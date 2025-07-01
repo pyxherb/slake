@@ -68,7 +68,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseGenericParams(
 		while (true) {
 			peff::SharedPtr<GenericParamNode> genericParamNode;
 
-			if (!(genericParamNode = peff::makeShared<GenericParamNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
+			if (!(genericParamNode = peff::makeSharedWithControlBlock<GenericParamNode, AstNodeControlBlock<GenericParamNode>>(resourceAllocator.get(), resourceAllocator.get(), document))) {
 				return genOutOfMemoryError();
 			}
 

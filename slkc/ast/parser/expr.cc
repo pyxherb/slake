@@ -26,7 +26,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 					IdRefPtr idRefPtr;
 					if ((syntaxError = parseIdRef(idRefPtr)))
 						goto genBadExpr;
-					if (!(lhs = peff::makeShared<IdRefExprNode>(resourceAllocator.get(), resourceAllocator.get(), document, std::move(idRefPtr)).castTo<ExprNode>()))
+					if (!(lhs = peff::makeSharedWithControlBlock<IdRefExprNode, AstNodeControlBlock<IdRefExprNode>>(resourceAllocator.get(), resourceAllocator.get(), document, std::move(idRefPtr)).castTo<ExprNode>()))
 						return genOutOfMemoryError();
 					break;
 				}
@@ -47,7 +47,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					peff::SharedPtr<AllocaExprNode> expr;
 
-					if (!(expr = peff::makeShared<AllocaExprNode>(
+					if (!(expr = peff::makeSharedWithControlBlock<AllocaExprNode, AstNodeControlBlock<AllocaExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document)))
 						return genOutOfMemoryError();
 
@@ -78,7 +78,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					peff::SharedPtr<NewExprNode> expr;
 
-					if (!(expr = peff::makeShared<NewExprNode>(
+					if (!(expr = peff::makeSharedWithControlBlock<NewExprNode, AstNodeControlBlock<NewExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document)))
 						return genOutOfMemoryError();
 
@@ -107,7 +107,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 				}
 				case TokenId::IntLiteral: {
 					nextToken();
-					if (!(lhs = peff::makeShared<I32LiteralExprNode>(
+					if (!(lhs = peff::makeSharedWithControlBlock<I32LiteralExprNode, AstNodeControlBlock<I32LiteralExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document,
 							  ((IntTokenExtension *)prefixToken->exData.get())->data)
 								.castTo<ExprNode>()))
@@ -116,7 +116,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 				}
 				case TokenId::LongLiteral: {
 					nextToken();
-					if (!(lhs = peff::makeShared<I64LiteralExprNode>(
+					if (!(lhs = peff::makeSharedWithControlBlock<I64LiteralExprNode, AstNodeControlBlock<I64LiteralExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document,
 							  ((LongTokenExtension *)prefixToken->exData.get())->data)
 								.castTo<ExprNode>()))
@@ -125,7 +125,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 				}
 				case TokenId::UIntLiteral: {
 					nextToken();
-					if (!(lhs = peff::makeShared<U32LiteralExprNode>(
+					if (!(lhs = peff::makeSharedWithControlBlock<U32LiteralExprNode, AstNodeControlBlock<U32LiteralExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document,
 							  ((UIntTokenExtension *)prefixToken->exData.get())->data)
 								.castTo<ExprNode>()))
@@ -134,7 +134,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 				}
 				case TokenId::ULongLiteral: {
 					nextToken();
-					if (!(lhs = peff::makeShared<U64LiteralExprNode>(
+					if (!(lhs = peff::makeSharedWithControlBlock<U64LiteralExprNode, AstNodeControlBlock<U64LiteralExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document,
 							  ((ULongTokenExtension *)prefixToken->exData.get())->data)
 								.castTo<ExprNode>()))
@@ -149,7 +149,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 						return genOutOfMemoryError();
 					}
 
-					if (!(lhs = peff::makeShared<StringLiteralExprNode>(
+					if (!(lhs = peff::makeSharedWithControlBlock<StringLiteralExprNode, AstNodeControlBlock<StringLiteralExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document,
 							  std::move(s))
 								.castTo<ExprNode>()))
@@ -158,7 +158,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 				}
 				case TokenId::F32Literal: {
 					nextToken();
-					if (!(lhs = peff::makeShared<F32LiteralExprNode>(
+					if (!(lhs = peff::makeSharedWithControlBlock<F32LiteralExprNode, AstNodeControlBlock<F32LiteralExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document,
 							  ((F32TokenExtension *)prefixToken->exData.get())->data)
 								.castTo<ExprNode>()))
@@ -167,7 +167,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 				}
 				case TokenId::F64Literal: {
 					nextToken();
-					if (!(lhs = peff::makeShared<F64LiteralExprNode>(
+					if (!(lhs = peff::makeSharedWithControlBlock<F64LiteralExprNode, AstNodeControlBlock<F64LiteralExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document,
 							  ((F64TokenExtension *)prefixToken->exData.get())->data)
 								.castTo<ExprNode>()))
@@ -176,7 +176,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 				}
 				case TokenId::TrueKeyword: {
 					nextToken();
-					if (!(lhs = peff::makeShared<BoolLiteralExprNode>(
+					if (!(lhs = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document,
 							  true)
 								.castTo<ExprNode>()))
@@ -185,7 +185,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 				}
 				case TokenId::FalseKeyword: {
 					nextToken();
-					if (!(lhs = peff::makeShared<BoolLiteralExprNode>(
+					if (!(lhs = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document,
 							  false)
 								.castTo<ExprNode>()))
@@ -194,7 +194,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 				}
 				case TokenId::NullKeyword: {
 					nextToken();
-					if (!(lhs = peff::makeShared<NullLiteralExprNode>(
+					if (!(lhs = peff::makeSharedWithControlBlock<NullLiteralExprNode, AstNodeControlBlock<NullLiteralExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document)
 								.castTo<ExprNode>()))
 						return genOutOfMemoryError();
@@ -205,7 +205,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					peff::SharedPtr<UnaryExprNode> expr;
 
-					if (!(expr = peff::makeShared<UnaryExprNode>(
+					if (!(expr = peff::makeSharedWithControlBlock<UnaryExprNode, AstNodeControlBlock<UnaryExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document)))
 						return genOutOfMemoryError();
 
@@ -223,7 +223,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					peff::SharedPtr<InitializerListExprNode> initializerExpr;
 
-					if (!(initializerExpr = peff::makeShared<InitializerListExprNode>(
+					if (!(initializerExpr = peff::makeSharedWithControlBlock<InitializerListExprNode, AstNodeControlBlock<InitializerListExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document)))
 						return genOutOfMemoryError();
 
@@ -275,7 +275,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					peff::SharedPtr<UnaryExprNode> expr;
 
-					if (!(expr = peff::makeShared<UnaryExprNode>(
+					if (!(expr = peff::makeSharedWithControlBlock<UnaryExprNode, AstNodeControlBlock<UnaryExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document)))
 						return genOutOfMemoryError();
 
@@ -293,7 +293,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					peff::SharedPtr<UnaryExprNode> expr;
 
-					if (!(expr = peff::makeShared<UnaryExprNode>(
+					if (!(expr = peff::makeSharedWithControlBlock<UnaryExprNode, AstNodeControlBlock<UnaryExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document)))
 						return genOutOfMemoryError();
 
@@ -311,7 +311,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					peff::SharedPtr<UnaryExprNode> expr;
 
-					if (!(expr = peff::makeShared<UnaryExprNode>(
+					if (!(expr = peff::makeSharedWithControlBlock<UnaryExprNode, AstNodeControlBlock<UnaryExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document)))
 						return genOutOfMemoryError();
 
@@ -330,7 +330,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					peff::SharedPtr<MatchExprNode> expr;
 
-					if (!(expr = peff::makeShared<MatchExprNode>(
+					if (!(expr = peff::makeSharedWithControlBlock<MatchExprNode, AstNodeControlBlock<MatchExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document)))
 						return genOutOfMemoryError();
 
@@ -442,7 +442,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					peff::SharedPtr<CallExprNode> expr;
 
-					if (!(expr = peff::makeShared<CallExprNode>(
+					if (!(expr = peff::makeSharedWithControlBlock<CallExprNode, AstNodeControlBlock<CallExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document, peff::SharedPtr<ExprNode>(), peff::DynArray<peff::SharedPtr<ExprNode>>{ resourceAllocator.get() })))
 						return genOutOfMemoryError();
 
@@ -481,7 +481,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					peff::SharedPtr<BinaryExprNode> expr;
 
-					if (!(expr = peff::makeShared<BinaryExprNode>(
+					if (!(expr = peff::makeSharedWithControlBlock<BinaryExprNode, AstNodeControlBlock<BinaryExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document)))
 						return genOutOfMemoryError();
 
@@ -507,7 +507,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					peff::SharedPtr<HeadedIdRefExprNode> expr;
 
-					if (!(expr = peff::makeShared<HeadedIdRefExprNode>(
+					if (!(expr = peff::makeSharedWithControlBlock<HeadedIdRefExprNode, AstNodeControlBlock<HeadedIdRefExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document, lhs, IdRefPtr{})))
 						return genOutOfMemoryError();
 
@@ -527,7 +527,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					peff::SharedPtr<CastExprNode> expr;
 
-					if (!(expr = peff::makeShared<CastExprNode>(
+					if (!(expr = peff::makeSharedWithControlBlock<CastExprNode, AstNodeControlBlock<CastExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document)))
 						return genOutOfMemoryError();
 
@@ -550,7 +550,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					peff::SharedPtr<BinaryExprNode> expr;
 
-					if (!(expr = peff::makeShared<BinaryExprNode>(
+					if (!(expr = peff::makeSharedWithControlBlock<BinaryExprNode, AstNodeControlBlock<BinaryExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document)))
 						return genOutOfMemoryError();
 
@@ -571,7 +571,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					peff::SharedPtr<BinaryExprNode> expr;
 
-					if (!(expr = peff::makeShared<BinaryExprNode>(
+					if (!(expr = peff::makeSharedWithControlBlock<BinaryExprNode, AstNodeControlBlock<BinaryExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document)))
 						return genOutOfMemoryError();
 
@@ -592,7 +592,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					peff::SharedPtr<BinaryExprNode> expr;
 
-					if (!(expr = peff::makeShared<BinaryExprNode>(
+					if (!(expr = peff::makeSharedWithControlBlock<BinaryExprNode, AstNodeControlBlock<BinaryExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document)))
 						return genOutOfMemoryError();
 
@@ -614,7 +614,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					peff::SharedPtr<BinaryExprNode> expr;
 
-					if (!(expr = peff::makeShared<BinaryExprNode>(
+					if (!(expr = peff::makeSharedWithControlBlock<BinaryExprNode, AstNodeControlBlock<BinaryExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document)))
 						return genOutOfMemoryError();
 
@@ -635,7 +635,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					peff::SharedPtr<BinaryExprNode> expr;
 
-					if (!(expr = peff::makeShared<BinaryExprNode>(
+					if (!(expr = peff::makeSharedWithControlBlock<BinaryExprNode, AstNodeControlBlock<BinaryExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document)))
 						return genOutOfMemoryError();
 
@@ -657,7 +657,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					peff::SharedPtr<BinaryExprNode> expr;
 
-					if (!(expr = peff::makeShared<BinaryExprNode>(
+					if (!(expr = peff::makeSharedWithControlBlock<BinaryExprNode, AstNodeControlBlock<BinaryExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document)))
 						return genOutOfMemoryError();
 
@@ -678,7 +678,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					peff::SharedPtr<BinaryExprNode> expr;
 
-					if (!(expr = peff::makeShared<BinaryExprNode>(
+					if (!(expr = peff::makeSharedWithControlBlock<BinaryExprNode, AstNodeControlBlock<BinaryExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document)))
 						return genOutOfMemoryError();
 
@@ -700,7 +700,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					peff::SharedPtr<BinaryExprNode> expr;
 
-					if (!(expr = peff::makeShared<BinaryExprNode>(
+					if (!(expr = peff::makeSharedWithControlBlock<BinaryExprNode, AstNodeControlBlock<BinaryExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document)))
 						return genOutOfMemoryError();
 
@@ -722,7 +722,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					peff::SharedPtr<BinaryExprNode> expr;
 
-					if (!(expr = peff::makeShared<BinaryExprNode>(
+					if (!(expr = peff::makeSharedWithControlBlock<BinaryExprNode, AstNodeControlBlock<BinaryExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document)))
 						return genOutOfMemoryError();
 
@@ -743,7 +743,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					peff::SharedPtr<BinaryExprNode> expr;
 
-					if (!(expr = peff::makeShared<BinaryExprNode>(
+					if (!(expr = peff::makeSharedWithControlBlock<BinaryExprNode, AstNodeControlBlock<BinaryExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document)))
 						return genOutOfMemoryError();
 
@@ -764,7 +764,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					peff::SharedPtr<BinaryExprNode> expr;
 
-					if (!(expr = peff::makeShared<BinaryExprNode>(
+					if (!(expr = peff::makeSharedWithControlBlock<BinaryExprNode, AstNodeControlBlock<BinaryExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document)))
 						return genOutOfMemoryError();
 
@@ -785,7 +785,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					peff::SharedPtr<BinaryExprNode> expr;
 
-					if (!(expr = peff::makeShared<BinaryExprNode>(
+					if (!(expr = peff::makeSharedWithControlBlock<BinaryExprNode, AstNodeControlBlock<BinaryExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document)))
 						return genOutOfMemoryError();
 
@@ -807,7 +807,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					peff::SharedPtr<BinaryExprNode> expr;
 
-					if (!(expr = peff::makeShared<BinaryExprNode>(
+					if (!(expr = peff::makeSharedWithControlBlock<BinaryExprNode, AstNodeControlBlock<BinaryExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document)))
 						return genOutOfMemoryError();
 
@@ -828,7 +828,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					peff::SharedPtr<BinaryExprNode> expr;
 
-					if (!(expr = peff::makeShared<BinaryExprNode>(
+					if (!(expr = peff::makeSharedWithControlBlock<BinaryExprNode, AstNodeControlBlock<BinaryExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document)))
 						return genOutOfMemoryError();
 
@@ -849,7 +849,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					peff::SharedPtr<BinaryExprNode> expr;
 
-					if (!(expr = peff::makeShared<BinaryExprNode>(
+					if (!(expr = peff::makeSharedWithControlBlock<BinaryExprNode, AstNodeControlBlock<BinaryExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document)))
 						return genOutOfMemoryError();
 
@@ -870,7 +870,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					peff::SharedPtr<BinaryExprNode> expr;
 
-					if (!(expr = peff::makeShared<BinaryExprNode>(
+					if (!(expr = peff::makeSharedWithControlBlock<BinaryExprNode, AstNodeControlBlock<BinaryExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document)))
 						return genOutOfMemoryError();
 
@@ -892,7 +892,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					peff::SharedPtr<BinaryExprNode> expr;
 
-					if (!(expr = peff::makeShared<BinaryExprNode>(
+					if (!(expr = peff::makeSharedWithControlBlock<BinaryExprNode, AstNodeControlBlock<BinaryExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document)))
 						return genOutOfMemoryError();
 
@@ -914,7 +914,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					peff::SharedPtr<BinaryExprNode> expr;
 
-					if (!(expr = peff::makeShared<BinaryExprNode>(
+					if (!(expr = peff::makeSharedWithControlBlock<BinaryExprNode, AstNodeControlBlock<BinaryExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document)))
 						return genOutOfMemoryError();
 
@@ -936,7 +936,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					peff::SharedPtr<BinaryExprNode> expr;
 
-					if (!(expr = peff::makeShared<BinaryExprNode>(
+					if (!(expr = peff::makeSharedWithControlBlock<BinaryExprNode, AstNodeControlBlock<BinaryExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document)))
 						return genOutOfMemoryError();
 
@@ -958,7 +958,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					peff::SharedPtr<BinaryExprNode> expr;
 
-					if (!(expr = peff::makeShared<BinaryExprNode>(
+					if (!(expr = peff::makeSharedWithControlBlock<BinaryExprNode, AstNodeControlBlock<BinaryExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document)))
 						return genOutOfMemoryError();
 
@@ -980,7 +980,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					peff::SharedPtr<BinaryExprNode> expr;
 
-					if (!(expr = peff::makeShared<BinaryExprNode>(
+					if (!(expr = peff::makeSharedWithControlBlock<BinaryExprNode, AstNodeControlBlock<BinaryExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document)))
 						return genOutOfMemoryError();
 
@@ -1002,7 +1002,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					peff::SharedPtr<TernaryExprNode> expr;
 
-					if (!(expr = peff::makeShared<TernaryExprNode>(
+					if (!(expr = peff::makeSharedWithControlBlock<TernaryExprNode, AstNodeControlBlock<TernaryExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document)))
 						return genOutOfMemoryError();
 
@@ -1034,7 +1034,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					peff::SharedPtr<BinaryExprNode> expr;
 
-					if (!(expr = peff::makeShared<BinaryExprNode>(
+					if (!(expr = peff::makeSharedWithControlBlock<BinaryExprNode, AstNodeControlBlock<BinaryExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document)))
 						return genOutOfMemoryError();
 
@@ -1055,7 +1055,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					peff::SharedPtr<BinaryExprNode> expr;
 
-					if (!(expr = peff::makeShared<BinaryExprNode>(
+					if (!(expr = peff::makeSharedWithControlBlock<BinaryExprNode, AstNodeControlBlock<BinaryExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document)))
 						return genOutOfMemoryError();
 
@@ -1076,7 +1076,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					peff::SharedPtr<BinaryExprNode> expr;
 
-					if (!(expr = peff::makeShared<BinaryExprNode>(
+					if (!(expr = peff::makeSharedWithControlBlock<BinaryExprNode, AstNodeControlBlock<BinaryExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document)))
 						return genOutOfMemoryError();
 
@@ -1097,7 +1097,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					peff::SharedPtr<BinaryExprNode> expr;
 
-					if (!(expr = peff::makeShared<BinaryExprNode>(
+					if (!(expr = peff::makeSharedWithControlBlock<BinaryExprNode, AstNodeControlBlock<BinaryExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document)))
 						return genOutOfMemoryError();
 
@@ -1118,7 +1118,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					peff::SharedPtr<BinaryExprNode> expr;
 
-					if (!(expr = peff::makeShared<BinaryExprNode>(
+					if (!(expr = peff::makeSharedWithControlBlock<BinaryExprNode, AstNodeControlBlock<BinaryExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document)))
 						return genOutOfMemoryError();
 
@@ -1139,7 +1139,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					peff::SharedPtr<BinaryExprNode> expr;
 
-					if (!(expr = peff::makeShared<BinaryExprNode>(
+					if (!(expr = peff::makeSharedWithControlBlock<BinaryExprNode, AstNodeControlBlock<BinaryExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document)))
 						return genOutOfMemoryError();
 
@@ -1160,7 +1160,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					peff::SharedPtr<BinaryExprNode> expr;
 
-					if (!(expr = peff::makeShared<BinaryExprNode>(
+					if (!(expr = peff::makeSharedWithControlBlock<BinaryExprNode, AstNodeControlBlock<BinaryExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document)))
 						return genOutOfMemoryError();
 
@@ -1181,7 +1181,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					peff::SharedPtr<BinaryExprNode> expr;
 
-					if (!(expr = peff::makeShared<BinaryExprNode>(
+					if (!(expr = peff::makeSharedWithControlBlock<BinaryExprNode, AstNodeControlBlock<BinaryExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document)))
 						return genOutOfMemoryError();
 
@@ -1202,7 +1202,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					peff::SharedPtr<BinaryExprNode> expr;
 
-					if (!(expr = peff::makeShared<BinaryExprNode>(
+					if (!(expr = peff::makeSharedWithControlBlock<BinaryExprNode, AstNodeControlBlock<BinaryExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document)))
 						return genOutOfMemoryError();
 
@@ -1223,7 +1223,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					peff::SharedPtr<BinaryExprNode> expr;
 
-					if (!(expr = peff::makeShared<BinaryExprNode>(
+					if (!(expr = peff::makeSharedWithControlBlock<BinaryExprNode, AstNodeControlBlock<BinaryExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document)))
 						return genOutOfMemoryError();
 
@@ -1244,7 +1244,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					peff::SharedPtr<BinaryExprNode> expr;
 
-					if (!(expr = peff::makeShared<BinaryExprNode>(
+					if (!(expr = peff::makeSharedWithControlBlock<BinaryExprNode, AstNodeControlBlock<BinaryExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document)))
 						return genOutOfMemoryError();
 
@@ -1270,7 +1270,7 @@ end:
 	return {};
 
 genBadExpr:
-	if (!(exprOut = peff::makeShared<BadExprNode>(resourceAllocator.get(), resourceAllocator.get(), document, lhs).castTo<ExprNode>()))
+	if (!(exprOut = peff::makeSharedWithControlBlock<BadExprNode, AstNodeControlBlock<BadExprNode>>(resourceAllocator.get(), resourceAllocator.get(), document, lhs).castTo<ExprNode>()))
 		return genOutOfMemoryError();
 	exprOut->tokenRange = { prefixToken->index, parseContext.idxCurrentToken };
 	return syntaxError;

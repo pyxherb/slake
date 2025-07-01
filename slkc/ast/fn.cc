@@ -4,7 +4,7 @@ using namespace slkc;
 
 SLKC_API peff::SharedPtr<AstNode> FnNode::doDuplicate(peff::Alloc *newAllocator) const {
 	bool succeeded = false;
-	peff::SharedPtr<FnNode> duplicatedNode(peff::makeShared<FnNode>(newAllocator, *this, newAllocator, succeeded));
+	peff::SharedPtr<FnNode> duplicatedNode(peff::makeSharedWithControlBlock<FnNode, AstNodeControlBlock<FnNode>>(newAllocator, *this, newAllocator, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -46,7 +46,7 @@ SLKC_API FnNode::~FnNode() {
 
 SLKC_API peff::SharedPtr<AstNode> FnOverloadingNode::doDuplicate(peff::Alloc *newAllocator) const {
 	bool succeeded = false;
-	peff::SharedPtr<FnOverloadingNode> duplicatedNode(peff::makeShared<FnOverloadingNode>(newAllocator, *this, newAllocator, succeeded));
+	peff::SharedPtr<FnOverloadingNode> duplicatedNode(peff::makeSharedWithControlBlock<FnOverloadingNode, AstNodeControlBlock<FnOverloadingNode>>(newAllocator, *this, newAllocator, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}

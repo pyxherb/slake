@@ -106,7 +106,7 @@ SLKC_API std::optional<CompilationError> NormalCompilationContext::emitIns(slake
 SLKC_API std::optional<CompilationError> NormalCompilationContext::allocLocalVar(const TokenRange &tokenRange, const std::string_view &name, uint32_t reg, peff::SharedPtr<TypeNameNode> type, peff::SharedPtr<VarNode> &localVarOut) {
 	peff::SharedPtr<VarNode> newVar;
 
-	if (!(newVar = peff::makeShared<VarNode>(allocator.get(), allocator.get(), document))) {
+	if (!(newVar = peff::makeSharedWithControlBlock<VarNode, AstNodeControlBlock<VarNode>>(allocator.get(), allocator.get(), document))) {
 		return genOutOfMemoryCompError();
 	}
 
@@ -237,7 +237,7 @@ SLKC_API std::optional<CompilationError> slkc::completeParentModules(
 			if (i + 1 == modules.size()) {
 				node = leaf;
 			} else {
-				if (!(node = peff::makeShared<ModuleNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+				if (!(node = peff::makeSharedWithControlBlock<ModuleNode, AstNodeControlBlock<ModuleNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 					return genOutOfMemoryCompError();
 				}
 			}
@@ -401,7 +401,7 @@ SLKC_API std::optional<CompilationError> FileSystemExternalModuleProvider::loadM
 
 				peff::SharedPtr<ModuleNode> mod;
 
-				if (!(mod = peff::makeShared<ModuleNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+				if (!(mod = peff::makeSharedWithControlBlock<ModuleNode, AstNodeControlBlock<ModuleNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 					return genOutOfMemoryCompError();
 				}
 

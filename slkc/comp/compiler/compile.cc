@@ -54,7 +54,7 @@ SLKC_API std::optional<CompilationError> slkc::compileTypeName(
 			break;
 		case TypeNameKind::Custom: {
 			peff::SharedPtr<CustomTypeNameNode> t = typeName.castTo<CustomTypeNameNode>();
-			peff::SharedPtr<Document> doc = t->document.lock();
+			peff::SharedPtr<Document> doc = t->document->sharedFromThis();
 			peff::SharedPtr<MemberNode> m;
 
 			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(doc, t, m));
@@ -107,7 +107,7 @@ SLKC_API std::optional<CompilationError> slkc::compileTypeName(
 		}
 		case TypeNameKind::Array: {
 			peff::SharedPtr<ArrayTypeNameNode> t = typeName.castTo<ArrayTypeNameNode>();
-			peff::SharedPtr<Document> doc = t->document.lock();
+			peff::SharedPtr<Document> doc = t->document->sharedFromThis();
 
 			slake::HostObjectRef<slake::TypeDefObject> obj;
 
@@ -126,7 +126,7 @@ SLKC_API std::optional<CompilationError> slkc::compileTypeName(
 		}
 		case TypeNameKind::Ref: {
 			peff::SharedPtr<RefTypeNameNode> t = typeName.castTo<RefTypeNameNode>();
-			peff::SharedPtr<Document> doc = t->document.lock();
+			peff::SharedPtr<Document> doc = t->document->sharedFromThis();
 
 			slake::HostObjectRef<slake::TypeDefObject> obj;
 
@@ -145,7 +145,7 @@ SLKC_API std::optional<CompilationError> slkc::compileTypeName(
 		}
 		case TypeNameKind::ParamTypeList: {
 			peff::SharedPtr<ParamTypeListTypeNameNode> t = typeName.castTo<ParamTypeListTypeNameNode>();
-			peff::SharedPtr<Document> doc = t->document.lock();
+			peff::SharedPtr<Document> doc = t->document->sharedFromThis();
 
 			slake::HostObjectRef<slake::ParamTypeListTypeDefObject> obj;
 
@@ -171,7 +171,7 @@ SLKC_API std::optional<CompilationError> slkc::compileTypeName(
 		}
 		case TypeNameKind::Unpacking: {
 			peff::SharedPtr<UnpackingTypeNameNode> t = typeName.castTo<UnpackingTypeNameNode>();
-			peff::SharedPtr<Document> doc = t->document.lock();
+			peff::SharedPtr<Document> doc = t->document->sharedFromThis();
 
 			slake::HostObjectRef<slake::TypeDefObject> obj;
 
@@ -532,14 +532,14 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 					peff::SharedPtr<MemberNode> baseTypeNode;
 
 					if (clsNode->baseType->typeNameKind == TypeNameKind::Custom) {
-						if (!(compilationError = resolveCustomTypeName(clsNode->document.lock(), clsNode->baseType.castTo<CustomTypeNameNode>(), baseTypeNode))) {
+						if (!(compilationError = resolveCustomTypeName(clsNode->document->sharedFromThis(), clsNode->baseType.castTo<CustomTypeNameNode>(), baseTypeNode))) {
 							if (baseTypeNode) {
 								if (baseTypeNode->astNodeType != AstNodeType::Class) {
 									SLKC_RETURN_IF_COMP_ERROR(compileContext->pushError(CompilationError(clsNode->baseType->tokenRange, CompilationErrorKind::ExpectingClassName)));
 								}
 
 								bool isCyclicInherited = false;
-								SLKC_RETURN_IF_COMP_ERROR(isBaseOf(clsNode->document.lock(), clsNode, clsNode, isCyclicInherited));
+								SLKC_RETURN_IF_COMP_ERROR(isBaseOf(clsNode->document->sharedFromThis(), clsNode, clsNode, isCyclicInherited));
 
 								if (isCyclicInherited) {
 									SLKC_RETURN_IF_COMP_ERROR(compileContext->pushError(CompilationError(clsNode->tokenRange, CompilationErrorKind::CyclicInheritedClass)));
@@ -565,7 +565,7 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 					peff::SharedPtr<MemberNode> implementedTypeNode;
 
 					if (i->typeNameKind == TypeNameKind::Custom) {
-						if (!(compilationError = resolveCustomTypeName(clsNode->document.lock(), i.castTo<CustomTypeNameNode>(), implementedTypeNode))) {
+						if (!(compilationError = resolveCustomTypeName(clsNode->document->sharedFromThis(), i.castTo<CustomTypeNameNode>(), implementedTypeNode))) {
 							if (implementedTypeNode) {
 								if (implementedTypeNode->astNodeType != AstNodeType::Interface) {
 									SLKC_RETURN_IF_COMP_ERROR(compileContext->pushError(CompilationError(i->tokenRange, CompilationErrorKind::ExpectingInterfaceName)));
@@ -665,13 +665,13 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 					peff::SharedPtr<MemberNode> implementedTypeNode;
 
 					if (i->typeNameKind == TypeNameKind::Custom) {
-						if (!(compilationError = resolveCustomTypeName(clsNode->document.lock(), i.castTo<CustomTypeNameNode>(), implementedTypeNode))) {
+						if (!(compilationError = resolveCustomTypeName(clsNode->document->sharedFromThis(), i.castTo<CustomTypeNameNode>(), implementedTypeNode))) {
 							if (implementedTypeNode) {
 								if (implementedTypeNode->astNodeType != AstNodeType::Interface) {
 									SLKC_RETURN_IF_COMP_ERROR(compileContext->pushError(CompilationError(i->tokenRange, CompilationErrorKind::ExpectingInterfaceName)));
 								}
 								bool isCyclicInherited = false;
-								SLKC_RETURN_IF_COMP_ERROR(isImplementedByInterface(clsNode->document.lock(), clsNode, clsNode, isCyclicInherited));
+								SLKC_RETURN_IF_COMP_ERROR(isImplementedByInterface(clsNode->document->sharedFromThis(), clsNode, clsNode, isCyclicInherited));
 
 								if (isCyclicInherited) {
 									SLKC_RETURN_IF_COMP_ERROR(compileContext->pushError(CompilationError(clsNode->tokenRange, CompilationErrorKind::CyclicInheritedClass)));
@@ -727,7 +727,7 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 						case AstNodeType::Class:
 						case AstNodeType::Interface:
 							if (!(i->accessModifier & slake::ACCESS_STATIC)) {
-								if (!(compileContext->thisNode = peff::makeShared<ThisNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document)))
+								if (!(compileContext->thisNode = peff::makeSharedWithControlBlock<ThisNode, AstNodeControlBlock<ThisNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document)))
 									return genOutOfMemoryCompError();
 								compileContext->thisNode->thisType = i->parent->parent->sharedFromThis().castTo<MemberNode>();
 							}

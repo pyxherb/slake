@@ -7,7 +7,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseAttribute(peff::SharedPtr<Attri
 
 	peff::SharedPtr<AttributeNode> attribute;
 
-	if (!(attribute = peff::makeShared<AttributeNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
+	if (!(attribute = peff::makeSharedWithControlBlock<AttributeNode, AstNodeControlBlock<AttributeNode>>(resourceAllocator.get(), resourceAllocator.get(), document))) {
 		return genOutOfMemoryError();
 	}
 

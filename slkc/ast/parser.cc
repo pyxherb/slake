@@ -363,7 +363,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseFn(peff::SharedPtr<FnOverloadin
 			return SyntaxError(TokenRange{ fnToken->index }, SyntaxErrorKind::UnexpectedToken);
 	}
 
-	if (!(fnNodeOut = peff::makeShared<FnOverloadingNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
+	if (!(fnNodeOut = peff::makeSharedWithControlBlock<FnOverloadingNode, AstNodeControlBlock<FnOverloadingNode>>(resourceAllocator.get(), resourceAllocator.get(), document))) {
 		return genOutOfMemoryError();
 	}
 
@@ -433,7 +433,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseFn(peff::SharedPtr<FnOverloadin
 
 			peff::SharedPtr<StmtNode> curStmt;
 
-			if (!(fnNodeOut->body = peff::makeShared<CodeBlockStmtNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
+			if (!(fnNodeOut->body = peff::makeSharedWithControlBlock<CodeBlockStmtNode, AstNodeControlBlock<CodeBlockStmtNode>>(resourceAllocator.get(), resourceAllocator.get(), document))) {
 				return genOutOfMemoryError();
 			}
 
@@ -541,7 +541,7 @@ accessModifierParseEnd:
 
 			peff::SharedPtr<AttributeDefNode> attributeNode;
 
-			if (!(attributeNode = peff::makeShared<AttributeDefNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
+			if (!(attributeNode = peff::makeSharedWithControlBlock<AttributeDefNode, AstNodeControlBlock<AttributeDefNode>>(resourceAllocator.get(), resourceAllocator.get(), document))) {
 				return genOutOfMemoryError();
 			}
 
@@ -661,7 +661,7 @@ accessModifierParseEnd:
 			} else {
 				peff::SharedPtr<FnNode> fnSlot;
 
-				if (!(fnSlot = peff::makeShared<FnNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
+				if (!(fnSlot = peff::makeSharedWithControlBlock<FnNode, AstNodeControlBlock<FnNode>>(resourceAllocator.get(), resourceAllocator.get(), document))) {
 					return genOutOfMemoryError();
 				}
 
@@ -687,7 +687,7 @@ accessModifierParseEnd:
 
 			peff::SharedPtr<ClassNode> classNode;
 
-			if (!(classNode = peff::makeShared<ClassNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
+			if (!(classNode = peff::makeSharedWithControlBlock<ClassNode, AstNodeControlBlock<ClassNode>>(resourceAllocator.get(), resourceAllocator.get(), document))) {
 				return genOutOfMemoryError();
 			}
 
@@ -822,7 +822,7 @@ accessModifierParseEnd:
 
 			peff::SharedPtr<InterfaceNode> interfaceNode;
 
-			if (!(interfaceNode = peff::makeShared<InterfaceNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
+			if (!(interfaceNode = peff::makeSharedWithControlBlock<InterfaceNode, AstNodeControlBlock<InterfaceNode>>(resourceAllocator.get(), resourceAllocator.get(), document))) {
 				return genOutOfMemoryError();
 			}
 
@@ -940,7 +940,7 @@ accessModifierParseEnd:
 
 			peff::SharedPtr<ImportNode> importNode;
 
-			if (!(importNode = peff::makeShared<ImportNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
+			if (!(importNode = peff::makeSharedWithControlBlock<ImportNode, AstNodeControlBlock<ImportNode>>(resourceAllocator.get(), resourceAllocator.get(), document))) {
 				return genOutOfMemoryError();
 			}
 
@@ -990,7 +990,7 @@ accessModifierParseEnd:
 
 			peff::SharedPtr<VarDefStmtNode> stmt;
 
-			if (!(stmt = peff::makeShared<VarDefStmtNode>(
+			if (!(stmt = peff::makeSharedWithControlBlock<VarDefStmtNode, AstNodeControlBlock<VarDefStmtNode>>(
 					  resourceAllocator.get(),
 					  resourceAllocator.get(),
 					  document,

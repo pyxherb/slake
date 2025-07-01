@@ -116,7 +116,7 @@ SLKC_API std::optional<CompilationError> slkc::renormalizeModuleVarDefStmts(
 			}
 			peff::SharedPtr<VarNode> varNode;
 
-			if (!(varNode = peff::makeShared<VarNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+			if (!(varNode = peff::makeSharedWithControlBlock<VarNode, AstNodeControlBlock<VarNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 				return genOutOfMemoryCompError();
 			}
 

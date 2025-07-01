@@ -4,7 +4,7 @@ using namespace slkc;
 
 SLKC_API peff::SharedPtr<AstNode> AttributeDefNode::doDuplicate(peff::Alloc *newAllocator) const {
 	bool succeeded = false;
-	peff::SharedPtr<AttributeDefNode> duplicatedNode(peff::makeShared<AttributeDefNode>(newAllocator, *this, newAllocator, succeeded));
+	peff::SharedPtr<AttributeDefNode> duplicatedNode(peff::makeSharedWithControlBlock<AttributeDefNode, AstNodeControlBlock<AttributeDefNode>>(newAllocator, *this, newAllocator, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -31,7 +31,7 @@ SLKC_API AttributeDefNode::~AttributeDefNode() {
 
 SLKC_API peff::SharedPtr<AstNode> AttributeNode::doDuplicate(peff::Alloc *newAllocator) const {
 	bool succeeded = false;
-	peff::SharedPtr<AttributeNode> duplicatedNode(peff::makeShared<AttributeNode>(newAllocator, *this, newAllocator, succeeded));
+	peff::SharedPtr<AttributeNode> duplicatedNode(peff::makeSharedWithControlBlock<AttributeNode, AstNodeControlBlock<AttributeNode>>(newAllocator, *this, newAllocator, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}

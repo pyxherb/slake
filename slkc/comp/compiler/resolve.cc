@@ -243,7 +243,7 @@ SLKC_API std::optional<CompilationError> slkc::resolveInstanceMember(
 		case AstNodeType::This: {
 			peff::SharedPtr<ThisNode> cls = memberNode.castTo<ThisNode>();
 
-			SLKC_RETURN_IF_COMP_ERROR(resolveInstanceMember(compileContext, cls->document.lock(), cls->thisType, name, result));
+			SLKC_RETURN_IF_COMP_ERROR(resolveInstanceMember(compileContext, cls->document->sharedFromThis(), cls->thisType, name, result));
 
 			break;
 		}
@@ -670,7 +670,7 @@ SLKC_API std::optional<CompilationError> slkc::visitBaseClass(peff::SharedPtr<Ty
 	if (cls && (cls->typeNameKind == TypeNameKind::Custom)) {
 		peff::SharedPtr<MemberNode> baseType;
 
-		SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(cls->document.lock(), cls.castTo<CustomTypeNameNode>(), baseType, walkedNodes));
+		SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(cls->document->sharedFromThis(), cls.castTo<CustomTypeNameNode>(), baseType, walkedNodes));
 
 		if (baseType && (baseType->astNodeType == AstNodeType::Class)) {
 			peff::SharedPtr<ClassNode> b = baseType.castTo<ClassNode>();
@@ -688,7 +688,7 @@ SLKC_API std::optional<CompilationError> slkc::visitBaseInterface(peff::SharedPt
 	if (cls && (cls->typeNameKind == TypeNameKind::Custom)) {
 		peff::SharedPtr<MemberNode> baseType;
 
-		SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(cls->document.lock(), cls.castTo<CustomTypeNameNode>(), baseType, walkedNodes));
+		SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(cls->document->sharedFromThis(), cls.castTo<CustomTypeNameNode>(), baseType, walkedNodes));
 
 		if (baseType && (baseType->astNodeType == AstNodeType::Interface)) {
 			peff::SharedPtr<InterfaceNode> b = baseType.castTo<InterfaceNode>();

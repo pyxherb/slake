@@ -9,7 +9,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseTypeName(peff::SharedPtr<TypeNa
 
 	switch (t->tokenId) {
 		case TokenId::VarArg:
-			if (!(typeNameOut = peff::makeShared<UnpackingTypeNameNode>(
+			if (!(typeNameOut = peff::makeSharedWithControlBlock<UnpackingTypeNameNode, AstNodeControlBlock<UnpackingTypeNameNode>>(
 					  resourceAllocator.get(),
 					  resourceAllocator.get(), document)
 						.castTo<TypeNameNode>()))
@@ -21,7 +21,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseTypeName(peff::SharedPtr<TypeNa
 				return syntaxError;
 			break;
 		case TokenId::VoidTypeName:
-			if (!(typeNameOut = peff::makeShared<VoidTypeNameNode>(
+			if (!(typeNameOut = peff::makeSharedWithControlBlock<VoidTypeNameNode, AstNodeControlBlock<VoidTypeNameNode>>(
 					  resourceAllocator.get(),
 					  resourceAllocator.get(), document)
 						.castTo<TypeNameNode>()))
@@ -30,7 +30,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseTypeName(peff::SharedPtr<TypeNa
 			nextToken();
 			break;
 		case TokenId::I8TypeName:
-			if (!(typeNameOut = peff::makeShared<I8TypeNameNode>(
+			if (!(typeNameOut = peff::makeSharedWithControlBlock<I8TypeNameNode, AstNodeControlBlock<I8TypeNameNode>>(
 					  resourceAllocator.get(),
 					  resourceAllocator.get(), document)
 						.castTo<TypeNameNode>()))
@@ -39,7 +39,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseTypeName(peff::SharedPtr<TypeNa
 			nextToken();
 			break;
 		case TokenId::I16TypeName:
-			if (!(typeNameOut = peff::makeShared<I16TypeNameNode>(
+			if (!(typeNameOut = peff::makeSharedWithControlBlock<I16TypeNameNode, AstNodeControlBlock<I16TypeNameNode>>(
 					  resourceAllocator.get(),
 					  resourceAllocator.get(), document)
 						.castTo<TypeNameNode>()))
@@ -48,7 +48,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseTypeName(peff::SharedPtr<TypeNa
 			nextToken();
 			break;
 		case TokenId::I32TypeName:
-			if (!(typeNameOut = peff::makeShared<I32TypeNameNode>(
+			if (!(typeNameOut = peff::makeSharedWithControlBlock<I32TypeNameNode, AstNodeControlBlock<I32TypeNameNode>>(
 					  resourceAllocator.get(),
 					  resourceAllocator.get(), document)
 						.castTo<TypeNameNode>()))
@@ -57,7 +57,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseTypeName(peff::SharedPtr<TypeNa
 			nextToken();
 			break;
 		case TokenId::I64TypeName:
-			if (!(typeNameOut = peff::makeShared<I64TypeNameNode>(
+			if (!(typeNameOut = peff::makeSharedWithControlBlock<I64TypeNameNode, AstNodeControlBlock<I64TypeNameNode>>(
 					  resourceAllocator.get(),
 					  resourceAllocator.get(), document)
 						.castTo<TypeNameNode>()))
@@ -66,7 +66,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseTypeName(peff::SharedPtr<TypeNa
 			nextToken();
 			break;
 		case TokenId::U8TypeName:
-			if (!(typeNameOut = peff::makeShared<U8TypeNameNode>(
+			if (!(typeNameOut = peff::makeSharedWithControlBlock<U8TypeNameNode, AstNodeControlBlock<U8TypeNameNode>>(
 					  resourceAllocator.get(),
 					  resourceAllocator.get(), document)
 						.castTo<TypeNameNode>()))
@@ -75,7 +75,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseTypeName(peff::SharedPtr<TypeNa
 			nextToken();
 			break;
 		case TokenId::U16TypeName:
-			if (!(typeNameOut = peff::makeShared<U16TypeNameNode>(
+			if (!(typeNameOut = peff::makeSharedWithControlBlock<U16TypeNameNode, AstNodeControlBlock<U16TypeNameNode>>(
 					  resourceAllocator.get(),
 					  resourceAllocator.get(), document)
 						.castTo<TypeNameNode>()))
@@ -84,7 +84,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseTypeName(peff::SharedPtr<TypeNa
 			nextToken();
 			break;
 		case TokenId::U32TypeName:
-			if (!(typeNameOut = peff::makeShared<U32TypeNameNode>(
+			if (!(typeNameOut = peff::makeSharedWithControlBlock<U32TypeNameNode, AstNodeControlBlock<U32TypeNameNode>>(
 					  resourceAllocator.get(),
 					  resourceAllocator.get(), document)
 						.castTo<TypeNameNode>()))
@@ -93,7 +93,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseTypeName(peff::SharedPtr<TypeNa
 			nextToken();
 			break;
 		case TokenId::U64TypeName:
-			if (!(typeNameOut = peff::makeShared<U64TypeNameNode>(
+			if (!(typeNameOut = peff::makeSharedWithControlBlock<U64TypeNameNode, AstNodeControlBlock<U64TypeNameNode>>(
 					  resourceAllocator.get(),
 					  resourceAllocator.get(), document)
 						.castTo<TypeNameNode>()))
@@ -102,7 +102,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseTypeName(peff::SharedPtr<TypeNa
 			nextToken();
 			break;
 		case TokenId::ISizeTypeName:
-			if (!(typeNameOut = peff::makeShared<ISizeTypeNameNode>(
+			if (!(typeNameOut = peff::makeSharedWithControlBlock<ISizeTypeNameNode, AstNodeControlBlock<ISizeTypeNameNode>>(
 					  resourceAllocator.get(),
 					  resourceAllocator.get(), document)
 						.castTo<TypeNameNode>()))
@@ -110,7 +110,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseTypeName(peff::SharedPtr<TypeNa
 			typeNameOut->tokenRange = TokenRange{ t->index };
 			break;
 		case TokenId::USizeTypeName:
-			if (!(typeNameOut = peff::makeShared<USizeTypeNameNode>(
+			if (!(typeNameOut = peff::makeSharedWithControlBlock<USizeTypeNameNode, AstNodeControlBlock<USizeTypeNameNode>>(
 					  resourceAllocator.get(),
 					  resourceAllocator.get(), document)
 						.castTo<TypeNameNode>()))
@@ -119,7 +119,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseTypeName(peff::SharedPtr<TypeNa
 			nextToken();
 			break;
 		case TokenId::F32TypeName:
-			if (!(typeNameOut = peff::makeShared<F32TypeNameNode>(
+			if (!(typeNameOut = peff::makeSharedWithControlBlock<F32TypeNameNode, AstNodeControlBlock<F32TypeNameNode>>(
 					  resourceAllocator.get(),
 					  resourceAllocator.get(), document)
 						.castTo<TypeNameNode>()))
@@ -128,7 +128,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseTypeName(peff::SharedPtr<TypeNa
 			nextToken();
 			break;
 		case TokenId::F64TypeName:
-			if (!(typeNameOut = peff::makeShared<F64TypeNameNode>(
+			if (!(typeNameOut = peff::makeSharedWithControlBlock<F64TypeNameNode, AstNodeControlBlock<F64TypeNameNode>>(
 					  resourceAllocator.get(),
 					  resourceAllocator.get(), document)
 						.castTo<TypeNameNode>()))
@@ -137,7 +137,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseTypeName(peff::SharedPtr<TypeNa
 			nextToken();
 			break;
 		case TokenId::BoolTypeName:
-			if (!(typeNameOut = peff::makeShared<BoolTypeNameNode>(
+			if (!(typeNameOut = peff::makeSharedWithControlBlock<BoolTypeNameNode, AstNodeControlBlock<BoolTypeNameNode>>(
 					  resourceAllocator.get(),
 					  resourceAllocator.get(), document)
 						.castTo<TypeNameNode>()))
@@ -146,7 +146,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseTypeName(peff::SharedPtr<TypeNa
 			nextToken();
 			break;
 		case TokenId::StringTypeName:
-			if (!(typeNameOut = peff::makeShared<StringTypeNameNode>(
+			if (!(typeNameOut = peff::makeSharedWithControlBlock<StringTypeNameNode, AstNodeControlBlock<StringTypeNameNode>>(
 					  resourceAllocator.get(),
 					  resourceAllocator.get(), document)
 						.castTo<TypeNameNode>()))
@@ -157,7 +157,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseTypeName(peff::SharedPtr<TypeNa
 		case TokenId::LParenthese: {
 			peff::SharedPtr<ParamTypeListTypeNameNode> tn;
 
-			if (!(tn = peff::makeShared<ParamTypeListTypeNameNode>(
+			if (!(tn = peff::makeSharedWithControlBlock<ParamTypeListTypeNameNode, AstNodeControlBlock<ParamTypeListTypeNameNode>>(
 					  resourceAllocator.get(),
 					  resourceAllocator.get(), document)))
 				return genOutOfMemoryError();
@@ -209,7 +209,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseTypeName(peff::SharedPtr<TypeNa
 		}
 		case TokenId::FnKeyword: {
 			peff::SharedPtr<FnTypeNameNode> tn;
-			if (!(tn = peff::makeShared<FnTypeNameNode>(
+			if (!(tn = peff::makeSharedWithControlBlock<FnTypeNameNode, AstNodeControlBlock<FnTypeNameNode>>(
 					  resourceAllocator.get(),
 					  resourceAllocator.get(), document)))
 				return genOutOfMemoryError();
@@ -275,7 +275,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseTypeName(peff::SharedPtr<TypeNa
 
 			peff::SharedPtr<CustomTypeNameNode> tn;
 
-			if (!(tn = peff::makeShared<CustomTypeNameNode>(
+			if (!(tn = peff::makeSharedWithControlBlock<CustomTypeNameNode, AstNodeControlBlock<CustomTypeNameNode>>(
 					  resourceAllocator.get(),
 					  resourceAllocator.get(),
 					  document)))
@@ -306,7 +306,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseTypeName(peff::SharedPtr<TypeNa
 
 					nextToken();
 
-					if (!(typeNameOut = peff::makeShared<ArrayTypeNameNode>(
+					if (!(typeNameOut = peff::makeSharedWithControlBlock<ArrayTypeNameNode, AstNodeControlBlock<ArrayTypeNameNode>>(
 							  resourceAllocator.get(),
 							  resourceAllocator.get(),
 							  document,
@@ -325,7 +325,7 @@ end:
 	if (withCircumfixes) {
 		if ((t = peekToken())->tokenId == TokenId::AndOp) {
 			nextToken();
-			if (!(typeNameOut = peff::makeShared<RefTypeNameNode>(
+			if (!(typeNameOut = peff::makeSharedWithControlBlock<RefTypeNameNode, AstNodeControlBlock<RefTypeNameNode>>(
 					  resourceAllocator.get(),
 					  resourceAllocator.get(),
 					  document,
@@ -334,7 +334,7 @@ end:
 				return genOutOfMemoryError();
 		} else if ((t = peekToken())->tokenId == TokenId::LAndOp) {
 			nextToken();
-			if (!(typeNameOut = peff::makeShared<TempRefTypeNameNode>(
+			if (!(typeNameOut = peff::makeSharedWithControlBlock<TempRefTypeNameNode, AstNodeControlBlock<TempRefTypeNameNode>>(
 					  resourceAllocator.get(),
 					  resourceAllocator.get(),
 					  document,

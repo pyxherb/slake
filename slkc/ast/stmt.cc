@@ -13,7 +13,7 @@ SLKC_API StmtNode::~StmtNode() {
 
 SLKC_API peff::SharedPtr<AstNode> ExprStmtNode::doDuplicate(peff::Alloc *newAllocator) const {
 	bool succeeded = false;
-	peff::SharedPtr<ExprStmtNode> duplicatedNode(peff::makeShared<ExprStmtNode>(newAllocator, *this, newAllocator, succeeded));
+	peff::SharedPtr<ExprStmtNode> duplicatedNode(peff::makeSharedWithControlBlock<ExprStmtNode, AstNodeControlBlock<ExprStmtNode>>(newAllocator, *this, newAllocator, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -67,7 +67,7 @@ SLKC_API VarDefEntryPtr slkc::duplicateVarDefEntry(VarDefEntry *varDefEntry, pef
 
 SLKC_API peff::SharedPtr<AstNode> VarDefStmtNode::doDuplicate(peff::Alloc *newAllocator) const {
 	bool succeeded = false;
-	peff::SharedPtr<VarDefStmtNode> duplicatedNode(peff::makeShared<VarDefStmtNode>(newAllocator, *this, newAllocator, succeeded));
+	peff::SharedPtr<VarDefStmtNode> duplicatedNode(peff::makeSharedWithControlBlock<VarDefStmtNode, AstNodeControlBlock<VarDefStmtNode>>(newAllocator, *this, newAllocator, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -100,7 +100,7 @@ SLKC_API VarDefStmtNode::~VarDefStmtNode() {
 }
 
 SLKC_API peff::SharedPtr<AstNode> BreakStmtNode::doDuplicate(peff::Alloc *newAllocator) const {
-	peff::SharedPtr<BreakStmtNode> duplicatedNode(peff::makeShared<BreakStmtNode>(newAllocator, *this, newAllocator));
+	peff::SharedPtr<BreakStmtNode> duplicatedNode(peff::makeSharedWithControlBlock<BreakStmtNode, AstNodeControlBlock<BreakStmtNode>>(newAllocator, *this, newAllocator));
 	if (!duplicatedNode) {
 		return {};
 	}
@@ -118,7 +118,7 @@ SLKC_API BreakStmtNode::~BreakStmtNode() {
 }
 
 SLKC_API peff::SharedPtr<AstNode> ContinueStmtNode::doDuplicate(peff::Alloc *newAllocator) const {
-	peff::SharedPtr<ContinueStmtNode> duplicatedNode(peff::makeShared<ContinueStmtNode>(newAllocator, *this, newAllocator));
+	peff::SharedPtr<ContinueStmtNode> duplicatedNode(peff::makeSharedWithControlBlock<ContinueStmtNode, AstNodeControlBlock<ContinueStmtNode>>(newAllocator, *this, newAllocator));
 	if (!duplicatedNode) {
 		return {};
 	}
@@ -137,7 +137,7 @@ SLKC_API ContinueStmtNode::~ContinueStmtNode() {
 
 SLKC_API peff::SharedPtr<AstNode> ForStmtNode::doDuplicate(peff::Alloc *newAllocator) const {
 	bool succeeded = false;
-	peff::SharedPtr<ForStmtNode> duplicatedNode(peff::makeShared<ForStmtNode>(newAllocator, *this, newAllocator, succeeded));
+	peff::SharedPtr<ForStmtNode> duplicatedNode(peff::makeSharedWithControlBlock<ForStmtNode, AstNodeControlBlock<ForStmtNode>>(newAllocator, *this, newAllocator, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -184,7 +184,7 @@ SLKC_API ForStmtNode::~ForStmtNode() {
 
 SLKC_API peff::SharedPtr<AstNode> ForEachStmtNode::doDuplicate(peff::Alloc *newAllocator) const {
 	bool succeeded = false;
-	peff::SharedPtr<ForEachStmtNode> duplicatedNode(peff::makeShared<ForEachStmtNode>(newAllocator, *this, newAllocator, succeeded));
+	peff::SharedPtr<ForEachStmtNode> duplicatedNode(peff::makeSharedWithControlBlock<ForEachStmtNode, AstNodeControlBlock<ForEachStmtNode>>(newAllocator, *this, newAllocator, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -219,7 +219,7 @@ SLKC_API ForEachStmtNode::~ForEachStmtNode() {
 
 SLKC_API peff::SharedPtr<AstNode> WhileStmtNode::doDuplicate(peff::Alloc *newAllocator) const {
 	bool succeeded = false;
-	peff::SharedPtr<WhileStmtNode> duplicatedNode(peff::makeShared<WhileStmtNode>(newAllocator, *this, newAllocator, succeeded));
+	peff::SharedPtr<WhileStmtNode> duplicatedNode(peff::makeSharedWithControlBlock<WhileStmtNode, AstNodeControlBlock<WhileStmtNode>>(newAllocator, *this, newAllocator, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -249,7 +249,7 @@ SLKC_API WhileStmtNode::~WhileStmtNode() {
 
 SLKC_API peff::SharedPtr<AstNode> ReturnStmtNode::doDuplicate(peff::Alloc *newAllocator) const {
 	bool succeeded = false;
-	peff::SharedPtr<ReturnStmtNode> duplicatedNode(peff::makeShared<ReturnStmtNode>(newAllocator, *this, newAllocator, succeeded));
+	peff::SharedPtr<ReturnStmtNode> duplicatedNode(peff::makeSharedWithControlBlock<ReturnStmtNode, AstNodeControlBlock<ReturnStmtNode>>(newAllocator, *this, newAllocator, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -274,7 +274,7 @@ SLKC_API ReturnStmtNode::~ReturnStmtNode() {
 
 SLKC_API peff::SharedPtr<AstNode> YieldStmtNode::doDuplicate(peff::Alloc *newAllocator) const {
 	bool succeeded = false;
-	peff::SharedPtr<YieldStmtNode> duplicatedNode(peff::makeShared<YieldStmtNode>(newAllocator, *this, newAllocator, succeeded));
+	peff::SharedPtr<YieldStmtNode> duplicatedNode(peff::makeSharedWithControlBlock<YieldStmtNode, AstNodeControlBlock<YieldStmtNode>>(newAllocator, *this, newAllocator, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -299,7 +299,7 @@ SLKC_API YieldStmtNode::~YieldStmtNode() {
 
 SLKC_API peff::SharedPtr<AstNode> IfStmtNode::doDuplicate(peff::Alloc *newAllocator) const {
 	bool succeeded = false;
-	peff::SharedPtr<IfStmtNode> duplicatedNode(peff::makeShared<IfStmtNode>(newAllocator, *this, newAllocator, succeeded));
+	peff::SharedPtr<IfStmtNode> duplicatedNode(peff::makeSharedWithControlBlock<IfStmtNode, AstNodeControlBlock<IfStmtNode>>(newAllocator, *this, newAllocator, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -358,7 +358,7 @@ WithConstraintEntryPtr slkc::duplicateWithConstraintEntry(peff::Alloc *allocator
 
 SLKC_API peff::SharedPtr<AstNode> WithStmtNode::doDuplicate(peff::Alloc *newAllocator) const {
 	bool succeeded = false;
-	peff::SharedPtr<WithStmtNode> duplicatedNode(peff::makeShared<WithStmtNode>(newAllocator, *this, newAllocator, succeeded));
+	peff::SharedPtr<WithStmtNode> duplicatedNode(peff::makeSharedWithControlBlock<WithStmtNode, AstNodeControlBlock<WithStmtNode>>(newAllocator, *this, newAllocator, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -400,7 +400,7 @@ SLKC_API WithStmtNode::~WithStmtNode() {
 
 SLKC_API peff::SharedPtr<AstNode> CaseLabelStmtNode::doDuplicate(peff::Alloc *newAllocator) const {
 	bool succeeded = false;
-	peff::SharedPtr<CaseLabelStmtNode> duplicatedNode(peff::makeShared<CaseLabelStmtNode>(newAllocator, *this, newAllocator, succeeded));
+	peff::SharedPtr<CaseLabelStmtNode> duplicatedNode(peff::makeSharedWithControlBlock<CaseLabelStmtNode, AstNodeControlBlock<CaseLabelStmtNode>>(newAllocator, *this, newAllocator, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -425,7 +425,7 @@ SLKC_API CaseLabelStmtNode::~CaseLabelStmtNode() {
 
 SLKC_API peff::SharedPtr<AstNode> SwitchStmtNode::doDuplicate(peff::Alloc *newAllocator) const {
 	bool succeeded = false;
-	peff::SharedPtr<SwitchStmtNode> duplicatedNode(peff::makeShared<SwitchStmtNode>(newAllocator, *this, newAllocator, succeeded));
+	peff::SharedPtr<SwitchStmtNode> duplicatedNode(peff::makeSharedWithControlBlock<SwitchStmtNode, AstNodeControlBlock<SwitchStmtNode>>(newAllocator, *this, newAllocator, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -469,7 +469,7 @@ SLKC_API SwitchStmtNode::~SwitchStmtNode() {
 
 SLKC_API peff::SharedPtr<AstNode> LabelStmtNode::doDuplicate(peff::Alloc *newAllocator) const {
 	bool succeeded = false;
-	peff::SharedPtr<LabelStmtNode> duplicatedNode(peff::makeShared<LabelStmtNode>(newAllocator, *this, newAllocator, succeeded));
+	peff::SharedPtr<LabelStmtNode> duplicatedNode(peff::makeSharedWithControlBlock<LabelStmtNode, AstNodeControlBlock<LabelStmtNode>>(newAllocator, *this, newAllocator, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -494,7 +494,7 @@ SLKC_API LabelStmtNode::~LabelStmtNode() {
 
 SLKC_API peff::SharedPtr<AstNode> CodeBlockStmtNode::doDuplicate(peff::Alloc *newAllocator) const {
 	bool succeeded = false;
-	peff::SharedPtr<CodeBlockStmtNode> duplicatedNode(peff::makeShared<CodeBlockStmtNode>(newAllocator, *this, newAllocator, succeeded));
+	peff::SharedPtr<CodeBlockStmtNode> duplicatedNode(peff::makeSharedWithControlBlock<CodeBlockStmtNode, AstNodeControlBlock<CodeBlockStmtNode>>(newAllocator, *this, newAllocator, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -526,7 +526,7 @@ SLKC_API CodeBlockStmtNode::~CodeBlockStmtNode() {
 
 SLKC_API peff::SharedPtr<AstNode> BadStmtNode::doDuplicate(peff::Alloc *newAllocator) const {
 	bool succeeded;
-	peff::SharedPtr<BadStmtNode> duplicatedNode(peff::makeShared<BadStmtNode>(newAllocator, *this, newAllocator, succeeded));
+	peff::SharedPtr<BadStmtNode> duplicatedNode(peff::makeSharedWithControlBlock<BadStmtNode, AstNodeControlBlock<BadStmtNode>>(newAllocator, *this, newAllocator, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}

@@ -218,8 +218,8 @@ SLKC_API std::optional<CompilationError> slkc::isSameType(
 	const peff::SharedPtr<TypeNameNode> &lhs,
 	const peff::SharedPtr<TypeNameNode> &rhs,
 	bool &whetherOut) {
-	peff::SharedPtr<Document> document = lhs->document.lock();
-	if (document != rhs->document.lock())
+	peff::SharedPtr<Document> document = lhs->document->sharedFromThis();
+	if (document != rhs->document->sharedFromThis())
 		std::terminate();
 
 	if (lhs->typeNameKind != rhs->typeNameKind) {
@@ -389,8 +389,8 @@ SLKC_API std::optional<CompilationError> slkc::isSameTypeInSignature(
 	const peff::SharedPtr<TypeNameNode> &lhs,
 	const peff::SharedPtr<TypeNameNode> &rhs,
 	bool &whetherOut) {
-	peff::SharedPtr<Document> document = lhs->document.lock();
-	if (document != rhs->document.lock())
+	peff::SharedPtr<Document> document = lhs->document->sharedFromThis();
+	if (document != rhs->document->sharedFromThis())
 		std::terminate();
 
 	if (lhs->typeNameKind != rhs->typeNameKind) {
@@ -457,8 +457,8 @@ SLKC_API std::optional<CompilationError> slkc::isTypeConvertible(
 	const peff::SharedPtr<TypeNameNode> &dest,
 	bool isSealed,
 	bool &whetherOut) {
-	peff::SharedPtr<Document> document = src->document.lock();
-	if (document != dest->document.lock())
+	peff::SharedPtr<Document> document = src->document->sharedFromThis();
+	if (document != dest->document->sharedFromThis())
 		std::terminate();
 
 	switch (dest->typeNameKind) {
@@ -724,7 +724,7 @@ SLKC_API std::optional<CompilationError> slkc::simplifyType(
 SLKC_API std::optional<CompilationError> slkc::getUnpackedTypeOf(
 	const peff::SharedPtr<TypeNameNode> &type,
 	peff::SharedPtr<TypeNameNode> &typeNameOut) {
-	peff::SharedPtr<Document> document = type->document.lock();
+	peff::SharedPtr<Document> document = type->document->sharedFromThis();
 
 	switch (type->typeNameKind) {
 		case TypeNameKind::Custom: {
@@ -739,7 +739,7 @@ SLKC_API std::optional<CompilationError> slkc::getUnpackedTypeOf(
 					if (p->isParamTypeList) {
 						peff::SharedPtr<UnpackedParamsTypeNameNode> unpackedType;
 
-						if (!(unpackedType = peff::makeShared<UnpackedParamsTypeNameNode>(document->allocator.get(), document->allocator.get(), document))) {
+						if (!(unpackedType = peff::makeSharedWithControlBlock<UnpackedParamsTypeNameNode, AstNodeControlBlock<UnpackedParamsTypeNameNode>>(document->allocator.get(), document->allocator.get(), document))) {
 							return genOutOfMemoryCompError();
 						}
 
@@ -773,7 +773,7 @@ SLKC_API std::optional<CompilationError> slkc::getUnpackedTypeOf(
 
 			peff::SharedPtr<UnpackedParamsTypeNameNode> unpackedType;
 
-			if (!(unpackedType = peff::makeShared<UnpackedParamsTypeNameNode>(document->allocator.get(), document->allocator.get(), document))) {
+			if (!(unpackedType = peff::makeSharedWithControlBlock<UnpackedParamsTypeNameNode, AstNodeControlBlock<UnpackedParamsTypeNameNode>>(document->allocator.get(), document->allocator.get(), document))) {
 				return genOutOfMemoryCompError();
 			}
 
@@ -808,7 +808,7 @@ SLKC_API std::optional<CompilationError> slkc::fnToTypeName(
 	peff::SharedPtr<FnTypeNameNode> &evaluatedTypeOut) {
 	peff::SharedPtr<FnTypeNameNode> tn;
 
-	if (!(tn = peff::makeShared<FnTypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+	if (!(tn = peff::makeSharedWithControlBlock<FnTypeNameNode, AstNodeControlBlock<FnTypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 		return genOutOfMemoryCompError();
 	}
 
@@ -835,7 +835,7 @@ SLKC_API std::optional<CompilationError> slkc::fnToTypeName(
 
 					SLKC_RETURN_IF_COMP_ERROR(getFullIdRef(compileContext->allocator.get(), fn->parent->parent->sharedFromThis().castTo<MemberNode>(), fullIdRef));
 
-					auto thisType = peff::makeShared<CustomTypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document);
+					auto thisType = peff::makeSharedWithControlBlock<CustomTypeNameNode, AstNodeControlBlock<CustomTypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document);
 
 					if (!thisType) {
 						return genOutOfMemoryCompError();
@@ -859,9 +859,9 @@ SLKC_API std::optional<CompilationError> slkc::fnToTypeName(
 }
 
 SLKC_API std::optional<slkc::CompilationError> slkc::typeNameCmp(peff::SharedPtr<TypeNameNode> lhs, peff::SharedPtr<TypeNameNode> rhs, int &out) noexcept {
-	peff::SharedPtr<Document> doc = lhs->document.lock();
+	peff::SharedPtr<Document> doc = lhs->document->sharedFromThis();
 
-	if (doc != rhs->document.lock())
+	if (doc != rhs->document->sharedFromThis())
 		std::terminate();
 
 	if (((uint8_t)lhs->typeNameKind) < ((uint8_t)rhs->typeNameKind)) {

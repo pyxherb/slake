@@ -187,7 +187,7 @@ static std::optional<CompilationError> _walkNodeForGenericInstantiation(
 								for (size_t k = 0; k < innerTypeName->paramTypes.size(); ++k) {
 									bool succeeded;
 
-									peff::SharedPtr<VarNode> p = peff::makeShared<VarNode>(context.allocator.get(), *curParam.get(), context.allocator.get(), succeeded);
+									peff::SharedPtr<VarNode> p = peff::makeSharedWithControlBlock<VarNode, AstNodeControlBlock<VarNode>>(context.allocator.get(), *curParam.get(), context.allocator.get(), succeeded);
 
 									if ((!p) || (!succeeded)) {
 										return genOutOfMemoryCompError();

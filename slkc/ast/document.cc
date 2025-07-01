@@ -6,6 +6,21 @@ SLKC_API Document::Document(peff::Alloc *allocator): allocator(allocator), exter
 }
 
 SLKC_API Document::~Document() {
+	clearDeferredDestructibleAstNodes();
+}
+
+SLKC_API void Document::clearDeferredDestructibleAstNodes() {
+	AstNode *i, *next;
+
+	while ((i = destructibleAstNodeList)) {
+		destructibleAstNodeList = nullptr;
+
+		while (i) {
+			next = i->nextDestructible;
+			i->destructor(i);
+			i = next;
+		};
+	}
 }
 
 SLAKE_API bool TypeNameListCmp::operator()(const peff::DynArray<peff::SharedPtr<TypeNameNode>> &lhs, const peff::DynArray<peff::SharedPtr<TypeNameNode>> &rhs) const noexcept {

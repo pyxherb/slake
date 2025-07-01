@@ -188,7 +188,7 @@ std::optional<CompilationError> _doSimpleComparisonBinaryOp(
 		case BinaryOp::Eq: {
 			peff::SharedPtr<BoolLiteralExprNode> result;
 
-			if (!(result = peff::makeShared<BoolLiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, _getData(lhs) == _getData(rhs))))
+			if (!(result = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, _getData(lhs) == _getData(rhs))))
 				return genOutOfMemoryCompError();
 
 			exprOut = result.castTo<ExprNode>();
@@ -197,7 +197,7 @@ std::optional<CompilationError> _doSimpleComparisonBinaryOp(
 		case BinaryOp::Neq: {
 			peff::SharedPtr<BoolLiteralExprNode> result;
 
-			if (!(result = peff::makeShared<BoolLiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, _getData(lhs) != _getData(rhs))))
+			if (!(result = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, _getData(lhs) != _getData(rhs))))
 				return genOutOfMemoryCompError();
 
 			exprOut = result.castTo<ExprNode>();
@@ -206,7 +206,7 @@ std::optional<CompilationError> _doSimpleComparisonBinaryOp(
 		case BinaryOp::StrictEq: {
 			peff::SharedPtr<BoolLiteralExprNode> result;
 
-			if (!(result = peff::makeShared<BoolLiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, _getData(lhs) == _getData(rhs))))
+			if (!(result = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, _getData(lhs) == _getData(rhs))))
 				return genOutOfMemoryCompError();
 
 			exprOut = result.castTo<ExprNode>();
@@ -215,7 +215,7 @@ std::optional<CompilationError> _doSimpleComparisonBinaryOp(
 		case BinaryOp::StrictNeq: {
 			peff::SharedPtr<BoolLiteralExprNode> result;
 
-			if (!(result = peff::makeShared<BoolLiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, _getData(lhs) != _getData(rhs))))
+			if (!(result = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, _getData(lhs) != _getData(rhs))))
 				return genOutOfMemoryCompError();
 
 			exprOut = result.castTo<ExprNode>();
@@ -224,7 +224,7 @@ std::optional<CompilationError> _doSimpleComparisonBinaryOp(
 		case BinaryOp::Lt: {
 			peff::SharedPtr<BoolLiteralExprNode> result;
 
-			if (!(result = peff::makeShared<BoolLiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, _getData(lhs) < _getData(rhs))))
+			if (!(result = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, _getData(lhs) < _getData(rhs))))
 				return genOutOfMemoryCompError();
 
 			exprOut = result.castTo<ExprNode>();
@@ -233,7 +233,7 @@ std::optional<CompilationError> _doSimpleComparisonBinaryOp(
 		case BinaryOp::Gt: {
 			peff::SharedPtr<BoolLiteralExprNode> result;
 
-			if (!(result = peff::makeShared<BoolLiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, _getData(lhs) > _getData(rhs))))
+			if (!(result = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, _getData(lhs) > _getData(rhs))))
 				return genOutOfMemoryCompError();
 
 			exprOut = result.castTo<ExprNode>();
@@ -242,7 +242,7 @@ std::optional<CompilationError> _doSimpleComparisonBinaryOp(
 		case BinaryOp::LtEq: {
 			peff::SharedPtr<BoolLiteralExprNode> result;
 
-			if (!(result = peff::makeShared<BoolLiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, _getData(lhs) <= _getData(rhs))))
+			if (!(result = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, _getData(lhs) <= _getData(rhs))))
 				return genOutOfMemoryCompError();
 
 			exprOut = result.castTo<ExprNode>();
@@ -251,7 +251,7 @@ std::optional<CompilationError> _doSimpleComparisonBinaryOp(
 		case BinaryOp::GtEq: {
 			peff::SharedPtr<BoolLiteralExprNode> result;
 
-			if (!(result = peff::makeShared<BoolLiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, _getData(lhs) >= _getData(rhs))))
+			if (!(result = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, _getData(lhs) >= _getData(rhs))))
 				return genOutOfMemoryCompError();
 
 			exprOut = result.castTo<ExprNode>();
@@ -271,7 +271,7 @@ std::optional<CompilationError> _doSimpleComparisonBinaryOp(
 			else
 				cmp = 0;
 
-			if (!(result = peff::makeShared<I32LiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, cmp)))
+			if (!(result = peff::makeSharedWithControlBlock<I32LiteralExprNode, AstNodeControlBlock<I32LiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, cmp)))
 				return genOutOfMemoryCompError();
 
 			exprOut = result.castTo<ExprNode>();
@@ -292,7 +292,7 @@ std::optional<CompilationError> _castConstExpr(
 	peff::SharedPtr<ExprNode> &exprOut) {
 	peff::SharedPtr<CastExprNode> castExpr;
 
-	if (!(castExpr = peff::makeShared<CastExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+	if (!(castExpr = peff::makeSharedWithControlBlock<CastExprNode, AstNodeControlBlock<CastExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 		return genOutOfMemoryCompError();
 	}
 
@@ -342,7 +342,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::I8 != rhs->exprKind) {
 								peff::SharedPtr<I8TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<I8TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<I8TypeNameNode, AstNodeControlBlock<I8TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -363,7 +363,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::I8 != rhs->exprKind) {
 								peff::SharedPtr<I8TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<I8TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<I8TypeNameNode, AstNodeControlBlock<I8TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -382,7 +382,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::I8 != rhs->exprKind) {
 								peff::SharedPtr<I8TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<I8TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<I8TypeNameNode, AstNodeControlBlock<I8TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -392,7 +392,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
-							if (!(result = peff::makeShared<BoolLiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, ll->data && rl.castTo<I8LiteralExprNode>()->data))) {
+							if (!(result = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, ll->data && rl.castTo<I8LiteralExprNode>()->data))) {
 								return genOutOfMemoryCompError();
 							}
 
@@ -403,7 +403,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::I8 != rhs->exprKind) {
 								peff::SharedPtr<I8TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<I8TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<I8TypeNameNode, AstNodeControlBlock<I8TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -413,7 +413,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
-							if (!(result = peff::makeShared<BoolLiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, ll->data || rl.castTo<I8LiteralExprNode>()->data))) {
+							if (!(result = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, ll->data || rl.castTo<I8LiteralExprNode>()->data))) {
 								return genOutOfMemoryCompError();
 							}
 
@@ -424,7 +424,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::U32 != rhs->exprKind) {
 								peff::SharedPtr<U32TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<U32TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<U32TypeNameNode, AstNodeControlBlock<U32TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -435,7 +435,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
 							uint32_t nBits = rl.castTo<U32LiteralExprNode>()->data;
-							if (!(result = peff::makeShared<BoolLiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, slake::flib::shrSigned8(ll->data, nBits)))) {
+							if (!(result = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, slake::flib::shrSigned8(ll->data, nBits)))) {
 								return genOutOfMemoryCompError();
 							}
 
@@ -446,7 +446,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::U32 != rhs->exprKind) {
 								peff::SharedPtr<U32TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<U32TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<U32TypeNameNode, AstNodeControlBlock<U32TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -458,11 +458,11 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 
 							uint32_t nBits = rl.castTo<U32LiteralExprNode>()->data;
 							if (nBits >= 8) {
-								if (!(result = peff::makeShared<BoolLiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, 0))) {
+								if (!(result = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, 0))) {
 									return genOutOfMemoryCompError();
 								}
 							} else {
-								if (!(result = peff::makeShared<BoolLiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, slake::flib::shrSigned8(ll->data, nBits)))) {
+								if (!(result = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, slake::flib::shrSigned8(ll->data, nBits)))) {
 									return genOutOfMemoryCompError();
 								}
 							}
@@ -482,7 +482,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::I8 != rhs->exprKind) {
 								peff::SharedPtr<I8TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<I8TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<I8TypeNameNode, AstNodeControlBlock<I8TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -509,7 +509,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::I16 != rhs->exprKind) {
 								peff::SharedPtr<I16TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<I16TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<I16TypeNameNode, AstNodeControlBlock<I16TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -530,7 +530,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::I16 != rhs->exprKind) {
 								peff::SharedPtr<I16TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<I16TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<I16TypeNameNode, AstNodeControlBlock<I16TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -549,7 +549,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::I16 != rhs->exprKind) {
 								peff::SharedPtr<I16TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<I16TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<I16TypeNameNode, AstNodeControlBlock<I16TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -559,7 +559,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
-							if (!(result = peff::makeShared<BoolLiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, ll->data && rl.castTo<I16LiteralExprNode>()->data))) {
+							if (!(result = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, ll->data && rl.castTo<I16LiteralExprNode>()->data))) {
 								return genOutOfMemoryCompError();
 							}
 
@@ -570,7 +570,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::I16 != rhs->exprKind) {
 								peff::SharedPtr<I16TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<I16TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<I16TypeNameNode, AstNodeControlBlock<I16TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -580,7 +580,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
-							if (!(result = peff::makeShared<BoolLiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, ll->data || rl.castTo<I16LiteralExprNode>()->data))) {
+							if (!(result = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, ll->data || rl.castTo<I16LiteralExprNode>()->data))) {
 								return genOutOfMemoryCompError();
 							}
 
@@ -591,7 +591,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::U32 != rhs->exprKind) {
 								peff::SharedPtr<U32TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<U32TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<U32TypeNameNode, AstNodeControlBlock<U32TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -602,7 +602,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
 							uint32_t nBits = rl.castTo<U32LiteralExprNode>()->data;
-							if (!(result = peff::makeShared<BoolLiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, slake::flib::shrSigned8(ll->data, nBits)))) {
+							if (!(result = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, slake::flib::shrSigned8(ll->data, nBits)))) {
 								return genOutOfMemoryCompError();
 							}
 
@@ -613,7 +613,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::U32 != rhs->exprKind) {
 								peff::SharedPtr<U32TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<U32TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<U32TypeNameNode, AstNodeControlBlock<U32TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -625,11 +625,11 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 
 							uint32_t nBits = rl.castTo<U32LiteralExprNode>()->data;
 							if (nBits >= 8) {
-								if (!(result = peff::makeShared<BoolLiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, 0))) {
+								if (!(result = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, 0))) {
 									return genOutOfMemoryCompError();
 								}
 							} else {
-								if (!(result = peff::makeShared<BoolLiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, slake::flib::shrSigned8(ll->data, nBits)))) {
+								if (!(result = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, slake::flib::shrSigned8(ll->data, nBits)))) {
 									return genOutOfMemoryCompError();
 								}
 							}
@@ -649,7 +649,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::I16 != rhs->exprKind) {
 								peff::SharedPtr<I16TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<I16TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<I16TypeNameNode, AstNodeControlBlock<I16TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -676,7 +676,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::I32 != rhs->exprKind) {
 								peff::SharedPtr<I32TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<I32TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<I32TypeNameNode, AstNodeControlBlock<I32TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -697,7 +697,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::I32 != rhs->exprKind) {
 								peff::SharedPtr<I32TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<I32TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<I32TypeNameNode, AstNodeControlBlock<I32TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -716,7 +716,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::I32 != rhs->exprKind) {
 								peff::SharedPtr<I32TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<I32TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<I32TypeNameNode, AstNodeControlBlock<I32TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -726,7 +726,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
-							if (!(result = peff::makeShared<BoolLiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, ll->data && rl.castTo<I32LiteralExprNode>()->data))) {
+							if (!(result = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, ll->data && rl.castTo<I32LiteralExprNode>()->data))) {
 								return genOutOfMemoryCompError();
 							}
 
@@ -737,7 +737,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::I32 != rhs->exprKind) {
 								peff::SharedPtr<I32TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<I32TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<I32TypeNameNode, AstNodeControlBlock<I32TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -747,7 +747,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
-							if (!(result = peff::makeShared<BoolLiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, ll->data || rl.castTo<I32LiteralExprNode>()->data))) {
+							if (!(result = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, ll->data || rl.castTo<I32LiteralExprNode>()->data))) {
 								return genOutOfMemoryCompError();
 							}
 
@@ -758,7 +758,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::U32 != rhs->exprKind) {
 								peff::SharedPtr<U32TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<U32TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<U32TypeNameNode, AstNodeControlBlock<U32TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -769,7 +769,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
 							uint32_t nBits = rl.castTo<U32LiteralExprNode>()->data;
-							if (!(result = peff::makeShared<BoolLiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, slake::flib::shrSigned8(ll->data, nBits)))) {
+							if (!(result = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, slake::flib::shrSigned8(ll->data, nBits)))) {
 								return genOutOfMemoryCompError();
 							}
 
@@ -780,7 +780,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::U32 != rhs->exprKind) {
 								peff::SharedPtr<U32TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<U32TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<U32TypeNameNode, AstNodeControlBlock<U32TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -792,11 +792,11 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 
 							uint32_t nBits = rl.castTo<U32LiteralExprNode>()->data;
 							if (nBits >= 8) {
-								if (!(result = peff::makeShared<BoolLiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, 0))) {
+								if (!(result = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, 0))) {
 									return genOutOfMemoryCompError();
 								}
 							} else {
-								if (!(result = peff::makeShared<BoolLiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, slake::flib::shrSigned8(ll->data, nBits)))) {
+								if (!(result = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, slake::flib::shrSigned8(ll->data, nBits)))) {
 									return genOutOfMemoryCompError();
 								}
 							}
@@ -816,7 +816,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::I32 != rhs->exprKind) {
 								peff::SharedPtr<I32TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<I32TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<I32TypeNameNode, AstNodeControlBlock<I32TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -843,7 +843,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::I64 != rhs->exprKind) {
 								peff::SharedPtr<I64TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<I64TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<I64TypeNameNode, AstNodeControlBlock<I64TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -864,7 +864,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::I64 != rhs->exprKind) {
 								peff::SharedPtr<I64TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<I64TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<I64TypeNameNode, AstNodeControlBlock<I64TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -883,7 +883,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::I64 != rhs->exprKind) {
 								peff::SharedPtr<I64TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<I64TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<I64TypeNameNode, AstNodeControlBlock<I64TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -893,7 +893,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
-							if (!(result = peff::makeShared<BoolLiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, ll->data && rl.castTo<I64LiteralExprNode>()->data))) {
+							if (!(result = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, ll->data && rl.castTo<I64LiteralExprNode>()->data))) {
 								return genOutOfMemoryCompError();
 							}
 
@@ -904,7 +904,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::I64 != rhs->exprKind) {
 								peff::SharedPtr<I64TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<I64TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<I64TypeNameNode, AstNodeControlBlock<I64TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -914,7 +914,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
-							if (!(result = peff::makeShared<BoolLiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, ll->data || rl.castTo<I64LiteralExprNode>()->data))) {
+							if (!(result = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, ll->data || rl.castTo<I64LiteralExprNode>()->data))) {
 								return genOutOfMemoryCompError();
 							}
 
@@ -925,7 +925,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::U32 != rhs->exprKind) {
 								peff::SharedPtr<U32TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<U32TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<U32TypeNameNode, AstNodeControlBlock<U32TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -936,7 +936,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
 							uint32_t nBits = rl.castTo<U32LiteralExprNode>()->data;
-							if (!(result = peff::makeShared<BoolLiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, slake::flib::shrSigned8(ll->data, nBits)))) {
+							if (!(result = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, slake::flib::shrSigned8(ll->data, nBits)))) {
 								return genOutOfMemoryCompError();
 							}
 
@@ -947,7 +947,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::U32 != rhs->exprKind) {
 								peff::SharedPtr<U32TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<U32TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<U32TypeNameNode, AstNodeControlBlock<U32TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -959,11 +959,11 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 
 							uint32_t nBits = rl.castTo<U32LiteralExprNode>()->data;
 							if (nBits >= 8) {
-								if (!(result = peff::makeShared<BoolLiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, 0))) {
+								if (!(result = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, 0))) {
 									return genOutOfMemoryCompError();
 								}
 							} else {
-								if (!(result = peff::makeShared<BoolLiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, slake::flib::shrSigned8(ll->data, nBits)))) {
+								if (!(result = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, slake::flib::shrSigned8(ll->data, nBits)))) {
 									return genOutOfMemoryCompError();
 								}
 							}
@@ -983,7 +983,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::I64 != rhs->exprKind) {
 								peff::SharedPtr<I64TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<I64TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<I64TypeNameNode, AstNodeControlBlock<I64TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -1010,7 +1010,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::U8 != rhs->exprKind) {
 								peff::SharedPtr<U8TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<U8TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<U8TypeNameNode, AstNodeControlBlock<U8TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -1031,7 +1031,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::U8 != rhs->exprKind) {
 								peff::SharedPtr<U8TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<U8TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<U8TypeNameNode, AstNodeControlBlock<U8TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -1050,7 +1050,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::U8 != rhs->exprKind) {
 								peff::SharedPtr<U8TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<U8TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<U8TypeNameNode, AstNodeControlBlock<U8TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -1060,7 +1060,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
-							if (!(result = peff::makeShared<BoolLiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, ll->data && rl.castTo<U8LiteralExprNode>()->data))) {
+							if (!(result = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, ll->data && rl.castTo<U8LiteralExprNode>()->data))) {
 								return genOutOfMemoryCompError();
 							}
 
@@ -1071,7 +1071,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::U8 != rhs->exprKind) {
 								peff::SharedPtr<U8TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<U8TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<U8TypeNameNode, AstNodeControlBlock<U8TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -1081,7 +1081,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
-							if (!(result = peff::makeShared<BoolLiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, ll->data || rl.castTo<U8LiteralExprNode>()->data))) {
+							if (!(result = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, ll->data || rl.castTo<U8LiteralExprNode>()->data))) {
 								return genOutOfMemoryCompError();
 							}
 
@@ -1092,7 +1092,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::U32 != rhs->exprKind) {
 								peff::SharedPtr<U32TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<U32TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<U32TypeNameNode, AstNodeControlBlock<U32TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -1103,7 +1103,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
 							uint32_t nBits = rl.castTo<U32LiteralExprNode>()->data;
-							if (!(result = peff::makeShared<BoolLiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, slake::flib::shrUnsigned8(ll->data, nBits)))) {
+							if (!(result = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, slake::flib::shrUnsigned8(ll->data, nBits)))) {
 								return genOutOfMemoryCompError();
 							}
 
@@ -1114,7 +1114,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::U32 != rhs->exprKind) {
 								peff::SharedPtr<U32TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<U32TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<U32TypeNameNode, AstNodeControlBlock<U32TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -1126,11 +1126,11 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 
 							uint32_t nBits = rl.castTo<U32LiteralExprNode>()->data;
 							if (nBits >= 8) {
-								if (!(result = peff::makeShared<BoolLiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, 0))) {
+								if (!(result = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, 0))) {
 									return genOutOfMemoryCompError();
 								}
 							} else {
-								if (!(result = peff::makeShared<BoolLiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, slake::flib::shrUnsigned8(ll->data, nBits)))) {
+								if (!(result = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, slake::flib::shrUnsigned8(ll->data, nBits)))) {
 									return genOutOfMemoryCompError();
 								}
 							}
@@ -1150,7 +1150,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::U8 != rhs->exprKind) {
 								peff::SharedPtr<U8TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<U8TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<U8TypeNameNode, AstNodeControlBlock<U8TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -1177,7 +1177,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::U16 != rhs->exprKind) {
 								peff::SharedPtr<U16TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<U16TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<U16TypeNameNode, AstNodeControlBlock<U16TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -1198,7 +1198,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::U16 != rhs->exprKind) {
 								peff::SharedPtr<U16TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<U16TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<U16TypeNameNode, AstNodeControlBlock<U16TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -1217,7 +1217,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::U16 != rhs->exprKind) {
 								peff::SharedPtr<U16TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<U16TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<U16TypeNameNode, AstNodeControlBlock<U16TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -1227,7 +1227,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
-							if (!(result = peff::makeShared<BoolLiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, ll->data && rl.castTo<U16LiteralExprNode>()->data))) {
+							if (!(result = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, ll->data && rl.castTo<U16LiteralExprNode>()->data))) {
 								return genOutOfMemoryCompError();
 							}
 
@@ -1238,7 +1238,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::U16 != rhs->exprKind) {
 								peff::SharedPtr<U16TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<U16TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<U16TypeNameNode, AstNodeControlBlock<U16TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -1248,7 +1248,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
-							if (!(result = peff::makeShared<BoolLiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, ll->data || rl.castTo<U16LiteralExprNode>()->data))) {
+							if (!(result = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, ll->data || rl.castTo<U16LiteralExprNode>()->data))) {
 								return genOutOfMemoryCompError();
 							}
 
@@ -1259,7 +1259,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::U32 != rhs->exprKind) {
 								peff::SharedPtr<U32TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<U32TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<U32TypeNameNode, AstNodeControlBlock<U32TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -1270,7 +1270,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
 							uint32_t nBits = rl.castTo<U32LiteralExprNode>()->data;
-							if (!(result = peff::makeShared<BoolLiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, slake::flib::shrUnsigned8(ll->data, nBits)))) {
+							if (!(result = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, slake::flib::shrUnsigned8(ll->data, nBits)))) {
 								return genOutOfMemoryCompError();
 							}
 
@@ -1281,7 +1281,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::U32 != rhs->exprKind) {
 								peff::SharedPtr<U32TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<U32TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<U32TypeNameNode, AstNodeControlBlock<U32TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -1293,11 +1293,11 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 
 							uint32_t nBits = rl.castTo<U32LiteralExprNode>()->data;
 							if (nBits >= 8) {
-								if (!(result = peff::makeShared<BoolLiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, 0))) {
+								if (!(result = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, 0))) {
 									return genOutOfMemoryCompError();
 								}
 							} else {
-								if (!(result = peff::makeShared<BoolLiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, slake::flib::shrUnsigned8(ll->data, nBits)))) {
+								if (!(result = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, slake::flib::shrUnsigned8(ll->data, nBits)))) {
 									return genOutOfMemoryCompError();
 								}
 							}
@@ -1317,7 +1317,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::U16 != rhs->exprKind) {
 								peff::SharedPtr<U16TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<U16TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<U16TypeNameNode, AstNodeControlBlock<U16TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -1344,7 +1344,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::U16 != rhs->exprKind) {
 								peff::SharedPtr<U16TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<U16TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<U16TypeNameNode, AstNodeControlBlock<U16TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -1365,7 +1365,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::U16 != rhs->exprKind) {
 								peff::SharedPtr<U16TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<U16TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<U16TypeNameNode, AstNodeControlBlock<U16TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -1384,7 +1384,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::U16 != rhs->exprKind) {
 								peff::SharedPtr<U16TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<U16TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<U16TypeNameNode, AstNodeControlBlock<U16TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -1394,7 +1394,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
-							if (!(result = peff::makeShared<BoolLiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, ll->data && rl.castTo<U16LiteralExprNode>()->data))) {
+							if (!(result = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, ll->data && rl.castTo<U16LiteralExprNode>()->data))) {
 								return genOutOfMemoryCompError();
 							}
 
@@ -1405,7 +1405,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::U16 != rhs->exprKind) {
 								peff::SharedPtr<U16TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<U16TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<U16TypeNameNode, AstNodeControlBlock<U16TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -1415,7 +1415,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
-							if (!(result = peff::makeShared<BoolLiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, ll->data || rl.castTo<U16LiteralExprNode>()->data))) {
+							if (!(result = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, ll->data || rl.castTo<U16LiteralExprNode>()->data))) {
 								return genOutOfMemoryCompError();
 							}
 
@@ -1426,7 +1426,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::U32 != rhs->exprKind) {
 								peff::SharedPtr<U32TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<U32TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<U32TypeNameNode, AstNodeControlBlock<U32TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -1437,7 +1437,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
 							uint32_t nBits = rl.castTo<U32LiteralExprNode>()->data;
-							if (!(result = peff::makeShared<BoolLiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, slake::flib::shrUnsigned8(ll->data, nBits)))) {
+							if (!(result = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, slake::flib::shrUnsigned8(ll->data, nBits)))) {
 								return genOutOfMemoryCompError();
 							}
 
@@ -1448,7 +1448,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::U32 != rhs->exprKind) {
 								peff::SharedPtr<U32TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<U32TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<U32TypeNameNode, AstNodeControlBlock<U32TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -1460,11 +1460,11 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 
 							uint32_t nBits = rl.castTo<U32LiteralExprNode>()->data;
 							if (nBits >= 8) {
-								if (!(result = peff::makeShared<BoolLiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, 0))) {
+								if (!(result = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, 0))) {
 									return genOutOfMemoryCompError();
 								}
 							} else {
-								if (!(result = peff::makeShared<BoolLiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, slake::flib::shrUnsigned8(ll->data, nBits)))) {
+								if (!(result = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, slake::flib::shrUnsigned8(ll->data, nBits)))) {
 									return genOutOfMemoryCompError();
 								}
 							}
@@ -1484,7 +1484,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::U16 != rhs->exprKind) {
 								peff::SharedPtr<U16TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<U16TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<U16TypeNameNode, AstNodeControlBlock<U16TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -1511,7 +1511,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::U64 != rhs->exprKind) {
 								peff::SharedPtr<U64TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<U64TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<U64TypeNameNode, AstNodeControlBlock<U64TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -1532,7 +1532,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::U64 != rhs->exprKind) {
 								peff::SharedPtr<U64TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<U64TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<U64TypeNameNode, AstNodeControlBlock<U64TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -1551,7 +1551,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::U64 != rhs->exprKind) {
 								peff::SharedPtr<U64TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<U64TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<U64TypeNameNode, AstNodeControlBlock<U64TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -1561,7 +1561,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
-							if (!(result = peff::makeShared<BoolLiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, ll->data && rl.castTo<U64LiteralExprNode>()->data))) {
+							if (!(result = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, ll->data && rl.castTo<U64LiteralExprNode>()->data))) {
 								return genOutOfMemoryCompError();
 							}
 
@@ -1572,7 +1572,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::U64 != rhs->exprKind) {
 								peff::SharedPtr<U64TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<U64TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<U64TypeNameNode, AstNodeControlBlock<U64TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -1582,7 +1582,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
-							if (!(result = peff::makeShared<BoolLiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, ll->data || rl.castTo<U64LiteralExprNode>()->data))) {
+							if (!(result = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, ll->data || rl.castTo<U64LiteralExprNode>()->data))) {
 								return genOutOfMemoryCompError();
 							}
 
@@ -1593,7 +1593,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::U32 != rhs->exprKind) {
 								peff::SharedPtr<U32TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<U32TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<U32TypeNameNode, AstNodeControlBlock<U32TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -1604,7 +1604,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
 							uint32_t nBits = rl.castTo<U32LiteralExprNode>()->data;
-							if (!(result = peff::makeShared<BoolLiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, slake::flib::shrUnsigned8(ll->data, nBits)))) {
+							if (!(result = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, slake::flib::shrUnsigned8(ll->data, nBits)))) {
 								return genOutOfMemoryCompError();
 							}
 
@@ -1615,7 +1615,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::U32 != rhs->exprKind) {
 								peff::SharedPtr<U32TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<U32TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<U32TypeNameNode, AstNodeControlBlock<U32TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -1627,11 +1627,11 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 
 							uint32_t nBits = rl.castTo<U32LiteralExprNode>()->data;
 							if (nBits >= 8) {
-								if (!(result = peff::makeShared<BoolLiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, 0))) {
+								if (!(result = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, 0))) {
 									return genOutOfMemoryCompError();
 								}
 							} else {
-								if (!(result = peff::makeShared<BoolLiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, slake::flib::shrUnsigned8(ll->data, nBits)))) {
+								if (!(result = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, slake::flib::shrUnsigned8(ll->data, nBits)))) {
 									return genOutOfMemoryCompError();
 								}
 							}
@@ -1651,7 +1651,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::U64 != rhs->exprKind) {
 								peff::SharedPtr<U64TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<U64TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<U64TypeNameNode, AstNodeControlBlock<U64TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -1677,7 +1677,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::F32 != rhs->exprKind) {
 								peff::SharedPtr<F32TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<F32TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<F32TypeNameNode, AstNodeControlBlock<F32TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -1696,7 +1696,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::F64 != rhs->exprKind) {
 								peff::SharedPtr<F32TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<F32TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<F32TypeNameNode, AstNodeControlBlock<F32TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -1706,7 +1706,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 
 							peff::SharedPtr<F32LiteralExprNode> result;
 
-							if (!(result = peff::makeShared<F32LiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, fmodf(ll->data, rl.castTo<F64LiteralExprNode>()->data)))) {
+							if (!(result = peff::makeSharedWithControlBlock<F32LiteralExprNode, AstNodeControlBlock<F32LiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, fmodf(ll->data, rl.castTo<F64LiteralExprNode>()->data)))) {
 								return genOutOfMemoryCompError();
 							}
 
@@ -1718,7 +1718,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::F32 != rhs->exprKind) {
 								peff::SharedPtr<F32TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<F32TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<F32TypeNameNode, AstNodeControlBlock<F32TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -1728,7 +1728,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
-							if (!(result = peff::makeShared<BoolLiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, ll->data && rl.castTo<F32LiteralExprNode>()->data))) {
+							if (!(result = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, ll->data && rl.castTo<F32LiteralExprNode>()->data))) {
 								return genOutOfMemoryCompError();
 							}
 
@@ -1739,7 +1739,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::F32 != rhs->exprKind) {
 								peff::SharedPtr<F32TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<F32TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<F32TypeNameNode, AstNodeControlBlock<F32TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -1749,7 +1749,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
-							if (!(result = peff::makeShared<BoolLiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, ll->data || rl.castTo<F32LiteralExprNode>()->data))) {
+							if (!(result = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, ll->data || rl.castTo<F32LiteralExprNode>()->data))) {
 								return genOutOfMemoryCompError();
 							}
 
@@ -1768,7 +1768,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::F32 != rhs->exprKind) {
 								peff::SharedPtr<F32TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<F32TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<F32TypeNameNode, AstNodeControlBlock<F32TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -1794,7 +1794,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::F64 != rhs->exprKind) {
 								peff::SharedPtr<F64TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<F64TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<F64TypeNameNode, AstNodeControlBlock<F64TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -1813,7 +1813,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::F64 != rhs->exprKind) {
 								peff::SharedPtr<F64TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<F64TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<F64TypeNameNode, AstNodeControlBlock<F64TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -1823,7 +1823,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 
 							peff::SharedPtr<F64LiteralExprNode> result;
 
-							if (!(result = peff::makeShared<F64LiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, fmod(ll->data, rl.castTo<F64LiteralExprNode>()->data)))) {
+							if (!(result = peff::makeSharedWithControlBlock<F64LiteralExprNode, AstNodeControlBlock<F64LiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, fmod(ll->data, rl.castTo<F64LiteralExprNode>()->data)))) {
 								return genOutOfMemoryCompError();
 							}
 
@@ -1835,7 +1835,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::F64 != rhs->exprKind) {
 								peff::SharedPtr<F64TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<F64TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<F64TypeNameNode, AstNodeControlBlock<F64TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -1845,7 +1845,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
-							if (!(result = peff::makeShared<BoolLiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, ll->data && rl.castTo<F64LiteralExprNode>()->data))) {
+							if (!(result = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, ll->data && rl.castTo<F64LiteralExprNode>()->data))) {
 								return genOutOfMemoryCompError();
 							}
 
@@ -1856,7 +1856,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::F64 != rhs->exprKind) {
 								peff::SharedPtr<F64TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<F64TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<F64TypeNameNode, AstNodeControlBlock<F64TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -1866,7 +1866,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
-							if (!(result = peff::makeShared<BoolLiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, ll->data || rl.castTo<F64LiteralExprNode>()->data))) {
+							if (!(result = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, ll->data || rl.castTo<F64LiteralExprNode>()->data))) {
 								return genOutOfMemoryCompError();
 							}
 
@@ -1885,7 +1885,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::F64 != rhs->exprKind) {
 								peff::SharedPtr<F64TypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<F64TypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<F64TypeNameNode, AstNodeControlBlock<F64TypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -1908,7 +1908,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::Bool != rhs->exprKind) {
 								peff::SharedPtr<BoolTypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<BoolTypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<BoolTypeNameNode, AstNodeControlBlock<BoolTypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -1927,7 +1927,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::Bool != rhs->exprKind) {
 								peff::SharedPtr<BoolTypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<BoolTypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<BoolTypeNameNode, AstNodeControlBlock<BoolTypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -1937,7 +1937,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
-							if (!(result = peff::makeShared<BoolLiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, ll->data && rl.castTo<BoolLiteralExprNode>()->data))) {
+							if (!(result = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, ll->data && rl.castTo<BoolLiteralExprNode>()->data))) {
 								return genOutOfMemoryCompError();
 							}
 
@@ -1948,7 +1948,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::Bool != rhs->exprKind) {
 								peff::SharedPtr<BoolTypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<BoolTypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<BoolTypeNameNode, AstNodeControlBlock<BoolTypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -1958,7 +1958,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
-							if (!(result = peff::makeShared<BoolLiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, ll->data || rl.castTo<BoolLiteralExprNode>()->data))) {
+							if (!(result = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, ll->data || rl.castTo<BoolLiteralExprNode>()->data))) {
 								return genOutOfMemoryCompError();
 							}
 
@@ -1977,7 +1977,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							if (ExprKind::Bool != rhs->exprKind) {
 								peff::SharedPtr<BoolTypeNameNode> tn;
 
-								if (!(tn = peff::makeShared<BoolTypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+								if (!(tn = peff::makeSharedWithControlBlock<BoolTypeNameNode, AstNodeControlBlock<BoolTypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
 									return genOutOfMemoryCompError();
 								}
 
@@ -2034,7 +2034,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 				case TypeNameKind::I8: {
 					peff::SharedPtr<I8LiteralExprNode> l;
 
-					if (!(l = peff::makeShared<I8LiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, 0))) {
+					if (!(l = peff::makeSharedWithControlBlock<I8LiteralExprNode, AstNodeControlBlock<I8LiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, 0))) {
 						return genOutOfMemoryCompError();
 					}
 
@@ -2046,7 +2046,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 				case TypeNameKind::I16: {
 					peff::SharedPtr<I16LiteralExprNode> l;
 
-					if (!(l = peff::makeShared<I16LiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, 0))) {
+					if (!(l = peff::makeSharedWithControlBlock<I16LiteralExprNode, AstNodeControlBlock<I16LiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, 0))) {
 						return genOutOfMemoryCompError();
 					}
 
@@ -2058,7 +2058,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 				case TypeNameKind::I32: {
 					peff::SharedPtr<I32LiteralExprNode> l;
 
-					if (!(l = peff::makeShared<I32LiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, 0))) {
+					if (!(l = peff::makeSharedWithControlBlock<I32LiteralExprNode, AstNodeControlBlock<I32LiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, 0))) {
 						return genOutOfMemoryCompError();
 					}
 
@@ -2070,7 +2070,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 				case TypeNameKind::I64: {
 					peff::SharedPtr<I64LiteralExprNode> l;
 
-					if (!(l = peff::makeShared<I64LiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, 0))) {
+					if (!(l = peff::makeSharedWithControlBlock<I64LiteralExprNode, AstNodeControlBlock<I64LiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, 0))) {
 						return genOutOfMemoryCompError();
 					}
 
@@ -2082,7 +2082,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 				case TypeNameKind::U8: {
 					peff::SharedPtr<U8LiteralExprNode> l;
 
-					if (!(l = peff::makeShared<U8LiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, 0))) {
+					if (!(l = peff::makeSharedWithControlBlock<U8LiteralExprNode, AstNodeControlBlock<U8LiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, 0))) {
 						return genOutOfMemoryCompError();
 					}
 
@@ -2094,7 +2094,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 				case TypeNameKind::U16: {
 					peff::SharedPtr<U16LiteralExprNode> l;
 
-					if (!(l = peff::makeShared<U16LiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, 0))) {
+					if (!(l = peff::makeSharedWithControlBlock<U16LiteralExprNode, AstNodeControlBlock<U16LiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, 0))) {
 						return genOutOfMemoryCompError();
 					}
 
@@ -2106,7 +2106,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 				case TypeNameKind::U32: {
 					peff::SharedPtr<U32LiteralExprNode> l;
 
-					if (!(l = peff::makeShared<U32LiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, 0))) {
+					if (!(l = peff::makeSharedWithControlBlock<U32LiteralExprNode, AstNodeControlBlock<U32LiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, 0))) {
 						return genOutOfMemoryCompError();
 					}
 
@@ -2118,7 +2118,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 				case TypeNameKind::U64: {
 					peff::SharedPtr<U64LiteralExprNode> l;
 
-					if (!(l = peff::makeShared<U64LiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, 0))) {
+					if (!(l = peff::makeSharedWithControlBlock<U64LiteralExprNode, AstNodeControlBlock<U64LiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, 0))) {
 						return genOutOfMemoryCompError();
 					}
 
@@ -2130,7 +2130,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 				case TypeNameKind::F32: {
 					peff::SharedPtr<F32LiteralExprNode> l;
 
-					if (!(l = peff::makeShared<F32LiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, 0))) {
+					if (!(l = peff::makeSharedWithControlBlock<F32LiteralExprNode, AstNodeControlBlock<F32LiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, 0))) {
 						return genOutOfMemoryCompError();
 					}
 
@@ -2142,7 +2142,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 				case TypeNameKind::F64: {
 					peff::SharedPtr<F64LiteralExprNode> l;
 
-					if (!(l = peff::makeShared<F64LiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, 0))) {
+					if (!(l = peff::makeSharedWithControlBlock<F64LiteralExprNode, AstNodeControlBlock<F64LiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, 0))) {
 						return genOutOfMemoryCompError();
 					}
 
@@ -2154,7 +2154,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 				case TypeNameKind::Bool: {
 					peff::SharedPtr<BoolLiteralExprNode> l;
 
-					if (!(l = peff::makeShared<BoolLiteralExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, 0))) {
+					if (!(l = peff::makeSharedWithControlBlock<BoolLiteralExprNode, AstNodeControlBlock<BoolLiteralExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, 0))) {
 						return genOutOfMemoryCompError();
 					}
 

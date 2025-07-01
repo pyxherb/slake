@@ -27,7 +27,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseParams(
 
 		peff::SharedPtr<VarNode> paramNode;
 
-		if (!(paramNode = peff::makeShared<VarNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
+		if (!(paramNode = peff::makeSharedWithControlBlock<VarNode, AstNodeControlBlock<VarNode>>(resourceAllocator.get(), resourceAllocator.get(), document))) {
 			return genOutOfMemoryError();
 		}
 

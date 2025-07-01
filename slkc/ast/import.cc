@@ -4,7 +4,7 @@ using namespace slkc;
 
 SLKC_API peff::SharedPtr<AstNode> ImportNode::doDuplicate(peff::Alloc *newAllocator) const {
 	bool succeeded = false;
-	peff::SharedPtr<ImportNode> duplicatedNode(peff::makeShared<ImportNode>(newAllocator, *this, newAllocator, succeeded));
+	peff::SharedPtr<ImportNode> duplicatedNode(peff::makeSharedWithControlBlock<ImportNode, AstNodeControlBlock<ImportNode>>(newAllocator, *this, newAllocator, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}

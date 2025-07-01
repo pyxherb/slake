@@ -56,7 +56,7 @@ SLKC_API MemberNode::~MemberNode() {
 
 SLKC_API peff::SharedPtr<AstNode> ModuleNode::doDuplicate(peff::Alloc *newAllocator) const {
 	bool succeeded = false;
-	peff::SharedPtr<ModuleNode> duplicatedNode(peff::makeShared<ModuleNode>(newAllocator, *this, newAllocator, succeeded));
+	peff::SharedPtr<ModuleNode> duplicatedNode(peff::makeSharedWithControlBlock<ModuleNode, AstNodeControlBlock<ModuleNode>>(newAllocator, *this, newAllocator, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}

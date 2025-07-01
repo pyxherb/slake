@@ -3,7 +3,7 @@
 using namespace slkc;
 
 SLKC_API peff::SharedPtr<AstNode> VoidTypeNameNode::doDuplicate(peff::Alloc *newAllocator) const {
-	peff::SharedPtr<VoidTypeNameNode> duplicatedNode(peff::makeShared<VoidTypeNameNode>(newAllocator, *this, newAllocator));
+	peff::SharedPtr<VoidTypeNameNode> duplicatedNode(peff::makeSharedWithControlBlock<VoidTypeNameNode, AstNodeControlBlock<VoidTypeNameNode>>(newAllocator, *this, newAllocator));
 	if(!duplicatedNode) {
 		return {};
 	}
@@ -21,7 +21,7 @@ SLKC_API VoidTypeNameNode::~VoidTypeNameNode() {
 }
 
 SLKC_API peff::SharedPtr<AstNode> I8TypeNameNode::doDuplicate(peff::Alloc *newAllocator) const {
-	peff::SharedPtr<I8TypeNameNode> duplicatedNode(peff::makeShared<I8TypeNameNode>(newAllocator, *this, newAllocator));
+	peff::SharedPtr<I8TypeNameNode> duplicatedNode(peff::makeSharedWithControlBlock<I8TypeNameNode, AstNodeControlBlock<I8TypeNameNode>>(newAllocator, *this, newAllocator));
 	if(!duplicatedNode) {
 		return {};
 	}
@@ -39,7 +39,7 @@ SLKC_API I8TypeNameNode::~I8TypeNameNode() {
 }
 
 SLKC_API peff::SharedPtr<AstNode> I16TypeNameNode::doDuplicate(peff::Alloc *newAllocator) const {
-	peff::SharedPtr<I16TypeNameNode> duplicatedNode(peff::makeShared<I16TypeNameNode>(newAllocator, *this, newAllocator));
+	peff::SharedPtr<I16TypeNameNode> duplicatedNode(peff::makeSharedWithControlBlock<I16TypeNameNode, AstNodeControlBlock<I16TypeNameNode>>(newAllocator, *this, newAllocator));
 	if(!duplicatedNode) {
 		return {};
 	}
@@ -57,7 +57,7 @@ SLKC_API I16TypeNameNode::~I16TypeNameNode() {
 }
 
 SLKC_API peff::SharedPtr<AstNode> I32TypeNameNode::doDuplicate(peff::Alloc *newAllocator) const {
-	peff::SharedPtr<I32TypeNameNode> duplicatedNode(peff::makeShared<I32TypeNameNode>(newAllocator, *this, newAllocator));
+	peff::SharedPtr<I32TypeNameNode> duplicatedNode(peff::makeSharedWithControlBlock<I32TypeNameNode, AstNodeControlBlock<I32TypeNameNode>>(newAllocator, *this, newAllocator));
 	if(!duplicatedNode) {
 		return {};
 	}
@@ -75,7 +75,7 @@ SLKC_API I32TypeNameNode::~I32TypeNameNode() {
 }
 
 SLKC_API peff::SharedPtr<AstNode> I64TypeNameNode::doDuplicate(peff::Alloc *newAllocator) const {
-	peff::SharedPtr<I64TypeNameNode> duplicatedNode(peff::makeShared<I64TypeNameNode>(newAllocator, *this, newAllocator));
+	peff::SharedPtr<I64TypeNameNode> duplicatedNode(peff::makeSharedWithControlBlock<I64TypeNameNode, AstNodeControlBlock<I64TypeNameNode>>(newAllocator, *this, newAllocator));
 	if(!duplicatedNode) {
 		return {};
 	}
@@ -93,7 +93,7 @@ SLKC_API I64TypeNameNode::~I64TypeNameNode() {
 }
 
 SLKC_API peff::SharedPtr<AstNode> U8TypeNameNode::doDuplicate(peff::Alloc *newAllocator) const {
-	peff::SharedPtr<U8TypeNameNode> duplicatedNode(peff::makeShared<U8TypeNameNode>(newAllocator, *this, newAllocator));
+	peff::SharedPtr<U8TypeNameNode> duplicatedNode(peff::makeSharedWithControlBlock<U8TypeNameNode, AstNodeControlBlock<U8TypeNameNode>>(newAllocator, *this, newAllocator));
 	if(!duplicatedNode) {
 		return {};
 	}
@@ -111,7 +111,7 @@ SLKC_API U8TypeNameNode::~U8TypeNameNode() {
 }
 
 SLKC_API peff::SharedPtr<AstNode> U16TypeNameNode::doDuplicate(peff::Alloc *newAllocator) const {
-	peff::SharedPtr<U16TypeNameNode> duplicatedNode(peff::makeShared<U16TypeNameNode>(newAllocator, *this, newAllocator));
+	peff::SharedPtr<U16TypeNameNode> duplicatedNode(peff::makeSharedWithControlBlock<U16TypeNameNode, AstNodeControlBlock<U16TypeNameNode>>(newAllocator, *this, newAllocator));
 	if(!duplicatedNode) {
 		return {};
 	}
@@ -129,7 +129,7 @@ SLKC_API U16TypeNameNode::~U16TypeNameNode() {
 }
 
 SLKC_API peff::SharedPtr<AstNode> U32TypeNameNode::doDuplicate(peff::Alloc *newAllocator) const {
-	peff::SharedPtr<U32TypeNameNode> duplicatedNode(peff::makeShared<U32TypeNameNode>(newAllocator, *this, newAllocator));
+	peff::SharedPtr<U32TypeNameNode> duplicatedNode(peff::makeSharedWithControlBlock<U32TypeNameNode, AstNodeControlBlock<U32TypeNameNode>>(newAllocator, *this, newAllocator));
 	if(!duplicatedNode) {
 		return {};
 	}
@@ -147,7 +147,7 @@ SLKC_API U32TypeNameNode::~U32TypeNameNode() {
 }
 
 SLKC_API peff::SharedPtr<AstNode> U64TypeNameNode::doDuplicate(peff::Alloc *newAllocator) const {
-	peff::SharedPtr<U64TypeNameNode> duplicatedNode(peff::makeShared<U64TypeNameNode>(newAllocator, *this, newAllocator));
+	peff::SharedPtr<U64TypeNameNode> duplicatedNode(peff::makeSharedWithControlBlock<U64TypeNameNode, AstNodeControlBlock<U64TypeNameNode>>(newAllocator, *this, newAllocator));
 	if(!duplicatedNode) {
 		return {};
 	}
@@ -165,7 +165,7 @@ SLKC_API U64TypeNameNode::~U64TypeNameNode() {
 }
 
 SLKC_API peff::SharedPtr<AstNode> ISizeTypeNameNode::doDuplicate(peff::Alloc *newAllocator) const {
-	peff::SharedPtr<ISizeTypeNameNode> duplicatedNode(peff::makeShared<ISizeTypeNameNode>(newAllocator, *this, newAllocator));
+	peff::SharedPtr<ISizeTypeNameNode> duplicatedNode(peff::makeSharedWithControlBlock<ISizeTypeNameNode, AstNodeControlBlock<ISizeTypeNameNode>>(newAllocator, *this, newAllocator));
 	if(!duplicatedNode) {
 		return {};
 	}
@@ -183,7 +183,7 @@ SLKC_API ISizeTypeNameNode::~ISizeTypeNameNode() {
 }
 
 SLKC_API peff::SharedPtr<AstNode> USizeTypeNameNode::doDuplicate(peff::Alloc *newAllocator) const {
-	peff::SharedPtr<USizeTypeNameNode> duplicatedNode(peff::makeShared<USizeTypeNameNode>(newAllocator, *this, newAllocator));
+	peff::SharedPtr<USizeTypeNameNode> duplicatedNode(peff::makeSharedWithControlBlock<USizeTypeNameNode, AstNodeControlBlock<USizeTypeNameNode>>(newAllocator, *this, newAllocator));
 	if(!duplicatedNode) {
 		return {};
 	}
@@ -201,7 +201,7 @@ SLKC_API USizeTypeNameNode::~USizeTypeNameNode() {
 }
 
 SLKC_API peff::SharedPtr<AstNode> F32TypeNameNode::doDuplicate(peff::Alloc *newAllocator) const {
-	peff::SharedPtr<F32TypeNameNode> duplicatedNode(peff::makeShared<F32TypeNameNode>(newAllocator, *this, newAllocator));
+	peff::SharedPtr<F32TypeNameNode> duplicatedNode(peff::makeSharedWithControlBlock<F32TypeNameNode, AstNodeControlBlock<F32TypeNameNode>>(newAllocator, *this, newAllocator));
 	if(!duplicatedNode) {
 		return {};
 	}
@@ -219,7 +219,7 @@ SLKC_API F32TypeNameNode::~F32TypeNameNode() {
 }
 
 SLKC_API peff::SharedPtr<AstNode> F64TypeNameNode::doDuplicate(peff::Alloc *newAllocator) const {
-	peff::SharedPtr<F64TypeNameNode> duplicatedNode(peff::makeShared<F64TypeNameNode>(newAllocator, *this, newAllocator));
+	peff::SharedPtr<F64TypeNameNode> duplicatedNode(peff::makeSharedWithControlBlock<F64TypeNameNode, AstNodeControlBlock<F64TypeNameNode>>(newAllocator, *this, newAllocator));
 	if(!duplicatedNode) {
 		return {};
 	}
@@ -237,7 +237,7 @@ SLKC_API F64TypeNameNode::~F64TypeNameNode() {
 }
 
 SLKC_API peff::SharedPtr<AstNode> StringTypeNameNode::doDuplicate(peff::Alloc *newAllocator) const {
-	peff::SharedPtr<StringTypeNameNode> duplicatedNode(peff::makeShared<StringTypeNameNode>(newAllocator, *this, newAllocator));
+	peff::SharedPtr<StringTypeNameNode> duplicatedNode(peff::makeSharedWithControlBlock<StringTypeNameNode, AstNodeControlBlock<StringTypeNameNode>>(newAllocator, *this, newAllocator));
 	if(!duplicatedNode) {
 		return {};
 	}
@@ -255,7 +255,7 @@ SLKC_API StringTypeNameNode::~StringTypeNameNode() {
 }
 
 SLKC_API peff::SharedPtr<AstNode> BoolTypeNameNode::doDuplicate(peff::Alloc *newAllocator) const {
-	peff::SharedPtr<BoolTypeNameNode> duplicatedNode(peff::makeShared<BoolTypeNameNode>(newAllocator, *this, newAllocator));
+	peff::SharedPtr<BoolTypeNameNode> duplicatedNode(peff::makeSharedWithControlBlock<BoolTypeNameNode, AstNodeControlBlock<BoolTypeNameNode>>(newAllocator, *this, newAllocator));
 	if(!duplicatedNode) {
 		return {};
 	}
@@ -273,7 +273,7 @@ SLKC_API BoolTypeNameNode::~BoolTypeNameNode() {
 }
 
 SLKC_API peff::SharedPtr<AstNode> ObjectTypeNameNode::doDuplicate(peff::Alloc *newAllocator) const {
-	peff::SharedPtr<ObjectTypeNameNode> duplicatedNode(peff::makeShared<ObjectTypeNameNode>(newAllocator, *this, newAllocator));
+	peff::SharedPtr<ObjectTypeNameNode> duplicatedNode(peff::makeSharedWithControlBlock<ObjectTypeNameNode, AstNodeControlBlock<ObjectTypeNameNode>>(newAllocator, *this, newAllocator));
 	if (!duplicatedNode) {
 		return {};
 	}
@@ -291,7 +291,7 @@ SLKC_API ObjectTypeNameNode::~ObjectTypeNameNode() {
 }
 
 SLKC_API peff::SharedPtr<AstNode> AnyTypeNameNode::doDuplicate(peff::Alloc *newAllocator) const {
-	peff::SharedPtr<AnyTypeNameNode> duplicatedNode(peff::makeShared<AnyTypeNameNode>(newAllocator, *this, newAllocator));
+	peff::SharedPtr<AnyTypeNameNode> duplicatedNode(peff::makeSharedWithControlBlock<AnyTypeNameNode, AstNodeControlBlock<AnyTypeNameNode>>(newAllocator, *this, newAllocator));
 	if (!duplicatedNode) {
 		return {};
 	}
@@ -310,7 +310,7 @@ SLKC_API AnyTypeNameNode::~AnyTypeNameNode() {
 
 SLKC_API peff::SharedPtr<AstNode> CustomTypeNameNode::doDuplicate(peff::Alloc *newAllocator) const {
 	bool succeeded = false;
-	peff::SharedPtr<CustomTypeNameNode> duplicatedNode(peff::makeShared<CustomTypeNameNode>(newAllocator, *this, newAllocator, succeeded));
+	peff::SharedPtr<CustomTypeNameNode> duplicatedNode(peff::makeSharedWithControlBlock<CustomTypeNameNode, AstNodeControlBlock<CustomTypeNameNode>>(newAllocator, *this, newAllocator, succeeded));
 	if((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -337,7 +337,7 @@ SLKC_API CustomTypeNameNode::~CustomTypeNameNode() {
 
 SLKC_API peff::SharedPtr<AstNode> UnpackingTypeNameNode::doDuplicate(peff::Alloc *newAllocator) const {
 	bool succeeded = false;
-	peff::SharedPtr<UnpackingTypeNameNode> duplicatedNode(peff::makeShared<UnpackingTypeNameNode>(newAllocator, *this, newAllocator, succeeded));
+	peff::SharedPtr<UnpackingTypeNameNode> duplicatedNode(peff::makeSharedWithControlBlock<UnpackingTypeNameNode, AstNodeControlBlock<UnpackingTypeNameNode>>(newAllocator, *this, newAllocator, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -362,7 +362,7 @@ SLKC_API UnpackingTypeNameNode::~UnpackingTypeNameNode() {
 
 SLKC_API peff::SharedPtr<AstNode> ArrayTypeNameNode::doDuplicate(peff::Alloc *newAllocator) const {
 	bool succeeded = false;
-	peff::SharedPtr<ArrayTypeNameNode> duplicatedNode(peff::makeShared<ArrayTypeNameNode>(newAllocator, *this, newAllocator, succeeded));
+	peff::SharedPtr<ArrayTypeNameNode> duplicatedNode(peff::makeSharedWithControlBlock<ArrayTypeNameNode, AstNodeControlBlock<ArrayTypeNameNode>>(newAllocator, *this, newAllocator, succeeded));
 	if((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -387,7 +387,7 @@ SLKC_API ArrayTypeNameNode::~ArrayTypeNameNode() {
 
 SLKC_API peff::SharedPtr<AstNode> FnTypeNameNode::doDuplicate(peff::Alloc *newAllocator) const {
 	bool succeeded = false;
-	peff::SharedPtr<FnTypeNameNode> duplicatedNode(peff::makeShared<FnTypeNameNode>(newAllocator, *this, newAllocator, succeeded));
+	peff::SharedPtr<FnTypeNameNode> duplicatedNode(peff::makeSharedWithControlBlock<FnTypeNameNode, AstNodeControlBlock<FnTypeNameNode>>(newAllocator, *this, newAllocator, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -432,7 +432,7 @@ SLKC_API FnTypeNameNode::~FnTypeNameNode() {
 
 SLKC_API peff::SharedPtr<AstNode> RefTypeNameNode::doDuplicate(peff::Alloc *newAllocator) const {
 	bool succeeded = false;
-	peff::SharedPtr<RefTypeNameNode> duplicatedNode(peff::makeShared<RefTypeNameNode>(newAllocator, *this, newAllocator, succeeded));
+	peff::SharedPtr<RefTypeNameNode> duplicatedNode(peff::makeSharedWithControlBlock<RefTypeNameNode, AstNodeControlBlock<RefTypeNameNode>>(newAllocator, *this, newAllocator, succeeded));
 	if((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -457,7 +457,7 @@ SLKC_API RefTypeNameNode::~RefTypeNameNode() {
 
 SLKC_API peff::SharedPtr<AstNode> TempRefTypeNameNode::doDuplicate(peff::Alloc *newAllocator) const {
 	bool succeeded = false;
-	peff::SharedPtr<TempRefTypeNameNode> duplicatedNode(peff::makeShared<TempRefTypeNameNode>(newAllocator, *this, newAllocator, succeeded));
+	peff::SharedPtr<TempRefTypeNameNode> duplicatedNode(peff::makeSharedWithControlBlock<TempRefTypeNameNode, AstNodeControlBlock<TempRefTypeNameNode>>(newAllocator, *this, newAllocator, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -482,7 +482,7 @@ SLKC_API TempRefTypeNameNode::~TempRefTypeNameNode() {
 
 SLKC_API peff::SharedPtr<AstNode> ParamTypeListTypeNameNode::doDuplicate(peff::Alloc *newAllocator) const {
 	bool succeeded = false;
-	peff::SharedPtr<ParamTypeListTypeNameNode> duplicatedNode(peff::makeShared<ParamTypeListTypeNameNode>(newAllocator, *this, newAllocator, succeeded));
+	peff::SharedPtr<ParamTypeListTypeNameNode> duplicatedNode(peff::makeSharedWithControlBlock<ParamTypeListTypeNameNode, AstNodeControlBlock<ParamTypeListTypeNameNode>>(newAllocator, *this, newAllocator, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -516,7 +516,7 @@ SLKC_API ParamTypeListTypeNameNode::~ParamTypeListTypeNameNode() {
 
 SLKC_API peff::SharedPtr<AstNode> UnpackedParamsTypeNameNode::doDuplicate(peff::Alloc *newAllocator) const {
 	bool succeeded = false;
-	peff::SharedPtr<UnpackedParamsTypeNameNode> duplicatedNode(peff::makeShared<UnpackedParamsTypeNameNode>(newAllocator, *this, newAllocator, succeeded));
+	peff::SharedPtr<UnpackedParamsTypeNameNode> duplicatedNode(peff::makeSharedWithControlBlock<UnpackedParamsTypeNameNode, AstNodeControlBlock<UnpackedParamsTypeNameNode>>(newAllocator, *this, newAllocator, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}

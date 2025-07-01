@@ -71,6 +71,8 @@ namespace slkc {
 	};
 
 	class TypeNameNode;
+	class ModuleNode;
+	class FnOverloadingNode;
 
 	struct IncompatibleOperandErrorExData {
 		peff::SharedPtr<TypeNameNode> desiredType;
@@ -174,6 +176,8 @@ namespace slkc {
 		SLAKE_API bool operator()(const peff::DynArray<peff::SharedPtr<TypeNameNode>> &lhs, const peff::DynArray<peff::SharedPtr<TypeNameNode>> &rhs) const noexcept;
 	};
 
+	class MemberNode;
+
 	using GenericCacheTable =
 		peff::Map<
 			peff::DynArray<peff::SharedPtr<TypeNameNode>>,
@@ -207,6 +211,8 @@ namespace slkc {
 			GenericCacheTable>
 			genericCacheDir;
 
+		AstNode *destructibleAstNodeList = nullptr;
+
 		SLKC_API Document(peff::Alloc *allocator);
 		SLKC_API virtual ~Document();
 
@@ -227,6 +233,8 @@ namespace slkc {
 			peff::SharedPtr<MemberNode> originalObject,
 			const peff::DynArray<peff::SharedPtr<TypeNameNode>> &genericArgs,
 			peff::SharedPtr<MemberNode> &memberOut);
+
+		SLKC_API void clearDeferredDestructibleAstNodes();
 	};
 }
 

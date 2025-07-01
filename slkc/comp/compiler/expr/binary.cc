@@ -434,21 +434,21 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 	peff::SharedPtr<I32TypeNameNode> i32Type;
 	peff::SharedPtr<BoolTypeNameNode> boolType;
 
-	if (!(u32Type = peff::makeShared<U32TypeNameNode>(
+	if (!(u32Type = peff::makeSharedWithControlBlock<U32TypeNameNode, AstNodeControlBlock<U32TypeNameNode>>(
 			  compileContext->allocator.get(),
 			  compileContext->allocator.get(),
 			  compileContext->document))) {
 		return genOutOfMemoryCompError();
 	}
 
-	if (!(i32Type = peff::makeShared<I32TypeNameNode>(
+	if (!(i32Type = peff::makeSharedWithControlBlock<I32TypeNameNode, AstNodeControlBlock<I32TypeNameNode>>(
 			  compileContext->allocator.get(),
 			  compileContext->allocator.get(),
 			  compileContext->document))) {
 		return genOutOfMemoryCompError();
 	}
 
-	if (!(boolType = peff::makeShared<BoolTypeNameNode>(
+	if (!(boolType = peff::makeSharedWithControlBlock<BoolTypeNameNode, AstNodeControlBlock<BoolTypeNameNode>>(
 			  compileContext->allocator.get(),
 			  compileContext->allocator.get(),
 			  compileContext->document))) {
@@ -491,7 +491,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 			case BinaryOp::Cmp: {
 				peff::SharedPtr<MemberNode> clsNode, operatorSlot;
 
-				SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(decayedRhsType->document.lock(), decayedRhsType.castTo<CustomTypeNameNode>(), clsNode));
+				SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(decayedRhsType->document->sharedFromThis(), decayedRhsType.castTo<CustomTypeNameNode>(), clsNode));
 
 				IdRefEntry e(compileContext->allocator.get());
 
@@ -520,7 +520,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 
 				peff::SharedPtr<VoidTypeNameNode> voidType;
 
-				if (!(voidType = peff::makeShared<VoidTypeNameNode>(
+				if (!(voidType = peff::makeSharedWithControlBlock<VoidTypeNameNode, AstNodeControlBlock<VoidTypeNameNode>>(
 						  compileContext->allocator.get(),
 						  compileContext->allocator.get(),
 						  compileContext->document))) {
@@ -985,7 +985,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 							evalPurpose,
 							lhsType,
 							decayedRhsType,
-							peff::makeShared<U32TypeNameNode>(
+							peff::makeSharedWithControlBlock<U32TypeNameNode, AstNodeControlBlock<U32TypeNameNode>>(
 								compileContext->allocator.get(),
 								compileContext->allocator.get(),
 								compileContext->document)
@@ -1005,7 +1005,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 							evalPurpose,
 							lhsType,
 							decayedRhsType,
-							peff::makeShared<U32TypeNameNode>(
+							peff::makeSharedWithControlBlock<U32TypeNameNode, AstNodeControlBlock<U32TypeNameNode>>(
 								compileContext->allocator.get(),
 								compileContext->allocator.get(),
 								compileContext->document)
@@ -1316,7 +1316,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 							evalPurpose,
 							lhsType,
 							decayedRhsType,
-							peff::makeShared<U32TypeNameNode>(
+							peff::makeSharedWithControlBlock<U32TypeNameNode, AstNodeControlBlock<U32TypeNameNode>>(
 								compileContext->allocator.get(),
 								compileContext->allocator.get(),
 								compileContext->document)
@@ -1336,7 +1336,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 							evalPurpose,
 							lhsType,
 							decayedRhsType,
-							peff::makeShared<U32TypeNameNode>(
+							peff::makeSharedWithControlBlock<U32TypeNameNode, AstNodeControlBlock<U32TypeNameNode>>(
 								compileContext->allocator.get(),
 								compileContext->allocator.get(),
 								compileContext->document)
@@ -1683,7 +1683,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					break;
 				case BinaryOp::Subscript: {
 					peff::SharedPtr<TypeNameNode> evaluatedType;
-					if (!(evaluatedType = peff::makeShared<RefTypeNameNode>(
+					if (!(evaluatedType = peff::makeSharedWithControlBlock<RefTypeNameNode, AstNodeControlBlock<RefTypeNameNode>>(
 							  compileContext->allocator.get(),
 							  compileContext->allocator.get(),
 							  compileContext->document,
@@ -1812,7 +1812,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 				case BinaryOp::Cmp: {
 					peff::SharedPtr<MemberNode> clsNode, operatorSlot;
 
-					SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(decayedLhsType->document.lock(), decayedLhsType.castTo<CustomTypeNameNode>(), clsNode));
+					SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(decayedLhsType->document->sharedFromThis(), decayedLhsType.castTo<CustomTypeNameNode>(), clsNode));
 
 					IdRefEntry e(compileContext->allocator.get());
 

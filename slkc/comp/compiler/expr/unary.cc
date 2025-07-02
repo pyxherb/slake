@@ -126,7 +126,7 @@ SLKC_API std::optional<CompilationError> slkc::compileUnaryExpr(
 							}
 
 							// TODO: I don't know what should I say, just keep it in mind.
-							resultOut.evaluatedType = decayedOperandType;
+							resultOut.evaluatedType = unpackedType;
 							break;
 						}
 						case ExprEvalPurpose::Stmt:

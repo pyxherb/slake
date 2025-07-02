@@ -420,7 +420,7 @@ namespace slkc {
 		bool isSealed,
 		bool &whetherOut);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> simplifyType(
-		const peff::SharedPtr<TypeNameNode> &type,
+		peff::SharedPtr<TypeNameNode> type,
 		peff::SharedPtr<TypeNameNode> &typeNameOut);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> getUnpackedTypeOf(
 		const peff::SharedPtr<TypeNameNode> &type,

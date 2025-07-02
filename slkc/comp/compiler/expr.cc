@@ -1113,8 +1113,28 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 						break;
 				}
 
-				for (size_t i = 0; i < e->args.size(); ++i) {
-					SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileContext, compilationContext, e->args.at(i), argTypes.at(i)));
+				for (size_t i = 0, j = 0; i < e->args.size(); ++i, ++j) {
+					SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileContext, compilationContext, e->args.at(i), argTypes.at(j)));
+
+					if (argTypes.at(j)->typeNameKind == TypeNameKind::UnpackedParams) {
+						peff::SharedPtr<UnpackedParamsTypeNameNode> t = argTypes.at(i).castTo<UnpackedParamsTypeNameNode>();
+
+						if (!argTypes.resize(argTypes.size() + t->paramTypes.size() - 1)) {
+							return genOutOfMemoryCompError();
+						}
+
+						--j;
+						for (size_t k = 0; k < t->paramTypes.size(); ++k, ++j) {
+							argTypes.at(j) = t->paramTypes.at(k);
+						}
+
+						if (t->hasVarArgs) {
+							// Varidic arguments must be the trailing one.
+							if (i + 1 != e->args.size()) {
+								return CompilationError(expr->tokenRange, CompilationErrorKind::CannotBeUnpackedInThisContext);
+							}
+						}
+					}
 				}
 
 				peff::SharedPtr<FnTypeNameNode> fnPrototype;
@@ -1137,14 +1157,34 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 
 				peff::SharedPtr<FnTypeNameNode> tn = fnType.castTo<FnTypeNameNode>();
 
-				for (size_t i = 0; i < e->args.size(); ++i) {
+				for (size_t i = 0, j = 0; i < e->args.size(); ++i, ++j) {
 					if (i < tn->paramTypes.size()) {
-						SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileContext, compilationContext, e->args.at(i), argTypes.at(i), tn->paramTypes.at(i)));
+						SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileContext, compilationContext, e->args.at(i), argTypes.at(j), tn->paramTypes.at(i)));
 					} else {
-						SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileContext, compilationContext, e->args.at(i), argTypes.at(i), {}));
+						SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileContext, compilationContext, e->args.at(i), argTypes.at(j), {}));
 					}
 
-					assert(argTypes.at(i));
+					if (argTypes.at(j)->typeNameKind == TypeNameKind::UnpackedParams) {
+						peff::SharedPtr<UnpackedParamsTypeNameNode> t = argTypes.at(i).castTo<UnpackedParamsTypeNameNode>();
+
+						if (!argTypes.resize(argTypes.size() + t->paramTypes.size() - 1)) {
+							return genOutOfMemoryCompError();
+						}
+
+						--j;
+						for (size_t k = 0; k < t->paramTypes.size(); ++k, ++j) {
+							argTypes.at(j) = t->paramTypes.at(k);
+						}
+
+						if (t->hasVarArgs) {
+							// Varidic arguments must be the trailing one.
+							if (i + 1 != e->args.size()) {
+								return CompilationError(expr->tokenRange, CompilationErrorKind::CannotBeUnpackedInThisContext);
+							}
+						}
+					}
+
+					assert(argTypes.at(j));
 				}
 			}
 
@@ -1180,11 +1220,21 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 					SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, compilationContext, e->args.at(i), ExprEvalPurpose::RValue, {}, reg, argResult));
 				}
 
-				SLKC_RETURN_IF_COMP_ERROR(
-					compilationContext->emitIns(
-						slake::Opcode::PUSHARG,
-						UINT32_MAX,
-						{ slake::Value(slake::ValueType::RegRef, reg) }));
+				switch (argResult.evaluatedType->typeNameKind) {
+					case TypeNameKind::UnpackedParams:
+						SLKC_RETURN_IF_COMP_ERROR(
+							compilationContext->emitIns(
+								slake::Opcode::PUSHAP,
+								UINT32_MAX,
+								{ slake::Value(slake::ValueType::RegRef, reg) }));
+						break;
+					default:
+						SLKC_RETURN_IF_COMP_ERROR(
+							compilationContext->emitIns(
+								slake::Opcode::PUSHARG,
+								UINT32_MAX,
+								{ slake::Value(slake::ValueType::RegRef, reg) }));
+				}
 			}
 
 			uint32_t thisReg = UINT32_MAX;

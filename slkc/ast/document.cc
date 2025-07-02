@@ -6,10 +6,10 @@ SLKC_API Document::Document(peff::Alloc *allocator): allocator(allocator), exter
 }
 
 SLKC_API Document::~Document() {
-	clearDeferredDestructibleAstNodes();
+	_doClearDeferredDestructibleAstNodes();
 }
 
-SLKC_API void Document::clearDeferredDestructibleAstNodes() {
+SLKC_API void Document::_doClearDeferredDestructibleAstNodes() {
 	AstNode *i, *next;
 
 	while ((i = destructibleAstNodeList)) {

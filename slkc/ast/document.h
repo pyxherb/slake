@@ -22,6 +22,7 @@ namespace slkc {
 		AmbiguousOperatorCall,
 		MismatchedGenericArgNumber,
 		DoesNotReferToATypeName,
+		ExpectingTypeName,
 		ExpectingClassName,
 		ExpectingInterfaceName,
 		AbstractMethodNotImplemented,
@@ -60,6 +61,7 @@ namespace slkc {
 		ErrorDeducingVarType,
 		TypeIsNotUnpackable,
 		InvalidVarArgHintDuringInstantiation,
+		CannotBeUnpackedInThisContext,
 
 		ImportLimitExceeded,
 		MalformedModuleName,
@@ -202,6 +204,9 @@ namespace slkc {
 	class ExternalModuleProvider;
 
 	class Document : public peff::SharedFromThis<Document> {
+	private:
+		SLKC_API void _doClearDeferredDestructibleAstNodes();
+
 	public:
 		peff::RcObjectPtr<peff::Alloc> allocator;
 		peff::SharedPtr<ModuleNode> rootModule;
@@ -234,7 +239,11 @@ namespace slkc {
 			const peff::DynArray<peff::SharedPtr<TypeNameNode>> &genericArgs,
 			peff::SharedPtr<MemberNode> &memberOut);
 
-		SLKC_API void clearDeferredDestructibleAstNodes();
+		SLAKE_FORCEINLINE void clearDeferredDestructibleAstNodes() {
+			if (destructibleAstNodeList) {
+				_doClearDeferredDestructibleAstNodes();
+			}
+		}
 	};
 }
 

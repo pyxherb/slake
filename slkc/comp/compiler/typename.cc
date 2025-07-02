@@ -708,14 +708,63 @@ SLKC_API std::optional<CompilationError> slkc::isTypeConvertible(
 }
 
 SLKC_API std::optional<CompilationError> slkc::simplifyType(
-	const peff::SharedPtr<TypeNameNode> &type,
+	peff::SharedPtr<TypeNameNode> type,
 	peff::SharedPtr<TypeNameNode> &typeNameOut) {
+	if (!type) {
+		typeNameOut = type;
+		return {};
+	}
+
 	switch (type->typeNameKind) {
 		case TypeNameKind::Unpacking:
 			SLKC_RETURN_IF_COMP_ERROR(getUnpackedTypeOf(type.castTo<UnpackingTypeNameNode>()->innerTypeName, typeNameOut));
 			break;
+		case TypeNameKind::Array: {
+			auto t = type.castTo<ArrayTypeNameNode>();
+
+			SLKC_RETURN_IF_COMP_ERROR(simplifyType(t->elementType, t->elementType));
+
+			typeNameOut = type;
+
+			break;
+		}
+		case TypeNameKind::Ref: {
+			auto t = type.castTo<RefTypeNameNode>();
+
+			SLKC_RETURN_IF_COMP_ERROR(simplifyType(t->referencedType, t->referencedType));
+
+			typeNameOut = type;
+
+			break;
+		}
+		case TypeNameKind::TempRef: {
+			auto t = type.castTo<TempRefTypeNameNode>();
+
+			SLKC_RETURN_IF_COMP_ERROR(simplifyType(t->referencedType, t->referencedType));
+
+			typeNameOut = type;
+
+			break;
+		}
+		case TypeNameKind::Fn: {
+			auto t = type.castTo<FnTypeNameNode>();
+
+			SLKC_RETURN_IF_COMP_ERROR(simplifyType(t->returnType, t->returnType));
+
+			for (auto &i : t->paramTypes) {
+				SLKC_RETURN_IF_COMP_ERROR(simplifyType(i, i));
+			}
+
+			SLKC_RETURN_IF_COMP_ERROR(simplifyType(t->thisType, t->thisType));
+
+			typeNameOut = type;
+
+			break;
+		}
 		default:
 			typeNameOut = type;
+
+			break;
 	}
 
 	return {};
@@ -731,6 +780,10 @@ SLKC_API std::optional<CompilationError> slkc::getUnpackedTypeOf(
 			peff::SharedPtr<MemberNode> m;
 
 			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, type.castTo<CustomTypeNameNode>(), m));
+
+			if (!m) {
+				return CompilationError(type->tokenRange, CompilationErrorKind::IdNotFound);
+			}
 
 			switch (m->astNodeType) {
 				case AstNodeType::GenericParam: {

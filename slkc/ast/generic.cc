@@ -15,7 +15,7 @@ GenericConstraintPtr slkc::duplicateGenericConstraint(peff::Alloc *allocator, co
 		return nullptr;
 	}
 
-	if (!(ptr->baseType = constraint->baseType->duplicate<TypeNameNode>(allocator))) {
+	if (constraint->baseType && !(ptr->baseType = constraint->baseType->duplicate<TypeNameNode>(allocator))) {
 		return nullptr;
 	}
 
@@ -81,12 +81,12 @@ SLKC_API GenericParamNode::GenericParamNode(const GenericParamNode &rhs, peff::A
 		return;
 	}
 
-	if (genericConstraint && !(genericConstraint = duplicateGenericConstraint(allocator, rhs.genericConstraint.get()))) {
+	if (rhs.genericConstraint && !(genericConstraint = duplicateGenericConstraint(allocator, rhs.genericConstraint.get()))) {
 		succeededOut = true;
 		return;
 	}
 
-	if (paramTypeListGenericConstraint && !(paramTypeListGenericConstraint = duplicateParamTypeListGenericConstraint(allocator, rhs.paramTypeListGenericConstraint.get()))) {
+	if (rhs.paramTypeListGenericConstraint && !(paramTypeListGenericConstraint = duplicateParamTypeListGenericConstraint(allocator, rhs.paramTypeListGenericConstraint.get()))) {
 		succeededOut = true;
 		return;
 	}

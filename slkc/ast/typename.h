@@ -279,6 +279,19 @@ namespace slkc {
 		SLKC_API UnpackedParamsTypeNameNode(const UnpackedParamsTypeNameNode &rhs, peff::Alloc *allocator, bool &succeededOut);
 		SLKC_API virtual ~UnpackedParamsTypeNameNode();
 	};
+
+	class UnpackedArgsTypeNameNode : public TypeNameNode {
+	protected:
+		SLKC_API virtual peff::SharedPtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
+
+	public:
+		peff::DynArray<peff::SharedPtr<TypeNameNode>> paramTypes;
+		bool hasVarArgs = false;
+
+		SLKC_API UnpackedArgsTypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
+		SLKC_API UnpackedArgsTypeNameNode(const UnpackedArgsTypeNameNode &rhs, peff::Alloc *allocator, bool &succeededOut);
+		SLKC_API virtual ~UnpackedArgsTypeNameNode();
+	};
 }
 
 #endif

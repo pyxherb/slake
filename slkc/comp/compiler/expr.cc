@@ -353,6 +353,8 @@ static std::optional<CompilationError> _determineNodeType(CompileContext *compil
 			std::terminate();
 	}
 
+	SLKC_RETURN_IF_COMP_ERROR(simplifyParamListTypeNameTree(typeNameOut, compileContext->allocator.get(), typeNameOut));
+
 	return {};
 };
 
@@ -846,18 +848,6 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 					break;
 				}
 				case ExprEvalPurpose::Unpacking: {
-					peff::SharedPtr<TypeNameNode> decayedTargetType;
-
-					SLKC_RETURN_IF_COMP_ERROR(removeRefOfType(resultOut.evaluatedType, decayedTargetType));
-
-					peff::SharedPtr<TypeNameNode> unpackedType;
-
-					SLKC_RETURN_IF_COMP_ERROR(getUnpackedTypeOf(decayedTargetType, unpackedType));
-
-					if (!unpackedType) {
-						return CompilationError(expr->tokenRange, CompilationErrorKind::TargetIsNotUnpackable);
-					}
-
 					SLKC_RETURN_IF_COMP_ERROR(
 						compilationContext->emitIns(
 							slake::Opcode::MOV,
@@ -1119,8 +1109,8 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 				for (size_t i = 0, j = 0; i < e->args.size(); ++i, ++j) {
 					SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileContext, compilationContext, e->args.at(i), argTypes.at(j)));
 
-					if (argTypes.at(j)->typeNameKind == TypeNameKind::UnpackedParams) {
-						peff::SharedPtr<UnpackedParamsTypeNameNode> t = argTypes.at(i).castTo<UnpackedParamsTypeNameNode>();
+					if (argTypes.at(j)->typeNameKind == TypeNameKind::UnpackedArgs) {
+						peff::SharedPtr<UnpackedArgsTypeNameNode> t = argTypes.at(i).castTo<UnpackedArgsTypeNameNode>();
 
 						if (!argTypes.resize(argTypes.size() + t->paramTypes.size() - 1)) {
 							return genOutOfMemoryCompError();
@@ -1167,10 +1157,10 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 						SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileContext, compilationContext, e->args.at(i), argTypes.at(j), {}));
 					}
 
-					SLKC_RETURN_IF_COMP_ERROR(simplifyParamListTypeNameTree(argTypes.at(j), compileContext->allocator.get(), argTypes.at(j)));
+					//SLKC_RETURN_IF_COMP_ERROR(simplifyParamListTypeNameTree(argTypes.at(j), compileContext->allocator.get(), argTypes.at(j)));
 
-					if (argTypes.at(j)->typeNameKind == TypeNameKind::UnpackedParams) {
-						peff::SharedPtr<UnpackedParamsTypeNameNode> t = argTypes.at(i).castTo<UnpackedParamsTypeNameNode>();
+					if (argTypes.at(j)->typeNameKind == TypeNameKind::UnpackedArgs) {
+						peff::SharedPtr<UnpackedArgsTypeNameNode> t = argTypes.at(i).castTo<UnpackedArgsTypeNameNode>();
 
 						if (!argTypes.resize(argTypes.size() + t->paramTypes.size() - 1)) {
 							return genOutOfMemoryCompError();
@@ -1225,12 +1215,12 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 					SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, compilationContext, e->args.at(i), ExprEvalPurpose::RValue, {}, reg, argResult));
 				}
 
-				peff::SharedPtr<TypeNameNode> argType;
+				peff::SharedPtr<TypeNameNode> argType = argResult.evaluatedType;
 
-				SLKC_RETURN_IF_COMP_ERROR(simplifyParamListTypeNameTree(argResult.evaluatedType, compileContext->allocator.get(), argType));
+				//SLKC_RETURN_IF_COMP_ERROR(simplifyParamListTypeNameTree(argResult.evaluatedType, compileContext->allocator.get(), argType));
 
 				switch (argType->typeNameKind) {
-					case TypeNameKind::UnpackedParams:
+					case TypeNameKind::UnpackedArgs:
 						SLKC_RETURN_IF_COMP_ERROR(
 							compilationContext->emitIns(
 								slake::Opcode::PUSHAP,

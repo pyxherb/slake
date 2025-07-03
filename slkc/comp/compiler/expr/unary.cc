@@ -112,7 +112,7 @@ SLKC_API std::optional<CompilationError> slkc::compileUnaryExpr(
 			}
 			break;
 		}
-		case TypeNameKind::Unpacking: {
+		case TypeNameKind::UnpackedParams: {
 			switch (expr->unaryOp) {
 				case UnaryOp::Unpacking:
 					switch (evalPurpose) {
@@ -141,7 +141,15 @@ SLKC_API std::optional<CompilationError> slkc::compileUnaryExpr(
 
 							SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, compilationContext, expr->operand, ExprEvalPurpose::Unpacking, {}, resultRegOut, result));
 
-							resultOut.evaluatedType = result.evaluatedType;
+							peff::SharedPtr<TypeNameNode> unpackedType;
+
+							SLKC_RETURN_IF_COMP_ERROR(getUnpackedTypeOf(result.evaluatedType, unpackedType));
+
+							if (!unpackedType) {
+								return CompilationError(expr->tokenRange, CompilationErrorKind::TargetIsNotUnpackable);
+							}
+
+							resultOut.evaluatedType = unpackedType;
 
 							break;
 						}

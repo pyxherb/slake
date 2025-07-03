@@ -399,12 +399,12 @@ SLKC_API FnTypeNameNode::FnTypeNameNode(peff::Alloc *selfAllocator, const peff::
 }
 
 SLKC_API FnTypeNameNode::FnTypeNameNode(const FnTypeNameNode &rhs, peff::Alloc *allocator, bool &succeededOut) : TypeNameNode(rhs, allocator), paramTypes(allocator) {
-	if (!(returnType = rhs.returnType->duplicate<TypeNameNode>(allocator))) {
+	if (rhs.returnType && !(returnType = rhs.returnType->duplicate<TypeNameNode>(allocator))) {
 		succeededOut = false;
 		return;
 	}
 
-	if (!(thisType = rhs.thisType->duplicate<TypeNameNode>(allocator))) {
+	if (rhs.thisType && !(thisType = rhs.thisType->duplicate<TypeNameNode>(allocator))) {
 		succeededOut = false;
 		return;
 	}
@@ -546,4 +546,38 @@ SLKC_API UnpackedParamsTypeNameNode::UnpackedParamsTypeNameNode(const UnpackedPa
 }
 
 SLKC_API UnpackedParamsTypeNameNode::~UnpackedParamsTypeNameNode() {
+}
+
+SLKC_API peff::SharedPtr<AstNode> UnpackedArgsTypeNameNode::doDuplicate(peff::Alloc *newAllocator) const {
+	bool succeeded = false;
+	peff::SharedPtr<UnpackedArgsTypeNameNode> duplicatedNode(peff::makeSharedWithControlBlock<UnpackedArgsTypeNameNode, AstNodeControlBlock<UnpackedArgsTypeNameNode>>(newAllocator, *this, newAllocator, succeeded));
+	if ((!duplicatedNode) || (!succeeded)) {
+		return {};
+	}
+
+	return duplicatedNode.castTo<AstNode>();
+}
+
+SLKC_API UnpackedArgsTypeNameNode::UnpackedArgsTypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : TypeNameNode(TypeNameKind::UnpackedArgs, selfAllocator, document), paramTypes(selfAllocator) {
+}
+
+SLKC_API UnpackedArgsTypeNameNode::UnpackedArgsTypeNameNode(const UnpackedArgsTypeNameNode &rhs, peff::Alloc *allocator, bool &succeededOut) : TypeNameNode(rhs, allocator), paramTypes(allocator) {
+	if (!paramTypes.resize(rhs.paramTypes.size())) {
+		succeededOut = false;
+		return;
+	}
+
+	for (size_t i = 0; i < paramTypes.size(); ++i) {
+		if (!(paramTypes.at(i) = rhs.paramTypes.at(i)->duplicate<TypeNameNode>(allocator))) {
+			succeededOut = false;
+			return;
+		}
+	}
+
+	hasVarArgs = rhs.hasVarArgs;
+
+	succeededOut = true;
+}
+
+SLKC_API UnpackedArgsTypeNameNode::~UnpackedArgsTypeNameNode() {
 }

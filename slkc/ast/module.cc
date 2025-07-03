@@ -112,7 +112,9 @@ SLKC_API ModuleNode::ModuleNode(const ModuleNode &rhs, peff::Alloc *allocator, b
 	}
 
 	for (size_t i = 0; i < members.size(); ++i) {
-		if (!(members.at(i) = rhs.members.at(i)->duplicate<MemberNode>(allocator))) {
+		peff::SharedPtr<MemberNode> &m = members.at(i);
+		const peff::SharedPtr<MemberNode> &rm = rhs.members.at(i);
+		if (!(m = rm->duplicate<MemberNode>(allocator))) {
 			succeededOut = false;
 			return;
 		}

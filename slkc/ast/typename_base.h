@@ -31,6 +31,7 @@ namespace slkc {
 		TempRef,
 		ParamTypeList,
 		UnpackedParams,
+		UnpackedArgs,
 
 		Bad
 	};

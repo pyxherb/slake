@@ -597,12 +597,12 @@ SLKC_API CallExprNode::CallExprNode(
 }
 SLKC_API CallExprNode::CallExprNode(const CallExprNode &rhs, peff::Alloc *allocator, bool &succeededOut)
 	: ExprNode(rhs, allocator), args(allocator), idxCommaTokens(allocator) {
-	if (!(target = rhs.target->duplicate<ExprNode>(allocator))) {
+	if (rhs.target && !(target = rhs.target->duplicate<ExprNode>(allocator))) {
 		succeededOut = false;
 		return;
 	}
 
-	if (!(withObject = rhs.withObject->duplicate<ExprNode>(allocator))) {
+	if (rhs.withObject && !(withObject = rhs.withObject->duplicate<ExprNode>(allocator))) {
 		succeededOut = false;
 		return;
 	}

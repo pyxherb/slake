@@ -76,12 +76,12 @@ SLKC_API FnOverloadingNode::FnOverloadingNode(const FnOverloadingNode &rhs, peff
 	  idxGenericParamCommaTokens(allocator),
 	  lAngleBracketIndex(rhs.lAngleBracketIndex),
 	  rAngleBracketIndex(rhs.rAngleBracketIndex) {
-	if (body && !(body = rhs.body->duplicate<CodeBlockStmtNode>(allocator))) {
+	/* if (rhs.body && !(body = rhs.body->duplicate<CodeBlockStmtNode>(allocator))) {
 		succeededOut = false;
 		return;
-	}
+	}*/
 
-	if (returnType && !(returnType = rhs.returnType->duplicate<TypeNameNode>(allocator))) {
+	if (rhs.returnType && !(returnType = rhs.returnType->duplicate<TypeNameNode>(allocator))) {
 		succeededOut = false;
 		return;
 	}

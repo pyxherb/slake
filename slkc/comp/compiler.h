@@ -419,12 +419,14 @@ namespace slkc {
 		const peff::SharedPtr<TypeNameNode> &dest,
 		bool isSealed,
 		bool &whetherOut);
+
 	[[nodiscard]] SLKC_API std::optional<CompilationError> _doExpandParamListTypeNameTree(
 		peff::SharedPtr<TypeNameNode> &type);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> simplifyParamListTypeNameTree(
 		peff::SharedPtr<TypeNameNode> type,
 		peff::Alloc *allocator,
 		peff::SharedPtr<TypeNameNode> &typeNameOut);
+
 	[[nodiscard]] SLKC_API std::optional<CompilationError> getUnpackedTypeOf(
 		peff::SharedPtr<TypeNameNode> type,
 		peff::SharedPtr<TypeNameNode> &typeNameOut);

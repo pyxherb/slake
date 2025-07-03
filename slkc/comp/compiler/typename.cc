@@ -202,6 +202,11 @@ SLKC_API std::optional<CompilationError> slkc::removeRefOfType(
 SLKC_API std::optional<CompilationError> slkc::isLValueType(
 	peff::SharedPtr<TypeNameNode> src,
 	bool &whetherOut) {
+	if (!src) {
+		whetherOut = false;
+		return {};
+	}
+
 	switch (src->typeNameKind) {
 		case TypeNameKind::Ref:
 			whetherOut = true;
@@ -847,6 +852,29 @@ SLKC_API std::optional<CompilationError> slkc::getUnpackedTypeOf(
 			unpackedType->hasVarArgs = t->hasVarArgs;
 
 			typeNameOut = unpackedType.castTo<TypeNameNode>();
+			break;
+		}
+		case TypeNameKind::UnpackedParams: {
+			auto t = type.castTo<UnpackedParamsTypeNameNode>();
+
+			peff::SharedPtr<UnpackedArgsTypeNameNode> unpackedType;
+
+			if (!(unpackedType = peff::makeSharedWithControlBlock<UnpackedArgsTypeNameNode, AstNodeControlBlock<UnpackedArgsTypeNameNode>>(document->allocator.get(), document->allocator.get(), document))) {
+				return genOutOfMemoryCompError();
+			}
+
+			if (!unpackedType->paramTypes.resize(t->paramTypes.size())) {
+				return genOutOfMemoryCompError();
+			}
+
+			for (size_t i = 0; i < unpackedType->paramTypes.size(); ++i) {
+				unpackedType->paramTypes.at(i) = t->paramTypes.at(i);
+			}
+
+			unpackedType->hasVarArgs = t->hasVarArgs;
+
+			typeNameOut = unpackedType.castTo<TypeNameNode>();
+
 			break;
 		}
 		case TypeNameKind::Unpacking: {

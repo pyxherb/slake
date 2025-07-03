@@ -42,7 +42,7 @@ if(SLAKE_BUILD_SLKC)
     add_subdirectory("slkc")
 endif()
 
-add_subdirectory("slkaot")
+# add_subdirectory("slkaot")
 
 add_subdirectory("example")
 

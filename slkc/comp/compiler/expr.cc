@@ -315,7 +315,12 @@ static std::optional<CompilationError> _determineNodeType(CompileContext *compil
 		}
 		case AstNodeType::Var: {
 			auto originalType = node.castTo<VarNode>()->type;
-			if (originalType->typeNameKind != TypeNameKind::Ref) {
+
+			peff::SharedPtr<TypeNameNode> unpackedTypeNameNode;
+
+			SLKC_RETURN_IF_COMP_ERROR(getUnpackedTypeOf(originalType, unpackedTypeNameNode));
+
+			if ((originalType->typeNameKind != TypeNameKind::Ref) && (!unpackedTypeNameNode)) {
 				peff::SharedPtr<RefTypeNameNode> t;
 
 				if (!(t = peff::makeSharedWithControlBlock<RefTypeNameNode, AstNodeControlBlock<RefTypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, peff::SharedPtr<TypeNameNode>()))) {
@@ -347,8 +352,6 @@ static std::optional<CompilationError> _determineNodeType(CompileContext *compil
 		default:
 			std::terminate();
 	}
-
-	SLKC_RETURN_IF_COMP_ERROR(simplifyType(typeNameOut, typeNameOut));
 
 	return {};
 };
@@ -1164,6 +1167,8 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 						SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileContext, compilationContext, e->args.at(i), argTypes.at(j), {}));
 					}
 
+					SLKC_RETURN_IF_COMP_ERROR(simplifyParamListTypeNameTree(argTypes.at(j), compileContext->allocator.get(), argTypes.at(j)));
+
 					if (argTypes.at(j)->typeNameKind == TypeNameKind::UnpackedParams) {
 						peff::SharedPtr<UnpackedParamsTypeNameNode> t = argTypes.at(i).castTo<UnpackedParamsTypeNameNode>();
 
@@ -1220,7 +1225,11 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 					SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, compilationContext, e->args.at(i), ExprEvalPurpose::RValue, {}, reg, argResult));
 				}
 
-				switch (argResult.evaluatedType->typeNameKind) {
+				peff::SharedPtr<TypeNameNode> argType;
+
+				SLKC_RETURN_IF_COMP_ERROR(simplifyParamListTypeNameTree(argResult.evaluatedType, compileContext->allocator.get(), argType));
+
+				switch (argType->typeNameKind) {
 					case TypeNameKind::UnpackedParams:
 						SLKC_RETURN_IF_COMP_ERROR(
 							compilationContext->emitIns(

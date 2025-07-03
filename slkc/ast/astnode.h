@@ -83,17 +83,17 @@ namespace slkc {
 
 	template <typename T>
 	struct AstNodeControlBlock : public peff::SharedPtr<T>::DefaultSharedPtrControlBlock {
-		PEFF_FORCEINLINE AstNodeControlBlock(peff::Alloc *allocator, T *ptr) noexcept : DefaultSharedPtrControlBlock(allocator, ptr) {}
+		PEFF_FORCEINLINE AstNodeControlBlock(peff::Alloc *allocator, T *ptr) noexcept : peff::SharedPtr<T>::DefaultSharedPtrControlBlock(allocator, ptr) {}
 		inline virtual ~AstNodeControlBlock() {}
 
 		inline virtual void onStrongRefZero() noexcept override {
-			addAstNodeToDestructibleList(ptr, [](AstNode *astNode) {
+			addAstNodeToDestructibleList(this->ptr, [](AstNode *astNode) {
 				peff::destroyAndRelease<T>(astNode->selfAllocator.get(), static_cast<T *>(astNode), alignof(T));
 			});
 		}
 
 		inline virtual void onRefZero() noexcept override {
-			peff::destroyAndRelease<DefaultSharedPtrControlBlock>(allocator.get(), this, alignof(DefaultSharedPtrControlBlock));
+			peff::destroyAndRelease<AstNodeControlBlock<T>>(this->allocator.get(), this, alignof(AstNodeControlBlock<T>));
 		}
 	};
 }

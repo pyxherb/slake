@@ -2,7 +2,7 @@
 
 using namespace slkc;
 
-SLKC_API std::optional<SyntaxError> Parser::parseGenericConstraint(GenericConstraintPtr& constraintOut) {
+SLKC_API std::optional<SyntaxError> Parser::parseGenericConstraint(GenericConstraintPtr &constraintOut) {
 	GenericConstraintPtr constraint(peff::allocAndConstruct<GenericConstraint>(resourceAllocator.get(), alignof(GenericConstraint), resourceAllocator.get()));
 
 	if (!constraint) {
@@ -52,6 +52,56 @@ SLKC_API std::optional<SyntaxError> Parser::parseGenericConstraint(GenericConstr
 	return {};
 }
 
+SLKC_API std::optional<SyntaxError> Parser::parseParamTypeListGenericConstraint(ParamTypeListGenericConstraintPtr &constraintOut) {
+	ParamTypeListGenericConstraintPtr constraint(peff::allocAndConstruct<ParamTypeListGenericConstraint>(resourceAllocator.get(), alignof(ParamTypeListGenericConstraint), resourceAllocator.get()));
+
+	if (!constraint) {
+		return genOutOfMemoryError();
+	}
+
+	std::optional<SyntaxError> syntaxError;
+
+	if (Token *lParentheseToken = peekToken(); lParentheseToken->tokenId == TokenId::LParenthese) {
+		nextToken();
+
+		while (true) {
+			peff::SharedPtr<TypeNameNode> tn;
+
+			if (peekToken()->tokenId == TokenId::VarArg) {
+				nextToken();
+
+				constraint->hasVarArg = true;
+
+				break;
+			}
+
+			if ((syntaxError = parseTypeName(tn))) {
+				return syntaxError;
+			}
+
+			if (!constraint->argTypes.pushBack(std::move(tn))) {
+				return genOutOfMemoryError();
+			}
+
+			if (peekToken()->tokenId != TokenId::Comma) {
+				break;
+			}
+
+			nextToken();
+		}
+
+		Token *rParentheseToken;
+		if ((syntaxError = expectToken((rParentheseToken = peekToken()), TokenId::RParenthese))) {
+			return syntaxError;
+		}
+		nextToken();
+	}
+
+	constraintOut = std::move(constraint);
+
+	return {};
+}
+
 SLKC_API std::optional<SyntaxError> Parser::parseGenericParams(
 	peff::DynArray<peff::SharedPtr<GenericParamNode>> &genericParamsOut,
 	peff::DynArray<size_t> &idxCommaTokensOut,
@@ -78,36 +128,62 @@ SLKC_API std::optional<SyntaxError> Parser::parseGenericParams(
 				nextToken();
 
 				genericParamNode->isParamTypeList = true;
-			}
 
-			Token *nameToken;
+				Token *nameToken;
 
-			if ((syntaxError = expectToken((nameToken = peekToken()), TokenId::Id))) {
-				return syntaxError;
-			};
-
-			if (!genericParamNode->name.build(nameToken->sourceText))
-				return genOutOfMemoryError();
-
-			nextToken();
-
-			{
-				peff::ScopeGuard setTokenRangeGuard([this, nameToken, &genericParamNode]() noexcept {
-					if (genericParamNode) {
-						genericParamNode->tokenRange = TokenRange{ nameToken->index, parseContext.idxPrevToken };
-					}
-				});
-
-				if ((syntaxError = parseGenericConstraint(genericParamNode->genericConstraint))) {
+				if ((syntaxError = expectToken((nameToken = peekToken()), TokenId::Id))) {
 					return syntaxError;
-				}
+				};
 
-				if (!genericParamsOut.pushBack(std::move(genericParamNode)))
+				if (!genericParamNode->name.build(nameToken->sourceText))
 					return genOutOfMemoryError();
 
-				if (peekToken()->tokenId != TokenId::Comma) {
-					break;
+				nextToken();
+
+				{
+					peff::ScopeGuard setTokenRangeGuard([this, nameToken, &genericParamNode]() noexcept {
+						if (genericParamNode) {
+							genericParamNode->tokenRange = TokenRange{ nameToken->index, parseContext.idxPrevToken };
+						}
+					});
+
+					if ((syntaxError = parseParamTypeListGenericConstraint(genericParamNode->paramTypeListGenericConstraint))) {
+						return syntaxError;
+					}
+
+					if (!genericParamsOut.pushBack(std::move(genericParamNode)))
+						return genOutOfMemoryError();
 				}
+			} else {
+				Token *nameToken;
+
+				if ((syntaxError = expectToken((nameToken = peekToken()), TokenId::Id))) {
+					return syntaxError;
+				};
+
+				if (!genericParamNode->name.build(nameToken->sourceText))
+					return genOutOfMemoryError();
+
+				nextToken();
+
+				{
+					peff::ScopeGuard setTokenRangeGuard([this, nameToken, &genericParamNode]() noexcept {
+						if (genericParamNode) {
+							genericParamNode->tokenRange = TokenRange{ nameToken->index, parseContext.idxPrevToken };
+						}
+					});
+
+					if ((syntaxError = parseGenericConstraint(genericParamNode->genericConstraint))) {
+						return syntaxError;
+					}
+
+					if (!genericParamsOut.pushBack(std::move(genericParamNode)))
+						return genOutOfMemoryError();
+				}
+			}
+
+			if (peekToken()->tokenId != TokenId::Comma) {
+				break;
 			}
 
 			Token *commaToken = nextToken();

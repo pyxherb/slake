@@ -707,71 +707,77 @@ SLKC_API std::optional<CompilationError> slkc::isTypeConvertible(
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> slkc::simplifyType(
-	peff::SharedPtr<TypeNameNode> type,
-	peff::SharedPtr<TypeNameNode> &typeNameOut) {
+SLKC_API std::optional<CompilationError> slkc::_doExpandParamListTypeNameTree(
+	peff::SharedPtr<TypeNameNode> &type) {
 	if (!type) {
-		typeNameOut = type;
 		return {};
 	}
 
 	switch (type->typeNameKind) {
-		case TypeNameKind::Unpacking:
-			SLKC_RETURN_IF_COMP_ERROR(getUnpackedTypeOf(type.castTo<UnpackingTypeNameNode>()->innerTypeName, typeNameOut));
+		case TypeNameKind::Unpacking: {
+			SLKC_RETURN_IF_COMP_ERROR(getUnpackedTypeOf(type, type));
 			break;
+		}
 		case TypeNameKind::Array: {
 			auto t = type.castTo<ArrayTypeNameNode>();
 
-			SLKC_RETURN_IF_COMP_ERROR(simplifyType(t->elementType, t->elementType));
-
-			typeNameOut = type;
+			SLKC_RETURN_IF_COMP_ERROR(_doExpandParamListTypeNameTree(t->elementType));
 
 			break;
 		}
 		case TypeNameKind::Ref: {
 			auto t = type.castTo<RefTypeNameNode>();
 
-			SLKC_RETURN_IF_COMP_ERROR(simplifyType(t->referencedType, t->referencedType));
-
-			typeNameOut = type;
+			SLKC_RETURN_IF_COMP_ERROR(_doExpandParamListTypeNameTree(t->referencedType));
 
 			break;
 		}
 		case TypeNameKind::TempRef: {
 			auto t = type.castTo<TempRefTypeNameNode>();
 
-			SLKC_RETURN_IF_COMP_ERROR(simplifyType(t->referencedType, t->referencedType));
-
-			typeNameOut = type;
+			SLKC_RETURN_IF_COMP_ERROR(_doExpandParamListTypeNameTree(t->referencedType));
 
 			break;
 		}
 		case TypeNameKind::Fn: {
 			auto t = type.castTo<FnTypeNameNode>();
 
-			SLKC_RETURN_IF_COMP_ERROR(simplifyType(t->returnType, t->returnType));
+			SLKC_RETURN_IF_COMP_ERROR(_doExpandParamListTypeNameTree(t->returnType));
 
 			for (auto &i : t->paramTypes) {
-				SLKC_RETURN_IF_COMP_ERROR(simplifyType(i, i));
+				SLKC_RETURN_IF_COMP_ERROR(_doExpandParamListTypeNameTree(i));
 			}
 
-			SLKC_RETURN_IF_COMP_ERROR(simplifyType(t->thisType, t->thisType));
-
-			typeNameOut = type;
+			SLKC_RETURN_IF_COMP_ERROR(_doExpandParamListTypeNameTree(t->thisType));
 
 			break;
 		}
 		default:
-			typeNameOut = type;
-
 			break;
 	}
 
 	return {};
 }
 
+SLKC_API std::optional<CompilationError> slkc::simplifyParamListTypeNameTree(
+	peff::SharedPtr<TypeNameNode> type,
+	peff::Alloc *allocator,
+	peff::SharedPtr<TypeNameNode> &typeNameOut) {
+	peff::SharedPtr<TypeNameNode> duplicatedType = type->duplicate<TypeNameNode>(allocator);
+
+	if (!duplicatedType) {
+		return genOutOfMemoryCompError();
+	}
+
+	SLKC_RETURN_IF_COMP_ERROR(_doExpandParamListTypeNameTree(duplicatedType));
+
+	typeNameOut = duplicatedType;
+
+	return {};
+}
+
 SLKC_API std::optional<CompilationError> slkc::getUnpackedTypeOf(
-	const peff::SharedPtr<TypeNameNode> &type,
+	peff::SharedPtr<TypeNameNode> type,
 	peff::SharedPtr<TypeNameNode> &typeNameOut) {
 	peff::SharedPtr<Document> document = type->document->sharedFromThis();
 

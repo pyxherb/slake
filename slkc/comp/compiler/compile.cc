@@ -399,29 +399,33 @@ SLKC_API std::optional<CompilationError> slkc::compileGenericParams(
 			return genOutOfMemoryCompError();
 		}
 
-		if (gpNode->genericConstraint->baseType) {
-			if ((e = compileTypeName(compileContext, gpNode->genericConstraint->baseType, gp.baseType))) {
-				if (e->errorKind == CompilationErrorKind::OutOfMemory)
-					return e;
-				if (!compileContext->errors.pushBack(std::move(*e))) {
-					return genOutOfMemoryCompError();
+		if (gpNode->isParamTypeList) {
+			// TODO: Implement it.
+		} else {
+			if (gpNode->genericConstraint->baseType) {
+				if ((e = compileTypeName(compileContext, gpNode->genericConstraint->baseType, gp.baseType))) {
+					if (e->errorKind == CompilationErrorKind::OutOfMemory)
+						return e;
+					if (!compileContext->errors.pushBack(std::move(*e))) {
+						return genOutOfMemoryCompError();
+					}
+					e.reset();
 				}
-				e.reset();
 			}
-		}
 
-		if (!gp.interfaces.resize(gpNode->genericConstraint->implTypes.size())) {
-			return genOutOfRuntimeMemoryCompError();
-		}
+			if (!gp.interfaces.resize(gpNode->genericConstraint->implTypes.size())) {
+				return genOutOfRuntimeMemoryCompError();
+			}
 
-		for (size_t k = 0; k < gpNode->genericConstraint->implTypes.size(); ++k) {
-			if ((e = compileTypeName(compileContext, gpNode->genericConstraint->implTypes.at(k), gp.interfaces.at(k)))) {
-				if (e->errorKind == CompilationErrorKind::OutOfMemory)
-					return e;
-				if (!compileContext->errors.pushBack(std::move(*e))) {
-					return genOutOfMemoryCompError();
+			for (size_t k = 0; k < gpNode->genericConstraint->implTypes.size(); ++k) {
+				if ((e = compileTypeName(compileContext, gpNode->genericConstraint->implTypes.at(k), gp.interfaces.at(k)))) {
+					if (e->errorKind == CompilationErrorKind::OutOfMemory)
+						return e;
+					if (!compileContext->errors.pushBack(std::move(*e))) {
+						return genOutOfMemoryCompError();
+					}
+					e.reset();
 				}
-				e.reset();
 			}
 		}
 

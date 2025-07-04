@@ -276,28 +276,28 @@ SLKC_API std::optional<CompilationError> slkc::getTypePromotionLevel(
 		case TypeNameKind::Bool:
 			levelOut = 1;
 			break;
-		case TypeNameKind::U8:
+		case TypeNameKind::I8:
 			levelOut = 11;
 			break;
-		case TypeNameKind::U16:
+		case TypeNameKind::I16:
 			levelOut = 12;
 			break;
-		case TypeNameKind::U32:
+		case TypeNameKind::I32:
 			levelOut = 13;
 			break;
-		case TypeNameKind::U64:
+		case TypeNameKind::I64:
 			levelOut = 14;
 			break;
-		case TypeNameKind::I8:
+		case TypeNameKind::U8:
 			levelOut = 21;
 			break;
-		case TypeNameKind::I16:
+		case TypeNameKind::U16:
 			levelOut = 22;
 			break;
-		case TypeNameKind::I32:
+		case TypeNameKind::U32:
 			levelOut = 23;
 			break;
-		case TypeNameKind::I64:
+		case TypeNameKind::U64:
 			levelOut = 24;
 			break;
 		case TypeNameKind::F32:

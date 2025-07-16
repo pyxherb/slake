@@ -118,7 +118,7 @@ SLAKE_API Object *ClassObject::duplicate(Duplicator *duplicator) const {
 
 SLAKE_API slake::ClassObject::ClassObject(Runtime *rt, peff::Alloc *selfAllocator)
 	: ModuleObject(rt, selfAllocator, ObjectKind::Class),
-	  baseType(TypeId::None),
+	  baseType(TypeId::Void),
 	  genericArgs(selfAllocator),
 	  mappedGenericArgs(selfAllocator),
 	  genericParams(selfAllocator),
@@ -190,7 +190,7 @@ SLAKE_API bool ClassObject::isBaseOf(const ClassObject *pClass) const {
 		if (i == this)
 			return true;
 
-		if (i->baseType.typeId == TypeId::None)
+		if (i->baseType.typeId == TypeId::Void)
 			break;
 		if (auto e = const_cast<Type &>(i->baseType).loadDeferredType(i->associatedRuntime);
 			e) {

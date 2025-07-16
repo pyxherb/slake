@@ -9,7 +9,7 @@
 namespace slake {
 	class TypeDefObject final : public Object {
 	public:
-		Type type = TypeId::None;
+		Type type = TypeId::Void;
 
 		SLAKE_API TypeDefObject(Runtime *rt, peff::Alloc *selfAllocator);
 		SLAKE_API TypeDefObject(Duplicator *duplicator, const TypeDefObject &x, peff::Alloc *allocator, bool &succeededOut);
@@ -24,7 +24,7 @@ namespace slake {
 
 	class FnTypeDefObject final : public Object {
 	public:
-		Type returnType = TypeId::None;
+		Type returnType = TypeId::Void;
 		peff::DynArray<Type> paramTypes;
 		bool hasVarArg = false;
 

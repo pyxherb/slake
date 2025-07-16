@@ -9,7 +9,7 @@ SLAKE_API TypeDefObject::TypeDefObject(Runtime *rt, peff::Alloc *selfAllocator)
 }
 
 SLAKE_API TypeDefObject::TypeDefObject(Duplicator *duplicator, const TypeDefObject &x, peff::Alloc *allocator, bool &succeededOut) : Object(x, allocator) {
-	type = TypeId::None;
+	type = TypeId::Void;
 
 	if (!duplicator->insertTask(DuplicationTask::makeType(&type, x.type))) {
 		succeededOut = false;
@@ -74,7 +74,7 @@ SLAKE_API FnTypeDefObject::FnTypeDefObject(Runtime *rt, peff::Alloc *selfAllocat
 }
 
 SLAKE_API FnTypeDefObject::FnTypeDefObject(Duplicator *duplicator, const FnTypeDefObject &x, peff::Alloc *allocator, bool &succeededOut) : Object(x, allocator), paramTypes(allocator) {
-	returnType = TypeId::None;
+	returnType = TypeId::Void;
 	if (!duplicator->insertTask(DuplicationTask::makeType(&returnType, x.returnType))) {
 		succeededOut = false;
 		return;
@@ -86,7 +86,7 @@ SLAKE_API FnTypeDefObject::FnTypeDefObject(Duplicator *duplicator, const FnTypeD
 	}
 
 	for (size_t i = 0; i < x.paramTypes.size(); ++i) {
-		paramTypes.at(i) = TypeId::None;
+		paramTypes.at(i) = TypeId::Void;
 	}
 
 	for (size_t i = 0; i < x.paramTypes.size(); ++i) {
@@ -168,7 +168,7 @@ SLAKE_API ParamTypeListTypeDefObject::ParamTypeListTypeDefObject(Duplicator *dup
 	}
 
 	for (size_t i = 0; i < x.paramTypes.size(); ++i) {
-		paramTypes.at(i) = TypeId::None;
+		paramTypes.at(i) = TypeId::Void;
 	}
 
 	for (size_t i = 0; i < x.paramTypes.size(); ++i) {

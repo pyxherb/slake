@@ -172,8 +172,8 @@ SLKC_API std::optional<CompilationError> slkc::dumpTypeName(
 	Writer *writer,
 	const slake::Type &type) {
 	switch (type.typeId) {
-		case slake::TypeId::None:
-			SLKC_RETURN_IF_COMP_ERROR(writer->writeU8((uint8_t)slake::slxfmt::TypeId::None));
+		case slake::TypeId::Void:
+			SLKC_RETURN_IF_COMP_ERROR(writer->writeU8((uint8_t)slake::slxfmt::TypeId::Void));
 			break;
 		case slake::TypeId::Any:
 			SLKC_RETURN_IF_COMP_ERROR(writer->writeU8((uint8_t)slake::slxfmt::TypeId::Any));

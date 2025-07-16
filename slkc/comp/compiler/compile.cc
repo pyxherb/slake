@@ -8,7 +8,7 @@ SLKC_API std::optional<CompilationError> slkc::compileTypeName(
 	slake::Type &typeOut) {
 	switch (typeName->typeNameKind) {
 		case TypeNameKind::Void:
-			typeOut = slake::Type(slake::TypeId::None);
+			typeOut = slake::Type(slake::TypeId::Void);
 			break;
 		case TypeNameKind::I8:
 			typeOut = slake::Type(slake::TypeId::I8);

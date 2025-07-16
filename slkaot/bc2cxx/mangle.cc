@@ -78,7 +78,7 @@ std::string BC2CXX::mangleRef(const peff::DynArray<IdRefEntry> &entries) {
 
 std::string BC2CXX::mangleTypeName(const Type &type) {
 	switch (type.typeId) {
-		case TypeId::None:
+		case TypeId::Void:
 			return "void";
 		case TypeId::I8:
 			return "i8";

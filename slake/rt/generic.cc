@@ -310,7 +310,7 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(const Membe
 				case TypeId::GenericArg: {
 					HostObjectRef<StringObject> nameObject = (StringObject *)type.getCustomTypeExData();
 					if (auto it = i.context->mappedGenericArgs.find(nameObject->data); it != i.context->mappedGenericArgs.end()) {
-						if (it.value().typeId != TypeId::None)
+						if (it.value().typeId != TypeId::Void)
 							type = it.value();
 					} else {
 						peff::String paramName(getFixedAlloc());
@@ -359,7 +359,7 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(const Membe
 							peff::String copiedName(getFixedAlloc());
 							if (!peff::copyAssign(copiedName, value->genericParams.at(i).name))
 								return OutOfMemoryError::alloc();
-							newInstantiationContext->mappedGenericArgs.insert(std::move(copiedName), TypeId::None);
+							newInstantiationContext->mappedGenericArgs.insert(std::move(copiedName), TypeId::Void);
 						}
 
 						SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(dispatcher, value->baseType, newInstantiationContext.get()));
@@ -517,7 +517,7 @@ SLAKE_API InternalExceptionPointer Runtime::_instantiateGenericObject(GenericIns
 			peff::String copiedName(getFixedAlloc());
 			if (!peff::copyAssign(copiedName, ol->genericParams.at(i).name))
 				return OutOfMemoryError::alloc();
-			newInstantiationContext.mappedGenericArgs.insert(std::move(copiedName), TypeId::None);
+			newInstantiationContext.mappedGenericArgs.insert(std::move(copiedName), TypeId::Void);
 		}
 
 		newInstantiationContext.mappedObject = ol->fnObject;

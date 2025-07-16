@@ -51,7 +51,7 @@ namespace slake {
 		};
 
 		enum class TypeId : uint8_t {
-			None = 0,		// None
+			Void = 0,		// Void
 			Any,			// Any
 			I8,				// i8
 			I16,			// i16

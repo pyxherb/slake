@@ -100,7 +100,7 @@ SLKC_API bool slkc::decompileGenericParam(peff::Alloc *allocator, DumpWriter *wr
 
 SLKC_API bool slkc::decompileTypeName(peff::Alloc *allocator, DumpWriter *writer, const slake::Type &type) {
 	switch (type.typeId) {
-		case slake::TypeId::None:
+		case slake::TypeId::Void:
 			SLKC_RETURN_IF_FALSE(writer->write("void"));
 			break;
 		case slake::TypeId::I8:

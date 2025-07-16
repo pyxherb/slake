@@ -152,7 +152,7 @@ namespace slake {
 	public:
 		peff::DynArray<slxfmt::SourceLocDesc> sourceLocDescs;
 		peff::DynArray<Instruction> instructions;
-		Type thisType = TypeId::None;
+		Type thisType = TypeId::Void;
 		uint32_t nRegisters;
 
 		SLAKE_API RegularFnOverloadingObject(

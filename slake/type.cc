@@ -266,7 +266,7 @@ SLAKE_API bool Type::operator==(const Type &rhs) const {
 		return false;
 
 	switch (rhs.typeId) {
-		case TypeId::None:
+		case TypeId::Void:
 		case TypeId::I8:
 		case TypeId::I16:
 		case TypeId::I32:
@@ -581,7 +581,7 @@ SLAKE_API std::string std::to_string(const slake::Type &type, const slake::Runti
 		}
 		case TypeId::Any:
 			return "any";
-		case TypeId::None:
+		case TypeId::Void:
 			return "void";
 		default:
 			return "<Unknown Type>";

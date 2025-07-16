@@ -23,8 +23,8 @@ SLAKE_API InternalExceptionPointer loader::loadType(Runtime *runtime, Reader *re
 	SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->readU8((uint8_t &)typeId)));
 
 	switch (typeId) {
-		case slake::slxfmt::TypeId::None:
-			typeOut = TypeId::None;
+		case slake::slxfmt::TypeId::Void:
+			typeOut = TypeId::Void;
 			break;
 		case slake::slxfmt::TypeId::Any:
 			typeOut = TypeId::Any;

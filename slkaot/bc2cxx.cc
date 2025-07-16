@@ -575,7 +575,7 @@ std::shared_ptr<cxxast::TypeName> BC2CXX::compileType(CompileContext &compileCon
 	std::shared_ptr<cxxast::TypeName> tn;
 
 	switch (type.typeId) {
-		case TypeId::None:
+		case TypeId::Void:
 			tn = std::make_shared<cxxast::VoidTypeName>();
 			break;
 		case TypeId::I8:
@@ -636,7 +636,7 @@ std::shared_ptr<cxxast::TypeName> BC2CXX::compileParamType(CompileContext &compi
 	std::shared_ptr<cxxast::TypeName> tn;
 
 	switch (type.typeId) {
-		case TypeId::None:
+		case TypeId::Void:
 			return compileType(compileContext, type);
 		case TypeId::I8:
 		case TypeId::I16:

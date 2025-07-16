@@ -145,7 +145,7 @@ SLAKE_API InternalExceptionPointer Runtime::initObjectLayoutForClass(ClassObject
 SLAKE_API InternalExceptionPointer Runtime::prepareClassForInstantiation(ClassObject *cls) {
 	ClassObject *p = nullptr;
 
-	if (cls->baseType.typeId != TypeId::None) {
+	if (cls->baseType.typeId != TypeId::Void) {
 		if (cls->baseType.typeId != TypeId::Instance)
 			return allocOutOfMemoryErrorIfAllocFailed(MalformedClassStructureError::alloc(getFixedAlloc(), cls));
 

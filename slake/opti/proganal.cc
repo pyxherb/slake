@@ -99,7 +99,7 @@ InternalExceptionPointer slake::opti::evalObjectType(
 					}
 
 					for (size_t i = 0; i < fnOverloadingObject->paramTypes.size(); ++i) {
-						typeDef->paramTypes.at(i) = TypeId::None;
+						typeDef->paramTypes.at(i) = TypeId::Void;
 					}
 
 					for (size_t i = 0; i < fnOverloadingObject->paramTypes.size(); ++i) {
@@ -1087,7 +1087,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 							i));
 				}
 
-				if (analyzeContext.fnObject->thisType.typeId == TypeId::None) {
+				if (analyzeContext.fnObject->thisType.typeId == TypeId::Void) {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
 							runtime->getFixedAlloc(),

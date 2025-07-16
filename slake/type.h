@@ -36,7 +36,7 @@ namespace slake {
 	};
 
 	enum class TypeId : uint8_t {
-		None = 0,  // None, aka `null'
+		Void = 0,  // Void
 
 		I8,		// Signed 8-bit integer
 		I16,	// Signed 16-bit integer
@@ -121,24 +121,20 @@ namespace slake {
 		[[nodiscard]] SLAKE_API InternalExceptionPointer loadDeferredType(Runtime *rt);
 
 		SLAKE_FORCEINLINE operator bool() const noexcept {
-			return typeId != TypeId::None;
+			return typeId != TypeId::Void;
 		}
 
 		SLAKE_API bool operator<(const Type &rhs) const;
-		/// @brief The less than operator is required by containers such as map and set.
-		/// @param rhs Right-hand side operand.
-		/// @return true if lesser, false otherwise.
-		SLAKE_FORCEINLINE bool operator<(Type &&rhs) const noexcept {
-			auto r = rhs;
-			return *this == r;
-		}
 
-		SLAKE_FORCEINLINE bool operator==(Type &&rhs) const noexcept {
-			auto r = rhs;
-			return *this == r;
+		SLAKE_FORCEINLINE bool operator<(Type &&rhs) const noexcept {
+			return *this < rhs;
 		}
 
 		SLAKE_API bool operator==(const Type &rhs) const;
+
+		SLAKE_FORCEINLINE bool operator==(Type &&rhs) const noexcept {
+			return *this == rhs;
+		}
 
 		SLAKE_FORCEINLINE bool operator!=(Type &&rhs) const noexcept { return !(*this == rhs); }
 		SLAKE_FORCEINLINE bool operator!=(const Type &rhs) const noexcept { return !(*this == rhs); }

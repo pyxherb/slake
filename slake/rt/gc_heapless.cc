@@ -57,7 +57,7 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, const Type &type) {
 			if (type.exData.typeDef)
 				GCWalkContext::pushObject(context, type.exData.typeDef);
 			break;
-		case TypeId::None:
+		case TypeId::Void:
 		case TypeId::Any:
 			break;
 		default:

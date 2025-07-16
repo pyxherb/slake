@@ -193,6 +193,9 @@ namespace slake {
 	using ssize_t = std::make_signed_t<size_t>;
 #endif
 
+	using SizeTypeMarker = bool;
+	constexpr static SizeTypeMarker SIZETYPE_MARKER = true;
+
 	union ValueData {
 		int8_t asI8;
 		int16_t asI16;
@@ -229,6 +232,9 @@ namespace slake {
 		SLAKE_FORCEINLINE constexpr ValueData(int64_t data) noexcept : asI64(data) {
 		}
 
+		SLAKE_FORCEINLINE constexpr ValueData(SizeTypeMarker marker, ssize_t data) noexcept : asISize(data) {
+		}
+
 		SLAKE_FORCEINLINE constexpr ValueData(uint8_t data) noexcept : asU8(data) {
 		}
 
@@ -239,6 +245,9 @@ namespace slake {
 		}
 
 		SLAKE_FORCEINLINE constexpr ValueData(uint64_t data) noexcept : asU64(data) {
+		}
+
+		SLAKE_FORCEINLINE constexpr ValueData(SizeTypeMarker marker, size_t data) noexcept : asUSize(data) {
 		}
 
 		SLAKE_FORCEINLINE constexpr ValueData(float data) noexcept : asF32(data) {
@@ -267,7 +276,7 @@ namespace slake {
 		}
 		SLAKE_FORCEINLINE constexpr Value(int64_t data) noexcept : valueType(ValueType::I64), data((int64_t)data) {
 		}
-		SLAKE_FORCEINLINE constexpr Value(ValueType vt, ssize_t data) noexcept : valueType(vt), data(data) {
+		SLAKE_FORCEINLINE constexpr Value(SizeTypeMarker marker, ssize_t data) noexcept : valueType(ValueType::ISize), data(data) {
 		}
 		SLAKE_FORCEINLINE constexpr Value(uint8_t data) noexcept : valueType(ValueType::U8), data((uint8_t)data) {
 		}
@@ -277,7 +286,7 @@ namespace slake {
 		}
 		SLAKE_FORCEINLINE constexpr Value(uint64_t data) noexcept : valueType(ValueType::U64), data((uint64_t)data) {
 		}
-		SLAKE_FORCEINLINE constexpr Value(ValueType vt, size_t data) noexcept : valueType(vt), data(data) {
+		SLAKE_FORCEINLINE constexpr Value(SizeTypeMarker marker, size_t data) noexcept : valueType(ValueType::USize), data(data) {
 		}
 		SLAKE_FORCEINLINE constexpr Value(float data) noexcept : valueType(ValueType::F32), data(data) {
 		}

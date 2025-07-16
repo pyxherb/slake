@@ -107,6 +107,8 @@ static Value _castToLiteralValue(Value x) noexcept {
 			return Value((LT)(x.getI32()));
 		case ValueType::I64:
 			return Value((LT)(x.getI64()));
+		case ValueType::ISize:
+			return Value((LT)(x.getISize()));
 		case ValueType::U8:
 			return Value((LT)(x.getU8()));
 		case ValueType::U16:
@@ -115,6 +117,8 @@ static Value _castToLiteralValue(Value x) noexcept {
 			return Value((LT)(x.getU32()));
 		case ValueType::U64:
 			return Value((LT)(x.getU64()));
+		case ValueType::USize:
+			return Value((LT)(x.getUSize()));
 		case ValueType::F32:
 			return Value((LT)(x.getF32()));
 		case ValueType::F64:

@@ -15,6 +15,8 @@ SLAKE_API bool Value::operator==(const Value &rhs) const {
 			return data.asI32 == rhs.data.asI32;
 		case ValueType::I64:
 			return data.asI64 == rhs.data.asI64;
+		case ValueType::ISize:
+			return data.asISize == rhs.data.asISize;
 		case ValueType::U8:
 			return data.asU8 == rhs.data.asU8;
 		case ValueType::U16:
@@ -23,6 +25,8 @@ SLAKE_API bool Value::operator==(const Value &rhs) const {
 			return data.asU32 == rhs.data.asU32;
 		case ValueType::U64:
 			return data.asU64 == rhs.data.asU64;
+		case ValueType::USize:
+			return data.asUSize == rhs.data.asUSize;
 		case ValueType::Bool:
 			return data.asBool == rhs.data.asBool;
 		case ValueType::EntityRef: {
@@ -54,6 +58,8 @@ SLAKE_API bool Value::operator<(const Value &rhs) const {
 			return data.asI32 < rhs.data.asI32;
 		case ValueType::I64:
 			return data.asI64 < rhs.data.asI64;
+		case ValueType::ISize:
+			return data.asISize < rhs.data.asISize;
 		case ValueType::U8:
 			return data.asU8 < rhs.data.asU8;
 		case ValueType::U16:
@@ -62,6 +68,8 @@ SLAKE_API bool Value::operator<(const Value &rhs) const {
 			return data.asU32 < rhs.data.asU32;
 		case ValueType::U64:
 			return data.asU64 < rhs.data.asU64;
+		case ValueType::USize:
+			return data.asUSize < rhs.data.asUSize;
 		case ValueType::Bool:
 			return data.asBool < rhs.data.asBool;
 		case ValueType::EntityRef:

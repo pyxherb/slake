@@ -15,10 +15,12 @@ namespace slake {
 		I16,	 // Signed 16-bit integer
 		I32,	 // Signed 32-bit integer
 		I64,	 // Signed 64-bit integer
+		ISize,	 // Signed platform-dependent integer
 		U8,		 // Unsigned 8-bit integer
 		U16,	 // Unsigned 16-bit integer
 		U32,	 // Unsigned 32-bit integer
 		U64,	 // Unsigned 64-bit integer
+		USize,	 // Unsigned platform-dependent integer
 		F32,	 // 32-bit floating point number
 		F64,	 // 64-bit floating point number
 		Bool,	 // Boolean
@@ -36,17 +38,19 @@ namespace slake {
 	enum class TypeId : uint8_t {
 		None = 0,  // None, aka `null'
 
-		I8,	   // Signed 8-bit integer
-		I16,   // Signed 16-bit integer
-		I32,   // Signed 32-bit integer
-		I64,   // Signed 64-bit integer
-		U8,	   // Unsigned 8-bit integer
-		U16,   // Unsigned 16-bit integer
-		U32,   // Unsigned 32-bit integer
-		U64,   // Unsigned 64-bit integer
-		F32,   // 32-bit floating point number
-		F64,   // 64-bit floating point number
-		Bool,  // Boolean
+		I8,		// Signed 8-bit integer
+		I16,	// Signed 16-bit integer
+		I32,	// Signed 32-bit integer
+		I64,	// Signed 64-bit integer
+		ISize,	// Signed platform-dependent integer
+		U8,		// Unsigned 8-bit integer
+		U16,	// Unsigned 16-bit integer
+		U32,	// Unsigned 32-bit integer
+		U64,	// Unsigned 64-bit integer
+		USize,	// Unsigned platform-dependent integer
+		F32,	// 32-bit floating point number
+		F64,	// 64-bit floating point number
+		Bool,	// Boolean
 
 		String,		 // String
 		Instance,	 // Object instance
@@ -59,7 +63,8 @@ namespace slake {
 		ParamTypeList,	// Parameter type list
 		Unpacking,		// Unpacking
 
-		Any	 // Any
+		Any,	  // Any
+		Unknown,  // Unknown
 	};
 
 	SLAKE_API TypeId valueTypeToTypeId(ValueType valueType);

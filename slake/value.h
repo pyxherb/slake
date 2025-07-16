@@ -189,15 +189,21 @@ namespace slake {
 		SLAKE_API bool operator<(const EntityRef &rhs) const;
 	};
 
+#ifndef ssize_t
+	using ssize_t = std::make_signed_t<size_t>;
+#endif
+
 	union ValueData {
 		int8_t asI8;
 		int16_t asI16;
 		int32_t asI32;
 		int64_t asI64;
+		ssize_t asISize;
 		uint8_t asU8;
 		uint16_t asU16;
 		uint32_t asU32;
 		uint64_t asU64;
+		size_t asUSize;
 		float asF32;
 		double asF64;
 		bool asBool;
@@ -208,8 +214,8 @@ namespace slake {
 		SLAKE_FORCEINLINE constexpr ValueData(const ValueData &other) noexcept = default;
 		SLAKE_FORCEINLINE constexpr ValueData(ValueData &&other) noexcept = default;
 
-		SLAKE_FORCEINLINE constexpr ValueData& operator=(const ValueData &other) noexcept = default;
-		SLAKE_FORCEINLINE constexpr ValueData& operator=(ValueData &&other) noexcept = default;
+		SLAKE_FORCEINLINE constexpr ValueData &operator=(const ValueData &other) noexcept = default;
+		SLAKE_FORCEINLINE constexpr ValueData &operator=(ValueData &&other) noexcept = default;
 
 		SLAKE_FORCEINLINE constexpr ValueData(int8_t data) noexcept : asI8(data) {
 		}
@@ -261,6 +267,8 @@ namespace slake {
 		}
 		SLAKE_FORCEINLINE constexpr Value(int64_t data) noexcept : valueType(ValueType::I64), data((int64_t)data) {
 		}
+		SLAKE_FORCEINLINE constexpr Value(ValueType vt, ssize_t data) noexcept : valueType(vt), data(data) {
+		}
 		SLAKE_FORCEINLINE constexpr Value(uint8_t data) noexcept : valueType(ValueType::U8), data((uint8_t)data) {
 		}
 		SLAKE_FORCEINLINE constexpr Value(uint16_t data) noexcept : valueType(ValueType::U16), data((uint16_t)data) {
@@ -268,6 +276,8 @@ namespace slake {
 		SLAKE_FORCEINLINE constexpr Value(uint32_t data) noexcept : valueType(ValueType::U32), data((uint32_t)data) {
 		}
 		SLAKE_FORCEINLINE constexpr Value(uint64_t data) noexcept : valueType(ValueType::U64), data((uint64_t)data) {
+		}
+		SLAKE_FORCEINLINE constexpr Value(ValueType vt, size_t data) noexcept : valueType(vt), data(data) {
 		}
 		SLAKE_FORCEINLINE constexpr Value(float data) noexcept : valueType(ValueType::F32), data(data) {
 		}
@@ -306,6 +316,11 @@ namespace slake {
 			return data.asI64;
 		}
 
+		SLAKE_FORCEINLINE ssize_t getISize() const noexcept {
+			assert(valueType == ValueType::ISize);
+			return data.asISize;
+		}
+
 		SLAKE_FORCEINLINE uint8_t getU8() const noexcept {
 			assert(valueType == ValueType::U8);
 			return data.asU8;
@@ -324,6 +339,11 @@ namespace slake {
 		SLAKE_FORCEINLINE uint64_t getU64() const noexcept {
 			assert(valueType == ValueType::U64);
 			return data.asU64;
+		}
+
+		SLAKE_FORCEINLINE size_t getUSize() const noexcept {
+			assert(valueType == ValueType::USize);
+			return data.asUSize;
 		}
 
 		SLAKE_FORCEINLINE float getF32() const noexcept {

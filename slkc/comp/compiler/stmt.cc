@@ -535,8 +535,48 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 			compilationContext->setLabelOffset(endLabel, compilationContext->getCurInsOff());
 			break;
 		}
-		case StmtKind::With:
+		case StmtKind::With: {
+			peff::SharedPtr<WithStmtNode> s = stmt.castTo<WithStmtNode>();
+
+			peff::SharedPtr<MemberNode> m;
+
+			peff::SharedPtr<CustomTypeNameNode> tn;
+
+			if (!(tn = peff::makeSharedWithControlBlock<CustomTypeNameNode, AstNodeControlBlock<CustomTypeNameNode>>(
+					  compileEnv->allocator.get(),
+					  compileEnv->allocator.get(),
+					  compileEnv->document)))
+				return genOutOfMemoryCompError();
+
+			for (auto &i : s->constraints) {
+				tn->idRefPtr.reset();
+
+				IdRefPtr idRefPtr(peff::allocAndConstruct<IdRef>(compileEnv->allocator.get(), ASTNODE_ALIGNMENT, compileEnv->allocator.get()));
+				if (!idRefPtr)
+					return genOutOfMemoryCompError();
+
+				IdRefEntry e(compileEnv->allocator.get());
+
+				if (!e.name.build(i->genericParamName))
+					return genOutOfMemoryCompError();
+
+				if (!idRefPtr->entries.pushBack(std::move(e)))
+					return genOutOfMemoryCompError();
+
+				tn->tokenRange = s->tokenRange;
+
+				tn->idRefPtr = std::move(idRefPtr);
+
+				tn->contextNode = compileEnv->thisNode->thisType;
+
+				SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(compileEnv->document, tn, m));
+
+				if (AstNodeType::GenericParam != m->astNodeType) {
+					return CompilationError(tn->tokenRange, CompilationErrorKind::TypeIsNotSubstitutable);
+				}
+			}
 			break;
+		}
 		case StmtKind::Switch: {
 			peff::SharedPtr<SwitchStmtNode> s = stmt.castTo<SwitchStmtNode>();
 

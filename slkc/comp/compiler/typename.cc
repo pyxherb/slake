@@ -890,12 +890,12 @@ SLKC_API std::optional<CompilationError> slkc::getUnpackedTypeOf(
 }
 
 SLKC_API std::optional<CompilationError> slkc::fnToTypeName(
-	CompileContext *compileContext,
+	CompileEnvironment *compileEnv,
 	peff::SharedPtr<FnOverloadingNode> fn,
 	peff::SharedPtr<FnTypeNameNode> &evaluatedTypeOut) {
 	peff::SharedPtr<FnTypeNameNode> tn;
 
-	if (!(tn = peff::makeSharedWithControlBlock<FnTypeNameNode, AstNodeControlBlock<FnTypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+	if (!(tn = peff::makeSharedWithControlBlock<FnTypeNameNode, AstNodeControlBlock<FnTypeNameNode>>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
 		return genOutOfMemoryCompError();
 	}
 
@@ -920,14 +920,14 @@ SLKC_API std::optional<CompilationError> slkc::fnToTypeName(
 				case AstNodeType::Interface: {
 					IdRefPtr fullIdRef;
 
-					SLKC_RETURN_IF_COMP_ERROR(getFullIdRef(compileContext->allocator.get(), fn->parent->parent->sharedFromThis().castTo<MemberNode>(), fullIdRef));
+					SLKC_RETURN_IF_COMP_ERROR(getFullIdRef(compileEnv->allocator.get(), fn->parent->parent->sharedFromThis().castTo<MemberNode>(), fullIdRef));
 
-					auto thisType = peff::makeSharedWithControlBlock<CustomTypeNameNode, AstNodeControlBlock<CustomTypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document);
+					auto thisType = peff::makeSharedWithControlBlock<CustomTypeNameNode, AstNodeControlBlock<CustomTypeNameNode>>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document);
 
 					if (!thisType) {
 						return genOutOfMemoryCompError();
 					}
-					thisType->contextNode = compileContext->document->rootModule.castTo<MemberNode>();
+					thisType->contextNode = compileEnv->document->rootModule.castTo<MemberNode>();
 
 					thisType->idRefPtr = std::move(fullIdRef);
 

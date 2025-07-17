@@ -16,7 +16,7 @@ namespace slkc {
 		Unpacking,	// For unpacking, note that it is used for notifying the expression compiler to prepare the expression to be unpacked, not actually to unpack it.
 	};
 
-	struct StmtCompileContext {
+	struct StmtCompileEnvironment {
 	};
 
 	struct LocalVarRegistry {
@@ -71,7 +71,7 @@ namespace slkc {
 		SLKC_API peff::SharedPtr<VarNode> lookupLocalVar(const std::string_view &name);
 	};
 
-	struct CompileContext;
+	struct CompileEnvironment;
 
 	class NormalCompilationContext : public CompilationContext {
 	public:
@@ -111,7 +111,7 @@ namespace slkc {
 		const uint32_t baseInsOff;
 		peff::DynArray<slake::Instruction> generatedInstructions;
 
-		SLKC_API NormalCompilationContext(CompileContext *compileContext, CompilationContext *parent);
+		SLKC_API NormalCompilationContext(CompileEnvironment *compileEnv, CompilationContext *parent);
 		SLKC_API virtual ~NormalCompilationContext();
 
 		SLKC_API virtual std::optional<CompilationError> allocLabel(uint32_t &labelIdOut) override;
@@ -145,7 +145,7 @@ namespace slkc {
 		SLKC_API virtual uint32_t getBlockLevel() override;
 	};
 
-	struct CompileContext : public peff::RcObject {
+	struct CompileEnvironment : public peff::RcObject {
 		slake::Runtime *runtime;
 		slake::HostRefHolder hostRefHolder;
 		peff::RcObjectPtr<peff::Alloc> selfAllocator, allocator;
@@ -156,7 +156,7 @@ namespace slkc {
 		peff::SharedPtr<ThisNode> thisNode;
 		uint32_t flags;
 
-		SLAKE_FORCEINLINE CompileContext(
+		SLAKE_FORCEINLINE CompileEnvironment(
 			slake::Runtime *runtime,
 			peff::SharedPtr<Document> document,
 			peff::Alloc *selfAllocator,
@@ -170,7 +170,7 @@ namespace slkc {
 			  warnings(allocator),
 			  flags(0) {}
 
-		SLKC_API virtual ~CompileContext();
+		SLKC_API virtual ~CompileEnvironment();
 
 		SLKC_API virtual void onRefZero() noexcept override;
 
@@ -195,30 +195,30 @@ namespace slkc {
 	};
 
 	struct PrevBreakPointHolder {
-		CompilationContext *compileContext;
+		CompilationContext *compileEnv;
 		uint32_t lastBreakStmtJumpDestLabel,
 			lastBreakStmtBlockLevel;
 
-		SLAKE_FORCEINLINE PrevBreakPointHolder(CompilationContext *compileContext)
-			: compileContext(compileContext),
-			  lastBreakStmtJumpDestLabel(compileContext->getBreakLabel()),
-			  lastBreakStmtBlockLevel(compileContext->getBreakLabelBlockLevel()) {}
+		SLAKE_FORCEINLINE PrevBreakPointHolder(CompilationContext *compileEnv)
+			: compileEnv(compileEnv),
+			  lastBreakStmtJumpDestLabel(compileEnv->getBreakLabel()),
+			  lastBreakStmtBlockLevel(compileEnv->getBreakLabelBlockLevel()) {}
 		SLAKE_FORCEINLINE ~PrevBreakPointHolder() {
-			compileContext->setBreakLabel(lastBreakStmtJumpDestLabel, lastBreakStmtBlockLevel);
+			compileEnv->setBreakLabel(lastBreakStmtJumpDestLabel, lastBreakStmtBlockLevel);
 		}
 	};
 
 	struct PrevContinuePointHolder {
-		CompilationContext *compileContext;
+		CompilationContext *compileEnv;
 		uint32_t lastContinueStmtJumpDestLabel,
 			lastContinueStmtBlockLevel;
 
-		SLAKE_FORCEINLINE PrevContinuePointHolder(CompilationContext *compileContext)
-			: compileContext(compileContext),
-			  lastContinueStmtJumpDestLabel(compileContext->getContinueLabel()),
-			  lastContinueStmtBlockLevel(compileContext->getContinueLabelBlockLevel()) {}
+		SLAKE_FORCEINLINE PrevContinuePointHolder(CompilationContext *compileEnv)
+			: compileEnv(compileEnv),
+			  lastContinueStmtJumpDestLabel(compileEnv->getContinueLabel()),
+			  lastContinueStmtBlockLevel(compileEnv->getContinueLabelBlockLevel()) {}
 		SLAKE_FORCEINLINE ~PrevContinuePointHolder() {
-			compileContext->setContinueLabel(lastContinueStmtJumpDestLabel, lastContinueStmtBlockLevel);
+			compileEnv->setContinueLabel(lastContinueStmtJumpDestLabel, lastContinueStmtBlockLevel);
 		}
 	};
 
@@ -242,7 +242,7 @@ namespace slkc {
 	using ResolvedIdRefPartList = peff::DynArray<ResolvedIdRefPart>;
 
 	[[nodiscard]] SLKC_API std::optional<CompilationError> _compileOrCastOperand(
-		CompileContext *compileContext,
+		CompileEnvironment *compileEnv,
 		CompilationContext *compilationContext,
 		uint32_t regOut,
 		ExprEvalPurpose evalPurpose,
@@ -250,7 +250,7 @@ namespace slkc {
 		peff::SharedPtr<ExprNode> operand,
 		peff::SharedPtr<TypeNameNode> operandType);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> _compileSimpleBinaryExpr(
-		CompileContext *compileContext,
+		CompileEnvironment *compileEnv,
 		CompilationContext *compilationContext,
 		peff::SharedPtr<BinaryExprNode> expr,
 		ExprEvalPurpose evalPurpose,
@@ -264,7 +264,7 @@ namespace slkc {
 		CompileExprResult &resultOut,
 		slake::Opcode opcode);
 	std::optional<CompilationError> _compileSimpleAssignBinaryExpr(
-		CompileContext *compileContext,
+		CompileEnvironment *compileEnv,
 		CompilationContext *compilationContext,
 		peff::SharedPtr<BinaryExprNode> expr,
 		ExprEvalPurpose evalPurpose,
@@ -276,7 +276,7 @@ namespace slkc {
 		uint32_t resultRegOut,
 		CompileExprResult &resultOut);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> _compileSimpleLAndBinaryExpr(
-		CompileContext *compileContext,
+		CompileEnvironment *compileEnv,
 		CompilationContext *compilationContext,
 		peff::SharedPtr<BinaryExprNode> expr,
 		ExprEvalPurpose evalPurpose,
@@ -287,7 +287,7 @@ namespace slkc {
 		CompileExprResult &resultOut,
 		slake::Opcode opcode);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> _compileSimpleLOrBinaryExpr(
-		CompileContext *compileContext,
+		CompileEnvironment *compileEnv,
 		CompilationContext *compilationContext,
 		peff::SharedPtr<BinaryExprNode> expr,
 		ExprEvalPurpose evalPurpose,
@@ -298,7 +298,7 @@ namespace slkc {
 		CompileExprResult &resultOut,
 		slake::Opcode opcode);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> _compileSimpleBinaryAssignOpExpr(
-		CompileContext *compileContext,
+		CompileEnvironment *compileEnv,
 		CompilationContext *compilationContext,
 		peff::SharedPtr<BinaryExprNode> expr,
 		ExprEvalPurpose evalPurpose,
@@ -311,7 +311,7 @@ namespace slkc {
 		slake::Opcode opcode);
 
 	[[nodiscard]] SLKC_API std::optional<CompilationError> resolveStaticMember(
-		CompileContext *compileContext,
+		CompileEnvironment *compileEnv,
 		peff::SharedPtr<Document> document,
 		const peff::SharedPtr<MemberNode> &memberNode,
 		const IdRefEntry &name,
@@ -319,7 +319,7 @@ namespace slkc {
 	[[nodiscard]] SLKC_API
 		std::optional<CompilationError>
 		resolveInstanceMember(
-			CompileContext *compileContext,
+			CompileEnvironment *compileEnv,
 			peff::SharedPtr<Document> document,
 			peff::SharedPtr<MemberNode> memberNode,
 			const IdRefEntry &name,
@@ -327,7 +327,7 @@ namespace slkc {
 	[[nodiscard]] SLKC_API
 		std::optional<CompilationError>
 		resolveIdRef(
-			CompileContext *compileContext,
+			CompileEnvironment *compileEnv,
 			peff::SharedPtr<Document> document,
 			const peff::SharedPtr<MemberNode> &resolveRoot,
 			IdRefEntry *idRef,
@@ -348,7 +348,7 @@ namespace slkc {
 	[[nodiscard]] SLKC_API
 		std::optional<CompilationError>
 		resolveIdRefWithScopeNode(
-			CompileContext *compileContext,
+			CompileEnvironment *compileEnv,
 			peff::SharedPtr<Document> document,
 			peff::Set<peff::SharedPtr<MemberNode>> &walkedNodes,
 			const peff::SharedPtr<MemberNode> &resolveScope,
@@ -359,7 +359,7 @@ namespace slkc {
 			bool isStatic = true,
 			bool isSealed = false);
 	/// @brief Resolve a custom type name.
-	/// @param compileContext The compile context.
+	/// @param compileEnv The compile context.
 	/// @param resolveContext Previous resolve context.
 	/// @param typeName Type name to be resolved.
 	/// @param memberNodeOut Where the resolved member node will be stored.
@@ -431,21 +431,21 @@ namespace slkc {
 		peff::SharedPtr<TypeNameNode> type,
 		peff::SharedPtr<TypeNameNode> &typeNameOut);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> compileUnaryExpr(
-		CompileContext *compileContext,
+		CompileEnvironment *compileEnv,
 		CompilationContext *compilationContext,
 		peff::SharedPtr<UnaryExprNode> expr,
 		ExprEvalPurpose evalPurpose,
 		uint32_t resultRegOut,
 		CompileExprResult &resultOut);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> compileBinaryExpr(
-		CompileContext *compileContext,
+		CompileEnvironment *compileEnv,
 		CompilationContext *compilationContext,
 		peff::SharedPtr<BinaryExprNode> expr,
 		ExprEvalPurpose evalPurpose,
 		uint32_t resultRegOut,
 		CompileExprResult &resultOut);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> compileExpr(
-		CompileContext *compileContext,
+		CompileEnvironment *compileEnv,
 		CompilationContext *compilationContext,
 		const peff::SharedPtr<ExprNode> &expr,
 		ExprEvalPurpose evalPurpose,
@@ -453,18 +453,18 @@ namespace slkc {
 		uint32_t resultRegOut,
 		CompileExprResult &resultOut);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> compileStmt(
-		CompileContext *compileContext,
+		CompileEnvironment *compileEnv,
 		CompilationContext *compilationContext,
 		const peff::SharedPtr<StmtNode> &stmt);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> evalExprType(
-		CompileContext *compileContext,
+		CompileEnvironment *compileEnv,
 		CompilationContext *compilationContext,
 		const peff::SharedPtr<ExprNode> &expr,
 		peff::SharedPtr<TypeNameNode> &typeOut,
 		peff::SharedPtr<TypeNameNode> desiredType = {});
 
 	[[nodiscard]] SLKC_API std::optional<CompilationError> evalConstExpr(
-		CompileContext *compileContext,
+		CompileEnvironment *compileEnv,
 		CompilationContext *compilationContext,
 		peff::SharedPtr<ExprNode> expr,
 		peff::SharedPtr<ExprNode> &exprOut);
@@ -472,11 +472,11 @@ namespace slkc {
 	[[nodiscard]] SLKC_API std::optional<CompilationError> getFullIdRef(peff::Alloc *allocator, peff::SharedPtr<MemberNode> m, IdRefPtr &idRefOut);
 
 	[[nodiscard]] SLKC_API std::optional<CompilationError> compileTypeName(
-		CompileContext *compileContext,
+		CompileEnvironment *compileEnv,
 		peff::SharedPtr<TypeNameNode> typeName,
 		slake::Type &typeOut);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> compileIdRef(
-		CompileContext *compileContext,
+		CompileEnvironment *compileEnv,
 		const IdRefEntry *entries,
 		size_t nEntries,
 		peff::SharedPtr<TypeNameNode> *paramTypes,
@@ -484,47 +484,47 @@ namespace slkc {
 		bool hasVarArgs,
 		slake::HostObjectRef<slake::IdRefObject> &idRefOut);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> compileValueExpr(
-		CompileContext *compileContext,
+		CompileEnvironment *compileEnv,
 		peff::SharedPtr<ExprNode> expr,
 		slake::Value &valueOut);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> compileGenericParams(
-		CompileContext *compileContext,
+		CompileEnvironment *compileEnv,
 		peff::SharedPtr<ModuleNode> mod,
 		peff::SharedPtr<GenericParamNode> *genericParams,
 		size_t nGenericParams,
 		slake::GenericParamList &genericParamListOut);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> compileModule(
-		CompileContext *compileContext,
+		CompileEnvironment *compileEnv,
 		peff::SharedPtr<ModuleNode> mod,
 		slake::ModuleObject *modOut);
 
 	[[nodiscard]] SLKC_API std::optional<CompilationError> reindexFnParams(
-		CompileContext *compileContext,
+		CompileEnvironment *compileEnv,
 		peff::SharedPtr<FnOverloadingNode> fn);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> indexFnParams(
-		CompileContext *compileContext,
+		CompileEnvironment *compileEnv,
 		peff::SharedPtr<FnOverloadingNode> fn);
 
 	[[nodiscard]] SLKC_API std::optional<CompilationError> reindexClassGenericParams(
-		CompileContext *compileContext,
+		CompileEnvironment *compileEnv,
 		peff::SharedPtr<ClassNode> cls);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> indexClassGenericParams(
-		CompileContext *compileContext,
+		CompileEnvironment *compileEnv,
 		peff::SharedPtr<ClassNode> cls);
 
 	[[nodiscard]] SLKC_API std::optional<CompilationError> reindexInterfaceGenericParams(
-		CompileContext *compileContext,
+		CompileEnvironment *compileEnv,
 		peff::SharedPtr<InterfaceNode> interfaceNode);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> indexInterfaceGenericParams(
-		CompileContext *compileContext,
+		CompileEnvironment *compileEnv,
 		peff::SharedPtr<InterfaceNode> interfaceNode);
 
 	[[nodiscard]] SLKC_API std::optional<CompilationError> indexModuleMembers(
-		CompileContext *compileContext,
+		CompileEnvironment *compileEnv,
 		peff::SharedPtr<ModuleNode> moduleNode);
 
 	[[nodiscard]] SLKC_API std::optional<CompilationError> determineFnOverloading(
-		CompileContext *compileContext,
+		CompileEnvironment *compileEnv,
 		peff::SharedPtr<FnNode> fnSlot,
 		const peff::SharedPtr<TypeNameNode> *argTypes,
 		size_t nArgTypes,
@@ -532,22 +532,22 @@ namespace slkc {
 		peff::DynArray<peff::SharedPtr<FnOverloadingNode>> &matchedOverloadings,
 		peff::Set<peff::SharedPtr<MemberNode>> *walkedParents = nullptr);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> fnToTypeName(
-		CompileContext *compileContext,
+		CompileEnvironment *compileEnv,
 		peff::SharedPtr<FnOverloadingNode> fn,
 		peff::SharedPtr<FnTypeNameNode> &evaluatedTypeOut);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> cleanupUnusedModuleTree(
-		CompileContext *compileContext,
+		CompileEnvironment *compileEnv,
 		peff::SharedPtr<ModuleNode> leaf);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> completeParentModules(
-		CompileContext *compileContext,
+		CompileEnvironment *compileEnv,
 		IdRef *modulePath,
 		peff::SharedPtr<ModuleNode> leaf);
 
 	[[nodiscard]] SLKC_API std::optional<CompilationError> renormalizeModuleVarDefStmts(
-		CompileContext *compileContext,
+		CompileEnvironment *compileEnv,
 		peff::SharedPtr<ModuleNode> mod);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> normalizeModuleVarDefStmts(
-		CompileContext *compileContext,
+		CompileEnvironment *compileEnv,
 		peff::SharedPtr<ModuleNode> mod);
 
 	[[nodiscard]] SLKC_API std::optional<CompilationError> isFnSignatureSame(peff::SharedPtr<VarNode> *lParams, peff::SharedPtr<VarNode> *rParams, size_t nParams, bool &whetherOut);
@@ -643,7 +643,7 @@ namespace slkc {
 		SLKC_API ExternalModuleProvider(const char *providerName);
 		SLKC_API virtual ~ExternalModuleProvider();
 
-		virtual std::optional<CompilationError> loadModule(CompileContext *compileContext, IdRef *moduleName) = 0;
+		virtual std::optional<CompilationError> loadModule(CompileEnvironment *compileEnv, IdRef *moduleName) = 0;
 	};
 
 	class FileSystemExternalModuleProvider : public ExternalModuleProvider {
@@ -653,7 +653,7 @@ namespace slkc {
 		SLKC_API FileSystemExternalModuleProvider(peff::Alloc *allocator);
 		SLKC_API virtual ~FileSystemExternalModuleProvider();
 
-		SLKC_API virtual std::optional<CompilationError> loadModule(CompileContext *compileContext, IdRef *moduleName) override;
+		SLKC_API virtual std::optional<CompilationError> loadModule(CompileEnvironment *compileEnv, IdRef *moduleName) override;
 		SLKC_API bool registerImportPath(peff::String &&path);
 	};
 }

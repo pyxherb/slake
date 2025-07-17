@@ -21,7 +21,7 @@ SLKC_API peff::SharedPtr<VarNode> CompilationContext::lookupLocalVar(const std::
 SLKC_API NormalCompilationContext::BlockLayer::~BlockLayer() {
 }
 
-SLKC_API NormalCompilationContext::NormalCompilationContext(CompileContext *compileContext, CompilationContext *parent) : CompilationContext(parent), allocator(compileContext->allocator), savedBlockLayers(compileContext->allocator.get()), curBlockLayer(compileContext->allocator.get()), labels(compileContext->allocator.get()), labelNameIndices(compileContext->allocator.get()), generatedInstructions(compileContext->allocator.get()), document(compileContext->document), baseBlockLevel(parent ? parent->getBlockLevel() : 0), baseInsOff(parent ? parent->getCurInsOff() : 0) {
+SLKC_API NormalCompilationContext::NormalCompilationContext(CompileEnvironment *compileEnv, CompilationContext *parent) : CompilationContext(parent), allocator(compileEnv->allocator), savedBlockLayers(compileEnv->allocator.get()), curBlockLayer(compileEnv->allocator.get()), labels(compileEnv->allocator.get()), labelNameIndices(compileEnv->allocator.get()), generatedInstructions(compileEnv->allocator.get()), document(compileEnv->document), baseBlockLevel(parent ? parent->getBlockLevel() : 0), baseInsOff(parent ? parent->getCurInsOff() : 0) {
 }
 SLKC_API NormalCompilationContext::~NormalCompilationContext() {
 }
@@ -192,41 +192,41 @@ SLKC_API uint32_t NormalCompilationContext::getBlockLevel() {
 	return baseBlockLevel + savedBlockLayers.size();
 }
 
-SLKC_API CompileContext::~CompileContext() {
+SLKC_API CompileEnvironment::~CompileEnvironment() {
 }
 
-SLKC_API void CompileContext::onRefZero() noexcept {
-	peff::destroyAndRelease<CompileContext>(selfAllocator.get(), this, sizeof(std::max_align_t));
+SLKC_API void CompileEnvironment::onRefZero() noexcept {
+	peff::destroyAndRelease<CompileEnvironment>(selfAllocator.get(), this, sizeof(std::max_align_t));
 }
 
 SLKC_API std::optional<CompilationError> slkc::evalExprType(
-	CompileContext *compileContext,
+	CompileEnvironment *compileEnv,
 	CompilationContext *compilationContext,
 	const peff::SharedPtr<ExprNode> &expr,
 	peff::SharedPtr<TypeNameNode> &typeOut,
 	peff::SharedPtr<TypeNameNode> desiredType) {
-	NormalCompilationContext tmpContext(compileContext, compilationContext);
+	NormalCompilationContext tmpContext(compileEnv, compilationContext);
 
-	CompileExprResult result(compileContext->allocator.get());
+	CompileExprResult result(compileEnv->allocator.get());
 
-	SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, &tmpContext, expr, ExprEvalPurpose::EvalType, desiredType, UINT32_MAX, result));
+	SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, &tmpContext, expr, ExprEvalPurpose::EvalType, desiredType, UINT32_MAX, result));
 
 	typeOut = result.evaluatedType;
 	return {};
 }
 
 SLKC_API std::optional<CompilationError> slkc::completeParentModules(
-	CompileContext *compileContext,
+	CompileEnvironment *compileEnv,
 	IdRef *modulePath,
 	peff::SharedPtr<ModuleNode> leaf) {
-	peff::DynArray<peff::SharedPtr<ModuleNode>> modules(compileContext->allocator.get());
+	peff::DynArray<peff::SharedPtr<ModuleNode>> modules(compileEnv->allocator.get());
 	size_t idxNewModulesBegin = 0;
 
 	if (!modules.resize(modulePath->entries.size())) {
 		return genOutOfMemoryCompError();
 	}
 
-	peff::SharedPtr<ModuleNode> node = compileContext->document->rootModule;
+	peff::SharedPtr<ModuleNode> node = compileEnv->document->rootModule;
 
 	for (size_t i = 0; i < modules.size(); ++i) {
 		if (auto it = node->memberIndices.find(modulePath->entries.at(i).name); it != node->memberIndices.end()) {
@@ -237,7 +237,7 @@ SLKC_API std::optional<CompilationError> slkc::completeParentModules(
 			if (i + 1 == modules.size()) {
 				node = leaf;
 			} else {
-				if (!(node = peff::makeSharedWithControlBlock<ModuleNode, AstNodeControlBlock<ModuleNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+				if (!(node = peff::makeSharedWithControlBlock<ModuleNode, AstNodeControlBlock<ModuleNode>>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
 					return genOutOfMemoryCompError();
 				}
 			}
@@ -262,10 +262,10 @@ SLKC_API std::optional<CompilationError> slkc::completeParentModules(
 			}
 			modules.at(i)->setParent(modules.at(i - 1).get());
 		} else {
-			if (!compileContext->document->rootModule->addMember(modules.at(i).castTo<MemberNode>())) {
+			if (!compileEnv->document->rootModule->addMember(modules.at(i).castTo<MemberNode>())) {
 				return genOutOfMemoryCompError();
 			}
-			modules.at(i)->setParent(compileContext->document->rootModule);
+			modules.at(i)->setParent(compileEnv->document->rootModule);
 		}
 	}
 
@@ -273,7 +273,7 @@ SLKC_API std::optional<CompilationError> slkc::completeParentModules(
 }
 
 SLKC_API std::optional<CompilationError> slkc::cleanupUnusedModuleTree(
-	CompileContext *compileContext,
+	CompileEnvironment *compileEnv,
 	peff::SharedPtr<ModuleNode> leaf) {
 	peff::SharedPtr<ModuleNode> cur = leaf;
 
@@ -314,12 +314,12 @@ FileSystemExternalModuleProvider::FileSystemExternalModuleProvider(peff::Alloc *
 FileSystemExternalModuleProvider::~FileSystemExternalModuleProvider() {
 }
 
-SLKC_API std::optional<CompilationError> FileSystemExternalModuleProvider::loadModule(CompileContext *compileContext, IdRef *moduleName) {
-	peff::String suffixPath(compileContext->allocator.get());
+SLKC_API std::optional<CompilationError> FileSystemExternalModuleProvider::loadModule(CompileEnvironment *compileEnv, IdRef *moduleName) {
+	peff::String suffixPath(compileEnv->allocator.get());
 
 	{
 		bool isLoaded = true;
-		peff::SharedPtr<ModuleNode> node = compileContext->document->rootModule;
+		peff::SharedPtr<ModuleNode> node = compileEnv->document->rootModule;
 
 		for (size_t i = 0; i < moduleName->entries.size(); ++i) {
 			if (auto it = node->memberIndices.find(moduleName->entries.at(i).name); it != node->memberIndices.end()) {
@@ -358,7 +358,7 @@ SLKC_API std::optional<CompilationError> FileSystemExternalModuleProvider::loadM
 		const peff::String &curPath = importPaths.at(i);
 
 		{
-			peff::String fullPath(compileContext->allocator.get());
+			peff::String fullPath(compileEnv->allocator.get());
 
 			const static char extension[] = ".slk";
 
@@ -385,9 +385,9 @@ SLKC_API std::optional<CompilationError> FileSystemExternalModuleProvider::loadM
 				}
 				fseek(fp, 0, SEEK_SET);
 
-				auto deleter = [compileContext, fileSize](void *ptr) {
+				auto deleter = [compileEnv, fileSize](void *ptr) {
 					if (ptr) {
-						compileContext->allocator->release(ptr, (size_t)fileSize, 1);
+						compileEnv->allocator->release(ptr, (size_t)fileSize, 1);
 					}
 				};
 				std::unique_ptr<char, decltype(deleter)> fileContent((char *)malloc((size_t)fileSize + 1), std::move(deleter));
@@ -401,17 +401,17 @@ SLKC_API std::optional<CompilationError> FileSystemExternalModuleProvider::loadM
 
 				peff::SharedPtr<ModuleNode> mod;
 
-				if (!(mod = peff::makeSharedWithControlBlock<ModuleNode, AstNodeControlBlock<ModuleNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+				if (!(mod = peff::makeSharedWithControlBlock<ModuleNode, AstNodeControlBlock<ModuleNode>>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
 					return genOutOfMemoryCompError();
 				}
 
 				peff::Uninitialized<slkc::TokenList> tokenList;
 				{
-					slkc::Lexer lexer(compileContext->allocator.get());
+					slkc::Lexer lexer(compileEnv->allocator.get());
 
 					std::string_view sv(fileContent.get(), fileSize);
 
-					if (auto e = lexer.lex(sv, peff::getDefaultAlloc(), compileContext->document); e) {
+					if (auto e = lexer.lex(sv, peff::getDefaultAlloc(), compileEnv->document); e) {
 						auto ce = CompilationError(moduleName->tokenRange, ErrorParsingImportedModuleErrorExData(std::move(*e)));
 						e.reset();
 						return std::move(ce);
@@ -421,7 +421,7 @@ SLKC_API std::optional<CompilationError> FileSystemExternalModuleProvider::loadM
 				}
 
 				peff::SharedPtr<slkc::Parser> parser;
-				if (!(parser = peff::makeShared<slkc::Parser>(compileContext->allocator.get(), compileContext->document, tokenList.release(), compileContext->allocator.get()))) {
+				if (!(parser = peff::makeShared<slkc::Parser>(compileEnv->allocator.get(), compileEnv->document, tokenList.release(), compileEnv->allocator.get()))) {
 					return genOutOfMemoryCompError();
 				}
 
@@ -432,7 +432,7 @@ SLKC_API std::optional<CompilationError> FileSystemExternalModuleProvider::loadM
 					}
 				}
 
-				SLKC_RETURN_IF_COMP_ERROR(completeParentModules(compileContext, moduleName.get(), mod));
+				SLKC_RETURN_IF_COMP_ERROR(completeParentModules(compileEnv, moduleName.get(), mod));
 
 				if (parser->syntaxErrors.size()) {
 					return CompilationError(moduleName->tokenRange, ErrorParsingImportedModuleErrorExData(mod));
@@ -440,11 +440,11 @@ SLKC_API std::optional<CompilationError> FileSystemExternalModuleProvider::loadM
 
 				for (auto i : mod->members) {
 					if (i->astNodeType == AstNodeType::Import) {
-						SLKC_RETURN_IF_COMP_ERROR(loadModule(compileContext, i.castTo<ImportNode>()->idRef.get()));
+						SLKC_RETURN_IF_COMP_ERROR(loadModule(compileEnv, i.castTo<ImportNode>()->idRef.get()));
 					}
 				}
 				for (auto i : mod->anonymousImports) {
-					SLKC_RETURN_IF_COMP_ERROR(loadModule(compileContext, i->idRef.get()));
+					SLKC_RETURN_IF_COMP_ERROR(loadModule(compileEnv, i->idRef.get()));
 				}
 
 				return {};
@@ -453,7 +453,7 @@ SLKC_API std::optional<CompilationError> FileSystemExternalModuleProvider::loadM
 		}
 
 		{
-			peff::String fullPath(compileContext->allocator.get());
+			peff::String fullPath(compileEnv->allocator.get());
 
 			const static char extension[] = ".slx";
 
@@ -480,9 +480,9 @@ SLKC_API std::optional<CompilationError> FileSystemExternalModuleProvider::loadM
 				}
 				fseek(fp, 0, SEEK_SET);
 
-				auto deleter = [compileContext, fileSize](void *ptr) {
+				auto deleter = [compileEnv, fileSize](void *ptr) {
 					if (ptr) {
-						compileContext->allocator->release(ptr, (size_t)fileSize, 1);
+						compileEnv->allocator->release(ptr, (size_t)fileSize, 1);
 					}
 				};
 				std::unique_ptr<char, decltype(deleter)> fileContent((char *)malloc((size_t)fileSize), std::move(deleter));

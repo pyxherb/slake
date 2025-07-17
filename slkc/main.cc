@@ -679,7 +679,7 @@ int main(int argc, char *argv[]) {
 			printError("Error allocating memory for the runtime");
 			return ENOMEM;
 		}
-		slkc::CompileContext compileContext(runtime.get(), document, &peff::g_nullAlloc, peff::getDefaultAlloc());
+		slkc::CompileEnvironment compileEnv(runtime.get(), document, &peff::g_nullAlloc, peff::getDefaultAlloc());
 		{
 			peff::SharedPtr<slkc::Parser> parser;
 			if (!(parser = peff::makeShared<slkc::Parser>(peff::getDefaultAlloc(), document, tokenList.release(), peff::getDefaultAlloc()))) {
@@ -713,12 +713,12 @@ int main(int argc, char *argv[]) {
 				dumpSyntaxError(parser, i);
 			}
 
-			if (auto e = completeParentModules(&compileContext, moduleName.get(), mod); e) {
+			if (auto e = completeParentModules(&compileEnv, moduleName.get(), mod); e) {
 				encounteredErrors = true;
 				dumpCompilationError(parser, *e);
 			}
 
-			if (auto e = indexModuleMembers(&compileContext, rootMod); e) {
+			if (auto e = indexModuleMembers(&compileEnv, rootMod); e) {
 				encounteredErrors = true;
 				dumpCompilationError(parser, *e);
 			}
@@ -726,15 +726,15 @@ int main(int argc, char *argv[]) {
 			slake::HostObjectRef<slake::ModuleObject> modObj = slake::ModuleObject::alloc(runtime.get());
 			modObj->setAccess(slake::ACCESS_PUB | slake::ACCESS_STATIC);
 
-			if (auto e = slkc::compileModule(&compileContext, mod, modObj.get()); e) {
+			if (auto e = slkc::compileModule(&compileEnv, mod, modObj.get()); e) {
 				encounteredErrors = true;
 				dumpCompilationError(parser, *e);
 			}
 
 			// Sort errors in order.
-			std::sort(compileContext.errors.data(), compileContext.errors.data() + compileContext.errors.size());
+			std::sort(compileEnv.errors.data(), compileEnv.errors.data() + compileEnv.errors.size());
 
-			for (auto &i : compileContext.errors) {
+			for (auto &i : compileEnv.errors) {
 				encounteredErrors = true;
 				dumpCompilationError(parser, i);
 			}

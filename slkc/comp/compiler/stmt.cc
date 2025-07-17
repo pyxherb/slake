@@ -3,16 +3,16 @@
 using namespace slkc;
 
 SLKC_API std::optional<CompilationError> slkc::compileStmt(
-	CompileContext *compileContext,
+	CompileEnvironment *compileEnv,
 	CompilationContext *compilationContext,
 	const peff::SharedPtr<StmtNode> &stmt) {
 	switch (stmt->stmtKind) {
 		case StmtKind::Expr: {
 			peff::SharedPtr<ExprStmtNode> s = stmt.castTo<ExprStmtNode>();
 
-			CompileExprResult result(compileContext->allocator.get());
+			CompileExprResult result(compileEnv->allocator.get());
 
-			SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, compilationContext, s->expr, ExprEvalPurpose::Stmt, {}, UINT32_MAX, result));
+			SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, s->expr, ExprEvalPurpose::Stmt, {}, UINT32_MAX, result));
 			break;
 		}
 		case StmtKind::VarDef: {
@@ -20,7 +20,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 
 			for (auto &i : s->varDefEntries) {
 				if (compilationContext->getLocalVarInCurLevel(i->name)) {
-					SLKC_RETURN_IF_COMP_ERROR(compileContext->pushError(CompilationError(i->initialValue->tokenRange, CompilationErrorKind::LocalVarAlreadyExists)));
+					SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(CompilationError(i->initialValue->tokenRange, CompilationErrorKind::LocalVarAlreadyExists)));
 				} else {
 					peff::SharedPtr<VarNode> newVar;
 
@@ -35,14 +35,14 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 
 						SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(initialValueReg));
 
-						CompileExprResult result(compileContext->allocator.get());
+						CompileExprResult result(compileEnv->allocator.get());
 
 						if (i->type) {
 							newVar->type = i->type;
 
 							{
 								slake::Type type;
-								SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileContext, newVar->type, type));
+								SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, newVar->type, type));
 
 								SLKC_RETURN_IF_COMP_ERROR(
 									compilationContext->emitIns(
@@ -53,7 +53,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 
 							peff::SharedPtr<TypeNameNode> exprType;
 
-							SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileContext, compilationContext, i->initialValue, exprType));
+							SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileEnv, compilationContext, i->initialValue, exprType));
 
 							bool same;
 
@@ -64,16 +64,16 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 
 								SLKC_RETURN_IF_COMP_ERROR(isLValueType(i->type, b));
 
-								SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileContext, compilationContext, initialValueReg, b ? ExprEvalPurpose::LValue : ExprEvalPurpose::RValue, i->type, i->initialValue, exprType));
+								SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileEnv, compilationContext, initialValueReg, b ? ExprEvalPurpose::LValue : ExprEvalPurpose::RValue, i->type, i->initialValue, exprType));
 							} else {
 								bool b = false;
 
 								SLKC_RETURN_IF_COMP_ERROR(isLValueType(i->type, b));
 
 								if (b) {
-									SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, compilationContext, i->initialValue, ExprEvalPurpose::LValue, i->type, initialValueReg, result));
+									SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, i->initialValue, ExprEvalPurpose::LValue, i->type, initialValueReg, result));
 								} else {
-									SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, compilationContext, i->initialValue, ExprEvalPurpose::RValue, i->type, initialValueReg, result));
+									SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, i->initialValue, ExprEvalPurpose::RValue, i->type, initialValueReg, result));
 								}
 							}
 						} else {
@@ -81,7 +81,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 
 							newVar->isTypeDeducedFromInitialValue = true;
 
-							SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileContext, compilationContext, i->initialValue, deducedType));
+							SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileEnv, compilationContext, i->initialValue, deducedType));
 
 							if (!deducedType) {
 								return CompilationError(stmt->tokenRange, CompilationErrorKind::ErrorDeducingVarType);
@@ -91,7 +91,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 
 							{
 								slake::Type type;
-								SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileContext, newVar->type, type));
+								SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, newVar->type, type));
 
 								SLKC_RETURN_IF_COMP_ERROR(
 									compilationContext->emitIns(
@@ -104,9 +104,9 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 							SLKC_RETURN_IF_COMP_ERROR(isLValueType(deducedType, b));
 
 							if (b) {
-								SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, compilationContext, i->initialValue, ExprEvalPurpose::LValue, {}, initialValueReg, result));
+								SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, i->initialValue, ExprEvalPurpose::LValue, {}, initialValueReg, result));
 							} else {
-								SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, compilationContext, i->initialValue, ExprEvalPurpose::RValue, {}, initialValueReg, result));
+								SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, i->initialValue, ExprEvalPurpose::RValue, {}, initialValueReg, result));
 							}
 						}
 
@@ -124,7 +124,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 
 						{
 							slake::Type type;
-							SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileContext, newVar->type, type));
+							SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, newVar->type, type));
 
 							SLKC_RETURN_IF_COMP_ERROR(
 								compilationContext->emitIns(
@@ -206,7 +206,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 
 			for (auto &i : s->varDefEntries) {
 				if (compilationContext->getLocalVarInCurLevel(i->name)) {
-					SLKC_RETURN_IF_COMP_ERROR(compileContext->pushError(CompilationError(i->initialValue->tokenRange, CompilationErrorKind::LocalVarAlreadyExists)));
+					SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(CompilationError(i->initialValue->tokenRange, CompilationErrorKind::LocalVarAlreadyExists)));
 				} else {
 					peff::SharedPtr<VarNode> newVar;
 
@@ -221,14 +221,14 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 
 						SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(initialValueReg));
 
-						CompileExprResult result(compileContext->allocator.get());
+						CompileExprResult result(compileEnv->allocator.get());
 
 						if (i->type) {
 							newVar->type = i->type;
 
 							{
 								slake::Type type;
-								SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileContext, newVar->type, type));
+								SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, newVar->type, type));
 
 								SLKC_RETURN_IF_COMP_ERROR(
 									compilationContext->emitIns(
@@ -239,7 +239,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 
 							peff::SharedPtr<TypeNameNode> exprType;
 
-							SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileContext, compilationContext, i->initialValue, exprType));
+							SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileEnv, compilationContext, i->initialValue, exprType));
 
 							bool same;
 
@@ -250,16 +250,16 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 
 								SLKC_RETURN_IF_COMP_ERROR(isLValueType(i->type, b));
 
-								SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileContext, compilationContext, initialValueReg, b ? ExprEvalPurpose::LValue : ExprEvalPurpose::RValue, i->type, i->initialValue, exprType));
+								SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileEnv, compilationContext, initialValueReg, b ? ExprEvalPurpose::LValue : ExprEvalPurpose::RValue, i->type, i->initialValue, exprType));
 							} else {
 								bool b = false;
 
 								SLKC_RETURN_IF_COMP_ERROR(isLValueType(i->type, b));
 
 								if (b) {
-									SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, compilationContext, i->initialValue, ExprEvalPurpose::LValue, i->type, initialValueReg, result));
+									SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, i->initialValue, ExprEvalPurpose::LValue, i->type, initialValueReg, result));
 								} else {
-									SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, compilationContext, i->initialValue, ExprEvalPurpose::RValue, i->type, initialValueReg, result));
+									SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, i->initialValue, ExprEvalPurpose::RValue, i->type, initialValueReg, result));
 								}
 							}
 						} else {
@@ -267,7 +267,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 
 							newVar->isTypeDeducedFromInitialValue = true;
 
-							SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileContext, compilationContext, i->initialValue, deducedType));
+							SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileEnv, compilationContext, i->initialValue, deducedType));
 
 							if (!deducedType) {
 								return CompilationError(stmt->tokenRange, CompilationErrorKind::ErrorDeducingVarType);
@@ -277,7 +277,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 
 							{
 								slake::Type type;
-								SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileContext, newVar->type, type));
+								SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, newVar->type, type));
 
 								SLKC_RETURN_IF_COMP_ERROR(
 									compilationContext->emitIns(
@@ -290,9 +290,9 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 							SLKC_RETURN_IF_COMP_ERROR(isLValueType(deducedType, b));
 
 							if (b) {
-								SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, compilationContext, i->initialValue, ExprEvalPurpose::LValue, {}, initialValueReg, result));
+								SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, i->initialValue, ExprEvalPurpose::LValue, {}, initialValueReg, result));
 							} else {
-								SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, compilationContext, i->initialValue, ExprEvalPurpose::RValue, {}, initialValueReg, result));
+								SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, i->initialValue, ExprEvalPurpose::RValue, {}, initialValueReg, result));
 							}
 						}
 
@@ -310,7 +310,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 
 						{
 							slake::Type type;
-							SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileContext, newVar->type, type));
+							SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, newVar->type, type));
 
 							SLKC_RETURN_IF_COMP_ERROR(
 								compilationContext->emitIns(
@@ -330,30 +330,30 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 
 			compilationContext->setLabelOffset(bodyLabel, compilationContext->getCurInsOff());
 
-			SLKC_RETURN_IF_COMP_ERROR(compileStmt(compileContext, compilationContext, s->body));
+			SLKC_RETURN_IF_COMP_ERROR(compileStmt(compileEnv, compilationContext, s->body));
 
 			if (s->cond) {
 				compilationContext->setLabelOffset(continueLabel, compilationContext->getCurInsOff());
 
 				{
-					CompileExprResult result(compileContext->allocator.get());
-					SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, compilationContext, s->cond, ExprEvalPurpose::Stmt, {}, UINT32_MAX, result));
+					CompileExprResult result(compileEnv->allocator.get());
+					SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, s->cond, ExprEvalPurpose::Stmt, {}, UINT32_MAX, result));
 				}
 
 				uint32_t conditionReg;
 				SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(conditionReg));
 
-				CompileExprResult result(compileContext->allocator.get());
+				CompileExprResult result(compileEnv->allocator.get());
 
 				peff::SharedPtr<TypeNameNode> tn, type;
 
-				if (!(tn = peff::makeSharedWithControlBlock<BoolTypeNameNode, AstNodeControlBlock<BoolTypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document).castTo<TypeNameNode>())) {
+				if (!(tn = peff::makeSharedWithControlBlock<BoolTypeNameNode, AstNodeControlBlock<BoolTypeNameNode>>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document).castTo<TypeNameNode>())) {
 					return genOutOfMemoryCompError();
 				}
 
-				SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileContext, compilationContext, s->cond, type, tn));
+				SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileEnv, compilationContext, s->cond, type, tn));
 
-				SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileContext, compilationContext, conditionReg, ExprEvalPurpose::RValue, tn, s->cond, type));
+				SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileEnv, compilationContext, conditionReg, ExprEvalPurpose::RValue, tn, s->cond, type));
 
 				SLKC_RETURN_IF_COMP_ERROR(
 					compilationContext->emitIns(
@@ -364,8 +364,8 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 				compilationContext->setLabelOffset(continueLabel, compilationContext->getCurInsOff());
 
 				{
-					CompileExprResult result(compileContext->allocator.get());
-					SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, compilationContext, s->cond, ExprEvalPurpose::Stmt, {}, UINT32_MAX, result));
+					CompileExprResult result(compileEnv->allocator.get());
+					SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, s->cond, ExprEvalPurpose::Stmt, {}, UINT32_MAX, result));
 				}
 			}
 
@@ -406,24 +406,24 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 
 			compilationContext->setLabelOffset(bodyLabel, compilationContext->getCurInsOff());
 
-			SLKC_RETURN_IF_COMP_ERROR(compileStmt(compileContext, compilationContext, s->body));
+			SLKC_RETURN_IF_COMP_ERROR(compileStmt(compileEnv, compilationContext, s->body));
 
 			compilationContext->setLabelOffset(continueLabel, compilationContext->getCurInsOff());
 
 			uint32_t conditionReg;
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(conditionReg));
 
-			CompileExprResult result(compileContext->allocator.get());
+			CompileExprResult result(compileEnv->allocator.get());
 
 			peff::SharedPtr<TypeNameNode> tn, type;
 
-			if (!(tn = peff::makeSharedWithControlBlock<BoolTypeNameNode, AstNodeControlBlock<BoolTypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document).castTo<TypeNameNode>())) {
+			if (!(tn = peff::makeSharedWithControlBlock<BoolTypeNameNode, AstNodeControlBlock<BoolTypeNameNode>>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document).castTo<TypeNameNode>())) {
 				return genOutOfMemoryCompError();
 			}
 
-			SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileContext, compilationContext, s->cond, type, tn));
+			SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileEnv, compilationContext, s->cond, type, tn));
 
-			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileContext, compilationContext, conditionReg, ExprEvalPurpose::RValue, tn, s->cond, type));
+			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileEnv, compilationContext, conditionReg, ExprEvalPurpose::RValue, tn, s->cond, type));
 
 			SLKC_RETURN_IF_COMP_ERROR(
 				compilationContext->emitIns(
@@ -442,9 +442,9 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(reg));
 
 			if (s->value) {
-				CompileExprResult result(compileContext->allocator.get());
+				CompileExprResult result(compileEnv->allocator.get());
 
-				SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, compilationContext, s->value, ExprEvalPurpose::RValue, compileContext->curOverloading->returnType, reg, result));
+				SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, s->value, ExprEvalPurpose::RValue, compileEnv->curOverloading->returnType, reg, result));
 
 				SLKC_RETURN_IF_COMP_ERROR(
 					compilationContext->emitIns(
@@ -468,9 +468,9 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(reg));
 
 			if (s->value) {
-				CompileExprResult result(compileContext->allocator.get());
+				CompileExprResult result(compileEnv->allocator.get());
 
-				SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, compilationContext, s->value, ExprEvalPurpose::RValue, compileContext->curOverloading->returnType, reg, result));
+				SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, s->value, ExprEvalPurpose::RValue, compileEnv->curOverloading->returnType, reg, result));
 
 				SLKC_RETURN_IF_COMP_ERROR(
 					compilationContext->emitIns(
@@ -492,9 +492,9 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 			peff::SharedPtr<BoolTypeNameNode> boolType;
 
 			if (!(boolType = peff::makeSharedWithControlBlock<BoolTypeNameNode, AstNodeControlBlock<BoolTypeNameNode>>(
-					  compileContext->allocator.get(),
-					  compileContext->allocator.get(),
-					  compileContext->document))) {
+					  compileEnv->allocator.get(),
+					  compileEnv->allocator.get(),
+					  compileEnv->document))) {
 				return genOutOfMemoryCompError();
 			}
 
@@ -502,13 +502,13 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(reg));
 
-			CompileExprResult result(compileContext->allocator.get());
+			CompileExprResult result(compileEnv->allocator.get());
 
 			peff::SharedPtr<TypeNameNode> exprType;
 
-			SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileContext, compilationContext, s->cond, exprType, boolType.castTo<TypeNameNode>()));
+			SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileEnv, compilationContext, s->cond, exprType, boolType.castTo<TypeNameNode>()));
 
-			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileContext, compilationContext, reg, ExprEvalPurpose::RValue, boolType.castTo<TypeNameNode>(), s->cond, exprType));
+			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileEnv, compilationContext, reg, ExprEvalPurpose::RValue, boolType.castTo<TypeNameNode>(), s->cond, exprType));
 
 			uint32_t endLabel, falseLabel;
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocLabel(endLabel));
@@ -520,7 +520,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 					UINT32_MAX,
 					{ slake::Value(slake::ValueType::Label, falseLabel) }));
 
-			SLKC_RETURN_IF_COMP_ERROR(compileStmt(compileContext, compilationContext, s->trueBody));
+			SLKC_RETURN_IF_COMP_ERROR(compileStmt(compileEnv, compilationContext, s->trueBody));
 
 			SLKC_RETURN_IF_COMP_ERROR(
 				compilationContext->emitIns(
@@ -530,7 +530,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 
 			compilationContext->setLabelOffset(falseLabel, compilationContext->getCurInsOff());
 
-			SLKC_RETURN_IF_COMP_ERROR(compileStmt(compileContext, compilationContext, s->falseBody));
+			SLKC_RETURN_IF_COMP_ERROR(compileStmt(compileEnv, compilationContext, s->falseBody));
 
 			compilationContext->setLabelOffset(endLabel, compilationContext->getCurInsOff());
 			break;
@@ -544,7 +544,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 
 			peff::SharedPtr<TypeNameNode> matchType;
 
-			SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileContext, compilationContext, s->condition, matchType));
+			SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileEnv, compilationContext, s->condition, matchType));
 
 			if (!matchType)
 				return CompilationError(s->condition->tokenRange, CompilationErrorKind::ErrorDeducingSwitchConditionType);
@@ -553,9 +553,9 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(conditionReg));
 
-			CompileExprResult result(compileContext->allocator.get());
+			CompileExprResult result(compileEnv->allocator.get());
 
-			SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, compilationContext, s->condition, ExprEvalPurpose::RValue, {}, conditionReg, result));
+			SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, s->condition, ExprEvalPurpose::RValue, {}, conditionReg, result));
 
 			if (!result.evaluatedType)
 				return CompilationError(s->condition->tokenRange, CompilationErrorKind::ErrorDeducingSwitchConditionType);
@@ -571,10 +571,10 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 			bool isDefaultSet = false;
 
 			// Key = jump source, value = value register
-			peff::Map<uint32_t, uint32_t> matchValueEvalLabels(compileContext->allocator.get());
+			peff::Map<uint32_t, uint32_t> matchValueEvalLabels(compileEnv->allocator.get());
 
 			if (s->isConst) {
-				peff::Set<peff::SharedPtr<ExprNode>> prevCaseConditions(compileContext->allocator.get());
+				peff::Set<peff::SharedPtr<ExprNode>> prevCaseConditions(compileEnv->allocator.get());
 
 				for (size_t i = 0; i < s->caseOffsets.size(); ++i) {
 					auto curCase = s->body.at(s->caseOffsets.at(i)).castTo<CaseLabelStmtNode>();
@@ -592,7 +592,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 					} else {
 						peff::SharedPtr<ExprNode> resultExpr;
 
-						SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileContext, compilationContext, curCase->condition, resultExpr));
+						SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, curCase->condition, resultExpr));
 
 						if (!resultExpr) {
 							return CompilationError(curCase->condition->tokenRange, CompilationErrorKind::ErrorEvaluatingConstSwitchCaseCondition);
@@ -600,7 +600,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 
 						peff::SharedPtr<TypeNameNode> resultExprType;
 
-						SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileContext, compilationContext, resultExpr, resultExprType));
+						SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileEnv, compilationContext, resultExpr, resultExprType));
 
 						if (!resultExprType) {
 							return CompilationError(curCase->condition->tokenRange, CompilationErrorKind::MismatchedSwitchCaseConditionType);
@@ -618,7 +618,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 
 							peff::SharedPtr<BinaryExprNode> ce;
 
-							if (!(ce = peff::makeSharedWithControlBlock<BinaryExprNode, AstNodeControlBlock<BinaryExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document)))
+							if (!(ce = peff::makeSharedWithControlBlock<BinaryExprNode, AstNodeControlBlock<BinaryExprNode>>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document)))
 								return genOutOfMemoryCompError();
 
 							ce->binaryOp = BinaryOp::Eq;
@@ -629,7 +629,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 
 							peff::SharedPtr<ExprNode> cmpResult;
 
-							SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileContext, compilationContext, ce.castTo<ExprNode>(), cmpResult));
+							SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, ce.castTo<ExprNode>(), cmpResult));
 
 							assert(cmpResult);
 
@@ -642,7 +642,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 
 						peff::SharedPtr<BinaryExprNode> cmpExpr;
 
-						if (!(cmpExpr = peff::makeSharedWithControlBlock<BinaryExprNode, AstNodeControlBlock<BinaryExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+						if (!(cmpExpr = peff::makeSharedWithControlBlock<BinaryExprNode, AstNodeControlBlock<BinaryExprNode>>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
 							return genOutOfMemoryCompError();
 						}
 
@@ -650,7 +650,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 
 						cmpExpr->tokenRange = curCase->condition->tokenRange;
 
-						if (!(cmpExpr->lhs = peff::makeSharedWithControlBlock<RegRefExprNode, AstNodeControlBlock<RegRefExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, conditionReg, conditionType).castTo<ExprNode>())) {
+						if (!(cmpExpr->lhs = peff::makeSharedWithControlBlock<RegRefExprNode, AstNodeControlBlock<RegRefExprNode>>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, conditionReg, conditionType).castTo<ExprNode>())) {
 							return genOutOfMemoryCompError();
 						}
 
@@ -658,16 +658,16 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 
 						peff::SharedPtr<BoolTypeNameNode> boolTypeName;
 
-						if (!(boolTypeName = peff::makeSharedWithControlBlock<BoolTypeNameNode, AstNodeControlBlock<BoolTypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document)))
+						if (!(boolTypeName = peff::makeSharedWithControlBlock<BoolTypeNameNode, AstNodeControlBlock<BoolTypeNameNode>>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document)))
 							return genOutOfMemoryCompError();
 
 						uint32_t cmpResultReg;
 						{
-							CompileExprResult cmpExprResult(compileContext->allocator.get());
+							CompileExprResult cmpExprResult(compileEnv->allocator.get());
 
 							SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(cmpResultReg));
 
-							SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, compilationContext, cmpExpr.castTo<ExprNode>(), ExprEvalPurpose::RValue, boolTypeName.castTo<TypeNameNode>(), cmpResultReg, cmpExprResult));
+							SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, cmpExpr.castTo<ExprNode>(), ExprEvalPurpose::RValue, boolTypeName.castTo<TypeNameNode>(), cmpResultReg, cmpExprResult));
 						}
 
 						if (!prevCaseConditions.insert(peff::SharedPtr<ExprNode>(resultExpr)))
@@ -699,7 +699,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 					} else {
 						peff::SharedPtr<TypeNameNode> resultExprType;
 
-						SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileContext, compilationContext, curCase->condition, resultExprType));
+						SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileEnv, compilationContext, curCase->condition, resultExprType));
 
 						if (!resultExprType) {
 							return CompilationError(curCase->condition->tokenRange, CompilationErrorKind::MismatchedSwitchCaseConditionType);
@@ -714,7 +714,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 
 						peff::SharedPtr<BinaryExprNode> cmpExpr;
 
-						if (!(cmpExpr = peff::makeSharedWithControlBlock<BinaryExprNode, AstNodeControlBlock<BinaryExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+						if (!(cmpExpr = peff::makeSharedWithControlBlock<BinaryExprNode, AstNodeControlBlock<BinaryExprNode>>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
 							return genOutOfMemoryCompError();
 						}
 
@@ -722,7 +722,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 
 						cmpExpr->tokenRange = curCase->condition->tokenRange;
 
-						if (!(cmpExpr->lhs = peff::makeSharedWithControlBlock<RegRefExprNode, AstNodeControlBlock<RegRefExprNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, conditionReg, conditionType).castTo<ExprNode>())) {
+						if (!(cmpExpr->lhs = peff::makeSharedWithControlBlock<RegRefExprNode, AstNodeControlBlock<RegRefExprNode>>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, conditionReg, conditionType).castTo<ExprNode>())) {
 							return genOutOfMemoryCompError();
 						}
 
@@ -730,16 +730,16 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 
 						peff::SharedPtr<BoolTypeNameNode> boolTypeName;
 
-						if (!(boolTypeName = peff::makeSharedWithControlBlock<BoolTypeNameNode, AstNodeControlBlock<BoolTypeNameNode>>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document)))
+						if (!(boolTypeName = peff::makeSharedWithControlBlock<BoolTypeNameNode, AstNodeControlBlock<BoolTypeNameNode>>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document)))
 							return genOutOfMemoryCompError();
 
 						uint32_t cmpResultReg;
 						{
-							CompileExprResult cmpExprResult(compileContext->allocator.get());
+							CompileExprResult cmpExprResult(compileEnv->allocator.get());
 
 							SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(cmpResultReg));
 
-							SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, compilationContext, cmpExpr.castTo<ExprNode>(), ExprEvalPurpose::RValue, boolTypeName.castTo<TypeNameNode>(), cmpResultReg, cmpExprResult));
+							SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, cmpExpr.castTo<ExprNode>(), ExprEvalPurpose::RValue, boolTypeName.castTo<TypeNameNode>(), cmpResultReg, cmpExprResult));
 						}
 
 						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::JT, UINT32_MAX, { slake::Value(slake::ValueType::Label, evalValueLabel), slake::Value(slake::ValueType::RegRef, cmpResultReg) }));
@@ -761,7 +761,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 					continue;
 				}
 
-				SLKC_RETURN_IF_COMP_ERROR(compileStmt(compileContext, compilationContext, curStmt));
+				SLKC_RETURN_IF_COMP_ERROR(compileStmt(compileEnv, compilationContext, curStmt));
 			}
 
 			compilationContext->setLabelOffset(breakLabel, compilationContext->getCurInsOff());
@@ -784,7 +784,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 			});
 
 			for (size_t i = 0; i < s->body.size(); ++i) {
-				SLKC_RETURN_IF_COMP_ERROR(compileStmt(compileContext, compilationContext, s->body.at(i)));
+				SLKC_RETURN_IF_COMP_ERROR(compileStmt(compileEnv, compilationContext, s->body.at(i)));
 			}
 
 			SLKC_RETURN_IF_COMP_ERROR(

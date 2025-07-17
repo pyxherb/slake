@@ -14,7 +14,7 @@ namespace slkc {
 		}
 	};
 
-	struct DecompileContext {
+	struct DecompileEnv {
 		size_t indentLevel = 0;
 	};
 

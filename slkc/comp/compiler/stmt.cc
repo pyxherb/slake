@@ -596,7 +596,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 					return genOutOfMemoryCompError();
 			}
 
-			peff::ScopeGuard restoreConstraintsGuard([&involvedGenericParams, &originalConstraints]() {
+			peff::ScopeGuard restoreConstraintsGuard([&involvedGenericParams, &originalConstraints]() noexcept {
 				for (size_t i = 0; i < involvedGenericParams.size(); ++i) {
 					involvedGenericParams.at(i)->genericConstraint = std::move(originalConstraints.at(i));
 				}

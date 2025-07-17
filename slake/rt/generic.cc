@@ -419,42 +419,26 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(const Membe
 					FnObject *value = (FnObject *)v;
 
 					if (i.context->mappedObject == value) {
-						FnOverloadingObject *matchedOverloading = nullptr, *matchedSpecializedOverloading = nullptr;
+						//
+						// We expect there's only one overloading can be instantiated.
+						// Uninstantiatable overloadings will be discarded.
+						//
+						FnOverloadingObject *matchedOverloading = nullptr;
 
-						for (auto j : value->overloadings) {
-							if (j->genericParams.size() != i.context->genericArgs->size()) {
-								continue;
-							}
-
-							assert(i.context->genericArgs->size() == j->specializationArgs.size());
-
-							if (j->specializationArgs.size()) {
-								for (size_t k = 0; k < j->specializationArgs.size(); ++k) {
-									auto &curType = j->specializationArgs.at(k);
-
-									if (curType.typeId == TypeId::GenericArg)
-										throw std::runtime_error("Specialization argument must be deterministic");
-
-									SLAKE_RETURN_IF_EXCEPT(curType.loadDeferredType(this));
-									if (curType != i.context->genericArgs->at(k)) {
-										goto specializationArgsMismatched;
-									}
-								}
-
-								SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(dispatcher, j, i.context.get()));
-								matchedSpecializedOverloading = j;
+						for (auto &i : value->overloadings) {
+							if (i->genericParams.size() == instantiationContext->genericArgs->size()) {
+								matchedOverloading = i;
 								break;
-							} else {
-								SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(dispatcher, j, i.context.get()));
-								matchedOverloading = j;
 							}
-
-						specializationArgsMismatched:;
 						}
 
-						if (!value->overloadings.insert(
-								matchedSpecializedOverloading ? std::move(matchedSpecializedOverloading) : std::move(matchedOverloading)))
-							return OutOfMemoryError::alloc();
+						value->overloadings.clear();
+
+						if (matchedOverloading) {
+							_instantiateGenericObject(dispatcher, matchedOverloading, instantiationContext);
+							if(!value->overloadings.insert(+matchedOverloading))
+								return OutOfMemoryError::alloc();
+						}
 					} else {
 						for (auto j : value->overloadings) {
 							SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(dispatcher, j, i.context.get()));

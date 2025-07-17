@@ -105,7 +105,6 @@ SLAKE_API FnOverloadingObject::FnOverloadingObject(
 	  fnObject(fnObject),
 	  genericParams(selfAllocator),
 	  mappedGenericArgs(selfAllocator),
-	  specializationArgs(selfAllocator),
 	  paramTypes(selfAllocator),
 	  returnType({ TypeId::Void }) {
 }
@@ -114,8 +113,7 @@ SLAKE_API FnOverloadingObject::FnOverloadingObject(const FnOverloadingObject &ot
 	: Object(other, allocator),
 	  genericParams(allocator),
 	  mappedGenericArgs(allocator),
-	  paramTypes(allocator),
-	  specializationArgs(allocator) {
+	  paramTypes(allocator) {
 	fnObject = other.fnObject;
 
 	access = other.access;
@@ -156,8 +154,6 @@ SLAKE_API void FnOverloadingObject::replaceAllocator(peff::Alloc *allocator) noe
 	for (auto i : mappedGenericArgs) {
 		i.first.replaceAllocator(allocator);
 	}
-
-	specializationArgs.replaceAllocator(allocator);
 
 	paramTypes.replaceAllocator(allocator);
 }

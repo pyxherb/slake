@@ -79,8 +79,6 @@ namespace slake {
 		GenericParamList genericParams;
 		peff::HashMap<peff::String, Type> mappedGenericArgs;
 
-		GenericArgList specializationArgs;
-
 		peff::DynArray<Type> paramTypes;
 		Type returnType;
 

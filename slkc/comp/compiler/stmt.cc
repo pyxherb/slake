@@ -538,8 +538,6 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 		case StmtKind::With: {
 			peff::SharedPtr<WithStmtNode> s = stmt.castTo<WithStmtNode>();
 
-			peff::SharedPtr<MemberNode> m;
-
 			peff::SharedPtr<CustomTypeNameNode> tn;
 
 			if (!(tn = peff::makeSharedWithControlBlock<CustomTypeNameNode, AstNodeControlBlock<CustomTypeNameNode>>(
@@ -547,6 +545,10 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 					  compileEnv->allocator.get(),
 					  compileEnv->document)))
 				return genOutOfMemoryCompError();
+
+			peff::DynArray<peff::SharedPtr<GenericParamNode>> involvedGenericParams(compileEnv->allocator.get());
+
+			peff::SharedPtr<MemberNode> m;
 
 			for (auto &i : s->constraints) {
 				tn->idRefPtr.reset();
@@ -571,9 +573,37 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 
 				SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(compileEnv->document, tn, m));
 
+				if (!m)
+					return CompilationError(tn->tokenRange, CompilationErrorKind::ExpectingTypeName);
+
 				if (AstNodeType::GenericParam != m->astNodeType) {
 					return CompilationError(tn->tokenRange, CompilationErrorKind::TypeIsNotSubstitutable);
 				}
+
+				if (!involvedGenericParams.pushBack(m.castTo<GenericParamNode>()))
+					return genOutOfMemoryCompError();
+			}
+			
+			peff::DynArray<GenericConstraintPtr> originalConstraints(compileEnv->allocator.get());
+
+			for (auto& i : involvedGenericParams) {
+				GenericConstraintPtr constraint;
+
+				if (!(constraint = duplicateGenericConstraint(compileEnv->allocator.get(), i->genericConstraint.get())))
+					return genOutOfMemoryCompError();
+
+				if (!(originalConstraints.pushBack(std::move(constraint))))
+					return genOutOfMemoryCompError();
+			}
+
+			peff::ScopeGuard restoreConstraintsGuard([&involvedGenericParams, &originalConstraints]() {
+				for (size_t i = 0; i < involvedGenericParams.size(); ++i) {
+					involvedGenericParams.at(i)->genericConstraint = std::move(originalConstraints.at(i));
+				}
+			});
+
+			for (size_t i = 0; i < involvedGenericParams.size(); ++i) {
+				// TODO: Replace the base type and add the additional implemented types.
 			}
 			break;
 		}

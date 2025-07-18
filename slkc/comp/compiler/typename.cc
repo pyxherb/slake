@@ -712,6 +712,72 @@ SLKC_API std::optional<CompilationError> slkc::isTypeConvertible(
 	return {};
 }
 
+SLKC_API std::optional<CompilationError> slkc::_isTypeNameParamListTypeNameTree(
+	peff::SharedPtr<TypeNameNode> type,
+	bool &whetherOut) {
+	if (!type) {
+		whetherOut = false;
+		return {};
+	}
+
+	switch (type->typeNameKind) {
+		case TypeNameKind::Unpacking: {
+			whetherOut = true;
+			break;
+		}
+		case TypeNameKind::Array: {
+			auto t = type.castTo<ArrayTypeNameNode>();
+
+			SLKC_RETURN_IF_COMP_ERROR(_isTypeNameParamListTypeNameTree(t->elementType, whetherOut));
+			if (whetherOut)
+				return {};
+
+			break;
+		}
+		case TypeNameKind::Ref: {
+			auto t = type.castTo<RefTypeNameNode>();
+
+			SLKC_RETURN_IF_COMP_ERROR(_isTypeNameParamListTypeNameTree(t->referencedType, whetherOut));
+			if (whetherOut)
+				return {};
+
+			break;
+		}
+		case TypeNameKind::TempRef: {
+			auto t = type.castTo<TempRefTypeNameNode>();
+
+			SLKC_RETURN_IF_COMP_ERROR(_isTypeNameParamListTypeNameTree(t->referencedType, whetherOut));
+			if (whetherOut)
+				return {};
+
+			break;
+		}
+		case TypeNameKind::Fn: {
+			auto t = type.castTo<FnTypeNameNode>();
+
+			SLKC_RETURN_IF_COMP_ERROR(_isTypeNameParamListTypeNameTree(t->returnType, whetherOut));
+			if (whetherOut)
+				return {};
+
+			for (auto &i : t->paramTypes) {
+				SLKC_RETURN_IF_COMP_ERROR(_isTypeNameParamListTypeNameTree(i, whetherOut));
+				if (whetherOut)
+					return {};
+			}
+
+			SLKC_RETURN_IF_COMP_ERROR(_isTypeNameParamListTypeNameTree(t->thisType, whetherOut));
+			if (whetherOut)
+				return {};
+
+			break;
+		}
+		default:
+			break;
+	}
+
+	return {};
+}
+
 SLKC_API std::optional<CompilationError> slkc::_doExpandParamListTypeNameTree(
 	peff::SharedPtr<TypeNameNode> &type) {
 	if (!type) {
@@ -768,6 +834,15 @@ SLKC_API std::optional<CompilationError> slkc::simplifyParamListTypeNameTree(
 	peff::SharedPtr<TypeNameNode> type,
 	peff::Alloc *allocator,
 	peff::SharedPtr<TypeNameNode> &typeNameOut) {
+	bool b;
+
+	SLKC_RETURN_IF_COMP_ERROR(_isTypeNameParamListTypeNameTree(type, b));
+
+	if (!b) {
+		typeNameOut = type;
+		return {};
+	}
+
 	peff::SharedPtr<TypeNameNode> duplicatedType = type->duplicate<TypeNameNode>(allocator);
 
 	if (!duplicatedType) {
@@ -781,7 +856,81 @@ SLKC_API std::optional<CompilationError> slkc::simplifyParamListTypeNameTree(
 	return {};
 }
 
-[[nodiscard]] SLKC_API std::optional<CompilationError> slkc::_doExpandGenericParamFacadeTypeNameTree(
+SLKC_API std::optional<CompilationError> slkc::_isTypeNameGenericParamFacade(
+	peff::SharedPtr<TypeNameNode> type,
+	bool& whetherOut) {
+	if (!type) {
+		whetherOut = false;
+		return {};
+	}
+
+	switch (type->typeNameKind) {
+		case TypeNameKind::Custom: {
+			peff::SharedPtr<TypeNameNode> t;
+
+			SLKC_RETURN_IF_COMP_ERROR(resolveBaseOverridenCustomTypeName(type->document->sharedFromThis(), type.castTo<CustomTypeNameNode>(), t));
+
+			if (t) {
+				whetherOut = true;
+				return {};
+			}
+			break;
+		}
+		case TypeNameKind::Array: {
+			auto t = type.castTo<ArrayTypeNameNode>();
+
+			SLKC_RETURN_IF_COMP_ERROR(_isTypeNameGenericParamFacade(t->elementType, whetherOut));
+			if (whetherOut)
+				return {};
+
+			break;
+		}
+		case TypeNameKind::Ref: {
+			auto t = type.castTo<RefTypeNameNode>();
+
+			SLKC_RETURN_IF_COMP_ERROR(_isTypeNameGenericParamFacade(t->referencedType, whetherOut));
+			if (whetherOut)
+				return {};
+
+			break;
+		}
+		case TypeNameKind::TempRef: {
+			auto t = type.castTo<TempRefTypeNameNode>();
+
+			SLKC_RETURN_IF_COMP_ERROR(_isTypeNameGenericParamFacade(t->referencedType, whetherOut));
+			if (whetherOut)
+				return {};
+
+			break;
+		}
+		case TypeNameKind::Fn: {
+			auto t = type.castTo<FnTypeNameNode>();
+
+			SLKC_RETURN_IF_COMP_ERROR(_isTypeNameGenericParamFacade(t->returnType, whetherOut));
+			if (whetherOut)
+				return {};
+
+			for (auto &i : t->paramTypes) {
+				SLKC_RETURN_IF_COMP_ERROR(_isTypeNameGenericParamFacade(i, whetherOut));
+				if (whetherOut)
+					return {};
+			}
+
+			SLKC_RETURN_IF_COMP_ERROR(_isTypeNameGenericParamFacade(t->thisType, whetherOut));
+			if (whetherOut)
+				return {};
+
+			break;
+		}
+		default:
+			break;
+	}
+
+	whetherOut = false;
+	return {};
+}
+
+SLKC_API std::optional<CompilationError> slkc::_doExpandGenericParamFacadeTypeNameTree(
 	peff::SharedPtr<TypeNameNode> &type) {
 	if (!type) {
 		return {};
@@ -789,7 +938,12 @@ SLKC_API std::optional<CompilationError> slkc::simplifyParamListTypeNameTree(
 
 	switch (type->typeNameKind) {
 		case TypeNameKind::Custom: {
-			SLKC_RETURN_IF_COMP_ERROR(resolveBaseOverridenCustomTypeName(type->document->sharedFromThis(), type.castTo<CustomTypeNameNode>(), type));
+			peff::SharedPtr<TypeNameNode> t;
+
+			SLKC_RETURN_IF_COMP_ERROR(resolveBaseOverridenCustomTypeName(type->document->sharedFromThis(), type.castTo<CustomTypeNameNode>(), t));
+
+			if (t)
+				type = t;
 			break;
 		}
 		case TypeNameKind::Array: {
@@ -837,6 +991,15 @@ SLKC_API std::optional<CompilationError> slkc::simplifyParamListTypeNameTree(
 	peff::SharedPtr<TypeNameNode> type,
 	peff::Alloc* allocator,
 	peff::SharedPtr<TypeNameNode> &typeNameOut) {
+	bool b;
+
+	SLKC_RETURN_IF_COMP_ERROR(_isTypeNameGenericParamFacade(type, b));
+
+	if (!b) {
+		typeNameOut = type;
+		return {};
+	}
+
 	peff::SharedPtr<TypeNameNode> duplicatedType = type->duplicate<TypeNameNode>(allocator);
 
 	if (!duplicatedType) {

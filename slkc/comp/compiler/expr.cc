@@ -355,8 +355,6 @@ static std::optional<CompilationError> _determineNodeType(CompileEnvironment *co
 
 	SLKC_RETURN_IF_COMP_ERROR(simplifyParamListTypeNameTree(typeNameOut, compileEnv->allocator.get(), typeNameOut));
 
-	SLKC_RETURN_IF_COMP_ERROR(simplifyGenericParamFacadeTypeNameTree(typeNameOut, compileEnv->allocator.get(), typeNameOut));
-
 	return {};
 };
 
@@ -1763,6 +1761,8 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 		default:
 			std::terminate();
 	}
+
+	SLKC_RETURN_IF_COMP_ERROR(simplifyGenericParamFacadeTypeNameTree(resultOut.evaluatedType, compileEnv->allocator.get(), resultOut.evaluatedType));
 
 	return {};
 }

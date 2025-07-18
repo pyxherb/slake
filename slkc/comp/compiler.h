@@ -426,6 +426,9 @@ namespace slkc {
 		bool isSealed,
 		bool &whetherOut);
 
+	[[nodiscard]] SLKC_API std::optional<CompilationError> _isTypeNameParamListTypeNameTree(
+		peff::SharedPtr<TypeNameNode> type,
+		bool &whetherOut);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> _doExpandParamListTypeNameTree(
 		peff::SharedPtr<TypeNameNode> &type);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> simplifyParamListTypeNameTree(
@@ -433,6 +436,9 @@ namespace slkc {
 		peff::Alloc *allocator,
 		peff::SharedPtr<TypeNameNode> &typeNameOut);
 
+	[[nodiscard]] SLKC_API std::optional<CompilationError> _isTypeNameGenericParamFacade(
+		peff::SharedPtr<TypeNameNode> type,
+		bool &whetherOut);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> _doExpandGenericParamFacadeTypeNameTree(
 		peff::SharedPtr<TypeNameNode> &type);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> simplifyGenericParamFacadeTypeNameTree(

@@ -666,6 +666,61 @@ resolved:
 	return {};
 }
 
+[[nodiscard]] SLKC_API
+	std::optional<CompilationError>
+	slkc::resolveBaseOverridenCustomTypeName(
+		peff::SharedPtr<Document> document,
+		const peff::SharedPtr<CustomTypeNameNode>& typeName,
+		peff::SharedPtr<TypeNameNode>& typeNameOut) {
+	peff::SharedPtr<MemberNode> member;
+
+	SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, typeName, member, nullptr));
+
+	if (!member) {
+		typeNameOut = {};
+		return {};
+	}
+
+	switch (member->astNodeType) {
+		case AstNodeType::GenericParam: {
+			auto gp = member.castTo<GenericParamNode>();
+
+			if (gp->genericConstraint) {
+				auto &c = gp->genericConstraint;
+
+				if (c->baseType) {
+					auto bt = c->baseType;
+
+					switch (bt->typeNameKind) {
+						case TypeNameKind::I8:
+						case TypeNameKind::I16:
+						case TypeNameKind::I32:
+						case TypeNameKind::I64:
+						case TypeNameKind::ISize:
+						case TypeNameKind::U8:
+						case TypeNameKind::U16:
+						case TypeNameKind::U32:
+						case TypeNameKind::U64:
+						case TypeNameKind::USize:
+						case TypeNameKind::F32:
+						case TypeNameKind::F64:
+						case TypeNameKind::String:
+						case TypeNameKind::Bool:
+						case TypeNameKind::Any:
+						case TypeNameKind::Unpacking:
+						case TypeNameKind::Fn:
+						case TypeNameKind::Array:
+							typeNameOut = bt;
+							break;
+					}
+				}
+			}
+		}
+	}
+
+	return {};
+}
+
 SLKC_API std::optional<CompilationError> slkc::visitBaseClass(peff::SharedPtr<TypeNameNode> cls, peff::SharedPtr<ClassNode> &classOut, peff::Set<peff::SharedPtr<MemberNode>> *walkedNodes) {
 	if (cls && (cls->typeNameKind == TypeNameKind::Custom)) {
 		peff::SharedPtr<MemberNode> baseType;

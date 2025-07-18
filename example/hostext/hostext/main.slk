@@ -34,6 +34,7 @@ class InterfaceTest<T: IA + IB> {
 class TestParent<T> {
 	fn myTest(a: T, b: T) {
 		with T(i32) {
+			a + b;
 			extfns.print("T = i32\n");
 		}
 		extfns.print("Called myTest: ", a, " ", b, "\n");

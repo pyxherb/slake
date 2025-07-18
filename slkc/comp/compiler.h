@@ -371,6 +371,12 @@ namespace slkc {
 			const peff::SharedPtr<CustomTypeNameNode> &typeName,
 			peff::SharedPtr<MemberNode> &memberNodeOut,
 			peff::Set<peff::SharedPtr<MemberNode>> *walkedNodes = nullptr);
+	[[nodiscard]] SLKC_API
+		std::optional<CompilationError>
+		resolveBaseOverridenCustomTypeName(
+			peff::SharedPtr<Document> document,
+			const peff::SharedPtr<CustomTypeNameNode> &typeName,
+			peff::SharedPtr<TypeNameNode> &typeNameOut);
 
 	[[nodiscard]] SLKC_API std::optional<CompilationError> collectInvolvedInterfaces(
 		peff::SharedPtr<Document> document,
@@ -423,6 +429,13 @@ namespace slkc {
 	[[nodiscard]] SLKC_API std::optional<CompilationError> _doExpandParamListTypeNameTree(
 		peff::SharedPtr<TypeNameNode> &type);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> simplifyParamListTypeNameTree(
+		peff::SharedPtr<TypeNameNode> type,
+		peff::Alloc *allocator,
+		peff::SharedPtr<TypeNameNode> &typeNameOut);
+
+	[[nodiscard]] SLKC_API std::optional<CompilationError> _doExpandGenericParamFacadeTypeNameTree(
+		peff::SharedPtr<TypeNameNode> &type);
+	[[nodiscard]] SLKC_API std::optional<CompilationError> simplifyGenericParamFacadeTypeNameTree(
 		peff::SharedPtr<TypeNameNode> type,
 		peff::Alloc *allocator,
 		peff::SharedPtr<TypeNameNode> &typeNameOut);

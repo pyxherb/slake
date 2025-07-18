@@ -781,6 +781,75 @@ SLKC_API std::optional<CompilationError> slkc::simplifyParamListTypeNameTree(
 	return {};
 }
 
+[[nodiscard]] SLKC_API std::optional<CompilationError> slkc::_doExpandGenericParamFacadeTypeNameTree(
+	peff::SharedPtr<TypeNameNode> &type) {
+	if (!type) {
+		return {};
+	}
+
+	switch (type->typeNameKind) {
+		case TypeNameKind::Custom: {
+			SLKC_RETURN_IF_COMP_ERROR(resolveBaseOverridenCustomTypeName(type->document->sharedFromThis(), type.castTo<CustomTypeNameNode>(), type));
+			break;
+		}
+		case TypeNameKind::Array: {
+			auto t = type.castTo<ArrayTypeNameNode>();
+
+			SLKC_RETURN_IF_COMP_ERROR(_doExpandGenericParamFacadeTypeNameTree(t->elementType));
+
+			break;
+		}
+		case TypeNameKind::Ref: {
+			auto t = type.castTo<RefTypeNameNode>();
+
+			SLKC_RETURN_IF_COMP_ERROR(_doExpandGenericParamFacadeTypeNameTree(t->referencedType));
+
+			break;
+		}
+		case TypeNameKind::TempRef: {
+			auto t = type.castTo<TempRefTypeNameNode>();
+
+			SLKC_RETURN_IF_COMP_ERROR(_doExpandGenericParamFacadeTypeNameTree(t->referencedType));
+
+			break;
+		}
+		case TypeNameKind::Fn: {
+			auto t = type.castTo<FnTypeNameNode>();
+
+			SLKC_RETURN_IF_COMP_ERROR(_doExpandGenericParamFacadeTypeNameTree(t->returnType));
+
+			for (auto &i : t->paramTypes) {
+				SLKC_RETURN_IF_COMP_ERROR(_doExpandGenericParamFacadeTypeNameTree(i));
+			}
+
+			SLKC_RETURN_IF_COMP_ERROR(_doExpandGenericParamFacadeTypeNameTree(t->thisType));
+
+			break;
+		}
+		default:
+			break;
+	}
+
+	return {};
+}
+
+[[nodiscard]] SLKC_API std::optional<CompilationError> slkc::simplifyGenericParamFacadeTypeNameTree(
+	peff::SharedPtr<TypeNameNode> type,
+	peff::Alloc* allocator,
+	peff::SharedPtr<TypeNameNode> &typeNameOut) {
+	peff::SharedPtr<TypeNameNode> duplicatedType = type->duplicate<TypeNameNode>(allocator);
+
+	if (!duplicatedType) {
+		return genOutOfMemoryCompError();
+	}
+
+	SLKC_RETURN_IF_COMP_ERROR(_doExpandGenericParamFacadeTypeNameTree(duplicatedType));
+
+	typeNameOut = duplicatedType;
+
+	return {};
+}
+
 SLKC_API std::optional<CompilationError> slkc::getUnpackedTypeOf(
 	peff::SharedPtr<TypeNameNode> type,
 	peff::SharedPtr<TypeNameNode> &typeNameOut) {

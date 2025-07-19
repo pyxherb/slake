@@ -1481,12 +1481,14 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 		case ExprKind::Cast: {
 			peff::SharedPtr<CastExprNode> e = expr.castTo<CastExprNode>();
 
-			peff::SharedPtr<TypeNameNode> exprType;
+			peff::SharedPtr<TypeNameNode> exprType, targetType;
 
-			SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileEnv, compilationContext, e->source, exprType, e->targetType));
+			SLKC_RETURN_IF_COMP_ERROR(simplifyGenericParamFacadeTypeNameTree(e->targetType, compileEnv->allocator.get(), targetType));
+
+			SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileEnv, compilationContext, e->source, exprType, targetType));
 
 			bool b;
-			SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(exprType, e->targetType, false, b));
+			SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(exprType, targetType, false, b));
 
 			if (!b) {
 				return CompilationError(e->source->tokenRange, CompilationErrorKind::InvalidCast);
@@ -1494,7 +1496,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 
 			bool leftValue;
 
-			SLKC_RETURN_IF_COMP_ERROR(isLValueType(e->targetType, leftValue));
+			SLKC_RETURN_IF_COMP_ERROR(isLValueType(targetType, leftValue));
 
 			peff::SharedPtr<TypeNameNode> decayedExprType;
 
@@ -1505,7 +1507,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 			SLKC_RETURN_IF_COMP_ERROR(removeRefOfType(exprType, decayedExprType));
 
 			bool sameType;
-			SLKC_RETURN_IF_COMP_ERROR(isSameType(decayedExprType, e->targetType, sameType));
+			SLKC_RETURN_IF_COMP_ERROR(isSameType(decayedExprType, targetType, sameType));
 			if (!sameType) {
 				uint32_t idxReg;
 
@@ -1519,7 +1521,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 				}
 
 				slake::Type type;
-				SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, e->targetType, type));
+				SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, targetType, type));
 
 				SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::CAST, resultRegOut, { slake::Value(type), slake::Value(slake::ValueType::RegRef, idxReg) }));
 			} else {
@@ -1531,13 +1533,15 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 				}
 			}
 
-			resultOut.evaluatedType = e->targetType;
+			resultOut.evaluatedType = targetType;
 			break;
 		}
 		case ExprKind::Match: {
 			peff::SharedPtr<MatchExprNode> e = expr.castTo<MatchExprNode>();
 
-			peff::SharedPtr<TypeNameNode> returnType = e->returnType;
+			peff::SharedPtr<TypeNameNode> returnType;
+
+			SLKC_RETURN_IF_COMP_ERROR(simplifyGenericParamFacadeTypeNameTree(e->returnType, compileEnv->allocator.get(), returnType));
 
 			if (!returnType) {
 				if (desiredType)

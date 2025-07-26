@@ -145,7 +145,8 @@ namespace slkc {
 		SLKC_API virtual uint32_t getBlockLevel() override;
 	};
 
-	struct CompileEnvironment : public peff::RcObject {
+	struct CompileEnvironment {
+		std::atomic_size_t refCount;
 		slake::Runtime *runtime;
 		slake::HostRefHolder hostRefHolder;
 		peff::RcObjectPtr<peff::Alloc> selfAllocator, allocator;
@@ -172,7 +173,18 @@ namespace slkc {
 
 		SLKC_API virtual ~CompileEnvironment();
 
-		SLKC_API virtual void onRefZero() noexcept override;
+		SLKC_API virtual void onRefZero() noexcept;
+		SLAKE_FORCEINLINE size_t incRef() noexcept {
+			return ++refCount;
+		}
+		SLAKE_FORCEINLINE size_t decRef() noexcept {
+			if (!--refCount) {
+				onRefZero();
+				return 0;
+			}
+
+			return refCount;
+		}
 
 		SLAKE_FORCEINLINE std::optional<CompilationError> pushError(CompilationError &&error) {
 			if (!errors.pushBack(std::move(error)))

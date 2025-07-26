@@ -10,6 +10,19 @@ SLAKE_API peff::Alloc *CountablePoolAlloc::getDefaultAlloc() const noexcept {
 	return &g_countablePoolDefaultAlloc;
 }
 
+SLAKE_API size_t CountablePoolAlloc::incRef(size_t globalRc) noexcept {
+	return ++refCount;
+}
+
+SLAKE_API size_t CountablePoolAlloc::decRef(size_t globalRc) noexcept {
+	if (!--refCount) {
+		onRefZero();
+		return 0;
+	}
+
+	return refCount;
+}
+
 SLAKE_API void CountablePoolAlloc::onRefZero() noexcept {
 }
 
@@ -48,23 +61,31 @@ SLAKE_API bool CountablePoolAlloc::isReplaceable(const peff::Alloc *rhs) const n
 
 SLAKE_API GenerationalPoolAlloc slake::g_generationalPoolDefaultAlloc(nullptr, nullptr);
 
+SLAKE_API size_t GenerationalPoolAlloc::incRef(size_t globalRc) noexcept {
+	++refCount;
 #ifndef _NDEBUG
-
-SLAKE_API void GenerationalPoolAlloc::onIncRef(size_t counter) {
-	if (!recordedRefPoints.insert(+counter, nullptr)) {
+	if (!recordedRefPoints.insert(+globalRc, nullptr)) {
 		puts("Error: error adding reference point!");
 	}
+#endif
+	return refCount;
 }
 
-SLAKE_API void GenerationalPoolAlloc::onDecRef(size_t counter) {
-	if (auto it = recordedRefPoints.find(counter); it != recordedRefPoints.end()) {
-		recordedRefPoints.remove(counter);
+SLAKE_API size_t GenerationalPoolAlloc::decRef(size_t globalRc) noexcept {
+	--refCount;
+#ifndef _NDEBUG
+	if (auto it = recordedRefPoints.find(+globalRc); it != recordedRefPoints.end()) {
+		recordedRefPoints.remove(+globalRc);
 	} else {
 		std::terminate();
 	}
-}
-
 #endif
+	if (!refCount) {
+		onRefZero();
+		return 0;
+	}
+	return refCount;
+}
 
 SLAKE_API GenerationalPoolAlloc::GenerationalPoolAlloc(Runtime *runtime, peff::Alloc *upstream) : runtime(runtime), upstream(upstream)
 #ifndef _NDEBUG
@@ -260,7 +281,7 @@ SLAKE_API Runtime::~Runtime() {
 	assert(!selfAllocator);
 }
 
-SLAKE_API void Runtime::addSameKindObjectToList(Object** list, Object* object) {
+SLAKE_API void Runtime::addSameKindObjectToList(Object **list, Object *object) {
 	if (*list) {
 		assert(!(*list)->prevSameKindObject);
 		(*list)->prevSameKindObject = object;
@@ -273,7 +294,7 @@ SLAKE_API void Runtime::addSameKindObjectToList(Object** list, Object* object) {
 	*list = object;
 }
 
-SLAKE_API void Runtime::removeSameKindObjectToList(Object** list, Object* object) {
+SLAKE_API void Runtime::removeSameKindObjectToList(Object **list, Object *object) {
 	if (object->nextSameKindObject) {
 		object->nextSameKindObject->prevSameKindObject = object->prevSameKindObject;
 	}

@@ -32,8 +32,8 @@ namespace slake {
 
 		SLAKE_API CountablePoolAlloc(Runtime *runtime, peff::Alloc *upstream);
 
-		SLAKE_API virtual size_t incRef() noexcept override;
-		SLAKE_API virtual size_t decRef() noexcept override;
+		SLAKE_API virtual size_t incRef(size_t globalRc) noexcept override;
+		SLAKE_API virtual size_t decRef(size_t globalRc) noexcept override;
 
 		SLAKE_API virtual void *alloc(size_t size, size_t alignment) noexcept override;
 		SLAKE_API virtual void release(void *p, size_t size, size_t alignment) noexcept override;
@@ -48,6 +48,7 @@ namespace slake {
 	class GenerationalPoolAlloc : public peff::Alloc {
 	protected:
 		std::atomic_size_t refCount;
+		friend class Runtime;
 
 	public:
 		Runtime *runtime;
@@ -61,8 +62,8 @@ namespace slake {
 
 		SLAKE_API GenerationalPoolAlloc(Runtime *runtime, peff::Alloc *upstream);
 
-		SLAKE_API virtual size_t incRef() noexcept override;
-		SLAKE_API virtual size_t decRef() noexcept override;
+		SLAKE_API virtual size_t incRef(size_t globalRc) noexcept override;
+		SLAKE_API virtual size_t decRef(size_t globalRc) noexcept override;
 
 		SLAKE_API virtual void *alloc(size_t size, size_t alignment) noexcept override;
 		SLAKE_API virtual void release(void *p, size_t size, size_t alignment) noexcept override;
@@ -312,8 +313,9 @@ namespace slake {
 		SLAKE_API Runtime(peff::Alloc *selfAllocator, peff::Alloc *upstream, RuntimeFlags flags = 0);
 		SLAKE_API virtual ~Runtime();
 
-		class GenericInstantiationContext final : public peff::RcObject {
+		class GenericInstantiationContext final {
 		public:
+			std::atomic_size_t refCount;
 			peff::RcObjectPtr<peff::Alloc> selfAllocator;
 			const Object *mappedObject;
 			const GenericArgList *genericArgs;
@@ -331,7 +333,20 @@ namespace slake {
 				  mappedGenericArgs(std::move(mappedGenericArgs)) {
 			}
 
-			SLAKE_FORCEINLINE void onRefZero() noexcept override {
+			SLAKE_FORCEINLINE size_t incRef(size_t globalRc) noexcept {
+				return ++refCount;
+			}
+
+			SLAKE_FORCEINLINE size_t decRef(size_t globalRc) noexcept {
+				if (!--refCount) {
+					onRefZero();
+					return 0;
+				}
+
+				return refCount;
+			}
+
+			SLAKE_FORCEINLINE void onRefZero() noexcept {
 				peff::destroyAndRelease<GenericInstantiationContext>(selfAllocator.get(), this, alignof(GenericInstantiationContext));
 			}
 		};

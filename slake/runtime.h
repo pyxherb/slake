@@ -21,6 +21,9 @@
 
 namespace slake {
 	class CountablePoolAlloc : public peff::Alloc {
+	protected:
+		std::atomic_size_t refCount;
+
 	public:
 		Runtime *runtime;
 
@@ -29,24 +32,22 @@ namespace slake {
 
 		SLAKE_API CountablePoolAlloc(Runtime *runtime, peff::Alloc *upstream);
 
+		SLAKE_API virtual size_t incRef() noexcept override;
+		SLAKE_API virtual size_t decRef() noexcept override;
+
 		SLAKE_API virtual void *alloc(size_t size, size_t alignment) noexcept override;
 		SLAKE_API virtual void release(void *p, size_t size, size_t alignment) noexcept override;
 
 		SLAKE_API virtual bool isReplaceable(const peff::Alloc *rhs) const noexcept override;
 
 		SLAKE_API virtual peff::Alloc *getDefaultAlloc() const noexcept override;
-		SLAKE_API virtual void onRefZero() noexcept override;
+		SLAKE_API virtual void onRefZero() noexcept;
 	};
 	SLAKE_API extern CountablePoolAlloc g_countablePoolDefaultAlloc;
 
 	class GenerationalPoolAlloc : public peff::Alloc {
 	protected:
-#ifndef _NDEBUG
-
-		SLAKE_API virtual void onIncRef(size_t counter) override;
-		SLAKE_API virtual void onDecRef(size_t counter) override;
-
-#endif
+		std::atomic_size_t refCount;
 
 	public:
 		Runtime *runtime;
@@ -60,13 +61,16 @@ namespace slake {
 
 		SLAKE_API GenerationalPoolAlloc(Runtime *runtime, peff::Alloc *upstream);
 
+		SLAKE_API virtual size_t incRef() noexcept override;
+		SLAKE_API virtual size_t decRef() noexcept override;
+
 		SLAKE_API virtual void *alloc(size_t size, size_t alignment) noexcept override;
 		SLAKE_API virtual void release(void *p, size_t size, size_t alignment) noexcept override;
 
 		SLAKE_API virtual bool isReplaceable(const peff::Alloc *rhs) const noexcept override;
 
 		SLAKE_API virtual peff::Alloc *getDefaultAlloc() const noexcept override;
-		SLAKE_API virtual void onRefZero() noexcept override;
+		SLAKE_API virtual void onRefZero() noexcept;
 	};
 	SLAKE_API extern GenerationalPoolAlloc g_generationalPoolDefaultAlloc;
 

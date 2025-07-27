@@ -92,9 +92,6 @@ namespace slake {
 
 		OPCODE_MAX
 	};
-
-	SLAKE_API extern const std::map<Opcode, std::string> OPCODE_MNEMONIC_MAP;
-	SLAKE_API extern const std::map<std::string, Opcode> MNEMONIC_OPCODE_MAP;
 }
 
 #endif

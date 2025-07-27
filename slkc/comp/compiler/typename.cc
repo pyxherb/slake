@@ -1136,7 +1136,7 @@ SLKC_API std::optional<CompilationError> slkc::fnToTypeName(
 	}
 
 	for (size_t i = 0; i < tn->paramTypes.size(); ++i) {
-		tn->paramTypes.at(i) = fn->params.at(i)->type;
+		SLKC_RETURN_IF_COMP_ERROR(simplifyGenericParamFacadeTypeNameTree(fn->params.at(i)->type, compileEnv->allocator.get(), tn->paramTypes.at(i)));
 	}
 
 	if (fn->fnFlags & FN_VARG) {

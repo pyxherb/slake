@@ -5,9 +5,9 @@ using namespace slkc;
 static std::optional<CompilationError> _compileSimpleRValueUnaryExpr(
 	CompileEnvironment *compileEnv,
 	CompilationContext *compilationContext,
-	peff::SharedPtr<UnaryExprNode> expr,
+	AstNodePtr<UnaryExprNode> expr,
 	ExprEvalPurpose evalPurpose,
-	peff::SharedPtr<TypeNameNode> desiredType,
+	AstNodePtr<TypeNameNode> desiredType,
 	uint32_t resultRegOut,
 	CompileExprResult &resultOut,
 	slake::Opcode opcode) {
@@ -47,11 +47,11 @@ static std::optional<CompilationError> _compileSimpleRValueUnaryExpr(
 SLKC_API std::optional<CompilationError> slkc::compileUnaryExpr(
 	CompileEnvironment *compileEnv,
 	CompilationContext *compilationContext,
-	peff::SharedPtr<UnaryExprNode> expr,
+	AstNodePtr<UnaryExprNode> expr,
 	ExprEvalPurpose evalPurpose,
 	uint32_t resultRegOut,
 	CompileExprResult &resultOut) {
-	peff::SharedPtr<TypeNameNode> operandType, decayedOperandType;
+	AstNodePtr<TypeNameNode> operandType, decayedOperandType;
 
 	SLKC_RETURN_IF_COMP_ERROR(
 		evalExprType(compileEnv, compilationContext, expr->operand, operandType));
@@ -117,7 +117,7 @@ SLKC_API std::optional<CompilationError> slkc::compileUnaryExpr(
 				case UnaryOp::Unpacking:
 					switch (evalPurpose) {
 						case ExprEvalPurpose::EvalType: {
-							peff::SharedPtr<TypeNameNode> unpackedType;
+							AstNodePtr<TypeNameNode> unpackedType;
 
 							SLKC_RETURN_IF_COMP_ERROR(getUnpackedTypeOf(decayedOperandType, unpackedType));
 
@@ -141,7 +141,7 @@ SLKC_API std::optional<CompilationError> slkc::compileUnaryExpr(
 
 							SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, expr->operand, ExprEvalPurpose::Unpacking, {}, resultRegOut, result));
 
-							peff::SharedPtr<TypeNameNode> unpackedType;
+							AstNodePtr<TypeNameNode> unpackedType;
 
 							SLKC_RETURN_IF_COMP_ERROR(getUnpackedTypeOf(result.evaluatedType, unpackedType));
 

@@ -23,7 +23,7 @@ SLKC_API void Document::_doClearDeferredDestructibleAstNodes() {
 	}
 }
 
-SLAKE_API bool TypeNameListCmp::operator()(const peff::DynArray<peff::SharedPtr<TypeNameNode>> &lhs, const peff::DynArray<peff::SharedPtr<TypeNameNode>> &rhs) const noexcept {
+SLAKE_API bool TypeNameListCmp::operator()(const peff::DynArray<AstNodePtr<TypeNameNode>> &lhs, const peff::DynArray<AstNodePtr<TypeNameNode>> &rhs) const noexcept {
 	int result;
 	// Note that we just need one critical error to notify the compiler
 	// that we have encountered errors that will force the compilation

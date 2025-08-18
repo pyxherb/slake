@@ -3,13 +3,13 @@
 
 using namespace slkc;
 
-SLKC_API std::optional<SyntaxError> Parser::parseTypeName(peff::SharedPtr<TypeNameNode> &typeNameOut, bool withCircumfixes) {
+SLKC_API std::optional<SyntaxError> Parser::parseTypeName(AstNodePtr<TypeNameNode> &typeNameOut, bool withCircumfixes) {
 	std::optional<SyntaxError> syntaxError;
 	Token *t = peekToken();
 
 	switch (t->tokenId) {
 		case TokenId::VarArg:
-			if (!(typeNameOut = peff::makeSharedWithControlBlock<UnpackingTypeNameNode, AstNodeControlBlock<UnpackingTypeNameNode>>(
+			if (!(typeNameOut = makeAstNode<UnpackingTypeNameNode>(
 					  resourceAllocator.get(),
 					  resourceAllocator.get(), document)
 						.castTo<TypeNameNode>()))
@@ -21,7 +21,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseTypeName(peff::SharedPtr<TypeNa
 				return syntaxError;
 			break;
 		case TokenId::VoidTypeName:
-			if (!(typeNameOut = peff::makeSharedWithControlBlock<VoidTypeNameNode, AstNodeControlBlock<VoidTypeNameNode>>(
+			if (!(typeNameOut = makeAstNode<VoidTypeNameNode>(
 					  resourceAllocator.get(),
 					  resourceAllocator.get(), document)
 						.castTo<TypeNameNode>()))
@@ -102,7 +102,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseTypeName(peff::SharedPtr<TypeNa
 			nextToken();
 			break;
 		case TokenId::ISizeTypeName:
-			if (!(typeNameOut = peff::makeSharedWithControlBlock<ISizeTypeNameNode, AstNodeControlBlock<ISizeTypeNameNode>>(
+			if (!(typeNameOut = makeAstNode<ISizeTypeNameNode>(
 					  resourceAllocator.get(),
 					  resourceAllocator.get(), document)
 						.castTo<TypeNameNode>()))
@@ -110,7 +110,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseTypeName(peff::SharedPtr<TypeNa
 			typeNameOut->tokenRange = TokenRange{ t->index };
 			break;
 		case TokenId::USizeTypeName:
-			if (!(typeNameOut = peff::makeSharedWithControlBlock<USizeTypeNameNode, AstNodeControlBlock<USizeTypeNameNode>>(
+			if (!(typeNameOut = makeAstNode<USizeTypeNameNode>(
 					  resourceAllocator.get(),
 					  resourceAllocator.get(), document)
 						.castTo<TypeNameNode>()))
@@ -137,7 +137,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseTypeName(peff::SharedPtr<TypeNa
 			nextToken();
 			break;
 		case TokenId::BoolTypeName:
-			if (!(typeNameOut = peff::makeSharedWithControlBlock<BoolTypeNameNode, AstNodeControlBlock<BoolTypeNameNode>>(
+			if (!(typeNameOut = makeAstNode<BoolTypeNameNode>(
 					  resourceAllocator.get(),
 					  resourceAllocator.get(), document)
 						.castTo<TypeNameNode>()))
@@ -146,7 +146,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseTypeName(peff::SharedPtr<TypeNa
 			nextToken();
 			break;
 		case TokenId::StringTypeName:
-			if (!(typeNameOut = peff::makeSharedWithControlBlock<StringTypeNameNode, AstNodeControlBlock<StringTypeNameNode>>(
+			if (!(typeNameOut = makeAstNode<StringTypeNameNode>(
 					  resourceAllocator.get(),
 					  resourceAllocator.get(), document)
 						.castTo<TypeNameNode>()))
@@ -155,9 +155,9 @@ SLKC_API std::optional<SyntaxError> Parser::parseTypeName(peff::SharedPtr<TypeNa
 			nextToken();
 			break;
 		case TokenId::LParenthese: {
-			peff::SharedPtr<ParamTypeListTypeNameNode> tn;
+			AstNodePtr<ParamTypeListTypeNameNode> tn;
 
-			if (!(tn = peff::makeSharedWithControlBlock<ParamTypeListTypeNameNode, AstNodeControlBlock<ParamTypeListTypeNameNode>>(
+			if (!(tn = makeAstNode<ParamTypeListTypeNameNode>(
 					  resourceAllocator.get(),
 					  resourceAllocator.get(), document)))
 				return genOutOfMemoryError();
@@ -182,7 +182,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseTypeName(peff::SharedPtr<TypeNa
 					break;
 				}
 
-				peff::SharedPtr<TypeNameNode> paramType;
+				AstNodePtr<TypeNameNode> paramType;
 
 				if (auto e = parseTypeName(paramType); e)
 					return e;
@@ -208,8 +208,8 @@ SLKC_API std::optional<SyntaxError> Parser::parseTypeName(peff::SharedPtr<TypeNa
 			break;
 		}
 		case TokenId::FnKeyword: {
-			peff::SharedPtr<FnTypeNameNode> tn;
-			if (!(tn = peff::makeSharedWithControlBlock<FnTypeNameNode, AstNodeControlBlock<FnTypeNameNode>>(
+			AstNodePtr<FnTypeNameNode> tn;
+			if (!(tn = makeAstNode<FnTypeNameNode>(
 					  resourceAllocator.get(),
 					  resourceAllocator.get(), document)))
 				return genOutOfMemoryError();
@@ -228,7 +228,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseTypeName(peff::SharedPtr<TypeNa
 					break;
 				}
 
-				peff::SharedPtr<TypeNameNode> paramType;
+				AstNodePtr<TypeNameNode> paramType;
 
 				if (auto e = parseTypeName(paramType); e)
 					return e;
@@ -273,9 +273,9 @@ SLKC_API std::optional<SyntaxError> Parser::parseTypeName(peff::SharedPtr<TypeNa
 			if ((syntaxError = parseIdRef(id)))
 				return syntaxError;
 
-			peff::SharedPtr<CustomTypeNameNode> tn;
+			AstNodePtr<CustomTypeNameNode> tn;
 
-			if (!(tn = peff::makeSharedWithControlBlock<CustomTypeNameNode, AstNodeControlBlock<CustomTypeNameNode>>(
+			if (!(tn = makeAstNode<CustomTypeNameNode>(
 					  resourceAllocator.get(),
 					  resourceAllocator.get(),
 					  document)))
@@ -306,7 +306,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseTypeName(peff::SharedPtr<TypeNa
 
 					nextToken();
 
-					if (!(typeNameOut = peff::makeSharedWithControlBlock<ArrayTypeNameNode, AstNodeControlBlock<ArrayTypeNameNode>>(
+					if (!(typeNameOut = makeAstNode<ArrayTypeNameNode>(
 							  resourceAllocator.get(),
 							  resourceAllocator.get(),
 							  document,
@@ -325,7 +325,7 @@ end:
 	if (withCircumfixes) {
 		if ((t = peekToken())->tokenId == TokenId::AndOp) {
 			nextToken();
-			if (!(typeNameOut = peff::makeSharedWithControlBlock<RefTypeNameNode, AstNodeControlBlock<RefTypeNameNode>>(
+			if (!(typeNameOut = makeAstNode<RefTypeNameNode>(
 					  resourceAllocator.get(),
 					  resourceAllocator.get(),
 					  document,
@@ -334,7 +334,7 @@ end:
 				return genOutOfMemoryError();
 		} else if ((t = peekToken())->tokenId == TokenId::LAndOp) {
 			nextToken();
-			if (!(typeNameOut = peff::makeSharedWithControlBlock<TempRefTypeNameNode, AstNodeControlBlock<TempRefTypeNameNode>>(
+			if (!(typeNameOut = makeAstNode<TempRefTypeNameNode>(
 					  resourceAllocator.get(),
 					  resourceAllocator.get(),
 					  document,

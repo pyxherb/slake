@@ -78,19 +78,19 @@ namespace slkc {
 	class FnOverloadingNode;
 
 	struct IncompatibleOperandErrorExData {
-		peff::SharedPtr<TypeNameNode> desiredType;
+		AstNodePtr<TypeNameNode> desiredType;
 	};
 
 	struct ErrorParsingImportedModuleErrorExData {
 		std::optional<LexicalError> lexicalError;
-		peff::SharedPtr<ModuleNode> mod;
+		AstNodePtr<ModuleNode> mod;
 
 		SLAKE_FORCEINLINE ErrorParsingImportedModuleErrorExData(LexicalError &&lexicalError) : lexicalError(std::move(lexicalError)) {}
-		SLAKE_FORCEINLINE ErrorParsingImportedModuleErrorExData(peff::SharedPtr<ModuleNode> mod) : mod(mod) {}
+		SLAKE_FORCEINLINE ErrorParsingImportedModuleErrorExData(AstNodePtr<ModuleNode> mod) : mod(mod) {}
 	};
 
 	struct AbstractMethodNotImplementedErrorExData {
-		peff::SharedPtr<FnOverloadingNode> overloading;
+		AstNodePtr<FnOverloadingNode> overloading;
 	};
 
 	struct CompilationError {
@@ -176,26 +176,26 @@ namespace slkc {
 
 		SLAKE_FORCEINLINE TypeNameListCmp(Document *document) : document(document) {}
 
-		SLAKE_API bool operator()(const peff::DynArray<peff::SharedPtr<TypeNameNode>> &lhs, const peff::DynArray<peff::SharedPtr<TypeNameNode>> &rhs) const noexcept;
+		SLAKE_API bool operator()(const peff::DynArray<AstNodePtr<TypeNameNode>> &lhs, const peff::DynArray<AstNodePtr<TypeNameNode>> &rhs) const noexcept;
 	};
 
 	class MemberNode;
 
 	using GenericCacheTable =
 		peff::Map<
-			peff::DynArray<peff::SharedPtr<TypeNameNode>>,
-			peff::SharedPtr<MemberNode>,
+			peff::DynArray<AstNodePtr<TypeNameNode>>,
+			AstNodePtr<MemberNode>,
 			TypeNameListCmp>;
 
 	struct GenericInstantiationContext {
 		peff::RcObjectPtr<peff::Alloc> allocator;
-		const peff::DynArray<peff::SharedPtr<TypeNameNode>> *genericArgs;
-		peff::HashMap<std::string_view, peff::SharedPtr<TypeNameNode>> mappedGenericArgs;
-		peff::SharedPtr<MemberNode> mappedNode;
+		const peff::DynArray<AstNodePtr<TypeNameNode>> *genericArgs;
+		peff::HashMap<std::string_view, AstNodePtr<TypeNameNode>> mappedGenericArgs;
+		AstNodePtr<MemberNode> mappedNode;
 
 		SLAKE_FORCEINLINE GenericInstantiationContext(
 			peff::Alloc *allocator,
-			const peff::DynArray<peff::SharedPtr<TypeNameNode>> *genericArgs)
+			const peff::DynArray<AstNodePtr<TypeNameNode>> *genericArgs)
 			: allocator(allocator),
 			  genericArgs(genericArgs),
 			  mappedGenericArgs(allocator) {
@@ -210,7 +210,7 @@ namespace slkc {
 
 	public:
 		peff::RcObjectPtr<peff::Alloc> allocator;
-		peff::SharedPtr<ModuleNode> rootModule;
+		AstNodePtr<ModuleNode> rootModule;
 		peff::DynArray<peff::SharedPtr<ExternalModuleProvider>> externalModuleProviders;
 		peff::Map<
 			MemberNode *,
@@ -222,23 +222,23 @@ namespace slkc {
 		SLKC_API Document(peff::Alloc *allocator);
 		SLKC_API virtual ~Document();
 
-		SLKC_API std::optional<CompilationError> lookupGenericCacheTable(peff::SharedPtr<MemberNode> originalObject, GenericCacheTable *&tableOut);
+		SLKC_API std::optional<CompilationError> lookupGenericCacheTable(AstNodePtr<MemberNode> originalObject, GenericCacheTable *&tableOut);
 
 		SLKC_API std::optional<CompilationError> lookupGenericCacheTable(
-			peff::SharedPtr<MemberNode> originalObject,
+			AstNodePtr<MemberNode> originalObject,
 			const GenericCacheTable *&tableOut) const {
 			return const_cast<Document *>(this)->lookupGenericCacheTable(originalObject, const_cast<GenericCacheTable *&>(tableOut));
 		}
 
 		SLKC_API std::optional<CompilationError> lookupGenericCache(
-			peff::SharedPtr<MemberNode> originalObject,
-			const peff::DynArray<peff::SharedPtr<TypeNameNode>> &genericArgs,
-			peff::SharedPtr<MemberNode> &memberOut) const;
+			AstNodePtr<MemberNode> originalObject,
+			const peff::DynArray<AstNodePtr<TypeNameNode>> &genericArgs,
+			AstNodePtr<MemberNode> &memberOut) const;
 
 		SLKC_API std::optional<CompilationError> instantiateGenericObject(
-			peff::SharedPtr<MemberNode> originalObject,
-			const peff::DynArray<peff::SharedPtr<TypeNameNode>> &genericArgs,
-			peff::SharedPtr<MemberNode> &memberOut);
+			AstNodePtr<MemberNode> originalObject,
+			const peff::DynArray<AstNodePtr<TypeNameNode>> &genericArgs,
+			AstNodePtr<MemberNode> &memberOut);
 
 		SLAKE_FORCEINLINE void clearDeferredDestructibleAstNodes() {
 			if (destructibleAstNodeList) {

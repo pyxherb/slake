@@ -6,7 +6,7 @@
 namespace slkc {
 	class ImportNode : public MemberNode {
 	protected:
-		SLKC_API virtual peff::SharedPtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
+		SLKC_API virtual AstNodePtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
 
 	public:
 		IdRefPtr idRef;

@@ -4,15 +4,15 @@ using namespace slkc;
 
 SLKC_API std::optional<CompilationError> slkc::determineFnOverloading(
 	CompileEnvironment *compileEnv,
-	peff::SharedPtr<FnNode> fnSlot,
-	const peff::SharedPtr<TypeNameNode> *argTypes,
+	AstNodePtr<FnNode> fnSlot,
+	const AstNodePtr<TypeNameNode> *argTypes,
 	size_t nArgTypes,
 	bool isStatic,
-	peff::DynArray<peff::SharedPtr<FnOverloadingNode>> &matchedOverloadings,
-	peff::Set<peff::SharedPtr<MemberNode>> *walkedParents) {
+	peff::DynArray<AstNodePtr<FnOverloadingNode>> &matchedOverloadings,
+	peff::Set<AstNodePtr<MemberNode>> *walkedParents) {
 	for (size_t i = 0; i < fnSlot->overloadings.size(); ++i) {
 		bool exactlyMatched = true;
-		peff::SharedPtr<FnOverloadingNode> currentOverloading = fnSlot->overloadings.at(i);
+		AstNodePtr<FnOverloadingNode> currentOverloading = fnSlot->overloadings.at(i);
 
 		if (isStatic != ((currentOverloading->accessModifier & slake::ACCESS_STATIC) == slake::ACCESS_STATIC)) {
 			continue;
@@ -27,7 +27,7 @@ SLKC_API std::optional<CompilationError> slkc::determineFnOverloading(
 		}
 
 		for (size_t j = 0; j < currentOverloading->params.size(); ++j) {
-			peff::SharedPtr<VarNode> currentParam = currentOverloading->params.at(j);
+			AstNodePtr<VarNode> currentParam = currentOverloading->params.at(j);
 
 			bool whether = false;
 			SLKC_RETURN_IF_COMP_ERROR(isSameType(currentParam->type, argTypes[j], whether));
@@ -44,13 +44,13 @@ SLKC_API std::optional<CompilationError> slkc::determineFnOverloading(
 		if (exactlyMatched) {
 			matchedOverloadings.clear();
 
-			if (!matchedOverloadings.pushBack(peff::SharedPtr<FnOverloadingNode>(currentOverloading))) {
+			if (!matchedOverloadings.pushBack(AstNodePtr<FnOverloadingNode>(currentOverloading))) {
 				return genOutOfMemoryCompError();
 			}
 
 			return {};
 		} else {
-			if (!matchedOverloadings.pushBack(peff::SharedPtr<FnOverloadingNode>(currentOverloading))) {
+			if (!matchedOverloadings.pushBack(AstNodePtr<FnOverloadingNode>(currentOverloading))) {
 				return genOutOfMemoryCompError();
 			}
 		}
@@ -61,7 +61,7 @@ SLKC_API std::optional<CompilationError> slkc::determineFnOverloading(
 	switch (fnSlot->parent->astNodeType) {
 		case AstNodeType::Module: {
 			if (fnSlot->parent->parent) {
-				peff::SharedPtr<ModuleNode> baseType = fnSlot->parent->parent->sharedFromThis().castTo<ModuleNode>();
+				AstNodePtr<ModuleNode> baseType = fnSlot->parent->parent->sharedFromThis().castTo<ModuleNode>();
 
 				if (auto it = baseType->memberIndices.find(fnSlot->name); it != baseType->memberIndices.end()) {
 					if (baseType->members.at(it.value())->astNodeType != AstNodeType::FnSlot) {
@@ -69,7 +69,7 @@ SLKC_API std::optional<CompilationError> slkc::determineFnOverloading(
 					}
 
 					if (!walkedParents) {
-						peff::Set<peff::SharedPtr<MemberNode>> walkedParentsSet(compileEnv->allocator.get());
+						peff::Set<AstNodePtr<MemberNode>> walkedParentsSet(compileEnv->allocator.get());
 						SLKC_RETURN_IF_COMP_ERROR(determineFnOverloading(compileEnv, baseType->members.at(it.value()).castTo<FnNode>(), argTypes, nArgTypes, isStatic, matchedOverloadings, walkedParents));
 					} else {
 						SLKC_RETURN_IF_COMP_ERROR(determineFnOverloading(compileEnv, baseType->members.at(it.value()).castTo<FnNode>(), argTypes, nArgTypes, isStatic, matchedOverloadings));
@@ -81,9 +81,9 @@ SLKC_API std::optional<CompilationError> slkc::determineFnOverloading(
 			break;
 		}
 		case AstNodeType::Class: {
-			peff::SharedPtr<ClassNode> m = fnSlot->parent->sharedFromThis().castTo<ClassNode>();
+			AstNodePtr<ClassNode> m = fnSlot->parent->sharedFromThis().castTo<ClassNode>();
 			{
-				peff::SharedPtr<ClassNode> baseType;
+				AstNodePtr<ClassNode> baseType;
 				SLKC_RETURN_IF_COMP_ERROR(visitBaseClass(m->baseType, baseType, nullptr));
 				if (baseType) {
 					if (auto it = baseType->memberIndices.find(fnSlot->name); it != baseType->memberIndices.end()) {
@@ -92,7 +92,7 @@ SLKC_API std::optional<CompilationError> slkc::determineFnOverloading(
 						}
 
 						if (!walkedParents) {
-							peff::Set<peff::SharedPtr<MemberNode>> walkedParentsSet(compileEnv->allocator.get());
+							peff::Set<AstNodePtr<MemberNode>> walkedParentsSet(compileEnv->allocator.get());
 							SLKC_RETURN_IF_COMP_ERROR(determineFnOverloading(compileEnv, baseType->members.at(it.value()).castTo<FnNode>(), argTypes, nArgTypes, isStatic, matchedOverloadings, walkedParents));
 						} else {
 							SLKC_RETURN_IF_COMP_ERROR(determineFnOverloading(compileEnv, baseType->members.at(it.value()).castTo<FnNode>(), argTypes, nArgTypes, isStatic, matchedOverloadings));
@@ -104,7 +104,7 @@ SLKC_API std::optional<CompilationError> slkc::determineFnOverloading(
 		classBaseClassMalformed:
 			for (auto &i : m->implTypes) {
 				{
-					peff::SharedPtr<InterfaceNode> baseType;
+					AstNodePtr<InterfaceNode> baseType;
 					SLKC_RETURN_IF_COMP_ERROR(visitBaseInterface(i, baseType, nullptr));
 					if (baseType) {
 						if (auto it = baseType->memberIndices.find(fnSlot->name); it != baseType->memberIndices.end()) {
@@ -113,7 +113,7 @@ SLKC_API std::optional<CompilationError> slkc::determineFnOverloading(
 							}
 
 							if (!walkedParents) {
-								peff::Set<peff::SharedPtr<MemberNode>> walkedParentsSet(compileEnv->allocator.get());
+								peff::Set<AstNodePtr<MemberNode>> walkedParentsSet(compileEnv->allocator.get());
 								SLKC_RETURN_IF_COMP_ERROR(determineFnOverloading(compileEnv, baseType->members.at(it.value()).castTo<FnNode>(), argTypes, nArgTypes, isStatic, matchedOverloadings, walkedParents));
 							} else {
 								SLKC_RETURN_IF_COMP_ERROR(determineFnOverloading(compileEnv, baseType->members.at(it.value()).castTo<FnNode>(), argTypes, nArgTypes, isStatic, matchedOverloadings));
@@ -125,10 +125,10 @@ SLKC_API std::optional<CompilationError> slkc::determineFnOverloading(
 			break;
 		}
 		case AstNodeType::Interface: {
-			peff::SharedPtr<InterfaceNode> m = fnSlot->parent->sharedFromThis().castTo<InterfaceNode>();
+			AstNodePtr<InterfaceNode> m = fnSlot->parent->sharedFromThis().castTo<InterfaceNode>();
 			for (auto &i : m->implTypes) {
 				{
-					peff::SharedPtr<InterfaceNode> baseType;
+					AstNodePtr<InterfaceNode> baseType;
 					SLKC_RETURN_IF_COMP_ERROR(visitBaseInterface(i, baseType, nullptr));
 					if (baseType) {
 						if (auto it = baseType->memberIndices.find(fnSlot->name); it != baseType->memberIndices.end()) {
@@ -137,7 +137,7 @@ SLKC_API std::optional<CompilationError> slkc::determineFnOverloading(
 							}
 
 							if (!walkedParents) {
-								peff::Set<peff::SharedPtr<MemberNode>> walkedParentsSet(compileEnv->allocator.get());
+								peff::Set<AstNodePtr<MemberNode>> walkedParentsSet(compileEnv->allocator.get());
 								SLKC_RETURN_IF_COMP_ERROR(determineFnOverloading(compileEnv, baseType->members.at(it.value()).castTo<FnNode>(), argTypes, nArgTypes, isStatic, matchedOverloadings, walkedParents));
 							} else {
 								SLKC_RETURN_IF_COMP_ERROR(determineFnOverloading(compileEnv, baseType->members.at(it.value()).castTo<FnNode>(), argTypes, nArgTypes, isStatic, matchedOverloadings));

@@ -9,8 +9,8 @@ namespace slkc {
 	class GenericConstraint {
 	public:
 		peff::RcObjectPtr<peff::Alloc> selfAllocator;
-		peff::SharedPtr<TypeNameNode> baseType;
-		peff::DynArray<peff::SharedPtr<TypeNameNode>> implTypes;
+		AstNodePtr<TypeNameNode> baseType;
+		peff::DynArray<AstNodePtr<TypeNameNode>> implTypes;
 
 		SLKC_API GenericConstraint(peff::Alloc *selfAllocator);
 		SLKC_API virtual ~GenericConstraint();
@@ -24,7 +24,7 @@ namespace slkc {
 	class ParamTypeListGenericConstraint {
 	public:
 		peff::RcObjectPtr<peff::Alloc> selfAllocator;
-		peff::DynArray<peff::SharedPtr<TypeNameNode>> argTypes;
+		peff::DynArray<AstNodePtr<TypeNameNode>> argTypes;
 		bool hasVarArg = false;
 
 		SLKC_API ParamTypeListGenericConstraint(peff::Alloc *selfAllocator);
@@ -38,7 +38,7 @@ namespace slkc {
 
 	class GenericParamNode : public MemberNode {
 	protected:
-		SLKC_API virtual peff::SharedPtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
+		SLKC_API virtual AstNodePtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
 
 	public:
 		GenericConstraintPtr genericConstraint;

@@ -29,7 +29,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseGenericConstraint(GenericConstr
 		nextToken();
 
 		while (true) {
-			peff::SharedPtr<TypeNameNode> tn;
+			AstNodePtr<TypeNameNode> tn;
 
 			if ((syntaxError = parseTypeName(tn))) {
 				return syntaxError;
@@ -65,7 +65,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseParamTypeListGenericConstraint(
 		nextToken();
 
 		while (true) {
-			peff::SharedPtr<TypeNameNode> tn;
+			AstNodePtr<TypeNameNode> tn;
 
 			if (peekToken()->tokenId == TokenId::VarArg) {
 				nextToken();
@@ -103,7 +103,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseParamTypeListGenericConstraint(
 }
 
 SLKC_API std::optional<SyntaxError> Parser::parseGenericParams(
-	peff::DynArray<peff::SharedPtr<GenericParamNode>> &genericParamsOut,
+	peff::DynArray<AstNodePtr<GenericParamNode>> &genericParamsOut,
 	peff::DynArray<size_t> &idxCommaTokensOut,
 	size_t &lAngleBracketIndexOut,
 	size_t &rAngleBracketIndexOut) {
@@ -116,9 +116,9 @@ SLKC_API std::optional<SyntaxError> Parser::parseGenericParams(
 	if (lAngleBracketToken->tokenId == TokenId::LtOp) {
 		nextToken();
 		while (true) {
-			peff::SharedPtr<GenericParamNode> genericParamNode;
+			AstNodePtr<GenericParamNode> genericParamNode;
 
-			if (!(genericParamNode = peff::makeSharedWithControlBlock<GenericParamNode, AstNodeControlBlock<GenericParamNode>>(resourceAllocator.get(), resourceAllocator.get(), document))) {
+			if (!(genericParamNode = makeAstNode<GenericParamNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
 				return genOutOfMemoryError();
 			}
 

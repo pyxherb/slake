@@ -2,9 +2,9 @@
 
 using namespace slkc;
 
-SLKC_API peff::SharedPtr<AstNode> VarNode::doDuplicate(peff::Alloc *newAllocator) const {
+SLKC_API AstNodePtr<AstNode> VarNode::doDuplicate(peff::Alloc *newAllocator) const {
 	bool succeeded = false;
-	peff::SharedPtr<VarNode> duplicatedNode(peff::makeSharedWithControlBlock<VarNode, AstNodeControlBlock<VarNode>>(newAllocator, *this, newAllocator, succeeded));
+	AstNodePtr<VarNode> duplicatedNode(makeAstNode<VarNode>(newAllocator, *this, newAllocator, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}

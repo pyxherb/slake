@@ -54,9 +54,9 @@ SLKC_API MemberNode::MemberNode(const MemberNode &rhs, peff::Alloc *allocator, b
 SLKC_API MemberNode::~MemberNode() {
 }
 
-SLKC_API peff::SharedPtr<AstNode> ModuleNode::doDuplicate(peff::Alloc *newAllocator) const {
+SLKC_API AstNodePtr<AstNode> ModuleNode::doDuplicate(peff::Alloc *newAllocator) const {
 	bool succeeded = false;
-	peff::SharedPtr<ModuleNode> duplicatedNode(peff::makeSharedWithControlBlock<ModuleNode, AstNodeControlBlock<ModuleNode>>(newAllocator, *this, newAllocator, succeeded));
+	AstNodePtr<ModuleNode> duplicatedNode(makeAstNode<ModuleNode>(newAllocator, *this, newAllocator, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -112,8 +112,8 @@ SLKC_API ModuleNode::ModuleNode(const ModuleNode &rhs, peff::Alloc *allocator, b
 	}
 
 	for (size_t i = 0; i < members.size(); ++i) {
-		peff::SharedPtr<MemberNode> &m = members.at(i);
-		const peff::SharedPtr<MemberNode> &rm = rhs.members.at(i);
+		AstNodePtr<MemberNode> &m = members.at(i);
+		const AstNodePtr<MemberNode> &rm = rhs.members.at(i);
 		if (!(m = rm->duplicate<MemberNode>(allocator))) {
 			succeededOut = false;
 			return;
@@ -133,7 +133,7 @@ SLKC_API ModuleNode::ModuleNode(const ModuleNode &rhs, peff::Alloc *allocator, b
 SLKC_API ModuleNode::~ModuleNode() {
 }
 
-SLKC_API size_t ModuleNode::pushMember(peff::SharedPtr<MemberNode> memberNode) noexcept {
+SLKC_API size_t ModuleNode::pushMember(AstNodePtr<MemberNode> memberNode) noexcept {
 	size_t n = members.size();
 
 	if (!members.pushBack(std::move(memberNode))) {
@@ -143,7 +143,7 @@ SLKC_API size_t ModuleNode::pushMember(peff::SharedPtr<MemberNode> memberNode) n
 	return n;
 }
 
-SLKC_API bool ModuleNode::addMember(peff::SharedPtr<MemberNode> memberNode) noexcept {
+SLKC_API bool ModuleNode::addMember(AstNodePtr<MemberNode> memberNode) noexcept {
 	size_t index;
 
 	if ((index = pushMember(memberNode)) == SIZE_MAX) {
@@ -154,7 +154,7 @@ SLKC_API bool ModuleNode::addMember(peff::SharedPtr<MemberNode> memberNode) noex
 }
 
 SLKC_API bool ModuleNode::indexMember(size_t indexInMemberArray) noexcept {
-	peff::SharedPtr<MemberNode> m = members.at(indexInMemberArray);
+	AstNodePtr<MemberNode> m = members.at(indexInMemberArray);
 
 	if (!memberIndices.insert(m->name, +indexInMemberArray)) {
 		return false;

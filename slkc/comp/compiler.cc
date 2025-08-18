@@ -7,9 +7,9 @@ SLKC_API CompilationContext::CompilationContext(CompilationContext *parent) : pa
 SLKC_API CompilationContext::~CompilationContext() {
 }
 
-SLKC_API peff::SharedPtr<VarNode> CompilationContext::lookupLocalVar(const std::string_view &name) {
+SLKC_API AstNodePtr<VarNode> CompilationContext::lookupLocalVar(const std::string_view &name) {
 	for (CompilationContext *i = this; i; i = i->parent) {
-		peff::SharedPtr<VarNode> varNode = i->getLocalVar(name);
+		AstNodePtr<VarNode> varNode = i->getLocalVar(name);
 
 		if (varNode) {
 			return varNode;
@@ -103,10 +103,10 @@ SLKC_API std::optional<CompilationError> NormalCompilationContext::emitIns(slake
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> NormalCompilationContext::allocLocalVar(const TokenRange &tokenRange, const std::string_view &name, uint32_t reg, peff::SharedPtr<TypeNameNode> type, peff::SharedPtr<VarNode> &localVarOut) {
-	peff::SharedPtr<VarNode> newVar;
+SLKC_API std::optional<CompilationError> NormalCompilationContext::allocLocalVar(const TokenRange &tokenRange, const std::string_view &name, uint32_t reg, AstNodePtr<TypeNameNode> type, AstNodePtr<VarNode> &localVarOut) {
+	AstNodePtr<VarNode> newVar;
 
-	if (!(newVar = peff::makeSharedWithControlBlock<VarNode, AstNodeControlBlock<VarNode>>(allocator.get(), allocator.get(), document))) {
+	if (!(newVar = makeAstNode<VarNode>(allocator.get(), allocator.get(), document))) {
 		return genOutOfMemoryCompError();
 	}
 
@@ -118,7 +118,7 @@ SLKC_API std::optional<CompilationError> NormalCompilationContext::allocLocalVar
 
 	newVar->idxReg = reg;
 
-	if (!curBlockLayer.localVars.insert(newVar->name, peff::SharedPtr<VarNode>(newVar))) {
+	if (!curBlockLayer.localVars.insert(newVar->name, AstNodePtr<VarNode>(newVar))) {
 		return genOutOfMemoryCompError();
 	}
 
@@ -126,14 +126,14 @@ SLKC_API std::optional<CompilationError> NormalCompilationContext::allocLocalVar
 
 	return {};
 }
-SLKC_API peff::SharedPtr<VarNode> NormalCompilationContext::getLocalVarInCurLevel(const std::string_view &name) {
+SLKC_API AstNodePtr<VarNode> NormalCompilationContext::getLocalVarInCurLevel(const std::string_view &name) {
 	if (auto it = curBlockLayer.localVars.find(name); it != curBlockLayer.localVars.end()) {
 		return it.value();
 	}
 
 	return {};
 }
-SLKC_API peff::SharedPtr<VarNode> NormalCompilationContext::getLocalVar(const std::string_view &name) {
+SLKC_API AstNodePtr<VarNode> NormalCompilationContext::getLocalVar(const std::string_view &name) {
 	if (auto v = getLocalVarInCurLevel(name); v)
 		return v;
 
@@ -202,9 +202,9 @@ SLKC_API void CompileEnvironment::onRefZero() noexcept {
 SLKC_API std::optional<CompilationError> slkc::evalExprType(
 	CompileEnvironment *compileEnv,
 	CompilationContext *compilationContext,
-	const peff::SharedPtr<ExprNode> &expr,
-	peff::SharedPtr<TypeNameNode> &typeOut,
-	peff::SharedPtr<TypeNameNode> desiredType) {
+	const AstNodePtr<ExprNode> &expr,
+	AstNodePtr<TypeNameNode> &typeOut,
+	AstNodePtr<TypeNameNode> desiredType) {
 	NormalCompilationContext tmpContext(compileEnv, compilationContext);
 
 	CompileExprResult result(compileEnv->allocator.get());
@@ -218,15 +218,15 @@ SLKC_API std::optional<CompilationError> slkc::evalExprType(
 SLKC_API std::optional<CompilationError> slkc::completeParentModules(
 	CompileEnvironment *compileEnv,
 	IdRef *modulePath,
-	peff::SharedPtr<ModuleNode> leaf) {
-	peff::DynArray<peff::SharedPtr<ModuleNode>> modules(compileEnv->allocator.get());
+	AstNodePtr<ModuleNode> leaf) {
+	peff::DynArray<AstNodePtr<ModuleNode>> modules(compileEnv->allocator.get());
 	size_t idxNewModulesBegin = 0;
 
 	if (!modules.resize(modulePath->entries.size())) {
 		return genOutOfMemoryCompError();
 	}
 
-	peff::SharedPtr<ModuleNode> node = compileEnv->document->rootModule;
+	AstNodePtr<ModuleNode> node = compileEnv->document->rootModule;
 
 	for (size_t i = 0; i < modules.size(); ++i) {
 		if (auto it = node->memberIndices.find(modulePath->entries.at(i).name); it != node->memberIndices.end()) {
@@ -237,7 +237,7 @@ SLKC_API std::optional<CompilationError> slkc::completeParentModules(
 			if (i + 1 == modules.size()) {
 				node = leaf;
 			} else {
-				if (!(node = peff::makeSharedWithControlBlock<ModuleNode, AstNodeControlBlock<ModuleNode>>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
+				if (!(node = makeAstNode<ModuleNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
 					return genOutOfMemoryCompError();
 				}
 			}
@@ -274,8 +274,8 @@ SLKC_API std::optional<CompilationError> slkc::completeParentModules(
 
 SLKC_API std::optional<CompilationError> slkc::cleanupUnusedModuleTree(
 	CompileEnvironment *compileEnv,
-	peff::SharedPtr<ModuleNode> leaf) {
-	peff::SharedPtr<ModuleNode> cur = leaf;
+	AstNodePtr<ModuleNode> leaf) {
+	AstNodePtr<ModuleNode> cur = leaf;
 
 	for (;;) {
 		for (auto &i : cur->members) {
@@ -291,7 +291,7 @@ SLKC_API std::optional<CompilationError> slkc::cleanupUnusedModuleTree(
 		if (cur->parent->astNodeType != AstNodeType::Module)
 			std::terminate();
 
-		peff::SharedPtr<ModuleNode> parent = cur->parent->sharedFromThis().castTo<ModuleNode>();
+		AstNodePtr<ModuleNode> parent = cur->parent->sharedFromThis().castTo<ModuleNode>();
 
 		if (!parent->removeMember(cur->name))
 			return genOutOfMemoryCompError();
@@ -319,7 +319,7 @@ SLKC_API std::optional<CompilationError> FileSystemExternalModuleProvider::loadM
 
 	{
 		bool isLoaded = true;
-		peff::SharedPtr<ModuleNode> node = compileEnv->document->rootModule;
+		AstNodePtr<ModuleNode> node = compileEnv->document->rootModule;
 
 		for (size_t i = 0; i < moduleName->entries.size(); ++i) {
 			if (auto it = node->memberIndices.find(moduleName->entries.at(i).name); it != node->memberIndices.end()) {
@@ -399,9 +399,9 @@ SLKC_API std::optional<CompilationError> FileSystemExternalModuleProvider::loadM
 					goto fail;
 				}
 
-				peff::SharedPtr<ModuleNode> mod;
+				AstNodePtr<ModuleNode> mod;
 
-				if (!(mod = peff::makeSharedWithControlBlock<ModuleNode, AstNodeControlBlock<ModuleNode>>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
+				if (!(mod = makeAstNode<ModuleNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
 					return genOutOfMemoryCompError();
 				}
 

@@ -55,10 +55,13 @@ namespace slkc {
 	class AstNode;
 
 	typedef void (*AstNodeDestructor)(AstNode *astNode);
+	
+	template<typename T>
+	using AstNodePtr = peff::SharedPtr<T>;
 
 	class AstNode : public peff::SharedFromThis<AstNode> {
 	protected:
-		SLKC_API virtual peff::SharedPtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const;
+		SLKC_API virtual AstNodePtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const;
 
 	public:
 		AstNodeType astNodeType;
@@ -96,6 +99,11 @@ namespace slkc {
 			peff::destroyAndRelease<AstNodeControlBlock<T>>(this->allocator.get(), this, alignof(AstNodeControlBlock<T>));
 		}
 	};
+
+	template <typename T, typename... Args>
+	SLAKE_FORCEINLINE AstNodePtr<T> makeAstNode(peff::Alloc *allocator, Args &&...args) {
+		return peff::makeSharedWithControlBlock<T, AstNodeControlBlock<T>>(allocator, std::forward<Args>(args)...);
+	}
 }
 
 #endif

@@ -5,13 +5,13 @@ using namespace slkc;
 std::optional<CompilationError> slkc::_compileSimpleBinaryExpr(
 	CompileEnvironment *compileEnv,
 	CompilationContext *compilationContext,
-	peff::SharedPtr<BinaryExprNode> expr,
+	AstNodePtr<BinaryExprNode> expr,
 	ExprEvalPurpose evalPurpose,
-	peff::SharedPtr<TypeNameNode> lhsType,
-	peff::SharedPtr<TypeNameNode> desiredLhsType,
+	AstNodePtr<TypeNameNode> lhsType,
+	AstNodePtr<TypeNameNode> desiredLhsType,
 	ExprEvalPurpose lhsEvalPurpose,
-	peff::SharedPtr<TypeNameNode> rhsType,
-	peff::SharedPtr<TypeNameNode> desiredRhsType,
+	AstNodePtr<TypeNameNode> rhsType,
+	AstNodePtr<TypeNameNode> desiredRhsType,
 	ExprEvalPurpose rhsEvalPurpose,
 	uint32_t resultRegOut,
 	CompileExprResult &resultOut,
@@ -65,12 +65,12 @@ std::optional<CompilationError> slkc::_compileSimpleBinaryExpr(
 std::optional<CompilationError> slkc::_compileSimpleAssignBinaryExpr(
 	CompileEnvironment *compileEnv,
 	CompilationContext *compilationContext,
-	peff::SharedPtr<BinaryExprNode> expr,
+	AstNodePtr<BinaryExprNode> expr,
 	ExprEvalPurpose evalPurpose,
-	peff::SharedPtr<TypeNameNode> lhsType,
-	peff::SharedPtr<TypeNameNode> desiredLhsType,
-	peff::SharedPtr<TypeNameNode> rhsType,
-	peff::SharedPtr<TypeNameNode> desiredRhsType,
+	AstNodePtr<TypeNameNode> lhsType,
+	AstNodePtr<TypeNameNode> desiredLhsType,
+	AstNodePtr<TypeNameNode> rhsType,
+	AstNodePtr<TypeNameNode> desiredRhsType,
 	ExprEvalPurpose rhsEvalPurpose,
 	uint32_t resultRegOut,
 	CompileExprResult &resultOut) {
@@ -151,11 +151,11 @@ std::optional<CompilationError> slkc::_compileSimpleAssignBinaryExpr(
 std::optional<CompilationError> slkc::_compileSimpleLAndBinaryExpr(
 	CompileEnvironment *compileEnv,
 	CompilationContext *compilationContext,
-	peff::SharedPtr<BinaryExprNode> expr,
+	AstNodePtr<BinaryExprNode> expr,
 	ExprEvalPurpose evalPurpose,
-	peff::SharedPtr<BoolTypeNameNode> boolType,
-	peff::SharedPtr<TypeNameNode> lhsType,
-	peff::SharedPtr<TypeNameNode> rhsType,
+	AstNodePtr<BoolTypeNameNode> boolType,
+	AstNodePtr<TypeNameNode> lhsType,
+	AstNodePtr<TypeNameNode> rhsType,
 	uint32_t resultRegOut,
 	CompileExprResult &resultOut,
 	slake::Opcode opcode) {
@@ -226,11 +226,11 @@ std::optional<CompilationError> slkc::_compileSimpleLAndBinaryExpr(
 std::optional<CompilationError> slkc::_compileSimpleLOrBinaryExpr(
 	CompileEnvironment *compileEnv,
 	CompilationContext *compilationContext,
-	peff::SharedPtr<BinaryExprNode> expr,
+	AstNodePtr<BinaryExprNode> expr,
 	ExprEvalPurpose evalPurpose,
-	peff::SharedPtr<BoolTypeNameNode> boolType,
-	peff::SharedPtr<TypeNameNode> lhsType,
-	peff::SharedPtr<TypeNameNode> rhsType,
+	AstNodePtr<BoolTypeNameNode> boolType,
+	AstNodePtr<TypeNameNode> lhsType,
+	AstNodePtr<TypeNameNode> rhsType,
 	uint32_t resultRegOut,
 	CompileExprResult &resultOut,
 	slake::Opcode opcode) {
@@ -301,11 +301,11 @@ std::optional<CompilationError> slkc::_compileSimpleLOrBinaryExpr(
 SLKC_API std::optional<CompilationError> slkc::_compileSimpleBinaryAssignOpExpr(
 	CompileEnvironment *compileEnv,
 	CompilationContext *compilationContext,
-	peff::SharedPtr<BinaryExprNode> expr,
+	AstNodePtr<BinaryExprNode> expr,
 	ExprEvalPurpose evalPurpose,
-	peff::SharedPtr<TypeNameNode> lhsType,
-	peff::SharedPtr<TypeNameNode> rhsType,
-	peff::SharedPtr<TypeNameNode> desiredRhsType,
+	AstNodePtr<TypeNameNode> lhsType,
+	AstNodePtr<TypeNameNode> rhsType,
+	AstNodePtr<TypeNameNode> desiredRhsType,
 	ExprEvalPurpose rhsEvalPurpose,
 	uint32_t resultRegOut,
 	CompileExprResult &resultOut,
@@ -396,11 +396,11 @@ SLKC_API std::optional<CompilationError> slkc::_compileSimpleBinaryAssignOpExpr(
 SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 	CompileEnvironment *compileEnv,
 	CompilationContext *compilationContext,
-	peff::SharedPtr<BinaryExprNode> expr,
+	AstNodePtr<BinaryExprNode> expr,
 	ExprEvalPurpose evalPurpose,
 	uint32_t resultRegOut,
 	CompileExprResult &resultOut) {
-	peff::SharedPtr<TypeNameNode> lhsType, rhsType, decayedLhsType, decayedRhsType;
+	AstNodePtr<TypeNameNode> lhsType, rhsType, decayedLhsType, decayedRhsType;
 
 	if (auto e = evalExprType(compileEnv, compilationContext, expr->lhs, lhsType); e) {
 		if (auto re = evalExprType(compileEnv, compilationContext, expr->rhs, rhsType); re) {
@@ -432,7 +432,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 
 	peff::SharedPtr<U32TypeNameNode> u32Type;
 	peff::SharedPtr<I32TypeNameNode> i32Type;
-	peff::SharedPtr<BoolTypeNameNode> boolType;
+	AstNodePtr<BoolTypeNameNode> boolType;
 
 	if (!(u32Type = peff::makeSharedWithControlBlock<U32TypeNameNode, AstNodeControlBlock<U32TypeNameNode>>(
 			  compileEnv->allocator.get(),
@@ -448,7 +448,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 		return genOutOfMemoryCompError();
 	}
 
-	if (!(boolType = peff::makeSharedWithControlBlock<BoolTypeNameNode, AstNodeControlBlock<BoolTypeNameNode>>(
+	if (!(boolType = makeAstNode<BoolTypeNameNode>(
 			  compileEnv->allocator.get(),
 			  compileEnv->allocator.get(),
 			  compileEnv->document))) {
@@ -489,7 +489,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 			case BinaryOp::LtEq:
 			case BinaryOp::GtEq:
 			case BinaryOp::Cmp: {
-				peff::SharedPtr<MemberNode> clsNode, operatorSlot;
+				AstNodePtr<MemberNode> clsNode, operatorSlot;
 
 				SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(decayedRhsType->document->sharedFromThis(), decayedRhsType.castTo<CustomTypeNameNode>(), clsNode));
 
@@ -511,16 +511,16 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 				if (operatorSlot->astNodeType != AstNodeType::FnSlot)
 					std::terminate();
 
-				peff::DynArray<peff::SharedPtr<FnOverloadingNode>> matchedOverloadingIndices(compileEnv->allocator.get());
-				peff::DynArray<peff::SharedPtr<TypeNameNode>> operatorParamTypes(compileEnv->allocator.get());
+				peff::DynArray<AstNodePtr<FnOverloadingNode>> matchedOverloadingIndices(compileEnv->allocator.get());
+				peff::DynArray<AstNodePtr<TypeNameNode>> operatorParamTypes(compileEnv->allocator.get());
 
-				if (!operatorParamTypes.pushBack(peff::SharedPtr<TypeNameNode>(lhsType))) {
+				if (!operatorParamTypes.pushBack(AstNodePtr<TypeNameNode>(lhsType))) {
 					return genOutOfMemoryCompError();
 				}
 
-				peff::SharedPtr<VoidTypeNameNode> voidType;
+				AstNodePtr<VoidTypeNameNode> voidType;
 
-				if (!(voidType = peff::makeSharedWithControlBlock<VoidTypeNameNode, AstNodeControlBlock<VoidTypeNameNode>>(
+				if (!(voidType = makeAstNode<VoidTypeNameNode>(
 						  compileEnv->allocator.get(),
 						  compileEnv->allocator.get(),
 						  compileEnv->document))) {
@@ -668,7 +668,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 	}
 
 	{
-		peff::SharedPtr<TypeNameNode> promotionalTypeName;
+		AstNodePtr<TypeNameNode> promotionalTypeName;
 
 		SLKC_RETURN_IF_COMP_ERROR(determinePromotionalType(decayedLhsType, decayedRhsType, promotionalTypeName));
 
@@ -1687,8 +1687,8 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 						resultOut.evaluatedType = boolType.castTo<TypeNameNode>();
 						break;
 					case BinaryOp::Subscript: {
-						peff::SharedPtr<TypeNameNode> evaluatedType;
-						if (!(evaluatedType = peff::makeSharedWithControlBlock<RefTypeNameNode, AstNodeControlBlock<RefTypeNameNode>>(
+						AstNodePtr<TypeNameNode> evaluatedType;
+						if (!(evaluatedType = makeAstNode<RefTypeNameNode>(
 								  compileEnv->allocator.get(),
 								  compileEnv->allocator.get(),
 								  compileEnv->document,
@@ -1815,7 +1815,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					case BinaryOp::LtEq:
 					case BinaryOp::GtEq:
 					case BinaryOp::Cmp: {
-						peff::SharedPtr<MemberNode> clsNode, operatorSlot;
+						AstNodePtr<MemberNode> clsNode, operatorSlot;
 
 						SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(decayedLhsType->document->sharedFromThis(), decayedLhsType.castTo<CustomTypeNameNode>(), clsNode));
 
@@ -1837,10 +1837,10 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 						if (operatorSlot->astNodeType != AstNodeType::FnSlot)
 							std::terminate();
 
-						peff::DynArray<peff::SharedPtr<FnOverloadingNode>> matchedOverloadingIndices(compileEnv->allocator.get());
-						peff::DynArray<peff::SharedPtr<TypeNameNode>> operatorParamTypes(compileEnv->allocator.get());
+						peff::DynArray<AstNodePtr<FnOverloadingNode>> matchedOverloadingIndices(compileEnv->allocator.get());
+						peff::DynArray<AstNodePtr<TypeNameNode>> operatorParamTypes(compileEnv->allocator.get());
 
-						if (!operatorParamTypes.pushBack(peff::SharedPtr<TypeNameNode>(rhsType))) {
+						if (!operatorParamTypes.pushBack(AstNodePtr<TypeNameNode>(rhsType))) {
 							return genOutOfMemoryCompError();
 						}
 

@@ -5,22 +5,22 @@ using namespace slkc;
 
 SLKC_API std::optional<CompilationError> slkc::collectInvolvedInterfaces(
 	peff::SharedPtr<Document> document,
-	const peff::SharedPtr<InterfaceNode> &derived,
-	peff::Set<peff::SharedPtr<InterfaceNode>> &walkedInterfaces,
+	const AstNodePtr<InterfaceNode> &derived,
+	peff::Set<AstNodePtr<InterfaceNode>> &walkedInterfaces,
 	bool insertSelf) {
 	if (walkedInterfaces.contains(derived)) {
 		return {};
 	}
 	if (insertSelf) {
-		if (!walkedInterfaces.insert(peff::SharedPtr<InterfaceNode>(derived))) {
+		if (!walkedInterfaces.insert(AstNodePtr<InterfaceNode>(derived))) {
 			return genOutOfMemoryCompError();
 		}
 	}
 
 	for (size_t i = 0; i < derived->implTypes.size(); ++i) {
-		peff::SharedPtr<TypeNameNode> t = derived->implTypes.at(i);
+		AstNodePtr<TypeNameNode> t = derived->implTypes.at(i);
 
-		peff::SharedPtr<MemberNode> m;
+		AstNodePtr<MemberNode> m;
 		SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, t.castTo<CustomTypeNameNode>(), m));
 
 		if (!m) {
@@ -42,10 +42,10 @@ malformed:
 
 SLKC_API std::optional<CompilationError> slkc::isImplementedByInterface(
 	peff::SharedPtr<Document> document,
-	const peff::SharedPtr<InterfaceNode> &base,
-	const peff::SharedPtr<InterfaceNode> &derived,
+	const AstNodePtr<InterfaceNode> &base,
+	const AstNodePtr<InterfaceNode> &derived,
 	bool &whetherOut) {
-	peff::Set<peff::SharedPtr<InterfaceNode>> interfaces(document->allocator.get());
+	peff::Set<AstNodePtr<InterfaceNode>> interfaces(document->allocator.get());
 
 	SLKC_RETURN_IF_COMP_ERROR(collectInvolvedInterfaces(document, derived, interfaces, true));
 
@@ -55,24 +55,24 @@ SLKC_API std::optional<CompilationError> slkc::isImplementedByInterface(
 
 SLKC_API std::optional<CompilationError> slkc::isImplementedByClass(
 	peff::SharedPtr<Document> document,
-	const peff::SharedPtr<InterfaceNode> &base,
-	const peff::SharedPtr<ClassNode> &derived,
+	const AstNodePtr<InterfaceNode> &base,
+	const AstNodePtr<ClassNode> &derived,
 	bool &whetherOut) {
-	peff::Set<peff::SharedPtr<ClassNode>> walkedClasses(document->allocator.get());
+	peff::Set<AstNodePtr<ClassNode>> walkedClasses(document->allocator.get());
 
-	if (!walkedClasses.insert(peff::SharedPtr<ClassNode>(derived))) {
+	if (!walkedClasses.insert(AstNodePtr<ClassNode>(derived))) {
 		return genOutOfMemoryCompError();
 	}
 
-	peff::SharedPtr<ClassNode> currentClass = derived;
-	peff::SharedPtr<TypeNameNode> currentType = derived->baseType;
+	AstNodePtr<ClassNode> currentClass = derived;
+	AstNodePtr<TypeNameNode> currentType = derived->baseType;
 
 	while (currentType) {
 		if (currentType->typeNameKind != TypeNameKind::Custom) {
 			goto malformed;
 		}
 
-		peff::SharedPtr<MemberNode> m;
+		AstNodePtr<MemberNode> m;
 		SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, currentType.castTo<CustomTypeNameNode>(), m));
 
 		if (m->astNodeType != AstNodeType::Class) {
@@ -88,9 +88,9 @@ SLKC_API std::optional<CompilationError> slkc::isImplementedByClass(
 		}
 
 		for (size_t i = 0; i < currentClass->implTypes.size(); ++i) {
-			peff::SharedPtr<TypeNameNode> t = derived->implTypes.at(i);
+			AstNodePtr<TypeNameNode> t = derived->implTypes.at(i);
 
-			peff::SharedPtr<MemberNode> m;
+			AstNodePtr<MemberNode> m;
 			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, t.castTo<CustomTypeNameNode>(), m));
 
 			if (!m) {
@@ -101,7 +101,7 @@ SLKC_API std::optional<CompilationError> slkc::isImplementedByClass(
 				goto malformed;
 			}
 
-			peff::SharedPtr<InterfaceNode> interfaceNode = m.castTo<InterfaceNode>();
+			AstNodePtr<InterfaceNode> interfaceNode = m.castTo<InterfaceNode>();
 
 			if (interfaceNode == base) {
 				whetherOut = true;
@@ -116,7 +116,7 @@ SLKC_API std::optional<CompilationError> slkc::isImplementedByClass(
 			}
 		}
 
-		if (!walkedClasses.insert(peff::SharedPtr<ClassNode>(currentClass))) {
+		if (!walkedClasses.insert(AstNodePtr<ClassNode>(currentClass))) {
 			return genOutOfMemoryCompError();
 		}
 	}
@@ -131,24 +131,24 @@ malformed:
 
 SLKC_API std::optional<CompilationError> slkc::isBaseOf(
 	peff::SharedPtr<Document> document,
-	const peff::SharedPtr<ClassNode> &base,
-	const peff::SharedPtr<ClassNode> &derived,
+	const AstNodePtr<ClassNode> &base,
+	const AstNodePtr<ClassNode> &derived,
 	bool &whetherOut) {
-	peff::Set<peff::SharedPtr<ClassNode>> walkedClasses(document->allocator.get());
+	peff::Set<AstNodePtr<ClassNode>> walkedClasses(document->allocator.get());
 
-	if (!walkedClasses.insert(peff::SharedPtr<ClassNode>(derived))) {
+	if (!walkedClasses.insert(AstNodePtr<ClassNode>(derived))) {
 		return genOutOfMemoryCompError();
 	}
 
-	peff::SharedPtr<ClassNode> currentClass = derived;
-	peff::SharedPtr<TypeNameNode> currentType;
+	AstNodePtr<ClassNode> currentClass = derived;
+	AstNodePtr<TypeNameNode> currentType;
 
 	while ((currentType = currentClass->baseType)) {
 		if (currentType->typeNameKind != TypeNameKind::Custom) {
 			goto malformed;
 		}
 
-		peff::SharedPtr<MemberNode> m;
+		AstNodePtr<MemberNode> m;
 		SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, currentType.castTo<CustomTypeNameNode>(), m));
 
 		if (!m) {
@@ -172,7 +172,7 @@ SLKC_API std::optional<CompilationError> slkc::isBaseOf(
 			return {};
 		}
 
-		if (!walkedClasses.insert(peff::SharedPtr<ClassNode>(currentClass))) {
+		if (!walkedClasses.insert(AstNodePtr<ClassNode>(currentClass))) {
 			return genOutOfMemoryCompError();
 		}
 	}
@@ -186,8 +186,8 @@ malformed:
 }
 
 SLKC_API std::optional<CompilationError> slkc::removeRefOfType(
-	peff::SharedPtr<TypeNameNode> src,
-	peff::SharedPtr<TypeNameNode> &typeNameOut) {
+	AstNodePtr<TypeNameNode> src,
+	AstNodePtr<TypeNameNode> &typeNameOut) {
 	switch (src->typeNameKind) {
 		case TypeNameKind::Ref:
 			typeNameOut = src.castTo<RefTypeNameNode>()->referencedType;
@@ -200,7 +200,7 @@ SLKC_API std::optional<CompilationError> slkc::removeRefOfType(
 }
 
 SLKC_API std::optional<CompilationError> slkc::isLValueType(
-	peff::SharedPtr<TypeNameNode> src,
+	AstNodePtr<TypeNameNode> src,
 	bool &whetherOut) {
 	if (!src) {
 		whetherOut = false;
@@ -220,8 +220,8 @@ SLKC_API std::optional<CompilationError> slkc::isLValueType(
 }
 
 SLKC_API std::optional<CompilationError> slkc::isSameType(
-	const peff::SharedPtr<TypeNameNode> &lhs,
-	const peff::SharedPtr<TypeNameNode> &rhs,
+	const AstNodePtr<TypeNameNode> &lhs,
+	const AstNodePtr<TypeNameNode> &rhs,
 	bool &whetherOut) {
 	peff::SharedPtr<Document> document = lhs->document->sharedFromThis();
 	if (document != rhs->document->sharedFromThis())
@@ -234,11 +234,11 @@ SLKC_API std::optional<CompilationError> slkc::isSameType(
 
 	switch (lhs->typeNameKind) {
 		case TypeNameKind::Custom: {
-			peff::SharedPtr<CustomTypeNameNode>
+			AstNodePtr<CustomTypeNameNode>
 				convertedLhs = lhs.castTo<CustomTypeNameNode>(),
 				convertedRhs = rhs.castTo<CustomTypeNameNode>();
 
-			peff::SharedPtr<MemberNode> lhsMember, rhsMember;
+			AstNodePtr<MemberNode> lhsMember, rhsMember;
 
 			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, convertedLhs, lhsMember));
 			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, convertedRhs, rhsMember));
@@ -247,7 +247,7 @@ SLKC_API std::optional<CompilationError> slkc::isSameType(
 			break;
 		}
 		case TypeNameKind::Array: {
-			peff::SharedPtr<ArrayTypeNameNode>
+			AstNodePtr<ArrayTypeNameNode>
 				convertedLhs = lhs.castTo<ArrayTypeNameNode>(),
 				convertedRhs = rhs.castTo<ArrayTypeNameNode>();
 
@@ -255,7 +255,7 @@ SLKC_API std::optional<CompilationError> slkc::isSameType(
 			break;
 		}
 		case TypeNameKind::Ref: {
-			peff::SharedPtr<RefTypeNameNode>
+			AstNodePtr<RefTypeNameNode>
 				convertedLhs = lhs.castTo<RefTypeNameNode>(),
 				convertedRhs = rhs.castTo<RefTypeNameNode>();
 
@@ -270,7 +270,7 @@ SLKC_API std::optional<CompilationError> slkc::isSameType(
 }
 
 SLKC_API std::optional<CompilationError> slkc::getTypePromotionLevel(
-	const peff::SharedPtr<TypeNameNode> &typeName,
+	const AstNodePtr<TypeNameNode> &typeName,
 	int &levelOut) {
 	switch (typeName->typeNameKind) {
 		case TypeNameKind::Bool:
@@ -318,9 +318,9 @@ SLKC_API std::optional<CompilationError> slkc::getTypePromotionLevel(
 }
 
 SLKC_API std::optional<CompilationError> slkc::determinePromotionalType(
-	peff::SharedPtr<TypeNameNode> lhs,
-	peff::SharedPtr<TypeNameNode> rhs,
-	peff::SharedPtr<TypeNameNode> &typeNameOut) {
+	AstNodePtr<TypeNameNode> lhs,
+	AstNodePtr<TypeNameNode> rhs,
+	AstNodePtr<TypeNameNode> &typeNameOut) {
 	int lhsWeight, rhsWeight;
 
 	if (!lhs) {
@@ -345,8 +345,8 @@ SLKC_API std::optional<CompilationError> slkc::determinePromotionalType(
 			case TypeNameKind::Array: {
 				switch (rhs->typeNameKind) {
 					case TypeNameKind::Array: {
-						peff::SharedPtr<ArrayTypeNameNode> lt = lhs.castTo<ArrayTypeNameNode>(), rt = rhs.castTo<ArrayTypeNameNode>();
-						peff::SharedPtr<TypeNameNode> finalType;
+						AstNodePtr<ArrayTypeNameNode> lt = lhs.castTo<ArrayTypeNameNode>(), rt = rhs.castTo<ArrayTypeNameNode>();
+						AstNodePtr<TypeNameNode> finalType;
 
 						SLKC_RETURN_IF_COMP_ERROR(determinePromotionalType(lt->elementType, rt->elementType, finalType));
 
@@ -362,7 +362,7 @@ SLKC_API std::optional<CompilationError> slkc::determinePromotionalType(
 			case TypeNameKind::Custom: {
 				switch (rhs->typeNameKind) {
 					case TypeNameKind::Custom: {
-						peff::SharedPtr<CustomTypeNameNode> lt = lhs.castTo<CustomTypeNameNode>(), rt = rhs.castTo<CustomTypeNameNode>();
+						AstNodePtr<CustomTypeNameNode> lt = lhs.castTo<CustomTypeNameNode>(), rt = rhs.castTo<CustomTypeNameNode>();
 
 						bool b;
 
@@ -391,8 +391,8 @@ SLKC_API std::optional<CompilationError> slkc::determinePromotionalType(
 }
 
 SLKC_API std::optional<CompilationError> slkc::isSameTypeInSignature(
-	const peff::SharedPtr<TypeNameNode> &lhs,
-	const peff::SharedPtr<TypeNameNode> &rhs,
+	const AstNodePtr<TypeNameNode> &lhs,
+	const AstNodePtr<TypeNameNode> &rhs,
 	bool &whetherOut) {
 	peff::SharedPtr<Document> document = lhs->document->sharedFromThis();
 	if (document != rhs->document->sharedFromThis())
@@ -405,11 +405,11 @@ SLKC_API std::optional<CompilationError> slkc::isSameTypeInSignature(
 
 	switch (lhs->typeNameKind) {
 		case TypeNameKind::Custom: {
-			peff::SharedPtr<CustomTypeNameNode>
+			AstNodePtr<CustomTypeNameNode>
 				convertedLhs = lhs.castTo<CustomTypeNameNode>(),
 				convertedRhs = rhs.castTo<CustomTypeNameNode>();
 
-			peff::SharedPtr<MemberNode> lhsMember, rhsMember;
+			AstNodePtr<MemberNode> lhsMember, rhsMember;
 
 			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, convertedLhs, lhsMember));
 			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, convertedRhs, rhsMember));
@@ -431,7 +431,7 @@ SLKC_API std::optional<CompilationError> slkc::isSameTypeInSignature(
 
 			switch (lhsMember->astNodeType) {
 				case AstNodeType::GenericParam: {
-					peff::SharedPtr<GenericParamNode> l, r;
+					AstNodePtr<GenericParamNode> l, r;
 
 					l = lhsMember.castTo<GenericParamNode>();
 					r = rhsMember.castTo<GenericParamNode>();
@@ -458,8 +458,8 @@ SLKC_API std::optional<CompilationError> slkc::isSameTypeInSignature(
 }
 
 SLKC_API std::optional<CompilationError> slkc::isTypeConvertible(
-	const peff::SharedPtr<TypeNameNode> &src,
-	const peff::SharedPtr<TypeNameNode> &dest,
+	const AstNodePtr<TypeNameNode> &src,
+	const AstNodePtr<TypeNameNode> &dest,
 	bool isSealed,
 	bool &whetherOut) {
 	peff::SharedPtr<Document> document = src->document->sharedFromThis();
@@ -568,11 +568,11 @@ SLKC_API std::optional<CompilationError> slkc::isTypeConvertible(
 		case TypeNameKind::Custom: {
 			switch (src->typeNameKind) {
 				case TypeNameKind::Custom: {
-					peff::SharedPtr<CustomTypeNameNode>
+					AstNodePtr<CustomTypeNameNode>
 						st = src.castTo<CustomTypeNameNode>(),
 						dt = dest.castTo<CustomTypeNameNode>();
 
-					peff::SharedPtr<MemberNode> stm, dtm;
+					AstNodePtr<MemberNode> stm, dtm;
 
 					SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, st, stm));
 					SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, dt, dtm));
@@ -713,7 +713,7 @@ SLKC_API std::optional<CompilationError> slkc::isTypeConvertible(
 }
 
 SLKC_API std::optional<CompilationError> slkc::_isTypeNameParamListTypeNameTree(
-	peff::SharedPtr<TypeNameNode> type,
+	AstNodePtr<TypeNameNode> type,
 	bool &whetherOut) {
 	if (!type) {
 		whetherOut = false;
@@ -779,7 +779,7 @@ SLKC_API std::optional<CompilationError> slkc::_isTypeNameParamListTypeNameTree(
 }
 
 SLKC_API std::optional<CompilationError> slkc::_doExpandParamListTypeNameTree(
-	peff::SharedPtr<TypeNameNode> &type) {
+	AstNodePtr<TypeNameNode> &type) {
 	if (!type) {
 		return {};
 	}
@@ -831,9 +831,9 @@ SLKC_API std::optional<CompilationError> slkc::_doExpandParamListTypeNameTree(
 }
 
 SLKC_API std::optional<CompilationError> slkc::simplifyParamListTypeNameTree(
-	peff::SharedPtr<TypeNameNode> type,
+	AstNodePtr<TypeNameNode> type,
 	peff::Alloc *allocator,
-	peff::SharedPtr<TypeNameNode> &typeNameOut) {
+	AstNodePtr<TypeNameNode> &typeNameOut) {
 	bool b;
 
 	SLKC_RETURN_IF_COMP_ERROR(_isTypeNameParamListTypeNameTree(type, b));
@@ -843,7 +843,7 @@ SLKC_API std::optional<CompilationError> slkc::simplifyParamListTypeNameTree(
 		return {};
 	}
 
-	peff::SharedPtr<TypeNameNode> duplicatedType = type->duplicate<TypeNameNode>(allocator);
+	AstNodePtr<TypeNameNode> duplicatedType = type->duplicate<TypeNameNode>(allocator);
 
 	if (!duplicatedType) {
 		return genOutOfMemoryCompError();
@@ -857,7 +857,7 @@ SLKC_API std::optional<CompilationError> slkc::simplifyParamListTypeNameTree(
 }
 
 SLKC_API std::optional<CompilationError> slkc::_isTypeNameGenericParamFacade(
-	peff::SharedPtr<TypeNameNode> type,
+	AstNodePtr<TypeNameNode> type,
 	bool& whetherOut) {
 	if (!type) {
 		whetherOut = false;
@@ -866,7 +866,7 @@ SLKC_API std::optional<CompilationError> slkc::_isTypeNameGenericParamFacade(
 
 	switch (type->typeNameKind) {
 		case TypeNameKind::Custom: {
-			peff::SharedPtr<TypeNameNode> t;
+			AstNodePtr<TypeNameNode> t;
 
 			SLKC_RETURN_IF_COMP_ERROR(resolveBaseOverridenCustomTypeName(type->document->sharedFromThis(), type.castTo<CustomTypeNameNode>(), t));
 
@@ -931,14 +931,14 @@ SLKC_API std::optional<CompilationError> slkc::_isTypeNameGenericParamFacade(
 }
 
 SLKC_API std::optional<CompilationError> slkc::_doExpandGenericParamFacadeTypeNameTree(
-	peff::SharedPtr<TypeNameNode> &type) {
+	AstNodePtr<TypeNameNode> &type) {
 	if (!type) {
 		return {};
 	}
 
 	switch (type->typeNameKind) {
 		case TypeNameKind::Custom: {
-			peff::SharedPtr<TypeNameNode> t;
+			AstNodePtr<TypeNameNode> t;
 
 			SLKC_RETURN_IF_COMP_ERROR(resolveBaseOverridenCustomTypeName(type->document->sharedFromThis(), type.castTo<CustomTypeNameNode>(), t));
 
@@ -988,9 +988,9 @@ SLKC_API std::optional<CompilationError> slkc::_doExpandGenericParamFacadeTypeNa
 }
 
 [[nodiscard]] SLKC_API std::optional<CompilationError> slkc::simplifyGenericParamFacadeTypeNameTree(
-	peff::SharedPtr<TypeNameNode> type,
+	AstNodePtr<TypeNameNode> type,
 	peff::Alloc* allocator,
-	peff::SharedPtr<TypeNameNode> &typeNameOut) {
+	AstNodePtr<TypeNameNode> &typeNameOut) {
 	bool b;
 
 	SLKC_RETURN_IF_COMP_ERROR(_isTypeNameGenericParamFacade(type, b));
@@ -1000,7 +1000,7 @@ SLKC_API std::optional<CompilationError> slkc::_doExpandGenericParamFacadeTypeNa
 		return {};
 	}
 
-	peff::SharedPtr<TypeNameNode> duplicatedType = type->duplicate<TypeNameNode>(allocator);
+	AstNodePtr<TypeNameNode> duplicatedType = type->duplicate<TypeNameNode>(allocator);
 
 	if (!duplicatedType) {
 		return genOutOfMemoryCompError();
@@ -1014,13 +1014,13 @@ SLKC_API std::optional<CompilationError> slkc::_doExpandGenericParamFacadeTypeNa
 }
 
 SLKC_API std::optional<CompilationError> slkc::getUnpackedTypeOf(
-	peff::SharedPtr<TypeNameNode> type,
-	peff::SharedPtr<TypeNameNode> &typeNameOut) {
+	AstNodePtr<TypeNameNode> type,
+	AstNodePtr<TypeNameNode> &typeNameOut) {
 	peff::SharedPtr<Document> document = type->document->sharedFromThis();
 
 	switch (type->typeNameKind) {
 		case TypeNameKind::Custom: {
-			peff::SharedPtr<MemberNode> m;
+			AstNodePtr<MemberNode> m;
 
 			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, type.castTo<CustomTypeNameNode>(), m));
 
@@ -1033,9 +1033,9 @@ SLKC_API std::optional<CompilationError> slkc::getUnpackedTypeOf(
 					auto p = m.castTo<GenericParamNode>();
 
 					if (p->isParamTypeList) {
-						peff::SharedPtr<UnpackedParamsTypeNameNode> unpackedType;
+						AstNodePtr<UnpackedParamsTypeNameNode> unpackedType;
 
-						if (!(unpackedType = peff::makeSharedWithControlBlock<UnpackedParamsTypeNameNode, AstNodeControlBlock<UnpackedParamsTypeNameNode>>(document->allocator.get(), document->allocator.get(), document))) {
+						if (!(unpackedType = makeAstNode<UnpackedParamsTypeNameNode>(document->allocator.get(), document->allocator.get(), document))) {
 							return genOutOfMemoryCompError();
 						}
 
@@ -1067,9 +1067,9 @@ SLKC_API std::optional<CompilationError> slkc::getUnpackedTypeOf(
 		case TypeNameKind::ParamTypeList: {
 			auto t = type.castTo<ParamTypeListTypeNameNode>();
 
-			peff::SharedPtr<UnpackedParamsTypeNameNode> unpackedType;
+			AstNodePtr<UnpackedParamsTypeNameNode> unpackedType;
 
-			if (!(unpackedType = peff::makeSharedWithControlBlock<UnpackedParamsTypeNameNode, AstNodeControlBlock<UnpackedParamsTypeNameNode>>(document->allocator.get(), document->allocator.get(), document))) {
+			if (!(unpackedType = makeAstNode<UnpackedParamsTypeNameNode>(document->allocator.get(), document->allocator.get(), document))) {
 				return genOutOfMemoryCompError();
 			}
 
@@ -1089,9 +1089,9 @@ SLKC_API std::optional<CompilationError> slkc::getUnpackedTypeOf(
 		case TypeNameKind::UnpackedParams: {
 			auto t = type.castTo<UnpackedParamsTypeNameNode>();
 
-			peff::SharedPtr<UnpackedArgsTypeNameNode> unpackedType;
+			AstNodePtr<UnpackedArgsTypeNameNode> unpackedType;
 
-			if (!(unpackedType = peff::makeSharedWithControlBlock<UnpackedArgsTypeNameNode, AstNodeControlBlock<UnpackedArgsTypeNameNode>>(document->allocator.get(), document->allocator.get(), document))) {
+			if (!(unpackedType = makeAstNode<UnpackedArgsTypeNameNode>(document->allocator.get(), document->allocator.get(), document))) {
 				return genOutOfMemoryCompError();
 			}
 
@@ -1123,11 +1123,11 @@ SLKC_API std::optional<CompilationError> slkc::getUnpackedTypeOf(
 
 SLKC_API std::optional<CompilationError> slkc::fnToTypeName(
 	CompileEnvironment *compileEnv,
-	peff::SharedPtr<FnOverloadingNode> fn,
-	peff::SharedPtr<FnTypeNameNode> &evaluatedTypeOut) {
-	peff::SharedPtr<FnTypeNameNode> tn;
+	AstNodePtr<FnOverloadingNode> fn,
+	AstNodePtr<FnTypeNameNode> &evaluatedTypeOut) {
+	AstNodePtr<FnTypeNameNode> tn;
 
-	if (!(tn = peff::makeSharedWithControlBlock<FnTypeNameNode, AstNodeControlBlock<FnTypeNameNode>>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
+	if (!(tn = makeAstNode<FnTypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
 		return genOutOfMemoryCompError();
 	}
 
@@ -1154,7 +1154,7 @@ SLKC_API std::optional<CompilationError> slkc::fnToTypeName(
 
 					SLKC_RETURN_IF_COMP_ERROR(getFullIdRef(compileEnv->allocator.get(), fn->parent->parent->sharedFromThis().castTo<MemberNode>(), fullIdRef));
 
-					auto thisType = peff::makeSharedWithControlBlock<CustomTypeNameNode, AstNodeControlBlock<CustomTypeNameNode>>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document);
+					auto thisType = makeAstNode<CustomTypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document);
 
 					if (!thisType) {
 						return genOutOfMemoryCompError();
@@ -1177,7 +1177,7 @@ SLKC_API std::optional<CompilationError> slkc::fnToTypeName(
 	return {};
 }
 
-SLKC_API std::optional<slkc::CompilationError> slkc::typeNameCmp(peff::SharedPtr<TypeNameNode> lhs, peff::SharedPtr<TypeNameNode> rhs, int &out) noexcept {
+SLKC_API std::optional<slkc::CompilationError> slkc::typeNameCmp(AstNodePtr<TypeNameNode> lhs, AstNodePtr<TypeNameNode> rhs, int &out) noexcept {
 	peff::SharedPtr<Document> doc = lhs->document->sharedFromThis();
 
 	if (doc != rhs->document->sharedFromThis())
@@ -1193,11 +1193,11 @@ SLKC_API std::optional<slkc::CompilationError> slkc::typeNameCmp(peff::SharedPtr
 	}
 	switch (lhs->typeNameKind) {
 		case TypeNameKind::Custom: {
-			peff::SharedPtr<CustomTypeNameNode>
+			AstNodePtr<CustomTypeNameNode>
 				l = lhs.castTo<CustomTypeNameNode>(),
 				r = rhs.castTo<CustomTypeNameNode>();
 
-			peff::SharedPtr<MemberNode>
+			AstNodePtr<MemberNode>
 				lm,
 				rm;
 
@@ -1247,7 +1247,7 @@ SLKC_API std::optional<slkc::CompilationError> slkc::typeNameCmp(peff::SharedPtr
 	std::terminate();
 }
 
-SLKC_API std::optional<slkc::CompilationError> slkc::typeNameListCmp(const peff::DynArray<peff::SharedPtr<TypeNameNode>> &lhs, const peff::DynArray<peff::SharedPtr<TypeNameNode>> &rhs, int &out) noexcept {
+SLKC_API std::optional<slkc::CompilationError> slkc::typeNameListCmp(const peff::DynArray<AstNodePtr<TypeNameNode>> &lhs, const peff::DynArray<AstNodePtr<TypeNameNode>> &rhs, int &out) noexcept {
 	if (lhs.size() < rhs.size()) {
 		out = -1;
 		return {};

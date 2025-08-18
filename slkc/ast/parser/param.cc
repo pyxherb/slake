@@ -3,7 +3,7 @@
 using namespace slkc;
 
 SLKC_API std::optional<SyntaxError> Parser::parseParams(
-	peff::DynArray<peff::SharedPtr<VarNode>> &paramsOut,
+	peff::DynArray<AstNodePtr<VarNode>> &paramsOut,
 	bool &varArgOut,
 	peff::DynArray<size_t> &idxCommaTokensOut,
 	size_t &lAngleBracketIndexOut,
@@ -25,9 +25,9 @@ SLKC_API std::optional<SyntaxError> Parser::parseParams(
 			break;
 		}
 
-		peff::SharedPtr<VarNode> paramNode;
+		AstNodePtr<VarNode> paramNode;
 
-		if (!(paramNode = peff::makeSharedWithControlBlock<VarNode, AstNodeControlBlock<VarNode>>(resourceAllocator.get(), resourceAllocator.get(), document))) {
+		if (!(paramNode = makeAstNode<VarNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
 			return genOutOfMemoryError();
 		}
 

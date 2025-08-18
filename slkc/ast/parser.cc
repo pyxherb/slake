@@ -248,7 +248,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseIdRef(IdRefPtr &idRefOut) {
 			nextToken();
 
 			for (;;) {
-				peff::SharedPtr<TypeNameNode> genericArg;
+				AstNodePtr<TypeNameNode> genericArg;
 				if ((syntaxError = parseTypeName(genericArg)))
 					goto genericArgParseFail;
 
@@ -298,13 +298,13 @@ end:
 	return {};
 }
 
-[[nodiscard]] SLKC_API std::optional<SyntaxError> Parser::parseArgs(peff::DynArray<peff::SharedPtr<ExprNode>> &argsOut, peff::DynArray<size_t> &idxCommaTokensOut) {
+[[nodiscard]] SLKC_API std::optional<SyntaxError> Parser::parseArgs(peff::DynArray<AstNodePtr<ExprNode>> &argsOut, peff::DynArray<size_t> &idxCommaTokensOut) {
 	while (true) {
 		if (peekToken()->tokenId == TokenId::RParenthese) {
 			break;
 		}
 
-		peff::SharedPtr<ExprNode> arg;
+		AstNodePtr<ExprNode> arg;
 
 		if (auto e = parseExpr(0, arg); e)
 			return e;
@@ -324,7 +324,7 @@ end:
 	return {};
 }
 
-SLKC_API std::optional<SyntaxError> Parser::parseFn(peff::SharedPtr<FnOverloadingNode> &fnNodeOut) {
+SLKC_API std::optional<SyntaxError> Parser::parseFn(AstNodePtr<FnOverloadingNode> &fnNodeOut) {
 	std::optional<SyntaxError> syntaxError;
 
 	FnFlags initialFlags = 0;
@@ -363,7 +363,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseFn(peff::SharedPtr<FnOverloadin
 			return SyntaxError(TokenRange{ fnToken->index }, SyntaxErrorKind::UnexpectedToken);
 	}
 
-	if (!(fnNodeOut = peff::makeSharedWithControlBlock<FnOverloadingNode, AstNodeControlBlock<FnOverloadingNode>>(resourceAllocator.get(), resourceAllocator.get(), document))) {
+	if (!(fnNodeOut = makeAstNode<FnOverloadingNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
 		return genOutOfMemoryError();
 	}
 
@@ -375,7 +375,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseFn(peff::SharedPtr<FnOverloadin
 			break;
 	}
 
-	peff::SharedPtr<MemberNode> prevParent = curParent;
+	AstNodePtr<MemberNode> prevParent = curParent;
 	peff::ScopeGuard restoreParentGuard([this, prevParent]() noexcept {
 		curParent = prevParent;
 	});
@@ -431,9 +431,9 @@ SLKC_API std::optional<SyntaxError> Parser::parseFn(peff::SharedPtr<FnOverloadin
 		case TokenId::LBrace: {
 			nextToken();
 
-			peff::SharedPtr<StmtNode> curStmt;
+			AstNodePtr<StmtNode> curStmt;
 
-			if (!(fnNodeOut->body = peff::makeSharedWithControlBlock<CodeBlockStmtNode, AstNodeControlBlock<CodeBlockStmtNode>>(resourceAllocator.get(), resourceAllocator.get(), document))) {
+			if (!(fnNodeOut->body = makeAstNode<CodeBlockStmtNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
 				return genOutOfMemoryError();
 			}
 
@@ -497,7 +497,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseClassStmts() {
 SLKC_API std::optional<SyntaxError> Parser::parseProgramStmt() {
 	std::optional<SyntaxError> syntaxError;
 
-	peff::DynArray<peff::SharedPtr<AttributeNode>> attributes(resourceAllocator.get());
+	peff::DynArray<AstNodePtr<AttributeNode>> attributes(resourceAllocator.get());
 
 	if ((syntaxError = parseAttributes(attributes))) {
 		return syntaxError;
@@ -528,7 +528,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseProgramStmt() {
 accessModifierParseEnd:
 	Token *token = peekToken();
 
-	peff::SharedPtr<ModuleNode> p = curParent.castTo<ModuleNode>();
+	AstNodePtr<ModuleNode> p = curParent.castTo<ModuleNode>();
 
 	if (p->astNodeType == AstNodeType::Module) {
 		access |= slake::ACCESS_STATIC;
@@ -539,9 +539,9 @@ accessModifierParseEnd:
 			// Attribute definition.
 			nextToken();
 
-			peff::SharedPtr<AttributeDefNode> attributeNode;
+			AstNodePtr<AttributeDefNode> attributeNode;
 
-			if (!(attributeNode = peff::makeSharedWithControlBlock<AttributeDefNode, AstNodeControlBlock<AttributeDefNode>>(resourceAllocator.get(), resourceAllocator.get(), document))) {
+			if (!(attributeNode = makeAstNode<AttributeDefNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
 				return genOutOfMemoryError();
 			}
 
@@ -570,7 +570,7 @@ accessModifierParseEnd:
 					attributeNode->tokenRange = TokenRange{ token->index, parseContext.idxPrevToken };
 				});
 
-				peff::SharedPtr<MemberNode> prevParent;
+				AstNodePtr<MemberNode> prevParent;
 				prevParent = curParent;
 				peff::ScopeGuard restorePrevModGuard([this, prevParent]() noexcept {
 					curParent = prevParent;
@@ -633,7 +633,7 @@ accessModifierParseEnd:
 		case TokenId::FnKeyword:
 		case TokenId::OperatorKeyword: {
 			// Function.
-			peff::SharedPtr<FnOverloadingNode> fn;
+			AstNodePtr<FnOverloadingNode> fn;
 
 			if ((syntaxError = parseFn(fn))) {
 				return syntaxError;
@@ -659,9 +659,9 @@ accessModifierParseEnd:
 					return genOutOfMemoryError();
 				}
 			} else {
-				peff::SharedPtr<FnNode> fnSlot;
+				AstNodePtr<FnNode> fnSlot;
 
-				if (!(fnSlot = peff::makeSharedWithControlBlock<FnNode, AstNodeControlBlock<FnNode>>(resourceAllocator.get(), resourceAllocator.get(), document))) {
+				if (!(fnSlot = makeAstNode<FnNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
 					return genOutOfMemoryError();
 				}
 
@@ -685,9 +685,9 @@ accessModifierParseEnd:
 			// Class.
 			nextToken();
 
-			peff::SharedPtr<ClassNode> classNode;
+			AstNodePtr<ClassNode> classNode;
 
-			if (!(classNode = peff::makeSharedWithControlBlock<ClassNode, AstNodeControlBlock<ClassNode>>(resourceAllocator.get(), resourceAllocator.get(), document))) {
+			if (!(classNode = makeAstNode<ClassNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
 				return genOutOfMemoryError();
 			}
 
@@ -716,7 +716,7 @@ accessModifierParseEnd:
 					classNode->tokenRange = TokenRange{ token->index, parseContext.idxPrevToken };
 				});
 
-				peff::SharedPtr<MemberNode> prevParent;
+				AstNodePtr<MemberNode> prevParent;
 				prevParent = curParent;
 				peff::ScopeGuard restorePrevModGuard([this, prevParent]() noexcept {
 					curParent = prevParent;
@@ -745,7 +745,7 @@ accessModifierParseEnd:
 					nextToken();
 
 					while (true) {
-						peff::SharedPtr<TypeNameNode> tn;
+						AstNodePtr<TypeNameNode> tn;
 
 						if ((syntaxError = parseTypeName(tn))) {
 							return syntaxError;
@@ -820,9 +820,9 @@ accessModifierParseEnd:
 			// Interface.
 			nextToken();
 
-			peff::SharedPtr<InterfaceNode> interfaceNode;
+			AstNodePtr<InterfaceNode> interfaceNode;
 
-			if (!(interfaceNode = peff::makeSharedWithControlBlock<InterfaceNode, AstNodeControlBlock<InterfaceNode>>(resourceAllocator.get(), resourceAllocator.get(), document))) {
+			if (!(interfaceNode = makeAstNode<InterfaceNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
 				return genOutOfMemoryError();
 			}
 
@@ -848,7 +848,7 @@ accessModifierParseEnd:
 			Token *t;
 
 			{
-				peff::SharedPtr<MemberNode> prevMember;
+				AstNodePtr<MemberNode> prevMember;
 				prevMember = curParent;
 				peff::ScopeGuard restorePrevModGuard([this, prevMember]() noexcept {
 					curParent = prevMember;
@@ -863,7 +863,7 @@ accessModifierParseEnd:
 					nextToken();
 
 					while (true) {
-						peff::SharedPtr<TypeNameNode> tn;
+						AstNodePtr<TypeNameNode> tn;
 
 						if ((syntaxError = parseTypeName(tn))) {
 							return syntaxError;
@@ -938,9 +938,9 @@ accessModifierParseEnd:
 			// Import item.
 			nextToken();
 
-			peff::SharedPtr<ImportNode> importNode;
+			AstNodePtr<ImportNode> importNode;
 
-			if (!(importNode = peff::makeSharedWithControlBlock<ImportNode, AstNodeControlBlock<ImportNode>>(resourceAllocator.get(), resourceAllocator.get(), document))) {
+			if (!(importNode = makeAstNode<ImportNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
 				return genOutOfMemoryError();
 			}
 
@@ -969,7 +969,7 @@ accessModifierParseEnd:
 					return genOutOfMemoryError();
 				}
 			} else {
-				if (!p->anonymousImports.pushBack(peff::SharedPtr<ImportNode>(importNode))) {
+				if (!p->anonymousImports.pushBack(AstNodePtr<ImportNode>(importNode))) {
 					return genOutOfMemoryError();
 				}
 			}
@@ -988,9 +988,9 @@ accessModifierParseEnd:
 			// Global variable.
 			nextToken();
 
-			peff::SharedPtr<VarDefStmtNode> stmt;
+			AstNodePtr<VarDefStmtNode> stmt;
 
-			if (!(stmt = peff::makeSharedWithControlBlock<VarDefStmtNode, AstNodeControlBlock<VarDefStmtNode>>(
+			if (!(stmt = makeAstNode<VarDefStmtNode>(
 					  resourceAllocator.get(),
 					  resourceAllocator.get(),
 					  document,
@@ -1032,7 +1032,7 @@ accessModifierParseEnd:
 	return {};
 }
 
-SLKC_API std::optional<SyntaxError> Parser::parseProgram(const peff::SharedPtr<ModuleNode> &initialMod, IdRefPtr &moduleNameOut) {
+SLKC_API std::optional<SyntaxError> Parser::parseProgram(const AstNodePtr<ModuleNode> &initialMod, IdRefPtr &moduleNameOut) {
 	std::optional<SyntaxError> syntaxError;
 
 	Token *t;

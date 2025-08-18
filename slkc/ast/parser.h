@@ -114,7 +114,7 @@ namespace slkc {
 	class Parser : public peff::SharedFromThis<Parser> {
 	public:
 		peff::SharedPtr<Document> document;
-		peff::SharedPtr<MemberNode> curParent;
+		AstNodePtr<MemberNode> curParent;
 		peff::RcObjectPtr<peff::Alloc> resourceAllocator;
 		TokenList tokenList;
 		struct ParseContext {
@@ -159,20 +159,20 @@ namespace slkc {
 		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseVarDefs(peff::DynArray<VarDefEntryPtr> &varDefEntries);
 
 		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseIdRef(IdRefPtr &idRefOut);
-		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseExpr(int precedence, peff::SharedPtr<ExprNode> &exprOut);
-		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseStmt(peff::SharedPtr<StmtNode> &stmtOut);
-		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseTypeName(peff::SharedPtr<TypeNameNode> &typeNameOut, bool withCircumfixes = true);
+		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseExpr(int precedence, AstNodePtr<ExprNode> &exprOut);
+		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseStmt(AstNodePtr<StmtNode> &stmtOut);
+		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseTypeName(AstNodePtr<TypeNameNode> &typeNameOut, bool withCircumfixes = true);
 
-		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseAttribute(peff::SharedPtr<AttributeNode> &attributeOut);
-		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseAttributes(peff::DynArray<peff::SharedPtr<AttributeNode>> &attributesOut);
+		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseAttribute(AstNodePtr<AttributeNode> &attributeOut);
+		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseAttributes(peff::DynArray<AstNodePtr<AttributeNode>> &attributesOut);
 
-		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseArgs(peff::DynArray<peff::SharedPtr<ExprNode>> &argsOut, peff::DynArray<size_t> &idxCommaTokensOut);
+		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseArgs(peff::DynArray<AstNodePtr<ExprNode>> &argsOut, peff::DynArray<size_t> &idxCommaTokensOut);
 		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseGenericConstraint(GenericConstraintPtr &constraintOut);
 		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseParamTypeListGenericConstraint(ParamTypeListGenericConstraintPtr &constraintOut);
-		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseGenericParams(peff::DynArray<peff::SharedPtr<GenericParamNode>> &genericParamsOut, peff::DynArray<size_t> &idxCommaTokensOut, size_t &lAngleBracketIndexOut, size_t &rAngleBracketIndexOut);
-		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseParams(peff::DynArray<peff::SharedPtr<VarNode>> &paramsOut, bool &varArgOut, peff::DynArray<size_t> &idxCommaTokensOut, size_t &lAngleBracketIndexOut, size_t &rAngleBracketIndexOut);
+		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseGenericParams(peff::DynArray<AstNodePtr<GenericParamNode>> &genericParamsOut, peff::DynArray<size_t> &idxCommaTokensOut, size_t &lAngleBracketIndexOut, size_t &rAngleBracketIndexOut);
+		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseParams(peff::DynArray<AstNodePtr<VarNode>> &paramsOut, bool &varArgOut, peff::DynArray<size_t> &idxCommaTokensOut, size_t &lAngleBracketIndexOut, size_t &rAngleBracketIndexOut);
 
-		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseFn(peff::SharedPtr<FnOverloadingNode> &fnNodeOut);
+		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseFn(AstNodePtr<FnOverloadingNode> &fnNodeOut);
 		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseOperatorName(std::string_view &nameOut);
 		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseIdName(peff::String &nameOut);
 
@@ -183,7 +183,7 @@ namespace slkc {
 		/// @brief Parse a whole program.
 		/// @return The syntax error that forced the parser to interrupt the parse progress.
 		/// @note Don't forget that there still may be syntax errors emitted even the parse progress is not interrupted.
-		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseProgram(const peff::SharedPtr<ModuleNode> &initialMod, IdRefPtr &moduleNameOut);
+		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseProgram(const AstNodePtr<ModuleNode> &initialMod, IdRefPtr &moduleNameOut);
 	};
 }
 

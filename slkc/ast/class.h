@@ -7,12 +7,12 @@
 namespace slkc {
 	class ClassNode : public ModuleNode {
 	protected:
-		SLKC_API virtual peff::SharedPtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
+		SLKC_API virtual AstNodePtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
 
 	public:
-		peff::SharedPtr<TypeNameNode> baseType;
-		peff::DynArray<peff::SharedPtr<TypeNameNode>> implTypes;
-		peff::DynArray<peff::SharedPtr<GenericParamNode>> genericParams;
+		AstNodePtr<TypeNameNode> baseType;
+		peff::DynArray<AstNodePtr<TypeNameNode>> implTypes;
+		peff::DynArray<AstNodePtr<GenericParamNode>> genericParams;
 		peff::HashMap<std::string_view, size_t> genericParamIndices;
 		peff::DynArray<size_t> idxGenericParamCommaTokens;
 		size_t idxLAngleBracketToken = SIZE_MAX, idxRAngleBracketToken = SIZE_MAX;
@@ -26,11 +26,11 @@ namespace slkc {
 
 	class InterfaceNode : public ModuleNode {
 	protected:
-		SLKC_API virtual peff::SharedPtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
+		SLKC_API virtual AstNodePtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
 
 	public:
-		peff::DynArray<peff::SharedPtr<TypeNameNode>> implTypes;
-		peff::DynArray<peff::SharedPtr<GenericParamNode>> genericParams;
+		peff::DynArray<AstNodePtr<TypeNameNode>> implTypes;
+		peff::DynArray<AstNodePtr<GenericParamNode>> genericParams;
 		peff::HashMap<std::string_view, size_t> genericParamIndices;
 		peff::DynArray<size_t> idxGenericParamCommaTokens;
 		size_t idxLAngleBracketToken = SIZE_MAX, idxRAngleBracketToken = SIZE_MAX;
@@ -44,10 +44,10 @@ namespace slkc {
 
 	class ThisNode : public MemberNode {
 	protected:
-		SLKC_API virtual peff::SharedPtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
+		SLKC_API virtual AstNodePtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
 
 	public:
-		peff::SharedPtr<MemberNode> thisType;
+		AstNodePtr<MemberNode> thisType;
 
 		SLKC_API ThisNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
 		SLKC_API ThisNode(const ThisNode &rhs, peff::Alloc *allocator, bool &succeededOut);

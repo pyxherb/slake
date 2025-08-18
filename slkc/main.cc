@@ -687,7 +687,7 @@ int main(int argc, char *argv[]) {
 				return ENOMEM;
 			}
 
-			peff::SharedPtr<slkc::ModuleNode> rootMod;
+			slkc::AstNodePtr<slkc::ModuleNode> rootMod;
 			if (!(rootMod = peff::makeSharedWithControlBlock<slkc::ModuleNode, slkc::AstNodeControlBlock<slkc::ModuleNode>>(peff::getDefaultAlloc(), peff::getDefaultAlloc(), document))) {
 				printError("Error allocating memory for the root module");
 				return ENOMEM;
@@ -696,7 +696,7 @@ int main(int argc, char *argv[]) {
 
 			slkc::IdRefPtr moduleName;
 
-			peff::SharedPtr<slkc::ModuleNode> mod(peff::makeSharedWithControlBlock<slkc::ModuleNode, slkc::AstNodeControlBlock<slkc::ModuleNode>>(peff::getDefaultAlloc(), peff::getDefaultAlloc(), document));
+			slkc::AstNodePtr<slkc::ModuleNode> mod(peff::makeSharedWithControlBlock<slkc::ModuleNode, slkc::AstNodeControlBlock<slkc::ModuleNode>>(peff::getDefaultAlloc(), peff::getDefaultAlloc(), document));
 			if (!(mod = peff::makeSharedWithControlBlock<slkc::ModuleNode, slkc::AstNodeControlBlock<slkc::ModuleNode>>(peff::getDefaultAlloc(), peff::getDefaultAlloc(), document))) {
 				printError("Error allocating memory for the target module");
 				return ENOMEM;

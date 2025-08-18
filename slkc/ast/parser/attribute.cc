@@ -2,12 +2,12 @@
 
 using namespace slkc;
 
-SLKC_API std::optional<SyntaxError> Parser::parseAttribute(peff::SharedPtr<AttributeNode> &attributeOut) {
+SLKC_API std::optional<SyntaxError> Parser::parseAttribute(AstNodePtr<AttributeNode> &attributeOut) {
 	std::optional<SyntaxError> syntaxError;
 
-	peff::SharedPtr<AttributeNode> attribute;
+	AstNodePtr<AttributeNode> attribute;
 
-	if (!(attribute = peff::makeSharedWithControlBlock<AttributeNode, AstNodeControlBlock<AttributeNode>>(resourceAllocator.get(), resourceAllocator.get(), document))) {
+	if (!(attribute = makeAstNode<AttributeNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
 		return genOutOfMemoryError();
 	}
 
@@ -28,7 +28,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseAttribute(peff::SharedPtr<Attri
 					break;
 				}
 
-				peff::SharedPtr<ExprNode> arg;
+				AstNodePtr<ExprNode> arg;
 
 				Token *nameToken;
 				if ((syntaxError = expectToken((nameToken = peekToken()), TokenId::Id)))
@@ -80,7 +80,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseAttribute(peff::SharedPtr<Attri
 	return {};
 }
 
-SLKC_API std::optional<SyntaxError> Parser::parseAttributes(peff::DynArray<peff::SharedPtr<AttributeNode>> &attributesOut) {
+SLKC_API std::optional<SyntaxError> Parser::parseAttributes(peff::DynArray<AstNodePtr<AttributeNode>> &attributesOut) {
 	std::optional<SyntaxError> syntaxError;
 	Token *currentToken;
 
@@ -91,7 +91,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseAttributes(peff::DynArray<peff:
 
 		nextToken();
 
-		peff::SharedPtr<AttributeNode> attribute;
+		AstNodePtr<AttributeNode> attribute;
 
 		if ((syntaxError = parseAttribute(attribute)))
 			return syntaxError;

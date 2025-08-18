@@ -60,9 +60,9 @@ ParamTypeListGenericConstraintPtr slkc::duplicateParamTypeListGenericConstraint(
 	return ptr;
 }
 
-SLKC_API peff::SharedPtr<AstNode> GenericParamNode::doDuplicate(peff::Alloc *newAllocator) const {
+SLKC_API AstNodePtr<AstNode> GenericParamNode::doDuplicate(peff::Alloc *newAllocator) const {
 	bool succeeded = false;
-	peff::SharedPtr<GenericParamNode> duplicatedNode(peff::makeSharedWithControlBlock<GenericParamNode, AstNodeControlBlock<GenericParamNode>>(newAllocator, *this, newAllocator, succeeded));
+	AstNodePtr<GenericParamNode> duplicatedNode(makeAstNode<GenericParamNode>(newAllocator, *this, newAllocator, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}

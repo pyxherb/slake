@@ -2,9 +2,9 @@
 
 using namespace slkc;
 
-SLKC_API peff::SharedPtr<AstNode> AttributeDefNode::doDuplicate(peff::Alloc *newAllocator) const {
+SLKC_API AstNodePtr<AstNode> AttributeDefNode::doDuplicate(peff::Alloc *newAllocator) const {
 	bool succeeded = false;
-	peff::SharedPtr<AttributeDefNode> duplicatedNode(peff::makeSharedWithControlBlock<AttributeDefNode, AstNodeControlBlock<AttributeDefNode>>(newAllocator, *this, newAllocator, succeeded));
+	AstNodePtr<AttributeDefNode> duplicatedNode(makeAstNode<AttributeDefNode>(newAllocator, *this, newAllocator, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -29,9 +29,9 @@ SLKC_API AttributeDefNode::AttributeDefNode(const AttributeDefNode &rhs, peff::A
 SLKC_API AttributeDefNode::~AttributeDefNode() {
 }
 
-SLKC_API peff::SharedPtr<AstNode> AttributeNode::doDuplicate(peff::Alloc *newAllocator) const {
+SLKC_API AstNodePtr<AstNode> AttributeNode::doDuplicate(peff::Alloc *newAllocator) const {
 	bool succeeded = false;
-	peff::SharedPtr<AttributeNode> duplicatedNode(peff::makeSharedWithControlBlock<AttributeNode, AstNodeControlBlock<AttributeNode>>(newAllocator, *this, newAllocator, succeeded));
+	AstNodePtr<AttributeNode> duplicatedNode(makeAstNode<AttributeNode>(newAllocator, *this, newAllocator, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -59,7 +59,7 @@ SLKC_API AttributeNode::AttributeNode(const AttributeNode &rhs, peff::Alloc *all
 	}
 
 	for (size_t i = 0; i < rhs.fieldData.size(); ++i) {
-		peff::SharedPtr<ExprNode> dd;
+		AstNodePtr<ExprNode> dd;
 		if (!(dd = rhs.fieldData.at(i)->duplicate<ExprNode>(allocator))) {
 			succeededOut = false;
 			return;

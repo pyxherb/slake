@@ -5,13 +5,13 @@ using namespace slkc;
 SLKC_API std::optional<SyntaxError> Parser::parseVarDefs(peff::DynArray<VarDefEntryPtr> &varDefEntries) {
 	Token *currentToken;
 	std::optional<SyntaxError> syntaxError;
-	peff::SharedPtr<TypeNameNode> type;
-	peff::SharedPtr<ExprNode> initialValue;
+	AstNodePtr<TypeNameNode> type;
+	AstNodePtr<ExprNode> initialValue;
 
 	for (;;) {
 		bool isSealed = false;
 
-		peff::DynArray<peff::SharedPtr<AttributeNode>> attributes(resourceAllocator.get());
+		peff::DynArray<AstNodePtr<AttributeNode>> attributes(resourceAllocator.get());
 
 		if ((syntaxError = parseAttributes(attributes))) {
 			return syntaxError;
@@ -84,7 +84,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseVarDefs(peff::DynArray<VarDefEn
 	return {};
 }
 
-SLKC_API std::optional<SyntaxError> Parser::parseStmt(peff::SharedPtr<StmtNode> &stmtOut) {
+SLKC_API std::optional<SyntaxError> Parser::parseStmt(AstNodePtr<StmtNode> &stmtOut) {
 	Token *prefixToken;
 
 	std::optional<SyntaxError> syntaxError;
@@ -101,9 +101,9 @@ SLKC_API std::optional<SyntaxError> Parser::parseStmt(peff::SharedPtr<StmtNode> 
 			case TokenId::IfKeyword: {
 				nextToken();
 
-				peff::SharedPtr<IfStmtNode> ifStmt;
+				AstNodePtr<IfStmtNode> ifStmt;
 
-				if (!(ifStmt = peff::makeSharedWithControlBlock<IfStmtNode, AstNodeControlBlock<IfStmtNode>>(resourceAllocator.get(), resourceAllocator.get(), document))) {
+				if (!(ifStmt = makeAstNode<IfStmtNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
 					return genOutOfMemoryError();
 				}
 
@@ -159,9 +159,9 @@ SLKC_API std::optional<SyntaxError> Parser::parseStmt(peff::SharedPtr<StmtNode> 
 			case TokenId::WithKeyword: {
 				nextToken();
 
-				peff::SharedPtr<WithStmtNode> withStmt;
+				AstNodePtr<WithStmtNode> withStmt;
 
-				if (!(withStmt = peff::makeSharedWithControlBlock<WithStmtNode, AstNodeControlBlock<WithStmtNode>>(
+				if (!(withStmt = makeAstNode<WithStmtNode>(
 						  resourceAllocator.get(),
 						  resourceAllocator.get(),
 						  document))) {
@@ -226,9 +226,9 @@ SLKC_API std::optional<SyntaxError> Parser::parseStmt(peff::SharedPtr<StmtNode> 
 			case TokenId::ForKeyword: {
 				nextToken();
 
-				peff::SharedPtr<ForStmtNode> forStmt;
+				AstNodePtr<ForStmtNode> forStmt;
 
-				if (!(forStmt = peff::makeSharedWithControlBlock<ForStmtNode, AstNodeControlBlock<ForStmtNode>>(
+				if (!(forStmt = makeAstNode<ForStmtNode>(
 						  resourceAllocator.get(),
 						  resourceAllocator.get(),
 						  document))) {
@@ -315,9 +315,9 @@ SLKC_API std::optional<SyntaxError> Parser::parseStmt(peff::SharedPtr<StmtNode> 
 			case TokenId::WhileKeyword: {
 				nextToken();
 
-				peff::SharedPtr<WhileStmtNode> whileStmt;
+				AstNodePtr<WhileStmtNode> whileStmt;
 
-				if (!(whileStmt = peff::makeSharedWithControlBlock<WhileStmtNode, AstNodeControlBlock<WhileStmtNode>>(
+				if (!(whileStmt = makeAstNode<WhileStmtNode>(
 						  resourceAllocator.get(),
 						  resourceAllocator.get(),
 						  document))) {
@@ -365,9 +365,9 @@ SLKC_API std::optional<SyntaxError> Parser::parseStmt(peff::SharedPtr<StmtNode> 
 			case TokenId::DoKeyword: {
 				nextToken();
 
-				peff::SharedPtr<WhileStmtNode> whileStmt;
+				AstNodePtr<WhileStmtNode> whileStmt;
 
-				if (!(whileStmt = peff::makeSharedWithControlBlock<WhileStmtNode, AstNodeControlBlock<WhileStmtNode>>(
+				if (!(whileStmt = makeAstNode<WhileStmtNode>(
 						  resourceAllocator.get(),
 						  resourceAllocator.get(),
 						  document))) {
@@ -425,9 +425,9 @@ SLKC_API std::optional<SyntaxError> Parser::parseStmt(peff::SharedPtr<StmtNode> 
 			case TokenId::LetKeyword: {
 				nextToken();
 
-				peff::SharedPtr<VarDefStmtNode> stmt;
+				AstNodePtr<VarDefStmtNode> stmt;
 
-				if (!(stmt = peff::makeSharedWithControlBlock<VarDefStmtNode, AstNodeControlBlock<VarDefStmtNode>>(
+				if (!(stmt = makeAstNode<VarDefStmtNode>(
 						  resourceAllocator.get(),
 						  resourceAllocator.get(),
 						  document,
@@ -454,9 +454,9 @@ SLKC_API std::optional<SyntaxError> Parser::parseStmt(peff::SharedPtr<StmtNode> 
 			case TokenId::BreakKeyword: {
 				nextToken();
 
-				peff::SharedPtr<BreakStmtNode> stmt;
+				AstNodePtr<BreakStmtNode> stmt;
 
-				if (!(stmt = peff::makeSharedWithControlBlock<BreakStmtNode, AstNodeControlBlock<BreakStmtNode>>(
+				if (!(stmt = makeAstNode<BreakStmtNode>(
 						  resourceAllocator.get(),
 						  resourceAllocator.get(),
 						  document))) {
@@ -478,9 +478,9 @@ SLKC_API std::optional<SyntaxError> Parser::parseStmt(peff::SharedPtr<StmtNode> 
 			case TokenId::ContinueKeyword: {
 				nextToken();
 
-				peff::SharedPtr<ContinueStmtNode> stmt;
+				AstNodePtr<ContinueStmtNode> stmt;
 
-				if (!(stmt = peff::makeSharedWithControlBlock<ContinueStmtNode, AstNodeControlBlock<ContinueStmtNode>>(
+				if (!(stmt = makeAstNode<ContinueStmtNode>(
 						  resourceAllocator.get(),
 						  resourceAllocator.get(),
 						  document))) {
@@ -502,13 +502,13 @@ SLKC_API std::optional<SyntaxError> Parser::parseStmt(peff::SharedPtr<StmtNode> 
 			case TokenId::ReturnKeyword: {
 				nextToken();
 
-				peff::SharedPtr<ReturnStmtNode> stmt;
+				AstNodePtr<ReturnStmtNode> stmt;
 
-				if (!(stmt = peff::makeSharedWithControlBlock<ReturnStmtNode, AstNodeControlBlock<ReturnStmtNode>>(
+				if (!(stmt = makeAstNode<ReturnStmtNode>(
 						  resourceAllocator.get(),
 						  resourceAllocator.get(),
 						  document,
-						  peff::SharedPtr<ExprNode>()))) {
+						  AstNodePtr<ExprNode>()))) {
 					return genOutOfMemoryError();
 				}
 
@@ -545,13 +545,13 @@ SLKC_API std::optional<SyntaxError> Parser::parseStmt(peff::SharedPtr<StmtNode> 
 			case TokenId::YieldKeyword: {
 				nextToken();
 
-				peff::SharedPtr<YieldStmtNode> stmt;
+				AstNodePtr<YieldStmtNode> stmt;
 
-				if (!(stmt = peff::makeSharedWithControlBlock<YieldStmtNode, AstNodeControlBlock<YieldStmtNode>>(
+				if (!(stmt = makeAstNode<YieldStmtNode>(
 						  resourceAllocator.get(),
 						  resourceAllocator.get(),
 						  document,
-						  peff::SharedPtr<ExprNode>()))) {
+						  AstNodePtr<ExprNode>()))) {
 					return genOutOfMemoryError();
 				}
 
@@ -588,9 +588,9 @@ SLKC_API std::optional<SyntaxError> Parser::parseStmt(peff::SharedPtr<StmtNode> 
 			case TokenId::Colon: {
 				nextToken();
 
-				peff::SharedPtr<LabelStmtNode> stmt;
+				AstNodePtr<LabelStmtNode> stmt;
 
-				if (!(stmt = peff::makeSharedWithControlBlock<LabelStmtNode, AstNodeControlBlock<LabelStmtNode>>(resourceAllocator.get(), resourceAllocator.get(), document))) {
+				if (!(stmt = makeAstNode<LabelStmtNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
 					return genOutOfMemoryError();
 				}
 
@@ -611,9 +611,9 @@ SLKC_API std::optional<SyntaxError> Parser::parseStmt(peff::SharedPtr<StmtNode> 
 			case TokenId::CaseKeyword: {
 				nextToken();
 
-				peff::SharedPtr<CaseLabelStmtNode> stmt;
+				AstNodePtr<CaseLabelStmtNode> stmt;
 
-				if (!(stmt = peff::makeSharedWithControlBlock<CaseLabelStmtNode, AstNodeControlBlock<CaseLabelStmtNode>>(resourceAllocator.get(), resourceAllocator.get(), document))) {
+				if (!(stmt = makeAstNode<CaseLabelStmtNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
 					return genOutOfMemoryError();
 				}
 
@@ -634,9 +634,9 @@ SLKC_API std::optional<SyntaxError> Parser::parseStmt(peff::SharedPtr<StmtNode> 
 			case TokenId::DefaultKeyword: {
 				nextToken();
 
-				peff::SharedPtr<CaseLabelStmtNode> stmt;
+				AstNodePtr<CaseLabelStmtNode> stmt;
 
-				if (!(stmt = peff::makeSharedWithControlBlock<CaseLabelStmtNode, AstNodeControlBlock<CaseLabelStmtNode>>(resourceAllocator.get(), resourceAllocator.get(), document))) {
+				if (!(stmt = makeAstNode<CaseLabelStmtNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
 					return genOutOfMemoryError();
 				}
 
@@ -653,9 +653,9 @@ SLKC_API std::optional<SyntaxError> Parser::parseStmt(peff::SharedPtr<StmtNode> 
 			case TokenId::SwitchKeyword: {
 				nextToken();
 
-				peff::SharedPtr<SwitchStmtNode> stmt;
+				AstNodePtr<SwitchStmtNode> stmt;
 
-				if (!(stmt = peff::makeSharedWithControlBlock<SwitchStmtNode, AstNodeControlBlock<SwitchStmtNode>>(resourceAllocator.get(), resourceAllocator.get(), document))) {
+				if (!(stmt = makeAstNode<SwitchStmtNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
 					return genOutOfMemoryError();
 				}
 
@@ -694,7 +694,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseStmt(peff::SharedPtr<StmtNode> 
 
 				nextToken();
 
-				peff::SharedPtr<StmtNode> curStmt;
+				AstNodePtr<StmtNode> curStmt;
 
 				while (true) {
 					if ((syntaxError = expectToken(peekToken()))) {
@@ -736,10 +736,10 @@ SLKC_API std::optional<SyntaxError> Parser::parseStmt(peff::SharedPtr<StmtNode> 
 			case TokenId::LBrace: {
 				nextToken();
 
-				peff::SharedPtr<CodeBlockStmtNode> stmt;
-				peff::SharedPtr<StmtNode> curStmt;
+				AstNodePtr<CodeBlockStmtNode> stmt;
+				AstNodePtr<StmtNode> curStmt;
 
-				if (!(stmt = peff::makeSharedWithControlBlock<CodeBlockStmtNode, AstNodeControlBlock<CodeBlockStmtNode>>(resourceAllocator.get(), resourceAllocator.get(), document))) {
+				if (!(stmt = makeAstNode<CodeBlockStmtNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
 					return genOutOfMemoryError();
 				}
 
@@ -777,11 +777,11 @@ SLKC_API std::optional<SyntaxError> Parser::parseStmt(peff::SharedPtr<StmtNode> 
 				break;
 			}
 			default: {
-				peff::SharedPtr<ExprNode> curExpr;
+				AstNodePtr<ExprNode> curExpr;
 
-				peff::SharedPtr<ExprStmtNode> stmt;
+				AstNodePtr<ExprStmtNode> stmt;
 
-				if (!(stmt = peff::makeSharedWithControlBlock<ExprStmtNode, AstNodeControlBlock<ExprStmtNode>>(resourceAllocator.get(), resourceAllocator.get(), document))) {
+				if (!(stmt = makeAstNode<ExprStmtNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
 					return genOutOfMemoryError();
 				}
 
@@ -808,7 +808,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseStmt(peff::SharedPtr<StmtNode> 
 	return {};
 
 genBadStmt:
-	if (!(stmtOut = peff::makeSharedWithControlBlock<BadStmtNode, AstNodeControlBlock<BadStmtNode>>(resourceAllocator.get(), resourceAllocator.get(), document, stmtOut).castTo<StmtNode>()))
+	if (!(stmtOut = makeAstNode<BadStmtNode>(resourceAllocator.get(), resourceAllocator.get(), document, stmtOut).castTo<StmtNode>()))
 		return genOutOfMemoryError();
 	stmtOut->tokenRange = { prefixToken->index, parseContext.idxCurrentToken };
 	return syntaxError;

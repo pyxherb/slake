@@ -2,9 +2,9 @@
 
 using namespace slkc;
 
-SLKC_API peff::SharedPtr<AstNode> ClassNode::doDuplicate(peff::Alloc *newAllocator) const {
+SLKC_API AstNodePtr<AstNode> ClassNode::doDuplicate(peff::Alloc *newAllocator) const {
 	bool succeeded = false;
-	peff::SharedPtr<ClassNode> duplicatedNode(peff::makeSharedWithControlBlock<ClassNode, AstNodeControlBlock<ClassNode>>(newAllocator, *this, newAllocator, succeeded));
+	AstNodePtr<ClassNode> duplicatedNode(makeAstNode<ClassNode>(newAllocator, *this, newAllocator, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -83,9 +83,9 @@ SLKC_API ClassNode::ClassNode(const ClassNode &rhs, peff::Alloc *allocator, bool
 SLKC_API ClassNode::~ClassNode() {
 }
 
-SLKC_API peff::SharedPtr<AstNode> InterfaceNode::doDuplicate(peff::Alloc *newAllocator) const {
+SLKC_API AstNodePtr<AstNode> InterfaceNode::doDuplicate(peff::Alloc *newAllocator) const {
 	bool succeeded = false;
-	peff::SharedPtr<InterfaceNode> duplicatedNode(peff::makeSharedWithControlBlock<InterfaceNode, AstNodeControlBlock<InterfaceNode>>(newAllocator, *this, newAllocator, succeeded));
+	AstNodePtr<InterfaceNode> duplicatedNode(makeAstNode<InterfaceNode>(newAllocator, *this, newAllocator, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -159,9 +159,9 @@ SLKC_API InterfaceNode::InterfaceNode(const InterfaceNode &rhs, peff::Alloc *all
 SLKC_API InterfaceNode::~InterfaceNode() {
 }
 
-SLKC_API peff::SharedPtr<AstNode> ThisNode::doDuplicate(peff::Alloc *newAllocator) const {
+SLKC_API AstNodePtr<AstNode> ThisNode::doDuplicate(peff::Alloc *newAllocator) const {
 	bool succeeded = false;
-	peff::SharedPtr<ThisNode> duplicatedNode(peff::makeSharedWithControlBlock<ThisNode, AstNodeControlBlock<ThisNode>>(newAllocator, *this, newAllocator, succeeded));
+	AstNodePtr<ThisNode> duplicatedNode(makeAstNode<ThisNode>(newAllocator, *this, newAllocator, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}

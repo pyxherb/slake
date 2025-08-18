@@ -19,7 +19,7 @@ SLAKE_API AstNode::AstNode(const AstNode &other, peff::Alloc *newAllocator) {
 SLKC_API AstNode::~AstNode() {
 }
 
-SLKC_API peff::SharedPtr<AstNode> AstNode::doDuplicate(peff::Alloc *newAllocator) const {
+SLKC_API AstNodePtr<AstNode> AstNode::doDuplicate(peff::Alloc *newAllocator) const {
 	std::terminate();
 }
 

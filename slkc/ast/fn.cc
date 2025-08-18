@@ -2,9 +2,9 @@
 
 using namespace slkc;
 
-SLKC_API peff::SharedPtr<AstNode> FnNode::doDuplicate(peff::Alloc *newAllocator) const {
+SLKC_API AstNodePtr<AstNode> FnNode::doDuplicate(peff::Alloc *newAllocator) const {
 	bool succeeded = false;
-	peff::SharedPtr<FnNode> duplicatedNode(peff::makeSharedWithControlBlock<FnNode, AstNodeControlBlock<FnNode>>(newAllocator, *this, newAllocator, succeeded));
+	AstNodePtr<FnNode> duplicatedNode(makeAstNode<FnNode>(newAllocator, *this, newAllocator, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -44,9 +44,9 @@ SLKC_API FnNode::FnNode(const FnNode &rhs, peff::Alloc *allocator, bool &succeed
 SLKC_API FnNode::~FnNode() {
 }
 
-SLKC_API peff::SharedPtr<AstNode> FnOverloadingNode::doDuplicate(peff::Alloc *newAllocator) const {
+SLKC_API AstNodePtr<AstNode> FnOverloadingNode::doDuplicate(peff::Alloc *newAllocator) const {
 	bool succeeded = false;
-	peff::SharedPtr<FnOverloadingNode> duplicatedNode(peff::makeSharedWithControlBlock<FnOverloadingNode, AstNodeControlBlock<FnOverloadingNode>>(newAllocator, *this, newAllocator, succeeded));
+	AstNodePtr<FnOverloadingNode> duplicatedNode(makeAstNode<FnOverloadingNode>(newAllocator, *this, newAllocator, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}

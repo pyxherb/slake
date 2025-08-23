@@ -9,8 +9,6 @@ SLAKE_API TypeDefObject::TypeDefObject(Runtime *rt, peff::Alloc *selfAllocator)
 }
 
 SLAKE_API TypeDefObject::TypeDefObject(Duplicator *duplicator, const TypeDefObject &x, peff::Alloc *allocator, bool &succeededOut) : Object(x, allocator) {
-	type = TypeId::Void;
-
 	if (!duplicator->insertTask(DuplicationTask::makeType(&type, x.type))) {
 		succeededOut = false;
 		return;
@@ -237,4 +235,147 @@ SLAKE_API void ParamTypeListTypeDefObject::replaceAllocator(peff::Alloc *allocat
 	this->Object::replaceAllocator(allocator);
 
 	paramTypes.replaceAllocator(allocator);
+}
+
+SLAKE_API TupleTypeListTypeDefObject::TupleTypeListTypeDefObject(Runtime *rt, peff::Alloc *selfAllocator)
+	: Object(rt, selfAllocator, ObjectKind::TupleTypeDef), paramTypes(selfAllocator) {
+}
+
+SLAKE_API TupleTypeListTypeDefObject::TupleTypeListTypeDefObject(Duplicator *duplicator, const TupleTypeListTypeDefObject &x, peff::Alloc *allocator, bool &succeededOut) : Object(x, allocator), paramTypes(allocator) {
+	if (!paramTypes.resize(x.paramTypes.size())) {
+		succeededOut = false;
+		return;
+	}
+
+	for (size_t i = 0; i < x.paramTypes.size(); ++i) {
+		paramTypes.at(i) = TypeId::Void;
+	}
+
+	for (size_t i = 0; i < x.paramTypes.size(); ++i) {
+		if (!duplicator->insertTask(DuplicationTask::makeType(&paramTypes.at(i), x.paramTypes.at(i)))) {
+			succeededOut = false;
+			return;
+		}
+	}
+
+	succeededOut = true;
+}
+
+SLAKE_API TupleTypeListTypeDefObject::~TupleTypeListTypeDefObject() {
+}
+
+SLAKE_API Object *TupleTypeListTypeDefObject::duplicate(Duplicator *duplicator) const {
+	return (Object *)alloc(duplicator, this).get();
+}
+
+SLAKE_API HostObjectRef<TupleTypeListTypeDefObject> slake::TupleTypeListTypeDefObject::alloc(Runtime *rt) {
+	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();
+
+	std::unique_ptr<TupleTypeListTypeDefObject, util::DeallocableDeleter<TupleTypeListTypeDefObject>> ptr(
+		peff::allocAndConstruct<TupleTypeListTypeDefObject>(
+			curGenerationAllocator.get(),
+			sizeof(std::max_align_t),
+			rt, curGenerationAllocator.get()));
+	if (!ptr)
+		return nullptr;
+
+	if (!rt->addObject(ptr.get()))
+		return nullptr;
+
+	return ptr.release();
+}
+
+SLAKE_API HostObjectRef<TupleTypeListTypeDefObject> slake::TupleTypeListTypeDefObject::alloc(Duplicator *duplicator, const TupleTypeListTypeDefObject *other) {
+	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = other->associatedRuntime->getCurGenAlloc();
+
+	bool succeeded = true;
+
+	std::unique_ptr<TupleTypeListTypeDefObject, util::DeallocableDeleter<TupleTypeListTypeDefObject>> ptr(
+		peff::allocAndConstruct<TupleTypeListTypeDefObject>(
+			curGenerationAllocator.get(),
+			sizeof(std::max_align_t),
+			duplicator, *other, curGenerationAllocator.get(), succeeded));
+	if (!ptr)
+		return nullptr;
+
+	if (!succeeded)
+		return nullptr;
+
+	if (!other->associatedRuntime->addObject(ptr.get()))
+		return nullptr;
+
+	return ptr.release();
+}
+
+SLAKE_API void slake::TupleTypeListTypeDefObject::dealloc() {
+	peff::destroyAndRelease<TupleTypeListTypeDefObject>(selfAllocator.get(), this, sizeof(std::max_align_t));
+}
+
+SLAKE_API void TupleTypeListTypeDefObject::replaceAllocator(peff::Alloc *allocator) noexcept {
+	this->Object::replaceAllocator(allocator);
+
+	paramTypes.replaceAllocator(allocator);
+}
+
+SLAKE_API SIMDTypeDefObject::SIMDTypeDefObject(Runtime *rt, peff::Alloc *selfAllocator)
+	: Object(rt, selfAllocator, ObjectKind::SIMDTypeDef) {
+}
+
+SLAKE_API SIMDTypeDefObject::SIMDTypeDefObject(Duplicator *duplicator, const SIMDTypeDefObject &x, peff::Alloc *allocator, bool &succeededOut) : Object(x, allocator) {
+	if (!duplicator->insertTask(DuplicationTask::makeType(&type, x.type))) {
+		succeededOut = false;
+		return;
+	}
+
+	succeededOut = true;
+}
+
+SLAKE_API SIMDTypeDefObject::~SIMDTypeDefObject() {
+}
+
+SLAKE_API Object *SIMDTypeDefObject::duplicate(Duplicator *duplicator) const {
+	return (Object *)alloc(duplicator, this).get();
+}
+
+SLAKE_API HostObjectRef<SIMDTypeDefObject> slake::SIMDTypeDefObject::alloc(Runtime *rt) {
+	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();
+
+	std::unique_ptr<SIMDTypeDefObject, util::DeallocableDeleter<SIMDTypeDefObject>> ptr(
+		peff::allocAndConstruct<SIMDTypeDefObject>(
+			curGenerationAllocator.get(),
+			sizeof(std::max_align_t),
+			rt, curGenerationAllocator.get()));
+	if (!ptr)
+		return nullptr;
+
+	if (!rt->addObject(ptr.get()))
+		return nullptr;
+
+	return ptr.release();
+}
+
+SLAKE_API HostObjectRef<SIMDTypeDefObject> slake::SIMDTypeDefObject::alloc(Duplicator *duplicator, const SIMDTypeDefObject *other) {
+	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = other->associatedRuntime->getCurGenAlloc();
+
+	bool succeeded = true;
+
+	std::unique_ptr<SIMDTypeDefObject, util::DeallocableDeleter<SIMDTypeDefObject>> ptr(
+		peff::allocAndConstruct<SIMDTypeDefObject>(
+			curGenerationAllocator.get(),
+			sizeof(std::max_align_t),
+			duplicator, *other, curGenerationAllocator.get(), succeeded));
+	if (!ptr)
+		return nullptr;
+
+	if (!succeeded)
+		return nullptr;
+
+	if (!other->associatedRuntime->addObject(ptr.get()))
+		return nullptr;
+
+	return ptr.release();
+}
+
+SLAKE_API void slake::SIMDTypeDefObject::dealloc() {
+	peff::destroyAndRelease<SIMDTypeDefObject>(selfAllocator.get(), this, sizeof(std::max_align_t));
 }

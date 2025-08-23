@@ -169,7 +169,7 @@ SLAKE_API Value Runtime::readVarUnsafe(const EntityRef &entityRef) const noexcep
 				case TypeId::String:
 				case TypeId::Instance:
 				case TypeId::Array:
-				case TypeId::FnDelegate:
+				case TypeId::Fn:
 					return Value(EntityRef::makeObjectRef(*((Object **)rawDataPtr)));
 				case TypeId::Ref:
 					return Value(*((EntityRef *)rawDataPtr));
@@ -216,7 +216,7 @@ SLAKE_API Value Runtime::readVarUnsafe(const EntityRef &entityRef) const noexcep
 				case TypeId::String:
 				case TypeId::Instance:
 				case TypeId::Array:
-				case TypeId::FnDelegate:
+				case TypeId::Fn:
 					return Value(EntityRef::makeObjectRef(*((Object **)rawDataPtr)));
 				case TypeId::Ref:
 					return Value(*((EntityRef *)rawDataPtr));
@@ -272,7 +272,7 @@ SLAKE_API Value Runtime::readVarUnsafe(const EntityRef &entityRef) const noexcep
 				case TypeId::String:
 				case TypeId::Instance:
 				case TypeId::Array:
-				case TypeId::FnDelegate:
+				case TypeId::Fn:
 					return Value(EntityRef::makeObjectRef(*((Object **)rawDataPtr)));
 				case TypeId::Ref:
 					return Value(*((EntityRef *)rawDataPtr));
@@ -318,7 +318,7 @@ SLAKE_API Value Runtime::readVarUnsafe(const EntityRef &entityRef) const noexcep
 				case TypeId::String:
 				case TypeId::Instance:
 				case TypeId::Array:
-				case TypeId::FnDelegate:
+				case TypeId::Fn:
 					return Value(EntityRef::makeObjectRef(*((Object **)rawFieldPtr)));
 				case TypeId::Ref:
 					return Value(*((EntityRef *)rawFieldPtr));
@@ -359,7 +359,7 @@ SLAKE_API Value Runtime::readVarUnsafe(const EntityRef &entityRef) const noexcep
 				case TypeId::Instance:
 				case TypeId::String:
 				case TypeId::Array:
-				case TypeId::FnDelegate:
+				case TypeId::Fn:
 					return Value(EntityRef::makeObjectRef(((Object **)entityRef.asArray.arrayObject->data)[entityRef.asArray.index]));
 				case TypeId::Ref:
 					return Value(((EntityRef *)entityRef.asArray.arrayObject->data)[entityRef.asArray.index]);

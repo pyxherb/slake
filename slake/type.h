@@ -58,8 +58,10 @@ namespace slake {
 
 		Array,	// Array
 		Ref,	// Reference
+		Tuple,	// Tuple
+		SIMD,	// SIMD
 
-		FnDelegate,		// Function delegation
+		Fn,		// Function delegation
 		ParamTypeList,	// Parameter type list
 		Unpacking,		// Unpacking
 

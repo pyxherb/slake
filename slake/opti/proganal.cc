@@ -107,7 +107,7 @@ InternalExceptionPointer slake::opti::evalObjectType(
 					}
 
 					analyzeContext.hostRefHolder.addObject(typeDef.get());
-					typeOut = Type(TypeId::FnDelegate, typeDef.get());
+					typeOut = Type(TypeId::Fn, typeDef.get());
 					break;
 				}
 				default:
@@ -931,7 +931,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				Type callTargetType = analyzedInfoOut.analyzedRegInfo.at(callTargetRegIndex).type;
 
 				switch (callTargetType.typeId) {
-					case TypeId::FnDelegate:
+					case TypeId::Fn:
 						if (regIndex != UINT32_MAX) {
 							FnTypeDefObject *typeDef = (FnTypeDefObject *)callTargetType.getCustomTypeExData();
 							analyzedInfoOut.analyzedRegInfo.at(regIndex).type = typeDef->returnType;
@@ -994,7 +994,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				Type callTargetType = analyzedInfoOut.analyzedRegInfo.at(callTargetRegIndex).type;
 
 				switch (callTargetType.typeId) {
-					case TypeId::FnDelegate:
+					case TypeId::Fn:
 						if (regIndex != UINT32_MAX) {
 							FnTypeDefObject *typeDef = (FnTypeDefObject *)callTargetType.getCustomTypeExData();
 							analyzedInfoOut.analyzedRegInfo.at(regIndex).type = typeDef->returnType;

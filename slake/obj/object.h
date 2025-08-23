@@ -28,9 +28,12 @@ namespace slake {
 
 	enum class ObjectKind {
 		String,		// String
+
 		TypeDef,	// Type definition
 		FnTypeDef,	// Function type definition
 		ParamTypeListTypeDef, // Parameter type list type definition
+		TupleTypeDef,  // Parameter type list type definition
+		SIMDTypeDef,  // Parameter type list type definition
 
 		Fn,				// Function
 		FnOverloading,	// Function overloading

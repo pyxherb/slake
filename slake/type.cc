@@ -562,7 +562,7 @@ SLAKE_API std::string std::to_string(const slake::Type &type, const slake::Runti
 			StringObject *nameObject = (StringObject *)type.exData.genericArg.nameObject;
 			return "!" + std::string(nameObject->data);
 		}
-		case TypeId::FnDelegate: {
+		case TypeId::Fn: {
 			FnTypeDefObject *fnTypeDefObject = (FnTypeDefObject *)type.exData.typeDef;
 			std::string result = "fn ";
 

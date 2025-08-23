@@ -422,7 +422,7 @@ InternalExceptionPointer slake::jit::x86_64::compileMovInstruction(
 				case TypeId::String:
 				case TypeId::Instance:
 				case TypeId::Array:
-				case TypeId::FnDelegate: {
+				case TypeId::Fn: {
 					RegisterId regId = compileContext.allocGpReg();
 					if (compileContext.isRegInUse(regId)) {
 						int32_t off;

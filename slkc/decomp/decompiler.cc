@@ -183,7 +183,7 @@ SLKC_API bool slkc::decompileTypeName(peff::Alloc *allocator, DumpWriter *writer
 			SLKC_RETURN_IF_FALSE(writer->write("&"));
 			break;
 		}
-		case slake::TypeId::FnDelegate: {
+		case slake::TypeId::Fn: {
 			SLKC_RETURN_IF_FALSE(writer->write("(fn delegate, not implemented yet)"));
 			break;
 		}

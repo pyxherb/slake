@@ -58,6 +58,39 @@ namespace slake {
 
 		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;
 	};
+
+	class TupleTypeListTypeDefObject final : public Object {
+	public:
+		peff::DynArray<Type> paramTypes;
+
+		SLAKE_API TupleTypeListTypeDefObject(Runtime *rt, peff::Alloc *selfAllocator);
+		SLAKE_API TupleTypeListTypeDefObject(Duplicator *duplicator, const TupleTypeListTypeDefObject &x, peff::Alloc *allocator, bool &succeededOut);
+		SLAKE_API virtual ~TupleTypeListTypeDefObject();
+
+		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
+
+		SLAKE_API static HostObjectRef<TupleTypeListTypeDefObject> alloc(Runtime *rt);
+		SLAKE_API static HostObjectRef<TupleTypeListTypeDefObject> alloc(Duplicator *duplicator, const TupleTypeListTypeDefObject *other);
+		SLAKE_API virtual void dealloc() override;
+
+		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;
+	};
+
+	class SIMDTypeDefObject final : public Object {
+	public:
+		Type type = TypeId::Void;
+		uint32_t width = 0;
+
+		SLAKE_API SIMDTypeDefObject(Runtime *rt, peff::Alloc *selfAllocator);
+		SLAKE_API SIMDTypeDefObject(Duplicator *duplicator, const SIMDTypeDefObject &x, peff::Alloc *allocator, bool &succeededOut);
+		SLAKE_API virtual ~SIMDTypeDefObject();
+
+		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
+
+		SLAKE_API static HostObjectRef<SIMDTypeDefObject> alloc(Runtime *rt);
+		SLAKE_API static HostObjectRef<SIMDTypeDefObject> alloc(Duplicator *duplicator, const SIMDTypeDefObject *other);
+		SLAKE_API virtual void dealloc() override;
+	};
 }
 
 #endif

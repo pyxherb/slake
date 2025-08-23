@@ -2,12 +2,10 @@
 
 using namespace slake;
 
-SLAKE_API CountablePoolAlloc slake::g_countablePoolDefaultAlloc(nullptr, nullptr);
-
 SLAKE_API CountablePoolAlloc::CountablePoolAlloc(Runtime *runtime, peff::Alloc *upstream) : runtime(runtime), upstream(upstream) {}
 
-SLAKE_API peff::Alloc *CountablePoolAlloc::getDefaultAlloc() const noexcept {
-	return &g_countablePoolDefaultAlloc;
+SLAKE_API peff::UUID CountablePoolAlloc::getTypeId() const noexcept {
+	return PEFF_UUID(1a4b6c8d, 0e2f, 4a6b, 8c1d, 2e4f6a8b0c2e);
 }
 
 SLAKE_API size_t CountablePoolAlloc::incRef(size_t globalRc) noexcept {
@@ -45,7 +43,7 @@ SLAKE_API void CountablePoolAlloc::release(void *p, size_t size, size_t alignmen
 }
 
 SLAKE_API bool CountablePoolAlloc::isReplaceable(const peff::Alloc *rhs) const noexcept {
-	if (getDefaultAlloc() != rhs->getDefaultAlloc())
+	if (getTypeId() != rhs->getTypeId())
 		return false;
 
 	CountablePoolAlloc *r = (CountablePoolAlloc *)rhs;
@@ -58,8 +56,6 @@ SLAKE_API bool CountablePoolAlloc::isReplaceable(const peff::Alloc *rhs) const n
 
 	return true;
 }
-
-SLAKE_API GenerationalPoolAlloc slake::g_generationalPoolDefaultAlloc(nullptr, nullptr);
 
 SLAKE_API size_t GenerationalPoolAlloc::incRef(size_t globalRc) noexcept {
 	++refCount;
@@ -95,8 +91,8 @@ SLAKE_API GenerationalPoolAlloc::GenerationalPoolAlloc(Runtime *runtime, peff::A
 {
 }
 
-SLAKE_API peff::Alloc *GenerationalPoolAlloc::getDefaultAlloc() const noexcept {
-	return &g_countablePoolDefaultAlloc;
+SLAKE_API peff::UUID GenerationalPoolAlloc::getTypeId() const noexcept {
+	return PEFF_UUID(3c2d4e6f, 8a0b, 2c4e, 6a8b, 0d2e4f6a8c1d);
 }
 
 SLAKE_API void GenerationalPoolAlloc::onRefZero() noexcept {
@@ -121,7 +117,7 @@ SLAKE_API void GenerationalPoolAlloc::release(void *p, size_t size, size_t align
 }
 
 SLAKE_API bool GenerationalPoolAlloc::isReplaceable(const peff::Alloc *rhs) const noexcept {
-	if (getDefaultAlloc() != rhs->getDefaultAlloc())
+	if (getTypeId() != rhs->getTypeId())
 		return false;
 
 	GenerationalPoolAlloc *r = (GenerationalPoolAlloc *)rhs;

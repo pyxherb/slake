@@ -40,10 +40,9 @@ namespace slake {
 
 		SLAKE_API virtual bool isReplaceable(const peff::Alloc *rhs) const noexcept override;
 
-		SLAKE_API virtual peff::Alloc *getDefaultAlloc() const noexcept override;
+		SLAKE_API virtual peff::UUID getTypeId() const noexcept override;
 		SLAKE_API virtual void onRefZero() noexcept;
 	};
-	SLAKE_API extern CountablePoolAlloc g_countablePoolDefaultAlloc;
 
 	class GenerationalPoolAlloc : public peff::Alloc {
 	protected:
@@ -70,10 +69,9 @@ namespace slake {
 
 		SLAKE_API virtual bool isReplaceable(const peff::Alloc *rhs) const noexcept override;
 
-		SLAKE_API virtual peff::Alloc *getDefaultAlloc() const noexcept override;
+		SLAKE_API virtual peff::UUID getTypeId() const noexcept override;
 		SLAKE_API virtual void onRefZero() noexcept;
 	};
-	SLAKE_API extern GenerationalPoolAlloc g_generationalPoolDefaultAlloc;
 
 	using RuntimeFlags = uint32_t;
 	constexpr static RuntimeFlags

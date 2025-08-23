@@ -178,6 +178,7 @@ namespace slkc {
 		VoidTypeName,
 		ObjectTypeName,
 		AnyTypeName,
+		SIMDTypeName,
 
 		IntLiteral,
 		LongLiteral,

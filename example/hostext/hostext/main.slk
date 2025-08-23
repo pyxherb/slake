@@ -176,6 +176,9 @@ class CallableTest<...T> {
 	}
 }
 
+fn t2() -> simd_t<i32, 4> {
+}
+
 pub fn *main() -> i32 {
 	/*a() with 123;*/
 

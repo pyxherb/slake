@@ -29,6 +29,8 @@ namespace slkc {
 		Array,
 		Ref,
 		TempRef,
+		Tuple,
+		SIMD,
 		ParamTypeList,
 		UnpackedParams,
 		UnpackedArgs,

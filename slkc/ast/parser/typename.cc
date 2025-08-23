@@ -268,6 +268,108 @@ SLKC_API std::optional<SyntaxError> Parser::parseTypeName(AstNodePtr<TypeNameNod
 
 			break;
 		}
+		case TokenId::LBracket: {
+			AstNodePtr<TupleTypeNameNode> tn;
+
+			if (!(tn = makeAstNode<TupleTypeNameNode>(
+					  resourceAllocator.get(),
+					  resourceAllocator.get(),
+					  document)))
+				return genOutOfMemoryError();
+
+			typeNameOut = tn.castTo<TypeNameNode>();
+
+			Token *lBracketToken;
+
+			if (auto e = expectToken(lBracketToken = peekToken(), TokenId::LBracket))
+				return e;
+
+			tn->idxLBracketToken = lBracketToken->index;
+
+			nextToken();
+
+			for (;;) {
+				if (peekToken()->tokenId == TokenId::RParenthese) {
+					break;
+				}
+
+				AstNodePtr<TypeNameNode> t;
+
+				if (auto e = parseTypeName(t); e)
+					return e;
+
+				if (!tn->elementTypes.pushBack(std::move(t)))
+					return genOutOfMemoryError();
+
+				if (peekToken()->tokenId != TokenId::Comma) {
+					break;
+				}
+
+				Token *commaToken = nextToken();
+
+				if (!tn->idxCommaTokens.pushBack(+commaToken->index))
+					return genOutOfMemoryError();
+			}
+
+			Token *rBracketToken;
+
+			if (auto e = expectToken(rBracketToken = peekToken(), TokenId::RBracket))
+				return e;
+
+			tn->idxRBracketToken = rBracketToken->index;
+
+			nextToken();
+
+			break;
+		}
+		case TokenId::SIMDTypeName: {
+			AstNodePtr<SIMDTypeNameNode> tn;
+
+			nextToken();
+
+			if (!(tn = makeAstNode<SIMDTypeNameNode>(
+					  resourceAllocator.get(),
+					  resourceAllocator.get(),
+					  document)))
+				return genOutOfMemoryError();
+
+			typeNameOut = tn.castTo<TypeNameNode>();
+
+			Token *lAngleBracketToken;
+
+			if (auto e = expectToken(lAngleBracketToken = peekToken(), TokenId::LtOp); e)
+				return e;
+
+			tn->idxLAngleBracketToken = lAngleBracketToken->index;
+
+			nextToken();
+
+			if (auto e = parseTypeName(tn->elementType); e)
+				return e;
+
+			Token *commaToken;
+
+			if (auto e = expectToken(commaToken = peekToken(), TokenId::Comma))
+				return e;
+
+			tn->idxCommaToken = commaToken->index;
+
+			nextToken();
+
+			if (auto e = parseExpr(140, tn->width); e)
+				return e;
+
+			Token *rAngleBracketToken;
+
+			if (auto e = expectToken(rAngleBracketToken = peekToken(), TokenId::GtOp))
+				return e;
+
+			tn->idxRAngleBracketToken = rAngleBracketToken->index;
+
+			nextToken();
+
+			break;
+		}
 		case TokenId::Id: {
 			IdRefPtr id;
 			if ((syntaxError = parseIdRef(id)))

@@ -294,6 +294,8 @@ SLKC_API const char *slkc::getTokenName(TokenId tokenId) {
 			return "object";
 		case TokenId::AnyTypeName:
 			return "any";
+		case TokenId::SIMDTypeName:
+			return "simd_t";
 		case TokenId::IntLiteral:
 			return "integer literal";
 		case TokenId::LongLiteral:

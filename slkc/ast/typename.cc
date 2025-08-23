@@ -385,6 +385,76 @@ SLKC_API ArrayTypeNameNode::ArrayTypeNameNode(const ArrayTypeNameNode &rhs, peff
 SLKC_API ArrayTypeNameNode::~ArrayTypeNameNode() {
 }
 
+SLKC_API AstNodePtr<AstNode> TupleTypeNameNode::doDuplicate(peff::Alloc *newAllocator) const {
+	bool succeeded = false;
+	AstNodePtr<TupleTypeNameNode> duplicatedNode(makeAstNode<TupleTypeNameNode>(newAllocator, *this, newAllocator, succeeded));
+	if ((!duplicatedNode) || (!succeeded)) {
+		return {};
+	}
+
+	return duplicatedNode.castTo<AstNode>();
+}
+
+SLKC_API TupleTypeNameNode::TupleTypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : TypeNameNode(TypeNameKind::Tuple, selfAllocator, document), elementTypes(selfAllocator), idxCommaTokens(selfAllocator) {
+}
+
+SLKC_API TupleTypeNameNode::TupleTypeNameNode(const TupleTypeNameNode &rhs, peff::Alloc *allocator, bool &succeededOut) : TypeNameNode(rhs, allocator), elementTypes(allocator), idxCommaTokens(allocator) {
+	if (!elementTypes.resize(rhs.elementTypes.size())) {
+		succeededOut = false;
+		return;
+	}
+
+	for (size_t i = 0; i < elementTypes.size(); ++i) {
+		elementTypes.at(i) = rhs.elementTypes.at(i)->duplicate<TypeNameNode>(allocator);
+	}
+
+	if (!idxCommaTokens.resizeUninitialized(rhs.idxCommaTokens.size())) {
+		succeededOut = false;
+		return;
+	}
+	idxLBracketToken = rhs.idxLBracketToken;
+	idxRBracketToken = rhs.idxRBracketToken;
+
+	succeededOut = true;
+}
+
+SLKC_API TupleTypeNameNode::~TupleTypeNameNode() {
+}
+
+SLKC_API AstNodePtr<AstNode> SIMDTypeNameNode::doDuplicate(peff::Alloc *newAllocator) const {
+	bool succeeded = false;
+	AstNodePtr<SIMDTypeNameNode> duplicatedNode(makeAstNode<SIMDTypeNameNode>(newAllocator, *this, newAllocator, succeeded));
+	if ((!duplicatedNode) || (!succeeded)) {
+		return {};
+	}
+
+	return duplicatedNode.castTo<AstNode>();
+}
+
+SLKC_API SIMDTypeNameNode::SIMDTypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : TypeNameNode(TypeNameKind::SIMD, selfAllocator, document) {
+}
+
+SLKC_API SIMDTypeNameNode::SIMDTypeNameNode(const SIMDTypeNameNode &rhs, peff::Alloc *allocator, bool &succeededOut) : TypeNameNode(rhs, allocator) {
+	if (!(elementType = rhs.elementType->duplicate<TypeNameNode>(allocator))) {
+		succeededOut = false;
+		return;
+	}
+
+	if (!(width = rhs.width->duplicate<ExprNode>(allocator))) {
+		succeededOut = false;
+		return;
+	}
+
+	idxLAngleBracketToken = rhs.idxLAngleBracketToken;
+	idxCommaToken = rhs.idxCommaToken;
+	idxRAngleBracketToken = rhs.idxRAngleBracketToken;
+
+	succeededOut = true;
+}
+
+SLKC_API SIMDTypeNameNode::~SIMDTypeNameNode() {
+}
+
 SLKC_API AstNodePtr<AstNode> FnTypeNameNode::doDuplicate(peff::Alloc *newAllocator) const {
 	bool succeeded = false;
 	AstNodePtr<FnTypeNameNode> duplicatedNode(makeAstNode<FnTypeNameNode>(newAllocator, *this, newAllocator, succeeded));

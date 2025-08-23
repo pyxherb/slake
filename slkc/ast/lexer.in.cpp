@@ -131,15 +131,21 @@ SLKC_API std::optional<LexicalError> Lexer::lex(const std::string_view &src, pef
 				<InitialCondition>"i16"			{ token->tokenId = TokenId::I16TypeName; break; }
 				<InitialCondition>"i32"			{ token->tokenId = TokenId::I32TypeName; break; }
 				<InitialCondition>"i64"			{ token->tokenId = TokenId::I64TypeName; break; }
+				<InitialCondition>"isize"		{ token->tokenId = TokenId::ISizeTypeName; break; }
 				<InitialCondition>"u8"			{ token->tokenId = TokenId::U8TypeName; break; }
 				<InitialCondition>"u16"			{ token->tokenId = TokenId::U16TypeName; break; }
 				<InitialCondition>"u32"			{ token->tokenId = TokenId::U32TypeName; break; }
 				<InitialCondition>"u64"			{ token->tokenId = TokenId::U64TypeName; break; }
+				<InitialCondition>"usize"		{ token->tokenId = TokenId::USizeTypeName; break; }
 				<InitialCondition>"f32"			{ token->tokenId = TokenId::F32TypeName; break; }
 				<InitialCondition>"f64"			{ token->tokenId = TokenId::F64TypeName; break; }
-				<InitialCondition>"bool"		{ token->tokenId = TokenId::BoolTypeName; break; }
-				<InitialCondition>"void"		{ token->tokenId = TokenId::VoidTypeName; break; }
 				<InitialCondition>"string"		{ token->tokenId = TokenId::StringTypeName; break; }
+				<InitialCondition>"bool"		{ token->tokenId = TokenId::BoolTypeName; break; }
+				<InitialCondition>"auto"		{ token->tokenId = TokenId::AutoTypeName; break; }
+				<InitialCondition>"void"		{ token->tokenId = TokenId::VoidTypeName; break; }
+				<InitialCondition>"object"		{ token->tokenId = TokenId::ObjectTypeName; break; }
+				<InitialCondition>"any"			{ token->tokenId = TokenId::AnyTypeName; break; }
+				<InitialCondition>"simd_t"		{ token->tokenId = TokenId::SIMDTypeName; break; }
 
 				<InitialCondition>","		{ token->tokenId = TokenId::Comma; break; }
 				<InitialCondition>"?"		{ token->tokenId = TokenId::Question; break; }

@@ -254,6 +254,40 @@ namespace slkc {
 		SLKC_API virtual ~TempRefTypeNameNode();
 	};
 
+	class TupleTypeNameNode : public TypeNameNode {
+	protected:
+		SLKC_API virtual AstNodePtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
+
+	public:
+		peff::DynArray<AstNodePtr<TypeNameNode>> elementTypes;
+
+		size_t idxLBracketToken = SIZE_MAX,
+			   idxRBracketToken = SIZE_MAX;
+
+		peff::DynArray<size_t> idxCommaTokens;
+
+		SLKC_API TupleTypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
+		SLKC_API TupleTypeNameNode(const TupleTypeNameNode &rhs, peff::Alloc *allocator, bool &succeededOut);
+		SLKC_API virtual ~TupleTypeNameNode();
+	};
+
+	class SIMDTypeNameNode : public TypeNameNode {
+	protected:
+		SLKC_API virtual AstNodePtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
+
+	public:
+		AstNodePtr<TypeNameNode> elementType;
+		AstNodePtr<ExprNode> width;
+
+		size_t idxLAngleBracketToken = SIZE_MAX,
+			   idxCommaToken = SIZE_MAX,
+			   idxRAngleBracketToken = SIZE_MAX;
+
+		SLKC_API SIMDTypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
+		SLKC_API SIMDTypeNameNode(const SIMDTypeNameNode &rhs, peff::Alloc *allocator, bool &succeededOut);
+		SLKC_API virtual ~SIMDTypeNameNode();
+	};
+
 	class ParamTypeListTypeNameNode : public TypeNameNode {
 	protected:
 		SLKC_API virtual AstNodePtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;

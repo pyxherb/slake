@@ -59,18 +59,18 @@ namespace slake {
 		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;
 	};
 
-	class TupleTypeListTypeDefObject final : public Object {
+	class TupleTypeDefObject final : public Object {
 	public:
-		peff::DynArray<Type> paramTypes;
+		peff::DynArray<Type> elementTypes;
 
-		SLAKE_API TupleTypeListTypeDefObject(Runtime *rt, peff::Alloc *selfAllocator);
-		SLAKE_API TupleTypeListTypeDefObject(Duplicator *duplicator, const TupleTypeListTypeDefObject &x, peff::Alloc *allocator, bool &succeededOut);
-		SLAKE_API virtual ~TupleTypeListTypeDefObject();
+		SLAKE_API TupleTypeDefObject(Runtime *rt, peff::Alloc *selfAllocator);
+		SLAKE_API TupleTypeDefObject(Duplicator *duplicator, const TupleTypeDefObject &x, peff::Alloc *allocator, bool &succeededOut);
+		SLAKE_API virtual ~TupleTypeDefObject();
 
 		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
 
-		SLAKE_API static HostObjectRef<TupleTypeListTypeDefObject> alloc(Runtime *rt);
-		SLAKE_API static HostObjectRef<TupleTypeListTypeDefObject> alloc(Duplicator *duplicator, const TupleTypeListTypeDefObject *other);
+		SLAKE_API static HostObjectRef<TupleTypeDefObject> alloc(Runtime *rt);
+		SLAKE_API static HostObjectRef<TupleTypeDefObject> alloc(Duplicator *duplicator, const TupleTypeDefObject *other);
 		SLAKE_API virtual void dealloc() override;
 
 		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;

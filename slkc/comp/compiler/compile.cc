@@ -143,6 +143,48 @@ SLKC_API std::optional<CompilationError> slkc::compileTypeName(
 			typeOut = slake::Type(slake::TypeId::Ref, obj.get());
 			break;
 		}
+		case TypeNameKind::Tuple: {
+			AstNodePtr<TupleTypeNameNode> t = typeName.castTo<TupleTypeNameNode>();
+			peff::SharedPtr<Document> doc = t->document->sharedFromThis();
+
+			slake::HostObjectRef<slake::TupleTypeDefObject> obj;
+
+			if (!(obj = slake::TupleTypeDefObject::alloc(compileEnv->runtime))) {
+				return genOutOfRuntimeMemoryCompError();
+			}
+
+			for (size_t i = 0; i < t->elementTypes.size(); ++i) {
+				SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, t->elementTypes.at(i), obj->elementTypes.at(i)));
+			}
+
+			if (!(compileEnv->hostRefHolder.addObject(obj.get()))) {
+				return genOutOfMemoryCompError();
+			}
+
+			typeOut = slake::Type(slake::TypeId::Tuple, obj.get());
+			break;
+		}
+		case TypeNameKind::SIMD: {
+			AstNodePtr<SIMDTypeNameNode> t = typeName.castTo<SIMDTypeNameNode>();
+			peff::SharedPtr<Document> doc = t->document->sharedFromThis();
+
+			slake::HostObjectRef<slake::SIMDTypeDefObject> obj;
+
+			if (!(obj = slake::SIMDTypeDefObject::alloc(compileEnv->runtime))) {
+				return genOutOfRuntimeMemoryCompError();
+			}
+
+			SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, t->elementType, obj->type));
+
+			obj->width = t->width;
+
+			if (!(compileEnv->hostRefHolder.addObject(obj.get()))) {
+				return genOutOfMemoryCompError();
+			}
+
+			typeOut = slake::Type(slake::TypeId::Tuple, obj.get());
+			break;
+		}
 		case TypeNameKind::ParamTypeList: {
 			AstNodePtr<ParamTypeListTypeNameNode> t = typeName.castTo<ParamTypeListTypeNameNode>();
 			peff::SharedPtr<Document> doc = t->document->sharedFromThis();
@@ -760,6 +802,20 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 					if (!fnObject->paramTypes.resize(i->params.size())) {
 						return genOutOfRuntimeMemoryCompError();
 					}
+
+					if (i->returnType) {
+						if ((e = compileTypeName(compileEnv, i->returnType, fnObject->returnType))) {
+							if (e->errorKind == CompilationErrorKind::OutOfMemory)
+								return e;
+							if (!compileEnv->errors.pushBack(std::move(*e))) {
+								return genOutOfMemoryCompError();
+							}
+							e.reset();
+						}
+					} else {
+						fnObject->returnType = slake::TypeId::Void;
+					}
+
 					for (size_t j = 0; j < i->params.size(); ++j) {
 						if ((e = compileTypeName(compileEnv, i->params.at(j)->type, fnObject->paramTypes.at(j)))) {
 							if (e->errorKind == CompilationErrorKind::OutOfMemory)

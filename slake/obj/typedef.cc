@@ -237,22 +237,22 @@ SLAKE_API void ParamTypeListTypeDefObject::replaceAllocator(peff::Alloc *allocat
 	paramTypes.replaceAllocator(allocator);
 }
 
-SLAKE_API TupleTypeListTypeDefObject::TupleTypeListTypeDefObject(Runtime *rt, peff::Alloc *selfAllocator)
-	: Object(rt, selfAllocator, ObjectKind::TupleTypeDef), paramTypes(selfAllocator) {
+SLAKE_API TupleTypeDefObject::TupleTypeDefObject(Runtime *rt, peff::Alloc *selfAllocator)
+	: Object(rt, selfAllocator, ObjectKind::TupleTypeDef), elementTypes(selfAllocator) {
 }
 
-SLAKE_API TupleTypeListTypeDefObject::TupleTypeListTypeDefObject(Duplicator *duplicator, const TupleTypeListTypeDefObject &x, peff::Alloc *allocator, bool &succeededOut) : Object(x, allocator), paramTypes(allocator) {
-	if (!paramTypes.resize(x.paramTypes.size())) {
+SLAKE_API TupleTypeDefObject::TupleTypeDefObject(Duplicator *duplicator, const TupleTypeDefObject &x, peff::Alloc *allocator, bool &succeededOut) : Object(x, allocator), elementTypes(allocator) {
+	if (!elementTypes.resize(x.elementTypes.size())) {
 		succeededOut = false;
 		return;
 	}
 
-	for (size_t i = 0; i < x.paramTypes.size(); ++i) {
-		paramTypes.at(i) = TypeId::Void;
+	for (size_t i = 0; i < x.elementTypes.size(); ++i) {
+		elementTypes.at(i) = TypeId::Void;
 	}
 
-	for (size_t i = 0; i < x.paramTypes.size(); ++i) {
-		if (!duplicator->insertTask(DuplicationTask::makeType(&paramTypes.at(i), x.paramTypes.at(i)))) {
+	for (size_t i = 0; i < x.elementTypes.size(); ++i) {
+		if (!duplicator->insertTask(DuplicationTask::makeType(&elementTypes.at(i), x.elementTypes.at(i)))) {
 			succeededOut = false;
 			return;
 		}
@@ -261,18 +261,18 @@ SLAKE_API TupleTypeListTypeDefObject::TupleTypeListTypeDefObject(Duplicator *dup
 	succeededOut = true;
 }
 
-SLAKE_API TupleTypeListTypeDefObject::~TupleTypeListTypeDefObject() {
+SLAKE_API TupleTypeDefObject::~TupleTypeDefObject() {
 }
 
-SLAKE_API Object *TupleTypeListTypeDefObject::duplicate(Duplicator *duplicator) const {
+SLAKE_API Object *TupleTypeDefObject::duplicate(Duplicator *duplicator) const {
 	return (Object *)alloc(duplicator, this).get();
 }
 
-SLAKE_API HostObjectRef<TupleTypeListTypeDefObject> slake::TupleTypeListTypeDefObject::alloc(Runtime *rt) {
+SLAKE_API HostObjectRef<TupleTypeDefObject> slake::TupleTypeDefObject::alloc(Runtime *rt) {
 	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();
 
-	std::unique_ptr<TupleTypeListTypeDefObject, util::DeallocableDeleter<TupleTypeListTypeDefObject>> ptr(
-		peff::allocAndConstruct<TupleTypeListTypeDefObject>(
+	std::unique_ptr<TupleTypeDefObject, util::DeallocableDeleter<TupleTypeDefObject>> ptr(
+		peff::allocAndConstruct<TupleTypeDefObject>(
 			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),
 			rt, curGenerationAllocator.get()));
@@ -285,13 +285,13 @@ SLAKE_API HostObjectRef<TupleTypeListTypeDefObject> slake::TupleTypeListTypeDefO
 	return ptr.release();
 }
 
-SLAKE_API HostObjectRef<TupleTypeListTypeDefObject> slake::TupleTypeListTypeDefObject::alloc(Duplicator *duplicator, const TupleTypeListTypeDefObject *other) {
+SLAKE_API HostObjectRef<TupleTypeDefObject> slake::TupleTypeDefObject::alloc(Duplicator *duplicator, const TupleTypeDefObject *other) {
 	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = other->associatedRuntime->getCurGenAlloc();
 
 	bool succeeded = true;
 
-	std::unique_ptr<TupleTypeListTypeDefObject, util::DeallocableDeleter<TupleTypeListTypeDefObject>> ptr(
-		peff::allocAndConstruct<TupleTypeListTypeDefObject>(
+	std::unique_ptr<TupleTypeDefObject, util::DeallocableDeleter<TupleTypeDefObject>> ptr(
+		peff::allocAndConstruct<TupleTypeDefObject>(
 			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),
 			duplicator, *other, curGenerationAllocator.get(), succeeded));
@@ -307,14 +307,14 @@ SLAKE_API HostObjectRef<TupleTypeListTypeDefObject> slake::TupleTypeListTypeDefO
 	return ptr.release();
 }
 
-SLAKE_API void slake::TupleTypeListTypeDefObject::dealloc() {
-	peff::destroyAndRelease<TupleTypeListTypeDefObject>(selfAllocator.get(), this, sizeof(std::max_align_t));
+SLAKE_API void slake::TupleTypeDefObject::dealloc() {
+	peff::destroyAndRelease<TupleTypeDefObject>(selfAllocator.get(), this, sizeof(std::max_align_t));
 }
 
-SLAKE_API void TupleTypeListTypeDefObject::replaceAllocator(peff::Alloc *allocator) noexcept {
+SLAKE_API void TupleTypeDefObject::replaceAllocator(peff::Alloc *allocator) noexcept {
 	this->Object::replaceAllocator(allocator);
 
-	paramTypes.replaceAllocator(allocator);
+	elementTypes.replaceAllocator(allocator);
 }
 
 SLAKE_API SIMDTypeDefObject::SIMDTypeDefObject(Runtime *rt, peff::Alloc *selfAllocator)

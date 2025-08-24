@@ -304,6 +304,364 @@ std::optional<CompilationError> _castConstExpr(
 	return {};
 }
 
+template <typename LT, ExprKind exprKind, typename TN>
+static std::optional<CompilationError> _evalSignedIntegralBinaryOp(
+	CompileEnvironment *compileEnv,
+	CompilationContext *compilationContext,
+	AstNodePtr<BinaryExprNode> e,
+	AstNodePtr<ExprNode> lhs,
+	AstNodePtr<ExprNode> rhs,
+	AstNodePtr<ExprNode> &exprOut) {
+	peff::SharedPtr<LT> ll = lhs.castTo<LT>();
+	AstNodePtr<ExprNode> rl;
+
+	switch (e->binaryOp) {
+		case BinaryOp::Add:
+		case BinaryOp::Sub:
+		case BinaryOp::Mul:
+		case BinaryOp::Div:
+		case BinaryOp::Mod: {
+			if (exprKind != rhs->exprKind) {
+				peff::SharedPtr<TN> tn;
+
+				if (!(tn = makeAstNode<TN>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
+					return genOutOfMemoryCompError();
+				}
+
+				SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
+			} else
+				rl = rhs;
+
+			peff::SharedPtr<LT> result;
+
+			if (!(result = makeAstNode<LT>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document->sharedFromThis(), 0))) {
+				return genOutOfMemoryCompError();
+			}
+
+			SLKC_RETURN_IF_COMP_ERROR(_doSimpleArithmeticBinaryOp<LT, LT>(compileEnv, e->binaryOp, ll, rl.castTo<LT>(), result));
+
+			exprOut = result.castTo<ExprNode>();
+			break;
+		}
+		case BinaryOp::And:
+		case BinaryOp::Or:
+		case BinaryOp::Xor: {
+			if (exprKind != rhs->exprKind) {
+				peff::SharedPtr<TN> tn;
+
+				if (!(tn = makeAstNode<TN>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
+					return genOutOfMemoryCompError();
+				}
+
+				SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
+			} else
+				rl = rhs;
+
+			peff::SharedPtr<LT> result;
+
+			if (!(result = makeAstNode<LT>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document->sharedFromThis(), 0))) {
+				return genOutOfMemoryCompError();
+			}
+
+			SLKC_RETURN_IF_COMP_ERROR(_doSimpleBitwiseBinaryOp<LT, LT>(compileEnv, e->binaryOp, ll, rl.castTo<LT>(), result));
+
+			exprOut = result.castTo<ExprNode>();
+			break;
+		}
+		case BinaryOp::LAnd: {
+			if (exprKind != rhs->exprKind) {
+				peff::SharedPtr<TN> tn;
+
+				if (!(tn = makeAstNode<TN>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
+					return genOutOfMemoryCompError();
+				}
+
+				SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
+			} else
+				rl = rhs;
+
+			AstNodePtr<BoolLiteralExprNode> result;
+
+			if (!(result = makeAstNode<BoolLiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, ll->data && rl.castTo<I16LiteralExprNode>()->data))) {
+				return genOutOfMemoryCompError();
+			}
+
+			exprOut = result.castTo<ExprNode>();
+			break;
+		}
+		case BinaryOp::LOr: {
+			if (exprKind != rhs->exprKind) {
+				peff::SharedPtr<TN> tn;
+
+				if (!(tn = makeAstNode<TN>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
+					return genOutOfMemoryCompError();
+				}
+
+				SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
+			} else
+				rl = rhs;
+
+			AstNodePtr<BoolLiteralExprNode> result;
+
+			if (!(result = makeAstNode<BoolLiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, ll->data || rl.castTo<I16LiteralExprNode>()->data))) {
+				return genOutOfMemoryCompError();
+			}
+
+			exprOut = result.castTo<ExprNode>();
+			break;
+		}
+		case BinaryOp::Shl: {
+			if (ExprKind::U32 != rhs->exprKind) {
+				peff::SharedPtr<U32TypeNameNode> tn;
+
+				if (!(tn = makeAstNode<U32TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
+					return genOutOfMemoryCompError();
+				}
+
+				SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
+			} else
+				rl = rhs;
+
+			AstNodePtr<LT> result;
+
+			typedef decltype(ll->data) (*ShlFnType)(decltype(ll->data), uint32_t);
+
+			uint32_t nBits = rl.castTo<U32LiteralExprNode>()->data;
+			if (!(result = makeAstNode<LT>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, (static_cast<ShlFnType>(slake::flib::shlSigned))(ll->data, nBits)))) {
+				return genOutOfMemoryCompError();
+			}
+
+			exprOut = result.castTo<ExprNode>();
+			break;
+		}
+		case BinaryOp::Shr: {
+			if (ExprKind::U32 != rhs->exprKind) {
+				peff::SharedPtr<U32TypeNameNode> tn;
+
+				if (!(tn = makeAstNode<U32TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
+					return genOutOfMemoryCompError();
+				}
+
+				SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
+			} else
+				rl = rhs;
+
+			AstNodePtr<LT> result;
+
+			typedef decltype(ll->data) (*ShrFnType)(decltype(ll->data), uint32_t);
+
+			uint32_t nBits = rl.castTo<U32LiteralExprNode>()->data;
+			if (!(result = makeAstNode<LT>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, (static_cast<ShrFnType>(slake::flib::shrSigned))(ll->data, nBits)))) {
+				return genOutOfMemoryCompError();
+			}
+
+			exprOut = result.castTo<ExprNode>();
+			break;
+		}
+		case BinaryOp::Eq:
+		case BinaryOp::Neq:
+		case BinaryOp::StrictEq:
+		case BinaryOp::StrictNeq:
+		case BinaryOp::Lt:
+		case BinaryOp::Gt:
+		case BinaryOp::LtEq:
+		case BinaryOp::GtEq:
+		case BinaryOp::Cmp:
+			if (exprKind != rhs->exprKind) {
+				peff::SharedPtr<TN> tn;
+
+				if (!(tn = makeAstNode<TN>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
+					return genOutOfMemoryCompError();
+				}
+
+				SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
+			} else
+				rl = rhs;
+
+			SLKC_RETURN_IF_COMP_ERROR(_doSimpleComparisonBinaryOp<LT>(compileEnv, e->binaryOp, ll, rl.castTo<LT>(), exprOut));
+			break;
+	}
+
+	return {};
+}
+
+template <typename LT, ExprKind exprKind, typename TN>
+static std::optional<CompilationError> _evalUnsignedIntegralBinaryOp(
+	CompileEnvironment *compileEnv,
+	CompilationContext *compilationContext,
+	AstNodePtr<BinaryExprNode> e,
+	AstNodePtr<ExprNode> lhs,
+	AstNodePtr<ExprNode> rhs,
+	AstNodePtr<ExprNode> &exprOut) {
+	peff::SharedPtr<LT> ll = lhs.castTo<LT>();
+	AstNodePtr<ExprNode> rl;
+
+	switch (e->binaryOp) {
+		case BinaryOp::Add:
+		case BinaryOp::Sub:
+		case BinaryOp::Mul:
+		case BinaryOp::Div:
+		case BinaryOp::Mod: {
+			if (exprKind != rhs->exprKind) {
+				peff::SharedPtr<TN> tn;
+
+				if (!(tn = makeAstNode<TN>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
+					return genOutOfMemoryCompError();
+				}
+
+				SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
+			} else
+				rl = rhs;
+
+			peff::SharedPtr<LT> result;
+
+			if (!(result = makeAstNode<LT>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document->sharedFromThis(), 0))) {
+				return genOutOfMemoryCompError();
+			}
+
+			SLKC_RETURN_IF_COMP_ERROR(_doSimpleArithmeticBinaryOp<LT, LT>(compileEnv, e->binaryOp, ll, rl.castTo<LT>(), result));
+
+			exprOut = result.castTo<ExprNode>();
+			break;
+		}
+		case BinaryOp::And:
+		case BinaryOp::Or:
+		case BinaryOp::Xor: {
+			if (exprKind != rhs->exprKind) {
+				peff::SharedPtr<TN> tn;
+
+				if (!(tn = makeAstNode<TN>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
+					return genOutOfMemoryCompError();
+				}
+
+				SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
+			} else
+				rl = rhs;
+
+			peff::SharedPtr<LT> result;
+
+			if (!(result = makeAstNode<LT>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document->sharedFromThis(), 0))) {
+				return genOutOfMemoryCompError();
+			}
+
+			SLKC_RETURN_IF_COMP_ERROR(_doSimpleBitwiseBinaryOp<LT, LT>(compileEnv, e->binaryOp, ll, rl.castTo<LT>(), result));
+
+			exprOut = result.castTo<ExprNode>();
+			break;
+		}
+		case BinaryOp::LAnd: {
+			if (exprKind != rhs->exprKind) {
+				peff::SharedPtr<TN> tn;
+
+				if (!(tn = makeAstNode<TN>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
+					return genOutOfMemoryCompError();
+				}
+
+				SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
+			} else
+				rl = rhs;
+
+			AstNodePtr<BoolLiteralExprNode> result;
+
+			if (!(result = makeAstNode<BoolLiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, ll->data && rl.castTo<I16LiteralExprNode>()->data))) {
+				return genOutOfMemoryCompError();
+			}
+
+			exprOut = result.castTo<ExprNode>();
+			break;
+		}
+		case BinaryOp::LOr: {
+			if (exprKind != rhs->exprKind) {
+				peff::SharedPtr<TN> tn;
+
+				if (!(tn = makeAstNode<TN>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
+					return genOutOfMemoryCompError();
+				}
+
+				SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
+			} else
+				rl = rhs;
+
+			AstNodePtr<BoolLiteralExprNode> result;
+
+			if (!(result = makeAstNode<BoolLiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, ll->data || rl.castTo<I16LiteralExprNode>()->data))) {
+				return genOutOfMemoryCompError();
+			}
+
+			exprOut = result.castTo<ExprNode>();
+			break;
+		}
+		case BinaryOp::Shl: {
+			if (ExprKind::U32 != rhs->exprKind) {
+				peff::SharedPtr<U32TypeNameNode> tn;
+
+				if (!(tn = makeAstNode<U32TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
+					return genOutOfMemoryCompError();
+				}
+
+				SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
+			} else
+				rl = rhs;
+
+			AstNodePtr<LT> result;
+
+			uint32_t nBits = rl.castTo<U32LiteralExprNode>()->data;
+			if (!(result = makeAstNode<LT>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, slake::flib::shlUnsigned(ll->data, nBits)))) {
+				return genOutOfMemoryCompError();
+			}
+
+			exprOut = result.castTo<ExprNode>();
+			break;
+		}
+		case BinaryOp::Shr: {
+			if (ExprKind::U32 != rhs->exprKind) {
+				peff::SharedPtr<U32TypeNameNode> tn;
+
+				if (!(tn = makeAstNode<U32TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
+					return genOutOfMemoryCompError();
+				}
+
+				SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
+			} else
+				rl = rhs;
+
+			AstNodePtr<LT> result;
+
+			uint32_t nBits = rl.castTo<U32LiteralExprNode>()->data;
+			if (!(result = makeAstNode<LT>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, slake::flib::shrUnsigned(ll->data, nBits)))) {
+				return genOutOfMemoryCompError();
+			}
+
+			exprOut = result.castTo<ExprNode>();
+			break;
+		}
+		case BinaryOp::Eq:
+		case BinaryOp::Neq:
+		case BinaryOp::StrictEq:
+		case BinaryOp::StrictNeq:
+		case BinaryOp::Lt:
+		case BinaryOp::Gt:
+		case BinaryOp::LtEq:
+		case BinaryOp::GtEq:
+		case BinaryOp::Cmp:
+			if (exprKind != rhs->exprKind) {
+				peff::SharedPtr<TN> tn;
+
+				if (!(tn = makeAstNode<TN>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
+					return genOutOfMemoryCompError();
+				}
+
+				SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
+			} else
+				rl = rhs;
+
+			SLKC_RETURN_IF_COMP_ERROR(_doSimpleComparisonBinaryOp<LT>(compileEnv, e->binaryOp, ll, rl.castTo<LT>(), exprOut));
+			break;
+	}
+
+	return {};
+}
+
 SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 	CompileEnvironment *compileEnv,
 	CompilationContext *compilationContext,
@@ -330,1403 +688,35 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 
 			switch (lhs->exprKind) {
 				case ExprKind::I8: {
-					peff::SharedPtr<I8LiteralExprNode> ll = lhs.castTo<I8LiteralExprNode>();
-					AstNodePtr<ExprNode> rl;
-
-					switch (e->binaryOp) {
-						case BinaryOp::Add:
-						case BinaryOp::Sub:
-						case BinaryOp::Mul:
-						case BinaryOp::Div:
-						case BinaryOp::Mod: {
-							if (ExprKind::I8 != rhs->exprKind) {
-								peff::SharedPtr<I8TypeNameNode> tn;
-
-								if (!(tn = makeAstNode<I8TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-									return genOutOfMemoryCompError();
-								}
-
-								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							} else
-								rl = rhs;
-
-							peff::SharedPtr<I8LiteralExprNode> result;
-
-							if (!(result = makeAstNode<I8LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document->sharedFromThis(), 0))) {
-								return genOutOfMemoryCompError();
-							}
-
-							SLKC_RETURN_IF_COMP_ERROR(_doSimpleArithmeticBinaryOp<I8LiteralExprNode, I8LiteralExprNode>(compileEnv, e->binaryOp, ll, rl.castTo<I8LiteralExprNode>(), result));
-
-							exprOut = result.castTo<ExprNode>();
-							break;
-						}
-						case BinaryOp::And:
-						case BinaryOp::Or:
-						case BinaryOp::Xor: {
-							if (ExprKind::I8 != rhs->exprKind) {
-								peff::SharedPtr<I8TypeNameNode> tn;
-
-								if (!(tn = makeAstNode<I8TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-									return genOutOfMemoryCompError();
-								}
-
-								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							} else
-								rl = rhs;
-
-							peff::SharedPtr<I8LiteralExprNode> result;
-
-							if (!(result = makeAstNode<I8LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document->sharedFromThis(), 0))) {
-								return genOutOfMemoryCompError();
-							}
-
-							SLKC_RETURN_IF_COMP_ERROR(_doSimpleBitwiseBinaryOp<I8LiteralExprNode, I8LiteralExprNode>(compileEnv, e->binaryOp, ll, rl.castTo<I8LiteralExprNode>(), result));
-
-							exprOut = result.castTo<ExprNode>();
-							break;
-						}
-						case BinaryOp::LAnd: {
-							if (ExprKind::I8 != rhs->exprKind) {
-								peff::SharedPtr<I8TypeNameNode> tn;
-
-								if (!(tn = makeAstNode<I8TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-									return genOutOfMemoryCompError();
-								}
-
-								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							} else
-								rl = rhs;
-
-							AstNodePtr<BoolLiteralExprNode> result;
-
-							if (!(result = makeAstNode<BoolLiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, ll->data && rl.castTo<I8LiteralExprNode>()->data))) {
-								return genOutOfMemoryCompError();
-							}
-
-							exprOut = result.castTo<ExprNode>();
-							break;
-						}
-						case BinaryOp::LOr: {
-							if (ExprKind::I8 != rhs->exprKind) {
-								peff::SharedPtr<I8TypeNameNode> tn;
-
-								if (!(tn = makeAstNode<I8TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-									return genOutOfMemoryCompError();
-								}
-
-								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							} else
-								rl = rhs;
-
-							AstNodePtr<BoolLiteralExprNode> result;
-
-							if (!(result = makeAstNode<BoolLiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, ll->data || rl.castTo<I8LiteralExprNode>()->data))) {
-								return genOutOfMemoryCompError();
-							}
-
-							exprOut = result.castTo<ExprNode>();
-							break;
-						}
-						case BinaryOp::Shl: {
-							if (ExprKind::U32 != rhs->exprKind) {
-								peff::SharedPtr<U32TypeNameNode> tn;
-
-								if (!(tn = makeAstNode<U32TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-									return genOutOfMemoryCompError();
-								}
-
-								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							} else
-								rl = rhs;
-
-							AstNodePtr<I8LiteralExprNode> result;
-
-							uint32_t nBits = rl.castTo<U32LiteralExprNode>()->data;
-							if (!(result = makeAstNode<I8LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, slake::flib::shrSigned8(ll->data, nBits)))) {
-								return genOutOfMemoryCompError();
-							}
-
-							exprOut = result.castTo<ExprNode>();
-							break;
-						}
-						case BinaryOp::Shr: {
-							if (ExprKind::U32 != rhs->exprKind) {
-								peff::SharedPtr<U32TypeNameNode> tn;
-
-								if (!(tn = makeAstNode<U32TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-									return genOutOfMemoryCompError();
-								}
-
-								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							} else
-								rl = rhs;
-
-							AstNodePtr<I8LiteralExprNode> result;
-
-							uint32_t nBits = rl.castTo<U32LiteralExprNode>()->data;
-							if (nBits >= 8) {
-								if (!(result = makeAstNode<I8LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, 0))) {
-									return genOutOfMemoryCompError();
-								}
-							} else {
-								if (!(result = makeAstNode<I8LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, slake::flib::shrSigned8(ll->data, nBits)))) {
-									return genOutOfMemoryCompError();
-								}
-							}
-
-							exprOut = result.castTo<ExprNode>();
-							break;
-						}
-						case BinaryOp::Eq:
-						case BinaryOp::Neq:
-						case BinaryOp::StrictEq:
-						case BinaryOp::StrictNeq:
-						case BinaryOp::Lt:
-						case BinaryOp::Gt:
-						case BinaryOp::LtEq:
-						case BinaryOp::GtEq:
-						case BinaryOp::Cmp:
-							if (ExprKind::I8 != rhs->exprKind) {
-								peff::SharedPtr<I8TypeNameNode> tn;
-
-								if (!(tn = makeAstNode<I8TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-									return genOutOfMemoryCompError();
-								}
-
-								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							} else
-								rl = rhs;
-
-							SLKC_RETURN_IF_COMP_ERROR(_doSimpleComparisonBinaryOp<I8LiteralExprNode>(compileEnv, e->binaryOp, ll, rl.castTo<I8LiteralExprNode>(), exprOut));
-							break;
-					}
-
+					SLKC_RETURN_IF_COMP_ERROR(_evalSignedIntegralBinaryOp<I8LiteralExprNode, ExprKind::I8, I8TypeNameNode>(compileEnv, compilationContext, e, lhs, rhs, exprOut));
 					break;
 				}
 				case ExprKind::I16: {
-					peff::SharedPtr<I16LiteralExprNode> ll = lhs.castTo<I16LiteralExprNode>();
-					AstNodePtr<ExprNode> rl;
-
-					switch (e->binaryOp) {
-						case BinaryOp::Add:
-						case BinaryOp::Sub:
-						case BinaryOp::Mul:
-						case BinaryOp::Div:
-						case BinaryOp::Mod: {
-							if (ExprKind::I16 != rhs->exprKind) {
-								peff::SharedPtr<I16TypeNameNode> tn;
-
-								if (!(tn = makeAstNode<I16TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-									return genOutOfMemoryCompError();
-								}
-
-								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							} else
-								rl = rhs;
-
-							peff::SharedPtr<I16LiteralExprNode> result;
-
-							if (!(result = makeAstNode<I16LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document->sharedFromThis(), 0))) {
-								return genOutOfMemoryCompError();
-							}
-
-							SLKC_RETURN_IF_COMP_ERROR(_doSimpleArithmeticBinaryOp<I16LiteralExprNode, I16LiteralExprNode>(compileEnv, e->binaryOp, ll, rl.castTo<I16LiteralExprNode>(), result));
-
-							exprOut = result.castTo<ExprNode>();
-							break;
-						}
-						case BinaryOp::And:
-						case BinaryOp::Or:
-						case BinaryOp::Xor: {
-							if (ExprKind::I16 != rhs->exprKind) {
-								peff::SharedPtr<I16TypeNameNode> tn;
-
-								if (!(tn = makeAstNode<I16TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-									return genOutOfMemoryCompError();
-								}
-
-								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							} else
-								rl = rhs;
-
-							peff::SharedPtr<I16LiteralExprNode> result;
-
-							if (!(result = makeAstNode<I16LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document->sharedFromThis(), 0))) {
-								return genOutOfMemoryCompError();
-							}
-
-							SLKC_RETURN_IF_COMP_ERROR(_doSimpleBitwiseBinaryOp<I16LiteralExprNode, I16LiteralExprNode>(compileEnv, e->binaryOp, ll, rl.castTo<I16LiteralExprNode>(), result));
-
-							exprOut = result.castTo<ExprNode>();
-							break;
-						}
-						case BinaryOp::LAnd: {
-							if (ExprKind::I16 != rhs->exprKind) {
-								peff::SharedPtr<I16TypeNameNode> tn;
-
-								if (!(tn = makeAstNode<I16TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-									return genOutOfMemoryCompError();
-								}
-
-								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							} else
-								rl = rhs;
-
-							AstNodePtr<BoolLiteralExprNode> result;
-
-							if (!(result = makeAstNode<BoolLiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, ll->data && rl.castTo<I16LiteralExprNode>()->data))) {
-								return genOutOfMemoryCompError();
-							}
-
-							exprOut = result.castTo<ExprNode>();
-							break;
-						}
-						case BinaryOp::LOr: {
-							if (ExprKind::I16 != rhs->exprKind) {
-								peff::SharedPtr<I16TypeNameNode> tn;
-
-								if (!(tn = makeAstNode<I16TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-									return genOutOfMemoryCompError();
-								}
-
-								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							} else
-								rl = rhs;
-
-							AstNodePtr<BoolLiteralExprNode> result;
-
-							if (!(result = makeAstNode<BoolLiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, ll->data || rl.castTo<I16LiteralExprNode>()->data))) {
-								return genOutOfMemoryCompError();
-							}
-
-							exprOut = result.castTo<ExprNode>();
-							break;
-						}
-						case BinaryOp::Shl: {
-							if (ExprKind::U32 != rhs->exprKind) {
-								peff::SharedPtr<U32TypeNameNode> tn;
-
-								if (!(tn = makeAstNode<U32TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-									return genOutOfMemoryCompError();
-								}
-
-								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							} else
-								rl = rhs;
-
-							AstNodePtr<I16LiteralExprNode> result;
-
-							uint32_t nBits = rl.castTo<U32LiteralExprNode>()->data;
-							if (!(result = makeAstNode<I16LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, slake::flib::shrSigned8(ll->data, nBits)))) {
-								return genOutOfMemoryCompError();
-							}
-
-							exprOut = result.castTo<ExprNode>();
-							break;
-						}
-						case BinaryOp::Shr: {
-							if (ExprKind::U32 != rhs->exprKind) {
-								peff::SharedPtr<U32TypeNameNode> tn;
-
-								if (!(tn = makeAstNode<U32TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-									return genOutOfMemoryCompError();
-								}
-
-								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							} else
-								rl = rhs;
-
-							AstNodePtr<I16LiteralExprNode> result;
-
-							uint32_t nBits = rl.castTo<U32LiteralExprNode>()->data;
-							if (nBits >= 8) {
-								if (!(result = makeAstNode<I16LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, 0))) {
-									return genOutOfMemoryCompError();
-								}
-							} else {
-								if (!(result = makeAstNode<I16LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, slake::flib::shrSigned8(ll->data, nBits)))) {
-									return genOutOfMemoryCompError();
-								}
-							}
-
-							exprOut = result.castTo<ExprNode>();
-							break;
-						}
-						case BinaryOp::Eq:
-						case BinaryOp::Neq:
-						case BinaryOp::StrictEq:
-						case BinaryOp::StrictNeq:
-						case BinaryOp::Lt:
-						case BinaryOp::Gt:
-						case BinaryOp::LtEq:
-						case BinaryOp::GtEq:
-						case BinaryOp::Cmp:
-							if (ExprKind::I16 != rhs->exprKind) {
-								peff::SharedPtr<I16TypeNameNode> tn;
-
-								if (!(tn = makeAstNode<I16TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-									return genOutOfMemoryCompError();
-								}
-
-								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							} else
-								rl = rhs;
-
-							SLKC_RETURN_IF_COMP_ERROR(_doSimpleComparisonBinaryOp<I16LiteralExprNode>(compileEnv, e->binaryOp, ll, rl.castTo<I16LiteralExprNode>(), exprOut));
-							break;
-					}
-
+					SLKC_RETURN_IF_COMP_ERROR(_evalSignedIntegralBinaryOp<I16LiteralExprNode, ExprKind::I16, I16TypeNameNode>(compileEnv, compilationContext, e, lhs, rhs, exprOut));
 					break;
 				}
 				case ExprKind::I32: {
-					peff::SharedPtr<I32LiteralExprNode> ll = lhs.castTo<I32LiteralExprNode>();
-					AstNodePtr<ExprNode> rl;
-
-					switch (e->binaryOp) {
-						case BinaryOp::Add:
-						case BinaryOp::Sub:
-						case BinaryOp::Mul:
-						case BinaryOp::Div:
-						case BinaryOp::Mod: {
-							if (ExprKind::I32 != rhs->exprKind) {
-								peff::SharedPtr<I32TypeNameNode> tn;
-
-								if (!(tn = makeAstNode<I32TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-									return genOutOfMemoryCompError();
-								}
-
-								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							} else
-								rl = rhs;
-
-							peff::SharedPtr<I32LiteralExprNode> result;
-
-							if (!(result = makeAstNode<I32LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document->sharedFromThis(), 0))) {
-								return genOutOfMemoryCompError();
-							}
-
-							SLKC_RETURN_IF_COMP_ERROR(_doSimpleArithmeticBinaryOp<I32LiteralExprNode, I32LiteralExprNode>(compileEnv, e->binaryOp, ll, rl.castTo<I32LiteralExprNode>(), result));
-
-							exprOut = result.castTo<ExprNode>();
-							break;
-						}
-						case BinaryOp::And:
-						case BinaryOp::Or:
-						case BinaryOp::Xor: {
-							if (ExprKind::I32 != rhs->exprKind) {
-								peff::SharedPtr<I32TypeNameNode> tn;
-
-								if (!(tn = makeAstNode<I32TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-									return genOutOfMemoryCompError();
-								}
-
-								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							} else
-								rl = rhs;
-
-							peff::SharedPtr<I32LiteralExprNode> result;
-
-							if (!(result = makeAstNode<I32LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document->sharedFromThis(), 0))) {
-								return genOutOfMemoryCompError();
-							}
-
-							SLKC_RETURN_IF_COMP_ERROR(_doSimpleBitwiseBinaryOp<I32LiteralExprNode, I32LiteralExprNode>(compileEnv, e->binaryOp, ll, rl.castTo<I32LiteralExprNode>(), result));
-
-							exprOut = result.castTo<ExprNode>();
-							break;
-						}
-						case BinaryOp::LAnd: {
-							if (ExprKind::I32 != rhs->exprKind) {
-								peff::SharedPtr<I32TypeNameNode> tn;
-
-								if (!(tn = makeAstNode<I32TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-									return genOutOfMemoryCompError();
-								}
-
-								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							} else
-								rl = rhs;
-
-							AstNodePtr<BoolLiteralExprNode> result;
-
-							if (!(result = makeAstNode<BoolLiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document->sharedFromThis(), false))) {
-								return genOutOfMemoryCompError();
-							}
-
-							exprOut = result.castTo<ExprNode>();
-							break;
-						}
-						case BinaryOp::LOr: {
-							if (ExprKind::I32 != rhs->exprKind) {
-								peff::SharedPtr<I32TypeNameNode> tn;
-
-								if (!(tn = makeAstNode<I32TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-									return genOutOfMemoryCompError();
-								}
-
-								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							} else
-								rl = rhs;
-
-							AstNodePtr<BoolLiteralExprNode> result;
-
-							if (!(result = makeAstNode<BoolLiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document->sharedFromThis(), false))) {
-								return genOutOfMemoryCompError();
-							}
-
-							exprOut = result.castTo<ExprNode>();
-							break;
-						}
-						case BinaryOp::Shl: {
-							if (ExprKind::U32 != rhs->exprKind) {
-								peff::SharedPtr<U32TypeNameNode> tn;
-
-								if (!(tn = makeAstNode<U32TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-									return genOutOfMemoryCompError();
-								}
-
-								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							} else
-								rl = rhs;
-
-							AstNodePtr<BoolLiteralExprNode> result;
-
-							uint32_t nBits = rl.castTo<U32LiteralExprNode>()->data;
-							if (!(result = makeAstNode<BoolLiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, slake::flib::shrSigned8(ll->data, nBits)))) {
-								return genOutOfMemoryCompError();
-							}
-
-							exprOut = result.castTo<ExprNode>();
-							break;
-						}
-						case BinaryOp::Shr: {
-							if (ExprKind::U32 != rhs->exprKind) {
-								peff::SharedPtr<U32TypeNameNode> tn;
-
-								if (!(tn = makeAstNode<U32TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-									return genOutOfMemoryCompError();
-								}
-
-								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							} else
-								rl = rhs;
-
-							AstNodePtr<U32LiteralExprNode> result;
-
-							uint32_t nBits = rl.castTo<U32LiteralExprNode>()->data;
-							if (nBits >= 8) {
-								if (!(result = makeAstNode<U32LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, 0))) {
-									return genOutOfMemoryCompError();
-								}
-							} else {
-								if (!(result = makeAstNode<U32LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, slake::flib::shrSigned8(ll->data, nBits)))) {
-									return genOutOfMemoryCompError();
-								}
-							}
-
-							exprOut = result.castTo<ExprNode>();
-							break;
-						}
-						case BinaryOp::Eq:
-						case BinaryOp::Neq:
-						case BinaryOp::StrictEq:
-						case BinaryOp::StrictNeq:
-						case BinaryOp::Lt:
-						case BinaryOp::Gt:
-						case BinaryOp::LtEq:
-						case BinaryOp::GtEq:
-						case BinaryOp::Cmp:
-							if (ExprKind::I32 != rhs->exprKind) {
-								peff::SharedPtr<I32TypeNameNode> tn;
-
-								if (!(tn = makeAstNode<I32TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-									return genOutOfMemoryCompError();
-								}
-
-								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							} else
-								rl = rhs;
-
-							SLKC_RETURN_IF_COMP_ERROR(_doSimpleComparisonBinaryOp<I32LiteralExprNode>(compileEnv, e->binaryOp, ll, rl.castTo<I32LiteralExprNode>(), exprOut));
-							break;
-					}
-
+					SLKC_RETURN_IF_COMP_ERROR(_evalSignedIntegralBinaryOp<I32LiteralExprNode, ExprKind::I32, I32TypeNameNode>(compileEnv, compilationContext, e, lhs, rhs, exprOut));
 					break;
 				}
 				case ExprKind::I64: {
-					peff::SharedPtr<I64LiteralExprNode> ll = lhs.castTo<I64LiteralExprNode>();
-					AstNodePtr<ExprNode> rl;
-
-					switch (e->binaryOp) {
-						case BinaryOp::Add:
-						case BinaryOp::Sub:
-						case BinaryOp::Mul:
-						case BinaryOp::Div:
-						case BinaryOp::Mod: {
-							if (ExprKind::I64 != rhs->exprKind) {
-								peff::SharedPtr<I64TypeNameNode> tn;
-
-								if (!(tn = makeAstNode<I64TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-									return genOutOfMemoryCompError();
-								}
-
-								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							} else
-								rl = rhs;
-
-							peff::SharedPtr<I64LiteralExprNode> result;
-
-							if (!(result = makeAstNode<I64LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document->sharedFromThis(), 0))) {
-								return genOutOfMemoryCompError();
-							}
-
-							SLKC_RETURN_IF_COMP_ERROR(_doSimpleArithmeticBinaryOp<I64LiteralExprNode, I64LiteralExprNode>(compileEnv, e->binaryOp, ll, rl.castTo<I64LiteralExprNode>(), result));
-
-							exprOut = result.castTo<ExprNode>();
-							break;
-						}
-						case BinaryOp::And:
-						case BinaryOp::Or:
-						case BinaryOp::Xor: {
-							if (ExprKind::I64 != rhs->exprKind) {
-								peff::SharedPtr<I64TypeNameNode> tn;
-
-								if (!(tn = makeAstNode<I64TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-									return genOutOfMemoryCompError();
-								}
-
-								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							} else
-								rl = rhs;
-
-							peff::SharedPtr<I64LiteralExprNode> result;
-
-							if (!(result = makeAstNode<I64LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document->sharedFromThis(), 0))) {
-								return genOutOfMemoryCompError();
-							}
-
-							SLKC_RETURN_IF_COMP_ERROR(_doSimpleBitwiseBinaryOp<I64LiteralExprNode, I64LiteralExprNode>(compileEnv, e->binaryOp, ll, rl.castTo<I64LiteralExprNode>(), result));
-
-							exprOut = result.castTo<ExprNode>();
-							break;
-						}
-						case BinaryOp::LAnd: {
-							if (ExprKind::I64 != rhs->exprKind) {
-								peff::SharedPtr<I64TypeNameNode> tn;
-
-								if (!(tn = makeAstNode<I64TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-									return genOutOfMemoryCompError();
-								}
-
-								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							} else
-								rl = rhs;
-
-							AstNodePtr<BoolLiteralExprNode> result;
-
-							if (!(result = makeAstNode<BoolLiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, ll->data && rl.castTo<I64LiteralExprNode>()->data))) {
-								return genOutOfMemoryCompError();
-							}
-
-							exprOut = result.castTo<ExprNode>();
-							break;
-						}
-						case BinaryOp::LOr: {
-							if (ExprKind::I64 != rhs->exprKind) {
-								peff::SharedPtr<I64TypeNameNode> tn;
-
-								if (!(tn = makeAstNode<I64TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-									return genOutOfMemoryCompError();
-								}
-
-								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							} else
-								rl = rhs;
-
-							AstNodePtr<BoolLiteralExprNode> result;
-
-							if (!(result = makeAstNode<BoolLiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, ll->data || rl.castTo<I64LiteralExprNode>()->data))) {
-								return genOutOfMemoryCompError();
-							}
-
-							exprOut = result.castTo<ExprNode>();
-							break;
-						}
-						case BinaryOp::Shl: {
-							if (ExprKind::U32 != rhs->exprKind) {
-								peff::SharedPtr<U32TypeNameNode> tn;
-
-								if (!(tn = makeAstNode<U32TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-									return genOutOfMemoryCompError();
-								}
-
-								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							} else
-								rl = rhs;
-
-							AstNodePtr<I64LiteralExprNode> result;
-
-							uint32_t nBits = rl.castTo<U32LiteralExprNode>()->data;
-							if (!(result = makeAstNode<I64LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, slake::flib::shrSigned8(ll->data, nBits)))) {
-								return genOutOfMemoryCompError();
-							}
-
-							exprOut = result.castTo<ExprNode>();
-							break;
-						}
-						case BinaryOp::Shr: {
-							if (ExprKind::U32 != rhs->exprKind) {
-								peff::SharedPtr<U32TypeNameNode> tn;
-
-								if (!(tn = makeAstNode<U32TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-									return genOutOfMemoryCompError();
-								}
-
-								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							} else
-								rl = rhs;
-
-							AstNodePtr<I64LiteralExprNode> result;
-
-							uint32_t nBits = rl.castTo<U32LiteralExprNode>()->data;
-							if (nBits >= 8) {
-								if (!(result = makeAstNode<I64LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, 0))) {
-									return genOutOfMemoryCompError();
-								}
-							} else {
-								if (!(result = makeAstNode<I64LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, slake::flib::shrSigned8(ll->data, nBits)))) {
-									return genOutOfMemoryCompError();
-								}
-							}
-
-							exprOut = result.castTo<ExprNode>();
-							break;
-						}
-						case BinaryOp::Eq:
-						case BinaryOp::Neq:
-						case BinaryOp::StrictEq:
-						case BinaryOp::StrictNeq:
-						case BinaryOp::Lt:
-						case BinaryOp::Gt:
-						case BinaryOp::LtEq:
-						case BinaryOp::GtEq:
-						case BinaryOp::Cmp:
-							if (ExprKind::I64 != rhs->exprKind) {
-								peff::SharedPtr<I64TypeNameNode> tn;
-
-								if (!(tn = makeAstNode<I64TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-									return genOutOfMemoryCompError();
-								}
-
-								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							} else
-								rl = rhs;
-
-							SLKC_RETURN_IF_COMP_ERROR(_doSimpleComparisonBinaryOp<I64LiteralExprNode>(compileEnv, e->binaryOp, ll, rl.castTo<I64LiteralExprNode>(), exprOut));
-							break;
-					}
-
+					SLKC_RETURN_IF_COMP_ERROR(_evalSignedIntegralBinaryOp<I64LiteralExprNode, ExprKind::I64, I64TypeNameNode>(compileEnv, compilationContext, e, lhs, rhs, exprOut));
 					break;
 				}
 				case ExprKind::U8: {
-					peff::SharedPtr<U8LiteralExprNode> ll = lhs.castTo<U8LiteralExprNode>();
-					AstNodePtr<ExprNode> rl;
-
-					switch (e->binaryOp) {
-						case BinaryOp::Add:
-						case BinaryOp::Sub:
-						case BinaryOp::Mul:
-						case BinaryOp::Div:
-						case BinaryOp::Mod: {
-							if (ExprKind::U8 != rhs->exprKind) {
-								peff::SharedPtr<U8TypeNameNode> tn;
-
-								if (!(tn = makeAstNode<U8TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-									return genOutOfMemoryCompError();
-								}
-
-								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							} else
-								rl = rhs;
-
-							peff::SharedPtr<U8LiteralExprNode> result;
-
-							if (!(result = makeAstNode<U8LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document->sharedFromThis(), 0))) {
-								return genOutOfMemoryCompError();
-							}
-
-							SLKC_RETURN_IF_COMP_ERROR(_doSimpleArithmeticBinaryOp<U8LiteralExprNode, U8LiteralExprNode>(compileEnv, e->binaryOp, ll, rl.castTo<U8LiteralExprNode>(), result));
-
-							exprOut = result.castTo<ExprNode>();
-							break;
-						}
-						case BinaryOp::And:
-						case BinaryOp::Or:
-						case BinaryOp::Xor: {
-							if (ExprKind::U8 != rhs->exprKind) {
-								peff::SharedPtr<U8TypeNameNode> tn;
-
-								if (!(tn = makeAstNode<U8TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-									return genOutOfMemoryCompError();
-								}
-
-								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							} else
-								rl = rhs;
-
-							peff::SharedPtr<U8LiteralExprNode> result;
-
-							if (!(result = makeAstNode<U8LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document->sharedFromThis(), 0))) {
-								return genOutOfMemoryCompError();
-							}
-
-							SLKC_RETURN_IF_COMP_ERROR(_doSimpleBitwiseBinaryOp<U8LiteralExprNode, U8LiteralExprNode>(compileEnv, e->binaryOp, ll, rl.castTo<U8LiteralExprNode>(), result));
-
-							exprOut = result.castTo<ExprNode>();
-							break;
-						}
-						case BinaryOp::LAnd: {
-							if (ExprKind::U8 != rhs->exprKind) {
-								peff::SharedPtr<U8TypeNameNode> tn;
-
-								if (!(tn = makeAstNode<U8TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-									return genOutOfMemoryCompError();
-								}
-
-								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							} else
-								rl = rhs;
-
-							AstNodePtr<BoolLiteralExprNode> result;
-
-							if (!(result = makeAstNode<BoolLiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, ll->data && rl.castTo<U8LiteralExprNode>()->data))) {
-								return genOutOfMemoryCompError();
-							}
-
-							exprOut = result.castTo<ExprNode>();
-							break;
-						}
-						case BinaryOp::LOr: {
-							if (ExprKind::U8 != rhs->exprKind) {
-								peff::SharedPtr<U8TypeNameNode> tn;
-
-								if (!(tn = makeAstNode<U8TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-									return genOutOfMemoryCompError();
-								}
-
-								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							} else
-								rl = rhs;
-
-							AstNodePtr<BoolLiteralExprNode> result;
-
-							if (!(result = makeAstNode<BoolLiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, ll->data || rl.castTo<U8LiteralExprNode>()->data))) {
-								return genOutOfMemoryCompError();
-							}
-
-							exprOut = result.castTo<ExprNode>();
-							break;
-						}
-						case BinaryOp::Shl: {
-							if (ExprKind::U32 != rhs->exprKind) {
-								peff::SharedPtr<U32TypeNameNode> tn;
-
-								if (!(tn = makeAstNode<U32TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-									return genOutOfMemoryCompError();
-								}
-
-								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							} else
-								rl = rhs;
-
-							AstNodePtr<BoolLiteralExprNode> result;
-
-							uint32_t nBits = rl.castTo<U32LiteralExprNode>()->data;
-							if (!(result = makeAstNode<BoolLiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, slake::flib::shrUnsigned8(ll->data, nBits)))) {
-								return genOutOfMemoryCompError();
-							}
-
-							exprOut = result.castTo<ExprNode>();
-							break;
-						}
-						case BinaryOp::Shr: {
-							if (ExprKind::U32 != rhs->exprKind) {
-								peff::SharedPtr<U32TypeNameNode> tn;
-
-								if (!(tn = makeAstNode<U32TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-									return genOutOfMemoryCompError();
-								}
-
-								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							} else
-								rl = rhs;
-
-							AstNodePtr<U8LiteralExprNode> result;
-
-							uint32_t nBits = rl.castTo<U32LiteralExprNode>()->data;
-							if (nBits >= 8) {
-								if (!(result = makeAstNode<U8LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, 0))) {
-									return genOutOfMemoryCompError();
-								}
-							} else {
-								if (!(result = makeAstNode<U8LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, slake::flib::shrUnsigned8(ll->data, nBits)))) {
-									return genOutOfMemoryCompError();
-								}
-							}
-
-							exprOut = result.castTo<ExprNode>();
-							break;
-						}
-						case BinaryOp::Eq:
-						case BinaryOp::Neq:
-						case BinaryOp::StrictEq:
-						case BinaryOp::StrictNeq:
-						case BinaryOp::Lt:
-						case BinaryOp::Gt:
-						case BinaryOp::LtEq:
-						case BinaryOp::GtEq:
-						case BinaryOp::Cmp:
-							if (ExprKind::U8 != rhs->exprKind) {
-								peff::SharedPtr<U8TypeNameNode> tn;
-
-								if (!(tn = makeAstNode<U8TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-									return genOutOfMemoryCompError();
-								}
-
-								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							} else
-								rl = rhs;
-
-							SLKC_RETURN_IF_COMP_ERROR(_doSimpleComparisonBinaryOp<U8LiteralExprNode>(compileEnv, e->binaryOp, ll, rl.castTo<U8LiteralExprNode>(), exprOut));
-							break;
-					}
-
+					SLKC_RETURN_IF_COMP_ERROR(_evalUnsignedIntegralBinaryOp<U8LiteralExprNode, ExprKind::U8, U8TypeNameNode>(compileEnv, compilationContext, e, lhs, rhs, exprOut));
 					break;
 				}
 				case ExprKind::U16: {
-					peff::SharedPtr<U16LiteralExprNode> ll = lhs.castTo<U16LiteralExprNode>();
-					AstNodePtr<ExprNode> rl;
-
-					switch (e->binaryOp) {
-						case BinaryOp::Add:
-						case BinaryOp::Sub:
-						case BinaryOp::Mul:
-						case BinaryOp::Div:
-						case BinaryOp::Mod: {
-							if (ExprKind::U16 != rhs->exprKind) {
-								peff::SharedPtr<U16TypeNameNode> tn;
-
-								if (!(tn = makeAstNode<U16TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-									return genOutOfMemoryCompError();
-								}
-
-								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							} else
-								rl = rhs;
-
-							peff::SharedPtr<U16LiteralExprNode> result;
-
-							if (!(result = makeAstNode<U16LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document->sharedFromThis(), 0))) {
-								return genOutOfMemoryCompError();
-							}
-
-							SLKC_RETURN_IF_COMP_ERROR(_doSimpleArithmeticBinaryOp<U16LiteralExprNode, U16LiteralExprNode>(compileEnv, e->binaryOp, ll, rl.castTo<U16LiteralExprNode>(), result));
-
-							exprOut = result.castTo<ExprNode>();
-							break;
-						}
-						case BinaryOp::And:
-						case BinaryOp::Or:
-						case BinaryOp::Xor: {
-							if (ExprKind::U16 != rhs->exprKind) {
-								peff::SharedPtr<U16TypeNameNode> tn;
-
-								if (!(tn = makeAstNode<U16TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-									return genOutOfMemoryCompError();
-								}
-
-								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							} else
-								rl = rhs;
-
-							peff::SharedPtr<U16LiteralExprNode> result;
-
-							if (!(result = makeAstNode<U16LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document->sharedFromThis(), 0))) {
-								return genOutOfMemoryCompError();
-							}
-
-							SLKC_RETURN_IF_COMP_ERROR(_doSimpleBitwiseBinaryOp<U16LiteralExprNode, U16LiteralExprNode>(compileEnv, e->binaryOp, ll, rl.castTo<U16LiteralExprNode>(), result));
-
-							exprOut = result.castTo<ExprNode>();
-							break;
-						}
-						case BinaryOp::LAnd: {
-							if (ExprKind::U16 != rhs->exprKind) {
-								peff::SharedPtr<U16TypeNameNode> tn;
-
-								if (!(tn = makeAstNode<U16TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-									return genOutOfMemoryCompError();
-								}
-
-								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							} else
-								rl = rhs;
-
-							AstNodePtr<BoolLiteralExprNode> result;
-
-							if (!(result = makeAstNode<BoolLiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, ll->data && rl.castTo<U16LiteralExprNode>()->data))) {
-								return genOutOfMemoryCompError();
-							}
-
-							exprOut = result.castTo<ExprNode>();
-							break;
-						}
-						case BinaryOp::LOr: {
-							if (ExprKind::U16 != rhs->exprKind) {
-								peff::SharedPtr<U16TypeNameNode> tn;
-
-								if (!(tn = makeAstNode<U16TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-									return genOutOfMemoryCompError();
-								}
-
-								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							} else
-								rl = rhs;
-
-							AstNodePtr<BoolLiteralExprNode> result;
-
-							if (!(result = makeAstNode<BoolLiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, ll->data || rl.castTo<U16LiteralExprNode>()->data))) {
-								return genOutOfMemoryCompError();
-							}
-
-							exprOut = result.castTo<ExprNode>();
-							break;
-						}
-						case BinaryOp::Shl: {
-							if (ExprKind::U32 != rhs->exprKind) {
-								peff::SharedPtr<U32TypeNameNode> tn;
-
-								if (!(tn = makeAstNode<U32TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-									return genOutOfMemoryCompError();
-								}
-
-								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							} else
-								rl = rhs;
-
-							AstNodePtr<U16LiteralExprNode> result;
-
-							uint32_t nBits = rl.castTo<U32LiteralExprNode>()->data;
-							if (!(result = makeAstNode<U16LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, slake::flib::shrUnsigned8(ll->data, nBits)))) {
-								return genOutOfMemoryCompError();
-							}
-
-							exprOut = result.castTo<ExprNode>();
-							break;
-						}
-						case BinaryOp::Shr: {
-							if (ExprKind::U32 != rhs->exprKind) {
-								peff::SharedPtr<U32TypeNameNode> tn;
-
-								if (!(tn = makeAstNode<U32TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-									return genOutOfMemoryCompError();
-								}
-
-								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							} else
-								rl = rhs;
-
-							AstNodePtr<U16LiteralExprNode> result;
-
-							uint32_t nBits = rl.castTo<U32LiteralExprNode>()->data;
-							if (nBits >= 8) {
-								if (!(result = makeAstNode<U16LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, 0))) {
-									return genOutOfMemoryCompError();
-								}
-							} else {
-								if (!(result = makeAstNode<U16LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, slake::flib::shrUnsigned8(ll->data, nBits)))) {
-									return genOutOfMemoryCompError();
-								}
-							}
-
-							exprOut = result.castTo<ExprNode>();
-							break;
-						}
-						case BinaryOp::Eq:
-						case BinaryOp::Neq:
-						case BinaryOp::StrictEq:
-						case BinaryOp::StrictNeq:
-						case BinaryOp::Lt:
-						case BinaryOp::Gt:
-						case BinaryOp::LtEq:
-						case BinaryOp::GtEq:
-						case BinaryOp::Cmp:
-							if (ExprKind::U16 != rhs->exprKind) {
-								peff::SharedPtr<U16TypeNameNode> tn;
-
-								if (!(tn = makeAstNode<U16TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-									return genOutOfMemoryCompError();
-								}
-
-								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							} else
-								rl = rhs;
-
-							SLKC_RETURN_IF_COMP_ERROR(_doSimpleComparisonBinaryOp<U16LiteralExprNode>(compileEnv, e->binaryOp, ll, rl.castTo<U16LiteralExprNode>(), exprOut));
-							break;
-					}
-
+					SLKC_RETURN_IF_COMP_ERROR(_evalUnsignedIntegralBinaryOp<U16LiteralExprNode, ExprKind::U16, U16TypeNameNode>(compileEnv, compilationContext, e, lhs, rhs, exprOut));
 					break;
 				}
 				case ExprKind::U32: {
-					peff::SharedPtr<U32LiteralExprNode> ll = lhs.castTo<U32LiteralExprNode>();
-					AstNodePtr<ExprNode> rl;
-
-					switch (e->binaryOp) {
-						case BinaryOp::Add:
-						case BinaryOp::Sub:
-						case BinaryOp::Mul:
-						case BinaryOp::Div:
-						case BinaryOp::Mod: {
-							if (ExprKind::U32 != rhs->exprKind) {
-								peff::SharedPtr<U32TypeNameNode> tn;
-
-								if (!(tn = makeAstNode<U32TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-									return genOutOfMemoryCompError();
-								}
-
-								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							} else
-								rl = rhs;
-
-							peff::SharedPtr<U32LiteralExprNode> result;
-
-							if (!(result = makeAstNode<U32LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document->sharedFromThis(), 0))) {
-								return genOutOfMemoryCompError();
-							}
-
-							SLKC_RETURN_IF_COMP_ERROR(_doSimpleArithmeticBinaryOp<U32LiteralExprNode, U32LiteralExprNode>(compileEnv, e->binaryOp, ll, rl.castTo<U32LiteralExprNode>(), result));
-
-							exprOut = result.castTo<ExprNode>();
-							break;
-						}
-						case BinaryOp::And:
-						case BinaryOp::Or:
-						case BinaryOp::Xor: {
-							if (ExprKind::U32 != rhs->exprKind) {
-								peff::SharedPtr<U32TypeNameNode> tn;
-
-								if (!(tn = makeAstNode<U32TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-									return genOutOfMemoryCompError();
-								}
-
-								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							} else
-								rl = rhs;
-
-							peff::SharedPtr<U32LiteralExprNode> result;
-
-							if (!(result = makeAstNode<U32LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document->sharedFromThis(), 0))) {
-								return genOutOfMemoryCompError();
-							}
-
-							SLKC_RETURN_IF_COMP_ERROR(_doSimpleBitwiseBinaryOp<U32LiteralExprNode, U32LiteralExprNode>(compileEnv, e->binaryOp, ll, rl.castTo<U32LiteralExprNode>(), result));
-
-							exprOut = result.castTo<ExprNode>();
-							break;
-						}
-						case BinaryOp::LAnd: {
-							if (ExprKind::U32 != rhs->exprKind) {
-								peff::SharedPtr<U32TypeNameNode> tn;
-
-								if (!(tn = makeAstNode<U32TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-									return genOutOfMemoryCompError();
-								}
-
-								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							} else
-								rl = rhs;
-
-							AstNodePtr<BoolLiteralExprNode> result;
-
-							if (!(result = makeAstNode<BoolLiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, ll->data && rl.castTo<U32LiteralExprNode>()->data))) {
-								return genOutOfMemoryCompError();
-							}
-
-							exprOut = result.castTo<ExprNode>();
-							break;
-						}
-						case BinaryOp::LOr: {
-							if (ExprKind::U32 != rhs->exprKind) {
-								peff::SharedPtr<U32TypeNameNode> tn;
-
-								if (!(tn = makeAstNode<U32TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-									return genOutOfMemoryCompError();
-								}
-
-								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							} else
-								rl = rhs;
-
-							AstNodePtr<BoolLiteralExprNode> result;
-
-							if (!(result = makeAstNode<BoolLiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, ll->data || rl.castTo<U32LiteralExprNode>()->data))) {
-								return genOutOfMemoryCompError();
-							}
-
-							exprOut = result.castTo<ExprNode>();
-							break;
-						}
-						case BinaryOp::Shl: {
-							if (ExprKind::U32 != rhs->exprKind) {
-								peff::SharedPtr<U32TypeNameNode> tn;
-
-								if (!(tn = makeAstNode<U32TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-									return genOutOfMemoryCompError();
-								}
-
-								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							} else
-								rl = rhs;
-
-							AstNodePtr<U32LiteralExprNode> result;
-
-							uint32_t nBits = rl.castTo<U32LiteralExprNode>()->data;
-							if (!(result = makeAstNode<U32LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, slake::flib::shrUnsigned8(ll->data, nBits)))) {
-								return genOutOfMemoryCompError();
-							}
-
-							exprOut = result.castTo<ExprNode>();
-							break;
-						}
-						case BinaryOp::Shr: {
-							if (ExprKind::U32 != rhs->exprKind) {
-								peff::SharedPtr<U32TypeNameNode> tn;
-
-								if (!(tn = makeAstNode<U32TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-									return genOutOfMemoryCompError();
-								}
-
-								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							} else
-								rl = rhs;
-
-							AstNodePtr<U32LiteralExprNode> result;
-
-							uint32_t nBits = rl.castTo<U32LiteralExprNode>()->data;
-							if (nBits >= 8) {
-								if (!(result = makeAstNode<U32LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, 0))) {
-									return genOutOfMemoryCompError();
-								}
-							} else {
-								if (!(result = makeAstNode<U32LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, slake::flib::shrUnsigned8(ll->data, nBits)))) {
-									return genOutOfMemoryCompError();
-								}
-							}
-
-							exprOut = result.castTo<ExprNode>();
-							break;
-						}
-						case BinaryOp::Eq:
-						case BinaryOp::Neq:
-						case BinaryOp::StrictEq:
-						case BinaryOp::StrictNeq:
-						case BinaryOp::Lt:
-						case BinaryOp::Gt:
-						case BinaryOp::LtEq:
-						case BinaryOp::GtEq:
-						case BinaryOp::Cmp:
-							if (ExprKind::U32 != rhs->exprKind) {
-								peff::SharedPtr<U32TypeNameNode> tn;
-
-								if (!(tn = makeAstNode<U32TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-									return genOutOfMemoryCompError();
-								}
-
-								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							} else
-								rl = rhs;
-
-							SLKC_RETURN_IF_COMP_ERROR(_doSimpleComparisonBinaryOp<U32LiteralExprNode>(compileEnv, e->binaryOp, ll, rl.castTo<U32LiteralExprNode>(), exprOut));
-							break;
-					}
-
+					SLKC_RETURN_IF_COMP_ERROR(_evalUnsignedIntegralBinaryOp<U32LiteralExprNode, ExprKind::U32, U32TypeNameNode>(compileEnv, compilationContext, e, lhs, rhs, exprOut));
 					break;
 				}
 				case ExprKind::U64: {
-					peff::SharedPtr<U64LiteralExprNode> ll = lhs.castTo<U64LiteralExprNode>();
-					AstNodePtr<ExprNode> rl;
-
-					switch (e->binaryOp) {
-						case BinaryOp::Add:
-						case BinaryOp::Sub:
-						case BinaryOp::Mul:
-						case BinaryOp::Div:
-						case BinaryOp::Mod: {
-							if (ExprKind::U64 != rhs->exprKind) {
-								peff::SharedPtr<U64TypeNameNode> tn;
-
-								if (!(tn = makeAstNode<U64TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-									return genOutOfMemoryCompError();
-								}
-
-								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							} else
-								rl = rhs;
-
-							peff::SharedPtr<U64LiteralExprNode> result;
-
-							if (!(result = makeAstNode<U64LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document->sharedFromThis(), 0))) {
-								return genOutOfMemoryCompError();
-							}
-
-							SLKC_RETURN_IF_COMP_ERROR(_doSimpleArithmeticBinaryOp<U64LiteralExprNode, U64LiteralExprNode>(compileEnv, e->binaryOp, ll, rl.castTo<U64LiteralExprNode>(), result));
-
-							exprOut = result.castTo<ExprNode>();
-							break;
-						}
-						case BinaryOp::And:
-						case BinaryOp::Or:
-						case BinaryOp::Xor: {
-							if (ExprKind::U64 != rhs->exprKind) {
-								peff::SharedPtr<U64TypeNameNode> tn;
-
-								if (!(tn = makeAstNode<U64TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-									return genOutOfMemoryCompError();
-								}
-
-								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							} else
-								rl = rhs;
-
-							peff::SharedPtr<U64LiteralExprNode> result;
-
-							if (!(result = makeAstNode<U64LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document->sharedFromThis(), 0))) {
-								return genOutOfMemoryCompError();
-							}
-
-							SLKC_RETURN_IF_COMP_ERROR(_doSimpleBitwiseBinaryOp<U64LiteralExprNode, U64LiteralExprNode>(compileEnv, e->binaryOp, ll, rl.castTo<U64LiteralExprNode>(), result));
-
-							exprOut = result.castTo<ExprNode>();
-							break;
-						}
-						case BinaryOp::LAnd: {
-							if (ExprKind::U64 != rhs->exprKind) {
-								peff::SharedPtr<U64TypeNameNode> tn;
-
-								if (!(tn = makeAstNode<U64TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-									return genOutOfMemoryCompError();
-								}
-
-								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							} else
-								rl = rhs;
-
-							AstNodePtr<BoolLiteralExprNode> result;
-
-							if (!(result = makeAstNode<BoolLiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, ll->data && rl.castTo<U64LiteralExprNode>()->data))) {
-								return genOutOfMemoryCompError();
-							}
-
-							exprOut = result.castTo<ExprNode>();
-							break;
-						}
-						case BinaryOp::LOr: {
-							if (ExprKind::U64 != rhs->exprKind) {
-								peff::SharedPtr<U64TypeNameNode> tn;
-
-								if (!(tn = makeAstNode<U64TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-									return genOutOfMemoryCompError();
-								}
-
-								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							} else
-								rl = rhs;
-
-							AstNodePtr<BoolLiteralExprNode> result;
-
-							if (!(result = makeAstNode<BoolLiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, ll->data || rl.castTo<U64LiteralExprNode>()->data))) {
-								return genOutOfMemoryCompError();
-							}
-
-							exprOut = result.castTo<ExprNode>();
-							break;
-						}
-						case BinaryOp::Shl: {
-							if (ExprKind::U32 != rhs->exprKind) {
-								peff::SharedPtr<U32TypeNameNode> tn;
-
-								if (!(tn = makeAstNode<U32TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-									return genOutOfMemoryCompError();
-								}
-
-								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							} else
-								rl = rhs;
-
-							AstNodePtr<U64LiteralExprNode> result;
-
-							uint32_t nBits = rl.castTo<U32LiteralExprNode>()->data;
-							if (!(result = makeAstNode<U64LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, slake::flib::shrUnsigned8(ll->data, nBits)))) {
-								return genOutOfMemoryCompError();
-							}
-
-							exprOut = result.castTo<ExprNode>();
-							break;
-						}
-						case BinaryOp::Shr: {
-							if (ExprKind::U32 != rhs->exprKind) {
-								peff::SharedPtr<U32TypeNameNode> tn;
-
-								if (!(tn = makeAstNode<U32TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-									return genOutOfMemoryCompError();
-								}
-
-								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							} else
-								rl = rhs;
-
-							AstNodePtr<U64LiteralExprNode> result;
-
-							uint32_t nBits = rl.castTo<U32LiteralExprNode>()->data;
-							if (nBits >= 8) {
-								if (!(result = makeAstNode<U64LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, 0))) {
-									return genOutOfMemoryCompError();
-								}
-							} else {
-								if (!(result = makeAstNode<U64LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, slake::flib::shrUnsigned8(ll->data, nBits)))) {
-									return genOutOfMemoryCompError();
-								}
-							}
-
-							exprOut = result.castTo<ExprNode>();
-							break;
-						}
-						case BinaryOp::Eq:
-						case BinaryOp::Neq:
-						case BinaryOp::StrictEq:
-						case BinaryOp::StrictNeq:
-						case BinaryOp::Lt:
-						case BinaryOp::Gt:
-						case BinaryOp::LtEq:
-						case BinaryOp::GtEq:
-						case BinaryOp::Cmp:
-							if (ExprKind::U64 != rhs->exprKind) {
-								peff::SharedPtr<U64TypeNameNode> tn;
-
-								if (!(tn = makeAstNode<U64TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-									return genOutOfMemoryCompError();
-								}
-
-								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							} else
-								rl = rhs;
-
-							SLKC_RETURN_IF_COMP_ERROR(_doSimpleComparisonBinaryOp<U64LiteralExprNode>(compileEnv, e->binaryOp, ll, rl.castTo<U64LiteralExprNode>(), exprOut));
-							break;
-					}
-
+					SLKC_RETURN_IF_COMP_ERROR(_evalUnsignedIntegralBinaryOp<U64LiteralExprNode, ExprKind::U64, U64TypeNameNode>(compileEnv, compilationContext, e, lhs, rhs, exprOut));
 					break;
 				}
 				case ExprKind::F32: {
@@ -1960,6 +950,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 							SLKC_RETURN_IF_COMP_ERROR(_doSimpleComparisonBinaryOp<F64LiteralExprNode>(compileEnv, e->binaryOp, ll, rl.castTo<F64LiteralExprNode>(), exprOut));
 							break;
 					}
+
+					break;
 				}
 				case ExprKind::Bool: {
 					AstNodePtr<BoolLiteralExprNode> ll = lhs.castTo<BoolLiteralExprNode>();

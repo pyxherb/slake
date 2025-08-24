@@ -42,7 +42,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 
 							{
 								slake::Type type;
-								SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, newVar->type, type));
+								SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, compilationContext, newVar->type, type));
 
 								SLKC_RETURN_IF_COMP_ERROR(
 									compilationContext->emitIns(
@@ -91,7 +91,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 
 							{
 								slake::Type type;
-								SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, newVar->type, type));
+								SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, compilationContext, newVar->type, type));
 
 								SLKC_RETURN_IF_COMP_ERROR(
 									compilationContext->emitIns(
@@ -124,7 +124,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 
 						{
 							slake::Type type;
-							SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, newVar->type, type));
+							SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, compilationContext, newVar->type, type));
 
 							SLKC_RETURN_IF_COMP_ERROR(
 								compilationContext->emitIns(
@@ -228,7 +228,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 
 							{
 								slake::Type type;
-								SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, newVar->type, type));
+								SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, compilationContext, newVar->type, type));
 
 								SLKC_RETURN_IF_COMP_ERROR(
 									compilationContext->emitIns(
@@ -277,7 +277,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 
 							{
 								slake::Type type;
-								SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, newVar->type, type));
+								SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, compilationContext, newVar->type, type));
 
 								SLKC_RETURN_IF_COMP_ERROR(
 									compilationContext->emitIns(
@@ -310,7 +310,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 
 						{
 							slake::Type type;
-							SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, newVar->type, type));
+							SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, compilationContext, newVar->type, type));
 
 							SLKC_RETURN_IF_COMP_ERROR(
 								compilationContext->emitIns(

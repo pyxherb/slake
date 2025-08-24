@@ -4,6 +4,7 @@ using namespace slkc;
 
 SLKC_API std::optional<CompilationError> slkc::compileTypeName(
 	CompileEnvironment *compileEnv,
+	CompilationContext *compilationContext,
 	AstNodePtr<TypeNameNode> typeName,
 	slake::Type &typeOut) {
 	switch (typeName->typeNameKind) {
@@ -72,7 +73,7 @@ SLKC_API std::optional<CompilationError> slkc::compileTypeName(
 
 					slake::HostObjectRef<slake::IdRefObject> obj;
 
-					SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, fullName->entries.data(), fullName->entries.size(), nullptr, 0, false, obj));
+					SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, compilationContext, fullName->entries.data(), fullName->entries.size(), nullptr, 0, false, obj));
 
 					if (!(compileEnv->hostRefHolder.addObject(obj.get()))) {
 						return genOutOfMemoryCompError();
@@ -115,7 +116,7 @@ SLKC_API std::optional<CompilationError> slkc::compileTypeName(
 				return genOutOfRuntimeMemoryCompError();
 			}
 
-			SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, t->elementType, obj->type));
+			SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, compilationContext, t->elementType, obj->type));
 
 			if (!(compileEnv->hostRefHolder.addObject(obj.get()))) {
 				return genOutOfMemoryCompError();
@@ -134,7 +135,7 @@ SLKC_API std::optional<CompilationError> slkc::compileTypeName(
 				return genOutOfRuntimeMemoryCompError();
 			}
 
-			SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, t->referencedType, obj->type));
+			SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, compilationContext, t->referencedType, obj->type));
 
 			if (!(compileEnv->hostRefHolder.addObject(obj.get()))) {
 				return genOutOfMemoryCompError();
@@ -153,8 +154,12 @@ SLKC_API std::optional<CompilationError> slkc::compileTypeName(
 				return genOutOfRuntimeMemoryCompError();
 			}
 
+			if (!obj->elementTypes.resize(t->elementTypes.size())) {
+				return genOutOfRuntimeMemoryCompError();
+			}
+
 			for (size_t i = 0; i < t->elementTypes.size(); ++i) {
-				SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, t->elementTypes.at(i), obj->elementTypes.at(i)));
+				SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, compilationContext, t->elementTypes.at(i), obj->elementTypes.at(i)));
 			}
 
 			if (!(compileEnv->hostRefHolder.addObject(obj.get()))) {
@@ -174,15 +179,47 @@ SLKC_API std::optional<CompilationError> slkc::compileTypeName(
 				return genOutOfRuntimeMemoryCompError();
 			}
 
-			SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, t->elementType, obj->type));
+			SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, compilationContext, t->elementType, obj->type));
 
-			obj->width = t->width;
+			AstNodePtr<ExprNode> width;
+
+			SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, t->width, width));
+
+			if (!width) {
+				return CompilationError(t->width->tokenRange, CompilationErrorKind::RequiresCompTimeExpr);
+			}
+
+			if (width->exprKind != ExprKind::U32)
+			{
+				AstNodePtr<CastExprNode> ce;
+
+				if (!(ce = makeAstNode<CastExprNode>(t->document->allocator.get(), t->document->allocator.get(), t->document->sharedFromThis()))) {
+					return genOutOfMemoryCompError();
+				}
+
+				AstNodePtr<U32TypeNameNode> u32Type;
+
+				if (!(u32Type = makeAstNode<U32TypeNameNode>(t->document->allocator.get(), t->document->allocator.get(), t->document->sharedFromThis()))) {
+					return genOutOfMemoryCompError();
+				}
+
+				ce->source = width;
+				ce->targetType = u32Type.castTo<TypeNameNode>();
+
+				SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, ce.castTo<ExprNode>(), width));
+
+				if (!width) {
+					return CompilationError(t->width->tokenRange, CompilationErrorKind::TypeArgTypeMismatched);
+				}
+			}
+
+			obj->width = width.castTo<U32LiteralExprNode>()->data;
 
 			if (!(compileEnv->hostRefHolder.addObject(obj.get()))) {
 				return genOutOfMemoryCompError();
 			}
 
-			typeOut = slake::Type(slake::TypeId::Tuple, obj.get());
+			typeOut = slake::Type(slake::TypeId::SIMD, obj.get());
 			break;
 		}
 		case TypeNameKind::ParamTypeList: {
@@ -199,7 +236,7 @@ SLKC_API std::optional<CompilationError> slkc::compileTypeName(
 				return genOutOfRuntimeMemoryCompError();
 			}
 			for (size_t i = 0; i < obj->paramTypes.size(); ++i) {
-				SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, t->paramTypes.at(i), obj->paramTypes.at(i)));
+				SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, compilationContext, t->paramTypes.at(i), obj->paramTypes.at(i)));
 			}
 
 			obj->hasVarArg = t->hasVarArgs;
@@ -221,7 +258,7 @@ SLKC_API std::optional<CompilationError> slkc::compileTypeName(
 				return genOutOfRuntimeMemoryCompError();
 			}
 
-			SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, t->innerTypeName, obj->type));
+			SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, compilationContext, t->innerTypeName, obj->type));
 
 			if (!(compileEnv->hostRefHolder.addObject(obj.get()))) {
 				return genOutOfMemoryCompError();
@@ -239,6 +276,7 @@ SLKC_API std::optional<CompilationError> slkc::compileTypeName(
 
 SLKC_API std::optional<CompilationError> slkc::compileIdRef(
 	CompileEnvironment *compileEnv,
+	CompilationContext *compilationContext,
 	const IdRefEntry *entries,
 	size_t nEntries,
 	AstNodePtr<TypeNameNode> *paramTypes,
@@ -272,7 +310,7 @@ SLKC_API std::optional<CompilationError> slkc::compileIdRef(
 		}
 
 		for (size_t i = 0; i < ce.genericArgs.size(); ++i) {
-			SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, ce.genericArgs.at(i), e.genericArgs.at(i)));
+			SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, compilationContext, ce.genericArgs.at(i), e.genericArgs.at(i)));
 		}
 	}
 
@@ -284,7 +322,7 @@ SLKC_API std::optional<CompilationError> slkc::compileIdRef(
 		}
 
 		for (size_t i = 0; i < nParams; ++i) {
-			SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, paramTypes[i], id->paramTypes->at(i)));
+			SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, compilationContext, paramTypes[i], id->paramTypes->at(i)));
 		}
 	}
 
@@ -296,6 +334,7 @@ SLKC_API std::optional<CompilationError> slkc::compileIdRef(
 
 SLKC_API std::optional<CompilationError> slkc::compileValueExpr(
 	CompileEnvironment *compileEnv,
+	CompilationContext *compilationContext,
 	AstNodePtr<ExprNode> expr,
 	slake::Value &valueOut) {
 	switch (expr->exprKind) {
@@ -306,6 +345,7 @@ SLKC_API std::optional<CompilationError> slkc::compileValueExpr(
 			SLKC_RETURN_IF_COMP_ERROR(
 				compileIdRef(
 					compileEnv,
+					compilationContext, 
 					e->idRefPtr->entries.data(),
 					e->idRefPtr->entries.size(),
 					nullptr,
@@ -427,6 +467,7 @@ SLKC_API std::optional<CompilationError> slkc::compileValueExpr(
 
 SLKC_API std::optional<CompilationError> slkc::compileGenericParams(
 	CompileEnvironment *compileEnv,
+	CompilationContext *compilationContext,
 	AstNodePtr<ModuleNode> mod,
 	AstNodePtr<GenericParamNode> *genericParams,
 	size_t nGenericParams,
@@ -445,7 +486,7 @@ SLKC_API std::optional<CompilationError> slkc::compileGenericParams(
 			// TODO: Implement it.
 		} else {
 			if (gpNode->genericConstraint->baseType) {
-				if ((e = compileTypeName(compileEnv, gpNode->genericConstraint->baseType, gp.baseType))) {
+				if ((e = compileTypeName(compileEnv, compilationContext, gpNode->genericConstraint->baseType, gp.baseType))) {
 					if (e->errorKind == CompilationErrorKind::OutOfMemory)
 						return e;
 					if (!compileEnv->errors.pushBack(std::move(*e))) {
@@ -460,7 +501,7 @@ SLKC_API std::optional<CompilationError> slkc::compileGenericParams(
 			}
 
 			for (size_t k = 0; k < gpNode->genericConstraint->implTypes.size(); ++k) {
-				if ((e = compileTypeName(compileEnv, gpNode->genericConstraint->implTypes.at(k), gp.interfaces.at(k)))) {
+				if ((e = compileTypeName(compileEnv, compilationContext, gpNode->genericConstraint->implTypes.at(k), gp.interfaces.at(k)))) {
 					if (e->errorKind == CompilationErrorKind::OutOfMemory)
 						return e;
 					if (!compileEnv->errors.pushBack(std::move(*e))) {
@@ -485,13 +526,15 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 	slake::ModuleObject *modOut) {
 	std::optional<CompilationError> compilationError;
 	for (auto i : mod->anonymousImports) {
+		NormalCompilationContext compilationContext(compileEnv, nullptr);
+
 		slake::HostObjectRef<slake::IdRefObject> id;
 
 		for (auto &j : compileEnv->document->externalModuleProviders) {
 			SLKC_RETURN_IF_COMP_ERROR(j->loadModule(compileEnv, i->idRef.get()));
 		}
 
-		SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, i->idRef->entries.data(), i->idRef->entries.size(), nullptr, 0, false, id));
+		SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, &compilationContext, i->idRef->entries.data(), i->idRef->entries.size(), nullptr, 0, false, id));
 
 		if (!modOut->unnamedImports.pushBack(id.get())) {
 			return genOutOfRuntimeMemoryCompError();
@@ -508,9 +551,11 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 				SLKC_RETURN_IF_COMP_ERROR(j->loadModule(compileEnv, importNode->idRef.get()));
 			}
 
+			NormalCompilationContext compilationContext(compileEnv, nullptr);
+
 			slake::HostObjectRef<slake::IdRefObject> id;
 
-			SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, importNode->idRef->entries.data(), importNode->idRef->entries.size(), nullptr, 0, false, id));
+			SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, &compilationContext, importNode->idRef->entries.data(), importNode->idRef->entries.size(), nullptr, 0, false, id));
 
 			if (!modOut->unnamedImports.pushBack(id.get())) {
 				return genOutOfMemoryCompError();
@@ -522,6 +567,8 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 
 	for (auto [k, v] : mod->memberIndices) {
 		AstNodePtr<MemberNode> m = mod->members.at(v);
+
+		NormalCompilationContext compilationContext(compileEnv, nullptr);
 
 		switch (m->astNodeType) {
 			case AstNodeType::Var: {
@@ -538,7 +585,7 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 
 				slake::Type type;
 
-				SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, varNode->type, type));
+				SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, &compilationContext, varNode->type, type));
 
 				fr.type = type;
 
@@ -549,7 +596,7 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 				slake::Value defaultValue;
 
 				if (varNode->initialValue) {
-					SLKC_RETURN_IF_COMP_ERROR(compileValueExpr(compileEnv, varNode->initialValue, defaultValue));
+					SLKC_RETURN_IF_COMP_ERROR(compileValueExpr(compileEnv, &compilationContext, varNode->initialValue, defaultValue));
 				} else {
 					defaultValue = modOut->associatedRuntime->defaultValueOf(type);
 				}
@@ -572,7 +619,7 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 					return genOutOfRuntimeMemoryCompError();
 				}
 
-				SLKC_RETURN_IF_COMP_ERROR(compileGenericParams(compileEnv, mod, clsNode->genericParams.data(), clsNode->genericParams.size(), cls->genericParams));
+				SLKC_RETURN_IF_COMP_ERROR(compileGenericParams(compileEnv, &compilationContext, mod, clsNode->genericParams.data(), clsNode->genericParams.size(), cls->genericParams));
 
 				if (clsNode->baseType) {
 					AstNodePtr<MemberNode> baseTypeNode;
@@ -602,7 +649,7 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 						SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(CompilationError(clsNode->baseType->tokenRange, CompilationErrorKind::ExpectingClassName)));
 					}
 
-					SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, clsNode->baseType, cls->baseType));
+					SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, &compilationContext, clsNode->baseType, cls->baseType));
 				}
 
 				peff::Set<AstNodePtr<InterfaceNode>> involvedInterfaces(compileEnv->allocator.get());
@@ -631,7 +678,7 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 
 					slake::Type t;
 
-					SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, i, t));
+					SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, &compilationContext, i, t));
 
 					if (!cls->implTypes.pushBack(std::move(t))) {
 						return genOutOfRuntimeMemoryCompError();
@@ -705,7 +752,7 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 					return genOutOfRuntimeMemoryCompError();
 				}
 
-				SLKC_RETURN_IF_COMP_ERROR(compileGenericParams(compileEnv, mod, clsNode->genericParams.data(), clsNode->genericParams.size(), cls->genericParams));
+				SLKC_RETURN_IF_COMP_ERROR(compileGenericParams(compileEnv, &compilationContext, mod, clsNode->genericParams.data(), clsNode->genericParams.size(), cls->genericParams));
 
 				for (auto &i : clsNode->implTypes) {
 					AstNodePtr<MemberNode> implementedTypeNode;
@@ -804,7 +851,7 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 					}
 
 					if (i->returnType) {
-						if ((e = compileTypeName(compileEnv, i->returnType, fnObject->returnType))) {
+						if ((e = compileTypeName(compileEnv, &compilationContext, i->returnType, fnObject->returnType))) {
 							if (e->errorKind == CompilationErrorKind::OutOfMemory)
 								return e;
 							if (!compileEnv->errors.pushBack(std::move(*e))) {
@@ -817,7 +864,7 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 					}
 
 					for (size_t j = 0; j < i->params.size(); ++j) {
-						if ((e = compileTypeName(compileEnv, i->params.at(j)->type, fnObject->paramTypes.at(j)))) {
+						if ((e = compileTypeName(compileEnv, &compilationContext, i->params.at(j)->type, fnObject->paramTypes.at(j)))) {
 							if (e->errorKind == CompilationErrorKind::OutOfMemory)
 								return e;
 							if (!compileEnv->errors.pushBack(std::move(*e))) {
@@ -827,13 +874,13 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 						}
 					}
 
-					SLKC_RETURN_IF_COMP_ERROR(compileGenericParams(compileEnv, mod, i->genericParams.data(), i->genericParams.size(), fnObject->genericParams));
+					SLKC_RETURN_IF_COMP_ERROR(compileGenericParams(compileEnv, &compilationContext, mod, i->genericParams.data(), i->genericParams.size(), fnObject->genericParams));
 
 					if (i->body) {
-						NormalCompilationContext compilationContext(compileEnv, nullptr);
+						NormalCompilationContext compContext(compileEnv, nullptr);
 
 						for (auto j : i->body->body) {
-							if ((e = compileStmt(compileEnv, &compilationContext, j))) {
+							if ((e = compileStmt(compileEnv, &compContext, j))) {
 								if (e->errorKind == CompilationErrorKind::OutOfMemory)
 									return e;
 								if (!compileEnv->errors.pushBack(std::move(*e))) {
@@ -842,23 +889,23 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 								e.reset();
 							}
 						}
-						if (!fnObject->instructions.resize(compilationContext.generatedInstructions.size())) {
+						if (!fnObject->instructions.resize(compContext.generatedInstructions.size())) {
 							return genOutOfRuntimeMemoryCompError();
 						}
-						for (size_t i = 0; i < compilationContext.generatedInstructions.size(); ++i) {
-							fnObject->instructions.at(i) = std::move(compilationContext.generatedInstructions.at(i));
+						for (size_t i = 0; i < compContext.generatedInstructions.size(); ++i) {
+							fnObject->instructions.at(i) = std::move(compContext.generatedInstructions.at(i));
 						}
-						compilationContext.generatedInstructions.clear();
+						compContext.generatedInstructions.clear();
 
 						for (auto &j : fnObject->instructions) {
 							for (size_t k = 0; k < j.nOperands; ++k) {
 								if (j.operands[k].valueType == slake::ValueType::Label) {
-									j.operands[k] = slake::Value(compilationContext.getLabelOffset(j.operands[k].getLabel()));
+									j.operands[k] = slake::Value(compContext.getLabelOffset(j.operands[k].getLabel()));
 								}
 							}
 						}
 
-						fnObject->nRegisters = compilationContext.nTotalRegs;
+						fnObject->nRegisters = compContext.nTotalRegs;
 					}
 
 					if (!slotObject->overloadings.insert(fnObject.get())) {

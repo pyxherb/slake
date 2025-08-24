@@ -206,6 +206,38 @@ SLKC_API bool slkc::decompileTypeName(peff::Alloc *allocator, DumpWriter *writer
 			SLKC_RETURN_IF_FALSE(writer->write(")"));
 			break;
 		}
+		case slake::TypeId::Tuple: {
+			auto obj = (slake::TupleTypeDefObject *)type.exData.typeDef;
+
+			SLKC_RETURN_IF_FALSE(writer->write("["));
+
+			for (size_t i = 0; i < obj->elementTypes.size(); ++i) {
+				if (i) {
+					SLKC_RETURN_IF_FALSE(writer->write(", "));
+				}
+
+				SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, obj->elementTypes.at(i)));
+			}
+
+			SLKC_RETURN_IF_FALSE(writer->write("]"));
+			break;
+		}
+		case slake::TypeId::SIMD: {
+			auto obj = (slake::SIMDTypeDefObject *)type.exData.typeDef;
+
+			SLKC_RETURN_IF_FALSE(writer->write("simd_t<"));
+
+			SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, obj->type));
+
+			SLKC_RETURN_IF_FALSE(writer->write(", "));
+
+			char s[16];
+			sprintf(s, "%u", obj->width);
+			SLKC_RETURN_IF_FALSE(writer->write(s));
+
+			SLKC_RETURN_IF_FALSE(writer->write(">"));
+			break;
+		}
 		case slake::TypeId::Unpacking: {
 			SLKC_RETURN_IF_FALSE(writer->write("@..."));
 			SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, type.getUnpackingExData()));

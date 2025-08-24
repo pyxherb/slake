@@ -582,7 +582,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					}
 
 					for (size_t i = 0; i < idRefObject->paramTypes->size(); ++i) {
-						SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, matchedOverloading->params.at(i)->type, idRefObject->paramTypes->at(i)));
+						SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, compilationContext, matchedOverloading->params.at(i)->type, idRefObject->paramTypes->at(i)));
 					}
 
 					idRefObject->hasVarArgs = true;
@@ -594,7 +594,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					IdRefPtr fullName;
 					SLKC_RETURN_IF_COMP_ERROR(getFullIdRef(compileEnv->allocator.get(), operatorSlot, fullName));
 
-					SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, fullName->entries.data(), fullName->entries.size(), nullptr, 0, true, idRefObject));
+					SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, compilationContext, fullName->entries.data(), fullName->entries.size(), nullptr, 0, true, idRefObject));
 
 					idRefObject->paramTypes = peff::DynArray<slake::Type>(compileEnv->runtime->getCurGenAlloc());
 
@@ -603,7 +603,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					}
 
 					for (size_t i = 0; i < idRefObject->paramTypes->size(); ++i) {
-						SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, matchedOverloading->params.at(i)->type, idRefObject->paramTypes->at(i)));
+						SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, compilationContext, matchedOverloading->params.at(i)->type, idRefObject->paramTypes->at(i)));
 					}
 
 					idRefObject->hasVarArgs = true;
@@ -1895,7 +1895,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 							}
 
 							for (size_t i = 0; i < idRefObject->paramTypes->size(); ++i) {
-								SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, matchedOverloading->params.at(i)->type, idRefObject->paramTypes->at(i)));
+								SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, compilationContext, matchedOverloading->params.at(i)->type, idRefObject->paramTypes->at(i)));
 							}
 
 							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::RLOAD, operatorReg, { slake::Value(slake::ValueType::RegRef, lhsReg), slake::Value(slake::EntityRef::makeObjectRef(idRefObject.get())) }));
@@ -1916,7 +1916,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 							}
 
 							for (size_t i = 0; i < idRefObject->paramTypes->size(); ++i) {
-								SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, matchedOverloading->params.at(i)->type, idRefObject->paramTypes->at(i)));
+								SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, compilationContext, matchedOverloading->params.at(i)->type, idRefObject->paramTypes->at(i)));
 							}
 
 							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::LOAD, operatorReg, { slake::Value(slake::EntityRef::makeObjectRef(idRefObject.get())) }));

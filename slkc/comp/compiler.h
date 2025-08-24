@@ -504,10 +504,12 @@ namespace slkc {
 
 	[[nodiscard]] SLKC_API std::optional<CompilationError> compileTypeName(
 		CompileEnvironment *compileEnv,
+		CompilationContext *compilationContext,
 		AstNodePtr<TypeNameNode> typeName,
 		slake::Type &typeOut);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> compileIdRef(
 		CompileEnvironment *compileEnv,
+		CompilationContext *compilationContext,
 		const IdRefEntry *entries,
 		size_t nEntries,
 		AstNodePtr<TypeNameNode> *paramTypes,
@@ -516,10 +518,12 @@ namespace slkc {
 		slake::HostObjectRef<slake::IdRefObject> &idRefOut);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> compileValueExpr(
 		CompileEnvironment *compileEnv,
+		CompilationContext *compilationContext,
 		AstNodePtr<ExprNode> expr,
 		slake::Value &valueOut);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> compileGenericParams(
 		CompileEnvironment *compileEnv,
+		CompilationContext *compilationContext,
 		AstNodePtr<ModuleNode> mod,
 		AstNodePtr<GenericParamNode> *genericParams,
 		size_t nGenericParams,

@@ -63,6 +63,8 @@ namespace slkc {
 		InvalidVarArgHintDuringInstantiation,
 		CannotBeUnpackedInThisContext,
 		TypeIsNotSubstitutable,
+		RequiresCompTimeExpr,
+		TypeArgTypeMismatched,
 
 		ImportLimitExceeded,
 		MalformedModuleName,

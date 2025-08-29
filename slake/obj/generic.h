@@ -37,10 +37,12 @@ namespace slake {
 
 	/// @brief Less than ("<") comparator for containers.
 	struct GenericArgListComparator {
+		InternalExceptionPointer exceptPtr;
+
 		SLAKE_API bool operator()(const GenericArgList &lhs, const GenericArgList &rhs) const noexcept;
 	};
 
-	/// @brief Equal ("<") comparator for containers.
+	/// @brief Equality ("<") comparator for containers.
 	struct GenericArgListEqComparator {
 		SLAKE_API bool operator()(const GenericArgList &lhs, const GenericArgList &rhs) const noexcept;
 	};

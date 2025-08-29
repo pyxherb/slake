@@ -126,26 +126,12 @@ namespace slake {
 			return typeId != TypeId::Void;
 		}
 
-		SLAKE_API bool operator<(const Type &rhs) const;
-
-		SLAKE_FORCEINLINE bool operator<(Type &&rhs) const noexcept {
-			return *this < rhs;
+		SLAKE_FORCEINLINE bool operator==(TypeId typeId) noexcept {
+			return this->typeId == typeId;
 		}
 
-		SLAKE_API bool operator==(const Type &rhs) const;
-
-		SLAKE_FORCEINLINE bool operator==(Type &&rhs) const noexcept {
-			return *this == rhs;
-		}
-
-		SLAKE_FORCEINLINE bool operator!=(Type &&rhs) const noexcept { return !(*this == rhs); }
-		SLAKE_FORCEINLINE bool operator!=(const Type &rhs) const noexcept { return !(*this == rhs); }
-
-		SLAKE_FORCEINLINE bool operator==(TypeId rhs) const noexcept {
-			return this->typeId == rhs;
-		}
-		SLAKE_FORCEINLINE bool operator!=(TypeId rhs) const noexcept {
-			return this->typeId != rhs;
+		SLAKE_FORCEINLINE bool operator!=(TypeId typeId) noexcept {
+			return this->typeId != typeId;
 		}
 
 		Type &operator=(const Type &rhs) noexcept = default;

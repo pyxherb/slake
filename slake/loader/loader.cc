@@ -394,8 +394,6 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(Runtime *runtime, R
 
 			SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read((char *)&ctd, sizeof(ctd))));
 
-			assert(!ctd.nImpls);
-
 			HostObjectRef<ClassObject> clsObject;
 
 			if (!(clsObject = ClassObject::alloc(runtime))) {
@@ -531,8 +529,6 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(Runtime *runtime, R
 				slake::slxfmt::FnDesc fnd;
 
 				SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read((char *)&fnd, sizeof(fnd))));
-
-				assert(fnd.lenBody);
 
 				if (fnd.flags & slxfmt::FND_PUB) {
 					fnOverloadingObject->access |= ACCESS_PUB;

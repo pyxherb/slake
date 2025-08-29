@@ -1157,7 +1157,12 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 							fnObject,
 							i));
 				}
-				if (lengthType != TypeId::U32) {
+
+				int cmpResult;
+
+				SLAKE_RETURN_IF_EXCEPT(runtime->compareType(analyzeContext.resourceAllocator.get(), lengthType, TypeId::U32, cmpResult));
+
+				if (cmpResult) {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
 							runtime->getFixedAlloc(),

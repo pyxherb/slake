@@ -240,6 +240,100 @@ SLAKE_API Value Runtime::defaultValueOf(const Type &type) {
 	std::terminate();
 }
 
+SLAKE_API InternalExceptionPointer Runtime::_doCompareType(CompareTypeContext &context, int &resultOut) {
+	while (context.frames.size() > 1) {
+		CompareTypeFrame &frame = context.frames.back();
+
+		switch (frame.kind) {
+			case CompareTypeFrameKind::Normal: {
+				NormalCompareTypeFrameExData &exData = std::get<NormalCompareTypeFrameExData>(frame.exData);
+
+				if (exData.lhs.typeId < exData.rhs.typeId) {
+					resultOut = -1;
+					return {};
+				}
+				if (exData.lhs.typeId > exData.rhs.typeId) {
+					resultOut = 1;
+					return {};
+				}
+				switch (exData.rhs.typeId) {
+					case TypeId::Instance: {
+						auto lhsType = exData.lhs.getCustomTypeExData(), rhsType = exData.rhs.getCustomTypeExData();
+
+						// TODO: Use comparison instead of the simple assert.
+						assert(lhsType->objectKind == rhsType->objectKind);
+						switch (lhsType->objectKind) {
+							case ObjectKind::IdRef: {
+								// Comparison between deferred resolving types are not allowed
+								std::terminate();
+							}
+							case ObjectKind::Class:
+							case ObjectKind::Interface: {
+								if (lhsType < rhsType) {
+									resultOut = -1;
+									return {};
+								}
+								if (lhsType > rhsType) {
+									resultOut = 1;
+									return {};
+								}
+							}
+							default:
+								std::terminate();
+						}
+
+						context.frames.popBack();
+
+						resultOut = 0;
+
+						break;
+					}
+					case TypeId::Array: {
+						NormalCompareTypeFrameExData newExData = { exData.lhs.getArrayExData(), exData.rhs.getArrayExData() };
+
+						context.frames.popBack();
+
+						if (!context.frames.pushBack(CompareTypeFrame(std::move(newExData)))) {
+							context.frames.back().exceptionPtr = OutOfMemoryError::alloc();
+						}
+
+						break;
+					}
+					case TypeId::Ref: {
+						NormalCompareTypeFrameExData newExData = { exData.lhs.getRefExData(), exData.rhs.getRefExData() };
+
+						context.frames.popBack();
+
+						if (!context.frames.pushBack(CompareTypeFrame(std::move(newExData)))) {
+							context.frames.back().exceptionPtr = OutOfMemoryError::alloc();
+						}
+
+						break;
+					}
+					default:
+						context.frames.popBack();
+						resultOut = 0;
+						break;
+				}
+			}
+		}
+	}
+}
+
+SLAKE_API InternalExceptionPointer Runtime::compareType(peff::Alloc *allocator, const Type &lhs, const Type &rhs, int &resultOut) {
+	CompareTypeContext context(allocator);
+
+	if (!context.frames.pushBack(CompareTypeFrame())) {
+		context.frames.back().exceptionPtr = OutOfMemoryError::alloc();
+	}
+
+	SLAKE_RETURN_IF_EXCEPT(_doCompareType(context, resultOut));
+
+	resultOut = context.frames.back().result;
+
+	return {};
+}
+
 SLAKE_API Runtime::Runtime(peff::Alloc *selfAllocator, peff::Alloc *upstream, RuntimeFlags flags)
 	: selfAllocator(selfAllocator),
 	  fixedAlloc(this, upstream),

@@ -179,7 +179,7 @@ InternalExceptionPointer Runtime::_mapGenericParams(const Object *v, GenericInst
 			for (size_t i = 0; i < value->genericParams.size(); ++i) {
 				peff::String copiedName(const_cast<Runtime *>(this)->getFixedAlloc());
 
-				if (!peff::copyAssign(copiedName, value->genericParams.at(i).name)) {
+				if (!copiedName.build(value->genericParams.at(i).name)) {
 					return OutOfMemoryError::alloc();
 				}
 
@@ -357,7 +357,7 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(const Membe
 						// and thus the generic types will keep unchanged.
 						for (size_t i = 0; i < value->genericParams.size(); ++i) {
 							peff::String copiedName(getFixedAlloc());
-							if (!peff::copyAssign(copiedName, value->genericParams.at(i).name))
+							if (!copiedName.build(value->genericParams.at(i).name))
 								return OutOfMemoryError::alloc();
 							newInstantiationContext->mappedGenericArgs.insert(std::move(copiedName), TypeId::Void);
 						}

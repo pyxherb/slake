@@ -268,6 +268,37 @@ namespace slake {
 
 		SLAKE_API uint32_t _findAndDispatchExceptHandler(const Value &curExcept, const MinorFrame &minorFrame) const;
 
+		enum CompareTypeFrameKind : uint8_t {
+			Awaiter = 0,
+			Normal,
+		};
+
+		struct NormalCompareTypeFrameExData {
+			const Type &lhs;
+			const Type &rhs;
+		};
+
+		struct CompareTypeFrame {
+			std::variant<std::monostate, NormalCompareTypeFrameExData> exData;
+			CompareTypeFrameKind kind;
+			InternalExceptionPointer exceptionPtr;
+			int result;
+
+			SLAKE_FORCEINLINE CompareTypeFrame() : kind(CompareTypeFrameKind::Awaiter) {
+			}
+			SLAKE_FORCEINLINE CompareTypeFrame(NormalCompareTypeFrameExData &&exData) : kind(CompareTypeFrameKind::Normal), exData(std::move(exData)) {
+			}
+		};
+
+		struct CompareTypeContext {
+			peff::List<CompareTypeFrame> frames;
+			int result;
+
+			SLAKE_FORCEINLINE CompareTypeContext(peff::Alloc *allocator) : frames(allocator) {}
+		};
+
+		SLAKE_API InternalExceptionPointer _doCompareType(CompareTypeContext &context, int &resultOut);
+
 		friend class Object;
 		friend class RegularFnOverloadingObject;
 		friend class FnObject;
@@ -453,6 +484,8 @@ namespace slake {
 		SLAKE_API size_t sizeofType(const Type &type);
 		SLAKE_API size_t alignofType(const Type &type);
 		SLAKE_API Value defaultValueOf(const Type &type);
+
+		SLAKE_API InternalExceptionPointer compareType(peff::Alloc *allocator, const Type &lhs, const Type &rhs, int &resultOut);
 
 		[[nodiscard]] SLAKE_API static bool constructAt(Runtime *dest, peff::Alloc *upstream, RuntimeFlags flags = 0);
 		[[nodiscard]] SLAKE_API static Runtime *alloc(peff::Alloc *selfAllocator, peff::Alloc *upstream, RuntimeFlags flags = 0);

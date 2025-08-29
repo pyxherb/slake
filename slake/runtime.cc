@@ -318,6 +318,10 @@ SLAKE_API InternalExceptionPointer Runtime::_doCompareType(CompareTypeContext &c
 			}
 		}
 	}
+
+	resultOut = context.frames.back().result;
+
+	return {};
 }
 
 SLAKE_API InternalExceptionPointer Runtime::compareType(peff::Alloc *allocator, const Type &lhs, const Type &rhs, int &resultOut) {

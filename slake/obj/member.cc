@@ -3,10 +3,6 @@
 
 using namespace slake;
 
-SLAKE_API bool MemberObject::onSetParent(Object* parent) {
-	return true;
-}
-
 SLAKE_API MemberObject::MemberObject(Runtime *rt, peff::Alloc *selfAllocator, ObjectKind objectKind)
 	: Object(rt, selfAllocator, objectKind), name(selfAllocator) {
 }

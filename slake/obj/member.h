@@ -11,9 +11,6 @@
 
 namespace slake {
 	class MemberObject : public Object {
-	protected:
-		SLAKE_API virtual bool onSetParent(Object *parent);
-
 	public:
 		peff::String name;
 		Object *parent = nullptr;
@@ -24,11 +21,8 @@ namespace slake {
 		SLAKE_API MemberObject(const MemberObject &x, peff::Alloc *allocator, bool &succeededOut);
 		SLAKE_API virtual ~MemberObject();
 
-		[[nodiscard]] SLAKE_FORCEINLINE bool setParent(Object *parent) noexcept {
-			if(!onSetParent(parent))
-				return false;
+		SLAKE_FORCEINLINE void setParent(Object *parent) noexcept {
 			this->parent = parent;
-			return true;
 		}
 		SLAKE_API virtual const GenericArgList *getGenericArgs() const;
 

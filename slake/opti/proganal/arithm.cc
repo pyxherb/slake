@@ -2258,7 +2258,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			break;
 		}
 		default:
-			throw std::logic_error("Unhandled opcode");
+			std::terminate();
 	}
 
 	return {};

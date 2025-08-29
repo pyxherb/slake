@@ -122,7 +122,9 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateModuleFields(Gene
 			return OutOfMemoryError::alloc();
 		}
 
-		writeVar(EntityRef::makeFieldRef(mod, i), readVarUnsafe(EntityRef::makeFieldRef(tmpMod.get(), i)));
+		if (writeVar(EntityRef::makeFieldRef(mod, i), readVarUnsafe(EntityRef::makeFieldRef(tmpMod.get(), i)))) {
+			return GenericFieldInitError::alloc(const_cast<Runtime *>(this)->getFixedAlloc(), mod, i);
+		}
 	}
 
 	return {};
@@ -435,7 +437,7 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(const Membe
 						value->overloadings.clear();
 
 						if (matchedOverloading) {
-							_instantiateGenericObject(dispatcher, matchedOverloading, instantiationContext);
+							SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(dispatcher, matchedOverloading, instantiationContext));
 							if(!value->overloadings.insert(+matchedOverloading))
 								return OutOfMemoryError::alloc();
 						}

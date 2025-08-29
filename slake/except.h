@@ -301,6 +301,27 @@ namespace slake {
 			peff::String &&name);
 	};
 
+	class GenericFieldInitError : public RuntimeExecError {
+	public:
+		HostObjectRef<ModuleObject> object;
+		size_t idxRecord;
+
+		SLAKE_API GenericFieldInitError(
+			peff::Alloc *selfAllocator,
+			ModuleObject *object,
+			size_t idxRecord);
+		SLAKE_API virtual ~GenericFieldInitError();
+
+		SLAKE_API virtual const char *what() const override;
+
+		SLAKE_API virtual void dealloc() override;
+
+		SLAKE_API static GenericFieldInitError *alloc(
+			peff::Alloc *selfAllocator,
+			ModuleObject *object,
+			size_t idxRecord);
+	};
+
 	enum class OptimizerErrorCode {
 		MalformedProgram = 0,
 		ErrorEvaluatingObjectType

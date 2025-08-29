@@ -1798,7 +1798,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 
 			if (co->isDone()) {
 				if (ins.output != UINT32_MAX) {
-					_setRegisterValue(this, dataStack, curMajorFrame, ins.output, co->finalResult);
+					SLAKE_RETURN_IF_EXCEPT(_setRegisterValue(this, dataStack, curMajorFrame, ins.output, co->finalResult));
 				}
 			} else {
 				SLAKE_RETURN_IF_EXCEPT(_createNewCoroutineMajorFrame(&context->_context, co.get(), ins.output));
@@ -1820,7 +1820,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkObjectOperandType(this, fnObjectRef.asObject.instanceObject, ObjectKind::FnOverloading));
 			co = (CoroutineObject *)fnObjectRef.asObject.instanceObject;
 
-			_setRegisterValue(this, dataStack, curMajorFrame, ins.output, co->isDone());
+			SLAKE_RETURN_IF_EXCEPT(_setRegisterValue(this, dataStack, curMajorFrame, ins.output, co->isDone()));
 			break;
 		}
 		case Opcode::LTHIS: {

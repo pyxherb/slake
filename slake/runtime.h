@@ -479,7 +479,9 @@ namespace slake {
 		[[nodiscard]] SLAKE_API InternalExceptionPointer readVar(const EntityRef &entityRef, Value &valueOut) const noexcept;
 		[[nodiscard]] SLAKE_API Value readVarUnsafe(const EntityRef &entityRef) const noexcept;
 		[[nodiscard]] SLAKE_API InternalExceptionPointer writeVar(const EntityRef &entityRef, const Value &value) const noexcept;
-		SLAKE_API void writeVarUnsafe(const EntityRef &entityRef, const Value &value) const noexcept;
+		SLAKE_FORCEINLINE void writeVarUnsafe(const EntityRef& entityRef, const Value& value) const noexcept {
+			writeVar(entityRef, value).unwrap();
+		}
 
 		SLAKE_API size_t sizeofType(const Type &type);
 		SLAKE_API size_t alignofType(const Type &type);

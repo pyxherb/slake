@@ -280,6 +280,30 @@ SLAKE_API GenericParameterNotFoundError *GenericParameterNotFoundError::alloc(
 	return peff::allocAndConstruct<GenericParameterNotFoundError>(selfAllocator, sizeof(std::max_align_t), selfAllocator, std::move(name));
 }
 
+SLAKE_API GenericFieldInitError::GenericFieldInitError(
+	peff::Alloc *selfAllocator,
+	ModuleObject *object,
+	size_t idxRecord)
+	: RuntimeExecError(selfAllocator, RuntimeExecErrorCode::InvalidArgumentIndex),
+	  object(object),
+	  idxRecord(idxRecord) {}
+SLAKE_API GenericFieldInitError::~GenericFieldInitError() {}
+
+SLAKE_API const char *GenericFieldInitError::what() const {
+	return "Generic parameter not found";
+}
+
+SLAKE_API void GenericFieldInitError::dealloc() {
+	peff::destroyAndRelease<GenericFieldInitError>(selfAllocator.get(), this, sizeof(std::max_align_t));
+}
+
+SLAKE_API GenericFieldInitError *GenericFieldInitError::alloc(
+	peff::Alloc *selfAllocator,
+	ModuleObject *object,
+	size_t idxRecord) {
+	return peff::allocAndConstruct<GenericFieldInitError>(selfAllocator, sizeof(std::max_align_t), selfAllocator, object, idxRecord);
+}
+
 SLAKE_API OptimizerError::OptimizerError(
 	peff::Alloc *selfAllocator,
 	OptimizerErrorCode optimizerErrorCode)

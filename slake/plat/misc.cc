@@ -1,6 +1,10 @@
 #include <slake/runtime.h>
 
-#if defined(__GNUC__)
+#if defined(_MSC_VER)
+void *slake::estimateCurrentStackPointer() {
+	return _AddressOfReturnAddress();
+}
+#elif defined(__GNUC__)
 void *slake::estimateCurrentStackPointer() {
 	return __builtin_frame_address(0);
 }

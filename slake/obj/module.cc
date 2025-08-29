@@ -107,7 +107,7 @@ SLAKE_API bool ModuleObject::appendFieldRecord(FieldRecord &&fieldRecord) {
 		return false;
 	}
 
-	associatedRuntime->writeVar(EntityRef::makeFieldRef(this, fieldRecords.size() - 1), associatedRuntime->defaultValueOf(fr.type));
+	associatedRuntime->writeVarUnsafe(EntityRef::makeFieldRef(this, fieldRecords.size() - 1), associatedRuntime->defaultValueOf(fr.type));
 	return true;
 }
 

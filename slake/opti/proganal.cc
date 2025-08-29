@@ -28,7 +28,8 @@ InternalExceptionPointer slake::opti::wrapIntoRefType(
 
 	typeDef->type = type;
 
-	hostRefHolder.addObject(typeDef.get());
+	if (!hostRefHolder.addObject(typeDef.get()))
+		return OutOfMemoryError::alloc();
 	typeOut = Type(TypeId::Ref, typeDef.get());
 
 	return {};
@@ -44,7 +45,8 @@ InternalExceptionPointer slake::opti::wrapIntoArrayType(
 
 	typeDef->type = type;
 
-	hostRefHolder.addObject(typeDef.get());
+	if (!hostRefHolder.addObject(typeDef.get()))
+		return OutOfMemoryError::alloc();
 	typeOut = Type(TypeId::Array, typeDef.get());
 
 	return {};
@@ -106,7 +108,8 @@ InternalExceptionPointer slake::opti::evalObjectType(
 						typeDef->paramTypes.at(i) = fnOverloadingObject->paramTypes.at(i);
 					}
 
-					analyzeContext.hostRefHolder.addObject(typeDef.get());
+					if (!analyzeContext.hostRefHolder.addObject(typeDef.get()))
+						return OutOfMemoryError::alloc();
 					typeOut = Type(TypeId::Fn, typeDef.get());
 					break;
 				}
@@ -271,9 +274,11 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 
 		varArgTypeDefObject->type = Type(TypeId::Any);
 
-		hostRefHolder.addObject(varArgTypeDefObject.get());
+		if(!hostRefHolder.addObject(varArgTypeDefObject.get()))
+			return OutOfMemoryError::alloc();
 
-		pseudoMajorFrame->resumable->argStack.pushBack({ Value(), Type(TypeId::Array, varArgTypeDefObject.get()) });
+		if(!pseudoMajorFrame->resumable->argStack.pushBack({ Value(), Type(TypeId::Array, varArgTypeDefObject.get()) }))
+			return OutOfMemoryError::alloc();
 	}
 
 	// Analyze lifetime of virtual registers.
@@ -626,7 +631,8 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 
 							typeDef->type = TypeId::Any;
 
-							hostRefHolder.addObject(typeDef.get());
+							if(!hostRefHolder.addObject(typeDef.get()))
+								return OutOfMemoryError::alloc();
 							SLAKE_RETURN_IF_EXCEPT(
 								wrapIntoRefType(
 									runtime,

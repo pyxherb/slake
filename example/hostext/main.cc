@@ -188,7 +188,7 @@ public:
 	virtual void *alloc(size_t size, size_t alignment) noexcept override {
 		void *p = this->StdAlloc::alloc(size, alignment);
 		if (!p)
-			throw std::bad_alloc();
+			std::terminate();
 
 		allocRecords[p] = { size, alignment };
 

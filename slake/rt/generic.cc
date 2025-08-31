@@ -21,6 +21,8 @@ struct Runtime::GenericInstantiationDispatcher {
 	SLAKE_FORCEINLINE GenericInstantiationDispatcher(peff::Alloc *selfAllocator) : nextWalkTypeSlots(selfAllocator), nextWalkObjects(selfAllocator) {}
 
 	SLAKE_FORCEINLINE InternalExceptionPointer pushTypeSlot(TypeSlotGenericInstantiationTask &&slot) noexcept {
+		assert(verifyType(*slot.slot));
+
 		if (!nextWalkTypeSlots.pushBack(std::move(slot))) {
 			return OutOfMemoryError::alloc();
 		}
@@ -168,7 +170,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateGenericObject(Gen
 InternalExceptionPointer Runtime::_mapGenericParams(const Object *v, GenericInstantiationContext *instantiationContext) const {
 	instantiationContext->mappedObject = v;
 
-	switch (v->objectKind) {
+	switch (v->getObjectKind()) {
 		case ObjectKind::Class: {
 			ClassObject *value = (ClassObject *)v;
 
@@ -310,7 +312,8 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(const Membe
 					break;
 				}
 				case TypeId::GenericArg: {
-					HostObjectRef<StringObject> nameObject = (StringObject *)type.getCustomTypeExData();
+					HostObjectRef<StringObject> nameObject = (StringObject *)type.getGenericArgNameObject();
+
 					if (auto it = i.context->mappedGenericArgs.find(nameObject->data); it != i.context->mappedGenericArgs.end()) {
 						if (it.value().typeId != TypeId::Void)
 							type = it.value();
@@ -325,6 +328,7 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(const Membe
 								const_cast<Runtime *>(this)->getFixedAlloc(),
 								std::move(paramName)));
 					}
+					break;
 				}
 			}
 		}
@@ -334,7 +338,7 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(const Membe
 		for (auto &i : dispatcher.nextWalkObjects) {
 			Object *v = i.obj;
 
-			switch (v->objectKind) {
+			switch (v->getObjectKind()) {
 				case ObjectKind::Class: {
 					ClassObject *const value = (ClassObject *)v;
 

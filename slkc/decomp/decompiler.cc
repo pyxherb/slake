@@ -144,7 +144,7 @@ SLKC_API bool slkc::decompileTypeName(peff::Alloc *allocator, DumpWriter *writer
 
 			slake::Runtime *runtime = obj->associatedRuntime;
 
-			switch (obj->objectKind) {
+			switch (obj->getObjectKind()) {
 				case slake::ObjectKind::Class:
 				case slake::ObjectKind::Interface: {
 					SLKC_RETURN_IF_FALSE(writer->write("@"));
@@ -327,7 +327,7 @@ SLKC_API bool slkc::decompileValue(peff::Alloc *allocator, DumpWriter *writer, c
 						break;
 					}
 
-					switch (obj->objectKind) {
+					switch (obj->getObjectKind()) {
 						case slake::ObjectKind::String: {
 							SLKC_RETURN_IF_FALSE(writer->write("\""));
 
@@ -524,7 +524,7 @@ SLKC_API bool slkc::decompileModuleMembers(peff::Alloc *allocator, DumpWriter *w
 	}
 
 	for (auto [k, v] : moduleObject->members) {
-		switch (v->objectKind) {
+		switch (v->getObjectKind()) {
 			case slake::ObjectKind::Fn: {
 				slake::FnObject *obj = (slake::FnObject *)v;
 

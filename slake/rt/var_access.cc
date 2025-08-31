@@ -570,7 +570,9 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 
 			const char *const rawDataPtr = basePtr + sizeof(TypeId);
 
-			Type t = *(TypeId *)basePtr;
+			Type t;
+
+			t.typeId = *(TypeId *)basePtr;
 
 			switch (t.typeId) {
 				case TypeId::I8:

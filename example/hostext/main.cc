@@ -64,7 +64,7 @@ slake::Value print(slake::Context *context, slake::MajorFrame *curMajorFrame) {
 					if (!objectPtr)
 						fputs("null", stdout);
 					else {
-						switch (objectPtr->objectKind) {
+						switch (objectPtr->getObjectKind()) {
 							case ObjectKind::String:
 								std::cout << ((slake::StringObject *)objectPtr)->data.data();
 								break;

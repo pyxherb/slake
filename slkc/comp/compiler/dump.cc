@@ -125,7 +125,7 @@ SLKC_API std::optional<CompilationError> slkc::dumpIdRef(
 						SLKC_RETURN_IF_COMP_ERROR(writer->writeU8((uint8_t)slake::slxfmt::ValueType::None));
 						break;
 					}
-					switch (er.asObject.instanceObject->objectKind) {
+					switch (er.asObject.instanceObject->getObjectKind()) {
 						case slake::ObjectKind::String: {
 							slake::StringObject *s = (slake::StringObject *)er.asObject.instanceObject;
 							SLKC_RETURN_IF_COMP_ERROR(writer->writeU8((uint8_t)slake::slxfmt::ValueType::String));
@@ -221,7 +221,7 @@ SLKC_API std::optional<CompilationError> slkc::dumpTypeName(
 		case slake::TypeId::Instance: {
 			SLKC_RETURN_IF_COMP_ERROR(writer->writeU8((uint8_t)slake::slxfmt::TypeId::Object));
 			slake::Object *dest = type.getCustomTypeExData();
-			switch (dest->objectKind) {
+			switch (dest->getObjectKind()) {
 				case slake::ObjectKind::IdRef: {
 					SLKC_RETURN_IF_COMP_ERROR(dumpIdRef(allocator, writer, (slake::IdRefObject *)dest));
 					break;
@@ -288,7 +288,7 @@ SLKC_API std::optional<CompilationError> slkc::dumpModuleMembers(
 	peff::DynArray<slake::FnObject *> collectedFns(allocator);
 
 	for (auto [k, v] : mod->members) {
-		switch (v->objectKind) {
+		switch (v->getObjectKind()) {
 			case slake::ObjectKind::Class: {
 				if (!collectedClasses.pushBack((slake::ClassObject *)v)) {
 					return genOutOfMemoryCompError();

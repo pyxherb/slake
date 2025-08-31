@@ -171,19 +171,30 @@ SLAKE_API Type Type::duplicate(bool &succeededOut) const {
 		default:;
 	}
 
+	assert(verifyType(newType));
+
 	succeededOut = true;
 
 	return newType;
 }
 
-SLAKE_API Type &Type::getArrayExData() const { return exData.typeDef->type; }
-SLAKE_API Type &Type::getRefExData() const { return exData.typeDef->type; }
-SLAKE_API Type &Type::getUnpackingExData() const { return exData.typeDef->type; }
+SLAKE_API Type &Type::getArrayExData() const {
+	assert(typeId == TypeId::Array);
+	return exData.typeDef->type;
+}
+SLAKE_API Type &Type::getRefExData() const {
+	assert(typeId == TypeId::Ref);
+	return exData.typeDef->type;
+}
+SLAKE_API Type &Type::getUnpackingExData() const {
+	assert(typeId == TypeId::Unpacking);
+	return exData.typeDef->type;
+}
 
 SLAKE_API bool Type::isLoadingDeferred() const noexcept {
 	switch (typeId) {
 		case TypeId::Instance:
-			return getCustomTypeExData()->objectKind == ObjectKind::IdRef;
+			return getCustomTypeExData()->getObjectKind() == ObjectKind::IdRef;
 		default:
 			return false;
 	}
@@ -228,7 +239,7 @@ SLAKE_API bool slake::isCompatible(const Type &type, const Value &value) {
 			const EntityRef &entityRef = value.getEntityRef();
 			if (entityRef.kind != ObjectRefKind::ObjectRef)
 				return false;
-			if (entityRef.asObject.instanceObject->objectKind != ObjectKind::String)
+			if (entityRef.asObject.instanceObject->getObjectKind() != ObjectKind::String)
 				return false;
 			break;
 		}
@@ -250,7 +261,7 @@ SLAKE_API bool slake::isCompatible(const Type &type, const Value &value) {
 				e.reset();
 				return false;
 			}
-			switch (type.getCustomTypeExData()->objectKind) {
+			switch (type.getCustomTypeExData()->getObjectKind()) {
 				case ObjectKind::Class: {
 					ClassObject *thisClass = (ClassObject *)type.getCustomTypeExData();
 
@@ -283,7 +294,7 @@ SLAKE_API bool slake::isCompatible(const Type &type, const Value &value) {
 			if (entityRef.kind != ObjectRefKind::ObjectRef)
 				return false;
 			Object *objectPtr = entityRef.asObject.instanceObject;
-			if (objectPtr->objectKind != ObjectKind::Array)
+			if (objectPtr->getObjectKind() != ObjectKind::Array)
 				return false;
 
 			auto arrayObjectPtr = ((ArrayObject *)objectPtr);

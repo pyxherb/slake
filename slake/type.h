@@ -61,7 +61,7 @@ namespace slake {
 		Tuple,	// Tuple
 		SIMD,	// SIMD
 
-		Fn,		// Function delegation
+		Fn,				// Function delegation
 		ParamTypeList,	// Parameter type list
 		Unpacking,		// Unpacking
 
@@ -83,17 +83,57 @@ namespace slake {
 	class TypeDefObject;
 	struct MajorFrame;
 
+	enum class ObjectKind : uint8_t {
+		String,	 // String
+
+		TypeDef,			   // Type definition
+		FnTypeDef,			   // Function type definition
+		ParamTypeListTypeDef,  // Parameter type list type definition
+		TupleTypeDef,		   // Parameter type list type definition
+		SIMDTypeDef,		   // Parameter type list type definition
+
+		Fn,				// Function
+		FnOverloading,	// Function overloading
+		Module,			// Module
+		Array,			// Array
+		Ref,			// Reference
+
+		Class,		// Class
+		Interface,	// Interface
+		Struct,		// Structure
+		Instance,	// Object instance
+
+		Any,  // Any
+
+		Alias,	// Alias
+
+		IdRef,		 // Reference
+		GenericArg,	 // Generic argument
+		Context,	 // Context
+		Resumable,	 // Resumable
+		Coroutine,	 // Coroutine
+	};
+
+	struct GenericArgTypeExData {
+		StringObject *nameObject;
+		// For type comparison.
+		Object *ownerObject;
+	};
+
 	union TypeExData {
 		Object *object;
 		TypeDefObject *typeDef;
-		struct {
-			StringObject *nameObject;
-			// For type comparison.
-			Object *ownerObject;
-		} genericArg;
+		GenericArgTypeExData genericArg;
 	};
 
 	struct Duplicator;
+
+	struct Type;
+
+	SLAKE_FORCEINLINE bool verifyType(const Type &type);
+
+	SLAKE_FORCEINLINE bool verifyObjectKind(const Object *object);
+	SLAKE_FORCEINLINE bool verifyObjectKind(const Object *object, ObjectKind objectKind);
 
 	struct Type final {
 		TypeExData exData;
@@ -103,18 +143,47 @@ namespace slake {
 		SLAKE_FORCEINLINE Type() = default;
 		SLAKE_FORCEINLINE Type(const Type &x) = default;
 		SLAKE_FORCEINLINE Type(Type &&x) = default;
-		SLAKE_FORCEINLINE constexpr Type(TypeId type) noexcept : typeId(type), exData({}) {}
+		SLAKE_FORCEINLINE Type(TypeId type) noexcept : typeId(type), exData({}) {
+			assert(type != TypeId::Instance);
+			assert(type != TypeId::GenericArg);
+			assert(type != TypeId::Array);
+			assert(type != TypeId::Ref);
+			assert(type != TypeId::Tuple);
+			assert(type != TypeId::SIMD);
+			assert(type != TypeId::Fn);
+			assert(type != TypeId::ParamTypeList);
+			assert(type != TypeId::Unpacking);
+		}
 		SLAKE_FORCEINLINE Type(TypeId type, Object *destObject) noexcept : typeId(type) {
+			assert(destObject && verifyObjectKind((Object *)destObject));
 			exData.object = destObject;
 		}
 		SLAKE_FORCEINLINE Type(StringObject *nameObject, Object *ownerObject) noexcept : typeId(TypeId::GenericArg) {
+			assert(verifyObjectKind((Object *)nameObject, ObjectKind::String));
 			exData.genericArg.nameObject = nameObject;
 			exData.genericArg.ownerObject = ownerObject;
 		}
 
 		SLAKE_API Type duplicate(bool &succeededOut) const;
 
-		SLAKE_FORCEINLINE Object *getCustomTypeExData() const { return exData.object; }
+		SLAKE_FORCEINLINE Object *getCustomTypeExData() const {
+			assert(typeId == TypeId::Instance);
+			assert(exData.object && verifyObjectKind(exData.object));
+			return exData.object;
+		}
+
+		SLAKE_FORCEINLINE StringObject *getGenericArgNameObject() const {
+			assert(typeId == TypeId::GenericArg);
+			assert(exData.genericArg.nameObject && verifyObjectKind((Object *)exData.genericArg.nameObject, ObjectKind::String));
+
+			return exData.genericArg.nameObject;
+		}
+		SLAKE_FORCEINLINE Object *getGenericArgOwnerObject() const {
+			assert(typeId == TypeId::GenericArg);
+			assert(exData.genericArg.ownerObject && verifyObjectKind(exData.genericArg.ownerObject));
+			return exData.genericArg.ownerObject;
+		}
+
 		SLAKE_API Type &getArrayExData() const;
 		SLAKE_API Type &getRefExData() const;
 		SLAKE_API Type &getUnpackingExData() const;
@@ -143,6 +212,42 @@ namespace slake {
 			return nullptr;
 		}
 	};
+
+	SLAKE_FORCEINLINE bool verifyType(const Type &type) {
+		if ((type.typeId < TypeId::Void) || (type.typeId > TypeId::Unknown))
+			return false;
+
+		switch (type.typeId) {
+			case TypeId::Instance:
+			case TypeId::Array:
+			case TypeId::Ref:
+				type.getCustomTypeExData();
+				break;
+			case TypeId::GenericArg:
+				type.getGenericArgNameObject();
+				type.getGenericArgOwnerObject();
+				break;
+			case TypeId::Tuple:
+				/* TODO: Implement it. */
+				break;
+			case TypeId::SIMD:
+				/* TODO: Implement it. */
+				break;
+			case TypeId::Fn:
+				/* TODO: Implement it. */
+				break;
+			case TypeId::ParamTypeList:
+				/* TODO: Implement it. */
+				break;
+			case TypeId::Unpacking:
+				/* TODO: Implement it. */
+				break;
+			default:
+				break;
+		}
+
+		return true;
+	}
 
 	class ClassObject;
 	class InterfaceObject;

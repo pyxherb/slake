@@ -240,29 +240,63 @@ SLAKE_API Value Runtime::defaultValueOf(const Type &type) {
 	std::terminate();
 }
 
-SLAKE_API InternalExceptionPointer Runtime::_doCompareType(CompareTypeContext &context, int &resultOut) {
+SLAKE_API Runtime::CompareTypesFrameExData::CompareTypesFrameExData() {
+}
+
+SLAKE_API Runtime::CompareTypesFrameExData ::~CompareTypesFrameExData() {
+}
+
+SLAKE_API Runtime::AwaiterCompareTypesFrameExData::AwaiterCompareTypesFrameExData(peff::Alloc *allocator) : CompareTypesFrameExData(), allocator(allocator) {
+}
+
+SLAKE_API Runtime::AwaiterCompareTypesFrameExData::~AwaiterCompareTypesFrameExData() {
+}
+
+SLAKE_API void Runtime::AwaiterCompareTypesFrameExData::dealloc() noexcept {
+	peff::destroyAndRelease<AwaiterCompareTypesFrameExData>(allocator.get(), this, alignof(AwaiterCompareTypesFrameExData));
+}
+
+SLAKE_API Runtime::AwaiterCompareTypesFrameExData *Runtime::AwaiterCompareTypesFrameExData::alloc(peff::Alloc *allocator) {
+	return peff::allocAndConstruct<AwaiterCompareTypesFrameExData>(allocator, alignof(AwaiterCompareTypesFrameExData), allocator);
+}
+
+SLAKE_API Runtime::NormalCompareTypesFrameExData::NormalCompareTypesFrameExData(peff::Alloc *allocator, const Type &lhs, const Type &rhs) : CompareTypesFrameExData(), allocator(allocator), lhs(lhs), rhs(rhs) {
+}
+
+SLAKE_API Runtime::NormalCompareTypesFrameExData::~NormalCompareTypesFrameExData() {
+}
+
+SLAKE_API void Runtime::NormalCompareTypesFrameExData::dealloc() noexcept {
+	peff::destroyAndRelease<NormalCompareTypesFrameExData>(allocator.get(), this, alignof(NormalCompareTypesFrameExData));
+}
+
+SLAKE_API Runtime::NormalCompareTypesFrameExData *Runtime::NormalCompareTypesFrameExData::alloc(peff::Alloc *allocator, const Type &lhs, const Type &rhs) {
+	return peff::allocAndConstruct<NormalCompareTypesFrameExData>(allocator, alignof(NormalCompareTypesFrameExData), allocator, lhs, rhs);
+}
+
+SLAKE_API InternalExceptionPointer Runtime::_doCompareTypes(CompareTypesContext &context, int &resultOut) {
 	while (context.frames.size() > 1) {
-		CompareTypeFrame &frame = context.frames.back();
+		CompareTypesFrame &frame = context.frames.back();
 
 		switch (frame.kind) {
-			case CompareTypeFrameKind::Normal: {
-				NormalCompareTypeFrameExData &exData = std::get<NormalCompareTypeFrameExData>(frame.exData);
+			case CompareTypesFrameKind::Normal: {
+				NormalCompareTypesFrameExData *exData = (NormalCompareTypesFrameExData *)frame.exData.get();
 
-				if (exData.lhs.typeId < exData.rhs.typeId) {
+				if (exData->lhs.typeId < exData->rhs.typeId) {
 					resultOut = -1;
 					return {};
 				}
-				if (exData.lhs.typeId > exData.rhs.typeId) {
+				if (exData->lhs.typeId > exData->rhs.typeId) {
 					resultOut = 1;
 					return {};
 				}
-				switch (exData.rhs.typeId) {
+				switch (exData->rhs.typeId) {
 					case TypeId::Instance: {
-						auto lhsType = exData.lhs.getCustomTypeExData(), rhsType = exData.rhs.getCustomTypeExData();
+						auto lhsType = exData->lhs.getCustomTypeExData(), rhsType = exData->rhs.getCustomTypeExData();
 
 						// TODO: Use comparison instead of the simple assert.
-						assert(lhsType->objectKind == rhsType->objectKind);
-						switch (lhsType->objectKind) {
+						assert(lhsType->getObjectKind() == rhsType->getObjectKind());
+						switch (lhsType->getObjectKind()) {
 							case ObjectKind::IdRef: {
 								// Comparison between deferred resolving types are not allowed
 								std::terminate();
@@ -289,22 +323,28 @@ SLAKE_API InternalExceptionPointer Runtime::_doCompareType(CompareTypeContext &c
 						break;
 					}
 					case TypeId::Array: {
-						NormalCompareTypeFrameExData newExData = { exData.lhs.getArrayExData(), exData.rhs.getArrayExData() };
+						std::unique_ptr<NormalCompareTypesFrameExData, peff::DeallocableDeleter<NormalCompareTypesFrameExData>> newExData(
+							NormalCompareTypesFrameExData::alloc(context.allocator.get(),
+								exData->lhs.getArrayExData(),
+								exData->rhs.getArrayExData()));
 
 						context.frames.popBack();
 
-						if (!context.frames.pushBack(CompareTypeFrame(std::move(newExData)))) {
+						if (!context.frames.pushBack(CompareTypesFrame(CompareTypesFrameKind::Normal, std::move(newExData.release())))) {
 							context.frames.back().exceptionPtr = OutOfMemoryError::alloc();
 						}
 
 						break;
 					}
 					case TypeId::Ref: {
-						NormalCompareTypeFrameExData newExData = { exData.lhs.getRefExData(), exData.rhs.getRefExData() };
+						std::unique_ptr<NormalCompareTypesFrameExData, peff::DeallocableDeleter<NormalCompareTypesFrameExData>> newExData(
+							NormalCompareTypesFrameExData::alloc(context.allocator.get(),
+								exData->lhs.getArrayExData(),
+								exData->rhs.getArrayExData()));
 
 						context.frames.popBack();
 
-						if (!context.frames.pushBack(CompareTypeFrame(std::move(newExData)))) {
+						if (!context.frames.pushBack(CompareTypesFrame(CompareTypesFrameKind::Normal, std::move(newExData.release())))) {
 							context.frames.back().exceptionPtr = OutOfMemoryError::alloc();
 						}
 
@@ -325,13 +365,16 @@ SLAKE_API InternalExceptionPointer Runtime::_doCompareType(CompareTypeContext &c
 }
 
 SLAKE_API InternalExceptionPointer Runtime::compareType(peff::Alloc *allocator, const Type &lhs, const Type &rhs, int &resultOut) {
-	CompareTypeContext context(allocator);
+	CompareTypesContext context(allocator);
 
-	if (!context.frames.pushBack(CompareTypeFrame())) {
+	std::unique_ptr<AwaiterCompareTypesFrameExData, peff::DeallocableDeleter<AwaiterCompareTypesFrameExData>> newExData(
+		AwaiterCompareTypesFrameExData::alloc(context.allocator.get()));
+
+	if (!context.frames.pushBack(CompareTypesFrame(CompareTypesFrameKind::Awaiter, newExData.get()))) {
 		context.frames.back().exceptionPtr = OutOfMemoryError::alloc();
 	}
 
-	SLAKE_RETURN_IF_EXCEPT(_doCompareType(context, resultOut));
+	SLAKE_RETURN_IF_EXCEPT(_doCompareTypes(context, resultOut));
 
 	resultOut = context.frames.back().result;
 

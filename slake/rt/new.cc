@@ -16,7 +16,7 @@ SLAKE_API InternalExceptionPointer Runtime::initMethodTableForClass(ClassObject 
 	}
 
 	for (auto it = cls->members.begin(); it != cls->members.end(); ++it) {
-		switch (it.value()->objectKind) {
+		switch (it.value()->getObjectKind()) {
 			case ObjectKind::Fn: {
 				std::deque<FnOverloadingObject *> overloadings;
 
@@ -152,7 +152,7 @@ SLAKE_API InternalExceptionPointer Runtime::prepareClassForInstantiation(ClassOb
 		SLAKE_RETURN_IF_EXCEPT(cls->baseType.loadDeferredType(this));
 
 		Object *parentClass = (ClassObject *)cls->baseType.getCustomTypeExData();
-		if (parentClass->objectKind != ObjectKind::Class)
+		if (parentClass->getObjectKind() != ObjectKind::Class)
 			return allocOutOfMemoryErrorIfAllocFailed(MalformedClassStructureError::alloc(getFixedAlloc(), cls));
 
 		SLAKE_RETURN_IF_EXCEPT(prepareClassForInstantiation((ClassObject *)parentClass));

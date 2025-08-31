@@ -51,7 +51,7 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 		}
 
 		if (ref->paramTypes.has_value() || ref->hasVarArgs) {
-			switch (scopeObject->objectKind) {
+			switch (scopeObject->getObjectKind()) {
 				case ObjectKind::Fn: {
 					FnObject *fnObject = ((FnObject *)scopeObject);
 
@@ -75,7 +75,7 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 		return {};
 
 	fail:
-		switch (curObject->objectKind) {
+		switch (curObject->getObjectKind()) {
 			case ObjectKind::Module:
 				if (!curObject->parent)
 					return allocOutOfMemoryErrorIfAllocFailed(ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(this)->getFixedAlloc(), ref));
@@ -101,7 +101,7 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 
 SLAKE_API bool Runtime::getFullRef(peff::Alloc *allocator, const MemberObject *v, peff::DynArray<IdRefEntry> &idRefOut) const {
 	while (v != _rootObject) {
-		switch (v->objectKind) {
+		switch (v->getObjectKind()) {
 			case ObjectKind::Instance:
 				v = (const MemberObject *)((InstanceObject *)v)->_class;
 				break;

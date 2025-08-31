@@ -198,7 +198,7 @@ SLAKE_API bool ClassObject::isBaseOf(const ClassObject *pClass) const {
 			return false;
 		}
 		auto parentClassObject = i->baseType.getCustomTypeExData();
-		assert(parentClassObject->objectKind == ObjectKind::Class);
+		assert(parentClassObject->getObjectKind() == ObjectKind::Class);
 		i = (ClassObject *)parentClassObject;
 	}
 
@@ -322,7 +322,7 @@ SLAKE_API bool InterfaceObject::isDerivedFrom(const InterfaceObject *pInterface)
 
 		InterfaceObject *interfaceObj = (InterfaceObject *)i.getCustomTypeExData();
 
-		if (interfaceObj->objectKind != ObjectKind::Interface) {
+		if (interfaceObj->getObjectKind() != ObjectKind::Interface) {
 			// The parent is not an interface - this situation should not be here,
 			// but we have disabled exceptions, so return anyway.
 			return false;

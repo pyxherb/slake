@@ -79,13 +79,13 @@ SLAKE_API bool Duplicator::exec() {
 	return true;
 }
 
-SLAKE_API Object::Object(Runtime *rt, peff::Alloc *selfAllocator, ObjectKind objectKind) : associatedRuntime(rt), selfAllocator(selfAllocator), objectKind(objectKind) {
+SLAKE_API Object::Object(Runtime *rt, peff::Alloc *selfAllocator, ObjectKind objectKind) : associatedRuntime(rt), selfAllocator(selfAllocator), _objectKind(objectKind) {
 }
 
 SLAKE_API Object::Object(const Object &x, peff::Alloc *allocator) {
 	associatedRuntime = x.associatedRuntime;
 	selfAllocator = allocator;
-	objectKind = x.objectKind;
+	_objectKind = x._objectKind;
 	_flags = x._flags & ~VF_WALKED;
 }
 

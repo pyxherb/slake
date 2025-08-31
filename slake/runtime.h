@@ -268,36 +268,64 @@ namespace slake {
 
 		SLAKE_API uint32_t _findAndDispatchExceptHandler(const Value &curExcept, const MinorFrame &minorFrame) const;
 
-		enum CompareTypeFrameKind : uint8_t {
+		enum CompareTypesFrameKind : uint8_t {
 			Awaiter = 0,
 			Normal,
 		};
 
-		struct NormalCompareTypeFrameExData {
-			const Type &lhs;
-			const Type &rhs;
+		class CompareTypesFrameExData {
+		public:
+			SLAKE_API CompareTypesFrameExData();
+			SLAKE_API virtual ~CompareTypesFrameExData();
+
+			virtual void dealloc() noexcept = 0;
 		};
 
-		struct CompareTypeFrame {
-			std::variant<std::monostate, NormalCompareTypeFrameExData> exData;
-			CompareTypeFrameKind kind;
+		class AwaiterCompareTypesFrameExData : public CompareTypesFrameExData {
+		public:
+			peff::RcObjectPtr<peff::Alloc> allocator;
+
+			SLAKE_API AwaiterCompareTypesFrameExData(peff::Alloc *allocator);
+			SLAKE_API virtual ~AwaiterCompareTypesFrameExData();
+
+			SLAKE_API virtual void dealloc() noexcept override;
+
+			SLAKE_API static AwaiterCompareTypesFrameExData *alloc(peff::Alloc *allocator);
+		};
+
+		class NormalCompareTypesFrameExData : public CompareTypesFrameExData {
+		public:
+			peff::RcObjectPtr<peff::Alloc> allocator;
+			const Type &lhs;
+			const Type &rhs;
+
+			SLAKE_API NormalCompareTypesFrameExData(peff::Alloc *allocator, const Type &lhs, const Type &rhs);
+			SLAKE_API virtual ~NormalCompareTypesFrameExData();
+
+			SLAKE_API virtual void dealloc() noexcept override;
+
+			SLAKE_API static NormalCompareTypesFrameExData *alloc(peff::Alloc *allocator, const Type &lhs, const Type &rhs);
+		};
+
+		struct CompareTypesFrame {
+			std::unique_ptr<CompareTypesFrameExData, peff::DeallocableDeleter<CompareTypesFrameExData>> exData;
+			CompareTypesFrameKind kind;
 			InternalExceptionPointer exceptionPtr;
 			int result;
 
-			SLAKE_FORCEINLINE CompareTypeFrame() : kind(CompareTypeFrameKind::Awaiter) {
-			}
-			SLAKE_FORCEINLINE CompareTypeFrame(NormalCompareTypeFrameExData &&exData) : kind(CompareTypeFrameKind::Normal), exData(std::move(exData)) {
+			SLAKE_FORCEINLINE CompareTypesFrame(CompareTypesFrameKind kind, CompareTypesFrameExData *exData) : kind(CompareTypesFrameKind::Awaiter), exData(exData) {
 			}
 		};
 
-		struct CompareTypeContext {
-			peff::List<CompareTypeFrame> frames;
+		struct CompareTypesContext {
+			peff::RcObjectPtr<peff::Alloc> allocator;
+			peff::List<CompareTypesFrame> frames;
 			int result;
 
-			SLAKE_FORCEINLINE CompareTypeContext(peff::Alloc *allocator) : frames(allocator) {}
+			SLAKE_FORCEINLINE CompareTypesContext(peff::Alloc *allocator) : allocator(allocator), frames(allocator) {}
 		};
 
-		SLAKE_API InternalExceptionPointer _doCompareType(CompareTypeContext &context, int &resultOut);
+		SLAKE_API InternalExceptionPointer _doCompareTypes(CompareTypesContext &context, int &resultOut);
 
 		friend class Object;
 		friend class RegularFnOverloadingObject;

@@ -26,37 +26,6 @@ namespace slake {
 	struct Type;
 	class Scope;
 
-	enum class ObjectKind {
-		String,		// String
-
-		TypeDef,	// Type definition
-		FnTypeDef,	// Function type definition
-		ParamTypeListTypeDef, // Parameter type list type definition
-		TupleTypeDef,  // Parameter type list type definition
-		SIMDTypeDef,  // Parameter type list type definition
-
-		Fn,				// Function
-		FnOverloading,	// Function overloading
-		Module,			// Module
-		Array,			// Array
-		Ref,			// Reference
-
-		Class,		// Class
-		Interface,	// Interface
-		Struct,		// Structure
-		Instance,	// Object instance
-
-		Any,  // Any
-
-		Alias,	// Alias
-
-		IdRef,		 // Reference
-		GenericArg,	 // Generic argument
-		Context,	 // Context
-		Resumable,	 // Resumable
-		Coroutine,	 // Coroutine
-	};
-
 	enum class ObjectGCStatus : uint8_t {
 		Unwalked = 0,
 		ReadyToWalk,
@@ -120,6 +89,9 @@ namespace slake {
 	};
 
 	class Object {
+	private:
+		ObjectKind _objectKind;
+
 	public:
 		peff::RcObjectPtr<peff::Alloc> selfAllocator;
 		// The object will never be freed if its host reference count is not 0.
@@ -152,8 +124,6 @@ namespace slake {
 
 		Runtime *associatedRuntime;
 
-		ObjectKind objectKind;
-
 		/// @brief Dulplicate the value if supported.
 		/// @return Duplicate of the value.
 		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const;
@@ -164,6 +134,15 @@ namespace slake {
 
 		SLAKE_FORCEINLINE Runtime *getRuntime() const noexcept { return associatedRuntime; }
 
+		SLAKE_FORCEINLINE ObjectKind getObjectKindUnchecked() const {
+			return _objectKind;
+		}
+
+		SLAKE_FORCEINLINE ObjectKind getObjectKind() const {
+			assert(verifyObjectKind(this));
+			return _objectKind;
+		}
+
 		SLAKE_API virtual EntityRef getMember(const std::string_view &name) const;
 	};
 
@@ -172,14 +151,14 @@ namespace slake {
 	public:
 		T *_value = nullptr;
 
-		SLAKE_FORCEINLINE void reset() {
+		SLAKE_FORCEINLINE void reset() noexcept {
 			if (_value) {
 				--_value->hostRefCount;
 				_value = nullptr;
 			}
 		}
 
-		SLAKE_FORCEINLINE T *release() {
+		SLAKE_FORCEINLINE T *release() noexcept {
 			T *v = _value;
 			--_value->hostRefCount;
 			_value = nullptr;
@@ -188,7 +167,7 @@ namespace slake {
 
 		SLAKE_FORCEINLINE void discard() noexcept { _value = nullptr; }
 
-		SLAKE_FORCEINLINE HostObjectRef(const HostObjectRef<T> &x) : _value(x._value) {
+		SLAKE_FORCEINLINE HostObjectRef(const HostObjectRef<T> &x) noexcept : _value(x._value) {
 			if (x._value) {
 				++_value->hostRefCount;
 			}
@@ -207,12 +186,12 @@ namespace slake {
 			reset();
 		}
 
-		SLAKE_FORCEINLINE const T *get() const { return _value; }
-		SLAKE_FORCEINLINE T *get() { return _value; }
-		SLAKE_FORCEINLINE const T *operator->() const { return _value; }
-		SLAKE_FORCEINLINE T *operator->() { return _value; }
+		SLAKE_FORCEINLINE const T *get() const noexcept { return _value; }
+		SLAKE_FORCEINLINE T *get() noexcept { return _value; }
+		SLAKE_FORCEINLINE const T *operator->() const noexcept { return _value; }
+		SLAKE_FORCEINLINE T *operator->() noexcept { return _value; }
 
-		SLAKE_FORCEINLINE HostObjectRef<T> &operator=(const HostObjectRef<T> &x) {
+		SLAKE_FORCEINLINE HostObjectRef<T> &operator=(const HostObjectRef<T> &x) noexcept {
 			reset();
 
 			if ((_value = x._value)) {
@@ -231,7 +210,7 @@ namespace slake {
 			return *this;
 		}
 
-		SLAKE_FORCEINLINE HostObjectRef<T> &operator=(T *other) {
+		SLAKE_FORCEINLINE HostObjectRef<T> &operator=(T *other) noexcept {
 			reset();
 
 			if ((_value = other)) {
@@ -267,6 +246,14 @@ namespace slake {
 		[[nodiscard]] SLAKE_API bool addObject(Object *object);
 		SLAKE_API void removeObject(Object *object) noexcept;
 	};
+
+	SLAKE_FORCEINLINE bool verifyObjectKind(const Object *object) {
+		return (object->getObjectKindUnchecked() >= ObjectKind::String) && (object->getObjectKindUnchecked() <= ObjectKind::Coroutine);
+	}
+
+	SLAKE_FORCEINLINE bool verifyObjectKind(const Object *object, ObjectKind objectKind) {
+		return object->getObjectKindUnchecked() == objectKind;
+	}
 }
 
 #include <slake/type.h>

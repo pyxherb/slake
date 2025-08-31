@@ -13,7 +13,7 @@
 	#define SLAKE_DLLEXPORT __attribute__((visibility("default")))
 	#define SLAKE_DLLIMPORT __attribute__((visibility("default")))
 	#define SLAKE_FORCEINLINE __attribute__((__always_inline__)) inline
-	#define SLAKE_NOINLINE 
+	#define SLAKE_NOINLINE
 
 #endif
 
@@ -34,5 +34,7 @@
 #else
 	#define SLAKE_API
 #endif
+
+#define SLAKE_REFERENCED_PARAM(n) (n)
 
 #endif

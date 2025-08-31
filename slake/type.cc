@@ -168,6 +168,16 @@ SLAKE_API Type Type::duplicate(bool &succeededOut) const {
 				return {};
 			}
 			break;
+		case TypeId::GenericArg:
+			if (!(newType.exData.genericArg.nameObject = (StringObject *)newType.exData.genericArg.nameObject->duplicate(nullptr))) {
+				succeededOut = false;
+				return {};
+			}
+			if (!(newType.exData.genericArg.ownerObject = newType.exData.genericArg.ownerObject->duplicate(nullptr))) {
+				succeededOut = false;
+				return {};
+			}
+			break;
 		default:;
 	}
 
@@ -180,14 +190,17 @@ SLAKE_API Type Type::duplicate(bool &succeededOut) const {
 
 SLAKE_API Type &Type::getArrayExData() const {
 	assert(typeId == TypeId::Array);
+	assert(exData.typeDef && verifyObjectKind(exData.typeDef, ObjectKind::TypeDef));
 	return exData.typeDef->type;
 }
 SLAKE_API Type &Type::getRefExData() const {
 	assert(typeId == TypeId::Ref);
+	assert(exData.typeDef && verifyObjectKind(exData.typeDef, ObjectKind::TypeDef));
 	return exData.typeDef->type;
 }
 SLAKE_API Type &Type::getUnpackingExData() const {
 	assert(typeId == TypeId::Unpacking);
+	assert(exData.typeDef && verifyObjectKind(exData.typeDef, ObjectKind::ParamTypeListTypeDef));
 	return exData.typeDef->type;
 }
 
@@ -209,16 +222,18 @@ SLAKE_API InternalExceptionPointer Type::loadDeferredType(Runtime *rt) {
 	SLAKE_RETURN_IF_EXCEPT(rt->resolveIdRef(ref, entityRef));
 
 	if (entityRef.kind != ObjectRefKind::ObjectRef)
-		return allocOutOfMemoryErrorIfAllocFailed(ReferencedMemberNotFoundError::alloc(rt->getFixedAlloc(), ref));
+		return allocOutOfMemoryErrorIfAllocFailed(InternalExceptionPointer(ReferencedMemberNotFoundError::alloc(rt->getFixedAlloc(), ref)));
 
 	exData.object = entityRef.asObject.instanceObject;
 
 	return {};
 }
 
-SLAKE_API bool slake::isCompatible(const Type &type, const Value &value) {
-	if (type.typeId == TypeId::Any)
-		return true;
+SLAKE_API InternalExceptionPointer slake::isCompatible(peff::Alloc *allocator, const Type &type, const Value &value, bool &resultOut) {
+	if (type.typeId == TypeId::Any) {
+		resultOut = true;
+		return {};
+	}
 
 	switch (type.typeId) {
 		case TypeId::I8:
@@ -229,37 +244,51 @@ SLAKE_API bool slake::isCompatible(const Type &type, const Value &value) {
 		case TypeId::U16:
 		case TypeId::U32:
 		case TypeId::U64: {
-			if (type.typeId != valueTypeToTypeId(value.valueType))
-				return false;
+			if (type.typeId != valueTypeToTypeId(value.valueType)) {
+				resultOut = false;
+				return {};
+			}
 			break;
 		}
 		case TypeId::String: {
-			if (value.valueType != ValueType::EntityRef)
-				return false;
+			if (value.valueType != ValueType::EntityRef) {
+				resultOut = false;
+				return {};
+			}
 			const EntityRef &entityRef = value.getEntityRef();
-			if (entityRef.kind != ObjectRefKind::ObjectRef)
-				return false;
-			if (entityRef.asObject.instanceObject->getObjectKind() != ObjectKind::String)
-				return false;
+			if (entityRef.kind != ObjectRefKind::ObjectRef) {
+				resultOut = false;
+				return {};
+			}
+			if (entityRef.asObject.instanceObject->getObjectKind() != ObjectKind::String) {
+				resultOut = false;
+				return {};
+			}
 			break;
 		}
 		case TypeId::Instance: {
-			if (value.valueType != ValueType::EntityRef)
-				return false;
+			if (value.valueType != ValueType::EntityRef) {
+				resultOut = false;
+				return {};
+			}
 
 			const EntityRef &entityRef = value.getEntityRef();
-			if (entityRef.kind != ObjectRefKind::ObjectRef)
-				return false;
+			if (entityRef.kind != ObjectRefKind::ObjectRef) {
+				resultOut = false;
+				return {};
+			}
 			Object *objectPtr = entityRef.asObject.instanceObject;
 
 			if (!objectPtr) {
-				return true;
+				resultOut = true;
+				return {};
 			}
 
 			if (auto e = const_cast<Type &>(type).loadDeferredType(objectPtr->associatedRuntime);
 				e) {
 				e.reset();
-				return false;
+				resultOut = false;
+				return {};
 			}
 			switch (type.getCustomTypeExData()->getObjectKind()) {
 				case ObjectKind::Class: {
@@ -267,8 +296,10 @@ SLAKE_API bool slake::isCompatible(const Type &type, const Value &value) {
 
 					ClassObject *valueClass = ((InstanceObject *)objectPtr)->_class;
 
-					if (!thisClass->isBaseOf(valueClass))
-						return false;
+					if (!thisClass->isBaseOf(valueClass)) {
+						resultOut = false;
+						return {};
+					}
 					break;
 				}
 				case ObjectKind::Interface: {
@@ -276,8 +307,10 @@ SLAKE_API bool slake::isCompatible(const Type &type, const Value &value) {
 
 					ClassObject *valueClass = ((InstanceObject *)objectPtr)->_class;
 
-					if (!valueClass->hasImplemented(thisInterface))
-						return false;
+					if (!valueClass->hasImplemented(thisInterface)) {
+						resultOut = false;
+						return {};
+					}
 					break;
 				}
 				default:
@@ -287,25 +320,39 @@ SLAKE_API bool slake::isCompatible(const Type &type, const Value &value) {
 			break;
 		}
 		case TypeId::Array: {
-			if (value.valueType != ValueType::EntityRef)
-				return false;
+			if (value.valueType != ValueType::EntityRef) {
+				resultOut = false;
+				return {};
+			}
 
 			const EntityRef &entityRef = value.getEntityRef();
-			if (entityRef.kind != ObjectRefKind::ObjectRef)
-				return false;
+			if (entityRef.kind != ObjectRefKind::ObjectRef) {
+				resultOut = false;
+				return {};
+			}
 			Object *objectPtr = entityRef.asObject.instanceObject;
-			if (objectPtr->getObjectKind() != ObjectKind::Array)
-				return false;
+			if (objectPtr->getObjectKind() != ObjectKind::Array) {
+				resultOut = false;
+				return {};
+			}
 
 			auto arrayObjectPtr = ((ArrayObject *)objectPtr);
 
-			if (arrayObjectPtr->elementType != type.getArrayExData())
-				return false;
+			int result;
+
+			SLAKE_RETURN_IF_EXCEPT(Runtime::compareType(allocator, arrayObjectPtr->elementType, type.getArrayExData(), result));
+
+			if (result) {
+				resultOut = false;
+				return {};
+			}
 			break;
 		}
 		case TypeId::Ref: {
-			if (value.valueType != ValueType::EntityRef)
-				return false;
+			if (value.valueType != ValueType::EntityRef) {
+				resultOut = false;
+				return {};
+			}
 
 			const EntityRef &entityRef = value.getEntityRef();
 			Runtime *rt;
@@ -317,6 +364,7 @@ SLAKE_API bool slake::isCompatible(const Type &type, const Value &value) {
 					rt = entityRef.asObjectField.instanceObject->associatedRuntime;
 					break;
 				case ObjectRefKind::LocalVarRef:
+					rt = entityRef.asLocalVar.context->runtime;
 					break;
 				case ObjectRefKind::ArrayElementRef:
 					rt = entityRef.asArray.arrayObject->associatedRuntime;
@@ -325,25 +373,35 @@ SLAKE_API bool slake::isCompatible(const Type &type, const Value &value) {
 					rt = entityRef.asArg.majorFrame->curFn->associatedRuntime;
 					break;
 				default:
-					return false;
+					resultOut = false;
+					return {};
 			}
 			Type type;
 
 			InternalExceptionPointer e = rt->typeofVar(entityRef, type);
 			if (e) {
 				e.reset();
-				return false;
+				resultOut = false;
+				return {};
 			}
 
-			if (type != type.getRefExData())
-				return false;
+			int result;
+
+			SLAKE_RETURN_IF_EXCEPT(Runtime::compareType(allocator, type, type.getRefExData(), result));
+
+			if (result) {
+				resultOut = false;
+				return {};
+			}
 			break;
 		}
 		default:
-			return false;
+			resultOut = false;
+			return {};
 	}
 
-	return true;
+	resultOut = true;
+	return {};
 }
 
 SLAKE_API std::string std::to_string(const slake::Type &type, const slake::Runtime *rt) {
@@ -425,7 +483,7 @@ SLAKE_API std::string std::to_string(const slake::Type &type, const slake::Runti
 				if (i)
 					result += ", ";
 
-				result += std::to_string(fnTypeDefObject->paramTypes.at(i));
+				//result += std::to_string(fnTypeDefObject->paramTypes.at(i));
 			}
 
 			if (fnTypeDefObject->hasVarArg) {

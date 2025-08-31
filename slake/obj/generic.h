@@ -35,16 +35,43 @@ namespace slake {
 	using GenericArgList = peff::DynArray<Type>;
 	using GenericParamList = peff::DynArray<GenericParam>;
 
-	/// @brief Less than ("<") comparator for containers.
+	/// @brief Three-way comparator for containers.
 	struct GenericArgListComparator {
-		InternalExceptionPointer exceptPtr;
+		peff::RcObjectPtr<peff::Alloc> allocator;
+		mutable InternalExceptionPointer exceptPtr;
 
-		SLAKE_API bool operator()(const GenericArgList &lhs, const GenericArgList &rhs) const noexcept;
+		SLAKE_FORCEINLINE GenericArgListComparator(peff::Alloc *allocator) : allocator(allocator) {}
+		SLAKE_API int operator()(const GenericArgList &lhs, const GenericArgList &rhs) const noexcept;
 	};
 
-	/// @brief Equality ("<") comparator for containers.
+	/// @brief Less than ("<") comparator for containers.
+	struct GenericArgListLtComparator {
+		GenericArgListComparator innerComparator;
+		mutable InternalExceptionPointer exceptPtr;
+
+		SLAKE_FORCEINLINE GenericArgListLtComparator(peff::Alloc *allocator) : innerComparator(allocator) {}
+		SLAKE_FORCEINLINE bool operator()(const GenericArgList& lhs, const GenericArgList& rhs) const noexcept {
+			int result = innerComparator(lhs, rhs);
+			if (innerComparator.exceptPtr) {
+				exceptPtr = std::move(innerComparator.exceptPtr);
+				return false;
+			}
+			return result < 0;
+		}
+	};
+
+	/// @brief Equality ("==") comparator for containers.
 	struct GenericArgListEqComparator {
-		SLAKE_API bool operator()(const GenericArgList &lhs, const GenericArgList &rhs) const noexcept;
+		GenericArgListComparator innerComparator;
+		mutable InternalExceptionPointer exceptPtr;
+
+		SLAKE_FORCEINLINE GenericArgListEqComparator(peff::Alloc *allocator) : innerComparator(allocator) {}
+		SLAKE_API bool operator()(const GenericArgList& lhs, const GenericArgList& rhs) const noexcept {
+			int result = innerComparator(lhs, rhs);
+			if (innerComparator.exceptPtr)
+				exceptPtr = std::move(innerComparator.exceptPtr);
+			return !result;
+		}
 	};
 
 	SLAKE_API size_t getGenericParamIndex(const GenericParamList &genericParamList, const std::string_view &name);

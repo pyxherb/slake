@@ -1,12 +1,18 @@
 #include "../runtime.h"
 using namespace slake;
 
-SLAKE_API uint32_t Runtime::_findAndDispatchExceptHandler(const Value &curExcept, const MinorFrame &minorFrame) const {
+SLAKE_API InternalExceptionPointer Runtime::_findAndDispatchExceptHandler(const Value &curExcept, const MinorFrame &minorFrame, uint32_t &offsetOut) const {
 	// Find a proper exception handler.
+	bool result;
+
 	for (const auto &i : minorFrame.exceptHandlers) {
-		if (isCompatible(i.type, curExcept)) {
-			return i.off;
+		SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), i.type, curExcept, result));
+		if (result) {
+			offsetOut = i.off;
+			return {};
 		}
 	}
-	return UINT32_MAX;
+
+	offsetOut = UINT32_MAX;
+	return {};
 }

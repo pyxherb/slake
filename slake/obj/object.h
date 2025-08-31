@@ -134,11 +134,11 @@ namespace slake {
 
 		SLAKE_FORCEINLINE Runtime *getRuntime() const noexcept { return associatedRuntime; }
 
-		SLAKE_FORCEINLINE ObjectKind getObjectKindUnchecked() const {
+		SLAKE_FORCEINLINE ObjectKind getObjectKindUnchecked() const noexcept {
 			return _objectKind;
 		}
 
-		SLAKE_FORCEINLINE ObjectKind getObjectKind() const {
+		SLAKE_FORCEINLINE ObjectKind getObjectKind() const noexcept {
 			assert(verifyObjectKind(this));
 			return _objectKind;
 		}

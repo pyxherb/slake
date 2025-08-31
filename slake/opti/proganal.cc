@@ -245,7 +245,11 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 	RegularFnOverloadingObject *fnObject,
 	ProgramAnalyzedInfo &analyzedInfoOut,
 	HostRefHolder &hostRefHolder) {
-	size_t nIns = fnObject->instructions.size();
+	if (fnObject->instructions.size() > UINT32_MAX) {
+		// TODO: Deal with this case elegently.
+		std::terminate();
+	}
+	uint32_t nIns = (uint32_t)fnObject->instructions.size();
 	analyzedInfoOut.contextObject = ContextObject::alloc(runtime);
 	MajorFramePtr pseudoMajorFrame;
 	{
@@ -282,7 +286,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 	}
 
 	// Analyze lifetime of virtual registers.
-	for (size_t &i = analyzeContext.idxCurIns; i < nIns; ++i) {
+	for (uint32_t &i = analyzeContext.idxCurIns; i < nIns; ++i) {
 		const Instruction &curIns = fnObject->instructions.at(i);
 
 		uint32_t regIndex = UINT32_MAX;
@@ -903,7 +907,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 								fnObject,
 								i));
 				}
-				if (!analyzeContext.argPushInsOffs.pushBack(i))
+				if (!analyzeContext.argPushInsOffs.pushBack(+i))
 					return OutOfMemoryError::alloc();
 				break;
 			}
@@ -952,7 +956,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 					}
 				}
 
-				analyzeContext.analyzedInfoOut.analyzedFnCallInfo.insert(i, FnCallAnalyzedInfo(analyzeContext.resourceAllocator.get()));
+				analyzeContext.analyzedInfoOut.analyzedFnCallInfo.insert(+i, FnCallAnalyzedInfo(analyzeContext.resourceAllocator.get()));
 				analyzeContext.analyzedInfoOut.analyzedFnCallInfo.at(i).argPushInsOffs = std::move(analyzeContext.argPushInsOffs);
 				analyzeContext.argPushInsOffs = peff::DynArray<uint32_t>(analyzeContext.resourceAllocator.get());
 
@@ -963,7 +967,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 					if (!analyzeContext.analyzedInfoOut.fnCallMap.contains(expectedFnObject)) {
 						analyzeContext.analyzedInfoOut.fnCallMap.insert(+expectedFnObject, peff::DynArray<uint32_t>(analyzeContext.runtime->getFixedAlloc()));
 					}
-					if (!analyzeContext.analyzedInfoOut.fnCallMap.at(expectedFnObject).pushBack(i))
+					if (!analyzeContext.analyzedInfoOut.fnCallMap.at(expectedFnObject).pushBack(+i))
 						return OutOfMemoryError::alloc();
 				}
 
@@ -1014,7 +1018,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 								i));
 					}
 				}
-				analyzeContext.analyzedInfoOut.analyzedFnCallInfo.insert(i, FnCallAnalyzedInfo(analyzeContext.resourceAllocator.get()));
+				analyzeContext.analyzedInfoOut.analyzedFnCallInfo.insert(+i, FnCallAnalyzedInfo(analyzeContext.resourceAllocator.get()));
 				analyzeContext.analyzedInfoOut.analyzedFnCallInfo.at(i).argPushInsOffs = std::move(analyzeContext.argPushInsOffs);
 				analyzeContext.argPushInsOffs = peff::DynArray<uint32_t>(analyzeContext.resourceAllocator.get());
 
@@ -1025,7 +1029,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 					if (!analyzeContext.analyzedInfoOut.fnCallMap.contains(expectedFnObject)) {
 						analyzeContext.analyzedInfoOut.fnCallMap.insert(+expectedFnObject, peff::DynArray<uint32_t>(analyzeContext.resourceAllocator.get()));
 					}
-					if (!analyzeContext.analyzedInfoOut.fnCallMap.at(expectedFnObject).pushBack(i))
+					if (!analyzeContext.analyzedInfoOut.fnCallMap.at(expectedFnObject).pushBack(+i))
 						return OutOfMemoryError::alloc();
 				}
 

@@ -36,7 +36,9 @@ namespace slake {
 	};
 
 	enum class TypeId : uint8_t {
-		Void = 0,  // Void
+		Invalid = 0,
+
+		Void,  // Void
 
 		I8,		// Signed 8-bit integer
 		I16,	// Signed 16-bit integer
@@ -84,6 +86,8 @@ namespace slake {
 	struct MajorFrame;
 
 	enum class ObjectKind : uint8_t {
+		Invalid = 0,  // Invalid
+
 		String,	 // String
 
 		TypeDef,			   // Type definition
@@ -126,7 +130,7 @@ namespace slake {
 		GenericArgTypeExData genericArg;
 	};
 
-	struct Duplicator;
+	class Duplicator;
 
 	struct Type;
 
@@ -144,22 +148,16 @@ namespace slake {
 		SLAKE_FORCEINLINE Type(const Type &x) = default;
 		SLAKE_FORCEINLINE Type(Type &&x) = default;
 		SLAKE_FORCEINLINE Type(TypeId type) noexcept : typeId(type), exData({}) {
-			assert(type != TypeId::Instance);
-			assert(type != TypeId::GenericArg);
-			assert(type != TypeId::Array);
-			assert(type != TypeId::Ref);
-			assert(type != TypeId::Tuple);
-			assert(type != TypeId::SIMD);
-			assert(type != TypeId::Fn);
-			assert(type != TypeId::ParamTypeList);
-			assert(type != TypeId::Unpacking);
+			assert(verifyType(*this));
 		}
 		SLAKE_FORCEINLINE Type(TypeId type, Object *destObject) noexcept : typeId(type) {
 			assert(destObject && verifyObjectKind((Object *)destObject));
 			exData.object = destObject;
+			assert(verifyType(*this));
 		}
 		SLAKE_FORCEINLINE Type(StringObject *nameObject, Object *ownerObject) noexcept : typeId(TypeId::GenericArg) {
 			assert(verifyObjectKind((Object *)nameObject, ObjectKind::String));
+			assert(verifyObjectKind(ownerObject));
 			exData.genericArg.nameObject = nameObject;
 			exData.genericArg.ownerObject = ownerObject;
 		}
@@ -167,7 +165,10 @@ namespace slake {
 		SLAKE_API Type duplicate(bool &succeededOut) const;
 
 		SLAKE_FORCEINLINE Object *getCustomTypeExData() const {
-			assert(typeId == TypeId::Instance);
+			assert((typeId == TypeId::Instance) ||
+				   (typeId == TypeId::Array) ||
+				   (typeId == TypeId::Ref) ||
+				   (typeId == TypeId::SIMD));
 			assert(exData.object && verifyObjectKind(exData.object));
 			return exData.object;
 		}
@@ -175,11 +176,13 @@ namespace slake {
 		SLAKE_FORCEINLINE StringObject *getGenericArgNameObject() const {
 			assert(typeId == TypeId::GenericArg);
 			assert(exData.genericArg.nameObject && verifyObjectKind((Object *)exData.genericArg.nameObject, ObjectKind::String));
+			assert(exData.genericArg.ownerObject && verifyObjectKind(exData.genericArg.ownerObject));
 
 			return exData.genericArg.nameObject;
 		}
 		SLAKE_FORCEINLINE Object *getGenericArgOwnerObject() const {
 			assert(typeId == TypeId::GenericArg);
+			assert(exData.genericArg.nameObject && verifyObjectKind((Object *)exData.genericArg.nameObject, ObjectKind::String));
 			assert(exData.genericArg.ownerObject && verifyObjectKind(exData.genericArg.ownerObject));
 			return exData.genericArg.ownerObject;
 		}
@@ -191,7 +194,7 @@ namespace slake {
 		SLAKE_API bool isLoadingDeferred() const noexcept;
 		[[nodiscard]] SLAKE_API InternalExceptionPointer loadDeferredType(Runtime *rt);
 
-		SLAKE_FORCEINLINE operator bool() const noexcept {
+		SLAKE_FORCEINLINE explicit operator bool() const noexcept {
 			return typeId != TypeId::Void;
 		}
 
@@ -218,6 +221,8 @@ namespace slake {
 			return false;
 
 		switch (type.typeId) {
+			case TypeId::Invalid:
+				return false;
 			case TypeId::Instance:
 			case TypeId::Array:
 			case TypeId::Ref:

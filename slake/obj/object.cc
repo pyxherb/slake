@@ -93,7 +93,9 @@ SLAKE_API Object::~Object() {
 }
 
 SLAKE_API Object *Object::duplicate(Duplicator *duplicator) const {
-	throw std::logic_error("duplicate() method is not supported");
+	SLAKE_REFERENCED_PARAM(duplicator);
+
+	std::terminate();
 }
 
 SLAKE_API void Object::replaceAllocator(peff::Alloc *allocator) noexcept {

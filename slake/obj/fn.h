@@ -242,7 +242,7 @@ namespace slake {
 		SLAKE_API FnObject(const FnObject &x, peff::Alloc *allocator, bool &succeededOut);
 		SLAKE_API virtual ~FnObject();
 
-		SLAKE_API FnOverloadingObject *getOverloading(const peff::DynArray<Type> &argTypes) const;
+		SLAKE_API InternalExceptionPointer getOverloading(peff::Alloc *allocator, const peff::DynArray<Type> &argTypes, FnOverloadingObject *&overloadingOut) const;
 
 		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
 
@@ -253,16 +253,20 @@ namespace slake {
 		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;
 	};
 
-	SLAKE_API FnOverloadingObject *findOverloading(
+	SLAKE_API InternalExceptionPointer findOverloading(
+		peff::Alloc *allocator,
 		FnObject *fnObject,
 		const peff::DynArray<Type> &paramTypes,
 		const GenericParamList &genericParams,
-		bool hasVarArg);
-	SLAKE_API bool isDuplicatedOverloading(
+		bool hasVarArg,
+		FnOverloadingObject *&overloadingOut);
+	SLAKE_API InternalExceptionPointer isDuplicatedOverloading(
+		peff::Alloc *allocator,
 		const FnOverloadingObject *overloading,
 		const peff::DynArray<Type> &paramTypes,
 		const GenericParamList &genericParams,
-		bool hasVarArg);
+		bool hasVarArg,
+		bool &resultOut);
 }
 
 #endif

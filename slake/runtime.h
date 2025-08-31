@@ -159,7 +159,7 @@ namespace slake {
 		ModuleObject *_rootObject;
 
 		struct GenericLookupEntry {
-			const MemberObject *originalObject;
+			MemberObject *originalObject;
 			GenericArgList genericArgs;
 		};
 		mutable peff::Map<const MemberObject *, GenericLookupEntry> _genericCacheLookupTable;
@@ -168,10 +168,10 @@ namespace slake {
 			peff::Map<
 				GenericArgList,	 // Generic arguments.
 				MemberObject *,	 // Cached instantiated value.
-				GenericArgListComparator>;
+				GenericArgListLtComparator>;
 
 		using GenericCacheDirectory = peff::Map<
-			const MemberObject *,  // Original uninstantiated generic value.
+			MemberObject *,  // Original uninstantiated generic value.
 			GenericCacheTable>;
 
 		/// @brief Cached instances of generic values.
@@ -266,7 +266,7 @@ namespace slake {
 		[[nodiscard]] SLAKE_API InternalExceptionPointer _instantiateGenericObject(GenericInstantiationDispatcher &dispatcher, Object *v, GenericInstantiationContext *instantiationContext);
 		[[nodiscard]] SLAKE_API InternalExceptionPointer _instantiateGenericObject(GenericInstantiationDispatcher &dispatcher, FnOverloadingObject *ol, GenericInstantiationContext *instantiationContext);
 
-		SLAKE_API uint32_t _findAndDispatchExceptHandler(const Value &curExcept, const MinorFrame &minorFrame) const;
+		SLAKE_API InternalExceptionPointer _findAndDispatchExceptHandler(const Value &curExcept, const MinorFrame &minorFrame, uint32_t &offsetOut) const;
 
 		enum CompareTypesFrameKind : uint8_t {
 			Awaiter = 0,
@@ -313,7 +313,7 @@ namespace slake {
 			InternalExceptionPointer exceptionPtr;
 			int result;
 
-			SLAKE_FORCEINLINE CompareTypesFrame(CompareTypesFrameKind kind, CompareTypesFrameExData *exData) : kind(CompareTypesFrameKind::Awaiter), exData(exData) {
+			SLAKE_FORCEINLINE CompareTypesFrame(CompareTypesFrameKind kind, CompareTypesFrameExData *exData) : kind(kind), exData(exData) {
 			}
 		};
 
@@ -325,7 +325,7 @@ namespace slake {
 			SLAKE_FORCEINLINE CompareTypesContext(peff::Alloc *allocator) : allocator(allocator), frames(allocator) {}
 		};
 
-		SLAKE_API InternalExceptionPointer _doCompareTypes(CompareTypesContext &context, int &resultOut);
+		SLAKE_API static InternalExceptionPointer _doCompareTypes(CompareTypesContext &context);
 
 		friend class Object;
 		friend class RegularFnOverloadingObject;
@@ -391,10 +391,12 @@ namespace slake {
 			}
 
 			SLAKE_FORCEINLINE size_t incRef(size_t globalRc) noexcept {
+				SLAKE_REFERENCED_PARAM(globalRc);
 				return ++refCount;
 			}
 
 			SLAKE_FORCEINLINE size_t decRef(size_t globalRc) noexcept {
+				SLAKE_REFERENCED_PARAM(globalRc);
 				if (!--refCount) {
 					onRefZero();
 					return 0;
@@ -414,20 +416,20 @@ namespace slake {
 		/// @param v Object to be instantiated.
 		/// @param genericArgs Generic arguments for instantiation.
 		/// @return Instantiated value.
-		[[nodiscard]] SLAKE_API InternalExceptionPointer instantiateGenericObject(const MemberObject *object, MemberObject *&objectOut, GenericInstantiationContext *instantiationContext);
+		[[nodiscard]] SLAKE_API InternalExceptionPointer instantiateGenericObject(MemberObject *object, MemberObject *&objectOut, GenericInstantiationContext *instantiationContext);
 
-		SLAKE_API InternalExceptionPointer setGenericCache(const MemberObject *object, const GenericArgList &genericArgs, MemberObject *instantiatedObject);
+		SLAKE_API InternalExceptionPointer setGenericCache(MemberObject *object, const GenericArgList &genericArgs, MemberObject *instantiatedObject);
 
 		/// @brief Resolve a reference and get the referenced value.
 		/// @param ref Reference to be resolved.
 		/// @param scopeObject Scope value for resolving.
 		/// @return Resolved value which is referred by the reference.
-		SLAKE_API InternalExceptionPointer resolveIdRef(IdRefObject *ref, EntityRef &objectRefOut, MemberObject *scopeObject = nullptr);
+		SLAKE_API InternalExceptionPointer resolveIdRef(IdRefObject *ref, EntityRef &objectRefOut, Object *scopeObject = nullptr);
 
 		SLAKE_API static void addSameKindObjectToList(Object **list, Object *object);
 		SLAKE_API static void removeSameKindObjectToList(Object **list, Object *object);
 		[[nodiscard]] SLAKE_API bool addObject(Object *object);
-		SLAKE_FORCEINLINE peff::Alloc *getFixedAlloc() {
+		SLAKE_FORCEINLINE peff::Alloc *getFixedAlloc() const {
 			return &fixedAlloc;
 		}
 		SLAKE_API peff::Alloc *getCurGenAlloc();
@@ -515,7 +517,7 @@ namespace slake {
 		SLAKE_API size_t alignofType(const Type &type);
 		SLAKE_API Value defaultValueOf(const Type &type);
 
-		SLAKE_API InternalExceptionPointer compareType(peff::Alloc *allocator, const Type &lhs, const Type &rhs, int &resultOut);
+		static SLAKE_API InternalExceptionPointer compareType(peff::Alloc *allocator, const Type &lhs, const Type &rhs, int &resultOut);
 
 		[[nodiscard]] SLAKE_API static bool constructAt(Runtime *dest, peff::Alloc *upstream, RuntimeFlags flags = 0);
 		[[nodiscard]] SLAKE_API static Runtime *alloc(peff::Alloc *selfAllocator, peff::Alloc *upstream, RuntimeFlags flags = 0);

@@ -58,6 +58,8 @@ SLAKE_API IdRefObject::~IdRefObject() {
 }
 
 SLAKE_API Object *IdRefObject::duplicate(Duplicator *duplicator) const {
+	SLAKE_REFERENCED_PARAM(duplicator);
+
 	return (Object *)alloc(this).get();
 }
 

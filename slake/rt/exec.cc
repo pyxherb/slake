@@ -13,7 +13,7 @@ using namespace slake;
 	Runtime *runtime,
 	const Instruction &ins,
 	bool hasOutput,
-	int_fast8_t nOperands) noexcept {
+	uint_fast8_t nOperands) noexcept {
 	if (hasOutput) {
 		if (ins.output == UINT32_MAX) {
 			return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(runtime->getFixedAlloc()));
@@ -50,7 +50,7 @@ using namespace slake;
 	Runtime *runtime,
 	Object *object,
 	ObjectKind typeId) noexcept {
-	if (object->getObjectKind() != typeId) {
+	if (/* object && (*/ object->getObjectKind() != typeId /*)*/) {
 		return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(runtime->getFixedAlloc()));
 	}
 	return {};
@@ -411,20 +411,35 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, curMajorFrame, ins.operands[0], lhs));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType(this, lhs, ValueType::EntityRef));
 
+			Value rhs;
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, curMajorFrame, ins.operands[1], rhs));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType(this, rhs, ValueType::EntityRef));
+
 			auto lhsPtr = lhs.getEntityRef();
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkObjectRefOperandType(this, lhsPtr, ObjectRefKind::ObjectRef));
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType(this, ins.operands[1], ValueType::EntityRef));
-			auto refPtr = ins.operands[1].getEntityRef();
+			auto refPtr = rhs.getEntityRef();
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkObjectRefOperandType(this, refPtr, ObjectRefKind::ObjectRef));
 
 			if (!lhsPtr) {
 				return allocOutOfMemoryErrorIfAllocFailed(NullRefError::alloc(getFixedAlloc()));
 			}
 
+			if (!refPtr) {
+				return allocOutOfMemoryErrorIfAllocFailed(NullRefError::alloc(getFixedAlloc()));
+			}
+
+			if (refPtr.asObject.instanceObject->getObjectKind() != ObjectKind::IdRef) {
+				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+			}
+
 			EntityRef entityRef;
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, resolveIdRef((IdRefObject *)refPtr.asObject.instanceObject, entityRef, (MemberObject *)lhsPtr.asObject.instanceObject));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, resolveIdRef((IdRefObject *)refPtr.asObject.instanceObject, entityRef, lhsPtr.asObject.instanceObject));
+
+			if (!entityRef) {
+				std::terminate();
+			}
 
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this,
 															dataStack,
@@ -1881,8 +1896,9 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 				for (size_t j = majorFrame->resumable->minorFrames.size(); j; --j) {
 					auto &minorFrame = majorFrame->resumable->minorFrames.at(j - 1);
 
-					if (uint32_t off = _findAndDispatchExceptHandler(majorFrame->curExcept, minorFrame);
-						off != UINT32_MAX) {
+					uint32_t off;
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _findAndDispatchExceptHandler(majorFrame->curExcept, minorFrame, off));
+					if (off != UINT32_MAX) {
 						for (size_t j = context->_context.majorFrames.size(); j > i; --j) {
 							context->_context.leaveMajor();
 						}

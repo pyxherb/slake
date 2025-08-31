@@ -399,7 +399,7 @@ SLAKE_API FnObject::FnObject(const FnObject &x, peff::Alloc *allocator, bool &su
 SLAKE_API FnObject::~FnObject() {
 }
 
-SLAKE_API FnOverloadingObject *FnObject::getOverloading(const peff::DynArray<Type> &argTypes) const {
+SLAKE_API InternalExceptionPointer FnObject::getOverloading(peff::Alloc *allocator, const peff::DynArray<Type> &argTypes, FnOverloadingObject *&overloadingOut) const {
 	const FnObject *i = this;
 
 	for (auto j : overloadings) {
@@ -419,19 +419,27 @@ SLAKE_API FnOverloadingObject *FnObject::getOverloading(const peff::DynArray<Typ
 				e.reset();
 				goto mismatched;
 			}
-			if (argTypes.at(k) != j->paramTypes.at(k))
+
+			int result;
+			SLAKE_RETURN_IF_EXCEPT(Runtime::compareType(allocator, argTypes.at(k), j->paramTypes.at(k), result));
+
+			if (result != 0)
 				goto mismatched;
 		}
 
-		return j;
+		overloadingOut = j;
+		return {};
 
 	mismatched:;
 	}
 
-	return nullptr;
+	overloadingOut = nullptr;
+	return {};
 }
 
 SLAKE_API Object *FnObject::duplicate(Duplicator *duplicator) const {
+	SLAKE_REFERENCED_PARAM(duplicator);
+
 	return (Object *)alloc(this).get();
 }
 
@@ -482,38 +490,61 @@ SLAKE_API void FnObject::replaceAllocator(peff::Alloc* allocator) noexcept {
 	overloadings.replaceAllocator(allocator);
 }
 
-SLAKE_API FnOverloadingObject *slake::findOverloading(
+SLAKE_API InternalExceptionPointer slake::findOverloading(
+	peff::Alloc *allocator,
 	FnObject *fnObject,
 	const peff::DynArray<Type> &paramTypes,
 	const GenericParamList &genericParams,
-	bool hasVarArg) {
+	bool hasVarArg,
+	FnOverloadingObject *&overloadingOut) {
 	for (auto i : fnObject->overloadings) {
-		if (isDuplicatedOverloading(i, paramTypes, genericParams, hasVarArg)) {
-			return i;
+		bool result;
+
+		SLAKE_RETURN_IF_EXCEPT(isDuplicatedOverloading(allocator, i, paramTypes, genericParams, hasVarArg, result));
+
+		if (result) {
+			overloadingOut = i;
+			return {};
 		}
 	}
 
-	return nullptr;
+	overloadingOut = nullptr;
+	return {};
 }
 
-SLAKE_API bool slake::isDuplicatedOverloading(
+SLAKE_API InternalExceptionPointer slake::isDuplicatedOverloading(
+	peff::Alloc *allocator,
 	const FnOverloadingObject *overloading,
 	const peff::DynArray<Type> &paramTypes,
 	const GenericParamList &genericParams,
-	bool hasVarArg) {
-	if ((overloading->overloadingFlags & OL_VARG) != (hasVarArg ? OL_VARG : 0))
-		return false;
-
-	if (overloading->paramTypes.size() != paramTypes.size())
-		return false;
-
-	if (overloading->genericParams.size() != genericParams.size())
-		return false;
-
-	for (size_t j = 0; j < paramTypes.size(); ++j) {
-		if (overloading->paramTypes.at(j) != paramTypes.at(j))
-			return false;
+	bool hasVarArg,
+	bool &resultOut) {
+	if ((overloading->overloadingFlags & OL_VARG) != (hasVarArg ? OL_VARG : 0)) {
+		resultOut = false;
+		return {};
 	}
 
-	return true;
+	if (overloading->paramTypes.size() != paramTypes.size()) {
+		resultOut = false;
+		return {};
+	}
+
+	if (overloading->genericParams.size() != genericParams.size()) {
+		resultOut = false;
+		return {};
+	}
+
+	for (size_t j = 0; j < paramTypes.size(); ++j) {
+		int result;
+		SLAKE_RETURN_IF_EXCEPT(Runtime::compareType(allocator, overloading->paramTypes.at(j), paramTypes.at(j), result));
+
+		if (result) {
+			resultOut = false;
+			return {};
+		}
+	}
+
+	resultOut = true;
+
+	return {};
 }

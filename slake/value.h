@@ -14,7 +14,7 @@ namespace slake {
 	struct Type;
 	class CoroutineObject;
 	class Object;
-	class Context;
+	struct Context;
 
 	// Value type definitions are defined in <slake/type.h>.
 
@@ -36,11 +36,11 @@ namespace slake {
 		union {
 			struct {
 				ModuleObject *moduleObject;
-				uint32_t index;
+				size_t index;
 			} asField;
 			struct {
 				ArrayObject *arrayObject;
-				uint32_t index;
+				size_t index;
 			} asArray;
 			struct {
 				Object *instanceObject;
@@ -63,12 +63,12 @@ namespace slake {
 			} asAlloca;
 			struct {
 				MajorFrame *majorFrame;
-				uint32_t argIndex;
+				size_t argIndex;
 			} asArg;
 			struct {
 				MajorFrame *majorFrame;
-				uint32_t begin;
-				uint32_t end;
+				size_t begin;
+				size_t end;
 			} asArgPack;
 			struct {
 				CoroutineObject *coroutine;
@@ -80,7 +80,7 @@ namespace slake {
 		};
 		ObjectRefKind kind;
 
-		static SLAKE_FORCEINLINE EntityRef makeFieldRef(ModuleObject *moduleObject, uint32_t index) {
+		static SLAKE_FORCEINLINE EntityRef makeFieldRef(ModuleObject *moduleObject, size_t index) {
 			EntityRef ref = {};
 
 			ref.asField.moduleObject = moduleObject;
@@ -90,7 +90,7 @@ namespace slake {
 			return ref;
 		}
 
-		static SLAKE_FORCEINLINE EntityRef makeArrayElementRef(ArrayObject *arrayObject, uint32_t index) {
+		static SLAKE_FORCEINLINE EntityRef makeArrayElementRef(ArrayObject *arrayObject, size_t index) {
 			EntityRef ref = {};
 
 			ref.asArray.arrayObject = arrayObject;
@@ -139,7 +139,7 @@ namespace slake {
 			return ref;
 		}
 
-		static SLAKE_FORCEINLINE EntityRef makeArgRef(MajorFrame *majorFrame, uint32_t argIndex) {
+		static SLAKE_FORCEINLINE EntityRef makeArgRef(MajorFrame *majorFrame, size_t argIndex) {
 			EntityRef ref = {};
 
 			ref.asArg.majorFrame = majorFrame;
@@ -149,7 +149,7 @@ namespace slake {
 			return ref;
 		}
 
-		static SLAKE_FORCEINLINE EntityRef makeArgPackRef(MajorFrame *majorFrame, uint32_t begin, uint32_t end) {
+		static SLAKE_FORCEINLINE EntityRef makeArgPackRef(MajorFrame *majorFrame, size_t begin, size_t end) {
 			EntityRef ref = {};
 
 			ref.asArgPack.majorFrame = majorFrame;
@@ -160,7 +160,7 @@ namespace slake {
 			return ref;
 		}
 
-		static SLAKE_FORCEINLINE EntityRef makeCoroutineArgRef(CoroutineObject *coroutine, uint32_t argIndex) {
+		static SLAKE_FORCEINLINE EntityRef makeCoroutineArgRef(CoroutineObject *coroutine, size_t argIndex) {
 			EntityRef ref = {};
 
 			ref.asCoroutineArg.coroutine = coroutine;
@@ -233,6 +233,7 @@ namespace slake {
 		}
 
 		SLAKE_FORCEINLINE constexpr ValueData(SizeTypeMarker marker, ssize_t data) noexcept : asISize(data) {
+			SLAKE_REFERENCED_PARAM(marker);
 		}
 
 		SLAKE_FORCEINLINE constexpr ValueData(uint8_t data) noexcept : asU8(data) {
@@ -248,6 +249,7 @@ namespace slake {
 		}
 
 		SLAKE_FORCEINLINE constexpr ValueData(SizeTypeMarker marker, size_t data) noexcept : asUSize(data) {
+			SLAKE_REFERENCED_PARAM(marker);
 		}
 
 		SLAKE_FORCEINLINE constexpr ValueData(float data) noexcept : asF32(data) {
@@ -277,6 +279,7 @@ namespace slake {
 		SLAKE_FORCEINLINE constexpr Value(int64_t data) noexcept : valueType(ValueType::I64), data((int64_t)data) {
 		}
 		SLAKE_FORCEINLINE constexpr Value(SizeTypeMarker marker, ssize_t data) noexcept : valueType(ValueType::ISize), data(data) {
+			SLAKE_REFERENCED_PARAM(marker);
 		}
 		SLAKE_FORCEINLINE constexpr Value(uint8_t data) noexcept : valueType(ValueType::U8), data((uint8_t)data) {
 		}
@@ -287,6 +290,7 @@ namespace slake {
 		SLAKE_FORCEINLINE constexpr Value(uint64_t data) noexcept : valueType(ValueType::U64), data((uint64_t)data) {
 		}
 		SLAKE_FORCEINLINE constexpr Value(SizeTypeMarker marker, size_t data) noexcept : valueType(ValueType::USize), data(data) {
+			SLAKE_REFERENCED_PARAM(marker);
 		}
 		SLAKE_FORCEINLINE constexpr Value(float data) noexcept : valueType(ValueType::F32), data(data) {
 		}
@@ -410,7 +414,7 @@ namespace slake {
 		SLAKE_API bool operator<(const Value &rhs) const;
 	};
 
-	SLAKE_API bool isCompatible(const Type &type, const Value &value);
+	SLAKE_API InternalExceptionPointer isCompatible(peff::Alloc *allocator, const Type &type, const Value &value, bool &resultOut);
 }
 
 #endif

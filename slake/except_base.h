@@ -77,7 +77,7 @@ namespace slake {
 				std::terminate();
 		}
 
-		SLAKE_FORCEINLINE explicit operator bool() noexcept {
+		SLAKE_FORCEINLINE explicit operator bool() const noexcept {
 			return (bool)_ptr;
 		}
 
@@ -92,7 +92,7 @@ namespace slake {
 }
 
 #define SLAKE_UNWRAP_EXCEPT(expr) (expr).unwrap()
-#define SLAKE_RETURN_IF_EXCEPT(expr)                  \
+#define SLAKE_RETURN_IF_EXCEPT(expr)                         \
 	if (slake::InternalExceptionPointer _ = (expr); (bool)_) \
 	return _
 #define SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(name, expr) \

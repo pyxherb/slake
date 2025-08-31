@@ -1,6 +1,6 @@
 #include <slake/runtime.h>
 #include <slake/loader/loader.h>
-#include <slake/opti/proganal.h>
+// #include <slake/opti/proganal.h>
 // #include <slake/lib/std.h>
 
 #include <cassert>
@@ -195,7 +195,7 @@ public:
 		return p;
 	}
 
-	virtual void release(void* p, size_t size, size_t alignment) noexcept override {
+	virtual void release(void *p, size_t size, size_t alignment) noexcept override {
 		AllocRecord &allocRecord = allocRecords.at(p);
 
 		assert(allocRecord.size == size);
@@ -280,7 +280,12 @@ int main(int argc, char **argv) {
 				throw std::bad_alloc();
 
 			auto fn = (slake::FnObject *)mod->getMember("main").asObject.instanceObject;
-			auto overloading = fn->getOverloading(peff::DynArray<slake::Type>(&myAllocator));
+			slake::FnOverloadingObject *overloading;
+
+			if (fn->getOverloading(&myAllocator, peff::DynArray<slake::Type>(&myAllocator), overloading)) {
+				throw std::bad_alloc();
+			}
+
 			/*
 			slake::opti::ProgramAnalyzedInfo analyzedInfo(rt.get(), &myAllocator);
 			if (auto e = slake::opti::analyzeProgramInfo(rt.get(), &myAllocator, (slake::RegularFnOverloadingObject *)overloading, analyzedInfo, hostRefHolder);
@@ -309,6 +314,7 @@ int main(int argc, char **argv) {
 				printf("Lifetime: %zu-%zu\n", it.value().lifetime.offBeginIns, it.value().lifetime.offEndIns);
 			}*/
 
+		retry: {
 			slake::HostObjectRef<slake::CoroutineObject> co;
 			if (auto e = rt->createCoroutineInstance(overloading, nullptr, nullptr, 0, co); e) {
 				printf("Internal exception: %s\n", e->what());
@@ -333,6 +339,9 @@ int main(int argc, char **argv) {
 					goto end;
 				}
 			}
+		}
+			rt->gc();
+			goto retry;
 
 			puts("");
 		}
@@ -342,5 +351,6 @@ int main(int argc, char **argv) {
 
 		rt.reset();
 	}
+
 	return 0;
 }

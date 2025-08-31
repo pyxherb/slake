@@ -5,7 +5,7 @@ using namespace slake::opti;
 
 InternalExceptionPointer slake::opti::analyzeCastIns(
 	ProgramAnalyzeContext &analyzeContext,
-	size_t regIndex) {
+	uint32_t regIndex) {
 	Instruction &curIns = analyzeContext.fnObject->instructions.at(analyzeContext.idxCurIns);
 
 	if (curIns.nOperands != 2) {

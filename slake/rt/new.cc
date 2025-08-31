@@ -31,7 +31,9 @@ SLAKE_API InternalExceptionPointer Runtime::initMethodTableForClass(ClassObject 
 					GenericParamList destructorGenericParamList(getFixedAlloc());
 
 					for (auto j : overloadings) {
-						if (isDuplicatedOverloading(j, destructorParamTypes, destructorGenericParamList, false)) {
+						bool result;
+						SLAKE_RETURN_IF_EXCEPT(isDuplicatedOverloading(getFixedAlloc(), j, destructorParamTypes, destructorGenericParamList, false, result));
+						if (result) {
 							if (!methodTable->destructors.pushFront(+j)) {
 								return OutOfMemoryError::alloc();
 							}
@@ -56,11 +58,15 @@ SLAKE_API InternalExceptionPointer Runtime::initMethodTableForClass(ClassObject 
 
 						for (auto &j : overloadings) {
 							for (auto k : methodSlot->overloadings) {
-								if (isDuplicatedOverloading(
-										k,
-										j->paramTypes,
-										j->genericParams,
-										j->overloadingFlags & OL_VARG)) {
+								bool result;
+								SLAKE_RETURN_IF_EXCEPT(isDuplicatedOverloading(
+									getFixedAlloc(),
+									k,
+									j->paramTypes,
+									j->genericParams,
+									j->overloadingFlags & OL_VARG,
+									result));
+								if (result) {
 									methodSlot->overloadings.remove(k);
 									break;
 								}

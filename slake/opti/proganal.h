@@ -85,7 +85,7 @@ namespace slake {
 			RegularFnOverloadingObject *fnObject;
 			ProgramAnalyzedInfo &analyzedInfoOut;
 			HostRefHolder &hostRefHolder;
-			size_t idxCurIns = 0;
+			uint32_t idxCurIns = 0;
 			Object *lastCallTarget;
 			Type lastCallTargetType;
 			peff::DynArray<uint32_t> argPushInsOffs;
@@ -133,7 +133,7 @@ namespace slake {
 			uint32_t regIndex) noexcept;
 		InternalExceptionPointer analyzeCastIns(
 			ProgramAnalyzeContext &analyzeContext,
-			size_t regIndex);
+			uint32_t regIndex);
 		InternalExceptionPointer analyzeProgramInfo(
 			Runtime *runtime,
 			peff::Alloc *resourceAllocator,

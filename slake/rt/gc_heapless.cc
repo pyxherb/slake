@@ -5,8 +5,8 @@ using namespace slake;
 SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, MethodTable *methodTable) {
 	if (!methodTable)
 		return;
-	for (auto i = methodTable->methods.begin(); i != methodTable->methods.end(); ++i) {
-		GCWalkContext::pushObject(context, i.value());
+	for (auto i : methodTable->methods) {
+		GCWalkContext::pushObject(context, i.second);
 	}
 	for (auto i : methodTable->destructors) {
 		GCWalkContext::pushObject(context, i);
@@ -167,7 +167,7 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 		case ObjectGCStatus::ReadyToWalk:
 			v->gcStatus = ObjectGCStatus::Walked;
 
-			switch (auto typeId = v->getObjectKind(); typeId) {
+			switch (v->getObjectKind()) {
 				case ObjectKind::String:
 					break;
 				case ObjectKind::TypeDef:
@@ -186,14 +186,10 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 						_gcWalk(context, i);
 					break;
 				}
-
 				case ObjectKind::Instance: {
 					auto value = (InstanceObject *)v;
 
 					GCWalkContext::pushObject(context, value->_class);
-					if (auto mt = value->_class->cachedInstantiatedMethodTable) {
-						_gcWalk(context, mt);
-					}
 
 					if (value->_class->cachedObjectLayout) {
 						for (auto &i : value->_class->cachedObjectLayout->fieldRecords) {
@@ -247,6 +243,10 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 					GCWalkContext::pushObject(context, ((ClassObject *)v)->parent);
 
 					ClassObject *value = (ClassObject *)v;
+
+					if (auto mt = value->cachedInstantiatedMethodTable; mt) {
+						_gcWalk(context, mt);
+					}
 
 					for (size_t i = 0; i < value->fieldRecords.size(); ++i) {
 						_gcWalk(context, value->fieldRecords.at(i).type);
@@ -609,9 +609,10 @@ rescan:
 		i->nextHostRef = nullptr;
 	}
 
-	for (auto i = _genericCacheDir.begin(); i != _genericCacheDir.end(); ++i) {
-		for (auto j = i.value().begin(); j != i.value().end(); ++j) {
-			GCWalkContext::pushObject(&context, j.value());
+	for (auto i : _genericCacheDir) {
+		for (auto j : i.second) {
+			GCWalkContext::pushObject(&context, i.first);
+			GCWalkContext::pushObject(&context, j.second);
 		}
 	}
 

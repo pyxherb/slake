@@ -5,7 +5,7 @@ using namespace slake;
 SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 	IdRefObject *ref,
 	EntityRef &objectRefOut,
-	MemberObject *scopeObject) {
+	Object *scopeObject) {
 	if (!ref)
 		return nullptr;
 
@@ -13,9 +13,9 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 		if (!(scopeObject = _rootObject))
 			return nullptr;
 
-	MemberObject *curObject;
+	Object *curObject;
 
-	while ((curObject = (MemberObject *)scopeObject)) {
+	while ((curObject = (Object *)scopeObject)) {
 		for (size_t i = 0; i < ref->entries.size(); ++i) {
 			auto &curName = ref->entries.at(i);
 
@@ -41,7 +41,9 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 					GenericInstantiationContext genericInstantiationContext(&nullAlloc, getFixedAlloc());
 
 					genericInstantiationContext.genericArgs = &curName.genericArgs;
-					SLAKE_RETURN_IF_EXCEPT(instantiateGenericObject(scopeObject, scopeObject, &genericInstantiationContext));
+					MemberObject *m;
+					SLAKE_RETURN_IF_EXCEPT(instantiateGenericObject((MemberObject*)scopeObject, m, &genericInstantiationContext));
+					scopeObject = m;
 					objectRefOut = EntityRef::makeObjectRef(scopeObject);
 				}
 			} else {
@@ -63,7 +65,11 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 						SLAKE_RETURN_IF_EXCEPT(j.loadDeferredType(this));
 					}
 
-					objectRefOut = EntityRef::makeObjectRef(fnObject->getOverloading(*ref->paramTypes));
+					FnOverloadingObject *overloading;
+
+					SLAKE_RETURN_IF_EXCEPT(fnObject->getOverloading(getFixedAlloc(), *ref->paramTypes, overloading));
+
+					objectRefOut = EntityRef::makeObjectRef(overloading);
 
 					break;
 				}
@@ -77,9 +83,9 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 	fail:
 		switch (curObject->getObjectKind()) {
 			case ObjectKind::Module:
-				if (!curObject->parent)
+				if (!((ModuleObject*)curObject)->parent)
 					return allocOutOfMemoryErrorIfAllocFailed(ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(this)->getFixedAlloc(), ref));
-				scopeObject = (MemberObject *)curObject->parent;
+				scopeObject = ((ModuleObject *)curObject)->parent;
 				break;
 			case ObjectKind::Class: {
 				ClassObject *cls = (ClassObject *)curObject;

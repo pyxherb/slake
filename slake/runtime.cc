@@ -9,10 +9,14 @@ SLAKE_API peff::UUID CountablePoolAlloc::getTypeId() const noexcept {
 }
 
 SLAKE_API size_t CountablePoolAlloc::incRef(size_t globalRc) noexcept {
+	SLAKE_REFERENCED_PARAM(globalRc);
+
 	return ++refCount;
 }
 
 SLAKE_API size_t CountablePoolAlloc::decRef(size_t globalRc) noexcept {
+	SLAKE_REFERENCED_PARAM(globalRc);
+
 	if (!--refCount) {
 		onRefZero();
 		return 0;
@@ -274,7 +278,7 @@ SLAKE_API Runtime::NormalCompareTypesFrameExData *Runtime::NormalCompareTypesFra
 	return peff::allocAndConstruct<NormalCompareTypesFrameExData>(allocator, alignof(NormalCompareTypesFrameExData), allocator, lhs, rhs);
 }
 
-SLAKE_API InternalExceptionPointer Runtime::_doCompareTypes(CompareTypesContext &context, int &resultOut) {
+SLAKE_API InternalExceptionPointer Runtime::_doCompareTypes(CompareTypesContext &context) {
 	while (context.frames.size() > 1) {
 		CompareTypesFrame &frame = context.frames.back();
 
@@ -283,12 +287,12 @@ SLAKE_API InternalExceptionPointer Runtime::_doCompareTypes(CompareTypesContext 
 				NormalCompareTypesFrameExData *exData = (NormalCompareTypesFrameExData *)frame.exData.get();
 
 				if (exData->lhs.typeId < exData->rhs.typeId) {
-					resultOut = -1;
-					return {};
+					context.frames.back().result = -1;
+					continue;
 				}
 				if (exData->lhs.typeId > exData->rhs.typeId) {
-					resultOut = 1;
-					return {};
+					context.frames.back().result = 1;
+					continue;
 				}
 				switch (exData->rhs.typeId) {
 					case TypeId::Instance: {
@@ -304,13 +308,14 @@ SLAKE_API InternalExceptionPointer Runtime::_doCompareTypes(CompareTypesContext 
 							case ObjectKind::Class:
 							case ObjectKind::Interface: {
 								if (lhsType < rhsType) {
-									resultOut = -1;
-									return {};
+									context.frames.back().result = -1;
+									continue;
 								}
 								if (lhsType > rhsType) {
-									resultOut = 1;
-									return {};
+									context.frames.back().result = 1;
+									continue;
 								}
+								break;
 							}
 							default:
 								std::terminate();
@@ -318,7 +323,7 @@ SLAKE_API InternalExceptionPointer Runtime::_doCompareTypes(CompareTypesContext 
 
 						context.frames.popBack();
 
-						resultOut = 0;
+						context.frames.back().result = 0;
 
 						break;
 					}
@@ -352,29 +357,45 @@ SLAKE_API InternalExceptionPointer Runtime::_doCompareTypes(CompareTypesContext 
 					}
 					default:
 						context.frames.popBack();
-						resultOut = 0;
+						context.frames.back().result = 0;
 						break;
 				}
 			}
 		}
 	}
 
-	resultOut = context.frames.back().result;
-
 	return {};
 }
 
 SLAKE_API InternalExceptionPointer Runtime::compareType(peff::Alloc *allocator, const Type &lhs, const Type &rhs, int &resultOut) {
+	if (lhs.typeId < rhs.typeId) {
+		resultOut = -1;
+		return {};
+	}
+	if (lhs.typeId > rhs.typeId) {
+		resultOut = 1;
+		return {};
+	}
+
 	CompareTypesContext context(allocator);
 
 	std::unique_ptr<AwaiterCompareTypesFrameExData, peff::DeallocableDeleter<AwaiterCompareTypesFrameExData>> newExData(
 		AwaiterCompareTypesFrameExData::alloc(context.allocator.get()));
 
-	if (!context.frames.pushBack(CompareTypesFrame(CompareTypesFrameKind::Awaiter, newExData.get()))) {
+	if (!context.frames.pushBack(CompareTypesFrame(CompareTypesFrameKind::Awaiter, newExData.release()))) {
 		context.frames.back().exceptionPtr = OutOfMemoryError::alloc();
 	}
 
-	SLAKE_RETURN_IF_EXCEPT(_doCompareTypes(context, resultOut));
+	std::unique_ptr<NormalCompareTypesFrameExData, peff::DeallocableDeleter<NormalCompareTypesFrameExData>> initialExData(
+		NormalCompareTypesFrameExData::alloc(context.allocator.get(),
+			lhs,
+			rhs));
+
+	if (!context.frames.pushBack(CompareTypesFrame(CompareTypesFrameKind::Normal, std::move(initialExData.release())))) {
+		context.frames.back().exceptionPtr = OutOfMemoryError::alloc();
+	}
+
+	SLAKE_RETURN_IF_EXCEPT(_doCompareTypes(context));
 
 	resultOut = context.frames.back().result;
 

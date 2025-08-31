@@ -13,32 +13,26 @@ SLAKE_API void GenericParam::replaceAllocator(peff::Alloc *allocator) noexcept {
 	interfaces.replaceAllocator(allocator);
 }
 
-SLAKE_API bool GenericArgListComparator::operator()(const GenericArgList &lhs, const GenericArgList &rhs) const noexcept {
+SLAKE_API int GenericArgListComparator::operator()(const GenericArgList &lhs, const GenericArgList &rhs) const noexcept {
+	exceptPtr.unwrap();
+
 	if (lhs.size() < rhs.size())
-		return true;
+		return -1;
 	if (lhs.size() > rhs.size())
-		return false;
+		return 1;
 
-	for (size_t i = 0; i < lhs.size(); ++i) {
-		if (lhs.at(i) < rhs.at(i))
-			return true;
-		if (lhs.at(i) > rhs.at(i))
-			return false;
+	int result;
+	for (size_t j = 0; j < lhs.size(); ++j) {
+		if ((exceptPtr = Runtime::compareType(allocator.get(), lhs.at(j), rhs.at(j), result))) {
+			// We use INT_MIN as a placeholder.
+			return INT_MIN;
+		}
+
+		if (result)
+			return result;
 	}
 
-	return false;
-}
-
-SLAKE_API bool GenericArgListEqComparator::operator()(const GenericArgList &lhs, const GenericArgList &rhs) const noexcept {
-	if (lhs.size() != rhs.size())
-		return false;
-
-	for (size_t i = 0; i < lhs.size(); ++i) {
-		if (lhs.at(i) != rhs.at(i))
-			return false;
-	}
-
-	return true;
+	return 0;
 }
 
 SLAKE_API size_t slake::getGenericParamIndex(const GenericParamList &genericParamList, const std::string_view &name) {

@@ -99,7 +99,7 @@ SLAKE_API MethodTable *MethodTable::duplicate(peff::Alloc *allocator) {
 		return nullptr;
 
 	for (auto [k, v] : methods) {
-		if(!newMethodTable->methods.insert(std::string_view(k), +v))
+		if(!newMethodTable->methods.insert(std::string_view(v->name), +v))
 			return nullptr;
 	}
 

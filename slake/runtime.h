@@ -124,6 +124,7 @@ namespace slake {
 		InstanceObject *unwalkedInstanceList = nullptr;
 		InstanceObject *destructibleList = nullptr;
 		Object *unwalkedList = nullptr;
+		Object *walkedList = nullptr;
 
 	public:
 		static SLAKE_API void pushObject(GCWalkContext *context, Object *object);
@@ -136,6 +137,8 @@ namespace slake {
 
 		SLAKE_API Object *getUnwalkedList();
 		SLAKE_API void pushUnwalked(Object *walkableObject);
+
+		SLAKE_API Object *getWalkedList();
 
 		SLAKE_API InstanceObject *getDestructibleList();
 		SLAKE_API void pushDestructible(InstanceObject *v);

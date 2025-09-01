@@ -400,6 +400,11 @@ void dumpCompilationError(peff::SharedPtr<slkc::Parser> parser, const slkc::Comp
 				beginToken->sourceLocation.beginPosition.line + 1,
 				beginToken->sourceLocation.beginPosition.column + 1);
 			break;
+		case slkc::CompilationErrorKind::ErrorDeducingArgType:
+			printError("Error at %zu, %zu: Error deducing type of the argument\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
 		case slkc::CompilationErrorKind::ErrorEvaluatingConstSwitchCaseCondition:
 			printError("Error at %zu, %zu: The switch condition is required to be a comptime evaluatable expression\n",
 				beginToken->sourceLocation.beginPosition.line + 1,

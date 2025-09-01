@@ -157,7 +157,8 @@ namespace slake {
 		}
 		SLAKE_FORCEINLINE Type(StringObject *nameObject, Object *ownerObject) noexcept : typeId(TypeId::GenericArg) {
 			assert(verifyObjectKind((Object *)nameObject, ObjectKind::String));
-			assert(verifyObjectKind(ownerObject));
+			if (ownerObject)
+				assert(verifyObjectKind(ownerObject));
 			exData.genericArg.nameObject = nameObject;
 			exData.genericArg.ownerObject = ownerObject;
 		}

@@ -169,24 +169,26 @@ fn t() {
 	123456 + test;
 }
 
-class CallableTest<...T> {
+/*class CallableTest<...T> {
 	fn call(test: ...T) {
 		extfns.print("Called CallableTest, values: ", ...test, "\n");
 		return;
 	}
-}
+}*/
 
-fn t2() -> simd_t<i32, (4 + 8)> {
-}
+/*fn t2() -> simd_t<i32, (4 + 8)> {
+}*/
 
 pub fn *main() -> i32 {
 	/*a() with 123;*/
 
 	hostext.extfns.print("Entered main\n");
 
+	// This causes crashing.
 	let vt: VirtualBase = new VirtualDerived();
 
 	vt.test(123);
+	// Above causes crashing.
 
 	let testDerived: TestDerived<i32> = new TestDerived<i32>();
 
@@ -201,7 +203,7 @@ pub fn *main() -> i32 {
 	x._setX(test);
 	x._getX();
 
-	/* extfns.print(test + 123); */
+	/*extfns.print(test + 123);*/
 
 	let v : u32 = 1919810 + 0;
 
@@ -239,9 +241,9 @@ pub fn *main() -> i32 {
 
 	let interfaceTest: InterfaceTest<ImplTest> = new InterfaceTest<ImplTest>();
 	
-	let callableTest: CallableTest<(i32, u32, f32)>;
+	/*let callableTest: CallableTest<(i32, u32, f32)>;
 
-	callableTest.call(114, 514 as u32, 1919810.0f);
+	callableTest.call(114, 514 as u32, 1919810.0f);*/
 
 	/*
 	match const (123) -> i32 {

@@ -1821,7 +1821,10 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 
 						IdRefEntry e(compileEnv->allocator.get());
 
-						std::string_view operatorName = getBinaryOperatorOverloadingName(expr->binaryOp);
+						const char *operatorName = getBinaryOperatorOverloadingName(expr->binaryOp);
+
+						if (!operatorName)
+							return CompilationError(expr->tokenRange, CompilationErrorKind::OperatorNotFound);
 
 						if (!e.name.build(operatorName)) {
 							return genOutOfMemoryCompError();

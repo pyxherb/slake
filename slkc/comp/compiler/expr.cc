@@ -1157,6 +1157,10 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 						SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileEnv, compilationContext, e->args.at(i), argTypes.at(j), {}));
 					}
 
+					if (!argTypes.at(j)) {
+						return CompilationError(e->args.at(i)->tokenRange, CompilationErrorKind::ErrorDeducingArgType);
+					}
+
 					//SLKC_RETURN_IF_COMP_ERROR(simplifyParamListTypeNameTree(argTypes.at(j), compileEnv->allocator.get(), argTypes.at(j)));
 
 					if (argTypes.at(j)->typeNameKind == TypeNameKind::UnpackedArgs) {

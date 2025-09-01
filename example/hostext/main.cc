@@ -314,34 +314,33 @@ int main(int argc, char **argv) {
 				printf("Lifetime: %zu-%zu\n", it.value().lifetime.offBeginIns, it.value().lifetime.offEndIns);
 			}*/
 
-		retry: {
-			slake::HostObjectRef<slake::CoroutineObject> co;
-			if (auto e = rt->createCoroutineInstance(overloading, nullptr, nullptr, 0, co); e) {
-				printf("Internal exception: %s\n", e->what());
-				e.reset();
-				goto end;
-			}
-
-			slake::HostObjectRef<slake::ContextObject> context;
-
-			if (!(context = slake::ContextObject::alloc(rt.get()))) {
-				puts("Out of memory");
-				goto end;
-			}
-
-			slake::Value result;
-			while (!co->isDone()) {
-				if (auto e = rt->resumeCoroutine(context.get(), co.get(), result);
-					e) {
+			{
+				slake::HostObjectRef<slake::CoroutineObject> co;
+				if (auto e = rt->createCoroutineInstance(overloading, nullptr, nullptr, 0, co); e) {
 					printf("Internal exception: %s\n", e->what());
-					printTraceback(rt.get(), context.get());
 					e.reset();
 					goto end;
 				}
+
+				slake::HostObjectRef<slake::ContextObject> context;
+
+				if (!(context = slake::ContextObject::alloc(rt.get()))) {
+					puts("Out of memory");
+					goto end;
+				}
+
+				slake::Value result;
+				while (!co->isDone()) {
+					if (auto e = rt->resumeCoroutine(context.get(), co.get(), result);
+						e) {
+						printf("Internal exception: %s\n", e->what());
+						printTraceback(rt.get(), context.get());
+						e.reset();
+						goto end;
+					}
+				}
 			}
-		}
 			rt->gc();
-			goto retry;
 
 			puts("");
 		}

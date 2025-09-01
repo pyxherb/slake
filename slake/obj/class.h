@@ -44,7 +44,7 @@ namespace slake {
 	public:
 		peff::RcObjectPtr<peff::Alloc> selfAllocator;
 		peff::HashMap<std::string_view, FnObject *> methods;
-		peff::List<FnOverloadingObject *> destructors;
+		peff::DynArray<FnOverloadingObject *> destructors;
 
 		SLAKE_API MethodTable(peff::Alloc *selfAllocator);
 

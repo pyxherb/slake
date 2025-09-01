@@ -476,6 +476,8 @@ SLAKE_API bool Runtime::addObject(Object *object) {
 		youngObjectList->prevSameGenObject = object;
 	}
 
+	object->gcStatus = ObjectGCStatus::Unwalked;
+
 	object->nextSameGenObject = youngObjectList;
 	youngObjectList = object;
 

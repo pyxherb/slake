@@ -34,6 +34,7 @@ namespace slkc {
 		InvalidInitializerListUsage,
 		ErrorDeducingInitializerListType,
 		ErrorDeducingSwitchConditionType,
+		ErrorDeducingArgType,
 		ErrorEvaluatingConstSwitchCaseCondition,
 		MismatchedSwitchCaseConditionType,
 		ErrorDeducingMatchConditionType,

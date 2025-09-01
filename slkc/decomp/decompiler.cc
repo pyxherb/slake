@@ -179,7 +179,7 @@ SLKC_API bool slkc::decompileTypeName(peff::Alloc *allocator, DumpWriter *writer
 			break;
 		}
 		case slake::TypeId::Ref: {
-			SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, type.getArrayExData()));
+			SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, type.getRefExData()));
 			SLKC_RETURN_IF_FALSE(writer->write("&"));
 			break;
 		}

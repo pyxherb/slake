@@ -3,34 +3,39 @@
 
 using namespace slake;
 
+// TODO: You will get errors in this function when you execute it more than once, please fix it!!!
 SLAKE_API InternalExceptionPointer Runtime::initMethodTableForClass(ClassObject *cls, ClassObject *parentClass) {
 	assert(!cls->cachedInstantiatedMethodTable);
-	std::unique_ptr<MethodTable, util::DeallocableDeleter<MethodTable>> methodTable;
+	MethodTable *parentMt = parentClass ? parentClass->cachedInstantiatedMethodTable : nullptr;
+	std::unique_ptr<MethodTable, util::DeallocableDeleter<MethodTable>> methodTable(MethodTable::alloc(cls->selfAllocator.get()));
 
-	if (parentClass && parentClass->cachedInstantiatedMethodTable) {
-		methodTable = std::unique_ptr<MethodTable, util::DeallocableDeleter<MethodTable>>(
-			parentClass->cachedInstantiatedMethodTable->duplicate(getCurGenAlloc()));
-	} else {
-		methodTable = std::unique_ptr<MethodTable, util::DeallocableDeleter<MethodTable>>(
-			MethodTable::alloc(cls->selfAllocator.get()));
+	if (parentMt) {
+		if (!methodTable->destructors.resize(parentMt->destructors.size())) {
+			return OutOfMemoryError::alloc();
+		}
+		memcpy(methodTable->destructors.data(), parentMt->destructors.data(), methodTable->destructors.size() * sizeof(void *));
 	}
 
 	for (auto it = cls->members.begin(); it != cls->members.end(); ++it) {
 		switch (it.value()->getObjectKind()) {
 			case ObjectKind::Fn: {
-				std::deque<FnOverloadingObject *> overloadings;
+				FnObject *fn = (FnObject *)it.value();
 
-				for (auto j : ((FnObject *)it.value())->overloadings) {
-					if ((!(j->access & ACCESS_STATIC)) &&
-						(j->overloadingFlags & OL_VIRTUAL))
-						overloadings.push_back(j);
+				HostObjectRef<FnObject> fnSlot;
+
+				fnSlot = FnObject::alloc(this);
+				if (!fnSlot) {
+					return OutOfMemoryError::alloc();
+				}
+				if (!fnSlot->name.build(((FnObject *)it.value())->name)) {
+					return OutOfMemoryError::alloc();
 				}
 
 				if (it.key() == "delete") {
 					peff::DynArray<Type> destructorParamTypes(getFixedAlloc());
 					GenericParamList destructorGenericParamList(getFixedAlloc());
 
-					for (auto j : overloadings) {
+					for (auto j : fn->overloadings) {
 						bool result;
 						SLAKE_RETURN_IF_EXCEPT(isDuplicatedOverloading(getFixedAlloc(), j, destructorParamTypes, destructorGenericParamList, false, result));
 						if (result) {
@@ -41,40 +46,41 @@ SLAKE_API InternalExceptionPointer Runtime::initMethodTableForClass(ClassObject 
 						}
 					}
 				} else {
-					if (overloadings.size()) {
-						// Link the method with method inherited from the parent.
-						HostObjectRef<FnObject> fn;
-						if (!methodTable->methods.contains(it.key())) {
-							methodTable->methods.insert(it.value()->name, nullptr);
-						}
-						auto &methodSlot = methodTable->methods.at(it.key());
+					for (auto j : fn->overloadings) {
+						if (!fnSlot->overloadings.insert(+j))
+							return OutOfMemoryError::alloc();
+					}
 
-						if (auto m = methodTable->getMethod(it.key()); m)
-							fn = m;
-						else {
-							fn = FnObject::alloc(this);
-							methodSlot = fn.get();
-						}
+					if (parentMt) {
+						if (auto m = parentMt->getMethod(fn->name); m) {
+							if (m->overloadings.size()) {
+								// Link the method with method inherited from the parent.
 
-						for (auto &j : overloadings) {
-							for (auto k : methodSlot->overloadings) {
-								bool result;
-								SLAKE_RETURN_IF_EXCEPT(isDuplicatedOverloading(
-									getFixedAlloc(),
-									k,
-									j->paramTypes,
-									j->genericParams,
-									j->overloadingFlags & OL_VARG,
-									result));
-								if (result) {
-									methodSlot->overloadings.remove(k);
-									break;
+								for (auto j : fnSlot->overloadings) {
+									for (auto k : m->overloadings) {
+										// If we found a non-duplicated overloading from the parent, add it.
+										bool result;
+										SLAKE_RETURN_IF_EXCEPT(isDuplicatedOverloading(
+											getFixedAlloc(),
+											k,
+											j->paramTypes,
+											j->genericParams,
+											j->overloadingFlags & OL_VARG,
+											result));
+										if (!result) {
+											if (!fnSlot->overloadings.insert(+k))
+												return OutOfMemoryError::alloc();
+										}
+									}
 								}
 							}
-							if (!methodSlot->overloadings.insert(+j))
-								return OutOfMemoryError::alloc();
 						}
 					}
+				}
+
+				if (fnSlot->overloadings.size()) {
+					if (!methodTable->methods.insert(fnSlot->name, fnSlot.get()))
+						return OutOfMemoryError::alloc();
 				}
 
 				break;
@@ -163,6 +169,10 @@ SLAKE_API InternalExceptionPointer Runtime::prepareClassForInstantiation(ClassOb
 
 		SLAKE_RETURN_IF_EXCEPT(prepareClassForInstantiation((ClassObject *)parentClass));
 		p = (ClassObject *)parentClass;
+	}
+
+	for (auto &i : cls->implTypes) {
+		SLAKE_RETURN_IF_EXCEPT(i.loadDeferredType(this));
 	}
 
 	if (!cls->cachedObjectLayout)

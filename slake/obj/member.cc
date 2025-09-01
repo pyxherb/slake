@@ -18,7 +18,6 @@ SLAKE_API MemberObject::MemberObject(const MemberObject &x, peff::Alloc *allocat
 }
 
 SLAKE_API MemberObject::~MemberObject() {
-	printf("Releasing member: %s\n", name.data());
 	associatedRuntime->invalidateGenericCache(this);
 }
 

@@ -144,6 +144,9 @@ SLAKE_API void GCWalkContext::removeFromUnwalkedList(Object *v) {
 
 	v->nextUnwalked = nullptr;
 	v->prevUnwalked = nullptr;
+
+	v->nextWalked = context.walkedList;
+	context.walkedList = v;
 }
 
 SLAKE_API void GCWalkContext::removeFromDestructibleList(Object *v) {
@@ -532,6 +535,10 @@ SLAKE_API void GCWalkContext::pushUnwalked(Object *walkableObject) {
 	unwalkedList = walkableObject;
 }
 
+SLAKE_API Object* GCWalkContext::getWalkedList() {
+	return walkedList;
+}
+
 SLAKE_API InstanceObject *GCWalkContext::getDestructibleList() {
 	MutexGuard accessMutexGuard(accessMutex);
 
@@ -611,7 +618,11 @@ rescan:
 
 	for (auto i : _genericCacheDir) {
 		for (auto j : i.second) {
+			i.first->gcStatus = ObjectGCStatus::Unwalked;
+			i.first->gcWalkContext = nullptr;
 			GCWalkContext::pushObject(&context, i.first);
+			j.second->gcStatus = ObjectGCStatus::Unwalked;
+			j.second->gcWalkContext = nullptr;
 			GCWalkContext::pushObject(&context, j.second);
 		}
 	}
@@ -655,10 +666,11 @@ rescan:
 
 	bool isRescanNeeded = false;
 
+	/*
 	if (InstanceObject *p = context.getDestructibleList(); p) {
 		_destructDestructibleObjects(p);
 		isRescanNeeded = true;
-	}
+	}*/
 
 	if (isRescanNeeded) {
 		goto rescan;
@@ -698,7 +710,9 @@ rescan:
 
 	nObjects -= nDeletedObjects;
 
-	for (Object *i = objectList; i; i = i->nextSameGenObject) {
+	for (Object *i = context.getWalkedList(), *next; i; i = next) {
+		next = i->nextWalked;
+		i->nextWalked = nullptr;
 		i->gcStatus = ObjectGCStatus::Unwalked;
 	}
 }

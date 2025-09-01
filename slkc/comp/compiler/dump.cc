@@ -12,7 +12,7 @@ SLKC_API std::optional<CompilationError> slkc::dumpGenericParam(
 	SLKC_RETURN_IF_COMP_ERROR(writer->writeU32(genericParam.name.size()));
 	SLKC_RETURN_IF_COMP_ERROR(writer->write(genericParam.name.data(), genericParam.name.size()));
 
-	SLKC_RETURN_IF_COMP_ERROR(writer->writeBool(genericParam.baseType));
+	SLKC_RETURN_IF_COMP_ERROR(writer->writeBool((bool)genericParam.baseType));
 	SLKC_RETURN_IF_COMP_ERROR(dumpTypeName(allocator, writer, genericParam.baseType));
 
 	SLKC_RETURN_IF_COMP_ERROR(writer->writeU32(genericParam.interfaces.size()));

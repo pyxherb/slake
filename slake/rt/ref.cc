@@ -107,6 +107,19 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 
 SLAKE_API bool Runtime::getFullRef(peff::Alloc *allocator, const MemberObject *v, peff::DynArray<IdRefEntry> &idRefOut) const {
 	while (v != _rootObject) {
+		if (!v) {
+			peff::String name(allocator);
+
+			if (!name.build("(Orphaned)"))
+				return false;
+
+			if (!idRefOut.pushFront(IdRefEntry(std::move(name), {allocator}))) {
+				return false;
+			}
+
+			return true;
+		}
+
 		switch (v->getObjectKind()) {
 			case ObjectKind::Instance:
 				v = (const MemberObject *)((InstanceObject *)v)->_class;

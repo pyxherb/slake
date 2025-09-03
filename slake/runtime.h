@@ -18,6 +18,7 @@
 #include "plat.h"
 #include <peff/containers/map.h>
 #include <peff/base/deallocable.h>
+#include <peff/advutils/buffer_alloc.h>
 
 namespace slake {
 	class CountablePoolAlloc : public peff::Alloc {

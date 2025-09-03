@@ -255,6 +255,37 @@ namespace slake {
 		return true;
 	}
 
+	SLAKE_FORCEINLINE constexpr bool isFundamentalType(TypeId typeId) {
+		switch (typeId) {
+			case TypeId::Void:
+			case TypeId::I8:
+			case TypeId::I16:
+			case TypeId::I32:
+			case TypeId::I64:
+			case TypeId::ISize:
+			case TypeId::U8:
+			case TypeId::U16:
+			case TypeId::U32:
+			case TypeId::U64:
+			case TypeId::USize:
+			case TypeId::F32:
+			case TypeId::F64:
+			case TypeId::Bool:
+			case TypeId::String:
+			case TypeId::Any:
+			case TypeId::Unknown:
+				return true;
+			default:
+				break;
+		}
+
+		return false;
+	}
+
+	SLAKE_FORCEINLINE bool isFundamentalType(Type type) {
+		return isFundamentalType(type.typeId);
+	}
+
 	class ClassObject;
 	class InterfaceObject;
 

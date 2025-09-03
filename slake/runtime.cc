@@ -377,7 +377,14 @@ SLAKE_API InternalExceptionPointer Runtime::compareTypes(peff::Alloc *allocator,
 		return {};
 	}
 
-	CompareTypesContext context(allocator);
+	if (isFundamentalType(lhs))
+		return 0;
+
+	char buffer[peff::BufferAlloc::calcAllocSize(sizeof(CompareTypesFrameExData), alignof(CompareTypesFrameExData)) * 16];
+
+	peff::BufferAlloc bufferAlloc(buffer, sizeof(buffer));
+	peff::UpstreamedBufferAlloc upstreamedAlloc(&bufferAlloc, allocator);
+	CompareTypesContext context(&upstreamedAlloc);
 
 	std::unique_ptr<AwaiterCompareTypesFrameExData, peff::DeallocableDeleter<AwaiterCompareTypesFrameExData>> newExData(
 		AwaiterCompareTypesFrameExData::alloc(context.allocator.get()));

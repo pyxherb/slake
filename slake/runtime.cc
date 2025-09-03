@@ -380,7 +380,7 @@ SLAKE_API InternalExceptionPointer Runtime::compareTypes(peff::Alloc *allocator,
 	if (isFundamentalType(lhs))
 		return 0;
 
-	char buffer[peff::BufferAlloc::calcAllocSize(sizeof(CompareTypesFrameExData), alignof(CompareTypesFrameExData)) * 16];
+	char buffer[4096];
 
 	peff::BufferAlloc bufferAlloc(buffer, sizeof(buffer));
 	peff::UpstreamedBufferAlloc upstreamedAlloc(&bufferAlloc, allocator);

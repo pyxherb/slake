@@ -90,8 +90,6 @@ namespace slake {
 		// The runtime is initializing.
 		_RT_INITING = 0x80000000;
 
-	typedef std::unique_ptr<std::istream> (*ModuleLocatorFn)(Runtime *rt, const peff::DynArray<IdRefEntry> &ref);
-
 	struct SecurityPolicy {
 		bool allowUnsafe;
 	};
@@ -183,9 +181,6 @@ namespace slake {
 		/// @brief Size of memory allocated for values after last GC cycle.
 		size_t _szMemUsedAfterLastGc = 0,
 			   _szComputedGcLimit = 0;
-
-		/// @brief Module locator for importing.
-		ModuleLocatorFn _moduleLocator;
 
 		UncaughtExceptionHandler _uncaughtExceptionHandler = nullptr;
 
@@ -440,9 +435,6 @@ namespace slake {
 		SLAKE_API HostObjectRef<ModuleObject> loadModule(const void *buf, size_t size, LoadModuleFlags flags);
 
 		SLAKE_FORCEINLINE ModuleObject *getRootObject() { return _rootObject; }
-
-		SLAKE_FORCEINLINE void setModuleLocator(ModuleLocatorFn locator) { _moduleLocator = locator; }
-		SLAKE_FORCEINLINE ModuleLocatorFn getModuleLocator() { return _moduleLocator; }
 
 		[[nodiscard]] SLAKE_API bool getFullRef(peff::Alloc *allocator, const MemberObject *v, peff::DynArray<IdRefEntry> &idRefOut) const;
 

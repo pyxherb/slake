@@ -61,6 +61,8 @@ namespace slake {
 			[[nodiscard]] SLAKE_FORCEINLINE ReadResult readF64(double &data) noexcept {
 				return read((char *)&data, sizeof(double));
 			}
+
+			virtual void dealloc() noexcept = 0;
 		};
 	}
 }

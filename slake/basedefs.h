@@ -36,5 +36,14 @@
 #endif
 
 #define SLAKE_REFERENCED_PARAM(n) (n)
+#define SLAKE_REFERENCED_VAR(n) (n)
+
+#if _MSC_VER
+	#define SLAKE_UNREACHABLE() __assume(0)
+#elif defined(__GNUC__) || defined(__clang__)
+	#define SLAKE_UNREACHABLE() __builtin_unreachable()
+#else
+	#define SLAKE_UNREACHABLE std::terminate()
+#endif
 
 #endif

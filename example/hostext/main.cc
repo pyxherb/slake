@@ -154,9 +154,11 @@ void printTraceback(slake::Runtime *rt, slake::ContextObject *context) {
 
 class MyReader : public slake::loader::Reader {
 public:
+	peff::RcObjectPtr<peff::Alloc> selfAllocator;
+
 	FILE *fp;
 
-	MyReader(FILE *fp) : fp(fp) {}
+	MyReader(peff::Alloc *selfAllocator, FILE *fp) : fp(fp) {}
 	virtual ~MyReader() {
 	}
 
@@ -169,6 +171,10 @@ public:
 			return slake::loader::ReadResult::ReadError;
 		}
 		return slake::loader::ReadResult::Succeeded;
+	}
+
+	virtual void dealloc() noexcept override {
+		peff::destroyAndRelease<MyReader>(selfAllocator.get(), this, alignof(MyReader));
 	}
 };
 
@@ -207,6 +213,46 @@ public:
 	}
 };
 
+class LoaderContext : public slake::loader::LoaderContext {
+public:
+	peff::RcObjectPtr<peff::Alloc> allocator;
+
+	LoaderContext(peff::Alloc *allocator) : allocator(allocator) {
+	}
+	~LoaderContext() {
+	}
+
+	virtual slake::InternalExceptionPointer locateModule(slake::Runtime *rt, const peff::DynArray<slake::IdRefEntry> &ref, slake::loader::Reader *&readerOut) {
+		std::string path;
+		for (size_t i = 0; i < ref.size(); ++i) {
+			path += ref.at(i).name;
+			if (i + 1 < ref.size())
+				path += "/";
+		}
+		path += ".slx";
+
+		FILE *fp;
+
+		if (!(fp = fopen(path.c_str(), "rb"))) {
+			puts("Error opening the main module");
+			return slake::BadMagicError::alloc(rt->getFixedAlloc());
+		}
+
+		peff::ScopeGuard closeFpGuard([fp]() noexcept {
+			fclose(fp);
+		});
+
+		std::unique_ptr<MyReader, peff::DeallocableDeleter<MyReader>> reader(peff::allocAndConstruct<MyReader>(allocator.get(), alignof(MyReader), allocator.get(), fp));
+
+		if (!reader)
+			return slake::OutOfMemoryError::alloc();
+
+		readerOut = reader.release();
+
+		return {};
+	}
+};
+
 int main(int argc, char **argv) {
 	slake::util::setupMemoryLeakDetector();
 
@@ -232,9 +278,10 @@ int main(int argc, char **argv) {
 				fclose(fp);
 			});
 
-			MyReader reader(fp);
+			LoaderContext loaderContext(peff::getDefaultAlloc());
+			MyReader reader(&peff::g_nullAlloc, fp);
 
-			slake::loader::loadModule(rt.get(), &reader, mod);
+			slake::loader::loadModule(loaderContext, rt.get(), &reader, mod);
 		}
 
 		{

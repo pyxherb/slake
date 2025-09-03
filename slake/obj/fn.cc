@@ -122,9 +122,18 @@ SLAKE_API FnOverloadingObject::FnOverloadingObject(const FnOverloadingObject &ot
 		succeededOut = false;
 		return;
 	}
-	if (!peff::copyAssign(mappedGenericArgs, other.mappedGenericArgs)) {
-		succeededOut = false;
-		return;
+	for (auto [k, v] : other.mappedGenericArgs) {
+		peff::String name(allocator);
+
+		if (!name.build(k)) {
+			succeededOut = false;
+			return;
+		}
+
+		if (!(mappedGenericArgs.insert(std::move(name), Type(v)))) {
+			succeededOut = false;
+			return;
+		}
 	}
 
 	if (!peff::copyAssign(paramTypes, other.paramTypes)) {
@@ -421,7 +430,7 @@ SLAKE_API InternalExceptionPointer FnObject::getOverloading(peff::Alloc *allocat
 			}
 
 			int result;
-			SLAKE_RETURN_IF_EXCEPT(Runtime::compareType(allocator, argTypes.at(k), j->paramTypes.at(k), result));
+			SLAKE_RETURN_IF_EXCEPT(Runtime::compareTypes(allocator, argTypes.at(k), j->paramTypes.at(k), result));
 
 			if (result != 0)
 				goto mismatched;
@@ -536,7 +545,7 @@ SLAKE_API InternalExceptionPointer slake::isDuplicatedOverloading(
 
 	for (size_t j = 0; j < paramTypes.size(); ++j) {
 		int result;
-		SLAKE_RETURN_IF_EXCEPT(Runtime::compareType(allocator, overloading->paramTypes.at(j), paramTypes.at(j), result));
+		SLAKE_RETURN_IF_EXCEPT(Runtime::compareTypes(allocator, overloading->paramTypes.at(j), paramTypes.at(j), result));
 
 		if (result) {
 			resultOut = false;

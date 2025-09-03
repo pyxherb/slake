@@ -367,7 +367,7 @@ SLAKE_API InternalExceptionPointer Runtime::_doCompareTypes(CompareTypesContext 
 	return {};
 }
 
-SLAKE_API InternalExceptionPointer Runtime::compareType(peff::Alloc *allocator, const Type &lhs, const Type &rhs, int &resultOut) {
+SLAKE_API InternalExceptionPointer Runtime::compareTypes(peff::Alloc *allocator, const Type &lhs, const Type &rhs, int &resultOut) {
 	if (lhs.typeId < rhs.typeId) {
 		resultOut = -1;
 		return {};

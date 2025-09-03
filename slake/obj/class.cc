@@ -144,9 +144,18 @@ SLAKE_API ClassObject::ClassObject(Duplicator *duplicator, const ClassObject &x,
 			succeededOut = false;
 			return;
 		}
-		if (!peff::copyAssign(mappedGenericArgs, x.mappedGenericArgs)) {
-			succeededOut = false;
-			return;
+		for (auto [k, v] : x.mappedGenericArgs) {
+			peff::String name(allocator);
+
+			if (!name.build(k)) {
+				succeededOut = false;
+				return;
+			}
+
+			if (!(mappedGenericArgs.insert(std::move(name), Type(v)))) {
+				succeededOut = false;
+				return;
+			}
 		}
 		if (!peff::copyAssign(genericParams, x.genericParams)) {
 			succeededOut = false;

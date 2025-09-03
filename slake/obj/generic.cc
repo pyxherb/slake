@@ -13,9 +13,7 @@ SLAKE_API void GenericParam::replaceAllocator(peff::Alloc *allocator) noexcept {
 	interfaces.replaceAllocator(allocator);
 }
 
-SLAKE_API int GenericArgListComparator::operator()(const GenericArgList &lhs, const GenericArgList &rhs) const noexcept {
-	exceptPtr.unwrap();
-
+SLAKE_API std::optional<int> GenericArgListComparator::operator()(const GenericArgList &lhs, const GenericArgList &rhs) const noexcept {
 	if (lhs.size() < rhs.size())
 		return -1;
 	if (lhs.size() > rhs.size())
@@ -23,9 +21,8 @@ SLAKE_API int GenericArgListComparator::operator()(const GenericArgList &lhs, co
 
 	int result;
 	for (size_t j = 0; j < lhs.size(); ++j) {
-		if ((exceptPtr = Runtime::compareType(allocator.get(), lhs.at(j), rhs.at(j), result))) {
-			// We use INT_MIN as a placeholder.
-			return INT_MIN;
+		if ((exceptPtr = Runtime::compareTypes(allocator.get(), lhs.at(j), rhs.at(j), result))) {
+			return std::nullopt;
 		}
 
 		if (result)

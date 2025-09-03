@@ -6,12 +6,11 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 	IdRefObject *ref,
 	EntityRef &objectRefOut,
 	Object *scopeObject) {
-	if (!ref)
-		return nullptr;
+	assert(ref);
 
 	if ((!scopeObject))
 		if (!(scopeObject = _rootObject))
-			return nullptr;
+			std::terminate();
 
 	Object *curObject;
 
@@ -69,7 +68,8 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 
 					SLAKE_RETURN_IF_EXCEPT(fnObject->getOverloading(getFixedAlloc(), *ref->paramTypes, overloading));
 
-					objectRefOut = EntityRef::makeObjectRef(overloading);
+					if (!(objectRefOut = EntityRef::makeObjectRef(overloading)))
+						return allocOutOfMemoryErrorIfAllocFailed(ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(this)->getFixedAlloc(), ref));
 
 					break;
 				}

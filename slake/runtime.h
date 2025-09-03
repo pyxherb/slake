@@ -168,12 +168,12 @@ namespace slake {
 		mutable peff::Map<const MemberObject *, GenericLookupEntry> _genericCacheLookupTable;
 
 		using GenericCacheTable =
-			peff::Map<
+			peff::FallibleMap<
 				GenericArgList,	 // Generic arguments.
 				MemberObject *,	 // Cached instantiated value.
 				GenericArgListLtComparator>;
 
-		using GenericCacheDirectory = peff::Map<
+		using GenericCacheDirectory = peff::FallibleMap<
 			MemberObject *,  // Original uninstantiated generic value.
 			GenericCacheTable>;
 
@@ -520,7 +520,7 @@ namespace slake {
 		SLAKE_API size_t alignofType(const Type &type);
 		SLAKE_API Value defaultValueOf(const Type &type);
 
-		static SLAKE_API InternalExceptionPointer compareType(peff::Alloc *allocator, const Type &lhs, const Type &rhs, int &resultOut);
+		static SLAKE_API InternalExceptionPointer compareTypes(peff::Alloc *allocator, const Type &lhs, const Type &rhs, int &resultOut);
 
 		[[nodiscard]] SLAKE_API static bool constructAt(Runtime *dest, peff::Alloc *upstream, RuntimeFlags flags = 0);
 		[[nodiscard]] SLAKE_API static Runtime *alloc(peff::Alloc *selfAllocator, peff::Alloc *upstream, RuntimeFlags flags = 0);

@@ -885,7 +885,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 						analyzeContext.idxCurIns));
 			}
 
-			SLAKE_RETURN_IF_EXCEPT(analyzeContext.runtime->compareType(analyzeContext.resourceAllocator.get(), lhsType, rhsType, cmpResult));
+			SLAKE_RETURN_IF_EXCEPT(analyzeContext.runtime->compareTypes(analyzeContext.resourceAllocator.get(), lhsType, rhsType, cmpResult));
 			if (cmpResult) {
 				return allocOutOfMemoryErrorIfAllocFailed(
 					MalformedProgramError::alloc(

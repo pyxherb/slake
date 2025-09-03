@@ -3,7 +3,6 @@
 
 using namespace slake;
 
-// TODO: You will get errors in this function when you execute it more than once, please fix it!!!
 SLAKE_API InternalExceptionPointer Runtime::initMethodTableForClass(ClassObject *cls, ClassObject *parentClass) {
 	assert(!cls->cachedInstantiatedMethodTable);
 	MethodTable *parentMt = parentClass ? parentClass->cachedInstantiatedMethodTable : nullptr;

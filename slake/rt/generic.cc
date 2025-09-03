@@ -369,8 +369,15 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(MemberObjec
 						if (value->genericParams.size() && value != i.context->mappedObject) {
 							peff::HashMap<peff::String, Type> copiedMappedGenericArgs(getFixedAlloc());
 
-							if (!peff::copyAssign(copiedMappedGenericArgs, i.context->mappedGenericArgs))
-								return OutOfMemoryError::alloc();
+							for (auto [k, v] : i.context->mappedGenericArgs) {
+								peff::String name(getFixedAlloc());
+
+								if (!name.build(k))
+									return OutOfMemoryError::alloc();
+
+								if (!(copiedMappedGenericArgs.insert(std::move(name), Type(v))))
+									return OutOfMemoryError::alloc();
+							}
 
 							peff::RcObjectPtr<GenericInstantiationContext> newInstantiationContext;
 
@@ -434,8 +441,15 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(MemberObjec
 
 						if (!peff::copyAssign(value->genericArgs, *i.context->genericArgs))
 							return OutOfMemoryError::alloc();
-						if (!peff::copyAssign(value->mappedGenericArgs, i.context->mappedGenericArgs))
-							return OutOfMemoryError::alloc();
+						for (auto [k, v] : i.context->mappedGenericArgs) {
+							peff::String name(getFixedAlloc());
+
+							if (!name.build(k))
+								return OutOfMemoryError::alloc();
+
+							if (!(value->mappedGenericArgs.insert(std::move(name), Type(v))))
+								return OutOfMemoryError::alloc();
+						}
 
 						for (auto it = value->members.begin(); it != value->members.end(); ++it) {
 							SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(dispatcher, it.value(), i.context.get()));
@@ -513,8 +527,15 @@ SLAKE_API InternalExceptionPointer Runtime::_instantiateGenericObject(GenericIns
 	if (ol->genericParams.size() && ol->fnObject != instantiationContext->mappedObject) {
 		peff::HashMap<peff::String, Type> copiedMappedGenericArgs(getFixedAlloc());
 
-		if (!peff::copyAssign(copiedMappedGenericArgs, instantiationContext->mappedGenericArgs))
-			return OutOfMemoryError::alloc();
+		for (auto [k, v] : instantiationContext->mappedGenericArgs) {
+			peff::String name(getFixedAlloc());
+
+			if (!name.build(k))
+				return OutOfMemoryError::alloc();
+
+			if (!(copiedMappedGenericArgs.insert(std::move(name), Type(v))))
+				return OutOfMemoryError::alloc();
+		}
 
 		peff::NullAlloc tmpAlloc;
 		GenericInstantiationContext newInstantiationContext = {

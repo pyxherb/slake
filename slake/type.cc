@@ -340,7 +340,7 @@ SLAKE_API InternalExceptionPointer slake::isCompatible(peff::Alloc *allocator, c
 
 			int result;
 
-			SLAKE_RETURN_IF_EXCEPT(Runtime::compareType(allocator, arrayObjectPtr->elementType, type.getArrayExData(), result));
+			SLAKE_RETURN_IF_EXCEPT(Runtime::compareTypes(allocator, arrayObjectPtr->elementType, type.getArrayExData(), result));
 
 			if (result) {
 				resultOut = false;
@@ -387,7 +387,7 @@ SLAKE_API InternalExceptionPointer slake::isCompatible(peff::Alloc *allocator, c
 
 			int result;
 
-			SLAKE_RETURN_IF_EXCEPT(Runtime::compareType(allocator, type, type.getRefExData(), result));
+			SLAKE_RETURN_IF_EXCEPT(Runtime::compareTypes(allocator, type, type.getRefExData(), result));
 
 			if (result) {
 				resultOut = false;

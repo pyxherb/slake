@@ -1170,7 +1170,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 
 				int cmpResult;
 
-				SLAKE_RETURN_IF_EXCEPT(runtime->compareType(analyzeContext.resourceAllocator.get(), lengthType, TypeId::U32, cmpResult));
+				SLAKE_RETURN_IF_EXCEPT(runtime->compareTypes(analyzeContext.resourceAllocator.get(), lengthType, TypeId::U32, cmpResult));
 
 				if (cmpResult) {
 					return allocOutOfMemoryErrorIfAllocFailed(

@@ -691,7 +691,7 @@ SLAKE_API InternalExceptionPointer loader::loadModule(LoaderContext &context, Ru
 
 		SLAKE_RETURN_IF_EXCEPT(loadIdRef(context, runtime, reader, moduleObjectOut.get(), path));
 
-		if (path->paramTypes) {
+		if (path->paramTypes.hasValue()) {
 			std::terminate();
 		}
 

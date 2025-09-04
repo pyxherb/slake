@@ -84,22 +84,6 @@ slake::Value print(slake::Context *context, slake::MajorFrame *curMajorFrame) {
 	return {};
 }
 
-std::unique_ptr<std::istream> fsModuleLocator(slake::Runtime *rt, const peff::DynArray<slake::IdRefEntry> &entries) {
-	std::string path;
-	for (size_t i = 0; i < entries.size(); ++i) {
-		path += entries.at(i).name;
-		if (i + 1 < entries.size())
-			path += "/";
-	}
-	path += ".slx";
-
-	std::unique_ptr<std::ifstream> fs = std::make_unique<std::ifstream>();
-	fs->exceptions(std::ios::failbit | std::ios::badbit | std::ios::eofbit);
-	fs->open(path, std::ios_base::binary);
-
-	return fs;
-}
-
 void printTraceback(slake::Runtime *rt, slake::ContextObject *context) {
 	printf("Traceback:\n");
 	for (auto &i : context->_context.majorFrames) {

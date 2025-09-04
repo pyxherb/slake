@@ -172,7 +172,7 @@ namespace slake {
 				MemberObject *,	 // Cached instantiated value.
 				GenericArgListLtComparator>;
 
-		using GenericCacheDirectory = peff::FallibleMap<
+		using GenericCacheDirectory = peff::Map<
 			MemberObject *,  // Original uninstantiated generic value.
 			GenericCacheTable>;
 
@@ -409,7 +409,7 @@ namespace slake {
 			}
 		};
 
-		SLAKE_API void invalidateGenericCache(MemberObject *i);
+		[[nodiscard]] SLAKE_API InternalExceptionPointer invalidateGenericCache(MemberObject *i);
 
 		/// @brief Instantiate an generic value (e.g. generic class, etc).
 		/// @param v Object to be instantiated.

@@ -43,19 +43,22 @@ struct Runtime::GenericInstantiationDispatcher {
 	}
 };
 
-SLAKE_API void Runtime::invalidateGenericCache(MemberObject *i) {
+SLAKE_API InternalExceptionPointer Runtime::invalidateGenericCache(MemberObject *i) {
 	if (_genericCacheLookupTable.contains(i)) {
 		// Remove the value from generic cache if it is unreachable.
 		auto &lookupEntry = _genericCacheLookupTable.at(i);
 
 		auto &table = _genericCacheDir.at(lookupEntry.originalObject);
-		table.remove(lookupEntry.genericArgs);
+		if (!table.remove(lookupEntry.genericArgs))
+			return table.comparator().getExceptionPtr();
 
 		if (!table.size())
 			_genericCacheDir.remove(lookupEntry.originalObject);
 
 		_genericCacheLookupTable.remove(i);
 	}
+
+	return {};
 }
 
 SLAKE_API InternalExceptionPointer Runtime::setGenericCache(MemberObject *object, const GenericArgList &genericArgs, MemberObject *instantiatedObject) {
@@ -66,24 +69,31 @@ SLAKE_API InternalExceptionPointer Runtime::setGenericCache(MemberObject *object
 	// Store the instance into the cache.
 	auto &cacheTable = _genericCacheDir.at(object);
 
-	if (!cacheTable.contains(genericArgs)) {
+	bool cacheTableQueryResult;
+	{
+		auto maybeResult = cacheTable.contains(genericArgs);
+		if (!maybeResult.hasValue())
+			return cacheTable.comparator().getExceptionPtr();
+		cacheTableQueryResult = maybeResult.value();
+	}
+
+	if (!cacheTableQueryResult) {
 		GenericArgList copiedGenericArgs(getFixedAlloc());
 		if (!copiedGenericArgs.resizeUninitialized(genericArgs.size())) {
 			return OutOfMemoryError::alloc();
 		}
 		memcpy(copiedGenericArgs.data(), genericArgs.data(), copiedGenericArgs.size() * sizeof(Type));
 
-		MemberObject *copiedInstantiatedObject = instantiatedObject;
-
-		cacheTable.insert(std::move(copiedGenericArgs), std::move(copiedInstantiatedObject));
+		cacheTable.insert(std::move(copiedGenericArgs), +instantiatedObject);
 	} else {
-		if (cacheTable.comparator().innerComparator.exceptPtr) {
-			return std::move(cacheTable.comparator().innerComparator.exceptPtr);
+		MemberObject **slot;
+		{
+			auto maybeSlot = cacheTable.at(genericArgs);
+			if (!maybeSlot.hasValue())
+				return std::move(cacheTable.comparator().getExceptionPtr());
+			slot = &maybeSlot.value();
 		}
-
-		MemberObject *copiedInstantiatedObject = instantiatedObject;
-
-		cacheTable.at(genericArgs) = std::move(copiedInstantiatedObject);
+		*slot = +instantiatedObject;
 	}
 
 	{
@@ -501,7 +511,7 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(MemberObjec
 							}
 						}
 
-						if (value->paramTypes) {
+						if (value->paramTypes.hasValue()) {
 							for (auto &j : *value->paramTypes) {
 								SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(dispatcher, j, i.context.get()));
 							}

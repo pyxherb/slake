@@ -33,7 +33,7 @@ SLAKE_API IdRefObject::IdRefObject(const IdRefObject &x, peff::Alloc *allocator,
 		return;
 	}
 
-	if (x.paramTypes.has_value()) {
+	if (x.paramTypes.hasValue()) {
 		peff::DynArray<Type> copiedParamTypes(allocator);
 
 		if (!copiedParamTypes.resize(x.paramTypes->size())) {
@@ -116,7 +116,7 @@ SLAKE_API void IdRefObject::replaceAllocator(peff::Alloc *allocator) noexcept {
 		i.replaceAllocator(allocator);
 	}
 
-	if (paramTypes.has_value())
+	if (paramTypes.hasValue())
 		paramTypes->replaceAllocator(allocator);
 }
 

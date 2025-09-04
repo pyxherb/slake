@@ -380,7 +380,7 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 						}
 					}
 
-					if (value->paramTypes) {
+					if (value->paramTypes.hasValue()) {
 						for (auto &j : *value->paramTypes) {
 							_gcWalk(context, j);
 						}

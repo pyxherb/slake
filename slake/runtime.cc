@@ -377,8 +377,10 @@ SLAKE_API InternalExceptionPointer Runtime::compareTypes(peff::Alloc *allocator,
 		return {};
 	}
 
-	if (isFundamentalType(lhs))
-		return 0;
+	if (isFundamentalType(lhs)) {
+		resultOut = 0;
+		return {};
+	}
 
 	char buffer[4096];
 

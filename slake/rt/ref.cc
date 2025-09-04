@@ -51,14 +51,10 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 			}
 		}
 
-		if (ref->paramTypes.has_value() || ref->hasVarArgs) {
+		if (ref->paramTypes.hasValue() || ref->hasVarArgs) {
 			switch (scopeObject->getObjectKind()) {
 				case ObjectKind::Fn: {
 					FnObject *fnObject = ((FnObject *)scopeObject);
-
-					if (!ref->paramTypes) {
-						std::terminate();
-					}
 
 					for (auto &j : *ref->paramTypes) {
 						SLAKE_RETURN_IF_EXCEPT(j.loadDeferredType(this));

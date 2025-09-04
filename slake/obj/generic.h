@@ -41,7 +41,12 @@ namespace slake {
 		mutable InternalExceptionPointer exceptPtr;
 
 		SLAKE_FORCEINLINE GenericArgListComparator(peff::Alloc *allocator) : allocator(allocator) {}
-		SLAKE_API std::optional<int> operator()(const GenericArgList &lhs, const GenericArgList &rhs) const noexcept;
+		SLAKE_API peff::Option<int> operator()(const GenericArgList &lhs, const GenericArgList &rhs) const noexcept;
+
+		SLAKE_FORCEINLINE InternalExceptionPointer getExceptionPtr() {
+			assert(exceptPtr);
+			return std::move(exceptPtr);
+		}
 	};
 
 	/// @brief Less than ("<") comparator for containers.
@@ -50,11 +55,15 @@ namespace slake {
 		mutable InternalExceptionPointer exceptPtr;
 
 		SLAKE_FORCEINLINE GenericArgListLtComparator(peff::Alloc *allocator) : innerComparator(allocator) {}
-		SLAKE_FORCEINLINE std::optional<bool> operator()(const GenericArgList& lhs, const GenericArgList& rhs) const noexcept {
+		SLAKE_FORCEINLINE peff::Option<bool> operator()(const GenericArgList& lhs, const GenericArgList& rhs) const noexcept {
 			auto result = innerComparator(lhs, rhs);
-			if (result.has_value())
+			if (result.hasValue())
 				return result.value() < 0;
 			return {};
+		}
+
+		SLAKE_FORCEINLINE InternalExceptionPointer getExceptionPtr() {
+			return innerComparator.getExceptionPtr();
 		}
 	};
 
@@ -64,11 +73,15 @@ namespace slake {
 		mutable InternalExceptionPointer exceptPtr;
 
 		SLAKE_FORCEINLINE GenericArgListEqComparator(peff::Alloc *allocator) : innerComparator(allocator) {}
-		SLAKE_API std::optional<bool> operator()(const GenericArgList& lhs, const GenericArgList& rhs) const noexcept {
+		SLAKE_API peff::Option<bool> operator()(const GenericArgList& lhs, const GenericArgList& rhs) const noexcept {
 			auto result = innerComparator(lhs, rhs);
-			if (result.has_value())
+			if (result.hasValue())
 				return result.value() == 0;
 			return {};
+		}
+
+		SLAKE_FORCEINLINE InternalExceptionPointer getExceptionPtr() {
+			return innerComparator.getExceptionPtr();
 		}
 	};
 

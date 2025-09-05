@@ -36,9 +36,7 @@ namespace slake {
 	};
 
 	enum class TypeId : uint8_t {
-		Invalid = 0,
-
-		Void,  // Void
+		Void = 0,  // Void
 
 		I8,		// Signed 8-bit integer
 		I16,	// Signed 16-bit integer
@@ -75,186 +73,6 @@ namespace slake {
 	SLAKE_API bool isValueTypeCompatibleTypeId(TypeId typeId);
 	SLAKE_API ValueType typeIdToValueType(TypeId typeId);
 
-	class Runtime;
-	class Object;
-	class IdRefObject;
-	class StringObject;
-	class ModuleObject;
-	class ArrayObject;
-	class InstanceObject;
-	class TypeDefObject;
-	struct MajorFrame;
-
-	enum class ObjectKind : uint8_t {
-		Invalid = 0,  // Invalid
-
-		String,	 // String
-
-		TypeDef,			   // Type definition
-		FnTypeDef,			   // Function type definition
-		ParamTypeListTypeDef,  // Parameter type list type definition
-		TupleTypeDef,		   // Parameter type list type definition
-		SIMDTypeDef,		   // Parameter type list type definition
-
-		Fn,				// Function
-		FnOverloading,	// Function overloading
-		Module,			// Module
-		Array,			// Array
-		Ref,			// Reference
-
-		Class,		// Class
-		Interface,	// Interface
-		Struct,		// Structure
-		Instance,	// Object instance
-
-		Any,  // Any
-
-		Alias,	// Alias
-
-		IdRef,		 // Reference
-		GenericArg,	 // Generic argument
-		Context,	 // Context
-		Resumable,	 // Resumable
-		Coroutine,	 // Coroutine
-	};
-
-	struct GenericArgTypeExData {
-		StringObject *nameObject;
-		// For type comparison.
-		Object *ownerObject;
-	};
-
-	union TypeExData {
-		Object *object;
-		TypeDefObject *typeDef;
-		GenericArgTypeExData genericArg;
-	};
-
-	class Duplicator;
-
-	struct Type;
-
-	SLAKE_FORCEINLINE bool verifyType(const Type &type);
-
-	SLAKE_FORCEINLINE bool verifyObjectKind(const Object *object);
-	SLAKE_FORCEINLINE bool verifyObjectKind(const Object *object, ObjectKind objectKind);
-
-	struct Type final {
-		TypeExData exData;
-
-		TypeId typeId;	// Type ID
-
-		SLAKE_FORCEINLINE Type() = default;
-		SLAKE_FORCEINLINE Type(const Type &x) = default;
-		SLAKE_FORCEINLINE Type(Type &&x) = default;
-		SLAKE_FORCEINLINE Type(TypeId type) noexcept : typeId(type), exData({}) {
-			assert(verifyType(*this));
-		}
-		SLAKE_FORCEINLINE Type(TypeId type, Object *destObject) noexcept : typeId(type) {
-			assert(destObject && verifyObjectKind((Object *)destObject));
-			exData.object = destObject;
-			assert(verifyType(*this));
-		}
-		SLAKE_FORCEINLINE Type(StringObject *nameObject, Object *ownerObject) noexcept : typeId(TypeId::GenericArg) {
-			assert(verifyObjectKind((Object *)nameObject, ObjectKind::String));
-			if (ownerObject)
-				assert(verifyObjectKind(ownerObject));
-			exData.genericArg.nameObject = nameObject;
-			exData.genericArg.ownerObject = ownerObject;
-		}
-
-		SLAKE_API Type duplicate(bool &succeededOut) const;
-
-		SLAKE_FORCEINLINE Object *getCustomTypeExData() const {
-			assert((typeId == TypeId::Instance) ||
-				   (typeId == TypeId::Array) ||
-				   (typeId == TypeId::Ref) ||
-				   (typeId == TypeId::SIMD));
-			assert(exData.object && verifyObjectKind(exData.object));
-			return exData.object;
-		}
-
-		SLAKE_FORCEINLINE StringObject *getGenericArgNameObject() const {
-			assert(typeId == TypeId::GenericArg);
-			assert(exData.genericArg.nameObject && verifyObjectKind((Object *)exData.genericArg.nameObject, ObjectKind::String));
-			assert(exData.genericArg.ownerObject && verifyObjectKind(exData.genericArg.ownerObject));
-
-			return exData.genericArg.nameObject;
-		}
-		SLAKE_FORCEINLINE Object *getGenericArgOwnerObject() const {
-			assert(typeId == TypeId::GenericArg);
-			assert(exData.genericArg.nameObject && verifyObjectKind((Object *)exData.genericArg.nameObject, ObjectKind::String));
-			assert(exData.genericArg.ownerObject && verifyObjectKind(exData.genericArg.ownerObject));
-			return exData.genericArg.ownerObject;
-		}
-
-		SLAKE_API Type &getArrayExData() const;
-		SLAKE_API Type &getRefExData() const;
-		SLAKE_API Type &getUnpackingExData() const;
-
-		SLAKE_API bool isLoadingDeferred() const noexcept;
-		[[nodiscard]] SLAKE_API InternalExceptionPointer loadDeferredType(Runtime *rt);
-
-		SLAKE_FORCEINLINE explicit operator bool() const noexcept {
-			return typeId != TypeId::Void;
-		}
-
-		SLAKE_FORCEINLINE bool operator==(TypeId typeId) noexcept {
-			return this->typeId == typeId;
-		}
-
-		SLAKE_FORCEINLINE bool operator!=(TypeId typeId) noexcept {
-			return this->typeId != typeId;
-		}
-
-		Type &operator=(const Type &rhs) noexcept = default;
-		Type &operator=(Type &&rhs) noexcept = default;
-
-		SLAKE_FORCEINLINE Object *resolveCustomType() const {
-			if (typeId == TypeId::Instance)
-				return (Object *)getCustomTypeExData();
-			return nullptr;
-		}
-	};
-
-	SLAKE_FORCEINLINE bool verifyType(const Type &type) {
-		if ((type.typeId < TypeId::Void) || (type.typeId > TypeId::Unknown))
-			return false;
-
-		switch (type.typeId) {
-			case TypeId::Invalid:
-				return false;
-			case TypeId::Instance:
-			case TypeId::Array:
-			case TypeId::Ref:
-				type.getCustomTypeExData();
-				break;
-			case TypeId::GenericArg:
-				type.getGenericArgNameObject();
-				type.getGenericArgOwnerObject();
-				break;
-			case TypeId::Tuple:
-				/* TODO: Implement it. */
-				break;
-			case TypeId::SIMD:
-				/* TODO: Implement it. */
-				break;
-			case TypeId::Fn:
-				/* TODO: Implement it. */
-				break;
-			case TypeId::ParamTypeList:
-				/* TODO: Implement it. */
-				break;
-			case TypeId::Unpacking:
-				/* TODO: Implement it. */
-				break;
-			default:
-				break;
-		}
-
-		return true;
-	}
-
 	SLAKE_FORCEINLINE constexpr bool isFundamentalType(TypeId typeId) {
 		switch (typeId) {
 			case TypeId::Void:
@@ -282,7 +100,72 @@ namespace slake {
 		return false;
 	}
 
-	SLAKE_FORCEINLINE bool isFundamentalType(Type type) {
+	class Runtime;
+	class Object;
+	class IdRefObject;
+	class StringObject;
+	class ModuleObject;
+	class ArrayObject;
+	class InstanceObject;
+	struct MajorFrame;
+
+	SLAKE_API bool isTypeDefObject(Object *object);
+
+	struct TypeRef {
+		TypeId typeId;
+		Object *typeDef;
+
+		TypeRef() = default;
+		TypeRef(const TypeRef &) = default;
+		SLAKE_FORCEINLINE TypeRef(TypeId typeId) : typeId(typeId), typeDef(nullptr) {
+			assert(isFundamentalType(typeId));
+		}
+		SLAKE_FORCEINLINE TypeRef(TypeId typeId, Object *typeDef) : typeId(typeId), typeDef(typeDef) {
+			assert(!isFundamentalType(typeId));
+			assert(isTypeDefObject(typeDef));
+		}
+		~TypeRef() = default;
+
+		TypeRef &operator=(const TypeRef &) = default;
+
+		SLAKE_FORCEINLINE int comparesTo(const TypeRef &rhs) const noexcept {
+			if (typeId < rhs.typeId)
+				return -1;
+			if(typeId > rhs.typeId)
+				return 1;
+			if (isFundamentalType(typeId))
+				return 0;
+			if (typeDef < rhs.typeDef)
+				return -1;
+			if(typeDef > rhs.typeDef)
+				return 1;
+			return 0;
+		}
+
+		SLAKE_FORCEINLINE bool operator==(const TypeRef &rhs) const {
+			return comparesTo(rhs) == 0;
+		}
+
+		SLAKE_FORCEINLINE bool operator!=(const TypeRef &rhs) const {
+			return comparesTo(rhs) != 0;
+		}
+
+		SLAKE_FORCEINLINE bool operator<(const TypeRef &rhs) const {
+			return comparesTo(rhs) < 0;
+		}
+
+		SLAKE_FORCEINLINE bool operator>(const TypeRef &rhs) const {
+			return comparesTo(rhs) > 0;
+		}
+
+		SLAKE_API TypeRef TypeRef::duplicate(bool &succeededOut) const;
+	};
+
+	static_assert(std::is_trivially_copyable_v<TypeRef>, "TypeRef must be trivially copyable");
+	static_assert(std::is_trivially_copy_assignable_v<TypeRef>, "TypeRef must be trivially copy-assignable");
+	static_assert(std::is_trivially_destructible_v<TypeRef>, "TypeRef must be trivially destructible");
+
+	SLAKE_FORCEINLINE bool isFundamentalType(TypeRef type) {
 		return isFundamentalType(type.typeId);
 	}
 
@@ -290,10 +173,23 @@ namespace slake {
 	class InterfaceObject;
 
 	class Runtime;
+
+	struct TypeRefComparator {
+		SLAKE_API int operator()(const TypeRef &lhs, const TypeRef &rhs) const noexcept;
+	};
+
+	struct TypeRefLtComparator {
+		TypeRefComparator innerComparator;
+
+		SLAKE_FORCEINLINE bool operator()(const TypeRef& lhs, const TypeRef& rhs) const noexcept {
+			return innerComparator(lhs, rhs) < 0;
+		}
+	};
 }
 
+/*
 namespace std {
-	SLAKE_API string to_string(const slake::Type &type, const slake::Runtime *rt);
-}
+	SLAKE_API string to_string(const slake::TypeRef &type, const slake::Runtime *rt);
+}*/
 
 #endif

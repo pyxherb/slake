@@ -157,79 +157,27 @@ SLAKE_API bool EntityRef::operator<(const EntityRef &rhs) const {
 	}
 }
 
-SLAKE_API Type Type::duplicate(bool &succeededOut) const {
-	Type newType(*this);
+SLAKE_API TypeRef TypeRef::duplicate(bool &succeededOut) const {
+	TypeRef newType(*this);
 
 	switch (typeId) {
 		case TypeId::Array:
 		case TypeId::Ref:
-			if (!(newType.exData.typeDef = (TypeDefObject *)newType.exData.typeDef->duplicate(nullptr))) {
-				succeededOut = false;
-				return {};
-			}
-			break;
 		case TypeId::GenericArg:
-			if (!(newType.exData.genericArg.nameObject = (StringObject *)newType.exData.genericArg.nameObject->duplicate(nullptr))) {
-				succeededOut = false;
-				return {};
-			}
-			if (!(newType.exData.genericArg.ownerObject = newType.exData.genericArg.ownerObject->duplicate(nullptr))) {
-				succeededOut = false;
+			newType.typeDef = typeDef->duplicate(nullptr);
+			if (!succeededOut) {
 				return {};
 			}
 			break;
 		default:;
 	}
 
-	assert(verifyType(newType));
-
 	succeededOut = true;
 
 	return newType;
 }
 
-SLAKE_API Type &Type::getArrayExData() const {
-	assert(typeId == TypeId::Array);
-	assert(exData.typeDef && verifyObjectKind(exData.typeDef, ObjectKind::TypeDef));
-	return exData.typeDef->type;
-}
-SLAKE_API Type &Type::getRefExData() const {
-	assert(typeId == TypeId::Ref);
-	assert(exData.typeDef && verifyObjectKind(exData.typeDef, ObjectKind::TypeDef));
-	return exData.typeDef->type;
-}
-SLAKE_API Type &Type::getUnpackingExData() const {
-	assert(typeId == TypeId::Unpacking);
-	assert(exData.typeDef && verifyObjectKind(exData.typeDef, ObjectKind::ParamTypeListTypeDef));
-	return exData.typeDef->type;
-}
-
-SLAKE_API bool Type::isLoadingDeferred() const noexcept {
-	switch (typeId) {
-		case TypeId::Instance:
-			return getCustomTypeExData()->getObjectKind() == ObjectKind::IdRef;
-		default:
-			return false;
-	}
-}
-
-SLAKE_API InternalExceptionPointer Type::loadDeferredType(Runtime *rt) {
-	if (!isLoadingDeferred())
-		return {};
-
-	auto ref = (IdRefObject *)getCustomTypeExData();
-	EntityRef entityRef;
-	SLAKE_RETURN_IF_EXCEPT(rt->resolveIdRef(ref, entityRef));
-
-	if (entityRef.kind != ObjectRefKind::ObjectRef)
-		return allocOutOfMemoryErrorIfAllocFailed(InternalExceptionPointer(ReferencedMemberNotFoundError::alloc(rt->getFixedAlloc(), ref)));
-
-	exData.object = entityRef.asObject.instanceObject;
-
-	return {};
-}
-
-SLAKE_API InternalExceptionPointer slake::isCompatible(peff::Alloc *allocator, const Type &type, const Value &value, bool &resultOut) {
+SLAKE_API InternalExceptionPointer slake::isCompatible(peff::Alloc *allocator, const TypeRef &type, const Value &value, bool &resultOut) {
 	if (type.typeId == TypeId::Any) {
 		resultOut = true;
 		return {};
@@ -284,15 +232,9 @@ SLAKE_API InternalExceptionPointer slake::isCompatible(peff::Alloc *allocator, c
 				return {};
 			}
 
-			if (auto e = const_cast<Type &>(type).loadDeferredType(objectPtr->associatedRuntime);
-				e) {
-				e.reset();
-				resultOut = false;
-				return {};
-			}
-			switch (type.getCustomTypeExData()->getObjectKind()) {
+			switch (((CustomTypeDefObject*)type.typeDef)->getObjectKind()) {
 				case ObjectKind::Class: {
-					ClassObject *thisClass = (ClassObject *)type.getCustomTypeExData();
+					ClassObject *thisClass = (ClassObject *)((CustomTypeDefObject *)type.typeDef);
 
 					ClassObject *valueClass = ((InstanceObject *)objectPtr)->_class;
 
@@ -303,7 +245,7 @@ SLAKE_API InternalExceptionPointer slake::isCompatible(peff::Alloc *allocator, c
 					break;
 				}
 				case ObjectKind::Interface: {
-					InterfaceObject *thisInterface = (InterfaceObject *)type.getCustomTypeExData();
+					InterfaceObject *thisInterface = (InterfaceObject *)((CustomTypeDefObject *)type.typeDef);
 
 					ClassObject *valueClass = ((InstanceObject *)objectPtr)->_class;
 
@@ -338,11 +280,7 @@ SLAKE_API InternalExceptionPointer slake::isCompatible(peff::Alloc *allocator, c
 
 			auto arrayObjectPtr = ((ArrayObject *)objectPtr);
 
-			int result;
-
-			SLAKE_RETURN_IF_EXCEPT(Runtime::compareTypes(allocator, arrayObjectPtr->elementType, type.getArrayExData(), result));
-
-			if (result) {
+			if (arrayObjectPtr->elementType != ((ArrayTypeDefObject *)type.typeDef)->elementType->typeRef) {
 				resultOut = false;
 				return {};
 			}
@@ -376,7 +314,7 @@ SLAKE_API InternalExceptionPointer slake::isCompatible(peff::Alloc *allocator, c
 					resultOut = false;
 					return {};
 			}
-			Type type;
+			TypeRef type;
 
 			InternalExceptionPointer e = rt->typeofVar(entityRef, type);
 			if (e) {
@@ -385,11 +323,7 @@ SLAKE_API InternalExceptionPointer slake::isCompatible(peff::Alloc *allocator, c
 				return {};
 			}
 
-			int result;
-
-			SLAKE_RETURN_IF_EXCEPT(Runtime::compareTypes(allocator, type, type.getRefExData(), result));
-
-			if (result) {
+			if (type != ((RefTypeDefObject *)type.typeDef)->referencedType->typeRef) {
 				resultOut = false;
 				return {};
 			}
@@ -404,7 +338,21 @@ SLAKE_API InternalExceptionPointer slake::isCompatible(peff::Alloc *allocator, c
 	return {};
 }
 
-SLAKE_API std::string std::to_string(const slake::Type &type, const slake::Runtime *rt) {
+int TypeRefComparator::operator()(const TypeRef &lhs, const TypeRef &rhs) const noexcept {
+	if (lhs.typeId < rhs.typeId)
+		return -1;
+	if (lhs.typeId > rhs.typeId)
+		return 1;
+
+	if (lhs.typeDef < rhs.typeDef)
+		return -1;
+	if (lhs.typeDef > rhs.typeDef)
+		return 1;
+
+	return 0;
+}
+
+/* SLAKE_API std::string std::to_string(const slake::TypeRef &type, const slake::Runtime *rt) {
 	switch (type.typeId) {
 		case TypeId::I8:
 			return "i8";
@@ -499,4 +447,4 @@ SLAKE_API std::string std::to_string(const slake::Type &type, const slake::Runti
 		default:
 			return "<Unknown Type>";
 	}
-}
+}*/

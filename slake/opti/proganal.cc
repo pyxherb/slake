@@ -23,7 +23,7 @@ InternalExceptionPointer slake::opti::wrapIntoRefType(
 	Runtime *runtime,
 	Type type,
 	HostRefHolder &hostRefHolder,
-	Type &typeOut) {
+	TypeRef &typeOut) {
 	HostObjectRef<TypeDefObject> typeDef = TypeDefObject::alloc(runtime);
 
 	typeDef->type = type;
@@ -39,7 +39,7 @@ InternalExceptionPointer slake::opti::wrapIntoArrayType(
 	Runtime *runtime,
 	Type type,
 	HostRefHolder &hostRefHolder,
-	Type &typeOut) {
+	TypeRef &typeOut) {
 	HostObjectRef<TypeDefObject> typeDef = TypeDefObject::alloc(
 		runtime);
 
@@ -55,7 +55,7 @@ InternalExceptionPointer slake::opti::wrapIntoArrayType(
 InternalExceptionPointer slake::opti::evalObjectType(
 	ProgramAnalyzeContext &analyzeContext,
 	const EntityRef &entityRef,
-	Type &typeOut) {
+	TypeRef &typeOut) {
 	switch (entityRef.kind) {
 		case ObjectRefKind::FieldRef:
 		case ObjectRefKind::ArrayElementRef:
@@ -129,7 +129,7 @@ InternalExceptionPointer slake::opti::evalObjectType(
 InternalExceptionPointer slake::opti::evalValueType(
 	ProgramAnalyzeContext &analyzeContext,
 	const Value &value,
-	Type &typeOut) {
+	TypeRef &typeOut) {
 	switch (value.valueType) {
 		case ValueType::I8:
 			typeOut = TypeId::I8;

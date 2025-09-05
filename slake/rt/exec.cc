@@ -148,15 +148,28 @@ SLAKE_API InternalExceptionPointer Runtime::_fillArgs(
 	}
 
 	if (fn->overloadingFlags & OL_VARG) {
-		auto varArgTypeDefObject = TypeDefObject::alloc(this);
+		auto elementHeapTypeObject = HeapTypeObject::alloc(this);
 
-		varArgTypeDefObject->type = Type(TypeId::Any);
+		if (!elementHeapTypeObject)
+			return OutOfMemoryError::alloc();
 
-		if (!holder.addObject(varArgTypeDefObject.get()))
+		elementHeapTypeObject->typeRef = TypeRef(TypeId::Any);
+
+		if (!holder.addObject(elementHeapTypeObject.get()))
+			return OutOfMemoryError::alloc();
+
+		auto arrayTypeDefObject = ArrayTypeDefObject::alloc(this);
+
+		if (!arrayTypeDefObject)
+			return OutOfMemoryError::alloc();
+
+		arrayTypeDefObject->elementType = elementHeapTypeObject.get();
+
+		if (!holder.addObject(arrayTypeDefObject.get()))
 			return OutOfMemoryError::alloc();
 
 		size_t szVarArgArray = nArgs - fn->paramTypes.size();
-		auto varArgArrayObject = newArrayInstance(this, Type(TypeId::Any), szVarArgArray);
+		auto varArgArrayObject = newArrayInstance(this, TypeRef(TypeId::Any), szVarArgArray);
 		if (!holder.addObject(varArgArrayObject.get()))
 			return OutOfMemoryError::alloc();
 
@@ -164,7 +177,7 @@ SLAKE_API InternalExceptionPointer Runtime::_fillArgs(
 			((Value *)varArgArrayObject->data)[i] = args[fn->paramTypes.size() + i];
 		}
 
-		if (!newMajorFrame->resumable->argStack.pushBack({ EntityRef::makeObjectRef(varArgArrayObject.get()), Type(TypeId::Array, varArgTypeDefObject.get()) }))
+		if (!newMajorFrame->resumable->argStack.pushBack({ EntityRef::makeObjectRef(varArgArrayObject.get()), TypeRef(TypeId::Array, arrayTypeDefObject.get()) }))
 			return OutOfMemoryError::alloc();
 	}
 
@@ -299,7 +312,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_createNewMajorFrame(
 	return {};
 }
 
-SLAKE_API InternalExceptionPointer slake::Runtime::_addLocalVar(Context *context, MajorFrame *frame, Type type, EntityRef &objectRefOut) noexcept {
+SLAKE_API InternalExceptionPointer slake::Runtime::_addLocalVar(Context *context, MajorFrame *frame, TypeRef type, EntityRef &objectRefOut) noexcept {
 	size_t stackOffset;
 
 	size_t size = sizeofType(type), align = alignofType(type);
@@ -340,10 +353,10 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_addLocalVar(Context *context
 		case TypeId::GenericArg:
 		case TypeId::Array:
 		case TypeId::Ref: {
-			TypeExData *typeInfo = (TypeExData *)context->stackAlloc(sizeof(TypeExData));
+			Object *typeInfo = (Object *)context->stackAlloc(sizeof(void *));
 			if (!typeInfo)
 				return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
-			memcpy(typeInfo, &type.exData, sizeof(TypeExData));
+			memcpy(typeInfo, &type.typeDef, sizeof(void *));
 			break;
 		}
 	}
@@ -380,8 +393,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount(this, ins, false, 1));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType(this, ins.operands[0], ValueType::TypeName));
 
-			Type type = ins.operands[0].getTypeName();
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, type.loadDeferredType(this));
+			TypeRef type = ins.operands[0].getTypeName();
 
 			EntityRef entityRef;
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _addLocalVar(&context->_context, curMajorFrame, type, entityRef));
@@ -1848,12 +1860,11 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount(this, ins, true, 1));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType(this, ins.operands[0], ValueType::TypeName));
 
-			Type type = ins.operands[0].getTypeName();
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, type.loadDeferredType(this));
+			TypeRef type = ins.operands[0].getTypeName();
 
 			switch (type.typeId) {
 				case TypeId::Instance: {
-					ClassObject *cls = (ClassObject *)type.getCustomTypeExData();
+					ClassObject *cls = (ClassObject *)((CustomTypeDefObject *)type.typeDef)->typeObject;
 					HostObjectRef<InstanceObject> instance = newClassInstance(cls, 0);
 					if (!instance)
 						// TODO: Return more detail exceptions.
@@ -1872,9 +1883,8 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType(this, ins.operands[0], ValueType::TypeName));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType(this, ins.operands[1], ValueType::U32));
 
-			Type type = ins.operands[0].getTypeName();
+			TypeRef type = ins.operands[0].getTypeName();
 			uint32_t size = ins.operands[1].getU32();
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, type.loadDeferredType(this));
 
 			auto instance = newArrayInstance(this, type, size);
 			if (!instance)
@@ -1923,8 +1933,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 
 			ExceptionHandler xh;
 
-			Type type = ins.operands[0].getTypeName();
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, type.loadDeferredType(this));
+			TypeRef type = ins.operands[0].getTypeName();
 
 			xh.type = ins.operands[0].getTypeName();
 			xh.off = ins.operands[1].getU32();

@@ -16,53 +16,17 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, MethodTable *methodTable
 SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, GenericParamList &genericParamList) {
 	for (auto &i : genericParamList) {
 		// i.baseType.loadDeferredType(this);
-		if (auto p = i.baseType.resolveCustomType(); p)
-			GCWalkContext::pushObject(context, p);
+		_gcWalk(context, i.baseType);
 
 		for (auto &j : i.interfaces) {
 			// j.loadDeferredType(this);
-			if (auto p = j.resolveCustomType(); p)
-				GCWalkContext::pushObject(context, p);
+			_gcWalk(context, i.baseType);
 		}
 	}
 }
 
-SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, const Type &type) {
-	switch (type.typeId) {
-		case TypeId::I8:
-		case TypeId::I16:
-		case TypeId::I32:
-		case TypeId::I64:
-		case TypeId::U8:
-		case TypeId::U16:
-		case TypeId::U32:
-		case TypeId::U64:
-		case TypeId::F32:
-		case TypeId::F64:
-		case TypeId::Bool:
-		case TypeId::String:
-			break;
-		case TypeId::Instance:
-			GCWalkContext::pushObject(context, type.getCustomTypeExData());
-			break;
-		case TypeId::GenericArg:
-			GCWalkContext::pushObject(context, type.exData.genericArg.ownerObject);
-			GCWalkContext::pushObject(context, type.exData.genericArg.nameObject);
-			break;
-		case TypeId::Array:
-			if (type.exData.typeDef)
-				GCWalkContext::pushObject(context, type.exData.typeDef);
-			break;
-		case TypeId::Ref:
-			if (type.exData.typeDef)
-				GCWalkContext::pushObject(context, type.exData.typeDef);
-			break;
-		case TypeId::Void:
-		case TypeId::Any:
-			break;
-		default:
-			throw std::logic_error("Unhandled object type");
-	}
+SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, const TypeRef &type) {
+	GCWalkContext::pushObject(context, (CustomTypeDefObject *)type.typeDef);
 }
 
 SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, const Value &i) {
@@ -173,8 +137,21 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 			switch (v->getObjectKind()) {
 				case ObjectKind::String:
 					break;
-				case ObjectKind::TypeDef:
-					_gcWalk(context, ((TypeDefObject *)v)->type);
+				case ObjectKind::HeapType:
+					_gcWalk(context, ((HeapTypeObject *)v)->typeRef);
+					break;
+				case ObjectKind::CustomTypeDef:
+					GCWalkContext::pushObject(context, ((CustomTypeDefObject *)v)->typeObject);
+					break;
+				case ObjectKind::GenericArgTypeDef:
+					GCWalkContext::pushObject(context, ((GenericArgTypeDefObject *)v)->ownerObject);
+					GCWalkContext::pushObject(context, ((GenericArgTypeDefObject *)v)->nameObject);
+					break;
+				case ObjectKind::ArrayTypeDef:
+					GCWalkContext::pushObject(context, ((ArrayTypeDefObject *)v)->elementType);
+					break;
+				case ObjectKind::RefTypeDef:
+					GCWalkContext::pushObject(context, ((RefTypeDefObject *)v)->referencedType);
 					break;
 				case ObjectKind::FnTypeDef: {
 					auto typeDef = ((FnTypeDefObject *)v);
@@ -295,7 +272,7 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 
 					for (auto &i : value->implTypes) {
 						// i.loadDeferredType(this);
-						GCWalkContext::pushObject(context, i.getCustomTypeExData());
+						GCWalkContext::pushObject(context, i.typeDef);
 					}
 					for (auto &i : value->genericParams) {
 						// i.baseType.loadDeferredType(this);
@@ -535,7 +512,7 @@ SLAKE_API void GCWalkContext::pushUnwalked(Object *walkableObject) {
 	unwalkedList = walkableObject;
 }
 
-SLAKE_API Object* GCWalkContext::getWalkedList() {
+SLAKE_API Object *GCWalkContext::getWalkedList() {
 	return walkedList;
 }
 

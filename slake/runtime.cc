@@ -68,6 +68,8 @@ SLAKE_API size_t GenerationalPoolAlloc::incRef(size_t globalRc) noexcept {
 		puts("Error: error adding reference point!");
 	}
 #endif
+	if (globalRc == 3116)
+		puts("");
 	return refCount;
 }
 
@@ -139,7 +141,7 @@ SLAKE_API peff::Alloc *Runtime::getCurGenAlloc() {
 	return &youngAlloc;
 }
 
-SLAKE_API size_t Runtime::sizeofType(const Type &type) {
+SLAKE_API size_t Runtime::sizeofType(const TypeRef &type) {
 	switch (type.typeId) {
 		case TypeId::I8:
 			return sizeof(int8_t);
@@ -176,7 +178,7 @@ SLAKE_API size_t Runtime::sizeofType(const Type &type) {
 	std::terminate();
 }
 
-SLAKE_API size_t Runtime::alignofType(const Type &type) {
+SLAKE_API size_t Runtime::alignofType(const TypeRef &type) {
 	switch (type.typeId) {
 		case TypeId::I8:
 			return sizeof(int8_t);
@@ -210,7 +212,7 @@ SLAKE_API size_t Runtime::alignofType(const Type &type) {
 	std::terminate();
 }
 
-SLAKE_API Value Runtime::defaultValueOf(const Type &type) {
+SLAKE_API Value Runtime::defaultValueOf(const TypeRef &type) {
 	switch (type.typeId) {
 		case TypeId::I8:
 			return Value((int8_t)0);
@@ -244,173 +246,6 @@ SLAKE_API Value Runtime::defaultValueOf(const Type &type) {
 	std::terminate();
 }
 
-SLAKE_API Runtime::CompareTypesFrameExData::CompareTypesFrameExData() {
-}
-
-SLAKE_API Runtime::CompareTypesFrameExData ::~CompareTypesFrameExData() {
-}
-
-SLAKE_API Runtime::AwaiterCompareTypesFrameExData::AwaiterCompareTypesFrameExData(peff::Alloc *allocator) : CompareTypesFrameExData(), allocator(allocator) {
-}
-
-SLAKE_API Runtime::AwaiterCompareTypesFrameExData::~AwaiterCompareTypesFrameExData() {
-}
-
-SLAKE_API void Runtime::AwaiterCompareTypesFrameExData::dealloc() noexcept {
-	peff::destroyAndRelease<AwaiterCompareTypesFrameExData>(allocator.get(), this, alignof(AwaiterCompareTypesFrameExData));
-}
-
-SLAKE_API Runtime::AwaiterCompareTypesFrameExData *Runtime::AwaiterCompareTypesFrameExData::alloc(peff::Alloc *allocator) {
-	return peff::allocAndConstruct<AwaiterCompareTypesFrameExData>(allocator, alignof(AwaiterCompareTypesFrameExData), allocator);
-}
-
-SLAKE_API Runtime::NormalCompareTypesFrameExData::NormalCompareTypesFrameExData(peff::Alloc *allocator, const Type &lhs, const Type &rhs) : CompareTypesFrameExData(), allocator(allocator), lhs(lhs), rhs(rhs) {
-}
-
-SLAKE_API Runtime::NormalCompareTypesFrameExData::~NormalCompareTypesFrameExData() {
-}
-
-SLAKE_API void Runtime::NormalCompareTypesFrameExData::dealloc() noexcept {
-	peff::destroyAndRelease<NormalCompareTypesFrameExData>(allocator.get(), this, alignof(NormalCompareTypesFrameExData));
-}
-
-SLAKE_API Runtime::NormalCompareTypesFrameExData *Runtime::NormalCompareTypesFrameExData::alloc(peff::Alloc *allocator, const Type &lhs, const Type &rhs) {
-	return peff::allocAndConstruct<NormalCompareTypesFrameExData>(allocator, alignof(NormalCompareTypesFrameExData), allocator, lhs, rhs);
-}
-
-SLAKE_API InternalExceptionPointer Runtime::_doCompareTypes(CompareTypesContext &context) {
-	while (context.frames.size() > 1) {
-		CompareTypesFrame &frame = context.frames.back();
-
-		switch (frame.kind) {
-			case CompareTypesFrameKind::Normal: {
-				NormalCompareTypesFrameExData *exData = (NormalCompareTypesFrameExData *)frame.exData.get();
-
-				if (exData->lhs.typeId < exData->rhs.typeId) {
-					context.frames.back().result = -1;
-					continue;
-				}
-				if (exData->lhs.typeId > exData->rhs.typeId) {
-					context.frames.back().result = 1;
-					continue;
-				}
-				switch (exData->rhs.typeId) {
-					case TypeId::Instance: {
-						auto lhsType = exData->lhs.getCustomTypeExData(), rhsType = exData->rhs.getCustomTypeExData();
-
-						// TODO: Use comparison instead of the simple assert.
-						assert(lhsType->getObjectKind() == rhsType->getObjectKind());
-						switch (lhsType->getObjectKind()) {
-							case ObjectKind::IdRef: {
-								// Comparison between deferred resolving types are not allowed
-								std::terminate();
-							}
-							case ObjectKind::Class:
-							case ObjectKind::Interface: {
-								if (lhsType < rhsType) {
-									context.frames.back().result = -1;
-									continue;
-								}
-								if (lhsType > rhsType) {
-									context.frames.back().result = 1;
-									continue;
-								}
-								break;
-							}
-							default:
-								std::terminate();
-						}
-
-						context.frames.popBack();
-
-						context.frames.back().result = 0;
-
-						break;
-					}
-					case TypeId::Array: {
-						std::unique_ptr<NormalCompareTypesFrameExData, peff::DeallocableDeleter<NormalCompareTypesFrameExData>> newExData(
-							NormalCompareTypesFrameExData::alloc(context.allocator.get(),
-								exData->lhs.getArrayExData(),
-								exData->rhs.getArrayExData()));
-
-						context.frames.popBack();
-
-						if (!context.frames.pushBack(CompareTypesFrame(CompareTypesFrameKind::Normal, std::move(newExData.release())))) {
-							context.frames.back().exceptionPtr = OutOfMemoryError::alloc();
-						}
-
-						break;
-					}
-					case TypeId::Ref: {
-						std::unique_ptr<NormalCompareTypesFrameExData, peff::DeallocableDeleter<NormalCompareTypesFrameExData>> newExData(
-							NormalCompareTypesFrameExData::alloc(context.allocator.get(),
-								exData->lhs.getArrayExData(),
-								exData->rhs.getArrayExData()));
-
-						context.frames.popBack();
-
-						if (!context.frames.pushBack(CompareTypesFrame(CompareTypesFrameKind::Normal, std::move(newExData.release())))) {
-							context.frames.back().exceptionPtr = OutOfMemoryError::alloc();
-						}
-
-						break;
-					}
-					default:
-						context.frames.popBack();
-						context.frames.back().result = 0;
-						break;
-				}
-			}
-		}
-	}
-
-	return {};
-}
-
-SLAKE_API InternalExceptionPointer Runtime::compareTypes(peff::Alloc *allocator, const Type &lhs, const Type &rhs, int &resultOut) {
-	if (lhs.typeId < rhs.typeId) {
-		resultOut = -1;
-		return {};
-	}
-	if (lhs.typeId > rhs.typeId) {
-		resultOut = 1;
-		return {};
-	}
-
-	if (isFundamentalType(lhs)) {
-		resultOut = 0;
-		return {};
-	}
-
-	char buffer[4096];
-
-	peff::BufferAlloc bufferAlloc(buffer, sizeof(buffer));
-	peff::UpstreamedBufferAlloc upstreamedAlloc(&bufferAlloc, allocator);
-	CompareTypesContext context(&upstreamedAlloc);
-
-	std::unique_ptr<AwaiterCompareTypesFrameExData, peff::DeallocableDeleter<AwaiterCompareTypesFrameExData>> newExData(
-		AwaiterCompareTypesFrameExData::alloc(context.allocator.get()));
-
-	if (!context.frames.pushBack(CompareTypesFrame(CompareTypesFrameKind::Awaiter, newExData.release()))) {
-		context.frames.back().exceptionPtr = OutOfMemoryError::alloc();
-	}
-
-	std::unique_ptr<NormalCompareTypesFrameExData, peff::DeallocableDeleter<NormalCompareTypesFrameExData>> initialExData(
-		NormalCompareTypesFrameExData::alloc(context.allocator.get(),
-			lhs,
-			rhs));
-
-	if (!context.frames.pushBack(CompareTypesFrame(CompareTypesFrameKind::Normal, std::move(initialExData.release())))) {
-		context.frames.back().exceptionPtr = OutOfMemoryError::alloc();
-	}
-
-	SLAKE_RETURN_IF_EXCEPT(_doCompareTypes(context));
-
-	resultOut = context.frames.back().result;
-
-	return {};
-}
-
 SLAKE_API Runtime::Runtime(peff::Alloc *selfAllocator, peff::Alloc *upstream, RuntimeFlags flags)
 	: selfAllocator(selfAllocator),
 	  fixedAlloc(this, upstream),
@@ -421,7 +256,8 @@ SLAKE_API Runtime::Runtime(peff::Alloc *selfAllocator, peff::Alloc *upstream, Ru
 	  parallelGcThreads(&fixedAlloc),
 	  parallelGcThreadRunnables(&fixedAlloc),
 	  youngAlloc(this, &fixedAlloc),
-	  persistentAlloc(this, &fixedAlloc) {
+	  persistentAlloc(this, &fixedAlloc),
+	  typeDefs(&fixedAlloc) {
 	_flags &= ~_RT_INITING;
 }
 
@@ -446,6 +282,28 @@ SLAKE_API Runtime::~Runtime() {
 	assert(!persistentObjectList);
 	// Self allocator should be moved out in the dealloc() method, or the runtime has been destructed prematurely.
 	assert(!selfAllocator);
+}
+
+SLAKE_API Object *Runtime::getEqualTypeDef(Object *typeDef) const noexcept {
+	if (auto it = typeDefs.find(typeDef); it != typeDefs.end()) {
+		return *it;
+	}
+
+	return nullptr;
+}
+
+SLAKE_API void Runtime::unregisterTypeDef(Object* typeDef) noexcept {
+	typeDefs.remove(typeDef);
+}
+
+SLAKE_API InternalExceptionPointer Runtime::registerTypeDef(Object *typeDef) noexcept {
+	if (typeDefs.contains(+typeDef))
+		std::terminate();
+
+	if (!typeDefs.insert(+typeDef))
+		return OutOfMemoryError::alloc();
+
+	return {};
 }
 
 SLAKE_API void Runtime::addSameKindObjectToList(Object **list, Object *object) {

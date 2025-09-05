@@ -17,7 +17,7 @@ namespace slake {
 	struct ObjectFieldRecord {
 		peff::String name;
 		size_t offset;
-		Type type;
+		TypeRef type;
 
 		PEFF_FORCEINLINE ObjectFieldRecord(peff::Alloc *selfAllocator) : name(selfAllocator) {}
 
@@ -66,12 +66,12 @@ namespace slake {
 
 	public:
 		GenericArgList genericArgs;
-		peff::HashMap<peff::String, Type> mappedGenericArgs;
+		peff::HashMap<peff::String, TypeRef> mappedGenericArgs;
 
 		GenericParamList genericParams;
 
-		Type baseType;
-		peff::DynArray<Type> implTypes;				 // Implemented interfaces
+		TypeRef baseType;
+		peff::DynArray<TypeRef> implTypes;				 // Implemented interfaces
 
 		MethodTable *cachedInstantiatedMethodTable = nullptr;
 		ObjectLayout *cachedObjectLayout = nullptr;
@@ -108,11 +108,11 @@ namespace slake {
 
 	public:
 		GenericArgList genericArgs;
-		peff::HashMap<peff::String, Type> mappedGenericArgs;
+		peff::HashMap<peff::String, TypeRef> mappedGenericArgs;
 
 		GenericParamList genericParams;
 
-		peff::DynArray<Type> implTypes;
+		peff::DynArray<TypeRef> implTypes;
 
 		SLAKE_API InterfaceObject(Runtime *rt, peff::Alloc *selfAllocator);
 		SLAKE_API InterfaceObject(Duplicator *duplicator, const InterfaceObject &x, peff::Alloc *allocator, bool &succeededOut);

@@ -32,10 +32,6 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 				scopeObject = (MemberObject *)objectRefOut.asObject.instanceObject;
 
 				if (curName.genericArgs.size()) {
-					for (auto &j : curName.genericArgs) {
-						SLAKE_RETURN_IF_EXCEPT(j.loadDeferredType(this));
-					}
-
 					peff::NullAlloc nullAlloc;
 					GenericInstantiationContext genericInstantiationContext(&nullAlloc, getFixedAlloc());
 
@@ -55,10 +51,6 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 			switch (scopeObject->getObjectKind()) {
 				case ObjectKind::Fn: {
 					FnObject *fnObject = ((FnObject *)scopeObject);
-
-					for (auto &j : *ref->paramTypes) {
-						SLAKE_RETURN_IF_EXCEPT(j.loadDeferredType(this));
-					}
 
 					FnOverloadingObject *overloading;
 
@@ -86,8 +78,7 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 			case ObjectKind::Class: {
 				ClassObject *cls = (ClassObject *)curObject;
 				if (cls->baseType.typeId == TypeId::Instance) {
-					SLAKE_RETURN_IF_EXCEPT(cls->baseType.loadDeferredType(this));
-					scopeObject = (MemberObject *)cls->baseType.getCustomTypeExData();
+					scopeObject = (MemberObject *)((CustomTypeDefObject*)cls->baseType.typeDef)->typeObject;
 				} else {
 					return allocOutOfMemoryErrorIfAllocFailed(ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(this)->getFixedAlloc(), ref));
 				}

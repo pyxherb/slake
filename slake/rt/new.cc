@@ -31,7 +31,7 @@ SLAKE_API InternalExceptionPointer Runtime::initMethodTableForClass(ClassObject 
 				}
 
 				if (it.key() == "delete") {
-					peff::DynArray<Type> destructorParamTypes(getFixedAlloc());
+					peff::DynArray<TypeRef> destructorParamTypes(getFixedAlloc());
 					GenericParamList destructorGenericParamList(getFixedAlloc());
 
 					for (auto j : fn->overloadings) {
@@ -118,7 +118,7 @@ SLAKE_API InternalExceptionPointer Runtime::initObjectLayoutForClass(ClassObject
 
 		ObjectFieldRecord fieldRecord(cls->selfAllocator.get());
 
-		Type type = clsFieldRecord.type;
+		TypeRef type = clsFieldRecord.type;
 
 		size_t size = sizeofType(type);
 		size_t align = alignofType(type);
@@ -160,18 +160,12 @@ SLAKE_API InternalExceptionPointer Runtime::prepareClassForInstantiation(ClassOb
 		if (cls->baseType.typeId != TypeId::Instance)
 			return allocOutOfMemoryErrorIfAllocFailed(MalformedClassStructureError::alloc(getFixedAlloc(), cls));
 
-		SLAKE_RETURN_IF_EXCEPT(cls->baseType.loadDeferredType(this));
-
-		Object *parentClass = (ClassObject *)cls->baseType.getCustomTypeExData();
+		Object *parentClass = ((CustomTypeDefObject*)(ClassObject *)cls->baseType.typeDef)->typeObject;
 		if (parentClass->getObjectKind() != ObjectKind::Class)
 			return allocOutOfMemoryErrorIfAllocFailed(MalformedClassStructureError::alloc(getFixedAlloc(), cls));
 
 		SLAKE_RETURN_IF_EXCEPT(prepareClassForInstantiation((ClassObject *)parentClass));
 		p = (ClassObject *)parentClass;
-	}
-
-	for (auto &i : cls->implTypes) {
-		SLAKE_RETURN_IF_EXCEPT(i.loadDeferredType(this));
 	}
 
 	if (!cls->cachedObjectLayout)
@@ -217,7 +211,7 @@ SLAKE_API HostObjectRef<InstanceObject> slake::Runtime::newClassInstance(ClassOb
 	return instance;
 }
 
-SLAKE_API HostObjectRef<ArrayObject> Runtime::newArrayInstance(Runtime *rt, const Type &type, size_t length) {
+SLAKE_API HostObjectRef<ArrayObject> Runtime::newArrayInstance(Runtime *rt, const TypeRef &type, size_t length) {
 	switch (type.typeId) {
 		case TypeId::I8: {
 			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(int8_t));

@@ -48,7 +48,7 @@ SLAKE_API InternalExceptionPointer Runtime::tryAccessVar(const EntityRef &entity
 	return {};
 }
 
-SLAKE_API InternalExceptionPointer Runtime::typeofVar(const EntityRef &entityRef, Type &typeOut) const noexcept {
+SLAKE_API InternalExceptionPointer Runtime::typeofVar(const EntityRef &entityRef, TypeRef &typeOut) const noexcept {
 	switch (entityRef.kind) {
 		case ObjectRefKind::FieldRef: {
 			FieldRecord &fieldRecord = entityRef.asField.moduleObject->fieldRecords.at(entityRef.asField.index);
@@ -61,7 +61,7 @@ SLAKE_API InternalExceptionPointer Runtime::typeofVar(const EntityRef &entityRef
 			memcpy(
 				&typeOut,
 				rawStackPtr,
-				sizeof(Type));
+				sizeof(TypeRef));
 			break;
 		}
 		case ObjectRefKind::CoroutineLocalVarRef: {
@@ -73,7 +73,7 @@ SLAKE_API InternalExceptionPointer Runtime::typeofVar(const EntityRef &entityRef
 				memcpy(
 					&typeOut,
 					rawStackPtr,
-					sizeof(Type));
+					sizeof(TypeRef));
 			} else {
 				const char *const rawStackPtr =
 					calcStackAddr(entityRef.asCoroutineLocalVar.coroutine->stackData,
@@ -82,7 +82,7 @@ SLAKE_API InternalExceptionPointer Runtime::typeofVar(const EntityRef &entityRef
 				memcpy(
 					&typeOut,
 					rawStackPtr,
-					sizeof(Type));
+					sizeof(TypeRef));
 			}
 			break;
 		}
@@ -466,7 +466,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 				entityRef.asLocalVar.stackOff);
 			const char *const rawDataPtr = rawStackPtr + sizeof(TypeId);
 
-			Type t = *(TypeId *)*rawStackPtr;
+			TypeRef t = *(TypeId *)*rawStackPtr;
 
 			switch (t.typeId) {
 				case TypeId::I8:
@@ -555,7 +555,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 					break;
 				case TypeId::Instance:
 				case TypeId::Array:
-					memcpy(&t.exData, rawStackPtr - sizeof(TypeExData), sizeof(TypeExData));
+					memcpy(&t.typeDef, rawStackPtr - sizeof(void *), sizeof(void *));
 					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
 					if (!result) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
@@ -586,7 +586,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 
 			const char *const rawDataPtr = basePtr + sizeof(TypeId);
 
-			Type t;
+			TypeRef t;
 
 			t.typeId = *(TypeId *)basePtr;
 
@@ -677,7 +677,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 					break;
 				case TypeId::Instance:
 				case TypeId::Array:
-					memcpy(&t.exData, basePtr - sizeof(TypeExData), sizeof(TypeExData));
+					memcpy(&t.typeDef, basePtr - sizeof(void *), sizeof(void *));
 					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
 					if (!result) {
 						return raiseMismatchedVarTypeError((Runtime *)this);

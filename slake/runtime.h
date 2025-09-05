@@ -167,7 +167,7 @@ namespace slake {
 		mutable peff::Map<const MemberObject *, GenericLookupEntry> _genericCacheLookupTable;
 
 		using GenericCacheTable =
-			peff::FallibleMap<
+			peff::Map<
 				GenericArgList,	 // Generic arguments.
 				MemberObject *,	 // Cached instantiated value.
 				GenericArgListLtComparator>;
@@ -191,15 +191,6 @@ namespace slake {
 			bool isInGenericScope;
 		};
 
-		SLAKE_API HostObjectRef<IdRefObject> _loadIdRef(LoaderContext &context, HostRefHolder &holder);
-		SLAKE_API Value _loadValue(LoaderContext &context, HostRefHolder &holder);
-		SLAKE_API Type _loadType(LoaderContext &context, HostRefHolder &holder);
-		SLAKE_API GenericParam _loadGenericParam(LoaderContext &context, HostRefHolder &holder);
-		SLAKE_API void _loadScope(LoaderContext &context,
-			HostObjectRef<ModuleObject> mod,
-			LoadModuleFlags loadModuleFlags,
-			HostRefHolder &holder);
-
 		/// @brief Execute a single instruction.
 		/// @param context Context for execution.
 		/// @param ins Instruction to be executed.
@@ -213,10 +204,16 @@ namespace slake {
 		Object *contextObjectList = nullptr;
 		Object *classObjectList = nullptr;
 
+		peff::Set<Object *, TypeDefLtComparator> typeDefs;
+
+		SLAKE_API Object *getEqualTypeDef(Object *typeDef) const noexcept;
+		SLAKE_API void unregisterTypeDef(Object *typeDef) noexcept;
+		SLAKE_API InternalExceptionPointer registerTypeDef(Object *typeDef) noexcept;
+
 	private:
 		SLAKE_API void _gcWalk(GCWalkContext *context, MethodTable *methodTable);
 		SLAKE_API void _gcWalk(GCWalkContext *context, GenericParamList &genericParamList);
-		SLAKE_API void _gcWalk(GCWalkContext *context, const Type &type);
+		SLAKE_API void _gcWalk(GCWalkContext *context, const TypeRef &type);
 		SLAKE_API void _gcWalk(GCWalkContext *context, const Value &i);
 		SLAKE_API void _gcWalk(GCWalkContext *context, Object *i);
 		SLAKE_API void _gcWalk(GCWalkContext *context, char *dataStack, MajorFrame *majorFrame);
@@ -260,71 +257,12 @@ namespace slake {
 		[[nodiscard]] SLAKE_API InternalExceptionPointer _mapGenericParams(const Object *v, GenericInstantiationContext *instantiationContext) const;
 		[[nodiscard]] SLAKE_API InternalExceptionPointer _mapGenericParams(const FnOverloadingObject *ol, GenericInstantiationContext *instantiationContext) const;
 
-		[[nodiscard]] SLAKE_API InternalExceptionPointer _instantiateGenericObject(GenericInstantiationDispatcher &dispatcher, Type &type, GenericInstantiationContext *instantiationContext);
+		[[nodiscard]] SLAKE_API InternalExceptionPointer _instantiateGenericObject(GenericInstantiationDispatcher &dispatcher, TypeRef &type, GenericInstantiationContext *instantiationContext);
 		[[nodiscard]] SLAKE_API InternalExceptionPointer _instantiateGenericObject(GenericInstantiationDispatcher &dispatcher, Value &value, GenericInstantiationContext *instantiationContext);
 		[[nodiscard]] SLAKE_API InternalExceptionPointer _instantiateGenericObject(GenericInstantiationDispatcher &dispatcher, Object *v, GenericInstantiationContext *instantiationContext);
 		[[nodiscard]] SLAKE_API InternalExceptionPointer _instantiateGenericObject(GenericInstantiationDispatcher &dispatcher, FnOverloadingObject *ol, GenericInstantiationContext *instantiationContext);
 
 		SLAKE_API InternalExceptionPointer _findAndDispatchExceptHandler(const Value &curExcept, const MinorFrame &minorFrame, uint32_t &offsetOut) const;
-
-		enum CompareTypesFrameKind : uint8_t {
-			Awaiter = 0,
-			Normal,
-		};
-
-		class CompareTypesFrameExData {
-		public:
-			SLAKE_API CompareTypesFrameExData();
-			SLAKE_API virtual ~CompareTypesFrameExData();
-
-			virtual void dealloc() noexcept = 0;
-		};
-
-		class AwaiterCompareTypesFrameExData : public CompareTypesFrameExData {
-		public:
-			peff::RcObjectPtr<peff::Alloc> allocator;
-
-			SLAKE_API AwaiterCompareTypesFrameExData(peff::Alloc *allocator);
-			SLAKE_API virtual ~AwaiterCompareTypesFrameExData();
-
-			SLAKE_API virtual void dealloc() noexcept override;
-
-			SLAKE_API static AwaiterCompareTypesFrameExData *alloc(peff::Alloc *allocator);
-		};
-
-		class NormalCompareTypesFrameExData : public CompareTypesFrameExData {
-		public:
-			peff::RcObjectPtr<peff::Alloc> allocator;
-			const Type &lhs;
-			const Type &rhs;
-
-			SLAKE_API NormalCompareTypesFrameExData(peff::Alloc *allocator, const Type &lhs, const Type &rhs);
-			SLAKE_API virtual ~NormalCompareTypesFrameExData();
-
-			SLAKE_API virtual void dealloc() noexcept override;
-
-			SLAKE_API static NormalCompareTypesFrameExData *alloc(peff::Alloc *allocator, const Type &lhs, const Type &rhs);
-		};
-
-		struct CompareTypesFrame {
-			std::unique_ptr<CompareTypesFrameExData, peff::DeallocableDeleter<CompareTypesFrameExData>> exData;
-			CompareTypesFrameKind kind;
-			InternalExceptionPointer exceptionPtr;
-			int result;
-
-			SLAKE_FORCEINLINE CompareTypesFrame(CompareTypesFrameKind kind, CompareTypesFrameExData *exData) : kind(kind), exData(exData) {
-			}
-		};
-
-		struct CompareTypesContext {
-			peff::RcObjectPtr<peff::Alloc> allocator;
-			peff::List<CompareTypesFrame> frames;
-			int result;
-
-			SLAKE_FORCEINLINE CompareTypesContext(peff::Alloc *allocator) : allocator(allocator), frames(allocator) {}
-		};
-
-		SLAKE_API static InternalExceptionPointer _doCompareTypes(CompareTypesContext &context);
 
 		friend class Object;
 		friend class RegularFnOverloadingObject;
@@ -333,7 +271,7 @@ namespace slake {
 		friend class ModuleObject;
 
 	public:
-		[[nodiscard]] SLAKE_API InternalExceptionPointer _addLocalVar(Context *context, MajorFrame *frame, Type type, EntityRef &objectRefOut) noexcept;
+		[[nodiscard]] SLAKE_API InternalExceptionPointer _addLocalVar(Context *context, MajorFrame *frame, TypeRef type, EntityRef &objectRefOut) noexcept;
 		[[nodiscard]] SLAKE_API InternalExceptionPointer _fillArgs(
 			MajorFrame *newMajorFrame,
 			const FnOverloadingObject *fn,
@@ -375,14 +313,14 @@ namespace slake {
 			peff::RcObjectPtr<peff::Alloc> selfAllocator;
 			const Object *mappedObject;
 			const GenericArgList *genericArgs;
-			peff::HashMap<peff::String, Type> mappedGenericArgs;
+			peff::HashMap<peff::String, TypeRef> mappedGenericArgs;
 
 			SLAKE_FORCEINLINE GenericInstantiationContext(peff::Alloc *selfAllocator, peff::Alloc *resourceAllocator) : selfAllocator(selfAllocator), mappedGenericArgs(resourceAllocator) {}
 			SLAKE_FORCEINLINE GenericInstantiationContext(
 				peff::Alloc *selfAllocator,
 				const Object *mappedObject,
 				const GenericArgList *genericArgs,
-				peff::HashMap<peff::String, Type> &&mappedGenericArgs)
+				peff::HashMap<peff::String, TypeRef> &&mappedGenericArgs)
 				: selfAllocator(selfAllocator),
 				  mappedObject(mappedObject),
 				  genericArgs(genericArgs),
@@ -446,7 +384,7 @@ namespace slake {
 		[[nodiscard]] SLAKE_API InternalExceptionPointer initObjectLayoutForClass(ClassObject *cls, ClassObject *parentClass);
 		[[nodiscard]] SLAKE_API InternalExceptionPointer prepareClassForInstantiation(ClassObject *cls);
 		SLAKE_API HostObjectRef<InstanceObject> newClassInstance(ClassObject *cls, NewClassInstanceFlags flags);
-		SLAKE_API HostObjectRef<ArrayObject> newArrayInstance(Runtime *rt, const Type &type, size_t length);
+		SLAKE_API HostObjectRef<ArrayObject> newArrayInstance(Runtime *rt, const TypeRef &type, size_t length);
 
 		[[nodiscard]] SLAKE_API InternalExceptionPointer execContext(ContextObject *context) noexcept;
 		/// @brief Execute a function on current thread.
@@ -501,7 +439,7 @@ namespace slake {
 			size_t nativeStackSize = 0);
 
 		[[nodiscard]] SLAKE_API InternalExceptionPointer tryAccessVar(const EntityRef &entityRef) const noexcept;
-		[[nodiscard]] SLAKE_API InternalExceptionPointer typeofVar(const EntityRef &entityRef, Type &typeOut) const noexcept;
+		[[nodiscard]] SLAKE_API InternalExceptionPointer typeofVar(const EntityRef &entityRef, TypeRef &typeOut) const noexcept;
 		[[nodiscard]] SLAKE_API InternalExceptionPointer readVar(const EntityRef &entityRef, Value &valueOut) const noexcept;
 		[[nodiscard]] SLAKE_API Value readVarUnsafe(const EntityRef &entityRef) const noexcept;
 		[[nodiscard]] SLAKE_API InternalExceptionPointer writeVar(const EntityRef &entityRef, const Value &value) const noexcept;
@@ -509,11 +447,9 @@ namespace slake {
 			writeVar(entityRef, value).unwrap();
 		}
 
-		SLAKE_API size_t sizeofType(const Type &type);
-		SLAKE_API size_t alignofType(const Type &type);
-		SLAKE_API Value defaultValueOf(const Type &type);
-
-		static SLAKE_API InternalExceptionPointer compareTypes(peff::Alloc *allocator, const Type &lhs, const Type &rhs, int &resultOut);
+		SLAKE_API size_t sizeofType(const TypeRef &type);
+		SLAKE_API size_t alignofType(const TypeRef &type);
+		SLAKE_API Value defaultValueOf(const TypeRef &type);
 
 		[[nodiscard]] SLAKE_API static bool constructAt(Runtime *dest, peff::Alloc *upstream, RuntimeFlags flags = 0);
 		[[nodiscard]] SLAKE_API static Runtime *alloc(peff::Alloc *selfAllocator, peff::Alloc *upstream, RuntimeFlags flags = 0);

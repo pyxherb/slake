@@ -14,6 +14,48 @@ namespace slake {
 	class MemberObject;
 	class Object;
 
+	enum class ObjectKind : uint8_t {
+		Invalid = 0,  // Invalid
+
+		String,	 // String
+
+		HeapType,  // On-heap type
+
+		CustomTypeDef,		   // Custom type definition
+		ArrayTypeDef,		   // Array type definition
+		RefTypeDef,			   // Reference type definition
+		GenericArgTypeDef,	   // Generic argument type definition
+		FnTypeDef,			   // Function type definition
+		ParamTypeListTypeDef,  // Parameter type list type definition
+		TupleTypeDef,		   // Parameter type list type definition
+		SIMDTypeDef,		   // Parameter type list type definition
+
+		Fn,				// Function
+		FnOverloading,	// Function overloading
+		Module,			// Module
+		Array,			// Array
+		Ref,			// Reference
+
+		Class,		// Class
+		Interface,	// Interface
+		Struct,		// Structure
+		Instance,	// Object instance
+
+		Any,  // Any
+
+		Alias,	// Alias
+
+		IdRef,		 // Reference
+		GenericArg,	 // Generic argument
+		Context,	 // Context
+		Resumable,	 // Resumable
+		Coroutine,	 // Coroutine
+	};
+
+	SLAKE_FORCEINLINE bool verifyObjectKind(const Object *object);
+
+	SLAKE_FORCEINLINE bool verifyObjectKind(const Object *object, ObjectKind objectKind);
+
 	using ObjectFlags = uint8_t;
 	constexpr static ObjectFlags
 		VF_WALKED = 0x01,		   // The value has been walked by the garbage collector.
@@ -23,7 +65,6 @@ namespace slake {
 		VF_GCREADY = 0x80		   // The object is ready to be GC., for objects created during GC.
 		;
 
-	struct Type;
 	class Scope;
 
 	enum class ObjectGCStatus : uint8_t {
@@ -58,8 +99,8 @@ namespace slake {
 	};
 
 	struct TypeDuplicationTask {
-		Type *type;
-		Type src;
+		TypeRef *type;
+		TypeRef src;
 	};
 
 	struct DuplicationTask {
@@ -73,7 +114,7 @@ namespace slake {
 
 		SLAKE_API static DuplicationTask makeNormal(Object **dest, Object *src);
 		SLAKE_API static DuplicationTask makeModuleMember(ModuleObject *mod, MemberObject *src);
-		SLAKE_API static DuplicationTask makeType(Type *type, const Type &src);
+		SLAKE_API static DuplicationTask makeType(TypeRef *type, const TypeRef &src);
 	};
 
 	class Duplicator {

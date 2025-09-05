@@ -110,20 +110,20 @@ namespace slake {
 			Runtime *runtime,
 			Type type,
 			HostRefHolder &hostRefHolder,
-			Type &typeOut);
+			TypeRef &typeOut);
 		InternalExceptionPointer wrapIntoArrayType(
 			Runtime *runtime,
 			Type type,
 			HostRefHolder &hostRefHolder,
-			Type &typeOut);
+			TypeRef &typeOut);
 		InternalExceptionPointer evalObjectType(
 			ProgramAnalyzeContext &analyzeContext,
 			const EntityRef &entityRef,
-			Type &typeOut);
+			TypeRef &typeOut);
 		InternalExceptionPointer evalValueType(
 			ProgramAnalyzeContext &analyzeContext,
 			const Value &value,
-			Type &typeOut);
+			TypeRef &typeOut);
 		InternalExceptionPointer evalConstValue(
 			ProgramAnalyzeContext &analyzeContext,
 			const Value &value,

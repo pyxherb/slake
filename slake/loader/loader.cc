@@ -3,7 +3,7 @@
 using namespace slake;
 using namespace slake::loader;
 
-SLAKE_API LoaderContext::LoaderContext() {
+SLAKE_API LoaderContext::LoaderContext(peff::Alloc *allocator) : allocator(allocator), loadedIdRefs(allocator), loadedCustomTypeDefs(allocator), hostRefHolder(allocator) {
 }
 
 SLAKE_API LoaderContext::~LoaderContext() {
@@ -23,7 +23,7 @@ SLAKE_FORCEINLINE static InternalExceptionPointer _normalizeReadResult(Runtime *
 	return {};
 }
 
-SLAKE_API InternalExceptionPointer loader::loadType(LoaderContext &context, Runtime *runtime, Reader *reader, Object *member, Type &typeOut) noexcept {
+SLAKE_API InternalExceptionPointer loader::loadType(LoaderContext &context, Runtime *runtime, Reader *reader, Object *member, TypeRef &typeOut) noexcept {
 	slxfmt::TypeId typeId;
 
 	SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->readU8((uint8_t &)typeId)));
@@ -72,23 +72,50 @@ SLAKE_API InternalExceptionPointer loader::loadType(LoaderContext &context, Runt
 			typeOut = TypeId::Bool;
 			break;
 		case slake::slxfmt::TypeId::Array: {
-			HostObjectRef<TypeDefObject> typeDef;
+			HostObjectRef<ArrayTypeDefObject> typeDef;
 
-			if (!(typeDef = TypeDefObject::alloc(runtime))) {
+			if (!(typeDef = ArrayTypeDefObject::alloc(runtime))) {
 				return OutOfMemoryError::alloc();
 			}
 
-			SLAKE_RETURN_IF_EXCEPT(loadType(context, runtime, reader, member, typeDef->type));
+			HostObjectRef<HeapTypeObject> heapType;
 
-			typeOut = Type(TypeId::Array, typeDef.get());
+			if (!(heapType = HeapTypeObject::alloc(runtime))) {
+				return OutOfMemoryError::alloc();
+			}
+
+			SLAKE_RETURN_IF_EXCEPT(loadType(context, runtime, reader, member, heapType->typeRef));
+
+			typeDef->elementType = heapType.get();
+
+			if (auto td = runtime->getEqualTypeDef(typeDef.get()); td) {
+				typeOut = TypeRef(TypeId::Array, td);
+			} else {
+				typeOut = TypeRef(TypeId::Array, typeDef.get());
+				SLAKE_RETURN_IF_EXCEPT(runtime->registerTypeDef(typeDef.get()));
+			}
 			break;
 		}
 		case slake::slxfmt::TypeId::Object: {
+			HostObjectRef<CustomTypeDefObject> typeDef;
+
+			if (!(typeDef = CustomTypeDefObject::alloc(runtime))) {
+				return OutOfMemoryError::alloc();
+			}
 			HostObjectRef<IdRefObject> idRef;
 
 			SLAKE_RETURN_IF_EXCEPT(loadIdRef(context, runtime, reader, member, idRef));
 
-			typeOut = Type(TypeId::Instance, idRef.get());
+			typeDef->typeObject = idRef.get();
+
+			if (auto td = runtime->getEqualTypeDef(typeDef.get()); td) {
+				typeOut = TypeRef(TypeId::Instance, td);
+			} else {
+				typeOut = TypeRef(TypeId::Instance, typeDef.get());
+				if (!context.loadedCustomTypeDefs.insert(typeDef.get()))
+					return OutOfMemoryError::alloc();
+				SLAKE_RETURN_IF_EXCEPT(runtime->registerTypeDef(typeDef.get()));
+			}
 			break;
 		}
 		case slake::slxfmt::TypeId::GenericArg: {
@@ -107,19 +134,46 @@ SLAKE_API InternalExceptionPointer loader::loadType(LoaderContext &context, Runt
 			}
 			SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read(nameObject->data.data(), nameLen)));
 
-			typeOut = Type(nameObject.get(), member);
-			break;
-		}
-		case slake::slxfmt::TypeId::Ref: {
-			HostObjectRef<TypeDefObject> typeDef;
+			HostObjectRef<GenericArgTypeDefObject> typeDef;
 
-			if (!(typeDef = TypeDefObject::alloc(runtime))) {
+			if (!(typeDef = GenericArgTypeDefObject::alloc(runtime))) {
 				return OutOfMemoryError::alloc();
 			}
 
-			SLAKE_RETURN_IF_EXCEPT(loadType(context, runtime, reader, member, typeDef->type));
+			typeDef->ownerObject = member;
+			typeDef->nameObject = nameObject.get();
 
-			typeOut = Type(TypeId::Ref, typeDef.get());
+			if (auto td = runtime->getEqualTypeDef(typeDef.get()); td) {
+				typeOut = TypeRef(TypeId::GenericArg, td);
+			} else {
+				typeOut = TypeRef(TypeId::GenericArg, typeDef.get());
+				SLAKE_RETURN_IF_EXCEPT(runtime->registerTypeDef(typeDef.get()));
+			}
+			break;
+		}
+		case slake::slxfmt::TypeId::Ref: {
+			HostObjectRef<RefTypeDefObject> typeDef;
+
+			if (!(typeDef = RefTypeDefObject::alloc(runtime))) {
+				return OutOfMemoryError::alloc();
+			}
+
+			HostObjectRef<HeapTypeObject> heapType;
+
+			if (!(heapType = HeapTypeObject::alloc(runtime))) {
+				return OutOfMemoryError::alloc();
+			}
+
+			SLAKE_RETURN_IF_EXCEPT(loadType(context, runtime, reader, member, heapType->typeRef));
+
+			typeDef->referencedType = heapType.get();
+
+			if (auto td = runtime->getEqualTypeDef(typeDef.get()); td) {
+				typeOut = TypeRef(TypeId::Ref, td);
+			} else {
+				typeOut = TypeRef(TypeId::Ref, typeDef.get());
+				SLAKE_RETURN_IF_EXCEPT(runtime->registerTypeDef(typeDef.get()));
+			}
 			break;
 		}
 		case slake::slxfmt::TypeId::ParamTypeList: {
@@ -138,12 +192,25 @@ SLAKE_API InternalExceptionPointer loader::loadType(LoaderContext &context, Runt
 			}
 
 			for (uint32_t i = 0; i < nParams; ++i) {
-				SLAKE_RETURN_IF_EXCEPT(loadType(context, runtime, reader, member, typeDef->paramTypes.at(i)));
+				HostObjectRef<HeapTypeObject> heapType;
+
+				if (!(heapType = HeapTypeObject::alloc(runtime))) {
+					return OutOfMemoryError::alloc();
+				}
+
+				SLAKE_RETURN_IF_EXCEPT(loadType(context, runtime, reader, member, heapType->typeRef));
+
+				typeDef->paramTypes.at(i) = heapType.get();
 			}
 
 			SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->readBool(typeDef->hasVarArg)));
 
-			typeOut = Type(TypeId::ParamTypeList, typeDef.get());
+			if (auto td = runtime->getEqualTypeDef(typeDef.get()); td) {
+				typeOut = TypeRef(TypeId::ParamTypeList, td);
+			} else {
+				typeOut = TypeRef(TypeId::ParamTypeList, typeDef.get());
+				SLAKE_RETURN_IF_EXCEPT(runtime->registerTypeDef(typeDef.get()));
+			}
 			break;
 		}
 		default:
@@ -260,7 +327,7 @@ SLAKE_API InternalExceptionPointer loader::loadValue(LoaderContext &context, Run
 			break;
 		}
 		case slake::slxfmt::ValueType::TypeName: {
-			Type type;
+			TypeRef type;
 
 			SLAKE_RETURN_IF_EXCEPT(loadType(context, runtime, reader, member, type));
 
@@ -304,7 +371,7 @@ SLAKE_API InternalExceptionPointer loader::loadValue(LoaderContext &context, Run
 		case slake::slxfmt::ValueType::Array: {
 			HostObjectRef<ArrayObject> a;
 
-			Type elementType;
+			TypeRef elementType;
 
 			SLAKE_RETURN_IF_EXCEPT(loadType(context, runtime, reader, member, elementType));
 
@@ -373,7 +440,7 @@ SLAKE_API InternalExceptionPointer loader::loadIdRef(LoaderContext &context, Run
 	}
 
 	if (nParamTypes != UINT32_MAX) {
-		peff::DynArray<Type> paramTypes(idRefOut->selfAllocator.get());
+		peff::DynArray<TypeRef> paramTypes(idRefOut->selfAllocator.get());
 
 		if (!paramTypes.resize(nParamTypes)) {
 			return OutOfMemoryError::alloc();
@@ -386,6 +453,14 @@ SLAKE_API InternalExceptionPointer loader::loadIdRef(LoaderContext &context, Run
 	}
 
 	SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->readBool(idRefOut->hasVarArgs)));
+
+	if (auto it = context.loadedIdRefs.find(idRefOut.get()); it != context.loadedIdRefs.end()) {
+		idRefOut = *it;
+	} else {
+		if (!(context.loadedIdRefs.insert(idRefOut.get()))) {
+			return OutOfMemoryError::alloc();
+		}
+	}
 
 	return {};
 }
@@ -707,6 +782,76 @@ SLAKE_API InternalExceptionPointer loader::loadModule(LoaderContext &context, Ru
 	}
 
 	SLAKE_RETURN_IF_EXCEPT(loadModuleMembers(context, runtime, reader, moduleObjectOut.get()));
+
+	peff::DynArray<IdRefEntry> testParentNamespaces(runtime->getFixedAlloc());
+	/*
+	{
+		IdRefEntry entry(runtime->getFixedAlloc());
+
+		if (!entry.name.build("hostext"))
+			return OutOfMemoryError::alloc();
+
+		if (!testParentNamespaces.pushBack(std::move(entry)))
+			return OutOfMemoryError::alloc();
+	}*/
+
+	if (!moduleObjectOut->name.build("hostext"))
+		return OutOfMemoryError::alloc();
+
+	SLAKE_RETURN_IF_EXCEPT(completeParentNamespaces(context, runtime, moduleObjectOut.get(), testParentNamespaces));
+
+	for (auto i : context.loadedCustomTypeDefs) {
+		runtime->unregisterTypeDef(i);
+	}
+
+	for (auto i : context.loadedCustomTypeDefs) {
+		IdRefObject *idRefObject = (IdRefObject *)i->typeObject;
+
+		slake::EntityRef entityRef;
+		SLAKE_RETURN_IF_EXCEPT(runtime->resolveIdRef(idRefObject, entityRef));
+
+		if (!entityRef)
+			std::terminate();
+
+		if (entityRef.kind != ObjectRefKind::ObjectRef)
+			std::terminate();
+
+		i->typeObject = entityRef.asObject.instanceObject;
+
+		SLAKE_RETURN_IF_EXCEPT(runtime->registerTypeDef(i));
+	}
+
+	return {};
+}
+
+SLAKE_API InternalExceptionPointer slake::loader::completeParentNamespaces(LoaderContext &context, Runtime *runtime, ModuleObject *moduleObject, const peff::DynArray<IdRefEntry> &ref) noexcept {
+	HostObjectRef<ModuleObject> mod = runtime->getRootObject();
+
+	for (size_t i = 0; i < ref.size(); ++i) {
+		std::string_view name = ref.at(i).name;
+
+		if (auto m = mod->members.find(name); m != mod->members.end()) {
+			if (m.value()->getObjectKind() != ObjectKind::Module)
+				std::terminate();
+			mod = (ModuleObject *)m.value();
+		} else {
+			HostObjectRef<ModuleObject> newMod;
+
+			if (!(newMod = ModuleObject::alloc(runtime)))
+				return OutOfMemoryError::alloc();
+
+			if (!newMod->name.build(name))
+				return OutOfMemoryError::alloc();
+
+			if (!mod->addMember(newMod.get()))
+				return OutOfMemoryError::alloc();
+
+			mod = newMod.get();
+		}
+	}
+
+	if (!mod->addMember(moduleObject))
+		return OutOfMemoryError::alloc();
 
 	return {};
 }

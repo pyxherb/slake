@@ -7,25 +7,90 @@
 #include "object.h"
 
 namespace slake {
-	class TypeDefObject final : public Object {
+	class CustomTypeDefObject final : public Object {
 	public:
-		Type type = TypeId::Void;
+		Object *typeObject;
 
-		SLAKE_API TypeDefObject(Runtime *rt, peff::Alloc *selfAllocator);
-		SLAKE_API TypeDefObject(Duplicator *duplicator, const TypeDefObject &x, peff::Alloc *allocator, bool &succeededOut);
-		SLAKE_API virtual ~TypeDefObject();
+		SLAKE_API CustomTypeDefObject(Runtime *rt, peff::Alloc *selfAllocator);
+		SLAKE_API CustomTypeDefObject(Duplicator *duplicator, const CustomTypeDefObject &x, peff::Alloc *allocator, bool &succeededOut);
+		SLAKE_API virtual ~CustomTypeDefObject();
 
 		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
 
-		SLAKE_API static HostObjectRef<TypeDefObject> alloc(Runtime *rt);
-		SLAKE_API static HostObjectRef<TypeDefObject> alloc(Duplicator *duplicator, const TypeDefObject *other);
+		SLAKE_API static HostObjectRef<CustomTypeDefObject> alloc(Runtime *rt);
+		SLAKE_API static HostObjectRef<CustomTypeDefObject> alloc(Duplicator *duplicator, const CustomTypeDefObject *other);
+		SLAKE_API virtual void dealloc() override;
+
+		SLAKE_FORCEINLINE bool isLoadingDeferred() const noexcept {
+			return typeObject->getObjectKind() == ObjectKind::IdRef;
+		}
+	};
+
+	class HeapTypeObject final : public Object {
+	public:
+		TypeRef typeRef;
+
+		SLAKE_API HeapTypeObject(Runtime *rt, peff::Alloc *selfAllocator);
+		SLAKE_API HeapTypeObject(Duplicator *duplicator, const HeapTypeObject &x, peff::Alloc *allocator, bool &succeededOut);
+		SLAKE_API virtual ~HeapTypeObject();
+
+		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
+
+		SLAKE_API static HostObjectRef<HeapTypeObject> alloc(Runtime *rt);
+		SLAKE_API static HostObjectRef<HeapTypeObject> alloc(Duplicator *duplicator, const HeapTypeObject *other);
+		SLAKE_API virtual void dealloc() override;
+	};
+
+	class ArrayTypeDefObject final : public Object {
+	public:
+		HeapTypeObject *elementType;
+
+		SLAKE_API ArrayTypeDefObject(Runtime *rt, peff::Alloc *selfAllocator);
+		SLAKE_API ArrayTypeDefObject(Duplicator *duplicator, const ArrayTypeDefObject &x, peff::Alloc *allocator, bool &succeededOut);
+		SLAKE_API virtual ~ArrayTypeDefObject();
+
+		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
+
+		SLAKE_API static HostObjectRef<ArrayTypeDefObject> alloc(Runtime *rt);
+		SLAKE_API static HostObjectRef<ArrayTypeDefObject> alloc(Duplicator *duplicator, const ArrayTypeDefObject *other);
+		SLAKE_API virtual void dealloc() override;
+	};
+
+	class RefTypeDefObject final : public Object {
+	public:
+		HeapTypeObject *referencedType;
+
+		SLAKE_API RefTypeDefObject(Runtime *rt, peff::Alloc *selfAllocator);
+		SLAKE_API RefTypeDefObject(Duplicator *duplicator, const RefTypeDefObject &x, peff::Alloc *allocator, bool &succeededOut);
+		SLAKE_API virtual ~RefTypeDefObject();
+
+		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
+
+		SLAKE_API static HostObjectRef<RefTypeDefObject> alloc(Runtime *rt);
+		SLAKE_API static HostObjectRef<RefTypeDefObject> alloc(Duplicator *duplicator, const RefTypeDefObject *other);
+		SLAKE_API virtual void dealloc() override;
+	};
+
+	class GenericArgTypeDefObject final : public Object {
+	public:
+		Object *ownerObject;
+		StringObject *nameObject;
+
+		SLAKE_API GenericArgTypeDefObject(Runtime *rt, peff::Alloc *selfAllocator);
+		SLAKE_API GenericArgTypeDefObject(Duplicator *duplicator, const GenericArgTypeDefObject &x, peff::Alloc *allocator, bool &succeededOut);
+		SLAKE_API virtual ~GenericArgTypeDefObject();
+
+		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
+
+		SLAKE_API static HostObjectRef<GenericArgTypeDefObject> alloc(Runtime *rt);
+		SLAKE_API static HostObjectRef<GenericArgTypeDefObject> alloc(Duplicator *duplicator, const GenericArgTypeDefObject *other);
 		SLAKE_API virtual void dealloc() override;
 	};
 
 	class FnTypeDefObject final : public Object {
 	public:
-		Type returnType = TypeId::Void;
-		peff::DynArray<Type> paramTypes;
+		HeapTypeObject *returnType = nullptr;
+		peff::DynArray<HeapTypeObject *> paramTypes;
 		bool hasVarArg = false;
 
 		SLAKE_API FnTypeDefObject(Runtime *rt, peff::Alloc *selfAllocator);
@@ -43,7 +108,7 @@ namespace slake {
 
 	class ParamTypeListTypeDefObject final : public Object {
 	public:
-		peff::DynArray<Type> paramTypes;
+		peff::DynArray<HeapTypeObject *> paramTypes;
 		bool hasVarArg = false;
 
 		SLAKE_API ParamTypeListTypeDefObject(Runtime *rt, peff::Alloc *selfAllocator);
@@ -61,7 +126,7 @@ namespace slake {
 
 	class TupleTypeDefObject final : public Object {
 	public:
-		peff::DynArray<Type> elementTypes;
+		peff::DynArray<HeapTypeObject *> elementTypes;
 
 		SLAKE_API TupleTypeDefObject(Runtime *rt, peff::Alloc *selfAllocator);
 		SLAKE_API TupleTypeDefObject(Duplicator *duplicator, const TupleTypeDefObject &x, peff::Alloc *allocator, bool &succeededOut);
@@ -78,7 +143,7 @@ namespace slake {
 
 	class SIMDTypeDefObject final : public Object {
 	public:
-		Type type = TypeId::Void;
+		HeapTypeObject *type;
 		uint32_t width = 0;
 
 		SLAKE_API SIMDTypeDefObject(Runtime *rt, peff::Alloc *selfAllocator);
@@ -90,6 +155,18 @@ namespace slake {
 		SLAKE_API static HostObjectRef<SIMDTypeDefObject> alloc(Runtime *rt);
 		SLAKE_API static HostObjectRef<SIMDTypeDefObject> alloc(Duplicator *duplicator, const SIMDTypeDefObject *other);
 		SLAKE_API virtual void dealloc() override;
+	};
+
+	struct TypeDefComparator {
+		SLAKE_API int operator()(const Object *lhs, const Object *rhs) const noexcept;
+	};
+
+	struct TypeDefLtComparator {
+		TypeDefComparator innerComparator;
+
+		SLAKE_FORCEINLINE bool operator()(const Object* lhs, const Object* rhs) const noexcept {
+			return innerComparator(lhs, rhs) < 0;
+		}
 	};
 }
 

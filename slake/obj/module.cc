@@ -43,11 +43,12 @@ SLAKE_API ModuleObject::ModuleObject(Duplicator *duplicator, const ModuleObject 
 		}
 		memcpy(localFieldStorage.data(), x.localFieldStorage.data(), localFieldStorage.size());
 
-		if (!peff::copyAssign(unnamedImports, x.unnamedImports)) {
+		if (!unnamedImports.resize(x.unnamedImports.size())) {
 			succeededOut = false;
 			return;
 		}
-		if (!peff::copyAssign(name, x.name)) {
+		memcpy(unnamedImports.data(), x.unnamedImports.data(), unnamedImports.size() * sizeof(void *));
+		if (!name.build(x.name)) {
 			succeededOut = false;
 			return;
 		}
@@ -132,7 +133,7 @@ SLAKE_API char *ModuleObject::appendFieldSpace(size_t size, size_t alignment) {
 	return localFieldStorage.data() + beginOff;
 }
 
-SLAKE_API char *ModuleObject::appendTypedFieldSpace(const Type &type) {
+SLAKE_API char *ModuleObject::appendTypedFieldSpace(const TypeRef &type) {
 	return appendFieldSpace(associatedRuntime->sizeofType(type), associatedRuntime->alignofType(type));
 }
 

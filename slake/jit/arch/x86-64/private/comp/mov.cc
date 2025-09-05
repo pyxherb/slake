@@ -230,7 +230,7 @@ InternalExceptionPointer slake::jit::x86_64::compileMovInstruction(
 			uint32_t srcRegIndex = src.getRegIndex();
 			auto &srcRegInfo = analyzedInfo.analyzedRegInfo.at(srcRegIndex);
 			auto &srcVregInfo = compileContext.virtualRegStates.at(srcRegIndex);
-			Type &srcRegType = srcRegInfo.type;
+			TypeRef &srcRegType = srcRegInfo.type;
 			switch (srcRegType.typeId) {
 				case TypeId::I8:
 				case TypeId::U8:

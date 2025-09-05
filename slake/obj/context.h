@@ -9,7 +9,7 @@
 
 namespace slake {
 	struct ExceptionHandler final {
-		Type type;
+		TypeRef type;
 		uint32_t off;
 	};
 
@@ -30,7 +30,7 @@ namespace slake {
 
 	struct ArgRecord {
 		Value value;
-		Type type;
+		TypeRef type;
 	};
 
 	class CoroutineObject;

@@ -34,7 +34,7 @@ SLAKE_API IdRefObject::IdRefObject(const IdRefObject &x, peff::Alloc *allocator,
 	}
 
 	if (x.paramTypes.hasValue()) {
-		peff::DynArray<Type> copiedParamTypes(allocator);
+		peff::DynArray<TypeRef> copiedParamTypes(allocator);
 
 		if (!copiedParamTypes.resize(x.paramTypes->size())) {
 			succeededOut = false;
@@ -120,6 +120,63 @@ SLAKE_API void IdRefObject::replaceAllocator(peff::Alloc *allocator) noexcept {
 		paramTypes->replaceAllocator(allocator);
 }
 
+SLAKE_API int IdRefComparator::operator()(const IdRefObject *lhs, const IdRefObject *rhs) const noexcept {
+	if (lhs->entries.size() < rhs->entries.size())
+		return -1;
+	if (lhs->entries.size() > rhs->entries.size())
+		return 1;
+
+	for (size_t i = 0; i < lhs->entries.size(); ++i) {
+		auto &le = lhs->entries.at(i), &re = rhs->entries.at(i);
+
+		if (le.name < re.name)
+			return -1;
+		if (le.name > re.name)
+			return 1;
+		
+		if (le.genericArgs.size() < re.genericArgs.size())
+			return -1;
+		if (le.genericArgs.size() > re.genericArgs.size())
+			return 1;
+
+		for (size_t j = 0; j < le.genericArgs.size(); ++j) {
+			auto &lga = le.genericArgs.at(j), &rga = re.genericArgs.at(j);
+
+			if (lga < rga)
+				return -1;
+			if (lga > rga)
+				return 1;
+		}
+	}
+
+	if ((uint8_t)lhs->paramTypes.hasValue() < (uint8_t)rhs->paramTypes.hasValue())
+		return -1;
+	if ((uint8_t)lhs->paramTypes.hasValue() > (uint8_t)rhs->paramTypes.hasValue())
+		return 1;
+	if (lhs->paramTypes.hasValue()) {
+		if (lhs->paramTypes->size() < rhs->paramTypes->size())
+			return -1;
+		if (lhs->paramTypes->size() > rhs->paramTypes->size())
+			return 1;
+
+		for (size_t i = 0; i < lhs->paramTypes->size(); ++i) {
+			const TypeRef &lt = lhs->paramTypes->at(i), &rt = rhs->paramTypes->at(i);
+
+			if (lt < rt)
+				return -1;
+			if (lt > rt)
+				return 1;
+		}
+	}
+
+	if ((uint8_t)lhs->hasVarArgs < (uint8_t)rhs->hasVarArgs)
+		return -1;
+	if ((uint8_t)lhs->hasVarArgs > (uint8_t)rhs->hasVarArgs)
+		return 1;
+
+	return 0;
+}
+
 SLAKE_API std::string std::to_string(const slake::IdRefObject *ref) {
 	string s;
 	for (size_t i = 0; i < ref->entries.size(); ++i) {
@@ -131,11 +188,11 @@ SLAKE_API std::string std::to_string(const slake::IdRefObject *ref) {
 
 		if (auto nGenericParams = scope.genericArgs.size(); nGenericParams) {
 			s += "<";
-			for (size_t j = 0; j < nGenericParams; ++j) {
+			/* for (size_t j = 0; j < nGenericParams; ++j) {
 				if (j)
 					s += ",";
 				s += to_string(scope.genericArgs.at(j), ref->getRuntime());
-			}
+			}*/
 			s += ">";
 		}
 	}

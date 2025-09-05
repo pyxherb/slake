@@ -77,10 +77,10 @@ namespace slake {
 		AccessModifier access = 0;
 
 		GenericParamList genericParams;
-		peff::HashMap<peff::String, Type> mappedGenericArgs;
+		peff::HashMap<peff::String, TypeRef> mappedGenericArgs;
 
-		peff::DynArray<Type> paramTypes;
-		Type returnType;
+		peff::DynArray<TypeRef> paramTypes;
+		TypeRef returnType;
 
 		OverloadingFlags overloadingFlags = 0;
 
@@ -95,15 +95,15 @@ namespace slake {
 			this->access = accessModifier;
 		}
 
-		SLAKE_FORCEINLINE void setParamTypes(peff::DynArray<Type> &&paramTypes) noexcept {
+		SLAKE_FORCEINLINE void setParamTypes(peff::DynArray<TypeRef> &&paramTypes) noexcept {
 			this->paramTypes = std::move(paramTypes);
 		}
 
-		SLAKE_FORCEINLINE void setReturnType(Type returnType) noexcept {
+		SLAKE_FORCEINLINE void setReturnType(TypeRef returnType) noexcept {
 			this->returnType = returnType;
 		}
 
-		SLAKE_FORCEINLINE Type getReturnType() noexcept {
+		SLAKE_FORCEINLINE TypeRef getReturnType() noexcept {
 			return returnType;
 		}
 
@@ -150,7 +150,7 @@ namespace slake {
 	public:
 		peff::DynArray<slxfmt::SourceLocDesc> sourceLocDescs;
 		peff::DynArray<Instruction> instructions;
-		Type thisType = TypeId::Void;
+		TypeRef thisType = TypeId::Void;
 		uint32_t nRegisters;
 
 		SLAKE_API RegularFnOverloadingObject(
@@ -168,11 +168,11 @@ namespace slake {
 		SLAKE_API static HostObjectRef<RegularFnOverloadingObject> alloc(const RegularFnOverloadingObject *other);
 		SLAKE_API virtual void dealloc() override;
 
-		SLAKE_FORCEINLINE void setThisType(Type thisType) noexcept {
+		SLAKE_FORCEINLINE void setThisType(TypeRef thisType) noexcept {
 			this->thisType = thisType;
 		}
 
-		SLAKE_FORCEINLINE Type getThisType() noexcept {
+		SLAKE_FORCEINLINE TypeRef getThisType() noexcept {
 			return thisType;
 		}
 
@@ -242,7 +242,7 @@ namespace slake {
 		SLAKE_API FnObject(const FnObject &x, peff::Alloc *allocator, bool &succeededOut);
 		SLAKE_API virtual ~FnObject();
 
-		SLAKE_API InternalExceptionPointer getOverloading(peff::Alloc *allocator, const peff::DynArray<Type> &argTypes, FnOverloadingObject *&overloadingOut) const;
+		SLAKE_API InternalExceptionPointer getOverloading(peff::Alloc *allocator, const peff::DynArray<TypeRef> &argTypes, FnOverloadingObject *&overloadingOut) const;
 
 		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
 
@@ -256,14 +256,14 @@ namespace slake {
 	SLAKE_API InternalExceptionPointer findOverloading(
 		peff::Alloc *allocator,
 		FnObject *fnObject,
-		const peff::DynArray<Type> &paramTypes,
+		const peff::DynArray<TypeRef> &paramTypes,
 		const GenericParamList &genericParams,
 		bool hasVarArg,
 		FnOverloadingObject *&overloadingOut);
 	SLAKE_API InternalExceptionPointer isDuplicatedOverloading(
 		peff::Alloc *allocator,
 		const FnOverloadingObject *overloading,
-		const peff::DynArray<Type> &paramTypes,
+		const peff::DynArray<TypeRef> &paramTypes,
 		const GenericParamList &genericParams,
 		bool hasVarArg,
 		bool &resultOut);

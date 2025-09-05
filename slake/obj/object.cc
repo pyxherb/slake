@@ -24,7 +24,7 @@ SLAKE_API DuplicationTask DuplicationTask::makeModuleMember(ModuleObject *mod, M
 	return task;
 }
 
-SLAKE_API DuplicationTask DuplicationTask::makeType(Type *type, const Type &src) {
+SLAKE_API DuplicationTask DuplicationTask::makeType(TypeRef *type, const TypeRef &src) {
 	DuplicationTask task;
 
 	task.taskType = DuplicationTaskType::Type;

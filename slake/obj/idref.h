@@ -42,7 +42,7 @@ namespace slake {
 	class IdRefObject final : public Object {
 	public:
 		peff::DynArray<IdRefEntry> entries;
-		peff::Option<peff::DynArray<Type>> paramTypes;
+		peff::Option<peff::DynArray<TypeRef>> paramTypes;
 		bool hasVarArgs;
 
 		SLAKE_API IdRefObject(Runtime *rt, peff::Alloc *selfAllocator);
@@ -56,6 +56,18 @@ namespace slake {
 		SLAKE_API virtual void dealloc() override;
 
 		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;
+	};
+
+	struct IdRefComparator {
+		SLAKE_API int operator()(const IdRefObject *lhs, const IdRefObject *rhs) const noexcept;
+	};
+
+	struct IdRefLtComparator {
+		IdRefComparator innerComparator;
+
+		SLAKE_FORCEINLINE bool operator()(const IdRefObject* lhs, const IdRefObject* rhs) const noexcept {
+			return innerComparator(lhs, rhs) < 0;
+		}
 	};
 }
 

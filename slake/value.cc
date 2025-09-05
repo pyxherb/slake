@@ -35,7 +35,7 @@ SLAKE_API bool Value::operator==(const Value &rhs) const {
 		case ValueType::RegRef:
 			return data.asU32 == rhs.data.asU32;
 		case ValueType::TypeName:
-			std::terminate();
+			return data.asType == rhs.data.asType;
 		case ValueType::Undefined:
 			return true;
 		default:;
@@ -77,7 +77,7 @@ SLAKE_API bool Value::operator<(const Value &rhs) const {
 		case ValueType::RegRef:
 			return data.asU32 < rhs.data.asU32;
 		case ValueType::TypeName:
-			std::terminate();
+			return data.asType < rhs.data.asType;
 		case ValueType::Undefined:
 			return false;
 		default:;

@@ -11,13 +11,13 @@ namespace slake {
 
 	struct LocalVarRecord {
 		size_t stackOffset;
-		Type type;
+		TypeRef type;
 	};
 
 	struct AllocaRecord {
 		size_t stackOffset;
 		size_t length;
-		Type type;
+		TypeRef type;
 	};
 
 	[[nodiscard]] InternalExceptionPointer raiseMismatchedVarTypeError(Runtime *rt);

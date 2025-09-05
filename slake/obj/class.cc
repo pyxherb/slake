@@ -152,7 +152,7 @@ SLAKE_API ClassObject::ClassObject(Duplicator *duplicator, const ClassObject &x,
 				return;
 			}
 
-			if (!(mappedGenericArgs.insert(std::move(name), Type(v)))) {
+			if (!(mappedGenericArgs.insert(std::move(name), TypeRef(v)))) {
 				succeededOut = false;
 				return;
 			}
@@ -181,13 +181,7 @@ SLAKE_API ClassObject::~ClassObject() {
 
 SLAKE_API bool ClassObject::hasImplemented(const InterfaceObject *pInterface) const {
 	for (auto &i : implTypes) {
-		if (auto e = const_cast<Type &>(i).loadDeferredType(associatedRuntime);
-			e) {
-			e.reset();
-			return false;
-		}
-
-		if (((InterfaceObject *)i.getCustomTypeExData())->isDerivedFrom(pInterface))
+		if (((InterfaceObject *)((CustomTypeDefObject*)i.typeDef)->typeObject)->isDerivedFrom(pInterface))
 			return true;
 	}
 	return false;
@@ -201,12 +195,7 @@ SLAKE_API bool ClassObject::isBaseOf(const ClassObject *pClass) const {
 
 		if (i->baseType.typeId == TypeId::Void)
 			break;
-		if (auto e = const_cast<Type &>(i->baseType).loadDeferredType(i->associatedRuntime);
-			e) {
-			e.reset();
-			return false;
-		}
-		auto parentClassObject = i->baseType.getCustomTypeExData();
+		auto parentClassObject = ((CustomTypeDefObject *)i->baseType.typeDef)->typeObject;
 		assert(parentClassObject->getObjectKind() == ObjectKind::Class);
 		i = (ClassObject *)parentClassObject;
 	}
@@ -323,13 +312,7 @@ SLAKE_API bool InterfaceObject::isDerivedFrom(const InterfaceObject *pInterface)
 		return true;
 
 	for (auto &i : implTypes) {
-		if (auto e = const_cast<Type &>(i).loadDeferredType(associatedRuntime);
-			e) {
-			e.reset();
-			return false;
-		}
-
-		InterfaceObject *interfaceObj = (InterfaceObject *)i.getCustomTypeExData();
+		InterfaceObject *interfaceObj = (InterfaceObject *)((CustomTypeDefObject *)i.typeDef)->typeObject;
 
 		if (interfaceObj->getObjectKind() != ObjectKind::Interface) {
 			// The parent is not an interface - this situation should not be here,

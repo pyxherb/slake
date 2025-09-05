@@ -112,11 +112,11 @@ void printTraceback(slake::Runtime *rt, slake::ContextObject *context) {
 			if (id.genericArgs.size()) {
 				name += '<';
 
-				for (size_t j = 0; j < id.genericArgs.size(); ++j) {
+				/* for (size_t j = 0; j < id.genericArgs.size(); ++j) {
 					if (j)
 						name += ",";
 					name += std::to_string(id.genericArgs.at(j), rt);
-				}
+				}*/
 
 				name += '>';
 			}
@@ -199,9 +199,7 @@ public:
 
 class LoaderContext : public slake::loader::LoaderContext {
 public:
-	peff::RcObjectPtr<peff::Alloc> allocator;
-
-	LoaderContext(peff::Alloc *allocator) : allocator(allocator) {
+	LoaderContext(peff::Alloc *allocator) : slake::loader::LoaderContext(allocator) {
 	}
 	~LoaderContext() {
 	}
@@ -274,9 +272,10 @@ int main(int argc, char **argv) {
 			slake::HostObjectRef<slake::ModuleObject> modObjectHostext = mod;
 			slake::HostObjectRef<slake::ModuleObject> modObjectExtfns = slake::ModuleObject::alloc(rt.get());
 
+			/*
 			if (!modObjectHostext->setName("hostext")) {
 				std::terminate();
-			}
+			}*/
 			if (!modObjectExtfns->setName("extfns")) {
 				std::terminate();
 			}
@@ -313,7 +312,7 @@ int main(int argc, char **argv) {
 			auto fn = (slake::FnObject *)mod->getMember("main").asObject.instanceObject;
 			slake::FnOverloadingObject *overloading;
 
-			if (fn->getOverloading(&myAllocator, peff::DynArray<slake::Type>(&myAllocator), overloading)) {
+			if (fn->getOverloading(&myAllocator, peff::DynArray<slake::TypeRef>(&myAllocator), overloading)) {
 				throw std::bad_alloc();
 			}
 

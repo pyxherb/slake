@@ -4,31 +4,28 @@
 
 using namespace slake;
 
-SLAKE_API TypeDefObject::TypeDefObject(Runtime *rt, peff::Alloc *selfAllocator)
-	: Object(rt, selfAllocator, ObjectKind::TypeDef) {
+SLAKE_API CustomTypeDefObject::CustomTypeDefObject(Runtime *rt, peff::Alloc *selfAllocator)
+	: Object(rt, selfAllocator, ObjectKind::CustomTypeDef) {
 }
 
-SLAKE_API TypeDefObject::TypeDefObject(Duplicator *duplicator, const TypeDefObject &x, peff::Alloc *allocator, bool &succeededOut) : Object(x, allocator) {
-	if (!duplicator->insertTask(DuplicationTask::makeType(&type, x.type))) {
-		succeededOut = false;
-		return;
-	}
+SLAKE_API CustomTypeDefObject::CustomTypeDefObject(Duplicator *duplicator, const CustomTypeDefObject &x, peff::Alloc *allocator, bool &succeededOut) : Object(x, allocator) {
+	typeObject = x.typeObject;
 
 	succeededOut = true;
 }
 
-SLAKE_API TypeDefObject::~TypeDefObject() {
+SLAKE_API CustomTypeDefObject::~CustomTypeDefObject() {
 }
 
-SLAKE_API Object *TypeDefObject::duplicate(Duplicator *duplicator) const {
+SLAKE_API Object *CustomTypeDefObject::duplicate(Duplicator *duplicator) const {
 	return (Object *)alloc(duplicator, this).get();
 }
 
-SLAKE_API HostObjectRef<TypeDefObject> slake::TypeDefObject::alloc(Runtime *rt) {
+SLAKE_API HostObjectRef<CustomTypeDefObject> slake::CustomTypeDefObject::alloc(Runtime *rt) {
 	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();
 
-	std::unique_ptr<TypeDefObject, util::DeallocableDeleter<TypeDefObject>> ptr(
-		peff::allocAndConstruct<TypeDefObject>(
+	std::unique_ptr<CustomTypeDefObject, util::DeallocableDeleter<CustomTypeDefObject>> ptr(
+		peff::allocAndConstruct<CustomTypeDefObject>(
 			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),
 			rt, curGenerationAllocator.get()));
@@ -41,13 +38,13 @@ SLAKE_API HostObjectRef<TypeDefObject> slake::TypeDefObject::alloc(Runtime *rt) 
 	return ptr.release();
 }
 
-SLAKE_API HostObjectRef<TypeDefObject> slake::TypeDefObject::alloc(Duplicator *duplicator, const TypeDefObject *other) {
+SLAKE_API HostObjectRef<CustomTypeDefObject> slake::CustomTypeDefObject::alloc(Duplicator *duplicator, const CustomTypeDefObject *other) {
 	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = other->associatedRuntime->getCurGenAlloc();
 
 	bool succeeded = true;
 
-	std::unique_ptr<TypeDefObject, util::DeallocableDeleter<TypeDefObject>> ptr(
-		peff::allocAndConstruct<TypeDefObject>(
+	std::unique_ptr<CustomTypeDefObject, util::DeallocableDeleter<CustomTypeDefObject>> ptr(
+		peff::allocAndConstruct<CustomTypeDefObject>(
 			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),
 			duplicator, *other, curGenerationAllocator.get(), succeeded));
@@ -63,8 +60,258 @@ SLAKE_API HostObjectRef<TypeDefObject> slake::TypeDefObject::alloc(Duplicator *d
 	return ptr.release();
 }
 
-SLAKE_API void slake::TypeDefObject::dealloc() {
-	peff::destroyAndRelease<TypeDefObject>(selfAllocator.get(), this, sizeof(std::max_align_t));
+SLAKE_API void slake::CustomTypeDefObject::dealloc() {
+	peff::destroyAndRelease<CustomTypeDefObject>(selfAllocator.get(), this, sizeof(std::max_align_t));
+}
+
+SLAKE_API HeapTypeObject::HeapTypeObject(Runtime *rt, peff::Alloc *selfAllocator)
+	: Object(rt, selfAllocator, ObjectKind::HeapType) {
+}
+
+SLAKE_API HeapTypeObject::HeapTypeObject(Duplicator *duplicator, const HeapTypeObject &x, peff::Alloc *allocator, bool &succeededOut) : Object(x, allocator) {
+	if (!duplicator->insertTask(DuplicationTask::makeType(&typeRef, x.typeRef))) {
+		succeededOut = false;
+		return;
+	}
+
+	succeededOut = true;
+}
+
+SLAKE_API HeapTypeObject::~HeapTypeObject() {
+}
+
+SLAKE_API Object *HeapTypeObject::duplicate(Duplicator *duplicator) const {
+	return (Object *)alloc(duplicator, this).get();
+}
+
+SLAKE_API HostObjectRef<HeapTypeObject> slake::HeapTypeObject::alloc(Runtime *rt) {
+	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();
+
+	std::unique_ptr<HeapTypeObject, util::DeallocableDeleter<HeapTypeObject>> ptr(
+		peff::allocAndConstruct<HeapTypeObject>(
+			curGenerationAllocator.get(),
+			sizeof(std::max_align_t),
+			rt, curGenerationAllocator.get()));
+	if (!ptr)
+		return nullptr;
+
+	if (!rt->addObject(ptr.get()))
+		return nullptr;
+
+	return ptr.release();
+}
+
+SLAKE_API HostObjectRef<HeapTypeObject> slake::HeapTypeObject::alloc(Duplicator *duplicator, const HeapTypeObject *other) {
+	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = other->associatedRuntime->getCurGenAlloc();
+
+	bool succeeded = true;
+
+	std::unique_ptr<HeapTypeObject, util::DeallocableDeleter<HeapTypeObject>> ptr(
+		peff::allocAndConstruct<HeapTypeObject>(
+			curGenerationAllocator.get(),
+			sizeof(std::max_align_t),
+			duplicator, *other, curGenerationAllocator.get(), succeeded));
+	if (!ptr)
+		return nullptr;
+
+	if (!succeeded)
+		return nullptr;
+
+	if (!other->associatedRuntime->addObject(ptr.get()))
+		return nullptr;
+
+	return ptr.release();
+}
+
+SLAKE_API void slake::HeapTypeObject::dealloc() {
+	peff::destroyAndRelease<HeapTypeObject>(selfAllocator.get(), this, sizeof(std::max_align_t));
+}
+
+SLAKE_API ArrayTypeDefObject::ArrayTypeDefObject(Runtime *rt, peff::Alloc *selfAllocator)
+	: Object(rt, selfAllocator, ObjectKind::ArrayTypeDef) {
+}
+
+SLAKE_API ArrayTypeDefObject::ArrayTypeDefObject(Duplicator *duplicator, const ArrayTypeDefObject &x, peff::Alloc *allocator, bool &succeededOut) : Object(x, allocator) {
+	if (!duplicator->insertTask(DuplicationTask::makeNormal((Object **)&elementType, x.elementType))) {
+		succeededOut = false;
+		return;
+	}
+
+	succeededOut = true;
+}
+
+SLAKE_API ArrayTypeDefObject::~ArrayTypeDefObject() {
+}
+
+SLAKE_API Object *ArrayTypeDefObject::duplicate(Duplicator *duplicator) const {
+	return (Object *)alloc(duplicator, this).get();
+}
+
+SLAKE_API HostObjectRef<ArrayTypeDefObject> slake::ArrayTypeDefObject::alloc(Runtime *rt) {
+	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();
+
+	std::unique_ptr<ArrayTypeDefObject, util::DeallocableDeleter<ArrayTypeDefObject>> ptr(
+		peff::allocAndConstruct<ArrayTypeDefObject>(
+			curGenerationAllocator.get(),
+			sizeof(std::max_align_t),
+			rt, curGenerationAllocator.get()));
+	if (!ptr)
+		return nullptr;
+
+	if (!rt->addObject(ptr.get()))
+		return nullptr;
+
+	return ptr.release();
+}
+
+SLAKE_API HostObjectRef<ArrayTypeDefObject> slake::ArrayTypeDefObject::alloc(Duplicator *duplicator, const ArrayTypeDefObject *other) {
+	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = other->associatedRuntime->getCurGenAlloc();
+
+	bool succeeded = true;
+
+	std::unique_ptr<ArrayTypeDefObject, util::DeallocableDeleter<ArrayTypeDefObject>> ptr(
+		peff::allocAndConstruct<ArrayTypeDefObject>(
+			curGenerationAllocator.get(),
+			sizeof(std::max_align_t),
+			duplicator, *other, curGenerationAllocator.get(), succeeded));
+	if (!ptr)
+		return nullptr;
+
+	if (!succeeded)
+		return nullptr;
+
+	if (!other->associatedRuntime->addObject(ptr.get()))
+		return nullptr;
+
+	return ptr.release();
+}
+
+SLAKE_API void slake::ArrayTypeDefObject::dealloc() {
+	peff::destroyAndRelease<ArrayTypeDefObject>(selfAllocator.get(), this, sizeof(std::max_align_t));
+}
+
+SLAKE_API RefTypeDefObject::RefTypeDefObject(Runtime *rt, peff::Alloc *selfAllocator)
+	: Object(rt, selfAllocator, ObjectKind::RefTypeDef) {
+}
+
+SLAKE_API RefTypeDefObject::RefTypeDefObject(Duplicator *duplicator, const RefTypeDefObject &x, peff::Alloc *allocator, bool &succeededOut) : Object(x, allocator) {
+	if (!duplicator->insertTask(DuplicationTask::makeNormal((Object **)&referencedType, x.referencedType))) {
+		succeededOut = false;
+		return;
+	}
+
+	succeededOut = true;
+}
+
+SLAKE_API RefTypeDefObject::~RefTypeDefObject() {
+}
+
+SLAKE_API Object *RefTypeDefObject::duplicate(Duplicator *duplicator) const {
+	return (Object *)alloc(duplicator, this).get();
+}
+
+SLAKE_API HostObjectRef<RefTypeDefObject> slake::RefTypeDefObject::alloc(Runtime *rt) {
+	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();
+
+	std::unique_ptr<RefTypeDefObject, util::DeallocableDeleter<RefTypeDefObject>> ptr(
+		peff::allocAndConstruct<RefTypeDefObject>(
+			curGenerationAllocator.get(),
+			sizeof(std::max_align_t),
+			rt, curGenerationAllocator.get()));
+	if (!ptr)
+		return nullptr;
+
+	if (!rt->addObject(ptr.get()))
+		return nullptr;
+
+	return ptr.release();
+}
+
+SLAKE_API HostObjectRef<RefTypeDefObject> slake::RefTypeDefObject::alloc(Duplicator *duplicator, const RefTypeDefObject *other) {
+	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = other->associatedRuntime->getCurGenAlloc();
+
+	bool succeeded = true;
+
+	std::unique_ptr<RefTypeDefObject, util::DeallocableDeleter<RefTypeDefObject>> ptr(
+		peff::allocAndConstruct<RefTypeDefObject>(
+			curGenerationAllocator.get(),
+			sizeof(std::max_align_t),
+			duplicator, *other, curGenerationAllocator.get(), succeeded));
+	if (!ptr)
+		return nullptr;
+
+	if (!succeeded)
+		return nullptr;
+
+	if (!other->associatedRuntime->addObject(ptr.get()))
+		return nullptr;
+
+	return ptr.release();
+}
+
+SLAKE_API void slake::RefTypeDefObject::dealloc() {
+	peff::destroyAndRelease<RefTypeDefObject>(selfAllocator.get(), this, sizeof(std::max_align_t));
+}
+
+SLAKE_API GenericArgTypeDefObject::GenericArgTypeDefObject(Runtime *rt, peff::Alloc *selfAllocator)
+	: Object(rt, selfAllocator, ObjectKind::GenericArgTypeDef) {
+}
+
+SLAKE_API GenericArgTypeDefObject::GenericArgTypeDefObject(Duplicator *duplicator, const GenericArgTypeDefObject &x, peff::Alloc *allocator, bool &succeededOut) : Object(x, allocator) {
+	ownerObject = x.ownerObject;
+	nameObject = x.nameObject;
+
+	succeededOut = true;
+}
+
+SLAKE_API GenericArgTypeDefObject::~GenericArgTypeDefObject() {
+}
+
+SLAKE_API Object *GenericArgTypeDefObject::duplicate(Duplicator *duplicator) const {
+	return (Object *)alloc(duplicator, this).get();
+}
+
+SLAKE_API HostObjectRef<GenericArgTypeDefObject> slake::GenericArgTypeDefObject::alloc(Runtime *rt) {
+	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();
+
+	std::unique_ptr<GenericArgTypeDefObject, util::DeallocableDeleter<GenericArgTypeDefObject>> ptr(
+		peff::allocAndConstruct<GenericArgTypeDefObject>(
+			curGenerationAllocator.get(),
+			sizeof(std::max_align_t),
+			rt, curGenerationAllocator.get()));
+	if (!ptr)
+		return nullptr;
+
+	if (!rt->addObject(ptr.get()))
+		return nullptr;
+
+	return ptr.release();
+}
+
+SLAKE_API HostObjectRef<GenericArgTypeDefObject> slake::GenericArgTypeDefObject::alloc(Duplicator *duplicator, const GenericArgTypeDefObject *other) {
+	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = other->associatedRuntime->getCurGenAlloc();
+
+	bool succeeded = true;
+
+	std::unique_ptr<GenericArgTypeDefObject, util::DeallocableDeleter<GenericArgTypeDefObject>> ptr(
+		peff::allocAndConstruct<GenericArgTypeDefObject>(
+			curGenerationAllocator.get(),
+			sizeof(std::max_align_t),
+			duplicator, *other, curGenerationAllocator.get(), succeeded));
+	if (!ptr)
+		return nullptr;
+
+	if (!succeeded)
+		return nullptr;
+
+	if (!other->associatedRuntime->addObject(ptr.get()))
+		return nullptr;
+
+	return ptr.release();
+}
+
+SLAKE_API void slake::GenericArgTypeDefObject::dealloc() {
+	peff::destroyAndRelease<GenericArgTypeDefObject>(selfAllocator.get(), this, sizeof(std::max_align_t));
 }
 
 SLAKE_API FnTypeDefObject::FnTypeDefObject(Runtime *rt, peff::Alloc *selfAllocator)
@@ -72,8 +319,7 @@ SLAKE_API FnTypeDefObject::FnTypeDefObject(Runtime *rt, peff::Alloc *selfAllocat
 }
 
 SLAKE_API FnTypeDefObject::FnTypeDefObject(Duplicator *duplicator, const FnTypeDefObject &x, peff::Alloc *allocator, bool &succeededOut) : Object(x, allocator), paramTypes(allocator) {
-	returnType = TypeId::Void;
-	if (!duplicator->insertTask(DuplicationTask::makeType(&returnType, x.returnType))) {
+	if (!duplicator->insertTask(DuplicationTask::makeNormal((Object **)&returnType, x.returnType))) {
 		succeededOut = false;
 		return;
 	}
@@ -84,11 +330,7 @@ SLAKE_API FnTypeDefObject::FnTypeDefObject(Duplicator *duplicator, const FnTypeD
 	}
 
 	for (size_t i = 0; i < x.paramTypes.size(); ++i) {
-		paramTypes.at(i) = TypeId::Void;
-	}
-
-	for (size_t i = 0; i < x.paramTypes.size(); ++i) {
-		if (!duplicator->insertTask(DuplicationTask::makeType(&paramTypes.at(i), x.paramTypes.at(i)))) {
+		if (!duplicator->insertTask(DuplicationTask::makeNormal((Object **)&paramTypes.at(i), x.paramTypes.at(i)))) {
 			succeededOut = false;
 			return;
 		}
@@ -166,11 +408,7 @@ SLAKE_API ParamTypeListTypeDefObject::ParamTypeListTypeDefObject(Duplicator *dup
 	}
 
 	for (size_t i = 0; i < x.paramTypes.size(); ++i) {
-		paramTypes.at(i) = TypeId::Void;
-	}
-
-	for (size_t i = 0; i < x.paramTypes.size(); ++i) {
-		if (!duplicator->insertTask(DuplicationTask::makeType(&paramTypes.at(i), x.paramTypes.at(i)))) {
+		if (!duplicator->insertTask(DuplicationTask::makeNormal((Object **)&paramTypes.at(i), x.paramTypes.at(i)))) {
 			succeededOut = false;
 			return;
 		}
@@ -248,11 +486,7 @@ SLAKE_API TupleTypeDefObject::TupleTypeDefObject(Duplicator *duplicator, const T
 	}
 
 	for (size_t i = 0; i < x.elementTypes.size(); ++i) {
-		elementTypes.at(i) = TypeId::Void;
-	}
-
-	for (size_t i = 0; i < x.elementTypes.size(); ++i) {
-		if (!duplicator->insertTask(DuplicationTask::makeType(&elementTypes.at(i), x.elementTypes.at(i)))) {
+		if (!duplicator->insertTask(DuplicationTask::makeNormal((Object **)&elementTypes.at(i), x.elementTypes.at(i)))) {
 			succeededOut = false;
 			return;
 		}
@@ -322,7 +556,7 @@ SLAKE_API SIMDTypeDefObject::SIMDTypeDefObject(Runtime *rt, peff::Alloc *selfAll
 }
 
 SLAKE_API SIMDTypeDefObject::SIMDTypeDefObject(Duplicator *duplicator, const SIMDTypeDefObject &x, peff::Alloc *allocator, bool &succeededOut) : Object(x, allocator) {
-	if (!duplicator->insertTask(DuplicationTask::makeType(&type, x.type))) {
+	if (!duplicator->insertTask(DuplicationTask::makeNormal((Object **)&type, x.type))) {
 		succeededOut = false;
 		return;
 	}
@@ -378,4 +612,185 @@ SLAKE_API HostObjectRef<SIMDTypeDefObject> slake::SIMDTypeDefObject::alloc(Dupli
 
 SLAKE_API void slake::SIMDTypeDefObject::dealloc() {
 	peff::destroyAndRelease<SIMDTypeDefObject>(selfAllocator.get(), this, sizeof(std::max_align_t));
+}
+
+SLAKE_API int TypeDefComparator::operator()(const Object *lhs, const Object *rhs) const noexcept {
+	ObjectKind objectKind = lhs->getObjectKind();
+
+	{
+		ObjectKind rhsObjectKind = rhs->getObjectKind();
+
+		if (objectKind < rhsObjectKind)
+			return -1;
+		if (objectKind > rhsObjectKind)
+			return 1;
+	}
+
+	switch (objectKind) {
+		case ObjectKind::CustomTypeDef: {
+			CustomTypeDefObject *l = (CustomTypeDefObject *)lhs,
+								*r = (CustomTypeDefObject *)rhs;
+
+			assert(l->isLoadingDeferred() == r->isLoadingDeferred());
+
+			if (l->isLoadingDeferred()) {
+				int result = IdRefComparator()((IdRefObject *)l->typeObject, (IdRefObject *)r->typeObject);
+				if (result != 0)
+					return result;
+			} else {
+				if (l->typeObject < r->typeObject)
+					return -1;
+				if (l->typeObject > r->typeObject)
+					return 1;
+			}
+
+			break;
+		}
+		case ObjectKind::ArrayTypeDef: {
+			ArrayTypeDefObject *l = (ArrayTypeDefObject *)lhs,
+							   *r = (ArrayTypeDefObject *)rhs;
+
+			if (l->elementType->typeRef < r->elementType->typeRef)
+				return -1;
+			if (l->elementType->typeRef > r->elementType->typeRef)
+				return 1;
+
+			break;
+		}
+		case ObjectKind::GenericArgTypeDef: {
+			GenericArgTypeDefObject *l = (GenericArgTypeDefObject *)lhs,
+									*r = (GenericArgTypeDefObject *)rhs;
+
+			if (l->ownerObject < r->ownerObject)
+				return -1;
+			if (l->ownerObject > r->ownerObject)
+				return 1;
+
+			if (l->nameObject->data < r->nameObject->data)
+				return -1;
+			if (l->nameObject->data > r->nameObject->data)
+				return 1;
+
+			break;
+		}
+		case ObjectKind::RefTypeDef: {
+			RefTypeDefObject *l = (RefTypeDefObject *)lhs,
+							 *r = (RefTypeDefObject *)rhs;
+
+			if (l->referencedType->typeRef < r->referencedType->typeRef)
+				return -1;
+			if (l->referencedType->typeRef > r->referencedType->typeRef)
+				return 1;
+
+			break;
+		}
+		case ObjectKind::FnTypeDef: {
+			FnTypeDefObject *l = (FnTypeDefObject *)lhs,
+							*r = (FnTypeDefObject *)rhs;
+
+			if (l->returnType->typeRef < r->returnType->typeRef)
+				return -1;
+			if (l->returnType->typeRef > r->returnType->typeRef)
+				return 1;
+
+			if (l->paramTypes.size() < r->paramTypes.size())
+				return -1;
+			if (l->paramTypes.size() > r->paramTypes.size())
+				return 1;
+
+			for (size_t i = 0; i < l->paramTypes.size(); ++i) {
+				const TypeRef &lt = l->paramTypes.at(i)->typeRef, &rt = r->paramTypes.at(i)->typeRef;
+
+				if (lt < rt)
+					return -1;
+				if (lt > rt)
+					return 1;
+			}
+
+			if ((uint8_t)l->hasVarArg < (uint8_t)r->hasVarArg)
+				return -1;
+			if ((uint8_t)l->hasVarArg > (uint8_t)r->hasVarArg)
+				return 1;
+
+			break;
+		}
+		case ObjectKind::ParamTypeListTypeDef: {
+			ParamTypeListTypeDefObject *l = (ParamTypeListTypeDefObject *)lhs,
+									   *r = (ParamTypeListTypeDefObject *)rhs;
+
+			if (l->paramTypes.size() < r->paramTypes.size())
+				return -1;
+			if (l->paramTypes.size() > r->paramTypes.size())
+				return 1;
+
+			for (size_t i = 0; i < l->paramTypes.size(); ++i) {
+				const TypeRef &lt = l->paramTypes.at(i)->typeRef, &rt = r->paramTypes.at(i)->typeRef;
+
+				if (lt < rt)
+					return -1;
+				if (lt > rt)
+					return 1;
+			}
+
+			if ((uint8_t)l->hasVarArg < (uint8_t)r->hasVarArg)
+				return -1;
+			if ((uint8_t)l->hasVarArg > (uint8_t)r->hasVarArg)
+				return 1;
+
+			break;
+		}
+		case ObjectKind::TupleTypeDef: {
+			TupleTypeDefObject *l = (TupleTypeDefObject *)lhs,
+							   *r = (TupleTypeDefObject *)rhs;
+
+			for (size_t i = 0; i < l->elementTypes.size(); ++i) {
+				const TypeRef &lt = l->elementTypes.at(i)->typeRef, &rt = r->elementTypes.at(i)->typeRef;
+
+				if (lt < rt)
+					return -1;
+				if (lt > rt)
+					return 1;
+			}
+
+			break;
+		}
+		case ObjectKind::SIMDTypeDef: {
+			SIMDTypeDefObject *l = (SIMDTypeDefObject *)lhs,
+							  *r = (SIMDTypeDefObject *)rhs;
+
+			if (l->type < r->type)
+				return -1;
+			if (l->type > r->type)
+				return 1;
+
+			if (l->width < r->width)
+				return -1;
+			if (l->width > r->width)
+				return 1;
+
+			break;
+		}
+		default:
+			std::terminate();
+	}
+
+	return 0;
+}
+
+SLAKE_API bool slake::isTypeDefObject(Object *object) {
+	switch (object->getObjectKind()) {
+		case ObjectKind::CustomTypeDef:
+		case ObjectKind::ArrayTypeDef:
+		case ObjectKind::RefTypeDef:
+		case ObjectKind::GenericArgTypeDef:
+		case ObjectKind::FnTypeDef:
+		case ObjectKind::ParamTypeListTypeDef:
+		case ObjectKind::TupleTypeDef:
+		case ObjectKind::SIMDTypeDef:
+			return true;
+		default:
+			break;
+	}
+
+	return false;
 }

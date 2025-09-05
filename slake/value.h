@@ -11,7 +11,6 @@
 #include <slake/generated/config.h>
 
 namespace slake {
-	struct Type;
 	class CoroutineObject;
 	class Object;
 	struct Context;
@@ -210,7 +209,7 @@ namespace slake {
 		float asF32;
 		double asF64;
 		bool asBool;
-		Type asType;
+		TypeRef asType;
 		EntityRef asObjectRef;
 
 		ValueData() noexcept = default;
@@ -305,7 +304,7 @@ namespace slake {
 		}
 		SLAKE_FORCEINLINE constexpr Value(ValueType vt, uint32_t index) noexcept : valueType(vt), data(index) {
 		}
-		SLAKE_FORCEINLINE Value(const Type &type) noexcept : valueType(ValueType::TypeName) {
+		SLAKE_FORCEINLINE Value(const TypeRef &type) noexcept : valueType(ValueType::TypeName) {
 			data.asType = type;
 		}
 
@@ -384,11 +383,11 @@ namespace slake {
 			return data.asU32;
 		}
 
-		SLAKE_FORCEINLINE Type &getTypeName() noexcept {
+		SLAKE_FORCEINLINE TypeRef &getTypeName() noexcept {
 			assert(valueType == ValueType::TypeName);
 			return data.asType;
 		}
-		SLAKE_FORCEINLINE const Type &getTypeName() const noexcept {
+		SLAKE_FORCEINLINE const TypeRef &getTypeName() const noexcept {
 			assert(valueType == ValueType::TypeName);
 			return data.asType;
 		}
@@ -414,7 +413,7 @@ namespace slake {
 		SLAKE_API bool operator<(const Value &rhs) const;
 	};
 
-	SLAKE_API InternalExceptionPointer isCompatible(peff::Alloc *allocator, const Type &type, const Value &value, bool &resultOut);
+	SLAKE_API InternalExceptionPointer isCompatible(peff::Alloc *allocator, const TypeRef &type, const Value &value, bool &resultOut);
 }
 
 #endif

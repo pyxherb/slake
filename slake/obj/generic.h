@@ -9,8 +9,8 @@
 namespace slake {
 	struct GenericParam final {
 		peff::String name;
-		Type baseType = Type(TypeId::Any);
-		peff::DynArray<Type> interfaces;
+		TypeRef baseType = TypeId::Any;
+		peff::DynArray<TypeRef> interfaces;
 
 		SLAKE_API GenericParam(peff::Alloc *selfAllocator);
 		SLAKE_API GenericParam(GenericParam &&rhs);
@@ -18,7 +18,7 @@ namespace slake {
 		SLAKE_FORCEINLINE bool copy(GenericParam &dest) const {
 			peff::constructAt<GenericParam>(&dest, interfaces.allocator());
 
-			if (!peff::copyAssign(dest.name, name))
+			if (!dest.name.build(name))
 				return false;
 
 			dest.baseType = baseType;
@@ -32,56 +32,32 @@ namespace slake {
 		SLAKE_API void replaceAllocator(peff::Alloc *allocator) noexcept;
 	};
 
-	using GenericArgList = peff::DynArray<Type>;
+	using GenericArgList = peff::DynArray<TypeRef>;
 	using GenericParamList = peff::DynArray<GenericParam>;
 
 	/// @brief Three-way comparator for containers.
 	struct GenericArgListComparator {
-		peff::RcObjectPtr<peff::Alloc> allocator;
-		mutable InternalExceptionPointer exceptPtr;
-
-		SLAKE_FORCEINLINE GenericArgListComparator(peff::Alloc *allocator) : allocator(allocator) {}
-		SLAKE_API peff::Option<int> operator()(const GenericArgList &lhs, const GenericArgList &rhs) const noexcept;
-
-		SLAKE_FORCEINLINE InternalExceptionPointer getExceptionPtr() {
-			assert(exceptPtr);
-			return std::move(exceptPtr);
-		}
+		SLAKE_FORCEINLINE GenericArgListComparator() {}
+		SLAKE_API int operator()(const GenericArgList &lhs, const GenericArgList &rhs) const noexcept;
 	};
 
 	/// @brief Less than ("<") comparator for containers.
 	struct GenericArgListLtComparator {
 		GenericArgListComparator innerComparator;
-		mutable InternalExceptionPointer exceptPtr;
 
-		SLAKE_FORCEINLINE GenericArgListLtComparator(peff::Alloc *allocator) : innerComparator(allocator) {}
-		SLAKE_FORCEINLINE peff::Option<bool> operator()(const GenericArgList& lhs, const GenericArgList& rhs) const noexcept {
-			auto result = innerComparator(lhs, rhs);
-			if (result.hasValue())
-				return result.value() < 0;
-			return {};
-		}
-
-		SLAKE_FORCEINLINE InternalExceptionPointer getExceptionPtr() {
-			return innerComparator.getExceptionPtr();
+		SLAKE_FORCEINLINE GenericArgListLtComparator(peff::Alloc *allocator) {}
+		SLAKE_FORCEINLINE bool operator()(const GenericArgList& lhs, const GenericArgList& rhs) const noexcept {
+			return innerComparator(lhs, rhs) < 0;
 		}
 	};
 
 	/// @brief Equality ("==") comparator for containers.
 	struct GenericArgListEqComparator {
 		GenericArgListComparator innerComparator;
-		mutable InternalExceptionPointer exceptPtr;
 
-		SLAKE_FORCEINLINE GenericArgListEqComparator(peff::Alloc *allocator) : innerComparator(allocator) {}
-		SLAKE_API peff::Option<bool> operator()(const GenericArgList& lhs, const GenericArgList& rhs) const noexcept {
-			auto result = innerComparator(lhs, rhs);
-			if (result.hasValue())
-				return result.value() == 0;
-			return {};
-		}
-
-		SLAKE_FORCEINLINE InternalExceptionPointer getExceptionPtr() {
-			return innerComparator.getExceptionPtr();
+		SLAKE_FORCEINLINE GenericArgListEqComparator(peff::Alloc *allocator) {}
+		SLAKE_API bool operator()(const GenericArgList& lhs, const GenericArgList& rhs) const noexcept {
+			return innerComparator(lhs, rhs) == 0;
 		}
 	};
 

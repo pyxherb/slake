@@ -4,7 +4,7 @@ using namespace slake;
 
 struct TypeSlotGenericInstantiationTask {
 	peff::RcObjectPtr<Runtime::GenericInstantiationContext> context;
-	Type *slot;
+	TypeRef *slot;
 };
 
 struct ObjectGenericInstantiationTask {
@@ -21,8 +21,6 @@ struct Runtime::GenericInstantiationDispatcher {
 	SLAKE_FORCEINLINE GenericInstantiationDispatcher(peff::Alloc *selfAllocator) : nextWalkTypeSlots(selfAllocator), nextWalkObjects(selfAllocator) {}
 
 	SLAKE_FORCEINLINE InternalExceptionPointer pushTypeSlot(TypeSlotGenericInstantiationTask &&slot) noexcept {
-		assert(verifyType(*slot.slot));
-
 		if (!nextWalkTypeSlots.pushBack(std::move(slot))) {
 			return OutOfMemoryError::alloc();
 		}
@@ -49,8 +47,7 @@ SLAKE_API InternalExceptionPointer Runtime::invalidateGenericCache(MemberObject 
 		auto &lookupEntry = _genericCacheLookupTable.at(i);
 
 		auto &table = _genericCacheDir.at(lookupEntry.originalObject);
-		if (!table.remove(lookupEntry.genericArgs))
-			return table.comparator().getExceptionPtr();
+		table.remove(lookupEntry.genericArgs);
 
 		if (!table.size())
 			_genericCacheDir.remove(lookupEntry.originalObject);
@@ -69,31 +66,16 @@ SLAKE_API InternalExceptionPointer Runtime::setGenericCache(MemberObject *object
 	// Store the instance into the cache.
 	auto &cacheTable = _genericCacheDir.at(object);
 
-	bool cacheTableQueryResult;
-	{
-		auto maybeResult = cacheTable.contains(genericArgs);
-		if (!maybeResult.hasValue())
-			return cacheTable.comparator().getExceptionPtr();
-		cacheTableQueryResult = maybeResult.value();
-	}
-
-	if (!cacheTableQueryResult) {
+	if (!cacheTable.contains(genericArgs)) {
 		GenericArgList copiedGenericArgs(getFixedAlloc());
 		if (!copiedGenericArgs.resizeUninitialized(genericArgs.size())) {
 			return OutOfMemoryError::alloc();
 		}
-		memcpy(copiedGenericArgs.data(), genericArgs.data(), copiedGenericArgs.size() * sizeof(Type));
+		memcpy(copiedGenericArgs.data(), genericArgs.data(), copiedGenericArgs.size() * sizeof(TypeRef));
 
 		cacheTable.insert(std::move(copiedGenericArgs), +instantiatedObject);
 	} else {
-		MemberObject **slot;
-		{
-			auto maybeSlot = cacheTable.at(genericArgs);
-			if (!maybeSlot.hasValue())
-				return std::move(cacheTable.comparator().getExceptionPtr());
-			slot = &maybeSlot.value();
-		}
-		*slot = +instantiatedObject;
+		cacheTable.at(genericArgs) = instantiatedObject;
 	}
 
 	{
@@ -101,7 +83,7 @@ SLAKE_API InternalExceptionPointer Runtime::setGenericCache(MemberObject *object
 		if (!copiedGenericArgList.resizeUninitialized(genericArgs.size())) {
 			return OutOfMemoryError::alloc();
 		}
-		memcpy(copiedGenericArgList.data(), genericArgs.data(), copiedGenericArgList.size() * sizeof(Type));
+		memcpy(copiedGenericArgList.data(), genericArgs.data(), copiedGenericArgList.size() * sizeof(TypeRef));
 		_genericCacheLookupTable.insert(+instantiatedObject, { object, std::move(copiedGenericArgList) });
 	}
 
@@ -148,7 +130,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateModuleFields(Gene
 	return {};
 }
 
-SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateGenericObject(GenericInstantiationDispatcher &dispatcher, Type &type, GenericInstantiationContext *instantiationContext) {
+SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateGenericObject(GenericInstantiationDispatcher &dispatcher, TypeRef &type, GenericInstantiationContext *instantiationContext) {
 	return dispatcher.pushTypeSlot({ instantiationContext, &type });
 }
 
@@ -203,7 +185,7 @@ InternalExceptionPointer Runtime::_mapGenericParams(const Object *v, GenericInst
 					return OutOfMemoryError::alloc();
 				}
 
-				Type copiedType = instantiationContext->genericArgs->at(i);
+				TypeRef copiedType = instantiationContext->genericArgs->at(i);
 
 				instantiationContext->mappedGenericArgs.insert(std::move(copiedName), std::move(copiedType));
 			}
@@ -222,7 +204,7 @@ InternalExceptionPointer Runtime::_mapGenericParams(const Object *v, GenericInst
 				peff::String copiedName(const_cast<Runtime *>(this)->getFixedAlloc());
 				if (!peff::copyAssign(copiedName, value->genericParams.at(i).name))
 					return OutOfMemoryError::alloc();
-				Type copiedType = instantiationContext->genericArgs->at(i);
+				TypeRef copiedType = instantiationContext->genericArgs->at(i);
 				instantiationContext->mappedGenericArgs.insert(std::move(copiedName), std::move(copiedType));
 			}
 			break;
@@ -246,7 +228,7 @@ SLAKE_API InternalExceptionPointer Runtime::_mapGenericParams(const FnOverloadin
 			return OutOfMemoryError::alloc();
 		}
 
-		Type copiedType = instantiationContext->genericArgs->at(i);
+		TypeRef copiedType = instantiationContext->genericArgs->at(i);
 
 		instantiationContext->mappedGenericArgs.insert(std::move(copiedName), std::move(copiedType));
 	}
@@ -268,7 +250,7 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(MemberObjec
 	Duplicator duplicator(this, getCurGenAlloc());
 
 	// Cache missed, instantiate the value.
-	MemberObject *duplicatedValue = (MemberObject *)object->duplicate(&duplicator);  // Make a duplicate of the original value.
+	MemberObject *duplicatedValue = (MemberObject *)object->duplicate(&duplicator);	 // Make a duplicate of the original value.
 
 	while (duplicator.tasks.size()) {
 		if (!duplicator.exec()) {
@@ -284,6 +266,8 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(MemberObjec
 
 	size_t iterateTimes = 0;
 
+	peff::Set<CustomTypeDefObject *> deferredTypeDefs(getFixedAlloc());
+
 	while (dispatcher.hasNext) {
 		dispatcher.hasNext = false;
 
@@ -295,17 +279,22 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(MemberObjec
 			dispatcher.nextWalkTypeSlots = peff::List<TypeSlotGenericInstantiationTask>(getFixedAlloc());
 
 			for (const auto &i : nextWalkTypeSlots) {
-				Type &type = *i.slot;
+				TypeRef &type = *i.slot;
 
 				switch (type.typeId) {
-					case TypeId::Instance: {
-						if (type.isLoadingDeferred()) {
-							IdRefObject *exData = (IdRefObject *)type.getCustomTypeExData();
+					/* case TypeId::Instance: {
+						auto typeDef = ((CustomTypeDefObject *)type.typeDef);
+
+						if (typeDef->isLoadingDeferred()) {
+							IdRefObject *exData = (IdRefObject *)typeDef->typeObject;
 							for (auto &j : exData->entries) {
 								for (auto &k : j.genericArgs) {
 									SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(dispatcher, k, i.context.get()));
 								}
 							}
+
+							if (!deferredTypeDefs.insert(+typeDef))
+								return OutOfMemoryError::alloc();
 						} else {
 							HostObjectRef<IdRefObject> idRefObject = IdRefObject::alloc((Runtime *)this);
 
@@ -313,22 +302,30 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(MemberObjec
 								return OutOfMemoryError::alloc();
 							}
 
-							if (!getFullRef(idRefObject->selfAllocator.get(), (MemberObject *)type.getCustomTypeExData(), idRefObject->entries))
+							if (!getFullRef(idRefObject->selfAllocator.get(), (MemberObject *)typeDef->typeObject, idRefObject->entries))
 								return OutOfMemoryError::alloc();
 
+							HostObjectRef<CustomTypeDefObject> typeDefObject = CustomTypeDefObject::alloc((Runtime *)this);
+
+							if (!typeDefObject) {
+								return OutOfMemoryError::alloc();
+							}
+
+							typeDefObject->typeObject = idRefObject.get();
+
 							// TODO: Add HostRefHolder for idRefObject.
-							type = Type(type.typeId, idRefObject.get());
+							type = TypeRef(type.typeId, typeDefObject.get());
 
 							SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(dispatcher, type, i.context.get()));
 						}
 						break;
-					}
+					}*/
 					case TypeId::Array: {
 						bool isSucceeded;
 						type = type.duplicate(isSucceeded);
 						if (!isSucceeded)
 							return OutOfMemoryError::alloc();
-						SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(dispatcher, type.getArrayExData(), i.context.get()));
+						SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(dispatcher, ((ArrayTypeDefObject *)type.typeDef)->elementType->typeRef, i.context.get()));
 						break;
 					}
 					case TypeId::Ref: {
@@ -336,15 +333,15 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(MemberObjec
 						type = type.duplicate(isSucceeded);
 						if (!isSucceeded)
 							return OutOfMemoryError::alloc();
-						SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(dispatcher, type.getRefExData(), i.context.get()));
+						SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(dispatcher, ((RefTypeDefObject *)type.typeDef)->referencedType->typeRef, i.context.get()));
 						break;
 					}
 					case TypeId::GenericArg: {
-						HostObjectRef<StringObject> nameObject = (StringObject *)type.getGenericArgNameObject();
+						HostObjectRef<GenericArgTypeDefObject> typeDef = (GenericArgTypeDefObject *)type.typeDef;
+						HostObjectRef<StringObject> nameObject = typeDef->nameObject;
 
 						if (auto it = i.context->mappedGenericArgs.find(nameObject->data); it != i.context->mappedGenericArgs.end()) {
-							Type fetchedType = it.value();
-							assert(verifyType(fetchedType));
+							TypeRef fetchedType = it.value();
 							if (it.value().typeId != TypeId::Void)
 								type = fetchedType;
 						} else {
@@ -377,7 +374,7 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(MemberObjec
 						ClassObject *const value = (ClassObject *)v;
 
 						if (value->genericParams.size() && value != i.context->mappedObject) {
-							peff::HashMap<peff::String, Type> copiedMappedGenericArgs(getFixedAlloc());
+							peff::HashMap<peff::String, TypeRef> copiedMappedGenericArgs(getFixedAlloc());
 
 							for (auto [k, v] : i.context->mappedGenericArgs) {
 								peff::String name(getFixedAlloc());
@@ -385,7 +382,7 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(MemberObjec
 								if (!name.build(k))
 									return OutOfMemoryError::alloc();
 
-								if (!(copiedMappedGenericArgs.insert(std::move(name), Type(v))))
+								if (!(copiedMappedGenericArgs.insert(std::move(name), TypeRef(v))))
 									return OutOfMemoryError::alloc();
 							}
 
@@ -422,7 +419,7 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(MemberObjec
 									return OutOfMemoryError::alloc();
 								for (auto i : i.context->mappedGenericArgs) {
 									peff::String name(value->selfAllocator.get());
-									Type type;
+									TypeRef type;
 
 									if (!name.build(i.first)) {
 										return OutOfMemoryError::alloc();
@@ -457,7 +454,7 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(MemberObjec
 							if (!name.build(k))
 								return OutOfMemoryError::alloc();
 
-							if (!(value->mappedGenericArgs.insert(std::move(name), Type(v))))
+							if (!(value->mappedGenericArgs.insert(std::move(name), TypeRef(v))))
 								return OutOfMemoryError::alloc();
 						}
 
@@ -526,6 +523,19 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(MemberObjec
 		}
 	}
 
+	/* for (auto i : deferredTypeDefs) {
+		slake::EntityRef entityRef;
+		SLAKE_RETURN_IF_EXCEPT(resolveIdRef((IdRefObject*)i->typeObject, entityRef));
+
+		if (!entityRef)
+			std::terminate();
+
+		if (entityRef.kind != ObjectRefKind::ObjectRef)
+			std::terminate();
+
+		i->typeObject = entityRef.asObject.instanceObject;
+	}*/
+
 	SLAKE_RETURN_IF_EXCEPT(setGenericCache(object, *instantiationContext->genericArgs, duplicatedValue));
 
 	objectOut = duplicatedValue;
@@ -535,7 +545,7 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(MemberObjec
 
 SLAKE_API InternalExceptionPointer Runtime::_instantiateGenericObject(GenericInstantiationDispatcher &dispatcher, FnOverloadingObject *ol, GenericInstantiationContext *instantiationContext) {
 	if (ol->genericParams.size() && ol->fnObject != instantiationContext->mappedObject) {
-		peff::HashMap<peff::String, Type> copiedMappedGenericArgs(getFixedAlloc());
+		peff::HashMap<peff::String, TypeRef> copiedMappedGenericArgs(getFixedAlloc());
 
 		for (auto [k, v] : instantiationContext->mappedGenericArgs) {
 			peff::String name(getFixedAlloc());
@@ -543,7 +553,7 @@ SLAKE_API InternalExceptionPointer Runtime::_instantiateGenericObject(GenericIns
 			if (!name.build(k))
 				return OutOfMemoryError::alloc();
 
-			if (!(copiedMappedGenericArgs.insert(std::move(name), Type(v))))
+			if (!(copiedMappedGenericArgs.insert(std::move(name), TypeRef(v))))
 				return OutOfMemoryError::alloc();
 		}
 

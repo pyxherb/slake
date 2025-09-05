@@ -11,7 +11,7 @@ namespace slake {
 		peff::String name;
 		AccessModifier accessModifier;
 		size_t offset;
-		Type type;
+		TypeRef type;
 
 		SLAKE_FORCEINLINE FieldRecord(peff::Alloc *allocator) : name(allocator) {}
 		SLAKE_FORCEINLINE FieldRecord(FieldRecord &&rhs)
@@ -22,7 +22,7 @@ namespace slake {
 		}
 
 		SLAKE_FORCEINLINE bool copy(FieldRecord &dest) const noexcept {
-			if (!peff::copy(dest.name, name)) {
+			if (!dest.name.build(name)) {
 				return false;
 			}
 			dest.accessModifier = accessModifier;
@@ -67,7 +67,7 @@ namespace slake {
 
 		SLAKE_API bool appendFieldRecord(FieldRecord &&fieldRecord);
 		SLAKE_API char *appendFieldSpace(size_t size, size_t alignment);
-		SLAKE_API char *appendTypedFieldSpace(const Type &type);
+		SLAKE_API char *appendTypedFieldSpace(const TypeRef &type);
 
 		SLAKE_API static HostObjectRef<ModuleObject> alloc(Runtime *rt);
 		SLAKE_API static HostObjectRef<ModuleObject> alloc(Duplicator *duplicator, const ModuleObject *other);

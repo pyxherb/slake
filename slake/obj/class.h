@@ -25,6 +25,9 @@ namespace slake {
 	};
 
 	struct ObjectLayout {
+#if _DEBUG
+		ClassObject *clsObject = nullptr;  // For debugging
+#endif
 		peff::RcObjectPtr<peff::Alloc> selfAllocator;
 		size_t totalSize = 0;
 		peff::DynArray<ObjectFieldRecord> fieldRecords;
@@ -71,7 +74,7 @@ namespace slake {
 		GenericParamList genericParams;
 
 		TypeRef baseType;
-		peff::DynArray<TypeRef> implTypes;				 // Implemented interfaces
+		peff::DynArray<TypeRef> implTypes;	// Implemented interfaces
 
 		MethodTable *cachedInstantiatedMethodTable = nullptr;
 		ObjectLayout *cachedObjectLayout = nullptr;

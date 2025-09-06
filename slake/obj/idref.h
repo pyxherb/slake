@@ -20,12 +20,14 @@ namespace slake {
 		SLAKE_FORCEINLINE bool copy(IdRefEntry &dest) const {
 			peff::constructAt<IdRefEntry>(&dest, genericArgs.allocator());
 
-			if (!peff::copyAssign(dest.name, name)) {
+			if (!dest.name.build(name)) {
 				return false;
 			}
-			if (!peff::copyAssign(dest.genericArgs, genericArgs)) {
+
+			if (!dest.genericArgs.resizeUninitialized(genericArgs.size())) {
 				return false;
 			}
+			memcpy(dest.genericArgs.data(), genericArgs.data(), genericArgs.size() * sizeof(TypeRef));
 
 			return true;
 		}

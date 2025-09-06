@@ -28,9 +28,18 @@ SLAKE_API slake::IdRefObject::IdRefObject(Runtime *rt, peff::Alloc *selfAllocato
 SLAKE_API IdRefObject::IdRefObject(const IdRefObject &x, peff::Alloc *allocator, bool &succeededOut)
 	: Object(x, allocator),
 	  entries(allocator) {
-	if (!(peff::copyAssign(entries, x.entries))) {
+	if (!entries.resizeUninitialized(x.entries.size())) {
 		succeededOut = false;
 		return;
+	}
+	for (size_t i = 0; i < x.entries.size(); ++i) {
+		if (!x.entries.at(i).copy(entries.at(i))) {
+			for (size_t j = i; j; --j) {
+				peff::destroyAt<IdRefEntry>(&entries.at(j - 1));
+			}
+			succeededOut = false;
+			return;
+		}
 	}
 
 	if (x.paramTypes.hasValue()) {
@@ -55,6 +64,7 @@ SLAKE_API IdRefObject::IdRefObject(const IdRefObject &x, peff::Alloc *allocator,
 }
 
 SLAKE_API IdRefObject::~IdRefObject() {
+	printf("Destroying IdRefObject: %s\n", std::to_string(this).c_str());
 }
 
 SLAKE_API Object *IdRefObject::duplicate(Duplicator *duplicator) const {
@@ -133,7 +143,7 @@ SLAKE_API int IdRefComparator::operator()(const IdRefObject *lhs, const IdRefObj
 			return -1;
 		if (le.name > re.name)
 			return 1;
-		
+
 		if (le.genericArgs.size() < re.genericArgs.size())
 			return -1;
 		if (le.genericArgs.size() > re.genericArgs.size())

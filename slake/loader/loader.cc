@@ -805,18 +805,7 @@ SLAKE_API InternalExceptionPointer loader::loadModule(LoaderContext &context, Ru
 	}
 
 	for (auto i : context.loadedCustomTypeDefs) {
-		IdRefObject *idRefObject = (IdRefObject *)i->typeObject;
-
-		slake::EntityRef entityRef;
-		SLAKE_RETURN_IF_EXCEPT(runtime->resolveIdRef(idRefObject, entityRef));
-
-		if (!entityRef)
-			std::terminate();
-
-		if (entityRef.kind != ObjectRefKind::ObjectRef)
-			std::terminate();
-
-		i->typeObject = entityRef.asObject.instanceObject;
+		SLAKE_RETURN_IF_EXCEPT(runtime->loadDeferredCustomTypeDef(i));
 
 		SLAKE_RETURN_IF_EXCEPT(runtime->registerTypeDef(i));
 	}

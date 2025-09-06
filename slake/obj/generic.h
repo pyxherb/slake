@@ -23,8 +23,9 @@ namespace slake {
 
 			dest.baseType = baseType;
 
-			if (!peff::copyAssign(dest.interfaces, interfaces))
+			if (!dest.interfaces.resize(interfaces.size()))
 				return false;
+			memcpy(dest.interfaces.data(), interfaces.data(), interfaces.size() * sizeof(TypeRef));
 
 			return true;
 		}

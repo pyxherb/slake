@@ -54,7 +54,7 @@ namespace slake {
 		Runtime *runtime;
 
 #ifndef _NDEBUG
-		peff::Map<size_t, void *> recordedRefPoints;
+		peff::Set<size_t> recordedRefPoints;
 #endif
 
 		peff::RcObjectPtr<peff::Alloc> upstream;
@@ -122,6 +122,7 @@ namespace slake {
 		Mutex accessMutex;
 		InstanceObject *unwalkedInstanceList = nullptr;
 		InstanceObject *destructibleList = nullptr;
+		InstanceObject *typeDefList = nullptr;
 		Object *unwalkedList = nullptr;
 		Object *walkedList = nullptr;
 
@@ -134,8 +135,9 @@ namespace slake {
 		SLAKE_API Object *getWalkableList();
 		SLAKE_API void pushWalkable(Object *walkableObject);
 
-		SLAKE_API Object *getUnwalkedList();
+		SLAKE_API Object *getUnwalkedList(bool clearList);
 		SLAKE_API void pushUnwalked(Object *walkableObject);
+		SLAKE_API void updateUnwalkedList(Object *deletedObject);
 
 		SLAKE_API Object *getWalkedList();
 
@@ -450,6 +452,7 @@ namespace slake {
 		SLAKE_API size_t sizeofType(const TypeRef &type);
 		SLAKE_API size_t alignofType(const TypeRef &type);
 		SLAKE_API Value defaultValueOf(const TypeRef &type);
+		SLAKE_API InternalExceptionPointer loadDeferredCustomTypeDef(CustomTypeDefObject *customTypeDef);
 
 		[[nodiscard]] SLAKE_API static bool constructAt(Runtime *dest, peff::Alloc *upstream, RuntimeFlags flags = 0);
 		[[nodiscard]] SLAKE_API static Runtime *alloc(peff::Alloc *selfAllocator, peff::Alloc *upstream, RuntimeFlags flags = 0);

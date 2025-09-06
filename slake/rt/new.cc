@@ -147,6 +147,10 @@ SLAKE_API InternalExceptionPointer Runtime::initObjectLayoutForClass(ClassObject
 		objectLayout->totalSize += size;
 	}
 
+#if _DEBUG
+	objectLayout->clsObject = cls;
+#endif
+
 	// cls->cachedFieldInitVars.shrink_to_fit();
 	cls->cachedObjectLayout = objectLayout.release();
 
@@ -160,7 +164,7 @@ SLAKE_API InternalExceptionPointer Runtime::prepareClassForInstantiation(ClassOb
 		if (cls->baseType.typeId != TypeId::Instance)
 			return allocOutOfMemoryErrorIfAllocFailed(MalformedClassStructureError::alloc(getFixedAlloc(), cls));
 
-		Object *parentClass = ((CustomTypeDefObject*)(ClassObject *)cls->baseType.typeDef)->typeObject;
+		Object *parentClass = ((CustomTypeDefObject *)(ClassObject *)cls->baseType.typeDef)->typeObject;
 		if (parentClass->getObjectKind() != ObjectKind::Class)
 			return allocOutOfMemoryErrorIfAllocFailed(MalformedClassStructureError::alloc(getFixedAlloc(), cls));
 

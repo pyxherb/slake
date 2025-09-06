@@ -118,9 +118,18 @@ SLAKE_API FnOverloadingObject::FnOverloadingObject(const FnOverloadingObject &ot
 
 	access = other.access;
 
-	if (!peff::copyAssign(genericParams, other.genericParams)) {
+	if (!genericParams.resizeUninitialized(other.genericParams.size())) {
 		succeededOut = false;
 		return;
+	}
+	for (size_t i = 0; i < other.genericParams.size(); ++i) {
+		if (!other.genericParams.at(i).copy(genericParams.at(i))) {
+			for (size_t j = i; j; --j) {
+				peff::destroyAt<GenericParam>(&genericParams.at(j - 1));
+			}
+			succeededOut = false;
+			return;
+		}
 	}
 	for (auto [k, v] : other.mappedGenericArgs) {
 		peff::String name(allocator);
@@ -136,10 +145,11 @@ SLAKE_API FnOverloadingObject::FnOverloadingObject(const FnOverloadingObject &ot
 		}
 	}
 
-	if (!peff::copyAssign(paramTypes, other.paramTypes)) {
+	if (!paramTypes.resize(other.paramTypes.size())) {
 		succeededOut = false;
 		return;
 	}
+	memcpy(paramTypes.data(), other.paramTypes.data(), paramTypes.size() * sizeof(TypeRef));
 	returnType = other.returnType;
 
 	overloadingFlags = other.overloadingFlags;
@@ -180,10 +190,11 @@ SLAKE_API RegularFnOverloadingObject::RegularFnOverloadingObject(
 
 SLAKE_API RegularFnOverloadingObject::RegularFnOverloadingObject(const RegularFnOverloadingObject &other, peff::Alloc *allocator, bool &succeededOut) : FnOverloadingObject(other, allocator, succeededOut), sourceLocDescs(allocator), instructions(allocator) {
 	if (succeededOut) {
-		if (!peff::copyAssign(sourceLocDescs, other.sourceLocDescs)) {
+		if (!sourceLocDescs.resize(other.sourceLocDescs.size())) {
 			succeededOut = false;
 			return;
 		}
+		memcpy(sourceLocDescs.data(), other.sourceLocDescs.data(), sourceLocDescs.size() * sizeof(slxfmt::SourceLocDesc));
 
 		if (!instructions.resize(other.instructions.size())) {
 			succeededOut = false;

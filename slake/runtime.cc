@@ -64,12 +64,10 @@ SLAKE_API bool CountablePoolAlloc::isReplaceable(const peff::Alloc *rhs) const n
 SLAKE_API size_t GenerationalPoolAlloc::incRef(size_t globalRc) noexcept {
 	++refCount;
 #ifndef _NDEBUG
-	if (!recordedRefPoints.insert(+globalRc, nullptr)) {
+	if (!recordedRefPoints.insert(+globalRc)) {
 		puts("Error: error adding reference point!");
 	}
 #endif
-	if (globalRc == 3116)
-		puts("");
 	return refCount;
 }
 
@@ -246,6 +244,23 @@ SLAKE_API Value Runtime::defaultValueOf(const TypeRef &type) {
 	std::terminate();
 }
 
+SLAKE_API InternalExceptionPointer Runtime::loadDeferredCustomTypeDef(CustomTypeDefObject *customTypeDef) {
+	IdRefObject *idRefObject = (IdRefObject *)customTypeDef->typeObject;
+
+	slake::EntityRef entityRef;
+	SLAKE_RETURN_IF_EXCEPT(resolveIdRef(idRefObject, entityRef));
+
+	if (!entityRef)
+		std::terminate();
+
+	if (entityRef.kind != ObjectRefKind::ObjectRef)
+		std::terminate();
+
+	customTypeDef->typeObject = entityRef.asObject.instanceObject;
+
+	return {};
+}
+
 SLAKE_API Runtime::Runtime(peff::Alloc *selfAllocator, peff::Alloc *upstream, RuntimeFlags flags)
 	: selfAllocator(selfAllocator),
 	  fixedAlloc(this, upstream),
@@ -270,11 +285,11 @@ SLAKE_API Runtime::~Runtime() {
 
 	_flags |= _RT_DEINITING;
 
+	_rootObject = nullptr;
+
 	gc();
 
 	_releaseParallelGcResources();
-
-	_rootObject = nullptr;
 
 	// No need to delete the root object explicitly.
 
@@ -292,7 +307,7 @@ SLAKE_API Object *Runtime::getEqualTypeDef(Object *typeDef) const noexcept {
 	return nullptr;
 }
 
-SLAKE_API void Runtime::unregisterTypeDef(Object* typeDef) noexcept {
+SLAKE_API void Runtime::unregisterTypeDef(Object *typeDef) noexcept {
 	typeDefs.remove(typeDef);
 }
 

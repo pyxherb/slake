@@ -140,10 +140,11 @@ SLAKE_API ClassObject::ClassObject(Duplicator *duplicator, const ClassObject &x,
 	if (succeededOut) {
 		_flags = x._flags;
 
-		if (!peff::copyAssign(genericArgs, x.genericArgs)) {
+		if (!genericArgs.resize(x.genericArgs.size())) {
 			succeededOut = false;
 			return;
 		}
+		memcpy(genericArgs.data(), x.genericArgs.data(), genericArgs.size() * sizeof(TypeRef));
 		for (auto [k, v] : x.mappedGenericArgs) {
 			peff::String name(allocator);
 
@@ -157,14 +158,24 @@ SLAKE_API ClassObject::ClassObject(Duplicator *duplicator, const ClassObject &x,
 				return;
 			}
 		}
-		if (!peff::copyAssign(genericParams, x.genericParams)) {
+		if (!genericParams.resizeUninitialized(x.genericParams.size())) {
 			succeededOut = false;
 			return;
 		}
-		if (!peff::copyAssign(implTypes, x.implTypes)) {
+		for (size_t i = 0; i < x.genericParams.size(); ++i) {
+			if (!x.genericParams.at(i).copy(genericParams.at(i))) {
+				for (size_t j = i; j; --j) {
+					peff::destroyAt<GenericParam>(&genericParams.at(j - 1));
+				}
+				succeededOut = false;
+				return;
+			}
+		}
+		if (!implTypes.resize(x.implTypes.size())) {
 			succeededOut = false;
 			return;
 		}
+		memcpy(implTypes.data(), x.implTypes.data(), implTypes.size() * sizeof(TypeRef));
 
 		baseType = x.baseType;
 
@@ -290,20 +301,21 @@ SLAKE_API InterfaceObject::InterfaceObject(Duplicator *duplicator, const Interfa
 	  genericParams(allocator),
 	  implTypes(allocator) {
 	if (succeededOut) {
-		if (!peff::copyAssign(genericArgs, x.genericArgs)) {
-			succeededOut = false;
-			return;
+		for (size_t i = 0; i < x.genericParams.size(); ++i) {
+			if (!x.genericParams.at(i).copy(genericParams.at(i))) {
+				for (size_t j = i; j; --j) {
+					peff::destroyAt<GenericParam>(&genericParams.at(j - 1));
+				}
+				succeededOut = false;
+				return;
+			}
 		}
 
-		if (!peff::copyAssign(genericParams, x.genericParams)) {
+		if (!implTypes.resize(x.implTypes.size())) {
 			succeededOut = false;
 			return;
 		}
-
-		if (!peff::copyAssign(implTypes, x.implTypes)) {
-			succeededOut = false;
-			return;
-		}
+		memcpy(implTypes.data(), x.implTypes.data(), implTypes.size() * sizeof(TypeRef));
 	}
 }
 

@@ -143,27 +143,27 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 				case ObjectKind::CustomTypeDef:
 					GCWalkContext::pushObject(context, ((CustomTypeDefObject *)v)->typeObject);
 					break;
-				case ObjectKind::GenericArgTypeDef:
-					GCWalkContext::pushObject(context, ((GenericArgTypeDefObject *)v)->ownerObject);
-					GCWalkContext::pushObject(context, ((GenericArgTypeDefObject *)v)->nameObject);
-					break;
 				case ObjectKind::ArrayTypeDef:
 					GCWalkContext::pushObject(context, ((ArrayTypeDefObject *)v)->elementType);
 					break;
 				case ObjectKind::RefTypeDef:
 					GCWalkContext::pushObject(context, ((RefTypeDefObject *)v)->referencedType);
 					break;
+				case ObjectKind::GenericArgTypeDef:
+					GCWalkContext::pushObject(context, ((GenericArgTypeDefObject *)v)->ownerObject);
+					GCWalkContext::pushObject(context, ((GenericArgTypeDefObject *)v)->nameObject);
+					break;
 				case ObjectKind::FnTypeDef: {
 					auto typeDef = ((FnTypeDefObject *)v);
-					_gcWalk(context, typeDef->returnType);
-					for (auto &i : typeDef->paramTypes)
-						_gcWalk(context, i);
+					GCWalkContext::pushObject(context, typeDef->returnType);
+					for (auto i : typeDef->paramTypes)
+						GCWalkContext::pushObject(context, i);
 					break;
 				}
 				case ObjectKind::ParamTypeListTypeDef: {
 					auto typeDef = ((ParamTypeListTypeDefObject *)v);
-					for (auto &i : typeDef->paramTypes)
-						_gcWalk(context, i);
+					for (auto i : typeDef->paramTypes)
+						GCWalkContext::pushObject(context, i);
 					break;
 				}
 				case ObjectKind::Instance: {
@@ -492,11 +492,12 @@ SLAKE_API void GCWalkContext::pushWalkable(Object *walkableObject) {
 	walkableList = walkableObject;
 }
 
-SLAKE_API Object *GCWalkContext::getUnwalkedList() {
+SLAKE_API Object *GCWalkContext::getUnwalkedList(bool clearList) {
 	MutexGuard accessMutexGuard(accessMutex);
 
 	Object *p = unwalkedList;
-	unwalkedList = nullptr;
+	if (clearList)
+		unwalkedList = nullptr;
 
 	return p;
 }
@@ -510,6 +511,15 @@ SLAKE_API void GCWalkContext::pushUnwalked(Object *walkableObject) {
 	walkableObject->nextUnwalked = unwalkedList;
 
 	unwalkedList = walkableObject;
+}
+
+SLAKE_API void GCWalkContext::updateUnwalkedList(Object *deletedObject) {
+	MutexGuard accessMutexGuard(accessMutex);
+
+	if (unwalkedList) {
+		if (unwalkedList == deletedObject)
+			unwalkedList = deletedObject;
+	}
 }
 
 SLAKE_API Object *GCWalkContext::getWalkedList() {
@@ -537,6 +547,11 @@ SLAKE_API void GCWalkContext::reset() {
 	destructibleList = nullptr;
 	unwalkedList = nullptr;
 }
+
+enum class GCTarget : uint8_t {
+	TypeDef = 0,
+	All
+};
 
 SLAKE_API void Runtime::_gcSerial(Object *&objectList, Object *&endObjectOut, size_t &nObjects, ObjectGeneration newGeneration) {
 rescan:
@@ -570,9 +585,9 @@ rescan:
 				case ObjectKind::Instance: {
 					InstanceObject *value = (InstanceObject *)i;
 
-					if (!(value->_flags & VF_DESTRUCTED)) {
+					/* if (!(value->_flags & VF_DESTRUCTED)) {
 						context.pushDestructible(value);
-					}
+					}*/
 					break;
 				}
 				default:
@@ -655,8 +670,24 @@ rescan:
 
 	size_t nDeletedObjects = 0;
 	// Delete unreachable objects.
-	for (Object *i = context.getUnwalkedList(), *next; i; i = next) {
+	GCTarget curGcTarget = GCTarget::TypeDef;
+	bool clearUnwalkedList = false;
+
+rescanDeletables:
+	for (Object *i = context.getUnwalkedList(clearUnwalkedList), *next; i; i = next) {
 		next = i->nextUnwalked;
+
+		switch (curGcTarget) {
+			case GCTarget::TypeDef:
+				if (!isTypeDefObject(i))
+					continue;
+				unregisterTypeDef(i);
+				break;
+			case GCTarget::All:
+				break;
+			default:
+				std::terminate();
+		}
 
 		if (i == objectList) {
 			objectList = i->nextSameGenObject;
@@ -680,9 +711,22 @@ rescan:
 			i->nextSameGenObject->prevSameGenObject = i->prevSameGenObject;
 		}
 
+		context.updateUnwalkedList(i);
+
 		i->dealloc();
 
 		++nDeletedObjects;
+	}
+
+	switch (curGcTarget) {
+		case GCTarget::TypeDef:
+			curGcTarget = GCTarget::All;
+			clearUnwalkedList = true;
+			break;
+		case GCTarget::All:
+			break;
+		default:
+			std::terminate();
 	}
 
 	nObjects -= nDeletedObjects;
@@ -886,13 +930,27 @@ rescanLeftovers:
 
 	size_t nDeletedObjects = 0;
 
+	GCTarget curGcTarget = GCTarget::TypeDef;
+	bool clearUnwalkedList = false;
 	for (size_t i = 0; i < parallelGcThreads.size(); ++i) {
 		ParallelGcThreadRunnable *curRunnable = (ParallelGcThreadRunnable *)parallelGcThreads.at(i)->runnable;
 		GCWalkContext &context = curRunnable->context;
 
 		// Delete unreachable objects.
-		for (Object *j = context.getUnwalkedList(), *next; j; j = next) {
+		for (Object *j = context.getUnwalkedList(clearUnwalkedList), *next; j; j = next) {
 			next = j->nextUnwalked;
+
+			switch (curGcTarget) {
+				case GCTarget::TypeDef:
+					if (!isTypeDefObject(j))
+						continue;
+					unregisterTypeDef(j);
+					break;
+				case GCTarget::All:
+					break;
+				default:
+					std::terminate();
+			}
 
 			if (j == objectList) {
 				assert(!j->prevSameGenObject);
@@ -907,10 +965,23 @@ rescanLeftovers:
 				j->nextSameGenObject->prevSameGenObject = j->prevSameGenObject;
 			}
 
+			context.updateUnwalkedList(j);
+
 			j->dealloc();
 
 			++nDeletedObjects;
 		}
+	}
+
+	switch (curGcTarget) {
+		case GCTarget::TypeDef:
+			curGcTarget = GCTarget::All;
+			clearUnwalkedList = true;
+			break;
+		case GCTarget::All:
+			break;
+		default:
+			std::terminate();
 	}
 
 	nObjects -= nDeletedObjects;

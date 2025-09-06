@@ -59,7 +59,7 @@ SLAKE_API void Runtime::gc() {
 		puts("Detected unreplaced allocator references!");
 
 		for (auto i : youngAlloc.recordedRefPoints) {
-			printf("Reference point #%zu:\n", i.first);
+			printf("Reference point #%zu\n", i);
 		}
 
 		puts("Dump completed");

@@ -4,66 +4,6 @@
 
 using namespace slake;
 
-SLAKE_API CustomTypeDefObject::CustomTypeDefObject(Runtime *rt, peff::Alloc *selfAllocator)
-	: Object(rt, selfAllocator, ObjectKind::CustomTypeDef) {
-}
-
-SLAKE_API CustomTypeDefObject::CustomTypeDefObject(Duplicator *duplicator, const CustomTypeDefObject &x, peff::Alloc *allocator, bool &succeededOut) : Object(x, allocator) {
-	typeObject = x.typeObject;
-
-	succeededOut = true;
-}
-
-SLAKE_API CustomTypeDefObject::~CustomTypeDefObject() {
-}
-
-SLAKE_API Object *CustomTypeDefObject::duplicate(Duplicator *duplicator) const {
-	return (Object *)alloc(duplicator, this).get();
-}
-
-SLAKE_API HostObjectRef<CustomTypeDefObject> slake::CustomTypeDefObject::alloc(Runtime *rt) {
-	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();
-
-	std::unique_ptr<CustomTypeDefObject, util::DeallocableDeleter<CustomTypeDefObject>> ptr(
-		peff::allocAndConstruct<CustomTypeDefObject>(
-			curGenerationAllocator.get(),
-			sizeof(std::max_align_t),
-			rt, curGenerationAllocator.get()));
-	if (!ptr)
-		return nullptr;
-
-	if (!rt->addObject(ptr.get()))
-		return nullptr;
-
-	return ptr.release();
-}
-
-SLAKE_API HostObjectRef<CustomTypeDefObject> slake::CustomTypeDefObject::alloc(Duplicator *duplicator, const CustomTypeDefObject *other) {
-	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = other->associatedRuntime->getCurGenAlloc();
-
-	bool succeeded = true;
-
-	std::unique_ptr<CustomTypeDefObject, util::DeallocableDeleter<CustomTypeDefObject>> ptr(
-		peff::allocAndConstruct<CustomTypeDefObject>(
-			curGenerationAllocator.get(),
-			sizeof(std::max_align_t),
-			duplicator, *other, curGenerationAllocator.get(), succeeded));
-	if (!ptr)
-		return nullptr;
-
-	if (!succeeded)
-		return nullptr;
-
-	if (!other->associatedRuntime->addObject(ptr.get()))
-		return nullptr;
-
-	return ptr.release();
-}
-
-SLAKE_API void slake::CustomTypeDefObject::dealloc() {
-	peff::destroyAndRelease<CustomTypeDefObject>(selfAllocator.get(), this, sizeof(std::max_align_t));
-}
-
 SLAKE_API HeapTypeObject::HeapTypeObject(Runtime *rt, peff::Alloc *selfAllocator)
 	: Object(rt, selfAllocator, ObjectKind::HeapType) {
 }
@@ -125,6 +65,66 @@ SLAKE_API HostObjectRef<HeapTypeObject> slake::HeapTypeObject::alloc(Duplicator 
 
 SLAKE_API void slake::HeapTypeObject::dealloc() {
 	peff::destroyAndRelease<HeapTypeObject>(selfAllocator.get(), this, sizeof(std::max_align_t));
+}
+
+SLAKE_API CustomTypeDefObject::CustomTypeDefObject(Runtime *rt, peff::Alloc *selfAllocator)
+	: Object(rt, selfAllocator, ObjectKind::CustomTypeDef) {
+}
+
+SLAKE_API CustomTypeDefObject::CustomTypeDefObject(Duplicator *duplicator, const CustomTypeDefObject &x, peff::Alloc *allocator, bool &succeededOut) : Object(x, allocator) {
+	typeObject = x.typeObject;
+
+	succeededOut = true;
+}
+
+SLAKE_API CustomTypeDefObject::~CustomTypeDefObject() {
+}
+
+SLAKE_API Object *CustomTypeDefObject::duplicate(Duplicator *duplicator) const {
+	return (Object *)alloc(duplicator, this).get();
+}
+
+SLAKE_API HostObjectRef<CustomTypeDefObject> slake::CustomTypeDefObject::alloc(Runtime *rt) {
+	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();
+
+	std::unique_ptr<CustomTypeDefObject, util::DeallocableDeleter<CustomTypeDefObject>> ptr(
+		peff::allocAndConstruct<CustomTypeDefObject>(
+			curGenerationAllocator.get(),
+			sizeof(std::max_align_t),
+			rt, curGenerationAllocator.get()));
+	if (!ptr)
+		return nullptr;
+
+	if (!rt->addObject(ptr.get()))
+		return nullptr;
+
+	return ptr.release();
+}
+
+SLAKE_API HostObjectRef<CustomTypeDefObject> slake::CustomTypeDefObject::alloc(Duplicator *duplicator, const CustomTypeDefObject *other) {
+	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = other->associatedRuntime->getCurGenAlloc();
+
+	bool succeeded = true;
+
+	std::unique_ptr<CustomTypeDefObject, util::DeallocableDeleter<CustomTypeDefObject>> ptr(
+		peff::allocAndConstruct<CustomTypeDefObject>(
+			curGenerationAllocator.get(),
+			sizeof(std::max_align_t),
+			duplicator, *other, curGenerationAllocator.get(), succeeded));
+	if (!ptr)
+		return nullptr;
+
+	if (!succeeded)
+		return nullptr;
+
+	if (!other->associatedRuntime->addObject(ptr.get()))
+		return nullptr;
+
+	return ptr.release();
+}
+
+SLAKE_API void slake::CustomTypeDefObject::dealloc() {
+	peff::destroyAndRelease<CustomTypeDefObject>(selfAllocator.get(), this, sizeof(std::max_align_t));
 }
 
 SLAKE_API ArrayTypeDefObject::ArrayTypeDefObject(Runtime *rt, peff::Alloc *selfAllocator)
@@ -631,7 +631,10 @@ SLAKE_API int TypeDefComparator::operator()(const Object *lhs, const Object *rhs
 			CustomTypeDefObject *l = (CustomTypeDefObject *)lhs,
 								*r = (CustomTypeDefObject *)rhs;
 
-			assert(l->isLoadingDeferred() == r->isLoadingDeferred());
+			if (l->typeObject->getObjectKind() < r->typeObject->getObjectKind())
+				return -1;
+			if (l->typeObject->getObjectKind() > r->typeObject->getObjectKind())
+				return 1;
 
 			if (l->isLoadingDeferred()) {
 				int result = IdRefComparator()((IdRefObject *)l->typeObject, (IdRefObject *)r->typeObject);

@@ -7,6 +7,21 @@
 #include "object.h"
 
 namespace slake {
+	class HeapTypeObject final : public Object {
+	public:
+		TypeRef typeRef;
+
+		SLAKE_API HeapTypeObject(Runtime *rt, peff::Alloc *selfAllocator);
+		SLAKE_API HeapTypeObject(Duplicator *duplicator, const HeapTypeObject &x, peff::Alloc *allocator, bool &succeededOut);
+		SLAKE_API virtual ~HeapTypeObject();
+
+		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
+
+		SLAKE_API static HostObjectRef<HeapTypeObject> alloc(Runtime *rt);
+		SLAKE_API static HostObjectRef<HeapTypeObject> alloc(Duplicator *duplicator, const HeapTypeObject *other);
+		SLAKE_API virtual void dealloc() override;
+	};
+
 	class CustomTypeDefObject final : public Object {
 	public:
 		Object *typeObject;
@@ -24,21 +39,6 @@ namespace slake {
 		SLAKE_FORCEINLINE bool isLoadingDeferred() const noexcept {
 			return typeObject->getObjectKind() == ObjectKind::IdRef;
 		}
-	};
-
-	class HeapTypeObject final : public Object {
-	public:
-		TypeRef typeRef;
-
-		SLAKE_API HeapTypeObject(Runtime *rt, peff::Alloc *selfAllocator);
-		SLAKE_API HeapTypeObject(Duplicator *duplicator, const HeapTypeObject &x, peff::Alloc *allocator, bool &succeededOut);
-		SLAKE_API virtual ~HeapTypeObject();
-
-		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
-
-		SLAKE_API static HostObjectRef<HeapTypeObject> alloc(Runtime *rt);
-		SLAKE_API static HostObjectRef<HeapTypeObject> alloc(Duplicator *duplicator, const HeapTypeObject *other);
-		SLAKE_API virtual void dealloc() override;
 	};
 
 	class ArrayTypeDefObject final : public Object {

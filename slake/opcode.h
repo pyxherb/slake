@@ -84,7 +84,6 @@ namespace slake {
 
 		APTOTUPLE,	// Cast an argument pack to a tuple
 
-		SIZEOF,	 // Get size of a type
 		TYPEOF,	 // Get type of an object
 
 		CONSTSW,  // Constant switch

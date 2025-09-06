@@ -64,7 +64,6 @@ SLAKE_API IdRefObject::IdRefObject(const IdRefObject &x, peff::Alloc *allocator,
 }
 
 SLAKE_API IdRefObject::~IdRefObject() {
-	printf("Destroying IdRefObject: %s\n", std::to_string(this).c_str());
 }
 
 SLAKE_API Object *IdRefObject::duplicate(Duplicator *duplicator) const {

@@ -520,6 +520,15 @@ SLAKE_API void GCWalkContext::updateUnwalkedList(Object *deletedObject) {
 		if (unwalkedList == deletedObject)
 			unwalkedList = deletedObject;
 	}
+
+	if (deletedObject->prevUnwalked)
+		deletedObject->prevUnwalked->nextUnwalked = deletedObject->nextUnwalked;
+
+	if (deletedObject->nextUnwalked)
+		deletedObject->nextUnwalked->prevUnwalked = deletedObject->prevUnwalked;
+
+	deletedObject->prevUnwalked = nullptr;
+	deletedObject->nextUnwalked = nullptr;
 }
 
 SLAKE_API Object *GCWalkContext::getWalkedList() {
@@ -674,7 +683,23 @@ rescan:
 	bool clearUnwalkedList = false;
 
 rescanDeletables:
-	for (Object *i = context.getUnwalkedList(clearUnwalkedList), *next; i; i = next) {
+	Object *i = context.getUnwalkedList(clearUnwalkedList);
+
+	bool updateUnwalkedList;
+	switch (curGcTarget) {
+		case GCTarget::TypeDef: {
+			if (!isTypeDefObject(i))
+				updateUnwalkedList = true;
+			break;
+		}
+		case GCTarget::All:
+			updateUnwalkedList = false;
+			break;
+		default:
+			std::terminate();
+	}
+
+	for (Object *next; i; i = next) {
 		next = i->nextUnwalked;
 
 		switch (curGcTarget) {
@@ -711,8 +736,8 @@ rescanDeletables:
 			i->nextSameGenObject->prevSameGenObject = i->prevSameGenObject;
 		}
 
-		context.updateUnwalkedList(i);
-
+		if (updateUnwalkedList)
+			context.updateUnwalkedList(i);
 		i->dealloc();
 
 		++nDeletedObjects;
@@ -722,7 +747,7 @@ rescanDeletables:
 		case GCTarget::TypeDef:
 			curGcTarget = GCTarget::All;
 			clearUnwalkedList = true;
-			break;
+			goto rescanDeletables;
 		case GCTarget::All:
 			break;
 		default:
@@ -932,12 +957,27 @@ rescanLeftovers:
 
 	GCTarget curGcTarget = GCTarget::TypeDef;
 	bool clearUnwalkedList = false;
+rescanDeletables:
 	for (size_t i = 0; i < parallelGcThreads.size(); ++i) {
 		ParallelGcThreadRunnable *curRunnable = (ParallelGcThreadRunnable *)parallelGcThreads.at(i)->runnable;
 		GCWalkContext &context = curRunnable->context;
 
 		// Delete unreachable objects.
-		for (Object *j = context.getUnwalkedList(clearUnwalkedList), *next; j; j = next) {
+		Object *j = context.getUnwalkedList(clearUnwalkedList);
+		bool updateUnwalkedList;
+		switch (curGcTarget) {
+			case GCTarget::TypeDef: {
+				if (!isTypeDefObject(j))
+					updateUnwalkedList = true;
+				break;
+			}
+			case GCTarget::All:
+				updateUnwalkedList = false;
+				break;
+			default:
+				std::terminate();
+		}
+		for (Object *next; j; j = next) {
 			next = j->nextUnwalked;
 
 			switch (curGcTarget) {
@@ -967,6 +1007,9 @@ rescanLeftovers:
 
 			context.updateUnwalkedList(j);
 
+			if (updateUnwalkedList)
+				context.updateUnwalkedList(j);
+
 			j->dealloc();
 
 			++nDeletedObjects;
@@ -977,7 +1020,7 @@ rescanLeftovers:
 		case GCTarget::TypeDef:
 			curGcTarget = GCTarget::All;
 			clearUnwalkedList = true;
-			break;
+			goto rescanDeletables;
 		case GCTarget::All:
 			break;
 		default:

@@ -781,6 +781,9 @@ SLAKE_API int TypeDefComparator::operator()(const Object *lhs, const Object *rhs
 }
 
 SLAKE_API bool slake::isTypeDefObject(Object *object) {
+	if (!object)
+		return false;
+
 	switch (object->getObjectKind()) {
 		case ObjectKind::CustomTypeDef:
 		case ObjectKind::ArrayTypeDef:

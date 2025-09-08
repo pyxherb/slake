@@ -50,8 +50,8 @@ SLAKE_API MinorFrame::MinorFrame(
 	Runtime *rt,
 	peff::Alloc *allocator,
 	size_t stackBase)
-	: exceptHandlers(allocator),
-	  stackBase(stackBase) {
+	: stackBase(stackBase),
+	  exceptHandlers(allocator) {
 }
 
 SLAKE_API MajorFrame::MajorFrame(Runtime *rt, peff::Alloc *allocator)

@@ -337,9 +337,9 @@ SLKC_API std::optional<CompilationError> slkc::determinePromotionalType(
 	SLKC_RETURN_IF_COMP_ERROR(getTypePromotionLevel(rhs, rhsWeight));
 
 	if (lhsWeight < rhsWeight) {
-		typeNameOut = lhs;
-	} else if (lhsWeight > rhsWeight) {
 		typeNameOut = rhs;
+	} else if (lhsWeight > rhsWeight) {
+		typeNameOut = lhs;
 	} else {
 		switch (lhs->typeNameKind) {
 			case TypeNameKind::Array: {

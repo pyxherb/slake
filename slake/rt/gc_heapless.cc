@@ -400,9 +400,8 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 					for (auto &k : value->nextArgStack)
 						_gcWalk(context, k);
 					for (auto &k : value->minorFrames) {
-						for (auto &l : k.exceptHandlers) {
+						for (auto &l : k.exceptHandlers)
 							_gcWalk(context, l.type);
-						}
 					}
 
 					break;

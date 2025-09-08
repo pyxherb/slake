@@ -1938,7 +1938,9 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 			xh.type = ins.operands[0].getTypeName();
 			xh.off = ins.operands[1].getU32();
 
-			if (!curMajorFrame->resumable->minorFrames.back().exceptHandlers.pushBack(std::move(xh)))
+			auto &minorFrame = curMajorFrame->resumable->minorFrames.back();
+
+			if (!minorFrame.exceptHandlers.pushBack(std::move(xh)))
 				return OutOfMemoryError::alloc();
 			break;
 		}
@@ -2072,7 +2074,7 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 
 					const Instruction &ins = ol->instructions.at(curMajorFrame->resumable->curIns);
 
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _execIns(context, curMajorFrame, ins, isContextChanged));
+					SLAKE_RETURN_IF_EXCEPT(_execIns(context, curMajorFrame, ins, isContextChanged));
 				}
 
 				break;

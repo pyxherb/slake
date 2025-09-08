@@ -196,7 +196,7 @@ namespace slake {
 		/// @brief Execute a single instruction.
 		/// @param context Context for execution.
 		/// @param ins Instruction to be executed.
-		[[nodiscard]] SLAKE_API InternalExceptionPointer _execIns(ContextObject *context, MajorFrame *curMajorFrame, const Instruction &ins, bool &isContextChangedOut) noexcept;
+		[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer _execIns(ContextObject *context, MajorFrame *curMajorFrame, const Instruction &ins, bool &isContextChangedOut) noexcept;
 
 	public:
 		Object *youngObjectList = nullptr, *persistentObjectList = nullptr;

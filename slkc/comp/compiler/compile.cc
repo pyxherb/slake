@@ -6,52 +6,52 @@ SLKC_API std::optional<CompilationError> slkc::compileTypeName(
 	CompileEnvironment *compileEnv,
 	CompilationContext *compilationContext,
 	AstNodePtr<TypeNameNode> typeName,
-	slake::Type &typeOut) {
+	slake::TypeRef &typeOut) {
 	switch (typeName->typeNameKind) {
 		case TypeNameKind::Void:
-			typeOut = slake::Type(slake::TypeId::Void);
+			typeOut = slake::TypeRef(slake::TypeId::Void);
 			break;
 		case TypeNameKind::I8:
-			typeOut = slake::Type(slake::TypeId::I8);
+			typeOut = slake::TypeRef(slake::TypeId::I8);
 			break;
 		case TypeNameKind::I16:
-			typeOut = slake::Type(slake::TypeId::I16);
+			typeOut = slake::TypeRef(slake::TypeId::I16);
 			break;
 		case TypeNameKind::I32:
-			typeOut = slake::Type(slake::TypeId::I32);
+			typeOut = slake::TypeRef(slake::TypeId::I32);
 			break;
 		case TypeNameKind::I64:
-			typeOut = slake::Type(slake::TypeId::I64);
+			typeOut = slake::TypeRef(slake::TypeId::I64);
 			break;
 		case TypeNameKind::U8:
-			typeOut = slake::Type(slake::TypeId::U8);
+			typeOut = slake::TypeRef(slake::TypeId::U8);
 			break;
 		case TypeNameKind::U16:
-			typeOut = slake::Type(slake::TypeId::U16);
+			typeOut = slake::TypeRef(slake::TypeId::U16);
 			break;
 		case TypeNameKind::U32:
-			typeOut = slake::Type(slake::TypeId::U32);
+			typeOut = slake::TypeRef(slake::TypeId::U32);
 			break;
 		case TypeNameKind::U64:
-			typeOut = slake::Type(slake::TypeId::U64);
+			typeOut = slake::TypeRef(slake::TypeId::U64);
 			break;
 		case TypeNameKind::F32:
-			typeOut = slake::Type(slake::TypeId::F32);
+			typeOut = slake::TypeRef(slake::TypeId::F32);
 			break;
 		case TypeNameKind::F64:
-			typeOut = slake::Type(slake::TypeId::F64);
+			typeOut = slake::TypeRef(slake::TypeId::F64);
 			break;
 		case TypeNameKind::String:
-			typeOut = slake::Type(slake::TypeId::String);
+			typeOut = slake::TypeRef(slake::TypeId::String);
 			break;
 		case TypeNameKind::Bool:
-			typeOut = slake::Type(slake::TypeId::Bool);
+			typeOut = slake::TypeRef(slake::TypeId::Bool);
 			break;
 		case TypeNameKind::Object:
-			typeOut = slake::Type(slake::TypeId::Instance, nullptr);
+			typeOut = slake::TypeRef(slake::TypeId::Instance, nullptr);
 			break;
 		case TypeNameKind::Any:
-			typeOut = slake::Type(slake::TypeId::Any);
+			typeOut = slake::TypeRef(slake::TypeId::Any);
 			break;
 		case TypeNameKind::Custom: {
 			AstNodePtr<CustomTypeNameNode> t = typeName.castTo<CustomTypeNameNode>();
@@ -67,6 +67,12 @@ SLKC_API std::optional<CompilationError> slkc::compileTypeName(
 			switch (m->astNodeType) {
 				case AstNodeType::Class:
 				case AstNodeType::Interface: {
+					slake::HostObjectRef<slake::CustomTypeDefObject> typeDef;
+
+					if (!(typeDef = slake::CustomTypeDefObject::alloc(compileEnv->runtime))) {
+						return genOutOfRuntimeMemoryCompError();
+					}
+
 					IdRefPtr fullName;
 
 					SLKC_RETURN_IF_COMP_ERROR(getFullIdRef(doc->allocator.get(), m, fullName));
@@ -79,10 +85,18 @@ SLKC_API std::optional<CompilationError> slkc::compileTypeName(
 						return genOutOfMemoryCompError();
 					}
 
-					typeOut = slake::Type(slake::TypeId::Instance, obj.get());
+					typeDef->typeObject = obj.get();
+
+					typeOut = slake::TypeRef(slake::TypeId::Instance, typeDef.get());
 					break;
 				}
 				case AstNodeType::GenericParam: {
+					slake::HostObjectRef<slake::GenericArgTypeDefObject> typeDef;
+
+					if (!(typeDef = slake::GenericArgTypeDefObject::alloc(compileEnv->runtime))) {
+						return genOutOfRuntimeMemoryCompError();
+					}
+
 					slake::HostObjectRef<slake::StringObject> obj;
 
 					if (!(obj = slake::StringObject::alloc(compileEnv->runtime))) {
@@ -97,7 +111,10 @@ SLKC_API std::optional<CompilationError> slkc::compileTypeName(
 						return genOutOfMemoryCompError();
 					}
 
-					typeOut = slake::Type(obj.get(), /* Placeholder!!! */ nullptr);
+					typeDef->ownerObject = nullptr;
+					typeDef->nameObject = obj.get();
+
+					typeOut = slake::TypeRef(slake::TypeId::GenericArg, typeDef.get());
 					break;
 				}
 				default:
@@ -110,38 +127,62 @@ SLKC_API std::optional<CompilationError> slkc::compileTypeName(
 			AstNodePtr<ArrayTypeNameNode> t = typeName.castTo<ArrayTypeNameNode>();
 			peff::SharedPtr<Document> doc = t->document->sharedFromThis();
 
-			slake::HostObjectRef<slake::TypeDefObject> obj;
+			slake::HostObjectRef<slake::ArrayTypeDefObject> typeDef;
 
-			if (!(obj = slake::TypeDefObject::alloc(compileEnv->runtime))) {
+			if (!(typeDef = slake::ArrayTypeDefObject::alloc(compileEnv->runtime))) {
 				return genOutOfRuntimeMemoryCompError();
 			}
 
-			SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, compilationContext, t->elementType, obj->type));
+			slake::HostObjectRef<slake::HeapTypeObject> obj;
+
+			if (!(obj = slake::HeapTypeObject::alloc(compileEnv->runtime))) {
+				return genOutOfRuntimeMemoryCompError();
+			}
 
 			if (!(compileEnv->hostRefHolder.addObject(obj.get()))) {
 				return genOutOfMemoryCompError();
 			}
 
-			typeOut = slake::Type(slake::TypeId::Array, obj.get());
+			SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, compilationContext, t->elementType, obj->typeRef));
+
+			if (!(compileEnv->hostRefHolder.addObject(typeDef.get()))) {
+				return genOutOfMemoryCompError();
+			}
+
+			typeDef->elementType = obj.get();
+
+			typeOut = slake::TypeRef(slake::TypeId::Array, typeDef.get());
 			break;
 		}
 		case TypeNameKind::Ref: {
 			AstNodePtr<RefTypeNameNode> t = typeName.castTo<RefTypeNameNode>();
 			peff::SharedPtr<Document> doc = t->document->sharedFromThis();
 
-			slake::HostObjectRef<slake::TypeDefObject> obj;
+			slake::HostObjectRef<slake::RefTypeDefObject> typeDef;
 
-			if (!(obj = slake::TypeDefObject::alloc(compileEnv->runtime))) {
+			if (!(typeDef = slake::RefTypeDefObject::alloc(compileEnv->runtime))) {
 				return genOutOfRuntimeMemoryCompError();
 			}
 
-			SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, compilationContext, t->referencedType, obj->type));
+			if (!(compileEnv->hostRefHolder.addObject(typeDef.get()))) {
+				return genOutOfMemoryCompError();
+			}
+
+			slake::HostObjectRef<slake::HeapTypeObject> obj;
+
+			if (!(obj = slake::HeapTypeObject::alloc(compileEnv->runtime))) {
+				return genOutOfRuntimeMemoryCompError();
+			}
+
+			SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, compilationContext, t->referencedType, obj->typeRef));
 
 			if (!(compileEnv->hostRefHolder.addObject(obj.get()))) {
 				return genOutOfMemoryCompError();
 			}
 
-			typeOut = slake::Type(slake::TypeId::Ref, obj.get());
+			typeDef->referencedType = obj.get();
+
+			typeOut = slake::TypeRef(slake::TypeId::Ref, typeDef.get());
 			break;
 		}
 		case TypeNameKind::Tuple: {
@@ -159,14 +200,24 @@ SLKC_API std::optional<CompilationError> slkc::compileTypeName(
 			}
 
 			for (size_t i = 0; i < t->elementTypes.size(); ++i) {
-				SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, compilationContext, t->elementTypes.at(i), obj->elementTypes.at(i)));
+				slake::HostObjectRef<slake::HeapTypeObject> heapType;
+
+				if (!(heapType = slake::HeapTypeObject::alloc(compileEnv->runtime)))
+					return genOutOfRuntimeMemoryCompError();
+
+				SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, compilationContext, t->elementTypes.at(i), heapType->typeRef));
+
+				if (!(compileEnv->hostRefHolder.addObject(heapType.get())))
+					return genOutOfMemoryCompError();
+
+				obj->elementTypes.at(i) = heapType.get();
 			}
 
 			if (!(compileEnv->hostRefHolder.addObject(obj.get()))) {
 				return genOutOfMemoryCompError();
 			}
 
-			typeOut = slake::Type(slake::TypeId::Tuple, obj.get());
+			typeOut = slake::TypeRef(slake::TypeId::Tuple, obj.get());
 			break;
 		}
 		case TypeNameKind::SIMD: {
@@ -179,7 +230,15 @@ SLKC_API std::optional<CompilationError> slkc::compileTypeName(
 				return genOutOfRuntimeMemoryCompError();
 			}
 
-			SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, compilationContext, t->elementType, obj->type));
+			slake::HostObjectRef<slake::HeapTypeObject> heapType;
+
+			if (!(heapType = slake::HeapTypeObject::alloc(compileEnv->runtime)))
+				return genOutOfRuntimeMemoryCompError();
+
+			SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, compilationContext, t->elementType, heapType->typeRef));
+
+			if (!(compileEnv->hostRefHolder.addObject(heapType.get())))
+				return genOutOfMemoryCompError();
 
 			AstNodePtr<ExprNode> width;
 
@@ -213,13 +272,14 @@ SLKC_API std::optional<CompilationError> slkc::compileTypeName(
 				}
 			}
 
+			obj->type = heapType.get();
 			obj->width = width.castTo<U32LiteralExprNode>()->data;
 
 			if (!(compileEnv->hostRefHolder.addObject(obj.get()))) {
 				return genOutOfMemoryCompError();
 			}
 
-			typeOut = slake::Type(slake::TypeId::SIMD, obj.get());
+			typeOut = slake::TypeRef(slake::TypeId::SIMD, obj.get());
 			break;
 		}
 		case TypeNameKind::ParamTypeList: {
@@ -236,7 +296,17 @@ SLKC_API std::optional<CompilationError> slkc::compileTypeName(
 				return genOutOfRuntimeMemoryCompError();
 			}
 			for (size_t i = 0; i < obj->paramTypes.size(); ++i) {
-				SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, compilationContext, t->paramTypes.at(i), obj->paramTypes.at(i)));
+				slake::HostObjectRef<slake::HeapTypeObject> heapType;
+
+				if (!(heapType = slake::HeapTypeObject::alloc(compileEnv->runtime)))
+					return genOutOfRuntimeMemoryCompError();
+
+				SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, compilationContext, t->paramTypes.at(i), heapType->typeRef));
+
+				if (!(compileEnv->hostRefHolder.addObject(heapType.get())))
+					return genOutOfMemoryCompError();
+
+				obj->paramTypes.at(i) = heapType.get();
 			}
 
 			obj->hasVarArg = t->hasVarArgs;
@@ -245,26 +315,34 @@ SLKC_API std::optional<CompilationError> slkc::compileTypeName(
 				return genOutOfMemoryCompError();
 			}
 
-			typeOut = slake::Type(slake::TypeId::ParamTypeList, obj.get());
+			typeOut = slake::TypeRef(slake::TypeId::ParamTypeList, obj.get());
 			break;
 		}
 		case TypeNameKind::Unpacking: {
 			AstNodePtr<UnpackingTypeNameNode> t = typeName.castTo<UnpackingTypeNameNode>();
 			peff::SharedPtr<Document> doc = t->document->sharedFromThis();
 
-			slake::HostObjectRef<slake::TypeDefObject> obj;
+			slake::HostObjectRef<slake::UnpackingTypeDefObject> obj;
 
-			if (!(obj = slake::TypeDefObject::alloc(compileEnv->runtime))) {
+			if (!(obj = slake::UnpackingTypeDefObject::alloc(compileEnv->runtime))) {
 				return genOutOfRuntimeMemoryCompError();
 			}
 
-			SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, compilationContext, t->innerTypeName, obj->type));
+			slake::HostObjectRef<slake::HeapTypeObject> heapType;
+
+			if (!(heapType = slake::HeapTypeObject::alloc(compileEnv->runtime)))
+				return genOutOfRuntimeMemoryCompError();
+
+			SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, compilationContext, t->innerTypeName, heapType->typeRef));
+
+			if (!(compileEnv->hostRefHolder.addObject(heapType.get())))
+				return genOutOfMemoryCompError();
 
 			if (!(compileEnv->hostRefHolder.addObject(obj.get()))) {
 				return genOutOfMemoryCompError();
 			}
 
-			typeOut = slake::Type(slake::TypeId::Unpacking, obj.get());
+			typeOut = slake::TypeRef(slake::TypeId::Unpacking, obj.get());
 			break;
 		}
 		default:
@@ -315,7 +393,7 @@ SLKC_API std::optional<CompilationError> slkc::compileIdRef(
 	}
 
 	if (paramTypes) {
-		id->paramTypes = peff::DynArray<slake::Type>(compileEnv->runtime->getCurGenAlloc());
+		id->paramTypes = peff::DynArray<slake::TypeRef>(compileEnv->runtime->getCurGenAlloc());
 
 		if (!id->paramTypes->resize(nParams)) {
 			return genOutOfMemoryCompError();
@@ -345,7 +423,7 @@ SLKC_API std::optional<CompilationError> slkc::compileValueExpr(
 			SLKC_RETURN_IF_COMP_ERROR(
 				compileIdRef(
 					compileEnv,
-					compilationContext, 
+					compilationContext,
 					e->idRefPtr->entries.data(),
 					e->idRefPtr->entries.size(),
 					nullptr,
@@ -583,7 +661,7 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 				fr.accessModifier = m->accessModifier;
 				fr.offset = modOut->localFieldStorage.size();
 
-				slake::Type type;
+				slake::TypeRef type;
 
 				SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, &compilationContext, varNode->type, type));
 
@@ -676,7 +754,7 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 						SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(CompilationError(i->tokenRange, CompilationErrorKind::ExpectingInterfaceName)));
 					}
 
-					slake::Type t;
+					slake::TypeRef t;
 
 					SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, &compilationContext, i, t));
 

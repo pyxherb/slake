@@ -575,7 +575,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 						return genOutOfRuntimeMemoryCompError();
 					}
 
-					idRefObject->paramTypes = peff::DynArray<slake::Type>(compileEnv->runtime->getCurGenAlloc());
+					idRefObject->paramTypes = peff::DynArray<slake::TypeRef>(compileEnv->runtime->getCurGenAlloc());
 
 					if (!idRefObject->paramTypes->resize(matchedOverloading->params.size())) {
 						return genOutOfMemoryCompError();
@@ -596,7 +596,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 
 					SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, compilationContext, fullName->entries.data(), fullName->entries.size(), nullptr, 0, true, idRefObject));
 
-					idRefObject->paramTypes = peff::DynArray<slake::Type>(compileEnv->runtime->getCurGenAlloc());
+					idRefObject->paramTypes = peff::DynArray<slake::TypeRef>(compileEnv->runtime->getCurGenAlloc());
 
 					if (!idRefObject->paramTypes->resize(matchedOverloading->params.size())) {
 						return genOutOfMemoryCompError();
@@ -1891,7 +1891,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 								return genOutOfRuntimeMemoryCompError();
 							}
 
-							idRefObject->paramTypes = peff::DynArray<slake::Type>(compileEnv->runtime->getCurGenAlloc());
+							idRefObject->paramTypes = peff::DynArray<slake::TypeRef>(compileEnv->runtime->getCurGenAlloc());
 
 							if (!idRefObject->paramTypes->resize(matchedOverloading->params.size())) {
 								return genOutOfMemoryCompError();
@@ -1912,7 +1912,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 							IdRefPtr fullName;
 							SLKC_RETURN_IF_COMP_ERROR(getFullIdRef(compileEnv->allocator.get(), operatorSlot, fullName));
 
-							idRefObject->paramTypes = peff::DynArray<slake::Type>(compileEnv->runtime->getCurGenAlloc());
+							idRefObject->paramTypes = peff::DynArray<slake::TypeRef>(compileEnv->runtime->getCurGenAlloc());
 
 							if (!idRefObject->paramTypes->resize(matchedOverloading->params.size())) {
 								return genOutOfMemoryCompError();

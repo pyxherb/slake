@@ -41,7 +41,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 							newVar->type = i->type;
 
 							{
-								slake::Type type;
+								slake::TypeRef type;
 								SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, compilationContext, newVar->type, type));
 
 								SLKC_RETURN_IF_COMP_ERROR(
@@ -90,7 +90,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 							newVar->type = deducedType;
 
 							{
-								slake::Type type;
+								slake::TypeRef type;
 								SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, compilationContext, newVar->type, type));
 
 								SLKC_RETURN_IF_COMP_ERROR(
@@ -123,7 +123,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 						newVar->type = i->type;
 
 						{
-							slake::Type type;
+							slake::TypeRef type;
 							SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, compilationContext, newVar->type, type));
 
 							SLKC_RETURN_IF_COMP_ERROR(
@@ -227,7 +227,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 							newVar->type = i->type;
 
 							{
-								slake::Type type;
+								slake::TypeRef type;
 								SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, compilationContext, newVar->type, type));
 
 								SLKC_RETURN_IF_COMP_ERROR(
@@ -276,7 +276,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 							newVar->type = deducedType;
 
 							{
-								slake::Type type;
+								slake::TypeRef type;
 								SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, compilationContext, newVar->type, type));
 
 								SLKC_RETURN_IF_COMP_ERROR(
@@ -309,7 +309,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 						newVar->type = i->type;
 
 						{
-							slake::Type type;
+							slake::TypeRef type;
 							SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, compilationContext, newVar->type, type));
 
 							SLKC_RETURN_IF_COMP_ERROR(

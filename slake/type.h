@@ -158,6 +158,10 @@ namespace slake {
 			return comparesTo(rhs) > 0;
 		}
 
+		SLAKE_FORCEINLINE explicit operator bool() const {
+			return typeId != TypeId::Void;
+		}
+
 		SLAKE_API TypeRef TypeRef::duplicate(bool &succeededOut) const;
 	};
 

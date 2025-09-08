@@ -27,8 +27,9 @@ namespace slake {
 		GenericArgTypeDef,	   // Generic argument type definition
 		FnTypeDef,			   // Function type definition
 		ParamTypeListTypeDef,  // Parameter type list type definition
-		TupleTypeDef,		   // Parameter type list type definition
-		SIMDTypeDef,		   // Parameter type list type definition
+		TupleTypeDef,		   // Tuple type definition
+		SIMDTypeDef,		   // SIMD type definition
+		UnpackingTypeDef,	   // Unpacking type definition
 
 		Fn,				// Function
 		FnOverloading,	// Function overloading

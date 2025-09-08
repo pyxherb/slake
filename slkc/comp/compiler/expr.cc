@@ -131,7 +131,7 @@ static std::optional<CompilationError> _loadTheRestOfIdRef(CompileEnvironment *c
 					SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, compilationContext, idRef->entries.data() + curIdx, part.nEntries, nullptr, 0, false, idRefObject));
 
 					if (extraFnArgs) {
-						idRefObject->paramTypes = peff::DynArray<slake::Type>(compileEnv->runtime->getCurGenAlloc());
+						idRefObject->paramTypes = peff::DynArray<slake::TypeRef>(compileEnv->runtime->getCurGenAlloc());
 
 						if (!idRefObject->paramTypes->resize(extraFnArgs->paramTypes.size()))
 							return genOutOfRuntimeMemoryCompError();
@@ -187,7 +187,7 @@ static std::optional<CompilationError> _loadTheRestOfIdRef(CompileEnvironment *c
 				SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, compilationContext, fullIdRef->entries.data(), fullIdRef->entries.size(), nullptr, 0, false, idRefObject));
 
 				if (extraFnArgs) {
-					idRefObject->paramTypes = peff::DynArray<slake::Type>(compileEnv->runtime->getCurGenAlloc());
+					idRefObject->paramTypes = peff::DynArray<slake::TypeRef>(compileEnv->runtime->getCurGenAlloc());
 
 					if (!idRefObject->paramTypes->resize(extraFnArgs->paramTypes.size()))
 						return genOutOfRuntimeMemoryCompError();
@@ -211,7 +211,7 @@ static std::optional<CompilationError> _loadTheRestOfIdRef(CompileEnvironment *c
 			SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, compilationContext, fullIdRef->entries.data(), fullIdRef->entries.size(), nullptr, 0, false, idRefObject));
 
 			if (extraFnArgs) {
-				idRefObject->paramTypes = peff::DynArray<slake::Type>(compileEnv->runtime->getCurGenAlloc());
+				idRefObject->paramTypes = peff::DynArray<slake::TypeRef>(compileEnv->runtime->getCurGenAlloc());
 
 				if (!idRefObject->paramTypes->resize(extraFnArgs->paramTypes.size()))
 					return genOutOfRuntimeMemoryCompError();
@@ -1028,7 +1028,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 					break;
 				case ExprEvalPurpose::RValue: {
 					if (resultRegOut != UINT32_MAX) {
-						slake::Type elementType;
+						slake::TypeRef elementType;
 
 						SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, compilationContext, tn, elementType));
 						SLKC_RETURN_IF_COMP_ERROR(
@@ -1345,7 +1345,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 
 			AstNodePtr<ClassNode> c = m.castTo<ClassNode>();
 
-			slake::Type type;
+			slake::TypeRef type;
 			{
 				IdRefPtr fullIdRef;
 				SLKC_RETURN_IF_COMP_ERROR(getFullIdRef(compileEnv->allocator.get(), c.castTo<MemberNode>(), fullIdRef));
@@ -1433,7 +1433,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 
 					SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, compilationContext, fullIdRef->entries.data(), fullIdRef->entries.size(), nullptr, 0, false, idRefObject));
 
-					idRefObject->paramTypes = peff::DynArray<slake::Type>(compileEnv->runtime->getCurGenAlloc());
+					idRefObject->paramTypes = peff::DynArray<slake::TypeRef>(compileEnv->runtime->getCurGenAlloc());
 
 					if (!idRefObject->paramTypes->resize(overloading->params.size()))
 						return genOutOfRuntimeMemoryCompError();
@@ -1524,7 +1524,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 					SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, e->source, ExprEvalPurpose::LValue, {}, idxReg, result));
 				}
 
-				slake::Type type;
+				slake::TypeRef type;
 				SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, compilationContext, targetType, type));
 
 				SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::CAST, resultRegOut, { slake::Value(type), slake::Value(slake::ValueType::RegRef, idxReg) }));

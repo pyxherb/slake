@@ -515,7 +515,7 @@ SLKC_API StringLiteralExprNode::StringLiteralExprNode(
 	  data(std::move(data)) {
 }
 SLKC_API StringLiteralExprNode::StringLiteralExprNode(const StringLiteralExprNode &rhs, peff::Alloc *allocator, bool &succeededOut) : ExprNode(rhs, allocator), data(allocator) {
-	if (!peff::copy(data, rhs.data)) {
+	if (!data.build(rhs.data)) {
 		succeededOut = false;
 		return;
 	}

@@ -506,7 +506,7 @@ namespace slkc {
 		CompileEnvironment *compileEnv,
 		CompilationContext *compilationContext,
 		AstNodePtr<TypeNameNode> typeName,
-		slake::Type &typeOut);
+		slake::TypeRef &typeOut);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> compileIdRef(
 		CompileEnvironment *compileEnv,
 		CompilationContext *compilationContext,
@@ -661,7 +661,7 @@ namespace slkc {
 	[[nodiscard]] SLKC_API std::optional<CompilationError> dumpTypeName(
 		peff::Alloc *allocator,
 		Writer *writer,
-		const slake::Type &type);
+		const slake::TypeRef &type);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> dumpModuleMembers(
 		peff::Alloc *allocator,
 		Writer *writer,

@@ -81,7 +81,7 @@ SLKC_API const char *slkc::getMnemonicName(slake::Opcode opcode) {
 
 SLKC_API bool slkc::decompileGenericParam(peff::Alloc *allocator, DumpWriter *writer, const slake::GenericParam &genericParam) {
 	SLKC_RETURN_IF_FALSE(writer->write(genericParam.name));
-	if (genericParam.baseType) {
+	if (genericParam.baseType != slake::TypeId::Any) {
 		SLKC_RETURN_IF_FALSE(writer->write("("));
 		SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, genericParam.baseType));
 		SLKC_RETURN_IF_FALSE(writer->write(")"));
@@ -98,7 +98,7 @@ SLKC_API bool slkc::decompileGenericParam(peff::Alloc *allocator, DumpWriter *wr
 	return true;
 }
 
-SLKC_API bool slkc::decompileTypeName(peff::Alloc *allocator, DumpWriter *writer, const slake::Type &type) {
+SLKC_API bool slkc::decompileTypeName(peff::Alloc *allocator, DumpWriter *writer, const slake::TypeRef &type) {
 	switch (type.typeId) {
 		case slake::TypeId::Void:
 			SLKC_RETURN_IF_FALSE(writer->write("void"));
@@ -140,25 +140,25 @@ SLKC_API bool slkc::decompileTypeName(peff::Alloc *allocator, DumpWriter *writer
 			SLKC_RETURN_IF_FALSE(writer->write("string"));
 			break;
 		case slake::TypeId::Instance: {
-			auto obj = type.getCustomTypeExData();
+			auto obj = (slake::CustomTypeDefObject*)type.typeDef;
 
 			slake::Runtime *runtime = obj->associatedRuntime;
 
-			switch (obj->getObjectKind()) {
+			switch (obj->typeObject->getObjectKind()) {
 				case slake::ObjectKind::Class:
 				case slake::ObjectKind::Interface: {
 					SLKC_RETURN_IF_FALSE(writer->write("@"));
 
 					peff::DynArray<slake::IdRefEntry> moduleFullName(allocator);
 
-					if (!runtime->getFullRef(allocator, (slake::MemberObject *)obj, moduleFullName))
+					if (!runtime->getFullRef(allocator, (slake::MemberObject *)obj->typeObject, moduleFullName))
 						return false;
 
 					break;
 				}
 				case slake::ObjectKind::IdRef: {
 					SLKC_RETURN_IF_FALSE(writer->write("@"));
-					SLKC_RETURN_IF_FALSE(decompileIdRef(allocator, writer, (slake::IdRefObject *)obj));
+					SLKC_RETURN_IF_FALSE(decompileIdRef(allocator, writer, (slake::IdRefObject *)obj->typeObject));
 					break;
 				}
 				default:
@@ -167,19 +167,29 @@ SLKC_API bool slkc::decompileTypeName(peff::Alloc *allocator, DumpWriter *writer
 			break;
 		}
 		case slake::TypeId::GenericArg: {
-			auto obj = type.exData.genericArg.nameObject;
+			auto obj = (slake::GenericArgTypeDefObject *)type.typeDef;
+
+			slake::Runtime *runtime = obj->associatedRuntime;
 
 			SLKC_RETURN_IF_FALSE(writer->write("@!"));
-			SLKC_RETURN_IF_FALSE(writer->write(obj->data.data(), obj->data.size()));
+			SLKC_RETURN_IF_FALSE(writer->write(obj->nameObject->data.data(), obj->nameObject->data.size()));
 			break;
 		}
 		case slake::TypeId::Array: {
-			SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, type.getArrayExData()));
+			auto obj = (slake::ArrayTypeDefObject *)type.typeDef;
+
+			slake::Runtime *runtime = obj->associatedRuntime;
+
+			SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, obj->elementType->typeRef));
 			SLKC_RETURN_IF_FALSE(writer->write("[]"));
 			break;
 		}
 		case slake::TypeId::Ref: {
-			SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, type.getRefExData()));
+			auto obj = (slake::RefTypeDefObject *)type.typeDef;
+
+			slake::Runtime *runtime = obj->associatedRuntime;
+
+			SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, obj->referencedType->typeRef));
 			SLKC_RETURN_IF_FALSE(writer->write("&"));
 			break;
 		}
@@ -191,7 +201,7 @@ SLKC_API bool slkc::decompileTypeName(peff::Alloc *allocator, DumpWriter *writer
 			SLKC_RETURN_IF_FALSE(writer->write("any"));
 			break;
 		case slake::TypeId::ParamTypeList: {
-			auto obj = (slake::ParamTypeListTypeDefObject *)type.exData.typeDef;
+			auto obj = (slake::ParamTypeListTypeDefObject *)type.typeDef;
 
 			SLKC_RETURN_IF_FALSE(writer->write("("));
 
@@ -200,14 +210,14 @@ SLKC_API bool slkc::decompileTypeName(peff::Alloc *allocator, DumpWriter *writer
 					SLKC_RETURN_IF_FALSE(writer->write(", "));
 				}
 
-				SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, obj->paramTypes.at(i)));
+				SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, obj->paramTypes.at(i)->typeRef));
 			}
 
 			SLKC_RETURN_IF_FALSE(writer->write(")"));
 			break;
 		}
 		case slake::TypeId::Tuple: {
-			auto obj = (slake::TupleTypeDefObject *)type.exData.typeDef;
+			auto obj = (slake::TupleTypeDefObject *)type.typeDef;
 
 			SLKC_RETURN_IF_FALSE(writer->write("["));
 
@@ -216,18 +226,18 @@ SLKC_API bool slkc::decompileTypeName(peff::Alloc *allocator, DumpWriter *writer
 					SLKC_RETURN_IF_FALSE(writer->write(", "));
 				}
 
-				SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, obj->elementTypes.at(i)));
+				SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, obj->elementTypes.at(i)->typeRef));
 			}
 
 			SLKC_RETURN_IF_FALSE(writer->write("]"));
 			break;
 		}
 		case slake::TypeId::SIMD: {
-			auto obj = (slake::SIMDTypeDefObject *)type.exData.typeDef;
+			auto obj = (slake::SIMDTypeDefObject *)type.typeDef;
 
 			SLKC_RETURN_IF_FALSE(writer->write("simd_t<"));
 
-			SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, obj->type));
+			SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, obj->type->typeRef));
 
 			SLKC_RETURN_IF_FALSE(writer->write(", "));
 
@@ -239,8 +249,9 @@ SLKC_API bool slkc::decompileTypeName(peff::Alloc *allocator, DumpWriter *writer
 			break;
 		}
 		case slake::TypeId::Unpacking: {
+			auto obj = (slake::UnpackingTypeDefObject *)type.typeDef;
 			SLKC_RETURN_IF_FALSE(writer->write("@..."));
-			SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, type.getUnpackingExData()));
+			SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, obj->type->typeRef));
 			break;
 		}
 		default:
@@ -476,7 +487,7 @@ SLKC_API bool slkc::decompileIdRefEntries(peff::Alloc *allocator, DumpWriter *wr
 SLKC_API bool slkc::decompileIdRef(peff::Alloc *allocator, DumpWriter *writer, slake::IdRefObject *idRefIn) {
 	SLKC_RETURN_IF_FALSE(decompileIdRefEntries(allocator, writer, idRefIn->entries));
 
-	if (idRefIn->paramTypes) {
+	if (idRefIn->paramTypes.hasValue()) {
 		auto &paramTypes = *idRefIn->paramTypes;
 
 		if (paramTypes.size()) {

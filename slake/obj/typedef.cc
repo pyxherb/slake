@@ -614,6 +614,69 @@ SLAKE_API void slake::SIMDTypeDefObject::dealloc() {
 	peff::destroyAndRelease<SIMDTypeDefObject>(selfAllocator.get(), this, sizeof(std::max_align_t));
 }
 
+SLAKE_API UnpackingTypeDefObject::UnpackingTypeDefObject(Runtime *rt, peff::Alloc *selfAllocator)
+	: Object(rt, selfAllocator, ObjectKind::UnpackingTypeDef) {
+}
+
+SLAKE_API UnpackingTypeDefObject::UnpackingTypeDefObject(Duplicator *duplicator, const UnpackingTypeDefObject &x, peff::Alloc *allocator, bool &succeededOut) : Object(x, allocator) {
+	if (!duplicator->insertTask(DuplicationTask::makeNormal((Object **)&type, x.type))) {
+		succeededOut = false;
+		return;
+	}
+
+	succeededOut = true;
+}
+
+SLAKE_API UnpackingTypeDefObject::~UnpackingTypeDefObject() {
+}
+
+SLAKE_API Object *UnpackingTypeDefObject::duplicate(Duplicator *duplicator) const {
+	return (Object *)alloc(duplicator, this).get();
+}
+
+SLAKE_API HostObjectRef<UnpackingTypeDefObject> slake::UnpackingTypeDefObject::alloc(Runtime *rt) {
+	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();
+
+	std::unique_ptr<UnpackingTypeDefObject, util::DeallocableDeleter<UnpackingTypeDefObject>> ptr(
+		peff::allocAndConstruct<UnpackingTypeDefObject>(
+			curGenerationAllocator.get(),
+			sizeof(std::max_align_t),
+			rt, curGenerationAllocator.get()));
+	if (!ptr)
+		return nullptr;
+
+	if (!rt->addObject(ptr.get()))
+		return nullptr;
+
+	return ptr.release();
+}
+
+SLAKE_API HostObjectRef<UnpackingTypeDefObject> slake::UnpackingTypeDefObject::alloc(Duplicator *duplicator, const UnpackingTypeDefObject *other) {
+	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = other->associatedRuntime->getCurGenAlloc();
+
+	bool succeeded = true;
+
+	std::unique_ptr<UnpackingTypeDefObject, util::DeallocableDeleter<UnpackingTypeDefObject>> ptr(
+		peff::allocAndConstruct<UnpackingTypeDefObject>(
+			curGenerationAllocator.get(),
+			sizeof(std::max_align_t),
+			duplicator, *other, curGenerationAllocator.get(), succeeded));
+	if (!ptr)
+		return nullptr;
+
+	if (!succeeded)
+		return nullptr;
+
+	if (!other->associatedRuntime->addObject(ptr.get()))
+		return nullptr;
+
+	return ptr.release();
+}
+
+SLAKE_API void slake::UnpackingTypeDefObject::dealloc() {
+	peff::destroyAndRelease<UnpackingTypeDefObject>(selfAllocator.get(), this, sizeof(std::max_align_t));
+}
+
 SLAKE_API int TypeDefComparator::operator()(const Object *lhs, const Object *rhs) const noexcept {
 	ObjectKind objectKind = lhs->getObjectKind();
 
@@ -793,6 +856,7 @@ SLAKE_API bool slake::isTypeDefObject(Object *object) {
 		case ObjectKind::ParamTypeListTypeDef:
 		case ObjectKind::TupleTypeDef:
 		case ObjectKind::SIMDTypeDef:
+		case ObjectKind::UnpackingTypeDef:
 			return true;
 		default:
 			break;

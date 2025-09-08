@@ -157,6 +157,21 @@ namespace slake {
 		SLAKE_API virtual void dealloc() override;
 	};
 
+	class UnpackingTypeDefObject final : public Object {
+	public:
+		HeapTypeObject *type;
+
+		SLAKE_API UnpackingTypeDefObject(Runtime *rt, peff::Alloc *selfAllocator);
+		SLAKE_API UnpackingTypeDefObject(Duplicator *duplicator, const UnpackingTypeDefObject &x, peff::Alloc *allocator, bool &succeededOut);
+		SLAKE_API virtual ~UnpackingTypeDefObject();
+
+		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
+
+		SLAKE_API static HostObjectRef<UnpackingTypeDefObject> alloc(Runtime *rt);
+		SLAKE_API static HostObjectRef<UnpackingTypeDefObject> alloc(Duplicator *duplicator, const UnpackingTypeDefObject *other);
+		SLAKE_API virtual void dealloc() override;
+	};
+
 	struct TypeDefComparator {
 		SLAKE_API int operator()(const Object *lhs, const Object *rhs) const noexcept;
 	};

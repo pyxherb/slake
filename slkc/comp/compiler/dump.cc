@@ -12,8 +12,10 @@ SLKC_API std::optional<CompilationError> slkc::dumpGenericParam(
 	SLKC_RETURN_IF_COMP_ERROR(writer->writeU32(genericParam.name.size()));
 	SLKC_RETURN_IF_COMP_ERROR(writer->write(genericParam.name.data(), genericParam.name.size()));
 
-	SLKC_RETURN_IF_COMP_ERROR(writer->writeBool((bool)genericParam.baseType));
-	SLKC_RETURN_IF_COMP_ERROR(dumpTypeName(allocator, writer, genericParam.baseType));
+	bool hasBaseType = genericParam.baseType != slake::TypeId::Any;
+	SLKC_RETURN_IF_COMP_ERROR(writer->writeBool(hasBaseType));
+	if (hasBaseType)
+		SLKC_RETURN_IF_COMP_ERROR(dumpTypeName(allocator, writer, genericParam.baseType));
 
 	SLKC_RETURN_IF_COMP_ERROR(writer->writeU32(genericParam.interfaces.size()));
 	for (auto &k : genericParam.interfaces) {
@@ -47,7 +49,7 @@ SLKC_API std::optional<CompilationError> slkc::dumpIdRef(
 
 	if (ref->entries.at(0).name == "")
 		puts("");
-	if (!ref->paramTypes.has_value()) {
+	if (!ref->paramTypes.hasValue()) {
 		SLKC_RETURN_IF_COMP_ERROR(writer->writeU32(UINT32_MAX));
 	} else {
 		SLKC_RETURN_IF_COMP_ERROR(writer->writeU32((uint32_t)ref->paramTypes->size()));
@@ -170,7 +172,7 @@ SLKC_API std::optional<CompilationError> slkc::dumpIdRef(
 SLKC_API std::optional<CompilationError> slkc::dumpTypeName(
 	peff::Alloc *allocator,
 	Writer *writer,
-	const slake::Type &type) {
+	const slake::TypeRef &type) {
 	switch (type.typeId) {
 		case slake::TypeId::Void:
 			SLKC_RETURN_IF_COMP_ERROR(writer->writeU8((uint8_t)slake::slxfmt::TypeId::Void));
@@ -216,11 +218,11 @@ SLKC_API std::optional<CompilationError> slkc::dumpTypeName(
 			break;
 		case slake::TypeId::Array:
 			SLKC_RETURN_IF_COMP_ERROR(writer->writeU8((uint8_t)slake::slxfmt::TypeId::Array));
-			SLKC_RETURN_IF_COMP_ERROR(dumpTypeName(allocator, writer, type.getArrayExData()));
+			SLKC_RETURN_IF_COMP_ERROR(dumpTypeName(allocator, writer, ((slake::ArrayTypeDefObject*)type.typeDef)->elementType->typeRef));
 			break;
 		case slake::TypeId::Instance: {
 			SLKC_RETURN_IF_COMP_ERROR(writer->writeU8((uint8_t)slake::slxfmt::TypeId::Object));
-			slake::Object *dest = type.getCustomTypeExData();
+			slake::Object *dest = ((slake::CustomTypeDefObject*)type.typeDef)->typeObject;
 			switch (dest->getObjectKind()) {
 				case slake::ObjectKind::IdRef: {
 					SLKC_RETURN_IF_COMP_ERROR(dumpIdRef(allocator, writer, (slake::IdRefObject *)dest));
@@ -242,25 +244,25 @@ SLKC_API std::optional<CompilationError> slkc::dumpTypeName(
 		}
 		case slake::TypeId::GenericArg: {
 			SLKC_RETURN_IF_COMP_ERROR(writer->writeU8((uint8_t)slake::slxfmt::TypeId::GenericArg));
-			slake::StringObject *dest = type.exData.genericArg.nameObject;
+			slake::StringObject *dest = ((slake::GenericArgTypeDefObject*)type.typeDef)->nameObject;
 			SLKC_RETURN_IF_COMP_ERROR(writer->writeU32(dest->data.size()));
 			SLKC_RETURN_IF_COMP_ERROR(writer->write(dest->data.data(), dest->data.size()));
 			break;
 		}
 		case slake::TypeId::Ref: {
 			SLKC_RETURN_IF_COMP_ERROR(writer->writeU8((uint8_t)slake::slxfmt::TypeId::Ref));
-			SLKC_RETURN_IF_COMP_ERROR(dumpTypeName(allocator, writer, type.getRefExData()));
+			SLKC_RETURN_IF_COMP_ERROR(dumpTypeName(allocator, writer, ((slake::RefTypeDefObject*)type.typeDef)->referencedType->typeRef));
 			break;
 		}
 		case slake::TypeId::ParamTypeList: {
 			SLKC_RETURN_IF_COMP_ERROR(writer->writeU8((uint8_t)slake::slxfmt::TypeId::ParamTypeList));
 
-			slake::ParamTypeListTypeDefObject *typeDef = (slake::ParamTypeListTypeDefObject *)type.exData.typeDef;
+			slake::ParamTypeListTypeDefObject *typeDef = (slake::ParamTypeListTypeDefObject *)type.typeDef;
 
 			SLKC_RETURN_IF_COMP_ERROR(writer->writeU32((uint32_t)typeDef->paramTypes.size()));
 
 			for (size_t i = 0; i < typeDef->paramTypes.size(); ++i) {
-				SLKC_RETURN_IF_COMP_ERROR(dumpTypeName(allocator, writer, typeDef->paramTypes.at(i)));
+				SLKC_RETURN_IF_COMP_ERROR(dumpTypeName(allocator, writer, typeDef->paramTypes.at(i)->typeRef));
 			}
 
 			SLKC_RETURN_IF_COMP_ERROR(writer->writeBool(typeDef->hasVarArg));
@@ -269,7 +271,7 @@ SLKC_API std::optional<CompilationError> slkc::dumpTypeName(
 		}
 		case slake::TypeId::Unpacking: {
 			SLKC_RETURN_IF_COMP_ERROR(writer->writeU8((uint8_t)slake::slxfmt::TypeId::Unpacking));
-			SLKC_RETURN_IF_COMP_ERROR(dumpTypeName(allocator, writer, type.getRefExData()));
+			SLKC_RETURN_IF_COMP_ERROR(dumpTypeName(allocator, writer, ((slake::UnpackingTypeDefObject*)type.typeDef)->type->typeRef));
 			break;
 		}
 		default:

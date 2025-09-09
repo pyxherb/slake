@@ -122,17 +122,13 @@ namespace slake {
 		TypeRef() = default;
 		TypeRef(const TypeRef &) = default;
 		SLAKE_FORCEINLINE TypeRef(TypeId typeId) : typeId(typeId), typeModifier(0), typeDef(nullptr) {
-			assert(isFundamentalType(typeId));
 		}
 		SLAKE_FORCEINLINE TypeRef(TypeId typeId, TypeModifier typeModifier) : typeId(typeId), typeModifier(typeModifier), typeDef(nullptr) {
-			assert(isFundamentalType(typeId));
 		}
 		SLAKE_FORCEINLINE TypeRef(TypeId typeId, Object *typeDef) : typeId(typeId), typeModifier(0), typeDef(typeDef) {
-			assert(!isFundamentalType(typeId));
 			assert(isTypeDefObject(typeDef));
 		}
 		SLAKE_FORCEINLINE TypeRef(TypeId typeId, Object *typeDef, TypeModifier typeModifier) : typeId(typeId), typeModifier(typeModifier), typeDef(typeDef) {
-			assert(!isFundamentalType(typeId));
 			assert(isTypeDefObject(typeDef));
 		}
 		~TypeRef() = default;

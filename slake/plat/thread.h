@@ -14,6 +14,17 @@
 #endif
 
 namespace slake {
+#if _WIN32
+	using NativeThreadHandle = HANDLE;
+#elif __unix__
+	using NativeThreadHandle = pthread_t;
+#endif
+
+	NativeThreadHandle currentThreadHandle();
+	void yieldCurrentThread();
+
+	void getCurrentThreadStackBounds(void *&baseOut, size_t &sizeOut);
+
 	class Mutex final {
 	public:
 #if _WIN32
@@ -58,6 +69,64 @@ namespace slake {
 		}
 	};
 
+	class Spinlock final {
+	public:
+		std::atomic_bool locked = false;
+
+		SLAKE_FORCEINLINE Spinlock() {
+		}
+		SLAKE_FORCEINLINE ~Spinlock() {
+		}
+
+		SLAKE_FORCEINLINE void lock() noexcept {
+			bool expected = false;
+			while (!locked.compare_exchange_strong(expected, true, std::memory_order_acquire)) {
+				expected = false;
+				yieldCurrentThread();
+			}
+		}
+
+		SLAKE_FORCEINLINE bool tryLock() noexcept {
+			bool expected = false;
+			if(!locked.compare_exchange_strong(expected, true, std::memory_order_acquire)) {
+				return false;
+			}
+			return true;
+		}
+
+		SLAKE_FORCEINLINE void unlock() noexcept {
+			locked.store(false, std::memory_order_release);
+		}
+	};
+
+	struct SpinlockGuard final {
+	public:
+		Spinlock &_mutex;
+		bool released = false;
+
+		SpinlockGuard() = delete;
+		SpinlockGuard(const SpinlockGuard &) = delete;
+		SpinlockGuard(SpinlockGuard &&) = delete;
+		SpinlockGuard &operator=(const Spinlock &) = delete;
+		SpinlockGuard &operator=(Spinlock &&) = delete;
+
+		SLAKE_FORCEINLINE SpinlockGuard(Spinlock &mutex) : _mutex(mutex) {
+			_mutex.lock();
+		}
+
+		SLAKE_FORCEINLINE ~SpinlockGuard() {
+			if (!released) {
+				_mutex.unlock();
+			}
+		}
+
+		SLAKE_FORCEINLINE void release() {
+			assert(!released);
+			_mutex.unlock();
+			released = true;
+		}
+	};
+
 	class Cond final {
 	public:
 #if _WIN32
@@ -81,12 +150,6 @@ namespace slake {
 		ExecutionThread,
 		RuntimeThread,
 	};
-
-#if _WIN32
-	using NativeThreadHandle = HANDLE;
-#elif __unix__
-	using NativeThreadHandle = pthread_t;
-#endif
 
 	enum class ThreadStatus : uint8_t {
 		Ready = 0,
@@ -126,11 +189,6 @@ namespace slake {
 
 		SLAKE_API static Thread *alloc(peff::Alloc *selfAllocator, Runnable *runnable, size_t stackSize);
 	};
-
-	NativeThreadHandle currentThreadHandle();
-	void yieldCurrentThread();
-
-	void getCurrentThreadStackBounds(void *&baseOut, size_t &sizeOut);
 }
 
 #endif

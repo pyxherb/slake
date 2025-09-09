@@ -332,6 +332,11 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_addLocalVar(Context *context
 		return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
 	*typeInfo = type.typeId;
 
+	TypeModifier *typeModifier = (TypeModifier *)context->stackAlloc(sizeof(TypeModifier));
+	if (!typeModifier)
+		return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
+	*typeModifier = type.typeModifier;
+
 	stackOffset = context->stackTop;
 
 	switch (type.typeId) {

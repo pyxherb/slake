@@ -57,33 +57,36 @@ SLAKE_API InternalExceptionPointer Runtime::typeofVar(const EntityRef &entityRef
 			break;
 		}
 		case ObjectRefKind::LocalVarRef: {
-			const char *const rawStackPtr = entityRef.asLocalVar.context->dataStack + SLAKE_STACK_MAX - entityRef.asLocalVar.stackOff;
-			memcpy(
-				&typeOut,
-				rawStackPtr,
-				sizeof(TypeRef));
+			const char *const rawStackPtr = calcStackAddr(entityRef.asLocalVar.context->dataStack,
+				SLAKE_STACK_MAX,
+				entityRef.asLocalVar.stackOff);
+			const char *const rawDataPtr = rawStackPtr + sizeof(TypeId) + sizeof(TypeModifier);
+
+			TypeRef t = *(TypeId *)(rawDataPtr - sizeof(TypeModifier));
+			t.typeModifier = *(TypeModifier *)(rawDataPtr);
+
+			typeOut = t;
 			break;
 		}
 		case ObjectRefKind::CoroutineLocalVarRef: {
-			if (entityRef.asCoroutineArg.coroutine->curContext) {
-				const char *const rawStackPtr =
-					calcStackAddr(entityRef.asCoroutineArg.coroutine->curContext->dataStack,
-						SLAKE_STACK_MAX,
-						entityRef.asCoroutineArg.coroutine->curMajorFrame->stackBase + entityRef.asCoroutineLocalVar.stackOff);
-				memcpy(
-					&typeOut,
-					rawStackPtr,
-					sizeof(TypeRef));
+			char *basePtr;
+
+			if (entityRef.asCoroutineLocalVar.coroutine->curContext) {
+				basePtr = calcStackAddr(entityRef.asCoroutineLocalVar.coroutine->curContext->dataStack,
+					SLAKE_STACK_MAX,
+					entityRef.asCoroutineLocalVar.stackOff + entityRef.asCoroutineLocalVar.coroutine->curMajorFrame->stackBase);
 			} else {
-				const char *const rawStackPtr =
-					calcStackAddr(entityRef.asCoroutineLocalVar.coroutine->stackData,
-						entityRef.asCoroutineLocalVar.coroutine->lenStackData,
-						entityRef.asCoroutineLocalVar.stackOff);
-				memcpy(
-					&typeOut,
-					rawStackPtr,
-					sizeof(TypeRef));
+				basePtr = calcStackAddr(entityRef.asCoroutineLocalVar.coroutine->stackData,
+					entityRef.asCoroutineLocalVar.coroutine->lenStackData,
+					entityRef.asCoroutineLocalVar.stackOff);
 			}
+
+			const char *const rawDataPtr = basePtr + sizeof(TypeId) + sizeof(TypeModifier);
+
+			TypeRef t = *(TypeId *)(rawDataPtr - sizeof(TypeModifier));
+			t.typeModifier = *(TypeModifier *)(rawDataPtr);
+
+			typeOut = t;
 			break;
 		}
 		case ObjectRefKind::InstanceFieldRef: {
@@ -186,11 +189,12 @@ SLAKE_API Value Runtime::readVarUnsafe(const EntityRef &entityRef) const noexcep
 			const char *const rawStackPtr = calcStackAddr(entityRef.asLocalVar.context->dataStack,
 				SLAKE_STACK_MAX,
 				entityRef.asLocalVar.stackOff);
-			const char *const rawDataPtr = rawStackPtr + sizeof(TypeId);
+			const char *const rawDataPtr = rawStackPtr + sizeof(TypeId) + sizeof(TypeModifier);
 
-			TypeId typeId = *(TypeId *)rawStackPtr;
+			TypeRef t = *(TypeId *)(rawDataPtr - sizeof(TypeModifier));
+			t.typeModifier = *(TypeModifier *)(rawDataPtr);
 
-			switch (typeId) {
+			switch (t.typeId) {
 				case TypeId::I8:
 					return Value(*((int8_t *)rawDataPtr));
 				case TypeId::I16:
@@ -242,11 +246,12 @@ SLAKE_API Value Runtime::readVarUnsafe(const EntityRef &entityRef) const noexcep
 					entityRef.asCoroutineLocalVar.stackOff);
 			}
 
-			const char *const rawDataPtr = basePtr + sizeof(TypeId);
+			const char *const rawDataPtr = basePtr + sizeof(TypeId) + sizeof(TypeModifier);
 
-			TypeId typeId = *(TypeId *)basePtr;
+			TypeRef t = *(TypeId *)(rawDataPtr - sizeof(TypeModifier));
+			t.typeModifier = *(TypeModifier *)(rawDataPtr);
 
-			switch (typeId) {
+			switch (t.typeId) {
 				case TypeId::I8:
 					return Value(*((int8_t *)rawDataPtr));
 				case TypeId::I16:
@@ -464,9 +469,10 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 			const char *const rawStackPtr = calcStackAddr(entityRef.asLocalVar.context->dataStack,
 				SLAKE_STACK_MAX,
 				entityRef.asLocalVar.stackOff);
-			const char *const rawDataPtr = rawStackPtr + sizeof(TypeId);
+			const char *const rawDataPtr = rawStackPtr + sizeof(TypeId) + sizeof(TypeModifier);
 
-			TypeRef t = *(TypeId *)*rawStackPtr;
+			TypeRef t = *(TypeId *)(rawDataPtr - sizeof(TypeModifier));
+			t.typeModifier = *(TypeModifier *)(rawDataPtr);
 
 			switch (t.typeId) {
 				case TypeId::I8:
@@ -583,12 +589,11 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 					entityRef.asCoroutineLocalVar.coroutine->lenStackData,
 					entityRef.asCoroutineLocalVar.stackOff);
 			}
+;
+			const char *const rawDataPtr = basePtr + sizeof(TypeId) + sizeof(TypeModifier);
 
-			const char *const rawDataPtr = basePtr + sizeof(TypeId);
-
-			TypeRef t;
-
-			t.typeId = *(TypeId *)basePtr;
+			TypeRef t = *(TypeId *)(rawDataPtr - sizeof(TypeModifier));
+			t.typeModifier = *(TypeModifier*)(rawDataPtr);
 
 			switch (t.typeId) {
 				case TypeId::I8:

@@ -232,6 +232,11 @@ SLKC_API std::optional<CompilationError> slkc::isSameType(
 		return {};
 	}
 
+	if (lhs->isFinal != rhs->isFinal) {
+		whetherOut = false;
+		return {};
+	}
+
 	switch (lhs->typeNameKind) {
 		case TypeNameKind::Custom: {
 			AstNodePtr<CustomTypeNameNode>
@@ -307,10 +312,10 @@ SLKC_API std::optional<CompilationError> slkc::getTypePromotionLevel(
 			levelOut = 32;
 			break;
 		case TypeNameKind::Any:
-			levelOut = INT_MAX;
+			levelOut = INT_MAX - 1;
 			break;
 		default:
-			levelOut = INT_MIN + 1;
+			levelOut = INT_MAX;
 			break;
 	}
 
@@ -465,6 +470,9 @@ SLKC_API std::optional<CompilationError> slkc::isTypeConvertible(
 	peff::SharedPtr<Document> document = src->document->sharedFromThis();
 	if (document != dest->document->sharedFromThis())
 		std::terminate();
+
+	if (dest->isFinal)
+		isSealed = true;
 
 	switch (dest->typeNameKind) {
 		case TypeNameKind::I8:

@@ -93,6 +93,9 @@ namespace slake {
 			Reg,	   // Register
 		};
 
+		constexpr static uint8_t
+			TYPE_FINAL = 0x01;
+
 		enum class ConstObjectType : uint8_t {
 			IdRef = 0,
 			String,

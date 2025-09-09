@@ -278,6 +278,14 @@ SLKC_API std::optional<CompilationError> slkc::dumpTypeName(
 			std::terminate();
 	}
 
+	uint8_t typeModifier = 0;
+
+	if (type.typeModifier & slake::TYPE_FINAL) {
+		typeModifier |= slake::slxfmt::TYPE_FINAL;
+	}
+
+	SLKC_RETURN_IF_COMP_ERROR(writer->writeU8(typeModifier));
+
 	return {};
 }
 

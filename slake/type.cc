@@ -238,9 +238,16 @@ SLAKE_API InternalExceptionPointer slake::isCompatible(peff::Alloc *allocator, c
 
 					ClassObject *valueClass = ((InstanceObject *)objectPtr)->_class;
 
-					if (!thisClass->isBaseOf(valueClass)) {
-						resultOut = false;
-						return {};
+					if (type.isFinal()) {
+						if (thisClass != valueClass) {
+							resultOut = false;
+							return {};
+						}
+					} else {
+						if (!thisClass->isBaseOf(valueClass)) {
+							resultOut = false;
+							return {};
+						}
 					}
 					break;
 				}
@@ -249,6 +256,7 @@ SLAKE_API InternalExceptionPointer slake::isCompatible(peff::Alloc *allocator, c
 
 					ClassObject *valueClass = ((InstanceObject *)objectPtr)->_class;
 
+					assert(!type.isFinal());
 					if (!valueClass->hasImplemented(thisInterface)) {
 						resultOut = false;
 						return {};

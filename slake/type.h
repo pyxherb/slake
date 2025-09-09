@@ -111,16 +111,27 @@ namespace slake {
 
 	SLAKE_API bool isTypeDefObject(Object *object);
 
+	using TypeModifier = uint8_t;
+	constexpr static TypeModifier TYPE_FINAL = 0x01;
+
 	struct TypeRef {
 		TypeId typeId;
+		TypeModifier typeModifier;
 		Object *typeDef;
 
 		TypeRef() = default;
 		TypeRef(const TypeRef &) = default;
-		SLAKE_FORCEINLINE TypeRef(TypeId typeId) : typeId(typeId), typeDef(nullptr) {
+		SLAKE_FORCEINLINE TypeRef(TypeId typeId) : typeId(typeId), typeModifier(0), typeDef(nullptr) {
 			assert(isFundamentalType(typeId));
 		}
-		SLAKE_FORCEINLINE TypeRef(TypeId typeId, Object *typeDef) : typeId(typeId), typeDef(typeDef) {
+		SLAKE_FORCEINLINE TypeRef(TypeId typeId, TypeModifier typeModifier) : typeId(typeId), typeModifier(typeModifier), typeDef(nullptr) {
+			assert(isFundamentalType(typeId));
+		}
+		SLAKE_FORCEINLINE TypeRef(TypeId typeId, Object *typeDef) : typeId(typeId), typeModifier(0), typeDef(typeDef) {
+			assert(!isFundamentalType(typeId));
+			assert(isTypeDefObject(typeDef));
+		}
+		SLAKE_FORCEINLINE TypeRef(TypeId typeId, Object *typeDef, TypeModifier typeModifier) : typeId(typeId), typeModifier(typeModifier), typeDef(typeDef) {
 			assert(!isFundamentalType(typeId));
 			assert(isTypeDefObject(typeDef));
 		}
@@ -132,6 +143,10 @@ namespace slake {
 			if (typeId < rhs.typeId)
 				return -1;
 			if(typeId > rhs.typeId)
+				return 1;
+			if (typeModifier < rhs.typeModifier)
+				return -1;
+			if (typeModifier > rhs.typeModifier)
 				return 1;
 			if (isFundamentalType(typeId))
 				return 0;
@@ -163,6 +178,10 @@ namespace slake {
 		}
 
 		SLAKE_API TypeRef TypeRef::duplicate(bool &succeededOut) const;
+
+		SLAKE_FORCEINLINE bool isFinal() const noexcept {
+			return typeModifier & TYPE_FINAL;
+		}
 	};
 
 	static_assert(std::is_trivially_copyable_v<TypeRef>, "TypeRef must be trivially copyable");

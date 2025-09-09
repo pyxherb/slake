@@ -217,6 +217,12 @@ SLAKE_API InternalExceptionPointer loader::loadType(LoaderContext &context, Runt
 			std::terminate();
 	}
 
+	uint8_t modifier;
+	SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->readU8(modifier)));
+
+	if (modifier & slxfmt::TYPE_FINAL)
+		typeOut.typeModifier |= TYPE_FINAL;
+
 	return {};
 }
 

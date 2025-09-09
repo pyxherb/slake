@@ -41,6 +41,7 @@ namespace slkc {
 	class TypeNameNode : public AstNode {
 	public:
 		TypeNameKind typeNameKind;
+		bool isFinal = false;
 
 		SLKC_API TypeNameNode(TypeNameKind typeNameKind, peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
 		SLKC_API TypeNameNode(const TypeNameNode &rhs, peff::Alloc *selfAllocator);

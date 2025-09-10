@@ -185,6 +185,23 @@ public:
 		return p;
 	}
 
+	virtual void *realloc(void *p, size_t size, size_t alignment, size_t newSize, size_t newAlignment) noexcept override {
+		void *ptr = this->StdAlloc::realloc(p, size, alignment, newSize, newAlignment);
+		if (!ptr)
+			return nullptr;
+
+		AllocRecord &allocRecord = allocRecords.at(p);
+
+		assert(allocRecord.size == size);
+		assert(allocRecord.alignment == alignment);
+
+		allocRecords.erase(p);
+
+		allocRecords[ptr] = { newSize, newAlignment };
+
+		return ptr;
+	}
+
 	virtual void release(void *p, size_t size, size_t alignment) noexcept override {
 		AllocRecord &allocRecord = allocRecords.at(p);
 

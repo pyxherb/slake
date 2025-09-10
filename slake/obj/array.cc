@@ -17,7 +17,7 @@ SLAKE_API ArrayObject::~ArrayObject() {
 
 SLAKE_API ArrayObject *ArrayObject::alloc(Runtime *rt, const TypeRef &elementType, size_t elementSize) {
 	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();
-	std::unique_ptr<ArrayObject, util::DeallocableDeleter<ArrayObject>> ptr(
+	std::unique_ptr<ArrayObject, peff::DeallocableDeleter<ArrayObject>> ptr(
 		peff::allocAndConstruct<ArrayObject>(
 			curGenerationAllocator.get(),
 			alignof(ArrayObject),

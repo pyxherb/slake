@@ -1,5 +1,5 @@
 #include <slake/runtime.h>
-#include <slake/util/scope_guard.h>
+#include <peff/base/scope_guard.h>
 
 using namespace slake;
 
@@ -13,7 +13,7 @@ SLAKE_API CoroutineObject::~CoroutineObject() {
 SLAKE_API HostObjectRef<CoroutineObject> slake::CoroutineObject::alloc(Runtime *rt) {
 	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();
 
-	std::unique_ptr<CoroutineObject, util::DeallocableDeleter<CoroutineObject>> ptr(
+	std::unique_ptr<CoroutineObject, peff::DeallocableDeleter<CoroutineObject>> ptr(
 		peff::allocAndConstruct<CoroutineObject>(
 			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),

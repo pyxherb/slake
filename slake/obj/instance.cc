@@ -41,7 +41,7 @@ SLAKE_API EntityRef InstanceObject::getMember(const std::string_view &name) cons
 SLAKE_API HostObjectRef<InstanceObject> slake::InstanceObject::alloc(Runtime *rt) {
 	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();
 
-	std::unique_ptr<InstanceObject, util::DeallocableDeleter<InstanceObject>> ptr(
+	std::unique_ptr<InstanceObject, peff::DeallocableDeleter<InstanceObject>> ptr(
 		peff::allocAndConstruct<InstanceObject>(
 			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),
@@ -56,7 +56,7 @@ SLAKE_API HostObjectRef<InstanceObject> slake::InstanceObject::alloc(Runtime *rt
 SLAKE_API HostObjectRef<InstanceObject> slake::InstanceObject::alloc(const InstanceObject *other) {
 	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = other->associatedRuntime->getCurGenAlloc();
 
-	std::unique_ptr<InstanceObject, util::DeallocableDeleter<InstanceObject>> ptr(
+	std::unique_ptr<InstanceObject, peff::DeallocableDeleter<InstanceObject>> ptr(
 		peff::allocAndConstruct<InstanceObject>(
 			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),

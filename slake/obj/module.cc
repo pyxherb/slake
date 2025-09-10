@@ -140,7 +140,7 @@ SLAKE_API char *ModuleObject::appendTypedFieldSpace(const TypeRef &type) {
 SLAKE_API HostObjectRef<ModuleObject> slake::ModuleObject::alloc(Runtime *rt) {
 	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();
 
-	std::unique_ptr<ModuleObject, util::DeallocableDeleter<ModuleObject>> ptr(
+	std::unique_ptr<ModuleObject, peff::DeallocableDeleter<ModuleObject>> ptr(
 		peff::allocAndConstruct<ModuleObject>(curGenerationAllocator.get(), sizeof(std::max_align_t), rt, curGenerationAllocator.get()));
 
 	if (!ptr)

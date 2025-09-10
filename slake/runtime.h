@@ -14,7 +14,6 @@
 #include "generated/config.h"
 #include "util/debug.h"
 #include "object.h"
-#include <slake/util/stream.hh>
 #include "plat.h"
 #include <peff/containers/map.h>
 #include <peff/base/deallocable.h>
@@ -223,7 +222,7 @@ namespace slake {
 		SLAKE_API void _gcSerial(Object *&objectList, Object *&endObjectOut, size_t &nObjects, ObjectGeneration newGeneration);
 
 		size_t nMaxGcThreads = 8;
-		peff::DynArray<std::unique_ptr<Thread, util::DeallocableDeleter<Thread>>> parallelGcThreads;
+		peff::DynArray<std::unique_ptr<Thread, peff::DeallocableDeleter<Thread>>> parallelGcThreads;
 
 		enum class ParallelGcThreadState : uint8_t {
 			Alive = 0,

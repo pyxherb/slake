@@ -413,7 +413,7 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 			GCWalkContext::removeFromUnwalkedList(v);
 
 			v->gcWalkContext = nullptr;
-			v->gcMutex.unlock();
+			v->gcSpinlock.unlock();
 
 			break;
 		case ObjectGCStatus::Walked:
@@ -452,7 +452,7 @@ SLAKE_API void GCWalkContext::pushObject(GCWalkContext *context, Object *object)
 		case ObjectGCStatus::Unwalked:
 			object->gcStatus = ObjectGCStatus::ReadyToWalk;
 
-			object->gcMutex.lock();
+			object->gcSpinlock.lock();
 
 			if (!object->gcWalkContext) {
 				object->gcWalkContext = context;
@@ -689,6 +689,8 @@ rescanDeletables:
 		case GCTarget::TypeDef: {
 			if (!isTypeDefObject(i))
 				updateUnwalkedList = true;
+			else
+				updateUnwalkedList = false;
 			break;
 		}
 		case GCTarget::All:
@@ -968,6 +970,8 @@ rescanDeletables:
 			case GCTarget::TypeDef: {
 				if (!isTypeDefObject(j))
 					updateUnwalkedList = true;
+				else
+					updateUnwalkedList = false;
 				break;
 			}
 			case GCTarget::All:
@@ -1062,7 +1066,7 @@ SLAKE_API bool Runtime::_allocParallelGcResources() {
 	}
 
 	for (size_t i = 0; i < nMaxGcThreads; ++i) {
-		if (!(parallelGcThreads.at(i) = std::unique_ptr<Thread, util::DeallocableDeleter<Thread>>(Thread::alloc(getFixedAlloc(), parallelGcThreadRunnables.at(i).get(), 4096)))) {
+		if (!(parallelGcThreads.at(i) = std::unique_ptr<Thread, peff::DeallocableDeleter<Thread>>(Thread::alloc(getFixedAlloc(), parallelGcThreadRunnables.at(i).get(), 4096)))) {
 			return false;
 		}
 	}

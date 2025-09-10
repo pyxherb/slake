@@ -14,7 +14,7 @@ SLAKE_API ResumableObject::~ResumableObject() {}
 SLAKE_API ResumableObject *ResumableObject::alloc(Runtime *rt) {
 	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();
 
-	std::unique_ptr<ResumableObject, util::DeallocableDeleter<ResumableObject>> ptr(
+	std::unique_ptr<ResumableObject, peff::DeallocableDeleter<ResumableObject>> ptr(
 		peff::allocAndConstruct<ResumableObject>(
 			curGenerationAllocator.get(),
 			alignof(ResumableObject),
@@ -118,7 +118,7 @@ SLAKE_API ContextObject::~ContextObject() {
 SLAKE_API HostObjectRef<ContextObject> slake::ContextObject::alloc(Runtime *rt) {
 	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();
 
-	std::unique_ptr<ContextObject, util::DeallocableDeleter<ContextObject>> ptr(
+	std::unique_ptr<ContextObject, peff::DeallocableDeleter<ContextObject>> ptr(
 		peff::allocAndConstruct<ContextObject>(
 			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),

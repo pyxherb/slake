@@ -27,7 +27,7 @@ SLAKE_API Object *HeapTypeObject::duplicate(Duplicator *duplicator) const {
 SLAKE_API HostObjectRef<HeapTypeObject> slake::HeapTypeObject::alloc(Runtime *rt) {
 	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();
 
-	std::unique_ptr<HeapTypeObject, util::DeallocableDeleter<HeapTypeObject>> ptr(
+	std::unique_ptr<HeapTypeObject, peff::DeallocableDeleter<HeapTypeObject>> ptr(
 		peff::allocAndConstruct<HeapTypeObject>(
 			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),
@@ -46,7 +46,7 @@ SLAKE_API HostObjectRef<HeapTypeObject> slake::HeapTypeObject::alloc(Duplicator 
 
 	bool succeeded = true;
 
-	std::unique_ptr<HeapTypeObject, util::DeallocableDeleter<HeapTypeObject>> ptr(
+	std::unique_ptr<HeapTypeObject, peff::DeallocableDeleter<HeapTypeObject>> ptr(
 		peff::allocAndConstruct<HeapTypeObject>(
 			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),
@@ -87,7 +87,7 @@ SLAKE_API Object *CustomTypeDefObject::duplicate(Duplicator *duplicator) const {
 SLAKE_API HostObjectRef<CustomTypeDefObject> slake::CustomTypeDefObject::alloc(Runtime *rt) {
 	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();
 
-	std::unique_ptr<CustomTypeDefObject, util::DeallocableDeleter<CustomTypeDefObject>> ptr(
+	std::unique_ptr<CustomTypeDefObject, peff::DeallocableDeleter<CustomTypeDefObject>> ptr(
 		peff::allocAndConstruct<CustomTypeDefObject>(
 			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),
@@ -106,7 +106,7 @@ SLAKE_API HostObjectRef<CustomTypeDefObject> slake::CustomTypeDefObject::alloc(D
 
 	bool succeeded = true;
 
-	std::unique_ptr<CustomTypeDefObject, util::DeallocableDeleter<CustomTypeDefObject>> ptr(
+	std::unique_ptr<CustomTypeDefObject, peff::DeallocableDeleter<CustomTypeDefObject>> ptr(
 		peff::allocAndConstruct<CustomTypeDefObject>(
 			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),
@@ -150,7 +150,7 @@ SLAKE_API Object *ArrayTypeDefObject::duplicate(Duplicator *duplicator) const {
 SLAKE_API HostObjectRef<ArrayTypeDefObject> slake::ArrayTypeDefObject::alloc(Runtime *rt) {
 	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();
 
-	std::unique_ptr<ArrayTypeDefObject, util::DeallocableDeleter<ArrayTypeDefObject>> ptr(
+	std::unique_ptr<ArrayTypeDefObject, peff::DeallocableDeleter<ArrayTypeDefObject>> ptr(
 		peff::allocAndConstruct<ArrayTypeDefObject>(
 			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),
@@ -169,7 +169,7 @@ SLAKE_API HostObjectRef<ArrayTypeDefObject> slake::ArrayTypeDefObject::alloc(Dup
 
 	bool succeeded = true;
 
-	std::unique_ptr<ArrayTypeDefObject, util::DeallocableDeleter<ArrayTypeDefObject>> ptr(
+	std::unique_ptr<ArrayTypeDefObject, peff::DeallocableDeleter<ArrayTypeDefObject>> ptr(
 		peff::allocAndConstruct<ArrayTypeDefObject>(
 			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),
@@ -213,7 +213,7 @@ SLAKE_API Object *RefTypeDefObject::duplicate(Duplicator *duplicator) const {
 SLAKE_API HostObjectRef<RefTypeDefObject> slake::RefTypeDefObject::alloc(Runtime *rt) {
 	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();
 
-	std::unique_ptr<RefTypeDefObject, util::DeallocableDeleter<RefTypeDefObject>> ptr(
+	std::unique_ptr<RefTypeDefObject, peff::DeallocableDeleter<RefTypeDefObject>> ptr(
 		peff::allocAndConstruct<RefTypeDefObject>(
 			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),
@@ -232,7 +232,7 @@ SLAKE_API HostObjectRef<RefTypeDefObject> slake::RefTypeDefObject::alloc(Duplica
 
 	bool succeeded = true;
 
-	std::unique_ptr<RefTypeDefObject, util::DeallocableDeleter<RefTypeDefObject>> ptr(
+	std::unique_ptr<RefTypeDefObject, peff::DeallocableDeleter<RefTypeDefObject>> ptr(
 		peff::allocAndConstruct<RefTypeDefObject>(
 			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),
@@ -274,7 +274,7 @@ SLAKE_API Object *GenericArgTypeDefObject::duplicate(Duplicator *duplicator) con
 SLAKE_API HostObjectRef<GenericArgTypeDefObject> slake::GenericArgTypeDefObject::alloc(Runtime *rt) {
 	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();
 
-	std::unique_ptr<GenericArgTypeDefObject, util::DeallocableDeleter<GenericArgTypeDefObject>> ptr(
+	std::unique_ptr<GenericArgTypeDefObject, peff::DeallocableDeleter<GenericArgTypeDefObject>> ptr(
 		peff::allocAndConstruct<GenericArgTypeDefObject>(
 			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),
@@ -293,7 +293,7 @@ SLAKE_API HostObjectRef<GenericArgTypeDefObject> slake::GenericArgTypeDefObject:
 
 	bool succeeded = true;
 
-	std::unique_ptr<GenericArgTypeDefObject, util::DeallocableDeleter<GenericArgTypeDefObject>> ptr(
+	std::unique_ptr<GenericArgTypeDefObject, peff::DeallocableDeleter<GenericArgTypeDefObject>> ptr(
 		peff::allocAndConstruct<GenericArgTypeDefObject>(
 			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),
@@ -351,7 +351,7 @@ SLAKE_API Object *FnTypeDefObject::duplicate(Duplicator *duplicator) const {
 SLAKE_API HostObjectRef<FnTypeDefObject> slake::FnTypeDefObject::alloc(Runtime *rt) {
 	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();
 
-	std::unique_ptr<FnTypeDefObject, util::DeallocableDeleter<FnTypeDefObject>> ptr(
+	std::unique_ptr<FnTypeDefObject, peff::DeallocableDeleter<FnTypeDefObject>> ptr(
 		peff::allocAndConstruct<FnTypeDefObject>(
 			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),
@@ -370,7 +370,7 @@ SLAKE_API HostObjectRef<FnTypeDefObject> slake::FnTypeDefObject::alloc(Duplicato
 
 	bool succeeded = true;
 
-	std::unique_ptr<FnTypeDefObject, util::DeallocableDeleter<FnTypeDefObject>> ptr(
+	std::unique_ptr<FnTypeDefObject, peff::DeallocableDeleter<FnTypeDefObject>> ptr(
 		peff::allocAndConstruct<FnTypeDefObject>(
 			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),
@@ -429,7 +429,7 @@ SLAKE_API Object *ParamTypeListTypeDefObject::duplicate(Duplicator *duplicator) 
 SLAKE_API HostObjectRef<ParamTypeListTypeDefObject> slake::ParamTypeListTypeDefObject::alloc(Runtime *rt) {
 	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();
 
-	std::unique_ptr<ParamTypeListTypeDefObject, util::DeallocableDeleter<ParamTypeListTypeDefObject>> ptr(
+	std::unique_ptr<ParamTypeListTypeDefObject, peff::DeallocableDeleter<ParamTypeListTypeDefObject>> ptr(
 		peff::allocAndConstruct<ParamTypeListTypeDefObject>(
 			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),
@@ -448,7 +448,7 @@ SLAKE_API HostObjectRef<ParamTypeListTypeDefObject> slake::ParamTypeListTypeDefO
 
 	bool succeeded = true;
 
-	std::unique_ptr<ParamTypeListTypeDefObject, util::DeallocableDeleter<ParamTypeListTypeDefObject>> ptr(
+	std::unique_ptr<ParamTypeListTypeDefObject, peff::DeallocableDeleter<ParamTypeListTypeDefObject>> ptr(
 		peff::allocAndConstruct<ParamTypeListTypeDefObject>(
 			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),
@@ -505,7 +505,7 @@ SLAKE_API Object *TupleTypeDefObject::duplicate(Duplicator *duplicator) const {
 SLAKE_API HostObjectRef<TupleTypeDefObject> slake::TupleTypeDefObject::alloc(Runtime *rt) {
 	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();
 
-	std::unique_ptr<TupleTypeDefObject, util::DeallocableDeleter<TupleTypeDefObject>> ptr(
+	std::unique_ptr<TupleTypeDefObject, peff::DeallocableDeleter<TupleTypeDefObject>> ptr(
 		peff::allocAndConstruct<TupleTypeDefObject>(
 			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),
@@ -524,7 +524,7 @@ SLAKE_API HostObjectRef<TupleTypeDefObject> slake::TupleTypeDefObject::alloc(Dup
 
 	bool succeeded = true;
 
-	std::unique_ptr<TupleTypeDefObject, util::DeallocableDeleter<TupleTypeDefObject>> ptr(
+	std::unique_ptr<TupleTypeDefObject, peff::DeallocableDeleter<TupleTypeDefObject>> ptr(
 		peff::allocAndConstruct<TupleTypeDefObject>(
 			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),
@@ -574,7 +574,7 @@ SLAKE_API Object *SIMDTypeDefObject::duplicate(Duplicator *duplicator) const {
 SLAKE_API HostObjectRef<SIMDTypeDefObject> slake::SIMDTypeDefObject::alloc(Runtime *rt) {
 	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();
 
-	std::unique_ptr<SIMDTypeDefObject, util::DeallocableDeleter<SIMDTypeDefObject>> ptr(
+	std::unique_ptr<SIMDTypeDefObject, peff::DeallocableDeleter<SIMDTypeDefObject>> ptr(
 		peff::allocAndConstruct<SIMDTypeDefObject>(
 			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),
@@ -593,7 +593,7 @@ SLAKE_API HostObjectRef<SIMDTypeDefObject> slake::SIMDTypeDefObject::alloc(Dupli
 
 	bool succeeded = true;
 
-	std::unique_ptr<SIMDTypeDefObject, util::DeallocableDeleter<SIMDTypeDefObject>> ptr(
+	std::unique_ptr<SIMDTypeDefObject, peff::DeallocableDeleter<SIMDTypeDefObject>> ptr(
 		peff::allocAndConstruct<SIMDTypeDefObject>(
 			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),
@@ -637,7 +637,7 @@ SLAKE_API Object *UnpackingTypeDefObject::duplicate(Duplicator *duplicator) cons
 SLAKE_API HostObjectRef<UnpackingTypeDefObject> slake::UnpackingTypeDefObject::alloc(Runtime *rt) {
 	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();
 
-	std::unique_ptr<UnpackingTypeDefObject, util::DeallocableDeleter<UnpackingTypeDefObject>> ptr(
+	std::unique_ptr<UnpackingTypeDefObject, peff::DeallocableDeleter<UnpackingTypeDefObject>> ptr(
 		peff::allocAndConstruct<UnpackingTypeDefObject>(
 			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),
@@ -656,7 +656,7 @@ SLAKE_API HostObjectRef<UnpackingTypeDefObject> slake::UnpackingTypeDefObject::a
 
 	bool succeeded = true;
 
-	std::unique_ptr<UnpackingTypeDefObject, util::DeallocableDeleter<UnpackingTypeDefObject>> ptr(
+	std::unique_ptr<UnpackingTypeDefObject, peff::DeallocableDeleter<UnpackingTypeDefObject>> ptr(
 		peff::allocAndConstruct<UnpackingTypeDefObject>(
 			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),

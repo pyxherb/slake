@@ -2,7 +2,7 @@
 #include <slake/flib/math/fmod.h>
 #include <slake/flib/bitop.h>
 #include <slake/flib/cmp.h>
-#include <slake/util/scope_guard.h>
+#include <peff/base/scope_guard.h>
 #include <cmath>
 
 #undef new

@@ -326,9 +326,8 @@ SLAKE_API InternalExceptionPointer slake::isCompatible(peff::Alloc *allocator, c
 
 			InternalExceptionPointer e = rt->typeofVar(entityRef, type);
 			if (e) {
-				e.reset();
 				resultOut = false;
-				return {};
+				return e;
 			}
 
 			if (type != ((RefTypeDefObject *)type.typeDef)->referencedType->typeRef) {

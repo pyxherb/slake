@@ -1,5 +1,5 @@
 #include <slake/runtime.h>
-#include <slake/util/scope_guard.h>
+#include <peff/base/scope_guard.h>
 
 using namespace slake;
 
@@ -270,7 +270,7 @@ SLAKE_API HostObjectRef<RegularFnOverloadingObject> slake::RegularFnOverloadingO
 	FnObject *fnObject) {
 	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = fnObject->associatedRuntime->getCurGenAlloc();
 
-	std::unique_ptr<RegularFnOverloadingObject, util::DeallocableDeleter<RegularFnOverloadingObject>> ptr(
+	std::unique_ptr<RegularFnOverloadingObject, peff::DeallocableDeleter<RegularFnOverloadingObject>> ptr(
 		peff::allocAndConstruct<RegularFnOverloadingObject>(
 			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),
@@ -290,7 +290,7 @@ SLAKE_API HostObjectRef<RegularFnOverloadingObject> slake::RegularFnOverloadingO
 
 	bool succeeded = true;
 
-	std::unique_ptr<RegularFnOverloadingObject, util::DeallocableDeleter<RegularFnOverloadingObject>> ptr(
+	std::unique_ptr<RegularFnOverloadingObject, peff::DeallocableDeleter<RegularFnOverloadingObject>> ptr(
 		peff::allocAndConstruct<RegularFnOverloadingObject>(
 			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),
@@ -351,7 +351,7 @@ SLAKE_API HostObjectRef<NativeFnOverloadingObject> slake::NativeFnOverloadingObj
 	NativeFnCallback callback) {
 	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = fnObject->associatedRuntime->getCurGenAlloc();
 
-	std::unique_ptr<NativeFnOverloadingObject, util::DeallocableDeleter<NativeFnOverloadingObject>> ptr(
+	std::unique_ptr<NativeFnOverloadingObject, peff::DeallocableDeleter<NativeFnOverloadingObject>> ptr(
 		peff::allocAndConstruct<NativeFnOverloadingObject>(
 			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),
@@ -370,7 +370,7 @@ SLAKE_API HostObjectRef<NativeFnOverloadingObject> slake::NativeFnOverloadingObj
 
 	bool succeeded = true;
 
-	std::unique_ptr<NativeFnOverloadingObject, util::DeallocableDeleter<NativeFnOverloadingObject>> ptr(
+	std::unique_ptr<NativeFnOverloadingObject, peff::DeallocableDeleter<NativeFnOverloadingObject>> ptr(
 		peff::allocAndConstruct<NativeFnOverloadingObject>(
 			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),
@@ -455,7 +455,7 @@ SLAKE_API Object *FnObject::duplicate(Duplicator *duplicator) const {
 SLAKE_API HostObjectRef<FnObject> slake::FnObject::alloc(Runtime *rt) {
 	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();
 
-	std::unique_ptr<FnObject, util::DeallocableDeleter<FnObject>> ptr(
+	std::unique_ptr<FnObject, peff::DeallocableDeleter<FnObject>> ptr(
 		peff::allocAndConstruct<FnObject>(
 			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),
@@ -472,7 +472,7 @@ SLAKE_API HostObjectRef<FnObject> slake::FnObject::alloc(const FnObject *other) 
 
 	bool succeeded = true;
 
-	std::unique_ptr<FnObject, util::DeallocableDeleter<FnObject>> ptr(
+	std::unique_ptr<FnObject, peff::DeallocableDeleter<FnObject>> ptr(
 		peff::allocAndConstruct<FnObject>(
 			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),

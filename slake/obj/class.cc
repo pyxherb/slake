@@ -27,7 +27,7 @@ SLAKE_API ObjectLayout::ObjectLayout(peff::Alloc *selfAllocator)
 }
 
 SLAKE_API ObjectLayout *ObjectLayout::duplicate(peff::Alloc *allocator) const {
-	std::unique_ptr<ObjectLayout, util::DeallocableDeleter<ObjectLayout>> ptr(alloc(allocator));
+	std::unique_ptr<ObjectLayout, peff::DeallocableDeleter<ObjectLayout>> ptr(alloc(allocator));
 	if (!ptr)
 		return nullptr;
 
@@ -94,7 +94,7 @@ SLAKE_API void MethodTable::replaceAllocator(peff::Alloc* allocator) noexcept {
 }
 
 SLAKE_API MethodTable *MethodTable::duplicate(peff::Alloc *allocator) {
-	std::unique_ptr<MethodTable, util::DeallocableDeleter<MethodTable>> newMethodTable(alloc(allocator));
+	std::unique_ptr<MethodTable, peff::DeallocableDeleter<MethodTable>> newMethodTable(alloc(allocator));
 	if (!newMethodTable)
 		return nullptr;
 
@@ -219,7 +219,7 @@ SLAKE_API HostObjectRef<ClassObject> slake::ClassObject::alloc(Duplicator *dupli
 
 	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = other->associatedRuntime->getCurGenAlloc();
 
-	std::unique_ptr<ClassObject, util::DeallocableDeleter<ClassObject>> ptr(
+	std::unique_ptr<ClassObject, peff::DeallocableDeleter<ClassObject>> ptr(
 		peff::allocAndConstruct<ClassObject>(
 			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),
@@ -239,7 +239,7 @@ SLAKE_API HostObjectRef<ClassObject> slake::ClassObject::alloc(Duplicator *dupli
 SLAKE_API HostObjectRef<ClassObject> slake::ClassObject::alloc(Runtime *rt) {
 	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();
 
-	std::unique_ptr<ClassObject, util::DeallocableDeleter<ClassObject>> ptr(
+	std::unique_ptr<ClassObject, peff::DeallocableDeleter<ClassObject>> ptr(
 		peff::allocAndConstruct<ClassObject>(
 			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),
@@ -353,7 +353,7 @@ SLAKE_API Object *InterfaceObject::duplicate(Duplicator *duplicator) const {
 SLAKE_API HostObjectRef<InterfaceObject> slake::InterfaceObject::alloc(Runtime *rt) {
 	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();
 
-	std::unique_ptr<InterfaceObject, util::DeallocableDeleter<InterfaceObject>> ptr(
+	std::unique_ptr<InterfaceObject, peff::DeallocableDeleter<InterfaceObject>> ptr(
 		peff::allocAndConstruct<InterfaceObject>(
 			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),
@@ -373,7 +373,7 @@ SLAKE_API HostObjectRef<InterfaceObject> slake::InterfaceObject::alloc(Duplicato
 
 	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = other->associatedRuntime->getCurGenAlloc();
 
-	std::unique_ptr<InterfaceObject, util::DeallocableDeleter<InterfaceObject>> ptr(
+	std::unique_ptr<InterfaceObject, peff::DeallocableDeleter<InterfaceObject>> ptr(
 		peff::allocAndConstruct<InterfaceObject>(
 			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),

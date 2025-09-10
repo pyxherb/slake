@@ -76,12 +76,12 @@ namespace slake {
 
 	struct GCWalkContext;
 
-	enum class ObjectGeneration {
+	enum class ObjectGeneration : uint8_t {
 		Young = 0,
 		Persistent
 	};
 
-	enum class DuplicationTaskType {
+	enum class DuplicationTaskType : uint8_t {
 		Normal = 0,
 		ModuleMember,
 		Type,
@@ -135,6 +135,12 @@ namespace slake {
 		ObjectKind _objectKind;
 
 	public:
+		ObjectFlags _flags = 0;
+		ObjectGeneration objectGeneration = ObjectGeneration::Young;
+		Spinlock gcSpinlock;
+		ObjectGCStatus gcStatus;
+
+	public:
 		peff::RcObjectPtr<peff::Alloc> selfAllocator;
 		// The object will never be freed if its host reference count is not 0.
 		mutable std::atomic_uint32_t hostRefCount = 0;
@@ -145,15 +151,10 @@ namespace slake {
 		SLAKE_API Object(const Object &x, peff::Alloc *allocator);
 		SLAKE_API virtual ~Object();
 
-		ObjectFlags _flags = 0;
-
-		ObjectGeneration objectGeneration = ObjectGeneration::Young;
 		Object *nextSameGenObject = nullptr;
 		Object *prevSameGenObject = nullptr;
-		Mutex gcMutex;
 		GCWalkContext *gcWalkContext = nullptr;
 
-		ObjectGCStatus gcStatus;
 		Object *nextWalkable;		   // New reachable objects
 		Object *nextWalked = nullptr;  // Next reached objects
 		Object **sameKindObjectList = NULL;

@@ -42,7 +42,7 @@ SLAKE_API HostObjectRef<StringObject> slake::StringObject::alloc(const StringObj
 
 	bool succeeded = true;
 
-	std::unique_ptr<StringObject, util::DeallocableDeleter<StringObject>> ptr(
+	std::unique_ptr<StringObject, peff::DeallocableDeleter<StringObject>> ptr(
 		peff::allocAndConstruct<StringObject>(
 			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),
@@ -60,7 +60,7 @@ SLAKE_API HostObjectRef<StringObject> slake::StringObject::alloc(const StringObj
 SLAKE_API HostObjectRef<StringObject> slake::StringObject::alloc(Runtime *rt) {
 	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();
 
-	std::unique_ptr<StringObject, util::DeallocableDeleter<StringObject>> ptr(
+	std::unique_ptr<StringObject, peff::DeallocableDeleter<StringObject>> ptr(
 		peff::allocAndConstruct<StringObject>(
 			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),

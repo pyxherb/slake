@@ -326,6 +326,10 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(MemberObjec
 						if (!isSucceeded)
 							return OutOfMemoryError::alloc();
 						SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(dispatcher, ((ArrayTypeDefObject *)type.typeDef)->elementType->typeRef, i.context.get()));
+						if (auto td = getEqualTypeDef(type.typeDef); td)
+							type.typeDef = td;
+						else
+							registerTypeDef(type.typeDef);
 						break;
 					}
 					case TypeId::Ref: {
@@ -334,6 +338,10 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(MemberObjec
 						if (!isSucceeded)
 							return OutOfMemoryError::alloc();
 						SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(dispatcher, ((RefTypeDefObject *)type.typeDef)->referencedType->typeRef, i.context.get()));
+						if (auto td = getEqualTypeDef(type.typeDef); td)
+							type.typeDef = td;
+						else
+							registerTypeDef(type.typeDef);
 						break;
 					}
 					case TypeId::GenericArg: {

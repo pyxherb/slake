@@ -38,7 +38,7 @@ SLAKE_API void Thread::dealloc() {
 }
 
 SLAKE_API Thread* Thread::alloc(peff::Alloc* selfAllocator, Runnable* runnable, size_t stackSize) {
-	std::unique_ptr<Thread, util::DeallocableDeleter<Thread>>
+	std::unique_ptr<Thread, peff::DeallocableDeleter<Thread>>
 		executionThread(peff::allocAndConstruct<Thread>(selfAllocator, alignof(Thread), selfAllocator, runnable));
 
 	executionThread->_initialRunMutex.lock();

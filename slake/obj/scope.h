@@ -7,7 +7,6 @@
 #include <memory>
 #include <string>
 #include <string_view>
-#include <slake/util/memory.h>
 #include <slake/basedefs.h>
 
 namespace slake {

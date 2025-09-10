@@ -1,12 +1,12 @@
 #include <slake/runtime.h>
-#include <slake/util/scope_guard.h>
+#include <peff/base/scope_guard.h>
 
 using namespace slake;
 
 SLAKE_API InternalExceptionPointer Runtime::initMethodTableForClass(ClassObject *cls, ClassObject *parentClass) {
 	assert(!cls->cachedInstantiatedMethodTable);
 	MethodTable *parentMt = parentClass ? parentClass->cachedInstantiatedMethodTable : nullptr;
-	std::unique_ptr<MethodTable, util::DeallocableDeleter<MethodTable>> methodTable(MethodTable::alloc(cls->selfAllocator.get()));
+	std::unique_ptr<MethodTable, peff::DeallocableDeleter<MethodTable>> methodTable(MethodTable::alloc(cls->selfAllocator.get()));
 
 	if (parentMt) {
 		if (!methodTable->destructors.resize(parentMt->destructors.size())) {
@@ -94,7 +94,7 @@ SLAKE_API InternalExceptionPointer Runtime::initMethodTableForClass(ClassObject 
 
 SLAKE_API InternalExceptionPointer Runtime::initObjectLayoutForClass(ClassObject *cls, ClassObject *parentClass) {
 	assert(!cls->cachedObjectLayout);
-	std::unique_ptr<ObjectLayout, util::DeallocableDeleter<ObjectLayout>> objectLayout;
+	std::unique_ptr<ObjectLayout, peff::DeallocableDeleter<ObjectLayout>> objectLayout;
 
 	if (parentClass && parentClass->cachedObjectLayout) {
 		objectLayout = decltype(objectLayout)(parentClass->cachedObjectLayout->duplicate(getCurGenAlloc()));

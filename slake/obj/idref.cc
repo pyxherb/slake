@@ -75,7 +75,7 @@ SLAKE_API Object *IdRefObject::duplicate(Duplicator *duplicator) const {
 SLAKE_API HostObjectRef<IdRefObject> slake::IdRefObject::alloc(Runtime *rt) {
 	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();
 
-	std::unique_ptr<IdRefObject, util::DeallocableDeleter<IdRefObject>> ptr(
+	std::unique_ptr<IdRefObject, peff::DeallocableDeleter<IdRefObject>> ptr(
 		peff::allocAndConstruct<IdRefObject>(
 			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),
@@ -95,7 +95,7 @@ SLAKE_API HostObjectRef<IdRefObject> slake::IdRefObject::alloc(const IdRefObject
 
 	bool succeeded = true;
 
-	std::unique_ptr<IdRefObject, util::DeallocableDeleter<IdRefObject>> ptr(
+	std::unique_ptr<IdRefObject, peff::DeallocableDeleter<IdRefObject>> ptr(
 		peff::allocAndConstruct<IdRefObject>(
 			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),

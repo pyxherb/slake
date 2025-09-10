@@ -3,7 +3,6 @@
 
 #include "opcode.h"
 #include "basedefs.h"
-#include "util/memory.h"
 #include <memory>
 #include <cassert>
 #include <peff/base/alloc.h>

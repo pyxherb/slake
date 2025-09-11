@@ -107,6 +107,7 @@ namespace slake {
 	class ModuleObject;
 	class ArrayObject;
 	class InstanceObject;
+	class TypeDefObject;
 	struct MajorFrame;
 
 	SLAKE_API bool isTypeDefObject(Object *object);
@@ -117,7 +118,7 @@ namespace slake {
 	struct TypeRef {
 		TypeId typeId;
 		TypeModifier typeModifier;
-		Object *typeDef;
+		TypeDefObject *typeDef;
 
 		TypeRef() = default;
 		TypeRef(const TypeRef &) = default;
@@ -125,11 +126,11 @@ namespace slake {
 		}
 		SLAKE_FORCEINLINE TypeRef(TypeId typeId, TypeModifier typeModifier) : typeId(typeId), typeModifier(typeModifier), typeDef(nullptr) {
 		}
-		SLAKE_FORCEINLINE TypeRef(TypeId typeId, Object *typeDef) : typeId(typeId), typeModifier(0), typeDef(typeDef) {
-			assert(isTypeDefObject(typeDef));
+		SLAKE_FORCEINLINE TypeRef(TypeId typeId, TypeDefObject *typeDef) : typeId(typeId), typeModifier(0), typeDef(typeDef) {
+			assert(isTypeDefObject((Object *)typeDef));
 		}
-		SLAKE_FORCEINLINE TypeRef(TypeId typeId, Object *typeDef, TypeModifier typeModifier) : typeId(typeId), typeModifier(typeModifier), typeDef(typeDef) {
-			assert(isTypeDefObject(typeDef));
+		SLAKE_FORCEINLINE TypeRef(TypeId typeId, TypeDefObject *typeDef, TypeModifier typeModifier) : typeId(typeId), typeModifier(typeModifier), typeDef(typeDef) {
+			assert(isTypeDefObject((Object *)typeDef));
 		}
 		~TypeRef() = default;
 
@@ -138,7 +139,7 @@ namespace slake {
 		SLAKE_FORCEINLINE int comparesTo(const TypeRef &rhs) const noexcept {
 			if (typeId < rhs.typeId)
 				return -1;
-			if(typeId > rhs.typeId)
+			if (typeId > rhs.typeId)
 				return 1;
 			if (typeModifier < rhs.typeModifier)
 				return -1;
@@ -148,7 +149,7 @@ namespace slake {
 				return 0;
 			if (typeDef < rhs.typeDef)
 				return -1;
-			if(typeDef > rhs.typeDef)
+			if (typeDef > rhs.typeDef)
 				return 1;
 			return 0;
 		}
@@ -200,7 +201,7 @@ namespace slake {
 	struct TypeRefLtComparator {
 		TypeRefComparator innerComparator;
 
-		SLAKE_FORCEINLINE bool operator()(const TypeRef& lhs, const TypeRef& rhs) const noexcept {
+		SLAKE_FORCEINLINE bool operator()(const TypeRef &lhs, const TypeRef &rhs) const noexcept {
 			return innerComparator(lhs, rhs) < 0;
 		}
 	};

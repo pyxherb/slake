@@ -21,15 +21,7 @@ namespace slake {
 
 		HeapType,  // On-heap type
 
-		CustomTypeDef,		   // Custom type definition
-		ArrayTypeDef,		   // Array type definition
-		RefTypeDef,			   // Reference type definition
-		GenericArgTypeDef,	   // Generic argument type definition
-		FnTypeDef,			   // Function type definition
-		ParamTypeListTypeDef,  // Parameter type list type definition
-		TupleTypeDef,		   // Tuple type definition
-		SIMDTypeDef,		   // SIMD type definition
-		UnpackingTypeDef,	   // Unpacking type definition
+		TypeDef,  // Type definition
 
 		Fn,				// Function
 		FnOverloading,	// Function overloading

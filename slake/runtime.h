@@ -207,11 +207,11 @@ namespace slake {
 		Object *contextObjectList = nullptr;
 		Object *classObjectList = nullptr;
 
-		peff::Set<Object *, TypeDefLtComparator> typeDefs;
+		peff::Set<TypeDefObject *, TypeDefLtComparator> typeDefs;
 
-		SLAKE_API Object *getEqualTypeDef(Object *typeDef) const noexcept;
-		SLAKE_API void unregisterTypeDef(Object *typeDef) noexcept;
-		SLAKE_API InternalExceptionPointer registerTypeDef(Object *typeDef) noexcept;
+		SLAKE_API TypeDefObject *getEqualTypeDef(TypeDefObject *typeDef) const noexcept;
+		SLAKE_API void unregisterTypeDef(TypeDefObject *typeDef) noexcept;
+		SLAKE_API InternalExceptionPointer registerTypeDef(TypeDefObject *typeDef) noexcept;
 
 	private:
 		SLAKE_API void _gcWalk(GCWalkContext *context, MethodTable *methodTable);

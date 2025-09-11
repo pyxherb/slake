@@ -7,6 +7,18 @@
 #include "object.h"
 
 namespace slake {
+	enum class TypeDefKind : uint8_t {
+		CustomTypeDef,		   // Custom type definition
+		ArrayTypeDef,		   // Array type definition
+		RefTypeDef,			   // Reference type definition
+		GenericArgTypeDef,	   // Generic argument type definition
+		FnTypeDef,			   // Function type definition
+		ParamTypeListTypeDef,  // Parameter type list type definition
+		TupleTypeDef,		   // Tuple type definition
+		SIMDTypeDef,		   // SIMD type definition
+		UnpackingTypeDef,	   // Unpacking type definition
+	};
+
 	class HeapTypeObject final : public Object {
 	public:
 		TypeRef typeRef;
@@ -22,7 +34,21 @@ namespace slake {
 		SLAKE_API virtual void dealloc() override;
 	};
 
-	class CustomTypeDefObject final : public Object {
+	class TypeDefObject : public Object {
+	private:
+		TypeDefKind _typeDefKind;
+
+	public:
+		SLAKE_API TypeDefObject(Runtime *rt, peff::Alloc *selfAllocator, TypeDefKind typeDefKind);
+		SLAKE_API TypeDefObject(Duplicator *duplicator, const TypeDefObject &x, peff::Alloc *allocator);
+		SLAKE_API virtual ~TypeDefObject();
+
+		SLAKE_FORCEINLINE TypeDefKind getTypeDefKind() const noexcept {
+			return _typeDefKind;
+		}
+	};
+
+	class CustomTypeDefObject final : public TypeDefObject {
 	public:
 		Object *typeObject;
 
@@ -41,7 +67,7 @@ namespace slake {
 		}
 	};
 
-	class ArrayTypeDefObject final : public Object {
+	class ArrayTypeDefObject final : public TypeDefObject {
 	public:
 		HeapTypeObject *elementType;
 
@@ -56,7 +82,7 @@ namespace slake {
 		SLAKE_API virtual void dealloc() override;
 	};
 
-	class RefTypeDefObject final : public Object {
+	class RefTypeDefObject final : public TypeDefObject {
 	public:
 		HeapTypeObject *referencedType;
 
@@ -71,7 +97,7 @@ namespace slake {
 		SLAKE_API virtual void dealloc() override;
 	};
 
-	class GenericArgTypeDefObject final : public Object {
+	class GenericArgTypeDefObject final : public TypeDefObject {
 	public:
 		Object *ownerObject;
 		StringObject *nameObject;
@@ -87,7 +113,7 @@ namespace slake {
 		SLAKE_API virtual void dealloc() override;
 	};
 
-	class FnTypeDefObject final : public Object {
+	class FnTypeDefObject final : public TypeDefObject {
 	public:
 		HeapTypeObject *returnType = nullptr;
 		peff::DynArray<HeapTypeObject *> paramTypes;
@@ -106,7 +132,7 @@ namespace slake {
 		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;
 	};
 
-	class ParamTypeListTypeDefObject final : public Object {
+	class ParamTypeListTypeDefObject final : public TypeDefObject {
 	public:
 		peff::DynArray<HeapTypeObject *> paramTypes;
 		bool hasVarArg = false;
@@ -124,7 +150,7 @@ namespace slake {
 		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;
 	};
 
-	class TupleTypeDefObject final : public Object {
+	class TupleTypeDefObject final : public TypeDefObject {
 	public:
 		peff::DynArray<HeapTypeObject *> elementTypes;
 
@@ -141,7 +167,7 @@ namespace slake {
 		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;
 	};
 
-	class SIMDTypeDefObject final : public Object {
+	class SIMDTypeDefObject final : public TypeDefObject {
 	public:
 		HeapTypeObject *type;
 		uint32_t width = 0;
@@ -157,7 +183,7 @@ namespace slake {
 		SLAKE_API virtual void dealloc() override;
 	};
 
-	class UnpackingTypeDefObject final : public Object {
+	class UnpackingTypeDefObject final : public TypeDefObject {
 	public:
 		HeapTypeObject *type;
 
@@ -173,13 +199,13 @@ namespace slake {
 	};
 
 	struct TypeDefComparator {
-		SLAKE_API int operator()(const Object *lhs, const Object *rhs) const noexcept;
+		SLAKE_API int operator()(const TypeDefObject *lhs, const TypeDefObject *rhs) const noexcept;
 	};
 
 	struct TypeDefLtComparator {
 		TypeDefComparator innerComparator;
 
-		SLAKE_FORCEINLINE bool operator()(const Object* lhs, const Object* rhs) const noexcept {
+		SLAKE_FORCEINLINE bool operator()(const TypeDefObject* lhs, const TypeDefObject* rhs) const noexcept {
 			return innerComparator(lhs, rhs) < 0;
 		}
 	};

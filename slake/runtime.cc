@@ -321,7 +321,7 @@ SLAKE_API Runtime::~Runtime() {
 	assert(!selfAllocator);
 }
 
-SLAKE_API Object *Runtime::getEqualTypeDef(Object *typeDef) const noexcept {
+SLAKE_API TypeDefObject *Runtime::getEqualTypeDef(TypeDefObject *typeDef) const noexcept {
 	if (auto it = typeDefs.find(typeDef); it != typeDefs.end()) {
 		return *it;
 	}
@@ -329,11 +329,11 @@ SLAKE_API Object *Runtime::getEqualTypeDef(Object *typeDef) const noexcept {
 	return nullptr;
 }
 
-SLAKE_API void Runtime::unregisterTypeDef(Object *typeDef) noexcept {
+SLAKE_API void Runtime::unregisterTypeDef(TypeDefObject *typeDef) noexcept {
 	typeDefs.remove(typeDef);
 }
 
-SLAKE_API InternalExceptionPointer Runtime::registerTypeDef(Object *typeDef) noexcept {
+SLAKE_API InternalExceptionPointer Runtime::registerTypeDef(TypeDefObject *typeDef) noexcept {
 	if (typeDefs.contains(+typeDef))
 		std::terminate();
 

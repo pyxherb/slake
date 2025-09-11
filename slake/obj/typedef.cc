@@ -67,11 +67,22 @@ SLAKE_API void slake::HeapTypeObject::dealloc() {
 	peff::destroyAndRelease<HeapTypeObject>(selfAllocator.get(), this, sizeof(std::max_align_t));
 }
 
-SLAKE_API CustomTypeDefObject::CustomTypeDefObject(Runtime *rt, peff::Alloc *selfAllocator)
-	: Object(rt, selfAllocator, ObjectKind::CustomTypeDef) {
+SLAKE_API TypeDefObject::TypeDefObject(Runtime *rt, peff::Alloc *selfAllocator, TypeDefKind typeDefKind)
+	: Object(rt, selfAllocator, ObjectKind::TypeDef), _typeDefKind(typeDefKind) {
 }
 
-SLAKE_API CustomTypeDefObject::CustomTypeDefObject(Duplicator *duplicator, const CustomTypeDefObject &x, peff::Alloc *allocator, bool &succeededOut) : Object(x, allocator) {
+SLAKE_API TypeDefObject::TypeDefObject(Duplicator *duplicator, const TypeDefObject &x, peff::Alloc *allocator) : Object(x, allocator) {
+	_typeDefKind = x._typeDefKind;
+}
+
+SLAKE_API TypeDefObject::~TypeDefObject() {
+}
+
+SLAKE_API CustomTypeDefObject::CustomTypeDefObject(Runtime *rt, peff::Alloc *selfAllocator)
+	: TypeDefObject(rt, selfAllocator, TypeDefKind::CustomTypeDef) {
+}
+
+SLAKE_API CustomTypeDefObject::CustomTypeDefObject(Duplicator *duplicator, const CustomTypeDefObject &x, peff::Alloc *allocator, bool &succeededOut) : TypeDefObject(duplicator, x, allocator) {
 	typeObject = x.typeObject;
 
 	succeededOut = true;
@@ -128,10 +139,10 @@ SLAKE_API void slake::CustomTypeDefObject::dealloc() {
 }
 
 SLAKE_API ArrayTypeDefObject::ArrayTypeDefObject(Runtime *rt, peff::Alloc *selfAllocator)
-	: Object(rt, selfAllocator, ObjectKind::ArrayTypeDef) {
+	: TypeDefObject(rt, selfAllocator, TypeDefKind::ArrayTypeDef) {
 }
 
-SLAKE_API ArrayTypeDefObject::ArrayTypeDefObject(Duplicator *duplicator, const ArrayTypeDefObject &x, peff::Alloc *allocator, bool &succeededOut) : Object(x, allocator) {
+SLAKE_API ArrayTypeDefObject::ArrayTypeDefObject(Duplicator *duplicator, const ArrayTypeDefObject &x, peff::Alloc *allocator, bool &succeededOut) : TypeDefObject(duplicator, x, allocator) {
 	if (!duplicator->insertTask(DuplicationTask::makeNormal((Object **)&elementType, x.elementType))) {
 		succeededOut = false;
 		return;
@@ -191,10 +202,10 @@ SLAKE_API void slake::ArrayTypeDefObject::dealloc() {
 }
 
 SLAKE_API RefTypeDefObject::RefTypeDefObject(Runtime *rt, peff::Alloc *selfAllocator)
-	: Object(rt, selfAllocator, ObjectKind::RefTypeDef) {
+	: TypeDefObject(rt, selfAllocator, TypeDefKind::RefTypeDef) {
 }
 
-SLAKE_API RefTypeDefObject::RefTypeDefObject(Duplicator *duplicator, const RefTypeDefObject &x, peff::Alloc *allocator, bool &succeededOut) : Object(x, allocator) {
+SLAKE_API RefTypeDefObject::RefTypeDefObject(Duplicator *duplicator, const RefTypeDefObject &x, peff::Alloc *allocator, bool &succeededOut) : TypeDefObject(duplicator, x, allocator) {
 	if (!duplicator->insertTask(DuplicationTask::makeNormal((Object **)&referencedType, x.referencedType))) {
 		succeededOut = false;
 		return;
@@ -254,10 +265,10 @@ SLAKE_API void slake::RefTypeDefObject::dealloc() {
 }
 
 SLAKE_API GenericArgTypeDefObject::GenericArgTypeDefObject(Runtime *rt, peff::Alloc *selfAllocator)
-	: Object(rt, selfAllocator, ObjectKind::GenericArgTypeDef) {
+	: TypeDefObject(rt, selfAllocator, TypeDefKind::GenericArgTypeDef) {
 }
 
-SLAKE_API GenericArgTypeDefObject::GenericArgTypeDefObject(Duplicator *duplicator, const GenericArgTypeDefObject &x, peff::Alloc *allocator, bool &succeededOut) : Object(x, allocator) {
+SLAKE_API GenericArgTypeDefObject::GenericArgTypeDefObject(Duplicator *duplicator, const GenericArgTypeDefObject &x, peff::Alloc *allocator, bool &succeededOut) : TypeDefObject(duplicator, x, allocator) {
 	ownerObject = x.ownerObject;
 	nameObject = x.nameObject;
 
@@ -315,10 +326,10 @@ SLAKE_API void slake::GenericArgTypeDefObject::dealloc() {
 }
 
 SLAKE_API FnTypeDefObject::FnTypeDefObject(Runtime *rt, peff::Alloc *selfAllocator)
-	: Object(rt, selfAllocator, ObjectKind::FnTypeDef), paramTypes(selfAllocator) {
+	: TypeDefObject(rt, selfAllocator, TypeDefKind::FnTypeDef), paramTypes(selfAllocator) {
 }
 
-SLAKE_API FnTypeDefObject::FnTypeDefObject(Duplicator *duplicator, const FnTypeDefObject &x, peff::Alloc *allocator, bool &succeededOut) : Object(x, allocator), paramTypes(allocator) {
+SLAKE_API FnTypeDefObject::FnTypeDefObject(Duplicator *duplicator, const FnTypeDefObject &x, peff::Alloc *allocator, bool &succeededOut) : TypeDefObject(duplicator, x, allocator), paramTypes(allocator) {
 	if (!duplicator->insertTask(DuplicationTask::makeNormal((Object **)&returnType, x.returnType))) {
 		succeededOut = false;
 		return;
@@ -398,10 +409,10 @@ SLAKE_API void FnTypeDefObject::replaceAllocator(peff::Alloc *allocator) noexcep
 }
 
 SLAKE_API ParamTypeListTypeDefObject::ParamTypeListTypeDefObject(Runtime *rt, peff::Alloc *selfAllocator)
-	: Object(rt, selfAllocator, ObjectKind::ParamTypeListTypeDef), paramTypes(selfAllocator) {
+	: TypeDefObject(rt, selfAllocator, TypeDefKind::ParamTypeListTypeDef), paramTypes(selfAllocator) {
 }
 
-SLAKE_API ParamTypeListTypeDefObject::ParamTypeListTypeDefObject(Duplicator *duplicator, const ParamTypeListTypeDefObject &x, peff::Alloc *allocator, bool &succeededOut) : Object(x, allocator), paramTypes(allocator) {
+SLAKE_API ParamTypeListTypeDefObject::ParamTypeListTypeDefObject(Duplicator *duplicator, const ParamTypeListTypeDefObject &x, peff::Alloc *allocator, bool &succeededOut) : TypeDefObject(duplicator, x, allocator), paramTypes(allocator) {
 	if (!paramTypes.resize(x.paramTypes.size())) {
 		succeededOut = false;
 		return;
@@ -476,10 +487,10 @@ SLAKE_API void ParamTypeListTypeDefObject::replaceAllocator(peff::Alloc *allocat
 }
 
 SLAKE_API TupleTypeDefObject::TupleTypeDefObject(Runtime *rt, peff::Alloc *selfAllocator)
-	: Object(rt, selfAllocator, ObjectKind::TupleTypeDef), elementTypes(selfAllocator) {
+	: TypeDefObject(rt, selfAllocator, TypeDefKind::TupleTypeDef), elementTypes(selfAllocator) {
 }
 
-SLAKE_API TupleTypeDefObject::TupleTypeDefObject(Duplicator *duplicator, const TupleTypeDefObject &x, peff::Alloc *allocator, bool &succeededOut) : Object(x, allocator), elementTypes(allocator) {
+SLAKE_API TupleTypeDefObject::TupleTypeDefObject(Duplicator *duplicator, const TupleTypeDefObject &x, peff::Alloc *allocator, bool &succeededOut) : TypeDefObject(duplicator, x, allocator), elementTypes(allocator) {
 	if (!elementTypes.resize(x.elementTypes.size())) {
 		succeededOut = false;
 		return;
@@ -552,10 +563,10 @@ SLAKE_API void TupleTypeDefObject::replaceAllocator(peff::Alloc *allocator) noex
 }
 
 SLAKE_API SIMDTypeDefObject::SIMDTypeDefObject(Runtime *rt, peff::Alloc *selfAllocator)
-	: Object(rt, selfAllocator, ObjectKind::SIMDTypeDef) {
+	: TypeDefObject(rt, selfAllocator, TypeDefKind::SIMDTypeDef) {
 }
 
-SLAKE_API SIMDTypeDefObject::SIMDTypeDefObject(Duplicator *duplicator, const SIMDTypeDefObject &x, peff::Alloc *allocator, bool &succeededOut) : Object(x, allocator) {
+SLAKE_API SIMDTypeDefObject::SIMDTypeDefObject(Duplicator *duplicator, const SIMDTypeDefObject &x, peff::Alloc *allocator, bool &succeededOut) : TypeDefObject(duplicator, x, allocator) {
 	if (!duplicator->insertTask(DuplicationTask::makeNormal((Object **)&type, x.type))) {
 		succeededOut = false;
 		return;
@@ -615,10 +626,10 @@ SLAKE_API void slake::SIMDTypeDefObject::dealloc() {
 }
 
 SLAKE_API UnpackingTypeDefObject::UnpackingTypeDefObject(Runtime *rt, peff::Alloc *selfAllocator)
-	: Object(rt, selfAllocator, ObjectKind::UnpackingTypeDef) {
+	: TypeDefObject(rt, selfAllocator, TypeDefKind::UnpackingTypeDef) {
 }
 
-SLAKE_API UnpackingTypeDefObject::UnpackingTypeDefObject(Duplicator *duplicator, const UnpackingTypeDefObject &x, peff::Alloc *allocator, bool &succeededOut) : Object(x, allocator) {
+SLAKE_API UnpackingTypeDefObject::UnpackingTypeDefObject(Duplicator *duplicator, const UnpackingTypeDefObject &x, peff::Alloc *allocator, bool &succeededOut) : TypeDefObject(duplicator, x, allocator) {
 	if (!duplicator->insertTask(DuplicationTask::makeNormal((Object **)&type, x.type))) {
 		succeededOut = false;
 		return;
@@ -677,20 +688,19 @@ SLAKE_API void slake::UnpackingTypeDefObject::dealloc() {
 	peff::destroyAndRelease<UnpackingTypeDefObject>(selfAllocator.get(), this, sizeof(std::max_align_t));
 }
 
-SLAKE_API int TypeDefComparator::operator()(const Object *lhs, const Object *rhs) const noexcept {
-	ObjectKind objectKind = lhs->getObjectKind();
+SLAKE_API int TypeDefComparator::operator()(const TypeDefObject *lhs, const TypeDefObject *rhs) const noexcept {
+	TypeDefKind typeDefKind;
 
 	{
-		ObjectKind rhsObjectKind = rhs->getObjectKind();
-
-		if (objectKind < rhsObjectKind)
+		TypeDefKind rhsTypeDefKind;
+		if ((typeDefKind = lhs->getTypeDefKind()) < (rhsTypeDefKind = rhs->getTypeDefKind()))
 			return -1;
-		if (objectKind > rhsObjectKind)
+		if (typeDefKind > rhsTypeDefKind)
 			return 1;
 	}
 
-	switch (objectKind) {
-		case ObjectKind::CustomTypeDef: {
+	switch (typeDefKind) {
+		case TypeDefKind::CustomTypeDef: {
 			CustomTypeDefObject *l = (CustomTypeDefObject *)lhs,
 								*r = (CustomTypeDefObject *)rhs;
 
@@ -712,7 +722,7 @@ SLAKE_API int TypeDefComparator::operator()(const Object *lhs, const Object *rhs
 
 			break;
 		}
-		case ObjectKind::ArrayTypeDef: {
+		case TypeDefKind::ArrayTypeDef: {
 			ArrayTypeDefObject *l = (ArrayTypeDefObject *)lhs,
 							   *r = (ArrayTypeDefObject *)rhs;
 
@@ -723,7 +733,7 @@ SLAKE_API int TypeDefComparator::operator()(const Object *lhs, const Object *rhs
 
 			break;
 		}
-		case ObjectKind::GenericArgTypeDef: {
+		case TypeDefKind::GenericArgTypeDef: {
 			GenericArgTypeDefObject *l = (GenericArgTypeDefObject *)lhs,
 									*r = (GenericArgTypeDefObject *)rhs;
 
@@ -739,7 +749,7 @@ SLAKE_API int TypeDefComparator::operator()(const Object *lhs, const Object *rhs
 
 			break;
 		}
-		case ObjectKind::RefTypeDef: {
+		case TypeDefKind::RefTypeDef: {
 			RefTypeDefObject *l = (RefTypeDefObject *)lhs,
 							 *r = (RefTypeDefObject *)rhs;
 
@@ -750,7 +760,7 @@ SLAKE_API int TypeDefComparator::operator()(const Object *lhs, const Object *rhs
 
 			break;
 		}
-		case ObjectKind::FnTypeDef: {
+		case TypeDefKind::FnTypeDef: {
 			FnTypeDefObject *l = (FnTypeDefObject *)lhs,
 							*r = (FnTypeDefObject *)rhs;
 
@@ -780,7 +790,7 @@ SLAKE_API int TypeDefComparator::operator()(const Object *lhs, const Object *rhs
 
 			break;
 		}
-		case ObjectKind::ParamTypeListTypeDef: {
+		case TypeDefKind::ParamTypeListTypeDef: {
 			ParamTypeListTypeDefObject *l = (ParamTypeListTypeDefObject *)lhs,
 									   *r = (ParamTypeListTypeDefObject *)rhs;
 
@@ -805,7 +815,7 @@ SLAKE_API int TypeDefComparator::operator()(const Object *lhs, const Object *rhs
 
 			break;
 		}
-		case ObjectKind::TupleTypeDef: {
+		case TypeDefKind::TupleTypeDef: {
 			TupleTypeDefObject *l = (TupleTypeDefObject *)lhs,
 							   *r = (TupleTypeDefObject *)rhs;
 
@@ -820,7 +830,7 @@ SLAKE_API int TypeDefComparator::operator()(const Object *lhs, const Object *rhs
 
 			break;
 		}
-		case ObjectKind::SIMDTypeDef: {
+		case TypeDefKind::SIMDTypeDef: {
 			SIMDTypeDefObject *l = (SIMDTypeDefObject *)lhs,
 							  *r = (SIMDTypeDefObject *)rhs;
 
@@ -847,20 +857,5 @@ SLAKE_API bool slake::isTypeDefObject(Object *object) {
 	if (!object)
 		return false;
 
-	switch (object->getObjectKind()) {
-		case ObjectKind::CustomTypeDef:
-		case ObjectKind::ArrayTypeDef:
-		case ObjectKind::RefTypeDef:
-		case ObjectKind::GenericArgTypeDef:
-		case ObjectKind::FnTypeDef:
-		case ObjectKind::ParamTypeListTypeDef:
-		case ObjectKind::TupleTypeDef:
-		case ObjectKind::SIMDTypeDef:
-		case ObjectKind::UnpackingTypeDef:
-			return true;
-		default:
-			break;
-	}
-
-	return false;
+	return object->getObjectKind() == ObjectKind::TypeDef;
 }

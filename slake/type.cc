@@ -164,7 +164,7 @@ SLAKE_API TypeRef TypeRef::duplicate(bool &succeededOut) const {
 		case TypeId::Array:
 		case TypeId::Ref:
 		case TypeId::GenericArg:
-			newType.typeDef = typeDef->duplicate(nullptr);
+			newType.typeDef = (TypeDefObject *)typeDef->duplicate(nullptr);
 			if (!succeededOut) {
 				return {};
 			}
@@ -232,7 +232,7 @@ SLAKE_API InternalExceptionPointer slake::isCompatible(peff::Alloc *allocator, c
 				return {};
 			}
 
-			switch (((CustomTypeDefObject*)type.typeDef)->getObjectKind()) {
+			switch (((CustomTypeDefObject *)type.typeDef)->getObjectKind()) {
 				case ObjectKind::Class: {
 					ClassObject *thisClass = (ClassObject *)((CustomTypeDefObject *)type.typeDef);
 

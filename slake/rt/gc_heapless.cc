@@ -140,30 +140,37 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 				case ObjectKind::HeapType:
 					_gcWalk(context, ((HeapTypeObject *)v)->typeRef);
 					break;
-				case ObjectKind::CustomTypeDef:
-					GCWalkContext::pushObject(context, ((CustomTypeDefObject *)v)->typeObject);
-					break;
-				case ObjectKind::ArrayTypeDef:
-					GCWalkContext::pushObject(context, ((ArrayTypeDefObject *)v)->elementType);
-					break;
-				case ObjectKind::RefTypeDef:
-					GCWalkContext::pushObject(context, ((RefTypeDefObject *)v)->referencedType);
-					break;
-				case ObjectKind::GenericArgTypeDef:
-					GCWalkContext::pushObject(context, ((GenericArgTypeDefObject *)v)->ownerObject);
-					GCWalkContext::pushObject(context, ((GenericArgTypeDefObject *)v)->nameObject);
-					break;
-				case ObjectKind::FnTypeDef: {
-					auto typeDef = ((FnTypeDefObject *)v);
-					GCWalkContext::pushObject(context, typeDef->returnType);
-					for (auto i : typeDef->paramTypes)
-						GCWalkContext::pushObject(context, i);
-					break;
-				}
-				case ObjectKind::ParamTypeListTypeDef: {
-					auto typeDef = ((ParamTypeListTypeDefObject *)v);
-					for (auto i : typeDef->paramTypes)
-						GCWalkContext::pushObject(context, i);
+				case ObjectKind::TypeDef: {
+					auto typeDef = (TypeDefObject *)v;
+
+					switch (typeDef->getTypeDefKind()) {
+						case TypeDefKind::CustomTypeDef:
+							GCWalkContext::pushObject(context, ((CustomTypeDefObject *)typeDef)->typeObject);
+							break;
+						case TypeDefKind::ArrayTypeDef:
+							GCWalkContext::pushObject(context, ((ArrayTypeDefObject *)typeDef)->elementType);
+							break;
+						case TypeDefKind::RefTypeDef:
+							GCWalkContext::pushObject(context, ((RefTypeDefObject *)typeDef)->referencedType);
+							break;
+						case TypeDefKind::GenericArgTypeDef:
+							GCWalkContext::pushObject(context, ((GenericArgTypeDefObject *)typeDef)->ownerObject);
+							GCWalkContext::pushObject(context, ((GenericArgTypeDefObject *)typeDef)->nameObject);
+							break;
+						case TypeDefKind::FnTypeDef: {
+							auto td = ((FnTypeDefObject *)typeDef);
+							GCWalkContext::pushObject(context, td->returnType);
+							for (auto i : td->paramTypes)
+								GCWalkContext::pushObject(context, i);
+							break;
+						}
+						case TypeDefKind::ParamTypeListTypeDef: {
+							auto td = ((ParamTypeListTypeDefObject *)typeDef);
+							for (auto i : td->paramTypes)
+								GCWalkContext::pushObject(context, i);
+							break;
+						}
+					}
 					break;
 				}
 				case ObjectKind::Instance: {
@@ -707,7 +714,7 @@ rescanDeletables:
 			case GCTarget::TypeDef:
 				if (!isTypeDefObject(i))
 					continue;
-				unregisterTypeDef(i);
+				unregisterTypeDef((TypeDefObject*)i);
 				break;
 			case GCTarget::All:
 				break;
@@ -987,7 +994,7 @@ rescanDeletables:
 				case GCTarget::TypeDef:
 					if (!isTypeDefObject(j))
 						continue;
-					unregisterTypeDef(j);
+					unregisterTypeDef((TypeDefObject *)j);
 					break;
 				case GCTarget::All:
 					break;

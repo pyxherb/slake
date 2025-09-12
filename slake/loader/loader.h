@@ -10,6 +10,8 @@ namespace slake {
 			peff::RcObjectPtr<peff::Alloc> allocator;
 			peff::Set<IdRefObject *, IdRefLtComparator> loadedIdRefs;
 			peff::Set<CustomTypeDefObject *> loadedCustomTypeDefs;
+			peff::Set<InterfaceObject *> loadedInterfaces;
+			peff::Set<ClassObject *> loadedClasses;
 			HostRefHolder hostRefHolder;
 
 			SLAKE_API LoaderContext(peff::Alloc *allocator);

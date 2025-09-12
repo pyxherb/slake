@@ -3,7 +3,13 @@
 using namespace slake;
 using namespace slake::loader;
 
-SLAKE_API LoaderContext::LoaderContext(peff::Alloc *allocator) : allocator(allocator), loadedIdRefs(allocator), loadedCustomTypeDefs(allocator), hostRefHolder(allocator) {
+SLAKE_API LoaderContext::LoaderContext(peff::Alloc *allocator)
+	: allocator(allocator),
+	  loadedIdRefs(allocator),
+	  loadedCustomTypeDefs(allocator),
+	  loadedInterfaces(allocator),
+	  loadedClasses(allocator),
+	  hostRefHolder(allocator) {
 }
 
 SLAKE_API LoaderContext::~LoaderContext() {
@@ -524,6 +530,10 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(LoaderContext &cont
 
 			SLAKE_RETURN_IF_EXCEPT(loadModuleMembers(context, runtime, reader, clsObject.get()));
 
+			if (!context.loadedClasses.insert(clsObject.get())) {
+				return OutOfMemoryError::alloc();
+			}
+
 			clsObject->setParent(moduleObject);
 
 			if (!moduleObject->addMember(clsObject.get())) {
@@ -576,6 +586,10 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(LoaderContext &cont
 			}
 
 			SLAKE_RETURN_IF_EXCEPT(loadModuleMembers(context, runtime, reader, interfaceObject.get()));
+
+			if (!context.loadedInterfaces.insert(interfaceObject.get())) {
+				return OutOfMemoryError::alloc();
+			}
 
 			interfaceObject->setParent(moduleObject);
 
@@ -814,6 +828,10 @@ SLAKE_API InternalExceptionPointer loader::loadModule(LoaderContext &context, Ru
 		SLAKE_RETURN_IF_EXCEPT(runtime->loadDeferredCustomTypeDef(i));
 
 		SLAKE_RETURN_IF_EXCEPT(runtime->registerTypeDef(i));
+	}
+
+	for (auto i : context.loadedInterfaces) {
+		SLAKE_RETURN_IF_EXCEPT(i->updateInheritanceRelationship(runtime->getFixedAlloc()));
 	}
 
 	return {};

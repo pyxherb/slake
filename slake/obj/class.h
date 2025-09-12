@@ -92,7 +92,7 @@ namespace slake {
 		/// @param[in] pInterface Interface to check.
 		///
 		/// @return true if implemented, false otherwise.
-		SLAKE_API bool hasImplemented(const InterfaceObject *pInterface) const;
+		SLAKE_API bool hasImplemented(InterfaceObject *pInterface) const;
 		SLAKE_API bool isBaseOf(const ClassObject *pClass) const;
 
 		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
@@ -105,7 +105,7 @@ namespace slake {
 	};
 
 	class InterfaceObject : public ModuleObject {
-	protected:
+	private:
 		friend class Runtime;
 		friend class ClassObject;
 
@@ -116,6 +116,8 @@ namespace slake {
 		GenericParamList genericParams;
 
 		peff::DynArray<TypeRef> implTypes;
+
+		peff::Set<InterfaceObject *> implInterfaceIndices;
 
 		SLAKE_API InterfaceObject(Runtime *rt, peff::Alloc *selfAllocator);
 		SLAKE_API InterfaceObject(Duplicator *duplicator, const InterfaceObject &x, peff::Alloc *allocator, bool &succeededOut);
@@ -129,10 +131,15 @@ namespace slake {
 		SLAKE_API static HostObjectRef<InterfaceObject> alloc(Duplicator *duplicator, const InterfaceObject *other);
 		SLAKE_API virtual void dealloc() override;
 
+		SLAKE_FORCEINLINE void invalidateInheritanceRelationshipCache() noexcept {
+			implInterfaceIndices.clear();
+		}
+		SLAKE_API InternalExceptionPointer updateInheritanceRelationship(peff::Alloc *allocator) noexcept;
+
 		/// @brief Check if the interface is derived from specified interface
 		/// @param pInterface Interface to check.
 		/// @return true if the interface is derived from specified interface, false otherwise.
-		SLAKE_API bool isDerivedFrom(const InterfaceObject *pInterface) const;
+		SLAKE_API bool isDerivedFrom(InterfaceObject *pInterface) const;
 
 		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;
 	};

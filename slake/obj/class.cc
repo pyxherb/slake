@@ -2,18 +2,18 @@
 
 using namespace slake;
 
-SLAKE_API void ObjectFieldRecord::replaceAllocator(peff::Alloc* allocator) noexcept {
+SLAKE_API void ObjectFieldRecord::replaceAllocator(peff::Alloc *allocator) noexcept {
 	name.replaceAllocator(allocator);
 }
 
-SLAKE_API void ObjectLayout::replaceAllocator(peff::Alloc* allocator) noexcept {
+SLAKE_API void ObjectLayout::replaceAllocator(peff::Alloc *allocator) noexcept {
 	peff::verifyReplaceable(selfAllocator.get(), allocator);
 
 	selfAllocator = allocator;
 
 	fieldRecords.replaceAllocator(allocator);
 
-	for (auto& i : fieldRecords) {
+	for (auto &i : fieldRecords) {
 		i.replaceAllocator(allocator);
 	}
 
@@ -83,7 +83,7 @@ SLAKE_API void MethodTable::dealloc() {
 	peff::destroyAndRelease<MethodTable>(selfAllocator.get(), this, sizeof(std::max_align_t));
 }
 
-SLAKE_API void MethodTable::replaceAllocator(peff::Alloc* allocator) noexcept {
+SLAKE_API void MethodTable::replaceAllocator(peff::Alloc *allocator) noexcept {
 	peff::verifyReplaceable(selfAllocator.get(), allocator);
 
 	selfAllocator = allocator;
@@ -99,18 +99,17 @@ SLAKE_API MethodTable *MethodTable::duplicate(peff::Alloc *allocator) {
 		return nullptr;
 
 	for (auto [k, v] : methods) {
-		if(!newMethodTable->methods.insert(std::string_view(v->name), +v))
+		if (!newMethodTable->methods.insert(std::string_view(v->name), +v))
 			return nullptr;
 	}
 
 	for (auto i : destructors) {
-		if(!newMethodTable->destructors.pushBack(+i))
+		if (!newMethodTable->destructors.pushBack(+i))
 			return nullptr;
 	}
 
 	return newMethodTable.release();
 }
-
 
 SLAKE_API Object *ClassObject::duplicate(Duplicator *duplicator) const {
 	return (Object *)alloc(duplicator, this).get();
@@ -190,9 +189,9 @@ SLAKE_API ClassObject::~ClassObject() {
 		cachedObjectLayout->dealloc();
 }
 
-SLAKE_API bool ClassObject::hasImplemented(const InterfaceObject *pInterface) const {
+SLAKE_API bool ClassObject::hasImplemented(InterfaceObject *pInterface) const {
 	for (auto &i : implTypes) {
-		if (((InterfaceObject *)((CustomTypeDefObject*)i.typeDef)->typeObject)->isDerivedFrom(pInterface))
+		if (((InterfaceObject *)((CustomTypeDefObject *)i.typeDef)->typeObject)->isDerivedFrom(pInterface))
 			return true;
 	}
 	return false;
@@ -271,7 +270,7 @@ SLAKE_API void ClassObject::replaceAllocator(peff::Alloc *allocator) noexcept {
 
 	genericParams.replaceAllocator(allocator);
 
-	for (auto& i : genericParams) {
+	for (auto &i : genericParams) {
 		i.replaceAllocator(allocator);
 	}
 
@@ -291,7 +290,8 @@ SLAKE_API InterfaceObject::InterfaceObject(Runtime *rt, peff::Alloc *selfAllocat
 	  genericArgs(selfAllocator),
 	  mappedGenericArgs(selfAllocator),
 	  genericParams(selfAllocator),
-	  implTypes(selfAllocator) {
+	  implTypes(selfAllocator),
+	  implInterfaceIndices(selfAllocator) {
 }
 
 SLAKE_API InterfaceObject::InterfaceObject(Duplicator *duplicator, const InterfaceObject &x, peff::Alloc *allocator, bool &succeededOut)
@@ -299,7 +299,8 @@ SLAKE_API InterfaceObject::InterfaceObject(Duplicator *duplicator, const Interfa
 	  genericArgs(allocator),
 	  mappedGenericArgs(allocator),
 	  genericParams(allocator),
-	  implTypes(allocator) {
+	  implTypes(allocator),
+	  implInterfaceIndices(allocator) {
 	if (succeededOut) {
 		for (size_t i = 0; i < x.genericParams.size(); ++i) {
 			if (!x.genericParams.at(i).copy(genericParams.at(i))) {
@@ -319,24 +320,65 @@ SLAKE_API InterfaceObject::InterfaceObject(Duplicator *duplicator, const Interfa
 	}
 }
 
-SLAKE_API bool InterfaceObject::isDerivedFrom(const InterfaceObject *pInterface) const {
+struct UpdateInterfaceInheritanceRelationshipFrame {
+	InterfaceObject *interfaceObject;
+	size_t index;
+};
+
+struct UpdateInterfaceInheritanceRelationshipContext {
+	peff::List<UpdateInterfaceInheritanceRelationshipFrame> frames;
+
+	SLAKE_FORCEINLINE UpdateInterfaceInheritanceRelationshipContext(peff::Alloc *allocator) : frames(allocator) {}
+};
+
+SLAKE_FORCEINLINE InternalExceptionPointer _updateInterfaceInheritanceRelationship(InterfaceObject *interfaceObject, UpdateInterfaceInheritanceRelationshipContext &context) noexcept {
+	while (context.frames.size()) {
+		UpdateInterfaceInheritanceRelationshipFrame &curFrame = context.frames.back();
+
+		InterfaceObject *interfaceObject = curFrame.interfaceObject;
+
+		if ((curFrame.index >= interfaceObject->implTypes.size()) ||
+			(!interfaceObject->implTypes.size())) {
+			if (!interfaceObject->implInterfaceIndices.insert(+interfaceObject))
+				return OutOfMemoryError::alloc();
+			context.frames.popBack();
+			continue;
+		}
+
+		TypeRef typeRef = interfaceObject->implTypes.at(curFrame.index);
+
+		// TODO: Return a malformed interface exception.
+		if (typeRef.typeDef->getTypeDefKind() != TypeDefKind::CustomTypeDef)
+			std::terminate();
+
+		CustomTypeDefObject *td = (CustomTypeDefObject *)typeRef.typeDef;
+
+		// TODO: Return a malformed interface exception.
+		if (td->typeObject->getObjectKind() != ObjectKind::Interface)
+			std::terminate();
+
+		if (!context.frames.pushBack({ (InterfaceObject *)td->typeObject, 0 }))
+			return OutOfMemoryError::alloc();
+
+		++curFrame.index;
+	}
+
+	return {};
+}
+
+SLAKE_API InternalExceptionPointer InterfaceObject::updateInheritanceRelationship(peff::Alloc *allocator) noexcept {
+	invalidateInheritanceRelationshipCache();
+
+	UpdateInterfaceInheritanceRelationshipContext context(allocator);
+
+	return _updateInterfaceInheritanceRelationship(this, context);
+}
+
+SLAKE_API bool InterfaceObject::isDerivedFrom(InterfaceObject *pInterface) const {
 	if (pInterface == this)
 		return true;
 
-	for (auto &i : implTypes) {
-		InterfaceObject *interfaceObj = (InterfaceObject *)((CustomTypeDefObject *)i.typeDef)->typeObject;
-
-		if (interfaceObj->getObjectKind() != ObjectKind::Interface) {
-			// The parent is not an interface - this situation should not be here,
-			// but we have disabled exceptions, so return anyway.
-			return false;
-		}
-
-		if (interfaceObj->isDerivedFrom(pInterface))
-			return true;
-	}
-
-	return false;
+	return implInterfaceIndices.contains(pInterface);
 }
 
 SLAKE_API const GenericArgList *InterfaceObject::getGenericArgs() const {
@@ -407,9 +449,11 @@ SLAKE_API void InterfaceObject::replaceAllocator(peff::Alloc *allocator) noexcep
 
 	genericParams.replaceAllocator(allocator);
 
-	for (auto& i : genericParams) {
+	for (auto &i : genericParams) {
 		i.replaceAllocator(allocator);
 	}
 
 	implTypes.replaceAllocator(allocator);
+
+	implInterfaceIndices.replaceAllocator(allocator);
 }

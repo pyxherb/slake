@@ -164,7 +164,7 @@ SLAKE_API void FnOverloadingObject::replaceAllocator(peff::Alloc *allocator) noe
 
 	genericParams.replaceAllocator(allocator);
 
-	for (auto& i : genericParams) {
+	for (auto &i : genericParams) {
 		i.replaceAllocator(allocator);
 	}
 
@@ -318,7 +318,7 @@ SLAKE_API void RegularFnOverloadingObject::replaceAllocator(peff::Alloc *allocat
 
 	instructions.replaceAllocator(allocator);
 
-	for (auto& i : instructions) {
+	for (auto &i : instructions) {
 		i.replaceAllocator(allocator);
 	}
 }
@@ -391,13 +391,33 @@ SLAKE_API void slake::NativeFnOverloadingObject::dealloc() {
 	peff::destroyAndRelease<NativeFnOverloadingObject>(selfAllocator.get(), this, sizeof(std::max_align_t));
 }
 
+SLAKE_API int FnSignatureComparator::operator()(const FnSignature &lhs, const FnSignature &rhs) const noexcept {
+	int result = innerComparator(lhs.paramTypes, rhs.paramTypes);
+	if (result)
+		return result;
+
+	if (((int)lhs.hasVarArg) < ((int)rhs.hasVarArg))
+		return -1;
+	if (((int)rhs.hasVarArg) > ((int)rhs.hasVarArg))
+		return 1;
+
+	if (lhs.nGenericParams < rhs.nGenericParams) {
+		return -1;
+	}
+	if (lhs.nGenericParams > rhs.nGenericParams) {
+		return 1;
+	}
+
+	return 0;
+}
+
 SLAKE_API FnObject::FnObject(Runtime *rt, peff::Alloc *selfAllocator) : MemberObject(rt, selfAllocator, ObjectKind::Fn), overloadings(selfAllocator) {
 }
 
 SLAKE_API FnObject::FnObject(const FnObject &x, peff::Alloc *allocator, bool &succeededOut) : MemberObject(x, allocator, succeededOut), overloadings(allocator) {
 	if (succeededOut) {
-		for (auto i : x.overloadings) {
-			FnOverloadingObject *ol = (FnOverloadingObject *)i->duplicate(nullptr);
+		for (auto [k, v] : x.overloadings) {
+			FnOverloadingObject *ol = (FnOverloadingObject *)v->duplicate(nullptr);
 
 			if (!ol) {
 				succeededOut = false;
@@ -406,7 +426,7 @@ SLAKE_API FnObject::FnObject(const FnObject &x, peff::Alloc *allocator, bool &su
 
 			ol->fnObject = this;
 
-			if (!overloadings.insert(std::move(ol))) {
+			if (!overloadings.insert({ ol->paramTypes, (bool)(ol->overloadingFlags & OL_VARG), ol->genericParams.size() }, +ol)) {
 				succeededOut = false;
 				return;
 			}
@@ -417,33 +437,6 @@ SLAKE_API FnObject::FnObject(const FnObject &x, peff::Alloc *allocator, bool &su
 }
 
 SLAKE_API FnObject::~FnObject() {
-}
-
-SLAKE_API InternalExceptionPointer FnObject::getOverloading(peff::Alloc *allocator, const peff::DynArray<TypeRef> &argTypes, FnOverloadingObject *&overloadingOut) const {
-	const FnObject *i = this;
-
-	for (auto j : overloadings) {
-		if (j->overloadingFlags & OL_VARG) {
-			if (argTypes.size() < j->paramTypes.size())
-				continue;
-		} else {
-			if (argTypes.size() != j->paramTypes.size())
-				continue;
-		}
-
-		for (size_t k = 0; k < argTypes.size(); ++k) {
-			if (argTypes.at(k) != j->paramTypes.at(k))
-				goto mismatched;
-		}
-
-		overloadingOut = j;
-		return {};
-
-	mismatched:;
-	}
-
-	overloadingOut = nullptr;
-	return {};
 }
 
 SLAKE_API Object *FnObject::duplicate(Duplicator *duplicator) const {
@@ -493,64 +486,47 @@ SLAKE_API void slake::FnObject::dealloc() {
 	peff::destroyAndRelease<FnObject>(selfAllocator.get(), this, sizeof(std::max_align_t));
 }
 
-SLAKE_API void FnObject::replaceAllocator(peff::Alloc* allocator) noexcept {
+SLAKE_API void FnObject::replaceAllocator(peff::Alloc *allocator) noexcept {
 	this->MemberObject::replaceAllocator(allocator);
 
 	overloadings.replaceAllocator(allocator);
 }
 
-SLAKE_API InternalExceptionPointer slake::findOverloading(
-	peff::Alloc *allocator,
-	FnObject *fnObject,
-	const peff::DynArray<TypeRef> &paramTypes,
-	const GenericParamList &genericParams,
-	bool hasVarArg,
-	FnOverloadingObject *&overloadingOut) {
-	for (auto i : fnObject->overloadings) {
-		bool result;
+SLAKE_API InternalExceptionPointer FnObject::resortOverloadings() noexcept {
+	// Resort the overloading map.
+	// TODO: Can we check if any one of the overloadings is changed to
+	// implement on-demand resorting?
+	auto oldOverloadings = std::move(overloadings);
 
-		SLAKE_RETURN_IF_EXCEPT(isDuplicatedOverloading(allocator, i, paramTypes, genericParams, hasVarArg, result));
+	overloadings = peff::Map<FnSignature, FnOverloadingObject *, FnSignatureLtComparator>(selfAllocator.get());
 
-		if (result) {
-			overloadingOut = i;
-			return {};
-		}
+	for (auto [k, v] : oldOverloadings) {
+		if (!overloadings.insert(FnSignature(k), +v))
+			return OutOfMemoryError::alloc();
 	}
 
-	overloadingOut = nullptr;
 	return {};
 }
 
-SLAKE_API InternalExceptionPointer slake::isDuplicatedOverloading(
-	peff::Alloc *allocator,
+SLAKE_API FnOverloadingObject *slake::findOverloading(
+	FnObject *fnObject,
+	const peff::DynArray<TypeRef> &paramTypes,
+	const GenericParamList &genericParams,
+	bool hasVarArg) {
+	if (auto it = fnObject->overloadings.find({ paramTypes, hasVarArg, genericParams.size() }); it != fnObject->overloadings.end())
+		return it.value();
+	return nullptr;
+}
+
+SLAKE_API bool slake::isDuplicatedOverloading(
 	const FnOverloadingObject *overloading,
 	const peff::DynArray<TypeRef> &paramTypes,
 	const GenericParamList &genericParams,
-	bool hasVarArg,
-	bool &resultOut) {
-	if ((overloading->overloadingFlags & OL_VARG) != (hasVarArg ? OL_VARG : 0)) {
-		resultOut = false;
-		return {};
-	}
+	bool hasVarArg) {
+	FnSignatureComparator cmp;
 
-	if (overloading->paramTypes.size() != paramTypes.size()) {
-		resultOut = false;
-		return {};
-	}
-
-	if (overloading->genericParams.size() != genericParams.size()) {
-		resultOut = false;
-		return {};
-	}
-
-	for (size_t j = 0; j < paramTypes.size(); ++j) {
-		if (overloading->paramTypes.at(j) != paramTypes.at(j)) {
-			resultOut = false;
-			return {};
-		}
-	}
-
-	resultOut = true;
-
-	return {};
+	return !cmp(
+		{ overloading->paramTypes, (bool)(overloading->overloadingFlags & OL_VARG),
+			overloading->genericParams.size() },
+		{ paramTypes, hasVarArg, genericParams.size() });
 }

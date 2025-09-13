@@ -546,20 +546,20 @@ SLKC_API bool slkc::decompileModuleMembers(peff::Alloc *allocator, DumpWriter *w
 					}
 					SLKC_RETURN_IF_FALSE(writer->write("fn "));
 
-					SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, i->returnType));
+					SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, i.second->returnType));
 
 					SLKC_RETURN_IF_FALSE(writer->write(" "));
 
 					SLKC_RETURN_IF_FALSE(writer->write(obj->name));
 
-					if (i->genericParams.size()) {
+					if (i.second->genericParams.size()) {
 						SLKC_RETURN_IF_FALSE(writer->write("<"));
 
-						for (size_t j = 0; j < i->genericParams.size(); ++j) {
+						for (size_t j = 0; j < i.second->genericParams.size(); ++j) {
 							if (j) {
 								SLKC_RETURN_IF_FALSE(writer->write(", "));
 							}
-							SLKC_RETURN_IF_FALSE(decompileGenericParam(allocator, writer, i->genericParams.at(j)));
+							SLKC_RETURN_IF_FALSE(decompileGenericParam(allocator, writer, i.second->genericParams.at(j)));
 						}
 
 						SLKC_RETURN_IF_FALSE(writer->write(">"));
@@ -567,16 +567,16 @@ SLKC_API bool slkc::decompileModuleMembers(peff::Alloc *allocator, DumpWriter *w
 
 					SLKC_RETURN_IF_FALSE(writer->write(" "));
 
-					for (size_t j = 0; j < i->paramTypes.size(); ++j) {
+					for (size_t j = 0; j < i.second->paramTypes.size(); ++j) {
 						if (j) {
 							SLKC_RETURN_IF_FALSE(writer->write(", "));
 						}
-						SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, i->paramTypes.at(j)));
+						SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, i.second->paramTypes.at(j)));
 					}
 
-					switch (i->overloadingKind) {
+					switch (i.second->overloadingKind) {
 						case slake::FnOverloadingKind::Regular: {
-							slake::RegularFnOverloadingObject *ol = (slake::RegularFnOverloadingObject *)i;
+							slake::RegularFnOverloadingObject *ol = (slake::RegularFnOverloadingObject *)i.second;
 
 							SLKC_RETURN_IF_FALSE(writer->write(" {\n"));
 

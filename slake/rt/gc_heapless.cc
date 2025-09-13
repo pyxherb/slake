@@ -303,7 +303,7 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 					GCWalkContext::pushObject(context, fn->parent);
 
 					for (auto i : fn->overloadings) {
-						GCWalkContext::pushObject(context, i);
+						GCWalkContext::pushObject(context, i.second);
 					}
 
 					break;

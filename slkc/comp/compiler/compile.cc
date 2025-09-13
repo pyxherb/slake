@@ -1004,7 +1004,7 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 						fnObject->nRegisters = compContext.nTotalRegs;
 					}
 
-					if (!slotObject->overloadings.insert(fnObject.get())) {
+					if (!slotObject->overloadings.insert({ fnObject->paramTypes, (bool)(fnObject->overloadingFlags & slake::OL_VARG), fnObject->genericParams.size() }, fnObject.get())) {
 						return genOutOfRuntimeMemoryCompError();
 					}
 				}

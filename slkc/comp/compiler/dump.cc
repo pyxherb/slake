@@ -390,12 +390,12 @@ SLKC_API std::optional<CompilationError> slkc::dumpModuleMembers(
 
 		SLKC_RETURN_IF_COMP_ERROR(writer->writeU32(i->overloadings.size()));
 		for (auto j : i->overloadings) {
-			if (j->overloadingKind != slake::FnOverloadingKind::Regular) {
+			if (j.second->overloadingKind != slake::FnOverloadingKind::Regular) {
 				// stub
 				continue;
 			}
 
-			slake::RegularFnOverloadingObject *ol = (slake::RegularFnOverloadingObject *)j;
+			slake::RegularFnOverloadingObject *ol = (slake::RegularFnOverloadingObject *)j.second;
 
 			slake::slxfmt::FnDesc fnd = {};
 
@@ -427,7 +427,7 @@ SLKC_API std::optional<CompilationError> slkc::dumpModuleMembers(
 
 			SLKC_RETURN_IF_COMP_ERROR(writer->write((char *)&fnd, sizeof(fnd)));
 
-			for (auto &k : j->genericParams) {
+			for (auto &k : j.second->genericParams) {
 				SLKC_RETURN_IF_COMP_ERROR(dumpGenericParam(allocator, writer, k));
 			}
 

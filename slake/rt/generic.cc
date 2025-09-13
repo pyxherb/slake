@@ -487,8 +487,8 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(MemberObjec
 							FnOverloadingObject *matchedOverloading = nullptr;
 
 							for (auto &i : value->overloadings) {
-								if (i->genericParams.size() == instantiationContext->genericArgs->size()) {
-									matchedOverloading = i;
+								if (i.second->genericParams.size() == instantiationContext->genericArgs->size()) {
+									matchedOverloading = i.second;
 									break;
 								}
 							}
@@ -497,13 +497,19 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(MemberObjec
 
 							if (matchedOverloading) {
 								SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(dispatcher, matchedOverloading, instantiationContext));
-								if (!value->overloadings.insert(+matchedOverloading))
+								if (!value->overloadings.insert(
+										{ matchedOverloading->paramTypes,
+											(bool)(matchedOverloading->overloadingFlags & OL_VARG),
+											matchedOverloading->genericParams.size() },
+										+matchedOverloading))
 									return OutOfMemoryError::alloc();
 							}
 						} else {
 							for (auto j : value->overloadings) {
-								SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(dispatcher, j, i.context.get()));
+								SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(dispatcher, j.second, i.context.get()));
 							}
+
+							value->resortOverloadings();
 						}
 						break;
 					}

@@ -312,7 +312,7 @@ int main(int argc, char **argv) {
 			printFn->setAccess(slake::ACCESS_PUB);
 			printFn->returnType = slake::TypeId::Void;
 			printFn->setVarArgs();
-			if (!fnObject->overloadings.insert(printFn.get()))
+			if (!fnObject->overloadings.insert({ printFn->paramTypes, (bool)(printFn->overloadingFlags & slake::OL_VARG), printFn->genericParams.size() }, printFn.get()))
 				throw std::bad_alloc();
 			fnObject->name.build("print");
 
@@ -329,9 +329,10 @@ int main(int argc, char **argv) {
 			auto fn = (slake::FnObject *)mod->getMember("main").asObject.instanceObject;
 			slake::FnOverloadingObject *overloading;
 
-			if (fn->getOverloading(&myAllocator, peff::DynArray<slake::TypeRef>(&myAllocator), overloading)) {
-				throw std::bad_alloc();
-			}
+			peff::DynArray<slake::TypeRef> params(&myAllocator);
+			peff::DynArray<slake::GenericParam> genericParams(&myAllocator);
+
+			overloading = slake::findOverloading(fn, params, genericParams, false);
 
 			/*
 			slake::opti::ProgramAnalyzedInfo analyzedInfo(rt.get(), &myAllocator);

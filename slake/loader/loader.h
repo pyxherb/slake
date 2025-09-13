@@ -12,6 +12,7 @@ namespace slake {
 			peff::Set<CustomTypeDefObject *> loadedCustomTypeDefs;
 			peff::Set<InterfaceObject *> loadedInterfaces;
 			peff::Set<ClassObject *> loadedClasses;
+			peff::Set<FnObject *> loadedFns;
 			HostRefHolder hostRefHolder;
 
 			SLAKE_API LoaderContext(peff::Alloc *allocator);

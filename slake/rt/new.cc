@@ -36,9 +36,8 @@ SLAKE_API InternalExceptionPointer Runtime::initMethodTableForClass(ClassObject 
 
 					for (auto j : fn->overloadings) {
 						bool result;
-						SLAKE_RETURN_IF_EXCEPT(isDuplicatedOverloading(getFixedAlloc(), j, destructorParamTypes, destructorGenericParamList, false, result));
-						if (result) {
-							if (!methodTable->destructors.pushFront(+j)) {
+						if (isDuplicatedOverloading(j.second, destructorParamTypes, destructorGenericParamList, false)) {
+							if (!methodTable->destructors.pushFront(+j.second)) {
 								return OutOfMemoryError::alloc();
 							}
 							break;
@@ -46,7 +45,7 @@ SLAKE_API InternalExceptionPointer Runtime::initMethodTableForClass(ClassObject 
 					}
 				} else {
 					for (auto j : fn->overloadings) {
-						if (!fnSlot->overloadings.insert(+j))
+						if (!fnSlot->overloadings.insert(FnSignature(j.first), +j.second))
 							return OutOfMemoryError::alloc();
 					}
 
@@ -55,21 +54,11 @@ SLAKE_API InternalExceptionPointer Runtime::initMethodTableForClass(ClassObject 
 							if (m->overloadings.size()) {
 								// Link the method with method inherited from the parent.
 
-								for (auto j : fnSlot->overloadings) {
-									for (auto k : m->overloadings) {
-										// If we found a non-duplicated overloading from the parent, add it.
-										bool result;
-										SLAKE_RETURN_IF_EXCEPT(isDuplicatedOverloading(
-											getFixedAlloc(),
-											k,
-											j->paramTypes,
-											j->genericParams,
-											j->overloadingFlags & OL_VARG,
-											result));
-										if (!result) {
-											if (!fnSlot->overloadings.insert(+k))
-												return OutOfMemoryError::alloc();
-										}
+								for (auto k : m->overloadings) {
+									// If we found a non-duplicated overloading from the parent, add it.
+									if (auto it = fnSlot->overloadings.find(k.first); it == fnSlot->overloadings.end()) {
+										if (!fnSlot->overloadings.insert(FnSignature(k.first), +k.second))
+											return OutOfMemoryError::alloc();
 									}
 								}
 							}

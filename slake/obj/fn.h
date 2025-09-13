@@ -12,6 +12,8 @@
 #include "member.h"
 #include "generic.h"
 
+#include <peff/containers/map.h>
+
 namespace slake {
 	struct Context;
 	struct MajorFrame;
@@ -234,15 +236,33 @@ namespace slake {
 		SLAKE_API virtual void dealloc() override;
 	};
 
+	struct FnSignature {
+		const peff::DynArray<TypeRef> &paramTypes;
+		bool hasVarArg;
+		size_t nGenericParams;
+	};
+
+	struct FnSignatureComparator {
+		GenericArgListComparator innerComparator;
+
+		SLAKE_API int operator()(const FnSignature &lhs, const FnSignature &rhs) const noexcept;
+	};
+
+	struct FnSignatureLtComparator {
+		FnSignatureComparator innerComparator;
+
+		SLAKE_FORCEINLINE bool operator()(const FnSignature &lhs, const FnSignature &rhs) const noexcept {
+			return innerComparator(lhs, rhs) < 0;
+		}
+	};
+
 	class FnObject : public MemberObject {
 	public:
-		peff::Set<FnOverloadingObject *> overloadings;
+		peff::Map<FnSignature, FnOverloadingObject *, FnSignatureLtComparator> overloadings;
 
 		SLAKE_API FnObject(Runtime *rt, peff::Alloc *selfAllocator);
 		SLAKE_API FnObject(const FnObject &x, peff::Alloc *allocator, bool &succeededOut);
 		SLAKE_API virtual ~FnObject();
-
-		SLAKE_API InternalExceptionPointer getOverloading(peff::Alloc *allocator, const peff::DynArray<TypeRef> &argTypes, FnOverloadingObject *&overloadingOut) const;
 
 		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
 
@@ -251,22 +271,20 @@ namespace slake {
 		SLAKE_API virtual void dealloc() override;
 
 		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;
+
+		SLAKE_API InternalExceptionPointer resortOverloadings() noexcept;
 	};
 
-	SLAKE_API InternalExceptionPointer findOverloading(
-		peff::Alloc *allocator,
+	SLAKE_API FnOverloadingObject *findOverloading(
 		FnObject *fnObject,
 		const peff::DynArray<TypeRef> &paramTypes,
 		const GenericParamList &genericParams,
-		bool hasVarArg,
-		FnOverloadingObject *&overloadingOut);
-	SLAKE_API InternalExceptionPointer isDuplicatedOverloading(
-		peff::Alloc *allocator,
+		bool hasVarArg);
+	SLAKE_API bool isDuplicatedOverloading(
 		const FnOverloadingObject *overloading,
 		const peff::DynArray<TypeRef> &paramTypes,
 		const GenericParamList &genericParams,
-		bool hasVarArg,
-		bool &resultOut);
+		bool hasVarArg);
 }
 
 #endif

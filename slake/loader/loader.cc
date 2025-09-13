@@ -9,6 +9,7 @@ SLAKE_API LoaderContext::LoaderContext(peff::Alloc *allocator)
 	  loadedCustomTypeDefs(allocator),
 	  loadedInterfaces(allocator),
 	  loadedClasses(allocator),
+	  loadedFns(allocator),
 	  hostRefHolder(allocator) {
 }
 
@@ -703,10 +704,17 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(LoaderContext &cont
 					}
 				}
 
-				if (!fnObject->overloadings.insert(fnOverloadingObject.get())) {
+				if (!fnObject->overloadings.insert(
+					{fnOverloadingObject->paramTypes,
+					(bool)(fnOverloadingObject->overloadingFlags & OL_VARG),
+							fnOverloadingObject->genericParams.size() },
+						fnOverloadingObject.get())) {
 					return OutOfMemoryError::alloc();
 				}
 			}
+
+			if (!context.loadedFns.insert(fnObject.get()))
+				return OutOfMemoryError::alloc();
 
 			fnObject->setParent(moduleObject);
 
@@ -830,8 +838,16 @@ SLAKE_API InternalExceptionPointer loader::loadModule(LoaderContext &context, Ru
 		SLAKE_RETURN_IF_EXCEPT(runtime->registerTypeDef(i));
 	}
 
+	context.loadedCustomTypeDefs.clear();
+
 	for (auto i : context.loadedInterfaces) {
 		SLAKE_RETURN_IF_EXCEPT(i->updateInheritanceRelationship(runtime->getFixedAlloc()));
+	}
+
+	context.loadedInterfaces.clear();
+
+	for (auto i : context.loadedFns) {
+		SLAKE_RETURN_IF_EXCEPT(i->resortOverloadings());
 	}
 
 	return {};

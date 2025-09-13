@@ -509,7 +509,7 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(MemberObjec
 								SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(dispatcher, j.second, i.context.get()));
 							}
 
-							value->resortOverloadings();
+							SLAKE_RETURN_IF_EXCEPT(value->resortOverloadings());
 						}
 						break;
 					}

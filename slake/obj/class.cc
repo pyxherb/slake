@@ -331,7 +331,7 @@ struct UpdateInterfaceInheritanceRelationshipContext {
 	SLAKE_FORCEINLINE UpdateInterfaceInheritanceRelationshipContext(peff::Alloc *allocator) : frames(allocator) {}
 };
 
-SLAKE_FORCEINLINE InternalExceptionPointer _updateInterfaceInheritanceRelationship(InterfaceObject *interfaceObject, UpdateInterfaceInheritanceRelationshipContext &context) noexcept {
+SLAKE_FORCEINLINE static InternalExceptionPointer _updateInterfaceInheritanceRelationship(InterfaceObject *interfaceObject, UpdateInterfaceInheritanceRelationshipContext &context) noexcept {
 	if (!context.frames.pushBack({ interfaceObject, 0 }))
 		return OutOfMemoryError::alloc();
 
@@ -339,14 +339,12 @@ SLAKE_FORCEINLINE InternalExceptionPointer _updateInterfaceInheritanceRelationsh
 		UpdateInterfaceInheritanceRelationshipFrame &curFrame = context.frames.back();
 
 		InterfaceObject *interfaceObject = curFrame.interfaceObject;
-
-		if ((curFrame.index >= interfaceObject->implTypes.size()) ||
-			(!interfaceObject->implTypes.size())) {
-			// Check if the interface has cyclic inheritance.
-			for (auto &i : context.frames) {
-				if ((&i != &curFrame) && (i.interfaceObject == curFrame.interfaceObject))
-					std::terminate();
-			}
+		// Check if the interface has cyclic inheritance.
+		for (auto &i : context.frames) {
+			if ((&i != &curFrame) && (i.interfaceObject == curFrame.interfaceObject))
+				std::terminate();
+		}
+		if (curFrame.index >= interfaceObject->implTypes.size()) {
 			if (!interfaceObject->implInterfaceIndices.insert(+interfaceObject))
 				return OutOfMemoryError::alloc();
 			context.frames.popBack();

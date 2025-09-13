@@ -33,8 +33,7 @@ static std::optional<CompilationError> _collectInvolvedInterfaces(
 				return CompilationError(i.interfaceNode->tokenRange, CompilationErrorKind::CyclicInheritedInterface);
 			}
 		}
-		if ((curFrame.index >= curInterface->implTypes.size()) ||
-			(!curInterface->implTypes.size())) {
+		if (curFrame.index >= curInterface->implTypes.size()) {
 			if (!walkedInterfaces.insert(AstNodePtr<InterfaceNode>(curInterface)))
 				return genOutOfMemoryCompError();
 			context.frames.popBack();

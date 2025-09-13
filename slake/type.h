@@ -58,6 +58,7 @@ namespace slake {
 
 		Array,	// Array
 		Ref,	// Reference
+		TempRef, // Temporary reference
 		Tuple,	// Tuple
 		SIMD,	// SIMD
 

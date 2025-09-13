@@ -868,6 +868,14 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 					} else {
 						SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(CompilationError(i->tokenRange, CompilationErrorKind::ExpectingInterfaceName)));
 					}
+
+					slake::TypeRef t;
+
+					SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, &compilationContext, i, t));
+
+					if (!cls->implTypes.pushBack(std::move(t))) {
+						return genOutOfRuntimeMemoryCompError();
+					}
 				}
 
 				SLKC_RETURN_IF_COMP_ERROR(compileModule(compileEnv, clsNode.castTo<ModuleNode>(), cls.get()));

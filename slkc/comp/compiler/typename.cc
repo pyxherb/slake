@@ -3,6 +3,69 @@
 
 using namespace slkc;
 
+struct CollectInvolvedInterfacesFrame {
+	AstNodePtr<InterfaceNode> interfaceNode;
+	size_t index;
+};
+
+struct CollectInvolvedInterfacesContext {
+	peff::List<CollectInvolvedInterfacesFrame> frames;
+
+	SLAKE_FORCEINLINE CollectInvolvedInterfacesContext(peff::Alloc *allocator) : frames(allocator) {}
+};
+
+static std::optional<CompilationError> _collectInvolvedInterfaces(
+	peff::SharedPtr<Document> document,
+	CollectInvolvedInterfacesContext &context,
+	AstNodePtr<InterfaceNode> interfaceNode,
+	peff::Set<AstNodePtr<InterfaceNode>> &walkedInterfaces) {
+	if (!context.frames.pushBack({ interfaceNode, 0 }))
+		return genOutOfMemoryCompError();
+
+	while (context.frames.size()) {
+		CollectInvolvedInterfacesFrame &curFrame = context.frames.back();
+
+		const AstNodePtr<InterfaceNode> &curInterface = curFrame.interfaceNode;
+
+		// Check if the interface has cyclic inheritance.
+		for (auto &i : context.frames) {
+			if ((&i != &curFrame) && (i.interfaceNode == curFrame.interfaceNode)) {
+				return CompilationError(i.interfaceNode->tokenRange, CompilationErrorKind::CyclicInheritedInterface);
+			}
+		}
+		if ((curFrame.index >= curInterface->implTypes.size()) ||
+			(!curInterface->implTypes.size())) {
+			if (!walkedInterfaces.insert(AstNodePtr<InterfaceNode>(curInterface)))
+				return genOutOfMemoryCompError();
+			context.frames.popBack();
+			continue;
+		}
+
+		AstNodePtr<TypeNameNode> t = curInterface->implTypes.at(curFrame.index);
+
+		AstNodePtr<MemberNode> m;
+		SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, t.castTo<CustomTypeNameNode>(), m));
+
+		if (!m) {
+			goto malformed;
+		}
+
+		if (m->astNodeType != AstNodeType::Interface) {
+			goto malformed;
+		}
+
+		if (!context.frames.pushBack({ m.castTo<InterfaceNode>(), 0 }))
+			return genOutOfMemoryCompError();
+
+		++curFrame.index;
+	}
+
+	return {};
+
+malformed:
+	return {};
+}
+
 SLKC_API std::optional<CompilationError> slkc::collectInvolvedInterfaces(
 	peff::SharedPtr<Document> document,
 	const AstNodePtr<InterfaceNode> &derived,
@@ -17,22 +80,9 @@ SLKC_API std::optional<CompilationError> slkc::collectInvolvedInterfaces(
 		}
 	}
 
-	for (size_t i = 0; i < derived->implTypes.size(); ++i) {
-		AstNodePtr<TypeNameNode> t = derived->implTypes.at(i);
+	CollectInvolvedInterfacesContext context(document->allocator.get());
 
-		AstNodePtr<MemberNode> m;
-		SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, t.castTo<CustomTypeNameNode>(), m));
-
-		if (!m) {
-			goto malformed;
-		}
-
-		if (m->astNodeType != AstNodeType::Interface) {
-			goto malformed;
-		}
-
-		SLKC_RETURN_IF_COMP_ERROR(collectInvolvedInterfaces(document, m.castTo<InterfaceNode>(), walkedInterfaces, true));
-	}
+	SLKC_RETURN_IF_COMP_ERROR(_collectInvolvedInterfaces(document, context, derived, walkedInterfaces));
 
 	return {};
 
@@ -866,7 +916,7 @@ SLKC_API std::optional<CompilationError> slkc::simplifyParamListTypeNameTree(
 
 SLKC_API std::optional<CompilationError> slkc::_isTypeNameGenericParamFacade(
 	AstNodePtr<TypeNameNode> type,
-	bool& whetherOut) {
+	bool &whetherOut) {
 	if (!type) {
 		whetherOut = false;
 		return {};
@@ -997,7 +1047,7 @@ SLKC_API std::optional<CompilationError> slkc::_doExpandGenericParamFacadeTypeNa
 
 [[nodiscard]] SLKC_API std::optional<CompilationError> slkc::simplifyGenericParamFacadeTypeNameTree(
 	AstNodePtr<TypeNameNode> type,
-	peff::Alloc* allocator,
+	peff::Alloc *allocator,
 	AstNodePtr<TypeNameNode> &typeNameOut) {
 	bool b;
 

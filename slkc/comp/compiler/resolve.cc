@@ -729,8 +729,11 @@ SLKC_API std::optional<CompilationError> slkc::visitBaseClass(AstNodePtr<TypeNam
 
 		if (baseType && (baseType->astNodeType == AstNodeType::Class)) {
 			AstNodePtr<ClassNode> b = baseType.castTo<ClassNode>();
+			bool isCyclicInherited;
 
-			if ((!walkedNodes) || !walkedNodes->contains(baseType)) {
+			SLKC_RETURN_IF_COMP_ERROR(b->isCyclicInherited(isCyclicInherited));
+
+			if (((!walkedNodes) || (!walkedNodes->contains(baseType))) && (!isCyclicInherited)) {
 				classOut = b;
 			}
 		}
@@ -747,8 +750,11 @@ SLKC_API std::optional<CompilationError> slkc::visitBaseInterface(AstNodePtr<Typ
 
 		if (baseType && (baseType->astNodeType == AstNodeType::Interface)) {
 			AstNodePtr<InterfaceNode> b = baseType.castTo<InterfaceNode>();
+			bool isCyclicInherited;
 
-			if ((!walkedNodes) || !walkedNodes->contains(baseType)) {
+			SLKC_RETURN_IF_COMP_ERROR(b->isCyclicInherited(isCyclicInherited));
+
+			if (((!walkedNodes) || (!walkedNodes->contains(baseType))) && (!isCyclicInherited)) {
 				classOut = b;
 			}
 		}

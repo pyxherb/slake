@@ -699,15 +699,15 @@ accessModifierParseEnd:
 				return syntaxError;
 			}
 
-			size_t idxMember;
-
-			if ((idxMember = p->pushMember(classNode.castTo<MemberNode>())) == SIZE_MAX) {
-				return genOutOfMemoryError();
-			}
-
 			nextToken();
 
 			if (!classNode->name.build(nameToken->sourceText)) {
+				return genOutOfMemoryError();
+			}
+
+			size_t idxMember;
+
+			if ((idxMember = p->pushMember(classNode.castTo<MemberNode>())) == SIZE_MAX) {
 				return genOutOfMemoryError();
 			}
 
@@ -848,6 +848,10 @@ accessModifierParseEnd:
 			Token *t;
 
 			{
+				peff::ScopeGuard setTokenRangeGuard([this, token, interfaceNode]() noexcept {
+					interfaceNode->tokenRange = TokenRange{ token->index, parseContext.idxPrevToken };
+				});
+
 				AstNodePtr<MemberNode> prevMember;
 				prevMember = curParent;
 				peff::ScopeGuard restorePrevModGuard([this, prevMember]() noexcept {

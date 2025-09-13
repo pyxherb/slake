@@ -1,4 +1,4 @@
-#include "class.h"
+#include "../comp/compiler.h"
 
 using namespace slkc;
 
@@ -70,7 +70,7 @@ SLKC_API ClassNode::ClassNode(const ClassNode &rhs, peff::Alloc *allocator, bool
 		return;
 	}
 
-	memcpy(idxGenericParamCommaTokens.data(), rhs.idxGenericParamCommaTokens.data(), sizeof(size_t) * idxGenericParamCommaTokens.size());
+	memcpy(idxGenericParamCommaTokens.data(), rhs.idxGenericParamCommaTokens.data(), sizeof(size_t)* idxGenericParamCommaTokens.size());
 
 	idxLAngleBracketToken = rhs.idxLAngleBracketToken;
 	idxRAngleBracketToken = rhs.idxRAngleBracketToken;
@@ -83,7 +83,26 @@ SLKC_API ClassNode::ClassNode(const ClassNode &rhs, peff::Alloc *allocator, bool
 SLKC_API ClassNode::~ClassNode() {
 }
 
-SLKC_API AstNodePtr<AstNode> InterfaceNode::doDuplicate(peff::Alloc *newAllocator) const {
+SLKC_API std::optional<CompilationError> ClassNode::isCyclicInherited(bool &whetherOut) {
+	if (isCyclicInheritanceChecked) {
+		whetherOut = isCyclicInheritedFlag;
+		return {};
+	}
+
+	SLKC_RETURN_IF_COMP_ERROR(updateCyclicInheritedFlag());
+
+	whetherOut = isCyclicInheritedFlag;
+	return {};
+}
+
+SLKC_API std::optional<CompilationError> ClassNode::updateCyclicInheritedFlag() {
+	SLKC_RETURN_IF_COMP_ERROR(isBaseOf(document->sharedFromThis(), sharedFromThis().castTo<ClassNode>(), sharedFromThis().castTo<ClassNode>(), isCyclicInheritedFlag));
+
+	isCyclicInheritanceChecked = true;
+	return {};
+}
+
+SLKC_API AstNodePtr<AstNode> InterfaceNode::doDuplicate(peff::Alloc* newAllocator) const {
 	bool succeeded = false;
 	AstNodePtr<InterfaceNode> duplicatedNode(makeAstNode<InterfaceNode>(newAllocator, *this, newAllocator, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
@@ -94,16 +113,16 @@ SLKC_API AstNodePtr<AstNode> InterfaceNode::doDuplicate(peff::Alloc *newAllocato
 }
 
 SLKC_API InterfaceNode::InterfaceNode(
-	peff::Alloc *selfAllocator,
-	const peff::SharedPtr<Document> &document)
+	peff::Alloc* selfAllocator,
+	const peff::SharedPtr<Document>& document)
 	: ModuleNode(selfAllocator, document, AstNodeType::Interface),
-	  genericParams(selfAllocator),
-	  genericParamIndices(selfAllocator),
-	  idxGenericParamCommaTokens(selfAllocator),
-	  implTypes(selfAllocator) {
+	genericParams(selfAllocator),
+	genericParamIndices(selfAllocator),
+	idxGenericParamCommaTokens(selfAllocator),
+	implTypes(selfAllocator) {
 }
 
-SLKC_API InterfaceNode::InterfaceNode(const InterfaceNode &rhs, peff::Alloc *allocator, bool &succeededOut) : ModuleNode(rhs, allocator, succeededOut), genericParams(allocator), genericParamIndices(allocator), idxGenericParamCommaTokens(allocator), implTypes(allocator) {
+SLKC_API InterfaceNode::InterfaceNode(const InterfaceNode& rhs, peff::Alloc* allocator, bool& succeededOut) : ModuleNode(rhs, allocator, succeededOut), genericParams(allocator), genericParamIndices(allocator), idxGenericParamCommaTokens(allocator), implTypes(allocator) {
 	if (!succeededOut) {
 		return;
 	}
@@ -134,7 +153,7 @@ SLKC_API InterfaceNode::InterfaceNode(const InterfaceNode &rhs, peff::Alloc *all
 		genericParams.at(i)->setParent(this);
 	}
 
-	for (const auto &[k, v] : rhs.genericParamIndices) {
+	for (const auto& [k, v] : rhs.genericParamIndices) {
 		if (!genericParamIndices.insert(genericParams.at(v)->name, +v)) {
 			succeededOut = false;
 			return;
@@ -157,6 +176,37 @@ SLKC_API InterfaceNode::InterfaceNode(const InterfaceNode &rhs, peff::Alloc *all
 }
 
 SLKC_API InterfaceNode::~InterfaceNode() {
+}
+
+SLKC_API std::optional<CompilationError> InterfaceNode::isCyclicInherited(bool &whetherOut) {
+	if (isCyclicInheritanceChecked) {
+		whetherOut = isCyclicInheritedFlag;
+		return {};
+	}
+
+	SLKC_RETURN_IF_COMP_ERROR(updateCyclicInheritedFlag());
+
+	whetherOut = isCyclicInheritedFlag;
+	return {};
+}
+
+SLKC_API std::optional<CompilationError> InterfaceNode::updateCyclicInheritedFlag() {
+	peff::Set<AstNodePtr<InterfaceNode>> involvedInterfaces(document->allocator.get());
+
+	if (auto e = collectInvolvedInterfaces(document->sharedFromThis(), sharedFromThis().castTo<InterfaceNode>(), involvedInterfaces, true); e) {
+		if (e->errorKind == CompilationErrorKind::CyclicInheritedInterface) {
+			isCyclicInheritedFlag = true;
+			isCyclicInheritanceChecked = true;
+
+			return {};
+		}
+		return e;
+	}
+
+	isCyclicInheritedFlag = false;
+	isCyclicInheritanceChecked = true;
+
+	return {};
 }
 
 SLKC_API AstNodePtr<AstNode> ThisNode::doDuplicate(peff::Alloc *newAllocator) const {

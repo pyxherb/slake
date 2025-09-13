@@ -326,7 +326,12 @@ void dumpCompilationError(peff::SharedPtr<slkc::Parser> parser, const slkc::Comp
 				beginToken->sourceLocation.beginPosition.column + 1);
 			break;
 		case slkc::CompilationErrorKind::CyclicInheritedClass:
-			printError("Error at %zu, %zu: Cyclic inheritance detected\n",
+			printError("Error at %zu, %zu: Cyclic inherited class detected\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
+		case slkc::CompilationErrorKind::CyclicInheritedInterface:
+			printError("Error at %zu, %zu: Cyclic inherited interface detected\n",
 				beginToken->sourceLocation.beginPosition.line + 1,
 				beginToken->sourceLocation.beginPosition.column + 1);
 			break;

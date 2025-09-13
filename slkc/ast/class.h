@@ -10,6 +10,11 @@ namespace slkc {
 		SLKC_API virtual AstNodePtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
 
 	public:
+		/// @brief Indicates if the cyclic inheritance is already checked.
+		bool isCyclicInheritanceChecked = false;
+		/// @brief Indicates if the class has cyclic inheritance.
+		bool isCyclicInheritedFlag = false;
+
 		AstNodePtr<TypeNameNode> baseType;
 		peff::DynArray<AstNodePtr<TypeNameNode>> implTypes;
 		peff::DynArray<AstNodePtr<GenericParamNode>> genericParams;
@@ -22,6 +27,13 @@ namespace slkc {
 		SLKC_API ClassNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
 		SLKC_API ClassNode(const ClassNode &rhs, peff::Alloc *allocator, bool &succeededOut);
 		SLKC_API virtual ~ClassNode();
+
+		SLKC_API std::optional<CompilationError> isCyclicInherited(bool &whetherOut);
+		SLKC_API std::optional<CompilationError> updateCyclicInheritedFlag();
+		SLAKE_FORCEINLINE void resetCyclicInheritanceFlag() {
+			isCyclicInheritanceChecked = false;
+			isCyclicInheritedFlag = false;
+		}
 	};
 
 	class InterfaceNode : public ModuleNode {
@@ -29,6 +41,11 @@ namespace slkc {
 		SLKC_API virtual AstNodePtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
 
 	public:
+		/// @brief Indicates if the cyclic inheritance is already checked.
+		bool isCyclicInheritanceChecked = false;
+		/// @brief Indicates if the interface has cyclic inheritance.
+		bool isCyclicInheritedFlag = false;
+
 		peff::DynArray<AstNodePtr<TypeNameNode>> implTypes;
 		peff::DynArray<AstNodePtr<GenericParamNode>> genericParams;
 		peff::HashMap<std::string_view, size_t> genericParamIndices;
@@ -40,6 +57,13 @@ namespace slkc {
 		SLKC_API InterfaceNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
 		SLKC_API InterfaceNode(const InterfaceNode &rhs, peff::Alloc *allocator, bool &succeededOut);
 		SLKC_API virtual ~InterfaceNode();
+
+		SLKC_API std::optional<CompilationError> isCyclicInherited(bool &whetherOut);
+		SLKC_API std::optional<CompilationError> updateCyclicInheritedFlag();
+		SLAKE_FORCEINLINE void resetCyclicInheritanceFlag() {
+			isCyclicInheritanceChecked = false;
+			isCyclicInheritedFlag = false;
+		}
 	};
 
 	class ThisNode : public MemberNode {

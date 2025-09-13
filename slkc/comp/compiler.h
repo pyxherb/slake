@@ -390,6 +390,13 @@ namespace slkc {
 			const AstNodePtr<CustomTypeNameNode> &typeName,
 			AstNodePtr<TypeNameNode> &typeNameOut);
 
+	/// @brief Collect interfaces involved in the whole inheritance chain.
+	/// @param document Document to be operated.
+	/// @param derived Leaf interface node.
+	/// @param walkedInterfaces Where the involved interfaces are stored.
+	/// @param insertSelf Controls whether to insert the leaf interface itself into the involved interface set.
+	/// @return std::nullopt No error.
+	/// @return CompilationErrorKind::CyclicInheritedInterface Cyclic inherited interface was detected.
 	[[nodiscard]] SLKC_API std::optional<CompilationError> collectInvolvedInterfaces(
 		peff::SharedPtr<Document> document,
 		const AstNodePtr<InterfaceNode> &derived,

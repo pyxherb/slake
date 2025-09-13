@@ -332,6 +332,9 @@ struct UpdateInterfaceInheritanceRelationshipContext {
 };
 
 SLAKE_FORCEINLINE InternalExceptionPointer _updateInterfaceInheritanceRelationship(InterfaceObject *interfaceObject, UpdateInterfaceInheritanceRelationshipContext &context) noexcept {
+	if (!context.frames.pushBack({ interfaceObject, 0 }))
+		return OutOfMemoryError::alloc();
+
 	while (context.frames.size()) {
 		UpdateInterfaceInheritanceRelationshipFrame &curFrame = context.frames.back();
 
@@ -339,6 +342,11 @@ SLAKE_FORCEINLINE InternalExceptionPointer _updateInterfaceInheritanceRelationsh
 
 		if ((curFrame.index >= interfaceObject->implTypes.size()) ||
 			(!interfaceObject->implTypes.size())) {
+			// Check if the interface has cyclic inheritance.
+			for (auto &i : context.frames) {
+				if ((&i != &curFrame) && (i.interfaceObject == curFrame.interfaceObject))
+					std::terminate();
+			}
 			if (!interfaceObject->implInterfaceIndices.insert(+interfaceObject))
 				return OutOfMemoryError::alloc();
 			context.frames.popBack();

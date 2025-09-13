@@ -248,8 +248,7 @@ SLKC_API std::optional<CompilationError> slkc::compileTypeName(
 				return CompilationError(t->width->tokenRange, CompilationErrorKind::RequiresCompTimeExpr);
 			}
 
-			if (width->exprKind != ExprKind::U32)
-			{
+			if (width->exprKind != ExprKind::U32) {
 				AstNodePtr<CastExprNode> ce;
 
 				if (!(ce = makeAstNode<CastExprNode>(t->document->allocator.get(), t->document->allocator.get(), t->document->sharedFromThis()))) {
@@ -741,7 +740,18 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 								if (implementedTypeNode->astNodeType != AstNodeType::Interface) {
 									SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(CompilationError(i->tokenRange, CompilationErrorKind::ExpectingInterfaceName)));
 								} else {
-									SLKC_RETURN_IF_COMP_ERROR(collectInvolvedInterfaces(compileEnv->document, implementedTypeNode.castTo<InterfaceNode>(), involvedInterfaces, true));
+									if (auto e = collectInvolvedInterfaces(compileEnv->document, implementedTypeNode.castTo<InterfaceNode>(), involvedInterfaces, true); e) {
+										if (e->errorKind != CompilationErrorKind::CyclicInheritedInterface)
+											return e;
+									}
+
+									bool isCyclicInherited = false;
+									SLKC_RETURN_IF_COMP_ERROR(clsNode->isCyclicInherited(isCyclicInherited));
+
+									if (isCyclicInherited) {
+										SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(CompilationError(clsNode->tokenRange, CompilationErrorKind::CyclicInheritedClass)));
+										continue;
+									}
 								}
 							} else {
 								SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(CompilationError(i->tokenRange, CompilationErrorKind::ExpectingInterfaceName)));
@@ -842,10 +852,10 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 									SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(CompilationError(i->tokenRange, CompilationErrorKind::ExpectingInterfaceName)));
 								}
 								bool isCyclicInherited = false;
-								SLKC_RETURN_IF_COMP_ERROR(isImplementedByInterface(clsNode->document->sharedFromThis(), clsNode, clsNode, isCyclicInherited));
+								SLKC_RETURN_IF_COMP_ERROR(clsNode->isCyclicInherited(isCyclicInherited));
 
 								if (isCyclicInherited) {
-									SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(CompilationError(clsNode->tokenRange, CompilationErrorKind::CyclicInheritedClass)));
+									SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(CompilationError(clsNode->tokenRange, CompilationErrorKind::CyclicInheritedInterface)));
 									continue;
 								}
 							} else {

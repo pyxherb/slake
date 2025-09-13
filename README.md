@@ -63,6 +63,7 @@ To build Slake, you will always need:
 * CMake (version > 3.23)
 * A C++ compiler with C++17 support
 * A C++17 STL
+* The PEFF library
 
 ### Runtime
 
@@ -74,5 +75,4 @@ For x86 and x86-64, you will need:
 
 You will need:
 
-* A C++ Compiler with C++17 support
-* jsoncpp library (If with language server support enabled)
+* A C++ Compiler with C++20 support

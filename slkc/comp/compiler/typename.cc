@@ -28,9 +28,11 @@ static std::optional<CompilationError> _collectInvolvedInterfaces(
 		const AstNodePtr<InterfaceNode> &curInterface = curFrame.interfaceNode;
 
 		// Check if the interface has cyclic inheritance.
-		for (auto &i : context.frames) {
-			if ((&i != &curFrame) && (i.interfaceNode == curFrame.interfaceNode)) {
-				return CompilationError(i.interfaceNode->tokenRange, CompilationErrorKind::CyclicInheritedInterface);
+		if (!curFrame.index) {
+			for (auto &i : context.frames) {
+				if ((&i != &curFrame) && (i.interfaceNode == curFrame.interfaceNode)) {
+					return CompilationError(i.interfaceNode->tokenRange, CompilationErrorKind::CyclicInheritedInterface);
+				}
 			}
 		}
 		if (curFrame.index >= curInterface->implTypes.size()) {

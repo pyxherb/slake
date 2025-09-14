@@ -340,9 +340,11 @@ SLAKE_FORCEINLINE static InternalExceptionPointer _updateInterfaceInheritanceRel
 
 		InterfaceObject *interfaceObject = curFrame.interfaceObject;
 		// Check if the interface has cyclic inheritance.
-		for (auto &i : context.frames) {
-			if ((&i != &curFrame) && (i.interfaceObject == curFrame.interfaceObject))
-				std::terminate();
+		if (!curFrame.index) {
+			for (auto &i : context.frames) {
+				if ((&i != &curFrame) && (i.interfaceObject == curFrame.interfaceObject))
+					std::terminate();
+			}
 		}
 		if (curFrame.index >= interfaceObject->implTypes.size()) {
 			if (!interfaceObject->implInterfaceIndices.insert(+interfaceObject))

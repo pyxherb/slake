@@ -76,7 +76,7 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 			case ObjectKind::Class: {
 				ClassObject *cls = (ClassObject *)curObject;
 				if (cls->baseType.typeId == TypeId::Instance) {
-					scopeObject = (MemberObject *)((CustomTypeDefObject*)cls->baseType.typeDef)->typeObject;
+					scopeObject = (MemberObject *)cls->baseType.getCustomTypeDef()->typeObject;
 				} else {
 					return allocOutOfMemoryErrorIfAllocFailed(ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(this)->getFixedAlloc(), ref));
 				}

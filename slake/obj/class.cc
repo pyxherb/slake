@@ -191,7 +191,8 @@ SLAKE_API ClassObject::~ClassObject() {
 
 SLAKE_API bool ClassObject::hasImplemented(InterfaceObject *pInterface) const {
 	for (auto &i : implTypes) {
-		if (((InterfaceObject *)((CustomTypeDefObject *)i.typeDef)->typeObject)->isDerivedFrom(pInterface))
+		InterfaceObject *interfaceObject = (InterfaceObject *)i.getCustomTypeDef()->typeObject;
+		if (interfaceObject->isDerivedFrom(pInterface))
 			return true;
 	}
 	return false;
@@ -205,7 +206,7 @@ SLAKE_API bool ClassObject::isBaseOf(const ClassObject *pClass) const {
 
 		if (i->baseType.typeId == TypeId::Void)
 			break;
-		auto parentClassObject = ((CustomTypeDefObject *)i->baseType.typeDef)->typeObject;
+		auto parentClassObject = (i->baseType.getCustomTypeDef())->typeObject;
 		assert(parentClassObject->getObjectKind() == ObjectKind::Class);
 		i = (ClassObject *)parentClassObject;
 	}
@@ -359,7 +360,7 @@ SLAKE_FORCEINLINE static InternalExceptionPointer _updateInterfaceInheritanceRel
 		if (typeRef.typeDef->getTypeDefKind() != TypeDefKind::CustomTypeDef)
 			std::terminate();
 
-		CustomTypeDefObject *td = (CustomTypeDefObject *)typeRef.typeDef;
+		CustomTypeDefObject *td = typeRef.getCustomTypeDef();
 
 		// TODO: Return a malformed interface exception.
 		if (td->typeObject->getObjectKind() != ObjectKind::Interface)

@@ -205,10 +205,55 @@ namespace slake {
 	struct TypeDefLtComparator {
 		TypeDefComparator innerComparator;
 
-		SLAKE_FORCEINLINE bool operator()(const TypeDefObject* lhs, const TypeDefObject* rhs) const noexcept {
+		SLAKE_FORCEINLINE bool operator()(const TypeDefObject *lhs, const TypeDefObject *rhs) const noexcept {
 			return innerComparator(lhs, rhs) < 0;
 		}
 	};
+
+	SLAKE_FORCEINLINE CustomTypeDefObject *TypeRef::getCustomTypeDef() const {
+		assert(typeDef->getTypeDefKind() == TypeDefKind::CustomTypeDef);
+		return static_cast<CustomTypeDefObject *>(typeDef);
+	}
+
+	SLAKE_FORCEINLINE ArrayTypeDefObject *TypeRef::getArrayTypeDef() const {
+		assert(typeDef->getTypeDefKind() == TypeDefKind::ArrayTypeDef);
+		return static_cast<ArrayTypeDefObject *>(typeDef);
+	}
+
+	SLAKE_FORCEINLINE RefTypeDefObject *TypeRef::getRefTypeDef() const {
+		assert(typeDef->getTypeDefKind() == TypeDefKind::RefTypeDef);
+		return static_cast<RefTypeDefObject *>(typeDef);
+	}
+
+	SLAKE_FORCEINLINE GenericArgTypeDefObject *TypeRef::getGenericArgTypeDef() const {
+		assert(typeDef->getTypeDefKind() == TypeDefKind::GenericArgTypeDef);
+		return static_cast<GenericArgTypeDefObject *>(typeDef);
+	}
+
+	SLAKE_FORCEINLINE FnTypeDefObject *TypeRef::getFnTypeDef() const {
+		assert(typeDef->getTypeDefKind() == TypeDefKind::FnTypeDef);
+		return static_cast<FnTypeDefObject *>(typeDef);
+	}
+
+	SLAKE_FORCEINLINE ParamTypeListTypeDefObject *TypeRef::getParamTypeListTypeDef() const {
+		assert(typeDef->getTypeDefKind() == TypeDefKind::ParamTypeListTypeDef);
+		return static_cast<ParamTypeListTypeDefObject *>(typeDef);
+	}
+
+	SLAKE_FORCEINLINE TupleTypeDefObject *TypeRef::getTupleTypeDef() const {
+		assert(typeDef->getTypeDefKind() == TypeDefKind::TupleTypeDef);
+		return static_cast<TupleTypeDefObject *>(typeDef);
+	}
+
+	SLAKE_FORCEINLINE SIMDTypeDefObject *TypeRef::getSIMDTypeDef() const {
+		assert(typeDef->getTypeDefKind() == TypeDefKind::SIMDTypeDef);
+		return static_cast<SIMDTypeDefObject *>(typeDef);
+	}
+
+	SLAKE_FORCEINLINE UnpackingTypeDefObject *TypeRef::getUnpackingTypeDef() const {
+		assert(typeDef->getTypeDefKind() == TypeDefKind::UnpackingTypeDef);
+		return static_cast<UnpackingTypeDefObject *>(typeDef);
+	}
 }
 
 #endif

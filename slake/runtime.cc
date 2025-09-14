@@ -161,7 +161,7 @@ SLAKE_API peff::Alloc *Runtime::getCurGenAlloc() {
 	return &youngAlloc;
 }
 
-SLAKE_API size_t Runtime::sizeofType(const TypeRef &type) {
+SLAKE_API size_t Runtime::sizeofType(const TypeRef &type) const {
 	switch (type.typeId) {
 		case TypeId::I8:
 			return sizeof(int8_t);
@@ -198,7 +198,7 @@ SLAKE_API size_t Runtime::sizeofType(const TypeRef &type) {
 	std::terminate();
 }
 
-SLAKE_API size_t Runtime::alignofType(const TypeRef &type) {
+SLAKE_API size_t Runtime::alignofType(const TypeRef &type) const {
 	switch (type.typeId) {
 		case TypeId::I8:
 			return sizeof(int8_t);
@@ -232,7 +232,7 @@ SLAKE_API size_t Runtime::alignofType(const TypeRef &type) {
 	std::terminate();
 }
 
-SLAKE_API Value Runtime::defaultValueOf(const TypeRef &type) {
+SLAKE_API Value Runtime::defaultValueOf(const TypeRef &type) const {
 	switch (type.typeId) {
 		case TypeId::I8:
 			return Value((int8_t)0);

@@ -141,7 +141,7 @@ SLKC_API bool slkc::decompileTypeName(peff::Alloc *allocator, DumpWriter *writer
 			SLKC_RETURN_IF_FALSE(writer->write("string"));
 			break;
 		case slake::TypeId::Instance: {
-			auto obj = (slake::CustomTypeDefObject*)type.typeDef;
+			auto obj = type.getCustomTypeDef();
 
 			slake::Runtime *runtime = obj->associatedRuntime;
 
@@ -168,7 +168,7 @@ SLKC_API bool slkc::decompileTypeName(peff::Alloc *allocator, DumpWriter *writer
 			break;
 		}
 		case slake::TypeId::GenericArg: {
-			auto obj = (slake::GenericArgTypeDefObject *)type.typeDef;
+			auto obj = type.getGenericArgTypeDef();
 
 			slake::Runtime *runtime = obj->associatedRuntime;
 
@@ -177,7 +177,7 @@ SLKC_API bool slkc::decompileTypeName(peff::Alloc *allocator, DumpWriter *writer
 			break;
 		}
 		case slake::TypeId::Array: {
-			auto obj = (slake::ArrayTypeDefObject *)type.typeDef;
+			auto obj = type.getArrayTypeDef();
 
 			slake::Runtime *runtime = obj->associatedRuntime;
 
@@ -186,7 +186,7 @@ SLKC_API bool slkc::decompileTypeName(peff::Alloc *allocator, DumpWriter *writer
 			break;
 		}
 		case slake::TypeId::Ref: {
-			auto obj = (slake::RefTypeDefObject *)type.typeDef;
+			auto obj = type.getRefTypeDef();
 
 			slake::Runtime *runtime = obj->associatedRuntime;
 
@@ -202,7 +202,7 @@ SLKC_API bool slkc::decompileTypeName(peff::Alloc *allocator, DumpWriter *writer
 			SLKC_RETURN_IF_FALSE(writer->write("any"));
 			break;
 		case slake::TypeId::ParamTypeList: {
-			auto obj = (slake::ParamTypeListTypeDefObject *)type.typeDef;
+			auto obj = type.getParamTypeListTypeDef();
 
 			SLKC_RETURN_IF_FALSE(writer->write("("));
 
@@ -218,7 +218,7 @@ SLKC_API bool slkc::decompileTypeName(peff::Alloc *allocator, DumpWriter *writer
 			break;
 		}
 		case slake::TypeId::Tuple: {
-			auto obj = (slake::TupleTypeDefObject *)type.typeDef;
+			auto obj = type.getTupleTypeDef();
 
 			SLKC_RETURN_IF_FALSE(writer->write("["));
 
@@ -234,7 +234,7 @@ SLKC_API bool slkc::decompileTypeName(peff::Alloc *allocator, DumpWriter *writer
 			break;
 		}
 		case slake::TypeId::SIMD: {
-			auto obj = (slake::SIMDTypeDefObject *)type.typeDef;
+			auto obj = type.getSIMDTypeDef();
 
 			SLKC_RETURN_IF_FALSE(writer->write("simd_t<"));
 
@@ -250,7 +250,7 @@ SLKC_API bool slkc::decompileTypeName(peff::Alloc *allocator, DumpWriter *writer
 			break;
 		}
 		case slake::TypeId::Unpacking: {
-			auto obj = (slake::UnpackingTypeDefObject *)type.typeDef;
+			auto obj = type.getUnpackingTypeDef();
 			SLKC_RETURN_IF_FALSE(writer->write("@..."));
 			SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, obj->type->typeRef));
 			break;

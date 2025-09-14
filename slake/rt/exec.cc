@@ -327,6 +327,8 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_addLocalVar(Context *context
 	if (!context->stackAlloc(size))
 		return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
 
+	stackOffset = context->stackTop;
+
 	TypeId *typeInfo = (TypeId *)context->stackAlloc(sizeof(TypeId));
 	if (!typeInfo)
 		return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
@@ -336,8 +338,6 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_addLocalVar(Context *context
 	if (!typeModifier)
 		return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
 	*typeModifier = type.typeModifier;
-
-	stackOffset = context->stackTop;
 
 	switch (type.typeId) {
 		case TypeId::I8:
@@ -1869,7 +1869,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 
 			switch (type.typeId) {
 				case TypeId::Instance: {
-					ClassObject *cls = (ClassObject *)((CustomTypeDefObject *)type.typeDef)->typeObject;
+					ClassObject *cls = (ClassObject *)(type.getCustomTypeDef())->typeObject;
 					HostObjectRef<InstanceObject> instance = newClassInstance(cls, 0);
 					if (!instance)
 						// TODO: Return more detail exceptions.

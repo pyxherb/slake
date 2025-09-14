@@ -4,8 +4,6 @@
 #include <cstdint>
 #include <cstring>
 #include <cassert>
-#include <string>
-#include <variant>
 #include <slake/basedefs.h>
 #include "except_base.h"
 
@@ -56,11 +54,11 @@ namespace slake {
 		Instance,	 // Object instance
 		GenericArg,	 // Generic argument
 
-		Array,	// Array
-		Ref,	// Reference
-		TempRef, // Temporary reference
-		Tuple,	// Tuple
-		SIMD,	// SIMD
+		Array,	  // Array
+		Ref,	  // Reference
+		TempRef,  // Temporary reference
+		Tuple,	  // Tuple
+		SIMD,	  // SIMD
 
 		Fn,				// Function delegation
 		ParamTypeList,	// Parameter type list
@@ -110,6 +108,15 @@ namespace slake {
 	class InstanceObject;
 	class TypeDefObject;
 	struct MajorFrame;
+	class CustomTypeDefObject;
+	class ArrayTypeDefObject;
+	class RefTypeDefObject;
+	class GenericArgTypeDefObject;
+	class FnTypeDefObject;
+	class ParamTypeListTypeDefObject;
+	class TupleTypeDefObject;
+	class SIMDTypeDefObject;
+	class UnpackingTypeDefObject;
 
 	SLAKE_API bool isTypeDefObject(Object *object);
 
@@ -180,7 +187,23 @@ namespace slake {
 		SLAKE_FORCEINLINE bool isFinal() const noexcept {
 			return typeModifier & TYPE_FINAL;
 		}
+
+		SLAKE_FORCEINLINE CustomTypeDefObject *getCustomTypeDef() const;
+		SLAKE_FORCEINLINE ArrayTypeDefObject *getArrayTypeDef() const;
+		SLAKE_FORCEINLINE RefTypeDefObject *getRefTypeDef() const;
+		SLAKE_FORCEINLINE GenericArgTypeDefObject *getGenericArgTypeDef() const;
+		SLAKE_FORCEINLINE FnTypeDefObject *getFnTypeDef() const;
+		SLAKE_FORCEINLINE ParamTypeListTypeDefObject *getParamTypeListTypeDef() const;
+		SLAKE_FORCEINLINE TupleTypeDefObject *getTupleTypeDef() const;
+		SLAKE_FORCEINLINE SIMDTypeDefObject *getSIMDTypeDef() const;
+		SLAKE_FORCEINLINE UnpackingTypeDefObject *getUnpackingTypeDef() const;
 	};
+
+	template <typename T>
+	SLAKE_FORCEINLINE T *typeDefOf(const TypeRef &typeRef) {
+		assert(typeRef.typeDef->getTypeDefKind() == T::TYPEDEF_KIND);
+		return static_cast<T *>(typeRef.typeDef);
+	}
 
 	static_assert(std::is_trivially_copyable_v<TypeRef>, "TypeRef must be trivially copyable");
 	static_assert(std::is_trivially_copy_assignable_v<TypeRef>, "TypeRef must be trivially copy-assignable");

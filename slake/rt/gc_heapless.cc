@@ -26,7 +26,7 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, GenericParamList &generi
 }
 
 SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, const TypeRef &type) {
-	GCWalkContext::pushObject(context, (CustomTypeDefObject *)type.typeDef);
+	GCWalkContext::pushObject(context, type.typeDef);
 }
 
 SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, const Value &i) {

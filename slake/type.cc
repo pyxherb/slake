@@ -232,9 +232,10 @@ SLAKE_API InternalExceptionPointer slake::isCompatible(peff::Alloc *allocator, c
 				return {};
 			}
 
-			switch (((CustomTypeDefObject *)type.typeDef)->getObjectKind()) {
+			Object *typeObject = type.getCustomTypeDef()->typeObject;
+			switch (typeObject->getObjectKind()) {
 				case ObjectKind::Class: {
-					ClassObject *thisClass = (ClassObject *)((CustomTypeDefObject *)type.typeDef);
+					ClassObject *thisClass = (ClassObject *)typeObject;
 
 					ClassObject *valueClass = ((InstanceObject *)objectPtr)->_class;
 
@@ -252,7 +253,7 @@ SLAKE_API InternalExceptionPointer slake::isCompatible(peff::Alloc *allocator, c
 					break;
 				}
 				case ObjectKind::Interface: {
-					InterfaceObject *thisInterface = (InterfaceObject *)((CustomTypeDefObject *)type.typeDef);
+					InterfaceObject *thisInterface = (InterfaceObject *)typeObject;
 
 					ClassObject *valueClass = ((InstanceObject *)objectPtr)->_class;
 
@@ -288,7 +289,7 @@ SLAKE_API InternalExceptionPointer slake::isCompatible(peff::Alloc *allocator, c
 
 			auto arrayObjectPtr = ((ArrayObject *)objectPtr);
 
-			if (arrayObjectPtr->elementType != ((ArrayTypeDefObject *)type.typeDef)->elementType->typeRef) {
+			if (arrayObjectPtr->elementType != (type.getArrayTypeDef()->elementType->typeRef)) {
 				resultOut = false;
 				return {};
 			}
@@ -330,7 +331,7 @@ SLAKE_API InternalExceptionPointer slake::isCompatible(peff::Alloc *allocator, c
 				return e;
 			}
 
-			if (type != ((RefTypeDefObject *)type.typeDef)->referencedType->typeRef) {
+			if (type != type.getRefTypeDef()->referencedType->typeRef) {
 				resultOut = false;
 				return {};
 			}

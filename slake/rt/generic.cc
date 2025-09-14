@@ -283,7 +283,7 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(MemberObjec
 
 				switch (type.typeId) {
 					/* case TypeId::Instance: {
-						auto typeDef = ((CustomTypeDefObject *)type.typeDef);
+						auto typeDef = (type.typeDef.getCustomTypeDef());
 
 						if (typeDef->isLoadingDeferred()) {
 							IdRefObject *exData = (IdRefObject *)typeDef->typeObject;
@@ -325,7 +325,7 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(MemberObjec
 						type = type.duplicate(isSucceeded);
 						if (!isSucceeded)
 							return OutOfMemoryError::alloc();
-						SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(dispatcher, ((ArrayTypeDefObject *)type.typeDef)->elementType->typeRef, i.context.get()));
+						SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(dispatcher, (type.getArrayTypeDef())->elementType->typeRef, i.context.get()));
 						if (auto td = getEqualTypeDef(type.typeDef); td)
 							type.typeDef = td;
 						else
@@ -337,7 +337,7 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(MemberObjec
 						type = type.duplicate(isSucceeded);
 						if (!isSucceeded)
 							return OutOfMemoryError::alloc();
-						SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(dispatcher, ((RefTypeDefObject *)type.typeDef)->referencedType->typeRef, i.context.get()));
+						SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(dispatcher, (type.getRefTypeDef())->referencedType->typeRef, i.context.get()));
 						if (auto td = getEqualTypeDef(type.typeDef); td)
 							type.typeDef = td;
 						else
@@ -345,7 +345,7 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(MemberObjec
 						break;
 					}
 					case TypeId::GenericArg: {
-						HostObjectRef<GenericArgTypeDefObject> typeDef = (GenericArgTypeDefObject *)type.typeDef;
+						HostObjectRef<GenericArgTypeDefObject> typeDef = type.getGenericArgTypeDef();
 						HostObjectRef<StringObject> nameObject = typeDef->nameObject;
 
 						if (auto it = i.context->mappedGenericArgs.find(nameObject->data); it != i.context->mappedGenericArgs.end()) {

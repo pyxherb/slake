@@ -38,6 +38,8 @@
 #define SLAKE_REFERENCED_PARAM(n) (n)
 #define SLAKE_REFERENCED_VAR(n) (n)
 
+#define SLAKE_REQUIRES_CONCEPT(...) PEFF_REQUIRES_CONCEPT(__VA_ARGS__)
+
 #if _MSC_VER
 	#define SLAKE_UNREACHABLE() __assume(0)
 #elif defined(__GNUC__) || defined(__clang__)

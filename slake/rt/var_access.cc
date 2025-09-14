@@ -186,46 +186,46 @@ SLAKE_API Value Runtime::readVarUnsafe(const EntityRef &entityRef) const noexcep
 			break;
 		}
 		case ObjectRefKind::LocalVarRef: {
-			const char *const rawStackPtr = calcStackAddr(entityRef.asLocalVar.context->dataStack,
+			const char *const basePtr = calcStackAddr(entityRef.asLocalVar.context->dataStack,
 				SLAKE_STACK_MAX,
 				entityRef.asLocalVar.stackOff);
-			const char *const rawDataPtr = rawStackPtr + sizeof(TypeId) + sizeof(TypeModifier);
+			const char *const rawDataPtr = basePtr - sizeof(TypeId) - sizeof(TypeModifier);
 
-			TypeRef t = *(TypeId *)(rawDataPtr - sizeof(TypeModifier));
+			TypeRef t = *(TypeId *)(rawDataPtr + sizeof(TypeModifier));
 			t.typeModifier = *(TypeModifier *)(rawDataPtr);
 
 			switch (t.typeId) {
 				case TypeId::I8:
-					return Value(*((int8_t *)rawDataPtr));
+					return Value(*((int8_t *)basePtr));
 				case TypeId::I16:
-					return Value(*((int16_t *)rawDataPtr));
+					return Value(*((int16_t *)basePtr));
 				case TypeId::I32:
-					return Value(*((int32_t *)rawDataPtr));
+					return Value(*((int32_t *)basePtr));
 				case TypeId::I64:
-					return Value(*((int64_t *)rawDataPtr));
+					return Value(*((int64_t *)basePtr));
 				case TypeId::U8:
-					return Value(*((uint8_t *)rawDataPtr));
+					return Value(*((uint8_t *)basePtr));
 				case TypeId::U16:
-					return Value(*((uint16_t *)rawDataPtr));
+					return Value(*((uint16_t *)basePtr));
 				case TypeId::U32:
-					return Value(*((uint32_t *)rawDataPtr));
+					return Value(*((uint32_t *)basePtr));
 				case TypeId::U64:
-					return Value(*((uint64_t *)rawDataPtr));
+					return Value(*((uint64_t *)basePtr));
 				case TypeId::F32:
-					return Value(*((float *)rawDataPtr));
+					return Value(*((float *)basePtr));
 				case TypeId::F64:
-					return Value(*((double *)rawDataPtr));
+					return Value(*((double *)basePtr));
 				case TypeId::Bool:
-					return Value(*((bool *)rawDataPtr));
+					return Value(*((bool *)basePtr));
 				case TypeId::String:
 				case TypeId::Instance:
 				case TypeId::Array:
 				case TypeId::Fn:
-					return Value(EntityRef::makeObjectRef(*((Object **)rawDataPtr)));
+					return Value(EntityRef::makeObjectRef(*((Object **)basePtr)));
 				case TypeId::Ref:
-					return Value(*((EntityRef *)rawDataPtr));
+					return Value(*((EntityRef *)basePtr));
 				case TypeId::Any:
-					return Value(*((Value *)rawDataPtr));
+					return Value(*((Value *)basePtr));
 				default:
 					// All fields should be checked during the instantiation.
 					std::terminate();
@@ -244,45 +244,44 @@ SLAKE_API Value Runtime::readVarUnsafe(const EntityRef &entityRef) const noexcep
 				basePtr = calcStackAddr(entityRef.asCoroutineLocalVar.coroutine->stackData,
 					entityRef.asCoroutineLocalVar.coroutine->lenStackData,
 					entityRef.asCoroutineLocalVar.stackOff);
-			}
+			};
+			const char *const rawDataPtr = basePtr - sizeof(TypeId) - sizeof(TypeModifier);
 
-			const char *const rawDataPtr = basePtr + sizeof(TypeId) + sizeof(TypeModifier);
-
-			TypeRef t = *(TypeId *)(rawDataPtr - sizeof(TypeModifier));
+			TypeRef t = *(TypeId *)(rawDataPtr + sizeof(TypeModifier));
 			t.typeModifier = *(TypeModifier *)(rawDataPtr);
 
 			switch (t.typeId) {
 				case TypeId::I8:
-					return Value(*((int8_t *)rawDataPtr));
+					return Value(*((int8_t *)basePtr));
 				case TypeId::I16:
-					return Value(*((int16_t *)rawDataPtr));
+					return Value(*((int16_t *)basePtr));
 				case TypeId::I32:
-					return Value(*((int32_t *)rawDataPtr));
+					return Value(*((int32_t *)basePtr));
 				case TypeId::I64:
-					return Value(*((int64_t *)rawDataPtr));
+					return Value(*((int64_t *)basePtr));
 				case TypeId::U8:
-					return Value(*((uint8_t *)rawDataPtr));
+					return Value(*((uint8_t *)basePtr));
 				case TypeId::U16:
-					return Value(*((uint16_t *)rawDataPtr));
+					return Value(*((uint16_t *)basePtr));
 				case TypeId::U32:
-					return Value(*((uint32_t *)rawDataPtr));
+					return Value(*((uint32_t *)basePtr));
 				case TypeId::U64:
-					return Value(*((uint64_t *)rawDataPtr));
+					return Value(*((uint64_t *)basePtr));
 				case TypeId::F32:
-					return Value(*((float *)rawDataPtr));
+					return Value(*((float *)basePtr));
 				case TypeId::F64:
-					return Value(*((double *)rawDataPtr));
+					return Value(*((double *)basePtr));
 				case TypeId::Bool:
-					return Value(*((bool *)rawDataPtr));
+					return Value(*((bool *)basePtr));
 				case TypeId::String:
 				case TypeId::Instance:
 				case TypeId::Array:
 				case TypeId::Fn:
-					return Value(EntityRef::makeObjectRef(*((Object **)rawDataPtr)));
+					return Value(EntityRef::makeObjectRef(*((Object **)basePtr)));
 				case TypeId::Ref:
-					return Value(*((EntityRef *)rawDataPtr));
+					return Value(*((EntityRef *)basePtr));
 				case TypeId::Any:
-					return Value(*((Value *)rawDataPtr));
+					return Value(*((Value *)basePtr));
 				default:
 					// All fields should be checked during the instantiation.
 					std::terminate();
@@ -466,12 +465,12 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 				// TODO: Use a proper type of exception instead of this.
 				return raiseInvalidArrayIndexError((Runtime *)this, entityRef.asArray.index);
 
-			const char *const rawStackPtr = calcStackAddr(entityRef.asLocalVar.context->dataStack,
+			const char *const basePtr = calcStackAddr(entityRef.asLocalVar.context->dataStack,
 				SLAKE_STACK_MAX,
 				entityRef.asLocalVar.stackOff);
-			const char *const rawDataPtr = rawStackPtr + sizeof(TypeId) + sizeof(TypeModifier);
+			const char *const rawDataPtr = basePtr - sizeof(TypeId) - sizeof(TypeModifier);
 
-			TypeRef t = *(TypeId *)(rawDataPtr - sizeof(TypeModifier));
+			TypeRef t = *(TypeId *)(rawDataPtr + sizeof(TypeModifier));
 			t.typeModifier = *(TypeModifier *)(rawDataPtr);
 
 			switch (t.typeId) {
@@ -480,93 +479,93 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 					if (!result) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
-					*((int8_t *)rawDataPtr) = value.getI8();
+					*((int8_t *)basePtr) = value.getI8();
 					break;
 				case TypeId::I16:
 					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
 					if (!result) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
-					*((int16_t *)rawDataPtr) = value.getI16();
+					*((int16_t *)basePtr) = value.getI16();
 					break;
 				case TypeId::I32:
 					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
 					if (!result) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
-					*((int32_t *)rawDataPtr) = value.getI32();
+					*((int32_t *)basePtr) = value.getI32();
 					break;
 				case TypeId::I64:
 					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
 					if (!result) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
-					*((int64_t *)rawDataPtr) = value.getI64();
+					*((int64_t *)basePtr) = value.getI64();
 					break;
 				case TypeId::U8:
 					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
 					if (!result) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
-					*((uint8_t *)rawDataPtr) = value.getU8();
+					*((uint8_t *)basePtr) = value.getU8();
 					break;
 				case TypeId::U16:
 					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
 					if (!result) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
-					*((uint16_t *)rawDataPtr) = value.getU16();
+					*((uint16_t *)basePtr) = value.getU16();
 					break;
 				case TypeId::U32:
 					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
 					if (!result) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
-					*((uint32_t *)rawDataPtr) = value.getU32();
+					*((uint32_t *)basePtr) = value.getU32();
 					break;
 				case TypeId::U64:
 					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
 					if (!result) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
-					*((uint64_t *)rawDataPtr) = value.getU64();
+					*((uint64_t *)basePtr) = value.getU64();
 					break;
 				case TypeId::F32:
 					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
 					if (!result) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
-					*((float *)rawDataPtr) = value.getF32();
+					*((float *)basePtr) = value.getF32();
 					break;
 				case TypeId::F64:
 					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
 					if (!result) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
-					*((double *)rawDataPtr) = value.getF64();
+					*((double *)basePtr) = value.getF64();
 					break;
 				case TypeId::Bool:
 					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
 					if (!result) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
-					*((bool *)rawDataPtr) = value.getBool();
+					*((bool *)basePtr) = value.getBool();
 					break;
 				case TypeId::String:
 					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
 					if (!result) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
-					*((Object **)rawDataPtr) = value.getEntityRef().asObject.instanceObject;
+					*((Object **)basePtr) = value.getEntityRef().asObject.instanceObject;
 					break;
 				case TypeId::Instance:
 				case TypeId::Array:
-					memcpy(&t.typeDef, rawStackPtr - sizeof(void *), sizeof(void *));
+					memcpy(&t.typeDef, basePtr - sizeof(void *), sizeof(void *));
 					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
 					if (!result) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
-					*((Object **)rawDataPtr) = value.getEntityRef().asObject.instanceObject;
+					*((Object **)basePtr) = value.getEntityRef().asObject.instanceObject;
 					break;
 				default:
 					// All fields should be checked during the instantiation.
@@ -590,9 +589,10 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 					entityRef.asCoroutineLocalVar.stackOff);
 			}
 ;
-			const char *const rawDataPtr = basePtr + sizeof(TypeId) + sizeof(TypeModifier);
+			// This is the correct version.
+			const char *const rawDataPtr = basePtr - sizeof(TypeId) - sizeof(TypeModifier);
 
-			TypeRef t = *(TypeId *)(rawDataPtr - sizeof(TypeModifier));
+			TypeRef t = *(TypeId *)(rawDataPtr + sizeof(TypeModifier));
 			t.typeModifier = *(TypeModifier*)(rawDataPtr);
 
 			switch (t.typeId) {
@@ -601,93 +601,93 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 					if (!result) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
-					*((int8_t *)rawDataPtr) = value.getI8();
+					*((int8_t *)basePtr) = value.getI8();
 					break;
 				case TypeId::I16:
 					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
 					if (!result) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
-					*((int16_t *)rawDataPtr) = value.getI16();
+					*((int16_t *)basePtr) = value.getI16();
 					break;
 				case TypeId::I32:
 					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
 					if (!result) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
-					*((int32_t *)rawDataPtr) = value.getI32();
+					*((int32_t *)basePtr) = value.getI32();
 					break;
 				case TypeId::I64:
 					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
 					if (!result) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
-					*((int64_t *)rawDataPtr) = value.getI64();
+					*((int64_t *)basePtr) = value.getI64();
 					break;
 				case TypeId::U8:
 					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
 					if (!result) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
-					*((uint8_t *)rawDataPtr) = value.getU8();
+					*((uint8_t *)basePtr) = value.getU8();
 					break;
 				case TypeId::U16:
 					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
 					if (!result) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
-					*((uint16_t *)rawDataPtr) = value.getU16();
+					*((uint16_t *)basePtr) = value.getU16();
 					break;
 				case TypeId::U32:
 					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
 					if (!result) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
-					*((uint32_t *)rawDataPtr) = value.getU32();
+					*((uint32_t *)basePtr) = value.getU32();
 					break;
 				case TypeId::U64:
 					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
 					if (!result) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
-					*((uint64_t *)rawDataPtr) = value.getU64();
+					*((uint64_t *)basePtr) = value.getU64();
 					break;
 				case TypeId::F32:
 					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
 					if (!result) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
-					*((float *)rawDataPtr) = value.getF32();
+					*((float *)basePtr) = value.getF32();
 					break;
 				case TypeId::F64:
 					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
 					if (!result) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
-					*((double *)rawDataPtr) = value.getF64();
+					*((double *)basePtr) = value.getF64();
 					break;
 				case TypeId::Bool:
 					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
 					if (!result) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
-					*((bool *)rawDataPtr) = value.getBool();
+					*((bool *)basePtr) = value.getBool();
 					break;
 				case TypeId::String:
 					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
 					if (!result) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
-					*((Object **)rawDataPtr) = value.getEntityRef().asObject.instanceObject;
+					*((Object **)basePtr) = value.getEntityRef().asObject.instanceObject;
 					break;
 				case TypeId::Instance:
 				case TypeId::Array:
-					memcpy(&t.typeDef, basePtr - sizeof(void *), sizeof(void *));
+					memcpy(&t.typeDef, rawDataPtr - sizeof(void *), sizeof(void *));
 					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
 					if (!result) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
-					*((Object **)rawDataPtr) = value.getEntityRef().asObject.instanceObject;
+					*((Object **)basePtr) = value.getEntityRef().asObject.instanceObject;
 					break;
 				default:
 					// All fields should be checked during the instantiation.

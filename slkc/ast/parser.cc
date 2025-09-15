@@ -401,14 +401,6 @@ SLKC_API std::optional<SyntaxError> Parser::parseFn(AstNodePtr<FnOverloadingNode
 		fnNodeOut->fnFlags |= FN_VARG;
 	}
 
-	Token *returnTypeToken;
-	if ((returnTypeToken = peekToken())->tokenId == TokenId::ReturnTypeOp) {
-		nextToken();
-		if ((syntaxError = parseTypeName(fnNodeOut->returnType))) {
-			return syntaxError;
-		}
-	}
-
 	Token *virtualToken;
 	if ((virtualToken = peekToken())->tokenId == TokenId::VirtualKeyword) {
 		fnNodeOut->fnFlags |= FN_VIRTUAL;
@@ -418,6 +410,14 @@ SLKC_API std::optional<SyntaxError> Parser::parseFn(AstNodePtr<FnOverloadingNode
 	Token *overrideToken;
 	if ((overrideToken = peekToken())->tokenId == TokenId::OverrideKeyword) {
 		nextToken();
+	}
+
+	Token *returnTypeToken;
+	if ((returnTypeToken = peekToken())->tokenId == TokenId::ReturnTypeOp) {
+		nextToken();
+		if ((syntaxError = parseTypeName(fnNodeOut->returnType))) {
+			return syntaxError;
+		}
 	}
 
 	Token *bodyToken = peekToken();

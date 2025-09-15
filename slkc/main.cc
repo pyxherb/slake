@@ -325,6 +325,11 @@ void dumpCompilationError(peff::SharedPtr<slkc::Parser> parser, const slkc::Comp
 				beginToken->sourceLocation.beginPosition.line + 1,
 				beginToken->sourceLocation.beginPosition.column + 1);
 			break;
+		case slkc::CompilationErrorKind::AbstractMethodNotImplemented:
+			printError("Error at %zu, %zu: Abstract method not implemented\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
 		case slkc::CompilationErrorKind::CyclicInheritedClass:
 			printError("Error at %zu, %zu: Cyclic inherited class detected\n",
 				beginToken->sourceLocation.beginPosition.line + 1,

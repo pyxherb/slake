@@ -487,18 +487,71 @@ SLKC_API std::optional<CompilationError> slkc::isSameTypeInSignature(
 
 			switch (lhsMember->astNodeType) {
 				case AstNodeType::GenericParam: {
+					// TODO: Lookup the generic parameters recursively for classes, interfaces
+					// and functions.
 					AstNodePtr<GenericParamNode> l, r;
 
 					l = lhsMember.castTo<GenericParamNode>();
 					r = rhsMember.castTo<GenericParamNode>();
 
-					if (((FnOverloadingNode *)l->parent)->genericParamIndices.at(l->name) == ((FnOverloadingNode *)r->parent)->genericParamIndices.at(r->name)) {
-						whetherOut = true;
+					auto lp = l->parent,
+						 rp = r->parent;
+
+					if (lp->astNodeType != rp->astNodeType) {
+						whetherOut = false;
 						break;
 					}
 
-					whetherOut = false;
-					break;
+					switch (lp->astNodeType) {
+						case AstNodeType::Class: {
+							if (lp != rp) {
+								whetherOut = false;
+								break;
+							}
+
+							if (((ClassNode *)lp)->genericParamIndices.at(l->name) ==
+								((ClassNode *)rp)->genericParamIndices.at(r->name)) {
+								whetherOut = true;
+								break;
+							} else {
+								whetherOut = false;
+								break;
+							}
+							break;
+						}
+						case AstNodeType::Interface: {
+							if (lp != rp) {
+								whetherOut = false;
+								break;
+							}
+
+							if (((InterfaceNode *)lp)->genericParamIndices.at(l->name) ==
+								((InterfaceNode *)rp)->genericParamIndices.at(r->name)) {
+								whetherOut = true;
+								break;
+							} else {
+								whetherOut = false;
+								break;
+							}
+							break;
+						}
+						case AstNodeType::Fn: {
+							auto lit = ((FnOverloadingNode *)lp)->genericParamIndices.find(l->name),
+								 rit = ((FnOverloadingNode *)rp)->genericParamIndices.find(r->name);
+
+							assert((lit != ((FnOverloadingNode *)lp)->genericParamIndices.end()) &&
+								   (rit != ((FnOverloadingNode *)rp)->genericParamIndices.end()));
+
+							if (*lit == *rit) {
+								whetherOut = true;
+								break;
+							} else {
+								whetherOut = false;
+								break;
+							}
+							break;
+						}
+					}
 				}
 				default:
 					whetherOut = lhsMember == rhsMember;

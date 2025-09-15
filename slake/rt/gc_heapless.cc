@@ -625,11 +625,7 @@ rescan:
 
 	for (auto i : _genericCacheDir) {
 		for (auto j : i.second) {
-			i.first->gcStatus = ObjectGCStatus::Unwalked;
-			i.first->gcWalkContext = nullptr;
 			GCWalkContext::pushObject(&context, i.first);
-			j.second->gcStatus = ObjectGCStatus::Unwalked;
-			j.second->gcWalkContext = nullptr;
 			GCWalkContext::pushObject(&context, j.second);
 		}
 	}

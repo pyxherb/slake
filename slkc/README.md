@@ -7,8 +7,8 @@ The compiler has 3 main modules:
 
 ## Issues
 
-### Stack Overflow Risk on Everywhere
+### Stack Overflow Risks on Everywhere
 
-Several modules (such as AST node duplication, generic instantiation,
+Several functions (such as AST node duplication, generic instantiation,
 expression compilation, etc.) has risk of stack overflow, we have planned to
 migrate to C++20 and use coroutine to avoid this problem.

@@ -59,7 +59,7 @@ NativeThreadHandle slake::currentThreadHandle() {
 }
 
 void slake::yieldCurrentThread() {
-	Sleep(0);
+	SwitchToThread();
 }
 
 void slake::getCurrentThreadStackBounds(void *&baseOut, size_t &sizeOut) {

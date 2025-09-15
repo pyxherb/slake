@@ -34,7 +34,9 @@ namespace slake {
 	};
 
 	enum class TypeId : uint8_t {
-		Void = 0,  // Void
+		Invalid = 0,  // Invalid
+
+		Void,  // Void
 
 		I8,		// Signed 8-bit integer
 		I16,	// Signed 16-bit integer

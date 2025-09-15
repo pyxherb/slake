@@ -31,15 +31,21 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 				// TODO: Check if the instance object is a member object.
 				scopeObject = (MemberObject *)objectRefOut.asObject.instanceObject;
 
-				if (curName.genericArgs.size()) {
-					peff::NullAlloc nullAlloc;
-					GenericInstantiationContext genericInstantiationContext(&nullAlloc, getFixedAlloc());
+				switch (scopeObject->getObjectKind()) {
+					case ObjectKind::Class:
+					case ObjectKind::Interface:
+					case ObjectKind::Fn:
+						if (curName.genericArgs.size()) {
+							peff::NullAlloc nullAlloc;
+							GenericInstantiationContext genericInstantiationContext(&nullAlloc, getFixedAlloc());
 
-					genericInstantiationContext.genericArgs = &curName.genericArgs;
-					MemberObject *m;
-					SLAKE_RETURN_IF_EXCEPT(instantiateGenericObject((MemberObject*)scopeObject, m, &genericInstantiationContext));
-					scopeObject = m;
-					objectRefOut = EntityRef::makeObjectRef(scopeObject);
+							genericInstantiationContext.genericArgs = &curName.genericArgs;
+							MemberObject *m;
+							SLAKE_RETURN_IF_EXCEPT(instantiateGenericObject((MemberObject *)scopeObject, m, &genericInstantiationContext));
+							scopeObject = m;
+							objectRefOut = EntityRef::makeObjectRef(scopeObject);
+						}
+						break;
 				}
 			} else {
 				if (i + 1 != ref->entries.size())
@@ -53,6 +59,9 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 					FnObject *fnObject = ((FnObject *)scopeObject);
 
 					FnOverloadingObject *overloading = findOverloading(fnObject, *ref->paramTypes, { getFixedAlloc() }, ref->hasVarArgs);
+
+					if (!overloading)
+						return allocOutOfMemoryErrorIfAllocFailed(ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(this)->getFixedAlloc(), ref));
 
 					if (!(objectRefOut = EntityRef::makeObjectRef(overloading)))
 						return allocOutOfMemoryErrorIfAllocFailed(ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(this)->getFixedAlloc(), ref));

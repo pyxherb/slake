@@ -303,6 +303,10 @@ SLAKE_API InterfaceObject::InterfaceObject(Duplicator *duplicator, const Interfa
 	  implTypes(allocator),
 	  implInterfaceIndices(allocator) {
 	if (succeededOut) {
+		if (!genericParams.resizeUninitialized(x.genericParams.size())) {
+			succeededOut = false;
+			return;
+		}
 		for (size_t i = 0; i < x.genericParams.size(); ++i) {
 			if (!x.genericParams.at(i).copy(genericParams.at(i))) {
 				for (size_t j = i; j; --j) {

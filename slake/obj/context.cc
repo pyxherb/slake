@@ -77,12 +77,12 @@ SLAKE_API void Context::leaveMajor() {
 
 SLAKE_API char *Context::stackAlloc(size_t size) {
 	if (size_t newStackTop = stackTop + size;
-		newStackTop > SLAKE_STACK_MAX) {
+		newStackTop > stackSize) {
 		return nullptr;
 	} else
 		stackTop = newStackTop;
 
-	return dataStack + SLAKE_STACK_MAX - stackTop;
+	return dataStack + stackSize - stackTop;
 }
 
 SLAKE_API Context::Context(Runtime *runtime, peff::Alloc *selfAllocator) : runtime(runtime), selfAllocator(selfAllocator), majorFrames(selfAllocator) {
@@ -90,7 +90,7 @@ SLAKE_API Context::Context(Runtime *runtime, peff::Alloc *selfAllocator) : runti
 
 SLAKE_API Context::~Context() {
 	if (dataStack) {
-		selfAllocator->release(dataStack, SLAKE_STACK_MAX, sizeof(std::max_align_t));
+		selfAllocator->release(dataStack, stackSize, sizeof(std::max_align_t));
 	}
 }
 
@@ -115,7 +115,7 @@ SLAKE_API ContextObject::ContextObject(
 SLAKE_API ContextObject::~ContextObject() {
 }
 
-SLAKE_API HostObjectRef<ContextObject> slake::ContextObject::alloc(Runtime *rt) {
+SLAKE_API HostObjectRef<ContextObject> slake::ContextObject::alloc(Runtime *rt, size_t stackSize) {
 	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();
 
 	std::unique_ptr<ContextObject, peff::DeallocableDeleter<ContextObject>> ptr(
@@ -126,8 +126,12 @@ SLAKE_API HostObjectRef<ContextObject> slake::ContextObject::alloc(Runtime *rt) 
 	if (!ptr)
 		return nullptr;
 
-	if (!(ptr->_context.dataStack = (char *)curGenerationAllocator->alloc(SLAKE_STACK_MAX, sizeof(std::max_align_t))))
+	if (!(ptr->_context.dataStack = (char *)curGenerationAllocator->alloc(stackSize, sizeof(std::max_align_t))))
 		return nullptr;
+
+	ptr->_context.dataStackTopPtr = ptr->_context.dataStack + stackSize;
+
+	ptr->_context.stackSize = stackSize;
 
 	if (!rt->addObject(ptr.get()))
 		return nullptr;

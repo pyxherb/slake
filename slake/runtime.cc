@@ -38,7 +38,7 @@ SLAKE_API void *CountablePoolAlloc::alloc(size_t size, size_t alignment) noexcep
 	return p;
 }
 
-SLAKE_API void* CountablePoolAlloc::realloc(void* ptr, size_t size, size_t alignment, size_t newSize, size_t newAlignment) noexcept {
+SLAKE_API void *CountablePoolAlloc::realloc(void *ptr, size_t size, size_t alignment, size_t newSize, size_t newAlignment) noexcept {
 	void *p = upstream->realloc(ptr, size, alignment, newSize, newAlignment);
 	if (!p)
 		return nullptr;
@@ -186,10 +186,10 @@ SLAKE_API size_t Runtime::sizeofType(const TypeRef &type) const {
 		case TypeId::Bool:
 			return sizeof(bool);
 		case TypeId::String:
+			return sizeof(void *);
 		case TypeId::Instance:
 		case TypeId::Array:
-		case TypeId::Ref:
-			return sizeof(EntityRef);
+			return sizeof(void *) + sizeof(void *);
 		case TypeId::Any:
 			return sizeof(Value);
 		default:

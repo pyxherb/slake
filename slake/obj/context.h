@@ -97,7 +97,9 @@ namespace slake {
 		peff::DynArray<MajorFramePtr> majorFrames;	// Major frame list
 		ContextFlags flags = 0;						// Flags
 		char *dataStack = nullptr;					// Data stack
+		char *dataStackTopPtr = nullptr;			// Data stack top pointer
 		size_t stackTop = 0;						// Stack top
+		size_t stackSize;
 
 		SLAKE_API char *stackAlloc(size_t size);
 		SLAKE_API void leaveMajor();
@@ -109,6 +111,14 @@ namespace slake {
 		SLAKE_API void replaceAllocator(peff::Alloc *allocator) noexcept;
 	};
 
+	SLAKE_FORCEINLINE bool stackBottomCheck(const char *const rawDataPtr, const char *const bottom) {
+		return rawDataPtr >= bottom;
+	}
+
+	SLAKE_FORCEINLINE bool stackTopCheck(const char *const rawDataPtr, const char *const top) {
+		return rawDataPtr < top;
+	}
+
 	class ContextObject final : public Object {
 	public:
 		Context _context;
@@ -116,7 +126,7 @@ namespace slake {
 		SLAKE_API ContextObject(Runtime *rt, peff::Alloc *selfAllocator);
 		SLAKE_API virtual ~ContextObject();
 
-		SLAKE_API static HostObjectRef<ContextObject> alloc(Runtime *rt);
+		SLAKE_API static HostObjectRef<ContextObject> alloc(Runtime *rt, size_t stackSize);
 		SLAKE_API virtual void dealloc() override;
 
 		SLAKE_FORCEINLINE Context &getContext() { return _context; }

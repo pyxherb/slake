@@ -219,7 +219,7 @@ namespace slake {
 		SLAKE_API void _gcWalk(GCWalkContext *context, const TypeRef &type);
 		SLAKE_API void _gcWalk(GCWalkContext *context, const Value &i);
 		SLAKE_API void _gcWalk(GCWalkContext *context, Object *i);
-		SLAKE_API void _gcWalk(GCWalkContext *context, char *dataStack, MajorFrame *majorFrame);
+		SLAKE_API void _gcWalk(GCWalkContext *context, char *dataStack, size_t stackSize, MajorFrame *majorFrame);
 		SLAKE_API void _gcWalk(GCWalkContext *context, Context &i);
 		SLAKE_API void _gcSerial(Object *&objectList, Object *&endObjectOut, size_t &nObjects, ObjectGeneration newGeneration);
 
@@ -406,7 +406,7 @@ namespace slake {
 		/// @return
 		[[nodiscard]] SLAKE_API InternalExceptionPointer execFn(
 			const FnOverloadingObject *overloading,
-			ContextObject *prevContext,
+			ContextObject *context,
 			Object *thisObject,
 			const Value *args,
 			uint32_t nArgs,
@@ -423,7 +423,7 @@ namespace slake {
 			size_t nativeStackSize = 0);
 		[[nodiscard]] SLAKE_API InternalExceptionPointer execFnWithSeparatedExecutionThread(
 			const FnOverloadingObject *overloading,
-			ContextObject *prevContext,
+			ContextObject *context,
 			Object *thisObject,
 			const Value *args,
 			uint32_t nArgs,

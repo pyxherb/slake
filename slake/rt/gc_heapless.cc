@@ -428,7 +428,7 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 	}
 }
 
-SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, char *dataStack, MajorFrame *majorFrame) {
+SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, char *dataStack, size_t stackSize, MajorFrame *majorFrame) {
 	GCWalkContext::pushObject(context, (FnOverloadingObject *)majorFrame->curFn);
 	if (majorFrame->curCoroutine)
 		GCWalkContext::pushObject(context, majorFrame->curCoroutine);
@@ -438,7 +438,7 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, char *dataStack, MajorFr
 	if (majorFrame->resumable) {
 		size_t nRegs = majorFrame->resumable->nRegs;
 		for (size_t i = 0; i < nRegs; ++i)
-			_gcWalk(context, *((Value *)(dataStack + SLAKE_STACK_MAX - (majorFrame->offRegs + sizeof(Value) * i))));
+			_gcWalk(context, calcStackAddr(dataStack, stackSize, (majorFrame->offRegs + sizeof(Value) * i)));
 	}
 }
 
@@ -447,7 +447,7 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Context &ctxt) {
 
 	for (size_t i = 0; i < ctxt.majorFrames.size(); ++i) {
 		MajorFrame *majorFrame = ctxt.majorFrames.at(i).get();
-		_gcWalk(context, ctxt.dataStack, majorFrame);
+		_gcWalk(context, ctxt.dataStack, ctxt.stackSize, majorFrame);
 	}
 }
 

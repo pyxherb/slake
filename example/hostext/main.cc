@@ -372,7 +372,7 @@ int main(int argc, char **argv) {
 
 				slake::HostObjectRef<slake::ContextObject> context;
 
-				if (!(context = slake::ContextObject::alloc(rt.get()))) {
+				if (!(context = slake::ContextObject::alloc(rt.get(), 114514))) {
 					puts("Out of memory");
 					goto end;
 				}

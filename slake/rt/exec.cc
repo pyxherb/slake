@@ -150,7 +150,7 @@ SLAKE_API InternalExceptionPointer Runtime::_fillArgs(
 		SLAKE_RETURN_IF_EXCEPT(writeVar(EntityRef::makeArgRef(newMajorFrame, i), args[i]));
 	}
 
-	if (fn->overloadingFlags & OL_VARG) {
+	if (fn->isWithVarArgs()) {
 		auto elementHeapTypeObject = HeapTypeObject::alloc(this);
 
 		if (!elementHeapTypeObject)

@@ -58,7 +58,7 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 				case ObjectKind::Fn: {
 					FnObject *fnObject = ((FnObject *)scopeObject);
 
-					FnOverloadingObject *overloading = findOverloading(fnObject, *ref->paramTypes, { getFixedAlloc() }, ref->hasVarArgs);
+					FnOverloadingObject *overloading = findOverloading(fnObject, *ref->paramTypes, 0, ref->hasVarArgs);
 
 					if (!overloading)
 						return allocOutOfMemoryErrorIfAllocFailed(ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(this)->getFixedAlloc(), ref));

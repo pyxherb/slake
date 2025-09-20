@@ -117,7 +117,7 @@ namespace slake {
 			overloadingFlags &= ~OL_VARG;
 		}
 
-		SLAKE_FORCEINLINE bool isWithVarArgs() noexcept {
+		SLAKE_FORCEINLINE bool isWithVarArgs() const noexcept {
 			return overloadingFlags & OL_VARG;
 		}
 
@@ -129,7 +129,7 @@ namespace slake {
 			overloadingFlags &= ~OL_GENERATOR;
 		}
 
-		SLAKE_FORCEINLINE bool isCoroutine() noexcept {
+		SLAKE_FORCEINLINE bool isCoroutine() const noexcept {
 			return overloadingFlags & OL_GENERATOR;
 		}
 
@@ -278,12 +278,12 @@ namespace slake {
 	SLAKE_API FnOverloadingObject *findOverloading(
 		FnObject *fnObject,
 		const peff::DynArray<TypeRef> &paramTypes,
-		const GenericParamList &genericParams,
+		size_t nGenericParams,
 		bool hasVarArg);
 	SLAKE_API bool isDuplicatedOverloading(
 		const FnOverloadingObject *overloading,
 		const peff::DynArray<TypeRef> &paramTypes,
-		const GenericParamList &genericParams,
+		size_t nGenericParams,
 		bool hasVarArg);
 }
 

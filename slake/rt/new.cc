@@ -32,11 +32,10 @@ SLAKE_API InternalExceptionPointer Runtime::initMethodTableForClass(ClassObject 
 
 				if (it.key() == "delete") {
 					peff::DynArray<TypeRef> destructorParamTypes(getFixedAlloc());
-					GenericParamList destructorGenericParamList(getFixedAlloc());
 
 					for (auto j : fn->overloadings) {
 						bool result;
-						if (isDuplicatedOverloading(j.second, destructorParamTypes, destructorGenericParamList, false)) {
+						if (isDuplicatedOverloading(j.second, destructorParamTypes, 0, false)) {
 							if (!methodTable->destructors.pushFront(+j.second)) {
 								return OutOfMemoryError::alloc();
 							}

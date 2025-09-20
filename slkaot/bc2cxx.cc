@@ -673,7 +673,7 @@ std::shared_ptr<cxxast::Fn> BC2CXX::compileFnOverloading(CompileContext &compile
 	} else {
 		std::shared_ptr<cxxast::Fn> fnOverloading = std::make_shared<cxxast::Fn>(mangleFnName((std::string_view)fnOverloadingObject->fnObject->name));
 
-		if (fnOverloadingObject->overloadingFlags & OL_VARG) {
+		if (fnOverloadingObject->isWithVarArgs()()) {
 			fnOverloading->name += "9";
 			fnOverloading->signature.paramTypes.push_back(
 				std::make_shared<cxxast::PointerTypeName>(

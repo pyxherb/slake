@@ -330,9 +330,8 @@ int main(int argc, char **argv) {
 			slake::FnOverloadingObject *overloading;
 
 			peff::DynArray<slake::TypeRef> params(&myAllocator);
-			peff::DynArray<slake::GenericParam> genericParams(&myAllocator);
 
-			overloading = slake::findOverloading(fn, params, genericParams, false);
+			overloading = slake::findOverloading(fn, params, 0, false);
 
 			/*
 			slake::opti::ProgramAnalyzedInfo analyzedInfo(rt.get(), &myAllocator);

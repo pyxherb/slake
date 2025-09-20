@@ -8,7 +8,7 @@
 
 namespace slake {
 	enum class Opcode : uint8_t {
-		NOP = 0,  // No operation
+		INVALID = 0,  // Invalid
 
 		LOAD,	// Load value of a variable.
 		RLOAD,	// Access and load corresponding member with an existing value.

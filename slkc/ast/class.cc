@@ -89,13 +89,13 @@ SLKC_API std::optional<CompilationError> ClassNode::isCyclicInherited(bool &whet
 		return {};
 	}
 
-	SLKC_RETURN_IF_COMP_ERROR(updateCyclicInheritedFlag());
+	SLKC_RETURN_IF_COMP_ERROR(updateCyclicInheritedStatus());
 
 	whetherOut = isCyclicInheritedFlag;
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> ClassNode::updateCyclicInheritedFlag() {
+SLKC_API std::optional<CompilationError> ClassNode::updateCyclicInheritedStatus() {
 	SLKC_RETURN_IF_COMP_ERROR(isBaseOf(document->sharedFromThis(), sharedFromThis().castTo<ClassNode>(), sharedFromThis().castTo<ClassNode>(), isCyclicInheritedFlag));
 
 	isCyclicInheritanceChecked = true;
@@ -184,19 +184,23 @@ SLKC_API std::optional<CompilationError> InterfaceNode::isCyclicInherited(bool &
 		return {};
 	}
 
-	SLKC_RETURN_IF_COMP_ERROR(updateCyclicInheritedFlag());
+	SLKC_RETURN_IF_COMP_ERROR(updateCyclicInheritedStatus());
 
 	whetherOut = isCyclicInheritedFlag;
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> InterfaceNode::updateCyclicInheritedFlag() {
+SLKC_API std::optional<CompilationError> InterfaceNode::updateCyclicInheritedStatus() {
 	peff::Set<AstNodePtr<InterfaceNode>> involvedInterfaces(document->allocator.get());
 
 	if (auto e = collectInvolvedInterfaces(document->sharedFromThis(), sharedFromThis().castTo<InterfaceNode>(), involvedInterfaces, true); e) {
 		if (e->errorKind == CompilationErrorKind::CyclicInheritedInterface) {
 			isCyclicInheritedFlag = true;
 			isCyclicInheritanceChecked = true;
+			if (!cyclicInheritanceError.has_value()) {
+				cyclicInheritanceError = std::move(*e);
+			}
+			e.reset();
 
 			return {};
 		}

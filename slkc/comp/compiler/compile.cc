@@ -851,13 +851,6 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 								if (implementedTypeNode->astNodeType != AstNodeType::Interface) {
 									SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(CompilationError(i->tokenRange, CompilationErrorKind::ExpectingInterfaceName)));
 								}
-								bool isCyclicInherited = false;
-								SLKC_RETURN_IF_COMP_ERROR(clsNode->isCyclicInherited(isCyclicInherited));
-
-								if (isCyclicInherited) {
-									SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(CompilationError(clsNode->tokenRange, CompilationErrorKind::CyclicInheritedInterface)));
-									continue;
-								}
 							} else {
 								SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(CompilationError(i->tokenRange, CompilationErrorKind::ExpectingInterfaceName)));
 							}
@@ -875,6 +868,17 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 
 					if (!cls->implTypes.pushBack(std::move(t))) {
 						return genOutOfRuntimeMemoryCompError();
+					}
+				}
+
+				bool isCyclicInherited = false;
+				SLKC_RETURN_IF_COMP_ERROR(clsNode->isCyclicInherited(isCyclicInherited));
+
+				if (isCyclicInherited) {
+					if (clsNode->cyclicInheritanceError.has_value()) {
+						SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(std::move(*clsNode->cyclicInheritanceError)));
+						clsNode->cyclicInheritanceError.reset();
+						continue;
 					}
 				}
 

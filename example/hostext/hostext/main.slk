@@ -6,6 +6,21 @@ attribute TestAttribute {
 	let test: i32;
 }
 
+/*interface IF: IE {
+}
+
+interface IG {
+}
+
+interface IC: IG + IF {
+}
+
+interface ID: IF {
+}
+
+interface IE: IC + ID {
+}*/
+
 interface IA {
 	fn testIA();
 }

@@ -401,8 +401,6 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 	const size_t stackSize = context->_context.stackSize;
 
 	switch (ins.opcode) {
-		case Opcode::NOP:
-			break;
 		case Opcode::LVAR: {
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount(this, ins, false, 1));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType(this, ins.operands[0], ValueType::TypeName));

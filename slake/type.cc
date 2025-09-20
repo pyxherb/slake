@@ -178,12 +178,10 @@ SLAKE_API TypeRef TypeRef::duplicate(bool &succeededOut) const {
 }
 
 SLAKE_API InternalExceptionPointer slake::isCompatible(peff::Alloc *allocator, const TypeRef &type, const Value &value, bool &resultOut) {
-	if (type.typeId == TypeId::Any) {
-		resultOut = true;
-		return {};
-	}
-
 	switch (type.typeId) {
+		case TypeId::Any:
+			resultOut = true;
+			break;
 		case TypeId::I8:
 		case TypeId::I16:
 		case TypeId::I32:
@@ -295,6 +293,7 @@ SLAKE_API InternalExceptionPointer slake::isCompatible(peff::Alloc *allocator, c
 			}
 			break;
 		}
+			/*
 		case TypeId::Ref: {
 			if (value.valueType != ValueType::EntityRef) {
 				resultOut = false;
@@ -336,7 +335,7 @@ SLAKE_API InternalExceptionPointer slake::isCompatible(peff::Alloc *allocator, c
 				return {};
 			}
 			break;
-		}
+		}*/
 		default:
 			resultOut = false;
 			return {};

@@ -3,8 +3,6 @@
 // #include <slake/opti/proganal.h>
 // #include <slake/lib/std.h>
 
-#include <cassert>
-#include <fstream>
 #include <iostream>
 
 slake::Value print(slake::Context *context, slake::MajorFrame *curMajorFrame) {

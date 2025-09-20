@@ -29,7 +29,7 @@ namespace slkc {
 		SLKC_API virtual ~ClassNode();
 
 		SLKC_API std::optional<CompilationError> isCyclicInherited(bool &whetherOut);
-		SLKC_API std::optional<CompilationError> updateCyclicInheritedFlag();
+		SLKC_API std::optional<CompilationError> updateCyclicInheritedStatus();
 		SLAKE_FORCEINLINE void resetCyclicInheritanceFlag() {
 			isCyclicInheritanceChecked = false;
 			isCyclicInheritedFlag = false;
@@ -45,6 +45,8 @@ namespace slkc {
 		bool isCyclicInheritanceChecked = false;
 		/// @brief Indicates if the interface has cyclic inheritance.
 		bool isCyclicInheritedFlag = false;
+		/// @brief Error indicates which one type name caused the inheritance error.
+		std::optional<CompilationError> cyclicInheritanceError;
 
 		peff::DynArray<AstNodePtr<TypeNameNode>> implTypes;
 		peff::DynArray<AstNodePtr<GenericParamNode>> genericParams;
@@ -59,10 +61,11 @@ namespace slkc {
 		SLKC_API virtual ~InterfaceNode();
 
 		SLKC_API std::optional<CompilationError> isCyclicInherited(bool &whetherOut);
-		SLKC_API std::optional<CompilationError> updateCyclicInheritedFlag();
+		SLKC_API std::optional<CompilationError> updateCyclicInheritedStatus();
 		SLAKE_FORCEINLINE void resetCyclicInheritanceFlag() {
 			isCyclicInheritanceChecked = false;
 			isCyclicInheritedFlag = false;
+			cyclicInheritanceError.reset();
 		}
 	};
 

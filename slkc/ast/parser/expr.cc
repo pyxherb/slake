@@ -26,7 +26,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 					IdRefPtr idRefPtr;
 					if ((syntaxError = parseIdRef(idRefPtr)))
 						goto genBadExpr;
-					if (!(lhs = makeAstNode<IdRefExprNode>(resourceAllocator.get(), resourceAllocator.get(), document, std::move(idRefPtr)).castTo<ExprNode>()))
+					if (!(lhs = makeAstNode<IdRefExprNode>(resourceAllocator.get(), resourceAllocator.get(), document, std::move(idRefPtr)).template castTo<ExprNode>()))
 						return genOutOfMemoryError();
 					break;
 				}
@@ -51,7 +51,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 							  resourceAllocator.get(), resourceAllocator.get(), document)))
 						return genOutOfMemoryError();
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.template castTo<ExprNode>();
 
 					if ((syntaxError = parseTypeName(expr->targetType, false)))
 						goto genBadExpr;
@@ -82,7 +82,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 							  resourceAllocator.get(), resourceAllocator.get(), document)))
 						return genOutOfMemoryError();
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.template castTo<ExprNode>();
 
 					if ((syntaxError = parseTypeName(expr->targetType)))
 						goto genBadExpr;
@@ -110,7 +110,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 					if (!(lhs = peff::makeSharedWithControlBlock<I32LiteralExprNode, AstNodeControlBlock<I32LiteralExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document,
 							  ((IntTokenExtension *)prefixToken->exData.get())->data)
-								.castTo<ExprNode>()))
+								.template castTo<ExprNode>()))
 						return genOutOfMemoryError();
 					break;
 				}
@@ -119,7 +119,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 					if (!(lhs = peff::makeSharedWithControlBlock<I64LiteralExprNode, AstNodeControlBlock<I64LiteralExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document,
 							  ((LongTokenExtension *)prefixToken->exData.get())->data)
-								.castTo<ExprNode>()))
+								.template castTo<ExprNode>()))
 						return genOutOfMemoryError();
 					break;
 				}
@@ -128,7 +128,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 					if (!(lhs = peff::makeSharedWithControlBlock<U32LiteralExprNode, AstNodeControlBlock<U32LiteralExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document,
 							  ((UIntTokenExtension *)prefixToken->exData.get())->data)
-								.castTo<ExprNode>()))
+								.template castTo<ExprNode>()))
 						return genOutOfMemoryError();
 					break;
 				}
@@ -137,7 +137,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 					if (!(lhs = peff::makeSharedWithControlBlock<U64LiteralExprNode, AstNodeControlBlock<U64LiteralExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document,
 							  ((ULongTokenExtension *)prefixToken->exData.get())->data)
-								.castTo<ExprNode>()))
+								.template castTo<ExprNode>()))
 						return genOutOfMemoryError();
 					break;
 				}
@@ -152,7 +152,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 					if (!(lhs = makeAstNode<StringLiteralExprNode>(
 							  resourceAllocator.get(), resourceAllocator.get(), document,
 							  std::move(s))
-								.castTo<ExprNode>()))
+								.template castTo<ExprNode>()))
 						return genOutOfMemoryError();
 					break;
 				}
@@ -161,7 +161,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 					if (!(lhs = peff::makeSharedWithControlBlock<F32LiteralExprNode, AstNodeControlBlock<F32LiteralExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document,
 							  ((F32TokenExtension *)prefixToken->exData.get())->data)
-								.castTo<ExprNode>()))
+								.template castTo<ExprNode>()))
 						return genOutOfMemoryError();
 					break;
 				}
@@ -170,7 +170,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 					if (!(lhs = peff::makeSharedWithControlBlock<F64LiteralExprNode, AstNodeControlBlock<F64LiteralExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document,
 							  ((F64TokenExtension *)prefixToken->exData.get())->data)
-								.castTo<ExprNode>()))
+								.template castTo<ExprNode>()))
 						return genOutOfMemoryError();
 					break;
 				}
@@ -179,7 +179,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 					if (!(lhs = makeAstNode<BoolLiteralExprNode>(
 							  resourceAllocator.get(), resourceAllocator.get(), document,
 							  true)
-								.castTo<ExprNode>()))
+								.template castTo<ExprNode>()))
 						return genOutOfMemoryError();
 					break;
 				}
@@ -188,7 +188,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 					if (!(lhs = makeAstNode<BoolLiteralExprNode>(
 							  resourceAllocator.get(), resourceAllocator.get(), document,
 							  false)
-								.castTo<ExprNode>()))
+								.template castTo<ExprNode>()))
 						return genOutOfMemoryError();
 					break;
 				}
@@ -196,7 +196,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 					nextToken();
 					if (!(lhs = makeAstNode<NullLiteralExprNode>(
 							  resourceAllocator.get(), resourceAllocator.get(), document)
-								.castTo<ExprNode>()))
+								.template castTo<ExprNode>()))
 						return genOutOfMemoryError();
 					break;
 				}
@@ -211,7 +211,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 
 					expr->unaryOp = UnaryOp::Unpacking;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.template castTo<ExprNode>();
 
 					if ((syntaxError = parseExpr(131, expr->operand))) {
 						goto genBadExpr;
@@ -227,7 +227,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 							  resourceAllocator.get(), resourceAllocator.get(), document)))
 						return genOutOfMemoryError();
 
-					lhs = initializerExpr.castTo<ExprNode>();
+					lhs = initializerExpr.template castTo<ExprNode>();
 
 					AstNodePtr<ExprNode> curExpr;
 
@@ -281,7 +281,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 
 					expr->unaryOp = UnaryOp::Neg;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.template castTo<ExprNode>();
 
 					if ((syntaxError = parseExpr(131, expr->operand))) {
 						goto genBadExpr;
@@ -299,7 +299,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 
 					expr->unaryOp = UnaryOp::Not;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.template castTo<ExprNode>();
 
 					if ((syntaxError = parseExpr(131, expr->operand))) {
 						goto genBadExpr;
@@ -317,7 +317,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 
 					expr->unaryOp = UnaryOp::LNot;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.template castTo<ExprNode>();
 
 					if ((syntaxError = parseExpr(131, expr->operand))) {
 						goto genBadExpr;
@@ -334,7 +334,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 							  resourceAllocator.get(), resourceAllocator.get(), document)))
 						return genOutOfMemoryError();
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.template castTo<ExprNode>();
 
 					if (peekToken()->tokenId == TokenId::ConstKeyword) {
 						expr->isConst = true;
@@ -448,7 +448,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 
 					expr->target = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.template castTo<ExprNode>();
 
 					expr->lParentheseTokenIndex = infixToken->index;
 
@@ -488,7 +488,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 					expr->binaryOp = BinaryOp::Subscript;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.template castTo<ExprNode>();
 
 					if ((syntaxError = parseExpr(0, expr->rhs)))
 						goto genBadExpr;
@@ -513,7 +513,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 
 					expr->head = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.template castTo<ExprNode>();
 
 					if ((syntaxError = parseIdRef(expr->idRefPtr)))
 						goto genBadExpr;
@@ -533,7 +533,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 
 					expr->source = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.template castTo<ExprNode>();
 
 					if ((syntaxError = parseTypeName(expr->targetType)))
 						goto genBadExpr;
@@ -557,7 +557,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 					expr->binaryOp = BinaryOp::Mul;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.template castTo<ExprNode>();
 
 					if ((syntaxError = parseExpr(121, expr->rhs)))
 						goto genBadExpr;
@@ -578,7 +578,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 					expr->binaryOp = BinaryOp::Div;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.template castTo<ExprNode>();
 
 					if ((syntaxError = parseExpr(121, expr->rhs)))
 						goto genBadExpr;
@@ -599,7 +599,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 					expr->binaryOp = BinaryOp::Mod;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.template castTo<ExprNode>();
 
 					if ((syntaxError = parseExpr(121, expr->rhs)))
 						goto genBadExpr;
@@ -621,7 +621,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 					expr->binaryOp = BinaryOp::Add;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.template castTo<ExprNode>();
 
 					if ((syntaxError = parseExpr(111, expr->rhs)))
 						goto genBadExpr;
@@ -642,7 +642,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 					expr->binaryOp = BinaryOp::Sub;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.template castTo<ExprNode>();
 
 					if ((syntaxError = parseExpr(111, expr->rhs)))
 						goto genBadExpr;
@@ -664,7 +664,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 					expr->binaryOp = BinaryOp::Shl;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.template castTo<ExprNode>();
 
 					if ((syntaxError = parseExpr(101, expr->rhs)))
 						goto genBadExpr;
@@ -685,7 +685,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 					expr->binaryOp = BinaryOp::Shr;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.template castTo<ExprNode>();
 
 					if ((syntaxError = parseExpr(101, expr->rhs)))
 						goto genBadExpr;
@@ -707,7 +707,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 					expr->binaryOp = BinaryOp::Cmp;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.template castTo<ExprNode>();
 
 					if ((syntaxError = parseExpr(91, expr->rhs)))
 						goto genBadExpr;
@@ -729,7 +729,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 					expr->binaryOp = BinaryOp::Gt;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.template castTo<ExprNode>();
 
 					if ((syntaxError = parseExpr(81, expr->rhs)))
 						goto genBadExpr;
@@ -750,7 +750,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 					expr->binaryOp = BinaryOp::GtEq;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.template castTo<ExprNode>();
 
 					if ((syntaxError = parseExpr(81, expr->rhs)))
 						goto genBadExpr;
@@ -771,7 +771,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 					expr->binaryOp = BinaryOp::Lt;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.template castTo<ExprNode>();
 
 					if ((syntaxError = parseExpr(81, expr->rhs)))
 						goto genBadExpr;
@@ -792,7 +792,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 					expr->binaryOp = BinaryOp::LtEq;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.template castTo<ExprNode>();
 
 					if ((syntaxError = parseExpr(81, expr->rhs)))
 						goto genBadExpr;
@@ -814,7 +814,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 					expr->binaryOp = BinaryOp::Eq;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.template castTo<ExprNode>();
 
 					if ((syntaxError = parseExpr(71, expr->rhs)))
 						goto genBadExpr;
@@ -835,7 +835,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 					expr->binaryOp = BinaryOp::Neq;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.template castTo<ExprNode>();
 
 					if ((syntaxError = parseExpr(71, expr->rhs)))
 						goto genBadExpr;
@@ -856,7 +856,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 					expr->binaryOp = BinaryOp::StrictEq;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.template castTo<ExprNode>();
 
 					if ((syntaxError = parseExpr(71, expr->rhs)))
 						goto genBadExpr;
@@ -877,7 +877,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 					expr->binaryOp = BinaryOp::StrictNeq;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.template castTo<ExprNode>();
 
 					if ((syntaxError = parseExpr(71, expr->rhs)))
 						goto genBadExpr;
@@ -899,7 +899,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 					expr->binaryOp = BinaryOp::And;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.template castTo<ExprNode>();
 
 					if ((syntaxError = parseExpr(61, expr->rhs)))
 						goto genBadExpr;
@@ -921,7 +921,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 					expr->binaryOp = BinaryOp::Xor;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.template castTo<ExprNode>();
 
 					if ((syntaxError = parseExpr(51, expr->rhs)))
 						goto genBadExpr;
@@ -943,7 +943,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 					expr->binaryOp = BinaryOp::Or;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.template castTo<ExprNode>();
 
 					if ((syntaxError = parseExpr(41, expr->rhs)))
 						goto genBadExpr;
@@ -965,7 +965,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 					expr->binaryOp = BinaryOp::LAnd;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.template castTo<ExprNode>();
 
 					if ((syntaxError = parseExpr(31, expr->rhs)))
 						goto genBadExpr;
@@ -987,7 +987,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 					expr->binaryOp = BinaryOp::LOr;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.template castTo<ExprNode>();
 
 					if ((syntaxError = parseExpr(21, expr->rhs)))
 						goto genBadExpr;
@@ -1008,7 +1008,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.template castTo<ExprNode>();
 
 					if ((syntaxError = parseExpr(10, expr->lhs)))
 						goto genBadExpr;
@@ -1041,7 +1041,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 					expr->binaryOp = BinaryOp::Assign;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.template castTo<ExprNode>();
 
 					if ((syntaxError = parseExpr(0, expr->rhs)))
 						goto genBadExpr;
@@ -1062,7 +1062,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 					expr->binaryOp = BinaryOp::AddAssign;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.template castTo<ExprNode>();
 
 					if ((syntaxError = parseExpr(0, expr->rhs)))
 						goto genBadExpr;
@@ -1083,7 +1083,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 					expr->binaryOp = BinaryOp::SubAssign;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.template castTo<ExprNode>();
 
 					if ((syntaxError = parseExpr(0, expr->rhs)))
 						goto genBadExpr;
@@ -1104,7 +1104,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 					expr->binaryOp = BinaryOp::MulAssign;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.template castTo<ExprNode>();
 
 					if ((syntaxError = parseExpr(0, expr->rhs)))
 						goto genBadExpr;
@@ -1125,7 +1125,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 					expr->binaryOp = BinaryOp::DivAssign;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.template castTo<ExprNode>();
 
 					if ((syntaxError = parseExpr(0, expr->rhs)))
 						goto genBadExpr;
@@ -1146,7 +1146,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 					expr->binaryOp = BinaryOp::AndAssign;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.template castTo<ExprNode>();
 
 					if ((syntaxError = parseExpr(0, expr->rhs)))
 						goto genBadExpr;
@@ -1167,7 +1167,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 					expr->binaryOp = BinaryOp::OrAssign;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.template castTo<ExprNode>();
 
 					if ((syntaxError = parseExpr(0, expr->rhs)))
 						goto genBadExpr;
@@ -1188,7 +1188,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 					expr->binaryOp = BinaryOp::XorAssign;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.template castTo<ExprNode>();
 
 					if ((syntaxError = parseExpr(0, expr->rhs)))
 						goto genBadExpr;
@@ -1209,7 +1209,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 					expr->binaryOp = BinaryOp::ShlAssign;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.template castTo<ExprNode>();
 
 					if ((syntaxError = parseExpr(0, expr->rhs)))
 						goto genBadExpr;
@@ -1230,7 +1230,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 					expr->binaryOp = BinaryOp::ShrAssign;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.template castTo<ExprNode>();
 
 					if ((syntaxError = parseExpr(0, expr->rhs)))
 						goto genBadExpr;
@@ -1251,7 +1251,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 					expr->binaryOp = BinaryOp::Comma;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.template castTo<ExprNode>();
 
 					if ((syntaxError = parseExpr(-10, expr->rhs)))
 						goto genBadExpr;
@@ -1270,7 +1270,7 @@ end:
 	return {};
 
 genBadExpr:
-	if (!(exprOut = makeAstNode<BadExprNode>(resourceAllocator.get(), resourceAllocator.get(), document, lhs).castTo<ExprNode>()))
+	if (!(exprOut = makeAstNode<BadExprNode>(resourceAllocator.get(), resourceAllocator.get(), document, lhs).template castTo<ExprNode>()))
 		return genOutOfMemoryError();
 	exprOut->tokenRange = { prefixToken->index, parseContext.idxCurrentToken };
 	return syntaxError;

@@ -14,7 +14,7 @@ SLKC_API DumpWriter::~DumpWriter() {
 
 SLKC_API const char *slkc::getMnemonicName(slake::Opcode opcode) {
 	switch (opcode) {
-		MNEMONIC_NAME_CASE(NOP)
+		MNEMONIC_NAME_CASE(INVALID)
 		MNEMONIC_NAME_CASE(LOAD)
 		MNEMONIC_NAME_CASE(RLOAD)
 		MNEMONIC_NAME_CASE(STORE)

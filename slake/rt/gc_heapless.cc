@@ -170,6 +170,24 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 								GCWalkContext::pushObject(context, i);
 							break;
 						}
+						case TypeDefKind::TupleTypeDef: {
+							auto td = ((TupleTypeDefObject *)typeDef);
+							for (auto i : td->elementTypes)
+								GCWalkContext::pushObject(context, i);
+							break;
+						}
+						case TypeDefKind::SIMDTypeDef: {
+							auto td = ((SIMDTypeDefObject *)typeDef);
+							GCWalkContext::pushObject(context, td->type);
+							break;
+						}
+						case TypeDefKind::UnpackingTypeDef: {
+							auto td = ((UnpackingTypeDefObject *)typeDef);
+							GCWalkContext::pushObject(context, td->type);
+							break;
+						}
+						default:
+							std::terminate();
 					}
 					break;
 				}

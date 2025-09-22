@@ -67,7 +67,7 @@ SLKC_API AstNodePtr<AstNode> GenericParamNode::doDuplicate(peff::Alloc *newAlloc
 		return {};
 	}
 
-	return duplicatedNode.castTo<AstNode>();
+	return duplicatedNode.template castTo<AstNode>();
 }
 
 SLKC_API GenericParamNode::GenericParamNode(

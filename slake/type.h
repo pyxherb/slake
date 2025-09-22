@@ -184,7 +184,7 @@ namespace slake {
 			return typeId != TypeId::Void;
 		}
 
-		SLAKE_API TypeRef TypeRef::duplicate(bool &succeededOut) const;
+		SLAKE_API TypeRef duplicate(bool &succeededOut) const;
 
 		SLAKE_FORCEINLINE bool isFinal() const noexcept {
 			return typeModifier & TYPE_FINAL;
@@ -200,12 +200,6 @@ namespace slake {
 		SLAKE_FORCEINLINE SIMDTypeDefObject *getSIMDTypeDef() const;
 		SLAKE_FORCEINLINE UnpackingTypeDefObject *getUnpackingTypeDef() const;
 	};
-
-	template <typename T>
-	SLAKE_FORCEINLINE T *typeDefOf(const TypeRef &typeRef) {
-		assert(typeRef.typeDef->getTypeDefKind() == T::TYPEDEF_KIND);
-		return static_cast<T *>(typeRef.typeDef);
-	}
 
 	static_assert(std::is_trivially_copyable_v<TypeRef>, "TypeRef must be trivially copyable");
 	static_assert(std::is_trivially_copy_assignable_v<TypeRef>, "TypeRef must be trivially copy-assignable");

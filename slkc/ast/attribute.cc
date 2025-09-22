@@ -9,7 +9,7 @@ SLKC_API AstNodePtr<AstNode> AttributeDefNode::doDuplicate(peff::Alloc *newAlloc
 		return {};
 	}
 
-	return duplicatedNode.castTo<AstNode>();
+	return duplicatedNode.template castTo<AstNode>();
 }
 
 SLKC_API AttributeDefNode::AttributeDefNode(
@@ -36,7 +36,7 @@ SLKC_API AstNodePtr<AstNode> AttributeNode::doDuplicate(peff::Alloc *newAllocato
 		return {};
 	}
 
-	return duplicatedNode.castTo<AstNode>();
+	return duplicatedNode.template castTo<AstNode>();
 }
 
 SLKC_API AttributeNode::AttributeNode(

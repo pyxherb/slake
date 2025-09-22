@@ -9,7 +9,7 @@ SLKC_API AstNodePtr<AstNode> ClassNode::doDuplicate(peff::Alloc *newAllocator) c
 		return {};
 	}
 
-	return duplicatedNode.castTo<AstNode>();
+	return duplicatedNode.template castTo<AstNode>();
 }
 
 SLKC_API ClassNode::ClassNode(
@@ -96,7 +96,7 @@ SLKC_API std::optional<CompilationError> ClassNode::isCyclicInherited(bool &whet
 }
 
 SLKC_API std::optional<CompilationError> ClassNode::updateCyclicInheritedStatus() {
-	SLKC_RETURN_IF_COMP_ERROR(isBaseOf(document->sharedFromThis(), sharedFromThis().castTo<ClassNode>(), sharedFromThis().castTo<ClassNode>(), isCyclicInheritedFlag));
+	SLKC_RETURN_IF_COMP_ERROR(isBaseOf(document->sharedFromThis(), sharedFromThis().template castTo<ClassNode>(), sharedFromThis().template castTo<ClassNode>(), isCyclicInheritedFlag));
 
 	isCyclicInheritanceChecked = true;
 	return {};
@@ -109,7 +109,7 @@ SLKC_API AstNodePtr<AstNode> InterfaceNode::doDuplicate(peff::Alloc* newAllocato
 		return {};
 	}
 
-	return duplicatedNode.castTo<AstNode>();
+	return duplicatedNode.template castTo<AstNode>();
 }
 
 SLKC_API InterfaceNode::InterfaceNode(
@@ -193,7 +193,7 @@ SLKC_API std::optional<CompilationError> InterfaceNode::isCyclicInherited(bool &
 SLKC_API std::optional<CompilationError> InterfaceNode::updateCyclicInheritedStatus() {
 	peff::Set<AstNodePtr<InterfaceNode>> involvedInterfaces(document->allocator.get());
 
-	if (auto e = collectInvolvedInterfaces(document->sharedFromThis(), sharedFromThis().castTo<InterfaceNode>(), involvedInterfaces, true); e) {
+	if (auto e = collectInvolvedInterfaces(document->sharedFromThis(), sharedFromThis().template castTo<InterfaceNode>(), involvedInterfaces, true); e) {
 		if (e->errorKind == CompilationErrorKind::CyclicInheritedInterface) {
 			isCyclicInheritedFlag = true;
 			isCyclicInheritanceChecked = true;
@@ -220,7 +220,7 @@ SLKC_API AstNodePtr<AstNode> ThisNode::doDuplicate(peff::Alloc *newAllocator) co
 		return {};
 	}
 
-	return duplicatedNode.castTo<AstNode>();
+	return duplicatedNode.template castTo<AstNode>();
 }
 
 SLKC_API ThisNode::ThisNode(

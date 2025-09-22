@@ -41,25 +41,25 @@ static std::optional<CompilationError> _walkTypeNameForGenericInstantiation(
 
 	switch (typeName->typeNameKind) {
 		case TypeNameKind::Array: {
-			AstNodePtr<ArrayTypeNameNode> tn = typeName.castTo<ArrayTypeNameNode>();
+			AstNodePtr<ArrayTypeNameNode> tn = typeName.template castTo<ArrayTypeNameNode>();
 
 			SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(tn->elementType, context));
 			break;
 		}
 		case TypeNameKind::Ref: {
-			AstNodePtr<RefTypeNameNode> tn = typeName.castTo<RefTypeNameNode>();
+			AstNodePtr<RefTypeNameNode> tn = typeName.template castTo<RefTypeNameNode>();
 
 			SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(tn->referencedType, context));
 			break;
 		}
 		case TypeNameKind::TempRef: {
-			AstNodePtr<TempRefTypeNameNode> tn = typeName.castTo<TempRefTypeNameNode>();
+			AstNodePtr<TempRefTypeNameNode> tn = typeName.template castTo<TempRefTypeNameNode>();
 
 			SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(tn->referencedType, context));
 			break;
 		}
 		case TypeNameKind::Fn: {
-			AstNodePtr<FnTypeNameNode> tn = typeName.castTo<FnTypeNameNode>();
+			AstNodePtr<FnTypeNameNode> tn = typeName.template castTo<FnTypeNameNode>();
 
 			for (size_t i = 0; i < tn->paramTypes.size(); ++i) {
 				SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(tn->paramTypes.at(i), context));
@@ -68,7 +68,7 @@ static std::optional<CompilationError> _walkTypeNameForGenericInstantiation(
 			break;
 		}
 		case TypeNameKind::Custom: {
-			AstNodePtr<CustomTypeNameNode> tn = typeName.castTo<CustomTypeNameNode>();
+			AstNodePtr<CustomTypeNameNode> tn = typeName.template castTo<CustomTypeNameNode>();
 
 			if (tn->idRefPtr->entries.size() == 1) {
 				IdRefEntry &entry = tn->idRefPtr->entries.at(0);
@@ -90,13 +90,13 @@ static std::optional<CompilationError> _walkTypeNameForGenericInstantiation(
 			break;
 		}
 		case TypeNameKind::Unpacking: {
-			AstNodePtr<UnpackingTypeNameNode> tn = typeName.castTo<UnpackingTypeNameNode>();
+			AstNodePtr<UnpackingTypeNameNode> tn = typeName.template castTo<UnpackingTypeNameNode>();
 
 			SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(tn->innerTypeName, context));
 			break;
 		}
 		case TypeNameKind::ParamTypeList: {
-			AstNodePtr<ParamTypeListTypeNameNode> tn = typeName.castTo<ParamTypeListTypeNameNode>();
+			AstNodePtr<ParamTypeListTypeNameNode> tn = typeName.template castTo<ParamTypeListTypeNameNode>();
 
 			for (size_t i = 0; i < tn->paramTypes.size(); ++i) {
 				SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(tn->paramTypes.at(i), context));
@@ -130,11 +130,11 @@ static std::optional<CompilationError> _walkNodeForGenericInstantiation(
 
 	switch (astNode->astNodeType) {
 		case AstNodeType::FnSlot: {
-			AstNodePtr<FnNode> fnSlot = astNode.castTo<FnNode>();
+			AstNodePtr<FnNode> fnSlot = astNode.template castTo<FnNode>();
 
 			for (auto i : fnSlot->overloadings) {
 				for (auto j : i->genericParams) {
-					SLKC_RETURN_IF_COMP_ERROR(_walkNodeForGenericInstantiation(j.castTo<MemberNode>(), context));
+					SLKC_RETURN_IF_COMP_ERROR(_walkNodeForGenericInstantiation(j.template castTo<MemberNode>(), context));
 				}
 
 				if ((context.mappedNode != astNode) && (i->genericParams.size())) {
@@ -171,10 +171,10 @@ static std::optional<CompilationError> _walkNodeForGenericInstantiation(
 
 					if (curParamType) {
 						if (curParamType->typeNameKind == TypeNameKind::Unpacking) {
-							AstNodePtr<UnpackingTypeNameNode> unpackingType = curParamType.castTo<UnpackingTypeNameNode>();
+							AstNodePtr<UnpackingTypeNameNode> unpackingType = curParamType.template castTo<UnpackingTypeNameNode>();
 
 							if (unpackingType->innerTypeName->typeNameKind == TypeNameKind::ParamTypeList) {
-								AstNodePtr<ParamTypeListTypeNameNode> innerTypeName = unpackingType->innerTypeName.castTo<ParamTypeListTypeNameNode>();
+								AstNodePtr<ParamTypeListTypeNameNode> innerTypeName = unpackingType->innerTypeName.template castTo<ParamTypeListTypeNameNode>();
 
 								if (!i->params.eraseRange(j, j + 1)) {
 									return genOutOfMemoryCompError();
@@ -227,16 +227,16 @@ static std::optional<CompilationError> _walkNodeForGenericInstantiation(
 			break;
 		}
 		case AstNodeType::Var: {
-			AstNodePtr<VarNode> varNode = astNode.castTo<VarNode>();
+			AstNodePtr<VarNode> varNode = astNode.template castTo<VarNode>();
 
 			SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(varNode->type, context));
 			break;
 		}
 		case AstNodeType::Class: {
-			AstNodePtr<ClassNode> cls = astNode.castTo<ClassNode>();
+			AstNodePtr<ClassNode> cls = astNode.template castTo<ClassNode>();
 
 			for (auto j : cls->genericParams) {
-				SLKC_RETURN_IF_COMP_ERROR(_walkNodeForGenericInstantiation(j.castTo<MemberNode>(), context));
+				SLKC_RETURN_IF_COMP_ERROR(_walkNodeForGenericInstantiation(j.template castTo<MemberNode>(), context));
 			}
 
 			if ((context.mappedNode != astNode) && (cls->genericParams.size())) {
@@ -274,10 +274,10 @@ static std::optional<CompilationError> _walkNodeForGenericInstantiation(
 			break;
 		}
 		case AstNodeType::Interface: {
-			AstNodePtr<InterfaceNode> cls = astNode.castTo<InterfaceNode>();
+			AstNodePtr<InterfaceNode> cls = astNode.template castTo<InterfaceNode>();
 
 			for (auto j : cls->genericParams) {
-				SLKC_RETURN_IF_COMP_ERROR(_walkNodeForGenericInstantiation(j.castTo<MemberNode>(), context));
+				SLKC_RETURN_IF_COMP_ERROR(_walkNodeForGenericInstantiation(j.template castTo<MemberNode>(), context));
 			}
 
 			if ((context.mappedNode != astNode) && (cls->genericParams.size())) {
@@ -311,7 +311,7 @@ static std::optional<CompilationError> _walkNodeForGenericInstantiation(
 			break;
 		}
 		case AstNodeType::GenericParam: {
-			AstNodePtr<GenericParamNode> cls = astNode.castTo<GenericParamNode>();
+			AstNodePtr<GenericParamNode> cls = astNode.template castTo<GenericParamNode>();
 
 			if (cls->genericConstraint) {
 				SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(cls->genericConstraint->baseType, context));
@@ -395,7 +395,7 @@ SLKC_API std::optional<CompilationError> Document::instantiateGenericObject(
 			// Map generic arguments.
 			switch (originalObject->astNodeType) {
 				case AstNodeType::Fn: {
-					AstNodePtr<FnOverloadingNode> obj = duplicatedObject.castTo<FnOverloadingNode>();
+					AstNodePtr<FnOverloadingNode> obj = duplicatedObject.template castTo<FnOverloadingNode>();
 
 					if (genericArgs.size() != obj->genericParams.size()) {
 						return CompilationError(
@@ -416,7 +416,7 @@ SLKC_API std::optional<CompilationError> Document::instantiateGenericObject(
 					break;
 				}
 				case AstNodeType::Class: {
-					AstNodePtr<ClassNode> obj = duplicatedObject.castTo<ClassNode>();
+					AstNodePtr<ClassNode> obj = duplicatedObject.template castTo<ClassNode>();
 
 					if (genericArgs.size() != obj->genericParams.size()) {
 						return CompilationError(
@@ -436,7 +436,7 @@ SLKC_API std::optional<CompilationError> Document::instantiateGenericObject(
 					break;
 				}
 				case AstNodeType::Interface: {
-					AstNodePtr<InterfaceNode> obj = duplicatedObject.castTo<InterfaceNode>();
+					AstNodePtr<InterfaceNode> obj = duplicatedObject.template castTo<InterfaceNode>();
 
 					if (genericArgs.size() != obj->genericParams.size()) {
 						return CompilationError(

@@ -7,6 +7,12 @@ struct TypeSlotGenericInstantiationTask {
 	TypeRef *slot;
 };
 
+struct ValueInitGenericInstantiationTask {
+	peff::RcObjectPtr<Runtime::GenericInstantiationContext> context;
+	EntityRef dest;
+	Value value;
+};
+
 struct ObjectGenericInstantiationTask {
 	peff::RcObjectPtr<Runtime::GenericInstantiationContext> context;
 	Object *obj;
@@ -16,12 +22,23 @@ struct Runtime::GenericInstantiationDispatcher {
 	bool hasNext = false;
 
 	peff::List<TypeSlotGenericInstantiationTask> nextWalkTypeSlots;
+	peff::List<ValueInitGenericInstantiationTask> nextWalkValueInits;
 	peff::List<ObjectGenericInstantiationTask> nextWalkObjects;
 
-	SLAKE_FORCEINLINE GenericInstantiationDispatcher(peff::Alloc *selfAllocator) : nextWalkTypeSlots(selfAllocator), nextWalkObjects(selfAllocator) {}
+	SLAKE_FORCEINLINE GenericInstantiationDispatcher(peff::Alloc *selfAllocator) : nextWalkTypeSlots(selfAllocator), nextWalkValueInits(selfAllocator), nextWalkObjects(selfAllocator) {}
 
 	SLAKE_FORCEINLINE InternalExceptionPointer pushTypeSlot(TypeSlotGenericInstantiationTask &&slot) noexcept {
 		if (!nextWalkTypeSlots.pushBack(std::move(slot))) {
+			return OutOfMemoryError::alloc();
+		}
+
+		hasNext = true;
+
+		return {};
+	}
+
+	SLAKE_FORCEINLINE InternalExceptionPointer pushValueInit(ValueInitGenericInstantiationTask &&slot) noexcept {
+		if (!nextWalkValueInits.pushBack(std::move(slot))) {
 			return OutOfMemoryError::alloc();
 		}
 
@@ -109,25 +126,30 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateModuleFields(Gene
 	for (size_t i = 0; i < nRecords; ++i) {
 		const FieldRecord &curOldFieldRecord = tmpMod->fieldRecords.at(i);
 
-		FieldRecord curFieldRecord(tmpMod->selfAllocator.get());
-		curFieldRecord.type = curOldFieldRecord.type;
-		curFieldRecord.accessModifier = curOldFieldRecord.accessModifier;
-		if (!curFieldRecord.name.build(curOldFieldRecord.name)) {
-			return OutOfMemoryError::alloc();
+		{
+			FieldRecord curFieldRecord(tmpMod->selfAllocator.get());
+			curFieldRecord.type = curOldFieldRecord.type;
+			curFieldRecord.accessModifier = curOldFieldRecord.accessModifier;
+			if (!curFieldRecord.name.build(curOldFieldRecord.name)) {
+				return OutOfMemoryError::alloc();
+			}
+
+			if (!mod->appendFieldRecord(std::move(curFieldRecord))) {
+				return OutOfMemoryError::alloc();
+			}
 		}
+
+		FieldRecord &curFieldRecord = mod->fieldRecords.back();
 
 		SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(dispatcher, curFieldRecord.type, instantiationContext));
-
-		if (!mod->appendFieldRecord(std::move(curFieldRecord))) {
-			return OutOfMemoryError::alloc();
-		}
-
-		if (writeVar(EntityRef::makeFieldRef(mod, i), readVarUnsafe(EntityRef::makeFieldRef(tmpMod.get(), i)))) {
-			return GenericFieldInitError::alloc(const_cast<Runtime *>(this)->getFixedAlloc(), mod, i);
-		}
+		SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(dispatcher, EntityRef::makeFieldRef(mod, i), readVarUnsafe(EntityRef::makeFieldRef(tmpMod.get(), i)), instantiationContext));
 	}
 
 	return {};
+}
+
+SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateGenericObject(GenericInstantiationDispatcher &dispatcher, EntityRef dest, Value value, GenericInstantiationContext *instantiationContext) {
+	return dispatcher.pushValueInit({ instantiationContext, dest, value });
 }
 
 SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateGenericObject(GenericInstantiationDispatcher &dispatcher, TypeRef &type, GenericInstantiationContext *instantiationContext) {
@@ -370,6 +392,18 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(MemberObjec
 		}
 
 		{
+			auto nextWalkValueInits = std::move(dispatcher.nextWalkValueInits);
+
+			dispatcher.nextWalkValueInits = peff::List<ValueInitGenericInstantiationTask>(getFixedAlloc());
+
+			for (auto &i : nextWalkValueInits) {
+				if (writeVar(i.dest, i.value)) {
+					return GenericFieldInitError::alloc(const_cast<Runtime *>(this)->getFixedAlloc(), i.dest.asField.moduleObject, i.dest.asField.index);
+				}
+			}
+		}
+
+		{
 			auto nextWalkObjects = std::move(dispatcher.nextWalkObjects);
 
 			dispatcher.nextWalkObjects = peff::List<ObjectGenericInstantiationTask>(getFixedAlloc());
@@ -538,7 +572,7 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(MemberObjec
 							//
 							FnOverloadingObject *matchedOverloading = nullptr;
 
-							for (auto &i : value->overloadings) {
+							for (auto i : value->overloadings) {
 								if (i.second->genericParams.size() == instantiationContext->genericArgs->size()) {
 									matchedOverloading = i.second;
 									break;

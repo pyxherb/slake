@@ -107,7 +107,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseStmt(AstNodePtr<StmtNode> &stmt
 					return genOutOfMemoryError();
 				}
 
-				stmtOut = ifStmt.castTo<StmtNode>();
+				stmtOut = ifStmt.template castTo<StmtNode>();
 
 				Token *lParentheseToken = peekToken();
 
@@ -168,7 +168,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseStmt(AstNodePtr<StmtNode> &stmt
 					return genOutOfMemoryError();
 				}
 
-				stmtOut = withStmt.castTo<StmtNode>();
+				stmtOut = withStmt.template castTo<StmtNode>();
 
 				WithConstraintEntryPtr entry;
 
@@ -235,7 +235,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseStmt(AstNodePtr<StmtNode> &stmt
 					return genOutOfMemoryError();
 				}
 
-				stmtOut = forStmt.castTo<StmtNode>();
+				stmtOut = forStmt.template castTo<StmtNode>();
 
 				Token *lParentheseToken = peekToken();
 
@@ -324,7 +324,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseStmt(AstNodePtr<StmtNode> &stmt
 					return genOutOfMemoryError();
 				}
 
-				stmtOut = whileStmt.castTo<StmtNode>();
+				stmtOut = whileStmt.template castTo<StmtNode>();
 
 				Token *lParentheseToken = peekToken();
 
@@ -374,7 +374,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseStmt(AstNodePtr<StmtNode> &stmt
 					return genOutOfMemoryError();
 				}
 
-				stmtOut = whileStmt.castTo<StmtNode>();
+				stmtOut = whileStmt.template castTo<StmtNode>();
 
 				whileStmt->isDoWhile = true;
 
@@ -435,7 +435,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseStmt(AstNodePtr<StmtNode> &stmt
 					return genOutOfMemoryError();
 				}
 
-				stmtOut = stmt.castTo<StmtNode>();
+				stmtOut = stmt.template castTo<StmtNode>();
 
 				if ((syntaxError = parseVarDefs(stmt->varDefEntries))) {
 					goto genBadStmt;
@@ -463,7 +463,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseStmt(AstNodePtr<StmtNode> &stmt
 					return genOutOfMemoryError();
 				}
 
-				stmtOut = stmt.castTo<StmtNode>();
+				stmtOut = stmt.template castTo<StmtNode>();
 
 				Token *semicolonToken;
 
@@ -487,7 +487,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseStmt(AstNodePtr<StmtNode> &stmt
 					return genOutOfMemoryError();
 				}
 
-				stmtOut = stmt.castTo<StmtNode>();
+				stmtOut = stmt.template castTo<StmtNode>();
 
 				Token *semicolonToken;
 
@@ -512,7 +512,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseStmt(AstNodePtr<StmtNode> &stmt
 					return genOutOfMemoryError();
 				}
 
-				stmtOut = stmt.castTo<StmtNode>();
+				stmtOut = stmt.template castTo<StmtNode>();
 
 				static TokenId skippingTerminativeToken[] = {
 					TokenId::RParenthese,
@@ -555,7 +555,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseStmt(AstNodePtr<StmtNode> &stmt
 					return genOutOfMemoryError();
 				}
 
-				stmtOut = stmt.castTo<StmtNode>();
+				stmtOut = stmt.template castTo<StmtNode>();
 
 				static TokenId skippingTerminativeToken[] = {
 					TokenId::RParenthese,
@@ -594,7 +594,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseStmt(AstNodePtr<StmtNode> &stmt
 					return genOutOfMemoryError();
 				}
 
-				stmtOut = stmt.castTo<StmtNode>();
+				stmtOut = stmt.template castTo<StmtNode>();
 
 				if ((syntaxError = expectToken(peekToken(), TokenId::Id))) {
 					return syntaxError;
@@ -617,7 +617,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseStmt(AstNodePtr<StmtNode> &stmt
 					return genOutOfMemoryError();
 				}
 
-				stmtOut = stmt.castTo<StmtNode>();
+				stmtOut = stmt.template castTo<StmtNode>();
 
 				if ((syntaxError = parseExpr(0, stmt->condition))) {
 					return syntaxError;
@@ -640,7 +640,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseStmt(AstNodePtr<StmtNode> &stmt
 					return genOutOfMemoryError();
 				}
 
-				stmtOut = stmt.castTo<StmtNode>();
+				stmtOut = stmt.template castTo<StmtNode>();
 
 				if ((syntaxError = expectToken(peekToken(), TokenId::Colon))) {
 					return syntaxError;
@@ -659,7 +659,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseStmt(AstNodePtr<StmtNode> &stmt
 					return genOutOfMemoryError();
 				}
 
-				stmtOut = stmt.castTo<StmtNode>();
+				stmtOut = stmt.template castTo<StmtNode>();
 
 				if (peekToken()->tokenId == TokenId::ConstKeyword) {
 					stmt->isConst = true;
@@ -743,7 +743,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseStmt(AstNodePtr<StmtNode> &stmt
 					return genOutOfMemoryError();
 				}
 
-				stmtOut = stmt.castTo<StmtNode>();
+				stmtOut = stmt.template castTo<StmtNode>();
 
 				while (true) {
 					if ((syntaxError = expectToken(peekToken()))) {
@@ -785,7 +785,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseStmt(AstNodePtr<StmtNode> &stmt
 					return genOutOfMemoryError();
 				}
 
-				stmtOut = stmt.castTo<StmtNode>();
+				stmtOut = stmt.template castTo<StmtNode>();
 
 				if ((syntaxError = parseExpr(-10, stmt->expr))) {
 					if (!syntaxErrors.pushBack(std::move(syntaxError.value())))
@@ -808,7 +808,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseStmt(AstNodePtr<StmtNode> &stmt
 	return {};
 
 genBadStmt:
-	if (!(stmtOut = makeAstNode<BadStmtNode>(resourceAllocator.get(), resourceAllocator.get(), document, stmtOut).castTo<StmtNode>()))
+	if (!(stmtOut = makeAstNode<BadStmtNode>(resourceAllocator.get(), resourceAllocator.get(), document, stmtOut).template castTo<StmtNode>()))
 		return genOutOfMemoryError();
 	stmtOut->tokenRange = { prefixToken->index, parseContext.idxCurrentToken };
 	return syntaxError;

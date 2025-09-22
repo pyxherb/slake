@@ -1,4 +1,5 @@
 #include <slkc/ast/lexer.h>
+#include <algorithm>
 
 using namespace slkc;
 

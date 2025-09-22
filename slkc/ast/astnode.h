@@ -55,7 +55,7 @@ namespace slkc {
 	class AstNode;
 
 	typedef void (*AstNodeDestructor)(AstNode *astNode);
-	
+
 	template<typename T>
 	using AstNodePtr = peff::SharedPtr<T>;
 
@@ -78,7 +78,7 @@ namespace slkc {
 
 		template <typename T>
 		SLAKE_FORCEINLINE peff::SharedPtr<T> duplicate(peff::Alloc *newAllocator) const {
-			return doDuplicate(newAllocator).castTo<T>();
+			return doDuplicate(newAllocator).template castTo<T>();
 		}
 	};
 

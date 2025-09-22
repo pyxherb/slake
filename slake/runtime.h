@@ -22,7 +22,7 @@
 namespace slake {
 	class CountablePoolAlloc : public peff::Alloc {
 	protected:
-		std::atomic_size_t refCount;
+		std::atomic_size_t refCount = 0;
 
 	public:
 		Runtime *runtime;
@@ -47,7 +47,7 @@ namespace slake {
 
 	class GenerationalPoolAlloc : public peff::Alloc {
 	protected:
-		std::atomic_size_t refCount;
+		std::atomic_size_t refCount = 0;
 		friend class Runtime;
 
 	public:
@@ -260,6 +260,7 @@ namespace slake {
 		[[nodiscard]] SLAKE_API InternalExceptionPointer _mapGenericParams(const Object *v, GenericInstantiationContext *instantiationContext) const;
 		[[nodiscard]] SLAKE_API InternalExceptionPointer _mapGenericParams(const FnOverloadingObject *ol, GenericInstantiationContext *instantiationContext) const;
 
+		[[nodiscard]] SLAKE_API InternalExceptionPointer _instantiateGenericObject(GenericInstantiationDispatcher &dispatcher, EntityRef dest, Value value, GenericInstantiationContext *instantiationContext);
 		[[nodiscard]] SLAKE_API InternalExceptionPointer _instantiateGenericObject(GenericInstantiationDispatcher &dispatcher, TypeRef &type, GenericInstantiationContext *instantiationContext);
 		[[nodiscard]] SLAKE_API InternalExceptionPointer _instantiateGenericObject(GenericInstantiationDispatcher &dispatcher, Value &value, GenericInstantiationContext *instantiationContext);
 		[[nodiscard]] SLAKE_API InternalExceptionPointer _instantiateGenericObject(GenericInstantiationDispatcher &dispatcher, Object *v, GenericInstantiationContext *instantiationContext);

@@ -8,7 +8,7 @@ SLKC_API AstNodePtr<AstNode> VoidTypeNameNode::doDuplicate(peff::Alloc *newAlloc
 		return {};
 	}
 
-	return duplicatedNode.castTo<AstNode>();
+	return duplicatedNode.template castTo<AstNode>();
 }
 
 SLKC_API VoidTypeNameNode::VoidTypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : TypeNameNode(TypeNameKind::Void, selfAllocator, document) {
@@ -26,7 +26,7 @@ SLKC_API AstNodePtr<AstNode> I8TypeNameNode::doDuplicate(peff::Alloc *newAllocat
 		return {};
 	}
 
-	return duplicatedNode.castTo<AstNode>();
+	return duplicatedNode.template castTo<AstNode>();
 }
 
 SLKC_API I8TypeNameNode::I8TypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : TypeNameNode(TypeNameKind::I8, selfAllocator, document) {
@@ -44,7 +44,7 @@ SLKC_API AstNodePtr<AstNode> I16TypeNameNode::doDuplicate(peff::Alloc *newAlloca
 		return {};
 	}
 
-	return duplicatedNode.castTo<AstNode>();
+	return duplicatedNode.template castTo<AstNode>();
 }
 
 SLKC_API I16TypeNameNode::I16TypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : TypeNameNode(TypeNameKind::I16, selfAllocator, document) {
@@ -62,7 +62,7 @@ SLKC_API AstNodePtr<AstNode> I32TypeNameNode::doDuplicate(peff::Alloc *newAlloca
 		return {};
 	}
 
-	return duplicatedNode.castTo<AstNode>();
+	return duplicatedNode.template castTo<AstNode>();
 }
 
 SLKC_API I32TypeNameNode::I32TypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : TypeNameNode(TypeNameKind::I32, selfAllocator, document) {
@@ -80,7 +80,7 @@ SLKC_API AstNodePtr<AstNode> I64TypeNameNode::doDuplicate(peff::Alloc *newAlloca
 		return {};
 	}
 
-	return duplicatedNode.castTo<AstNode>();
+	return duplicatedNode.template castTo<AstNode>();
 }
 
 SLKC_API I64TypeNameNode::I64TypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : TypeNameNode(TypeNameKind::I64, selfAllocator, document) {
@@ -98,7 +98,7 @@ SLKC_API AstNodePtr<AstNode> U8TypeNameNode::doDuplicate(peff::Alloc *newAllocat
 		return {};
 	}
 
-	return duplicatedNode.castTo<AstNode>();
+	return duplicatedNode.template castTo<AstNode>();
 }
 
 SLKC_API U8TypeNameNode::U8TypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : TypeNameNode(TypeNameKind::U8, selfAllocator, document) {
@@ -116,7 +116,7 @@ SLKC_API AstNodePtr<AstNode> U16TypeNameNode::doDuplicate(peff::Alloc *newAlloca
 		return {};
 	}
 
-	return duplicatedNode.castTo<AstNode>();
+	return duplicatedNode.template castTo<AstNode>();
 }
 
 SLKC_API U16TypeNameNode::U16TypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : TypeNameNode(TypeNameKind::U16, selfAllocator, document) {
@@ -134,7 +134,7 @@ SLKC_API AstNodePtr<AstNode> U32TypeNameNode::doDuplicate(peff::Alloc *newAlloca
 		return {};
 	}
 
-	return duplicatedNode.castTo<AstNode>();
+	return duplicatedNode.template castTo<AstNode>();
 }
 
 SLKC_API U32TypeNameNode::U32TypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : TypeNameNode(TypeNameKind::U32, selfAllocator, document) {
@@ -152,7 +152,7 @@ SLKC_API AstNodePtr<AstNode> U64TypeNameNode::doDuplicate(peff::Alloc *newAlloca
 		return {};
 	}
 
-	return duplicatedNode.castTo<AstNode>();
+	return duplicatedNode.template castTo<AstNode>();
 }
 
 SLKC_API U64TypeNameNode::U64TypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : TypeNameNode(TypeNameKind::U64, selfAllocator, document) {
@@ -170,7 +170,7 @@ SLKC_API AstNodePtr<AstNode> ISizeTypeNameNode::doDuplicate(peff::Alloc *newAllo
 		return {};
 	}
 
-	return duplicatedNode.castTo<AstNode>();
+	return duplicatedNode.template castTo<AstNode>();
 }
 
 SLKC_API ISizeTypeNameNode::ISizeTypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : TypeNameNode(TypeNameKind::ISize, selfAllocator, document) {
@@ -188,7 +188,7 @@ SLKC_API AstNodePtr<AstNode> USizeTypeNameNode::doDuplicate(peff::Alloc *newAllo
 		return {};
 	}
 
-	return duplicatedNode.castTo<AstNode>();
+	return duplicatedNode.template castTo<AstNode>();
 }
 
 SLKC_API USizeTypeNameNode::USizeTypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : TypeNameNode(TypeNameKind::USize, selfAllocator, document) {
@@ -206,7 +206,7 @@ SLKC_API AstNodePtr<AstNode> F32TypeNameNode::doDuplicate(peff::Alloc *newAlloca
 		return {};
 	}
 
-	return duplicatedNode.castTo<AstNode>();
+	return duplicatedNode.template castTo<AstNode>();
 }
 
 SLKC_API F32TypeNameNode::F32TypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : TypeNameNode(TypeNameKind::F32, selfAllocator, document) {
@@ -224,7 +224,7 @@ SLKC_API AstNodePtr<AstNode> F64TypeNameNode::doDuplicate(peff::Alloc *newAlloca
 		return {};
 	}
 
-	return duplicatedNode.castTo<AstNode>();
+	return duplicatedNode.template castTo<AstNode>();
 }
 
 SLKC_API F64TypeNameNode::F64TypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : TypeNameNode(TypeNameKind::F64, selfAllocator, document) {
@@ -242,7 +242,7 @@ SLKC_API AstNodePtr<AstNode> StringTypeNameNode::doDuplicate(peff::Alloc *newAll
 		return {};
 	}
 
-	return duplicatedNode.castTo<AstNode>();
+	return duplicatedNode.template castTo<AstNode>();
 }
 
 SLKC_API StringTypeNameNode::StringTypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : TypeNameNode(TypeNameKind::String, selfAllocator, document) {
@@ -260,7 +260,7 @@ SLKC_API AstNodePtr<AstNode> BoolTypeNameNode::doDuplicate(peff::Alloc *newAlloc
 		return {};
 	}
 
-	return duplicatedNode.castTo<AstNode>();
+	return duplicatedNode.template castTo<AstNode>();
 }
 
 SLKC_API BoolTypeNameNode::BoolTypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : TypeNameNode(TypeNameKind::Bool, selfAllocator, document) {
@@ -278,7 +278,7 @@ SLKC_API AstNodePtr<AstNode> ObjectTypeNameNode::doDuplicate(peff::Alloc *newAll
 		return {};
 	}
 
-	return duplicatedNode.castTo<AstNode>();
+	return duplicatedNode.template castTo<AstNode>();
 }
 
 SLKC_API ObjectTypeNameNode::ObjectTypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : TypeNameNode(TypeNameKind::Object, selfAllocator, document) {
@@ -296,7 +296,7 @@ SLKC_API AstNodePtr<AstNode> AnyTypeNameNode::doDuplicate(peff::Alloc *newAlloca
 		return {};
 	}
 
-	return duplicatedNode.castTo<AstNode>();
+	return duplicatedNode.template castTo<AstNode>();
 }
 
 SLKC_API AnyTypeNameNode::AnyTypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : TypeNameNode(TypeNameKind::Any, selfAllocator, document) {
@@ -315,7 +315,7 @@ SLKC_API AstNodePtr<AstNode> CustomTypeNameNode::doDuplicate(peff::Alloc *newAll
 		return {};
 	}
 
-	return duplicatedNode.castTo<AstNode>();
+	return duplicatedNode.template castTo<AstNode>();
 }
 
 SLKC_API CustomTypeNameNode::CustomTypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : TypeNameNode(TypeNameKind::Custom, selfAllocator, document) {
@@ -342,7 +342,7 @@ SLKC_API AstNodePtr<AstNode> UnpackingTypeNameNode::doDuplicate(peff::Alloc *new
 		return {};
 	}
 
-	return duplicatedNode.castTo<AstNode>();
+	return duplicatedNode.template castTo<AstNode>();
 }
 
 SLKC_API UnpackingTypeNameNode::UnpackingTypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : TypeNameNode(TypeNameKind::Unpacking, selfAllocator, document) {
@@ -367,7 +367,7 @@ SLKC_API AstNodePtr<AstNode> ArrayTypeNameNode::doDuplicate(peff::Alloc *newAllo
 		return {};
 	}
 
-	return duplicatedNode.castTo<AstNode>();
+	return duplicatedNode.template castTo<AstNode>();
 }
 
 SLKC_API ArrayTypeNameNode::ArrayTypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document, const AstNodePtr<TypeNameNode> &elementType) : TypeNameNode(TypeNameKind::Array, selfAllocator, document), elementType(elementType) {
@@ -392,7 +392,7 @@ SLKC_API AstNodePtr<AstNode> TupleTypeNameNode::doDuplicate(peff::Alloc *newAllo
 		return {};
 	}
 
-	return duplicatedNode.castTo<AstNode>();
+	return duplicatedNode.template castTo<AstNode>();
 }
 
 SLKC_API TupleTypeNameNode::TupleTypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : TypeNameNode(TypeNameKind::Tuple, selfAllocator, document), elementTypes(selfAllocator), idxCommaTokens(selfAllocator) {
@@ -428,7 +428,7 @@ SLKC_API AstNodePtr<AstNode> SIMDTypeNameNode::doDuplicate(peff::Alloc *newAlloc
 		return {};
 	}
 
-	return duplicatedNode.castTo<AstNode>();
+	return duplicatedNode.template castTo<AstNode>();
 }
 
 SLKC_API SIMDTypeNameNode::SIMDTypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : TypeNameNode(TypeNameKind::SIMD, selfAllocator, document) {
@@ -462,7 +462,7 @@ SLKC_API AstNodePtr<AstNode> FnTypeNameNode::doDuplicate(peff::Alloc *newAllocat
 		return {};
 	}
 
-	return duplicatedNode.castTo<AstNode>();
+	return duplicatedNode.template castTo<AstNode>();
 }
 
 SLKC_API FnTypeNameNode::FnTypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : TypeNameNode(TypeNameKind::Fn, selfAllocator, document), paramTypes(selfAllocator) {
@@ -507,7 +507,7 @@ SLKC_API AstNodePtr<AstNode> RefTypeNameNode::doDuplicate(peff::Alloc *newAlloca
 		return {};
 	}
 
-	return duplicatedNode.castTo<AstNode>();
+	return duplicatedNode.template castTo<AstNode>();
 }
 
 SLKC_API RefTypeNameNode::RefTypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document, const AstNodePtr<TypeNameNode> &referencedType) : TypeNameNode(TypeNameKind::Ref, selfAllocator, document), referencedType(referencedType) {
@@ -532,7 +532,7 @@ SLKC_API AstNodePtr<AstNode> TempRefTypeNameNode::doDuplicate(peff::Alloc *newAl
 		return {};
 	}
 
-	return duplicatedNode.castTo<AstNode>();
+	return duplicatedNode.template castTo<AstNode>();
 }
 
 SLKC_API TempRefTypeNameNode::TempRefTypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document, const AstNodePtr<TypeNameNode> &referencedType) : TypeNameNode(TypeNameKind::Ref, selfAllocator, document), referencedType(referencedType) {
@@ -557,7 +557,7 @@ SLKC_API AstNodePtr<AstNode> ParamTypeListTypeNameNode::doDuplicate(peff::Alloc 
 		return {};
 	}
 
-	return duplicatedNode.castTo<AstNode>();
+	return duplicatedNode.template castTo<AstNode>();
 }
 
 SLKC_API ParamTypeListTypeNameNode::ParamTypeListTypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : TypeNameNode(TypeNameKind::ParamTypeList, selfAllocator, document), paramTypes(selfAllocator) {
@@ -591,7 +591,7 @@ SLKC_API AstNodePtr<AstNode> UnpackedParamsTypeNameNode::doDuplicate(peff::Alloc
 		return {};
 	}
 
-	return duplicatedNode.castTo<AstNode>();
+	return duplicatedNode.template castTo<AstNode>();
 }
 
 SLKC_API UnpackedParamsTypeNameNode::UnpackedParamsTypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : TypeNameNode(TypeNameKind::UnpackedParams, selfAllocator, document), paramTypes(selfAllocator) {
@@ -625,7 +625,7 @@ SLKC_API AstNodePtr<AstNode> UnpackedArgsTypeNameNode::doDuplicate(peff::Alloc *
 		return {};
 	}
 
-	return duplicatedNode.castTo<AstNode>();
+	return duplicatedNode.template castTo<AstNode>();
 }
 
 SLKC_API UnpackedArgsTypeNameNode::UnpackedArgsTypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : TypeNameNode(TypeNameKind::UnpackedArgs, selfAllocator, document), paramTypes(selfAllocator) {

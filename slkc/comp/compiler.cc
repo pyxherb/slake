@@ -230,7 +230,7 @@ SLKC_API std::optional<CompilationError> slkc::completeParentModules(
 
 	for (size_t i = 0; i < modules.size(); ++i) {
 		if (auto it = node->memberIndices.find(modulePath->entries.at(i).name); it != node->memberIndices.end()) {
-			node = node->members.at(it.value()).castTo<ModuleNode>();
+			node = node->members.at(it.value()).template castTo<ModuleNode>();
 			modules.at(i) = node;
 			idxNewModulesBegin = i + 1;
 		} else {
@@ -257,12 +257,12 @@ SLKC_API std::optional<CompilationError> slkc::completeParentModules(
 
 		if (i) {
 			auto m1 = modules.at(i - 1), m2 = modules.at(i);
-			if (!modules.at(i - 1)->addMember(modules.at(i).castTo<MemberNode>())) {
+			if (!modules.at(i - 1)->addMember(modules.at(i).template castTo<MemberNode>())) {
 				return genOutOfMemoryCompError();
 			}
 			modules.at(i)->setParent(modules.at(i - 1).get());
 		} else {
-			if (!compileEnv->document->rootModule->addMember(modules.at(i).castTo<MemberNode>())) {
+			if (!compileEnv->document->rootModule->addMember(modules.at(i).template castTo<MemberNode>())) {
 				return genOutOfMemoryCompError();
 			}
 			modules.at(i)->setParent(compileEnv->document->rootModule);
@@ -291,7 +291,7 @@ SLKC_API std::optional<CompilationError> slkc::cleanupUnusedModuleTree(
 		if (cur->parent->astNodeType != AstNodeType::Module)
 			std::terminate();
 
-		AstNodePtr<ModuleNode> parent = cur->parent->sharedFromThis().castTo<ModuleNode>();
+		AstNodePtr<ModuleNode> parent = cur->parent->sharedFromThis().template castTo<ModuleNode>();
 
 		if (!parent->removeMember(cur->name))
 			return genOutOfMemoryCompError();
@@ -323,7 +323,7 @@ SLKC_API std::optional<CompilationError> FileSystemExternalModuleProvider::loadM
 
 		for (size_t i = 0; i < moduleName->entries.size(); ++i) {
 			if (auto it = node->memberIndices.find(moduleName->entries.at(i).name); it != node->memberIndices.end()) {
-				node = node->members.at(it.value()).castTo<ModuleNode>();
+				node = node->members.at(it.value()).template castTo<ModuleNode>();
 				continue;
 			}
 
@@ -440,7 +440,7 @@ SLKC_API std::optional<CompilationError> FileSystemExternalModuleProvider::loadM
 
 				for (auto i : mod->members) {
 					if (i->astNodeType == AstNodeType::Import) {
-						SLKC_RETURN_IF_COMP_ERROR(loadModule(compileEnv, i.castTo<ImportNode>()->idRef.get()));
+						SLKC_RETURN_IF_COMP_ERROR(loadModule(compileEnv, i.template castTo<ImportNode>()->idRef.get()));
 					}
 				}
 				for (auto i : mod->anonymousImports) {

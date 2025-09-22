@@ -46,7 +46,7 @@ static std::optional<CompilationError> _collectInvolvedInterfaces(
 		AstNodePtr<TypeNameNode> t = curInterface->implTypes.at(curFrame.index);
 
 		AstNodePtr<MemberNode> m;
-		SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, t.castTo<CustomTypeNameNode>(), m));
+		SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, t.template castTo<CustomTypeNameNode>(), m));
 
 		if (!m) {
 			goto malformed;
@@ -56,7 +56,7 @@ static std::optional<CompilationError> _collectInvolvedInterfaces(
 			goto malformed;
 		}
 
-		if (!context.frames.pushBack({ m.castTo<InterfaceNode>(), 0 }))
+		if (!context.frames.pushBack({ m.template castTo<InterfaceNode>(), 0 }))
 			return genOutOfMemoryCompError();
 
 		++curFrame.index;
@@ -125,13 +125,13 @@ SLKC_API std::optional<CompilationError> slkc::isImplementedByClass(
 		}
 
 		AstNodePtr<MemberNode> m;
-		SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, currentType.castTo<CustomTypeNameNode>(), m));
+		SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, currentType.template castTo<CustomTypeNameNode>(), m));
 
 		if (m->astNodeType != AstNodeType::Class) {
 			goto malformed;
 		}
 
-		currentClass = m.castTo<ClassNode>();
+		currentClass = m.template castTo<ClassNode>();
 
 		// Make sure that the function will work properly when the class has cyclic inheritance.
 		if (walkedClasses.contains(currentClass)) {
@@ -143,7 +143,7 @@ SLKC_API std::optional<CompilationError> slkc::isImplementedByClass(
 			AstNodePtr<TypeNameNode> t = derived->implTypes.at(i);
 
 			AstNodePtr<MemberNode> m;
-			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, t.castTo<CustomTypeNameNode>(), m));
+			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, t.template castTo<CustomTypeNameNode>(), m));
 
 			if (!m) {
 				goto malformed;
@@ -153,7 +153,7 @@ SLKC_API std::optional<CompilationError> slkc::isImplementedByClass(
 				goto malformed;
 			}
 
-			AstNodePtr<InterfaceNode> interfaceNode = m.castTo<InterfaceNode>();
+			AstNodePtr<InterfaceNode> interfaceNode = m.template castTo<InterfaceNode>();
 
 			if (interfaceNode == base) {
 				whetherOut = true;
@@ -201,7 +201,7 @@ SLKC_API std::optional<CompilationError> slkc::isBaseOf(
 		}
 
 		AstNodePtr<MemberNode> m;
-		SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, currentType.castTo<CustomTypeNameNode>(), m));
+		SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, currentType.template castTo<CustomTypeNameNode>(), m));
 
 		if (!m) {
 			goto malformed;
@@ -211,7 +211,7 @@ SLKC_API std::optional<CompilationError> slkc::isBaseOf(
 			goto malformed;
 		}
 
-		currentClass = m.castTo<ClassNode>();
+		currentClass = m.template castTo<ClassNode>();
 
 		// Make sure that the function will work properly when the class has cyclic inheritance.
 		if (walkedClasses.contains(currentClass)) {
@@ -242,7 +242,7 @@ SLKC_API std::optional<CompilationError> slkc::removeRefOfType(
 	AstNodePtr<TypeNameNode> &typeNameOut) {
 	switch (src->typeNameKind) {
 		case TypeNameKind::Ref:
-			typeNameOut = src.castTo<RefTypeNameNode>()->referencedType;
+			typeNameOut = src.template castTo<RefTypeNameNode>()->referencedType;
 			break;
 		default:
 			typeNameOut = src;
@@ -292,8 +292,8 @@ SLKC_API std::optional<CompilationError> slkc::isSameType(
 	switch (lhs->typeNameKind) {
 		case TypeNameKind::Custom: {
 			AstNodePtr<CustomTypeNameNode>
-				convertedLhs = lhs.castTo<CustomTypeNameNode>(),
-				convertedRhs = rhs.castTo<CustomTypeNameNode>();
+				convertedLhs = lhs.template castTo<CustomTypeNameNode>(),
+				convertedRhs = rhs.template castTo<CustomTypeNameNode>();
 
 			AstNodePtr<MemberNode> lhsMember, rhsMember;
 
@@ -305,16 +305,16 @@ SLKC_API std::optional<CompilationError> slkc::isSameType(
 		}
 		case TypeNameKind::Array: {
 			AstNodePtr<ArrayTypeNameNode>
-				convertedLhs = lhs.castTo<ArrayTypeNameNode>(),
-				convertedRhs = rhs.castTo<ArrayTypeNameNode>();
+				convertedLhs = lhs.template castTo<ArrayTypeNameNode>(),
+				convertedRhs = rhs.template castTo<ArrayTypeNameNode>();
 
 			SLKC_RETURN_IF_COMP_ERROR(isSameType(convertedLhs->elementType, convertedRhs->elementType, whetherOut));
 			break;
 		}
 		case TypeNameKind::Ref: {
 			AstNodePtr<RefTypeNameNode>
-				convertedLhs = lhs.castTo<RefTypeNameNode>(),
-				convertedRhs = rhs.castTo<RefTypeNameNode>();
+				convertedLhs = lhs.template castTo<RefTypeNameNode>(),
+				convertedRhs = rhs.template castTo<RefTypeNameNode>();
 
 			SLKC_RETURN_IF_COMP_ERROR(isSameType(convertedLhs->referencedType, convertedRhs->referencedType, whetherOut));
 			break;
@@ -402,7 +402,7 @@ SLKC_API std::optional<CompilationError> slkc::determinePromotionalType(
 			case TypeNameKind::Array: {
 				switch (rhs->typeNameKind) {
 					case TypeNameKind::Array: {
-						AstNodePtr<ArrayTypeNameNode> lt = lhs.castTo<ArrayTypeNameNode>(), rt = rhs.castTo<ArrayTypeNameNode>();
+						AstNodePtr<ArrayTypeNameNode> lt = lhs.template castTo<ArrayTypeNameNode>(), rt = rhs.template castTo<ArrayTypeNameNode>();
 						AstNodePtr<TypeNameNode> finalType;
 
 						SLKC_RETURN_IF_COMP_ERROR(determinePromotionalType(lt->elementType, rt->elementType, finalType));
@@ -419,7 +419,7 @@ SLKC_API std::optional<CompilationError> slkc::determinePromotionalType(
 			case TypeNameKind::Custom: {
 				switch (rhs->typeNameKind) {
 					case TypeNameKind::Custom: {
-						AstNodePtr<CustomTypeNameNode> lt = lhs.castTo<CustomTypeNameNode>(), rt = rhs.castTo<CustomTypeNameNode>();
+						AstNodePtr<CustomTypeNameNode> lt = lhs.template castTo<CustomTypeNameNode>(), rt = rhs.template castTo<CustomTypeNameNode>();
 
 						bool b;
 
@@ -463,8 +463,8 @@ SLKC_API std::optional<CompilationError> slkc::isSameTypeInSignature(
 	switch (lhs->typeNameKind) {
 		case TypeNameKind::Custom: {
 			AstNodePtr<CustomTypeNameNode>
-				convertedLhs = lhs.castTo<CustomTypeNameNode>(),
-				convertedRhs = rhs.castTo<CustomTypeNameNode>();
+				convertedLhs = lhs.template castTo<CustomTypeNameNode>(),
+				convertedRhs = rhs.template castTo<CustomTypeNameNode>();
 
 			AstNodePtr<MemberNode> lhsMember, rhsMember;
 
@@ -492,8 +492,8 @@ SLKC_API std::optional<CompilationError> slkc::isSameTypeInSignature(
 					// and functions.
 					AstNodePtr<GenericParamNode> l, r;
 
-					l = lhsMember.castTo<GenericParamNode>();
-					r = rhsMember.castTo<GenericParamNode>();
+					l = lhsMember.template castTo<GenericParamNode>();
+					r = rhsMember.template castTo<GenericParamNode>();
 
 					auto lp = l->parent,
 						 rp = r->parent;
@@ -608,7 +608,7 @@ SLKC_API std::optional<CompilationError> slkc::isTypeConvertible(
 					whetherOut = true;
 					break;
 				case TypeNameKind::Ref:
-					SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(src.castTo<RefTypeNameNode>()->referencedType, dest, isSealed, whetherOut));
+					SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(src.template castTo<RefTypeNameNode>()->referencedType, dest, isSealed, whetherOut));
 					break;
 				default:
 					whetherOut = false;
@@ -621,7 +621,7 @@ SLKC_API std::optional<CompilationError> slkc::isTypeConvertible(
 					whetherOut = true;
 					break;
 				case TypeNameKind::Ref:
-					SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(src.castTo<RefTypeNameNode>()->referencedType, dest, isSealed, whetherOut));
+					SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(src.template castTo<RefTypeNameNode>()->referencedType, dest, isSealed, whetherOut));
 					break;
 				default:
 					whetherOut = false;
@@ -648,7 +648,7 @@ SLKC_API std::optional<CompilationError> slkc::isTypeConvertible(
 					whetherOut = true;
 					break;
 				case TypeNameKind::Ref:
-					SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(src.castTo<RefTypeNameNode>()->referencedType, dest, isSealed, whetherOut));
+					SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(src.template castTo<RefTypeNameNode>()->referencedType, dest, isSealed, whetherOut));
 					break;
 				default:
 					whetherOut = false;
@@ -665,7 +665,7 @@ SLKC_API std::optional<CompilationError> slkc::isTypeConvertible(
 					whetherOut = true;
 					break;
 				case TypeNameKind::Ref:
-					SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(src.castTo<RefTypeNameNode>()->referencedType, dest, isSealed, whetherOut));
+					SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(src.template castTo<RefTypeNameNode>()->referencedType, dest, isSealed, whetherOut));
 					break;
 				default:
 					whetherOut = false;
@@ -682,8 +682,8 @@ SLKC_API std::optional<CompilationError> slkc::isTypeConvertible(
 			switch (src->typeNameKind) {
 				case TypeNameKind::Custom: {
 					AstNodePtr<CustomTypeNameNode>
-						st = src.castTo<CustomTypeNameNode>(),
-						dt = dest.castTo<CustomTypeNameNode>();
+						st = src.template castTo<CustomTypeNameNode>(),
+						dt = dest.template castTo<CustomTypeNameNode>();
 
 					AstNodePtr<MemberNode> stm, dtm;
 
@@ -694,17 +694,17 @@ SLKC_API std::optional<CompilationError> slkc::isTypeConvertible(
 						case AstNodeType::Class:
 							switch (dtm->astNodeType) {
 								case AstNodeType::Interface:
-									SLKC_RETURN_IF_COMP_ERROR(isImplementedByClass(document, dtm.castTo<InterfaceNode>(), stm.castTo<ClassNode>(), whetherOut));
+									SLKC_RETURN_IF_COMP_ERROR(isImplementedByClass(document, dtm.template castTo<InterfaceNode>(), stm.template castTo<ClassNode>(), whetherOut));
 									break;
 								case AstNodeType::Class:
-									SLKC_RETURN_IF_COMP_ERROR(isBaseOf(document, dtm.castTo<ClassNode>(), stm.castTo<ClassNode>(), whetherOut));
+									SLKC_RETURN_IF_COMP_ERROR(isBaseOf(document, dtm.template castTo<ClassNode>(), stm.template castTo<ClassNode>(), whetherOut));
 									if ((!isSealed) && (!whetherOut)) {
 										// Covariance is not allowed in sealed context.
-										SLKC_RETURN_IF_COMP_ERROR(isBaseOf(document, stm.castTo<ClassNode>(), dtm.castTo<ClassNode>(), whetherOut));
+										SLKC_RETURN_IF_COMP_ERROR(isBaseOf(document, stm.template castTo<ClassNode>(), dtm.template castTo<ClassNode>(), whetherOut));
 									}
 									break;
 								case AstNodeType::GenericParam: {
-									auto dgp = dtm.castTo<GenericParamNode>();
+									auto dgp = dtm.template castTo<GenericParamNode>();
 
 									if (dgp->genericConstraint->baseType && dgp->genericConstraint->baseType->typeNameKind == TypeNameKind::Custom) {
 										SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(src, dgp->genericConstraint->baseType, isSealed, whetherOut));
@@ -720,17 +720,17 @@ SLKC_API std::optional<CompilationError> slkc::isTypeConvertible(
 						case AstNodeType::Interface:
 							switch (dtm->astNodeType) {
 								case AstNodeType::Interface:
-									SLKC_RETURN_IF_COMP_ERROR(isImplementedByInterface(document, dtm.castTo<InterfaceNode>(), stm.castTo<InterfaceNode>(), whetherOut));
+									SLKC_RETURN_IF_COMP_ERROR(isImplementedByInterface(document, dtm.template castTo<InterfaceNode>(), stm.template castTo<InterfaceNode>(), whetherOut));
 									if ((!isSealed) && (!whetherOut)) {
 										// Covariance is not allowed in sealed context.
-										SLKC_RETURN_IF_COMP_ERROR(isImplementedByInterface(document, stm.castTo<InterfaceNode>(), dtm.castTo<InterfaceNode>(), whetherOut));
+										SLKC_RETURN_IF_COMP_ERROR(isImplementedByInterface(document, stm.template castTo<InterfaceNode>(), dtm.template castTo<InterfaceNode>(), whetherOut));
 									}
 									break;
 								case AstNodeType::Class:
-									SLKC_RETURN_IF_COMP_ERROR(isImplementedByClass(document, stm.castTo<InterfaceNode>(), dtm.castTo<ClassNode>(), whetherOut));
+									SLKC_RETURN_IF_COMP_ERROR(isImplementedByClass(document, stm.template castTo<InterfaceNode>(), dtm.template castTo<ClassNode>(), whetherOut));
 									break;
 								case AstNodeType::GenericParam: {
-									auto dgp = dtm.castTo<GenericParamNode>();
+									auto dgp = dtm.template castTo<GenericParamNode>();
 
 									if (dgp->genericConstraint->baseType && dgp->genericConstraint->baseType->typeNameKind == TypeNameKind::Custom) {
 										SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(src, dgp->genericConstraint->baseType, isSealed, whetherOut));
@@ -752,7 +752,7 @@ SLKC_API std::optional<CompilationError> slkc::isTypeConvertible(
 							}
 							break;
 						case AstNodeType::GenericParam: {
-							auto sgp = stm.castTo<GenericParamNode>();
+							auto sgp = stm.template castTo<GenericParamNode>();
 
 							switch (dtm->astNodeType) {
 								case AstNodeType::Interface:
@@ -786,7 +786,7 @@ SLKC_API std::optional<CompilationError> slkc::isTypeConvertible(
 					break;
 				}
 				case TypeNameKind::Ref:
-					SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(src.castTo<RefTypeNameNode>()->referencedType, dest, isSealed, whetherOut));
+					SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(src.template castTo<RefTypeNameNode>()->referencedType, dest, isSealed, whetherOut));
 					break;
 				default:
 					whetherOut = false;
@@ -796,7 +796,7 @@ SLKC_API std::optional<CompilationError> slkc::isTypeConvertible(
 		case TypeNameKind::Array:
 			switch (src->typeNameKind) {
 				case TypeNameKind::Ref: {
-					SLKC_RETURN_IF_COMP_ERROR(isSameType(src.castTo<RefTypeNameNode>()->referencedType, dest, whetherOut));
+					SLKC_RETURN_IF_COMP_ERROR(isSameType(src.template castTo<RefTypeNameNode>()->referencedType, dest, whetherOut));
 					break;
 				}
 				default:
@@ -839,7 +839,7 @@ SLKC_API std::optional<CompilationError> slkc::_isTypeNameParamListTypeNameTree(
 			break;
 		}
 		case TypeNameKind::Array: {
-			auto t = type.castTo<ArrayTypeNameNode>();
+			auto t = type.template castTo<ArrayTypeNameNode>();
 
 			SLKC_RETURN_IF_COMP_ERROR(_isTypeNameParamListTypeNameTree(t->elementType, whetherOut));
 			if (whetherOut)
@@ -848,7 +848,7 @@ SLKC_API std::optional<CompilationError> slkc::_isTypeNameParamListTypeNameTree(
 			break;
 		}
 		case TypeNameKind::Ref: {
-			auto t = type.castTo<RefTypeNameNode>();
+			auto t = type.template castTo<RefTypeNameNode>();
 
 			SLKC_RETURN_IF_COMP_ERROR(_isTypeNameParamListTypeNameTree(t->referencedType, whetherOut));
 			if (whetherOut)
@@ -857,7 +857,7 @@ SLKC_API std::optional<CompilationError> slkc::_isTypeNameParamListTypeNameTree(
 			break;
 		}
 		case TypeNameKind::TempRef: {
-			auto t = type.castTo<TempRefTypeNameNode>();
+			auto t = type.template castTo<TempRefTypeNameNode>();
 
 			SLKC_RETURN_IF_COMP_ERROR(_isTypeNameParamListTypeNameTree(t->referencedType, whetherOut));
 			if (whetherOut)
@@ -866,7 +866,7 @@ SLKC_API std::optional<CompilationError> slkc::_isTypeNameParamListTypeNameTree(
 			break;
 		}
 		case TypeNameKind::Fn: {
-			auto t = type.castTo<FnTypeNameNode>();
+			auto t = type.template castTo<FnTypeNameNode>();
 
 			SLKC_RETURN_IF_COMP_ERROR(_isTypeNameParamListTypeNameTree(t->returnType, whetherOut));
 			if (whetherOut)
@@ -903,28 +903,28 @@ SLKC_API std::optional<CompilationError> slkc::_doExpandParamListTypeNameTree(
 			break;
 		}
 		case TypeNameKind::Array: {
-			auto t = type.castTo<ArrayTypeNameNode>();
+			auto t = type.template castTo<ArrayTypeNameNode>();
 
 			SLKC_RETURN_IF_COMP_ERROR(_doExpandParamListTypeNameTree(t->elementType));
 
 			break;
 		}
 		case TypeNameKind::Ref: {
-			auto t = type.castTo<RefTypeNameNode>();
+			auto t = type.template castTo<RefTypeNameNode>();
 
 			SLKC_RETURN_IF_COMP_ERROR(_doExpandParamListTypeNameTree(t->referencedType));
 
 			break;
 		}
 		case TypeNameKind::TempRef: {
-			auto t = type.castTo<TempRefTypeNameNode>();
+			auto t = type.template castTo<TempRefTypeNameNode>();
 
 			SLKC_RETURN_IF_COMP_ERROR(_doExpandParamListTypeNameTree(t->referencedType));
 
 			break;
 		}
 		case TypeNameKind::Fn: {
-			auto t = type.castTo<FnTypeNameNode>();
+			auto t = type.template castTo<FnTypeNameNode>();
 
 			SLKC_RETURN_IF_COMP_ERROR(_doExpandParamListTypeNameTree(t->returnType));
 
@@ -981,7 +981,7 @@ SLKC_API std::optional<CompilationError> slkc::_isTypeNameGenericParamFacade(
 		case TypeNameKind::Custom: {
 			AstNodePtr<TypeNameNode> t;
 
-			SLKC_RETURN_IF_COMP_ERROR(resolveBaseOverridenCustomTypeName(type->document->sharedFromThis(), type.castTo<CustomTypeNameNode>(), t));
+			SLKC_RETURN_IF_COMP_ERROR(resolveBaseOverridenCustomTypeName(type->document->sharedFromThis(), type.template castTo<CustomTypeNameNode>(), t));
 
 			if (t) {
 				whetherOut = true;
@@ -990,7 +990,7 @@ SLKC_API std::optional<CompilationError> slkc::_isTypeNameGenericParamFacade(
 			break;
 		}
 		case TypeNameKind::Array: {
-			auto t = type.castTo<ArrayTypeNameNode>();
+			auto t = type.template castTo<ArrayTypeNameNode>();
 
 			SLKC_RETURN_IF_COMP_ERROR(_isTypeNameGenericParamFacade(t->elementType, whetherOut));
 			if (whetherOut)
@@ -999,7 +999,7 @@ SLKC_API std::optional<CompilationError> slkc::_isTypeNameGenericParamFacade(
 			break;
 		}
 		case TypeNameKind::Ref: {
-			auto t = type.castTo<RefTypeNameNode>();
+			auto t = type.template castTo<RefTypeNameNode>();
 
 			SLKC_RETURN_IF_COMP_ERROR(_isTypeNameGenericParamFacade(t->referencedType, whetherOut));
 			if (whetherOut)
@@ -1008,7 +1008,7 @@ SLKC_API std::optional<CompilationError> slkc::_isTypeNameGenericParamFacade(
 			break;
 		}
 		case TypeNameKind::TempRef: {
-			auto t = type.castTo<TempRefTypeNameNode>();
+			auto t = type.template castTo<TempRefTypeNameNode>();
 
 			SLKC_RETURN_IF_COMP_ERROR(_isTypeNameGenericParamFacade(t->referencedType, whetherOut));
 			if (whetherOut)
@@ -1017,7 +1017,7 @@ SLKC_API std::optional<CompilationError> slkc::_isTypeNameGenericParamFacade(
 			break;
 		}
 		case TypeNameKind::Fn: {
-			auto t = type.castTo<FnTypeNameNode>();
+			auto t = type.template castTo<FnTypeNameNode>();
 
 			SLKC_RETURN_IF_COMP_ERROR(_isTypeNameGenericParamFacade(t->returnType, whetherOut));
 			if (whetherOut)
@@ -1053,35 +1053,35 @@ SLKC_API std::optional<CompilationError> slkc::_doExpandGenericParamFacadeTypeNa
 		case TypeNameKind::Custom: {
 			AstNodePtr<TypeNameNode> t;
 
-			SLKC_RETURN_IF_COMP_ERROR(resolveBaseOverridenCustomTypeName(type->document->sharedFromThis(), type.castTo<CustomTypeNameNode>(), t));
+			SLKC_RETURN_IF_COMP_ERROR(resolveBaseOverridenCustomTypeName(type->document->sharedFromThis(), type.template castTo<CustomTypeNameNode>(), t));
 
 			if (t)
 				type = t;
 			break;
 		}
 		case TypeNameKind::Array: {
-			auto t = type.castTo<ArrayTypeNameNode>();
+			auto t = type.template castTo<ArrayTypeNameNode>();
 
 			SLKC_RETURN_IF_COMP_ERROR(_doExpandGenericParamFacadeTypeNameTree(t->elementType));
 
 			break;
 		}
 		case TypeNameKind::Ref: {
-			auto t = type.castTo<RefTypeNameNode>();
+			auto t = type.template castTo<RefTypeNameNode>();
 
 			SLKC_RETURN_IF_COMP_ERROR(_doExpandGenericParamFacadeTypeNameTree(t->referencedType));
 
 			break;
 		}
 		case TypeNameKind::TempRef: {
-			auto t = type.castTo<TempRefTypeNameNode>();
+			auto t = type.template castTo<TempRefTypeNameNode>();
 
 			SLKC_RETURN_IF_COMP_ERROR(_doExpandGenericParamFacadeTypeNameTree(t->referencedType));
 
 			break;
 		}
 		case TypeNameKind::Fn: {
-			auto t = type.castTo<FnTypeNameNode>();
+			auto t = type.template castTo<FnTypeNameNode>();
 
 			SLKC_RETURN_IF_COMP_ERROR(_doExpandGenericParamFacadeTypeNameTree(t->returnType));
 
@@ -1135,7 +1135,7 @@ SLKC_API std::optional<CompilationError> slkc::getUnpackedTypeOf(
 		case TypeNameKind::Custom: {
 			AstNodePtr<MemberNode> m;
 
-			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, type.castTo<CustomTypeNameNode>(), m));
+			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, type.template castTo<CustomTypeNameNode>(), m));
 
 			if (!m) {
 				return CompilationError(type->tokenRange, CompilationErrorKind::IdNotFound);
@@ -1143,7 +1143,7 @@ SLKC_API std::optional<CompilationError> slkc::getUnpackedTypeOf(
 
 			switch (m->astNodeType) {
 				case AstNodeType::GenericParam: {
-					auto p = m.castTo<GenericParamNode>();
+					auto p = m.template castTo<GenericParamNode>();
 
 					if (p->isParamTypeList) {
 						AstNodePtr<UnpackedParamsTypeNameNode> unpackedType;
@@ -1166,7 +1166,7 @@ SLKC_API std::optional<CompilationError> slkc::getUnpackedTypeOf(
 							unpackedType->hasVarArgs = p->paramTypeListGenericConstraint->hasVarArg;
 						}
 
-						typeNameOut = unpackedType.castTo<TypeNameNode>();
+						typeNameOut = unpackedType.template castTo<TypeNameNode>();
 					} else {
 						typeNameOut = {};
 					}
@@ -1178,7 +1178,7 @@ SLKC_API std::optional<CompilationError> slkc::getUnpackedTypeOf(
 			break;
 		}
 		case TypeNameKind::ParamTypeList: {
-			auto t = type.castTo<ParamTypeListTypeNameNode>();
+			auto t = type.template castTo<ParamTypeListTypeNameNode>();
 
 			AstNodePtr<UnpackedParamsTypeNameNode> unpackedType;
 
@@ -1196,11 +1196,11 @@ SLKC_API std::optional<CompilationError> slkc::getUnpackedTypeOf(
 
 			unpackedType->hasVarArgs = t->hasVarArgs;
 
-			typeNameOut = unpackedType.castTo<TypeNameNode>();
+			typeNameOut = unpackedType.template castTo<TypeNameNode>();
 			break;
 		}
 		case TypeNameKind::UnpackedParams: {
-			auto t = type.castTo<UnpackedParamsTypeNameNode>();
+			auto t = type.template castTo<UnpackedParamsTypeNameNode>();
 
 			AstNodePtr<UnpackedArgsTypeNameNode> unpackedType;
 
@@ -1218,12 +1218,12 @@ SLKC_API std::optional<CompilationError> slkc::getUnpackedTypeOf(
 
 			unpackedType->hasVarArgs = t->hasVarArgs;
 
-			typeNameOut = unpackedType.castTo<TypeNameNode>();
+			typeNameOut = unpackedType.template castTo<TypeNameNode>();
 
 			break;
 		}
 		case TypeNameKind::Unpacking: {
-			SLKC_RETURN_IF_COMP_ERROR(getUnpackedTypeOf(type.castTo<UnpackingTypeNameNode>()->innerTypeName, typeNameOut));
+			SLKC_RETURN_IF_COMP_ERROR(getUnpackedTypeOf(type.template castTo<UnpackingTypeNameNode>()->innerTypeName, typeNameOut));
 
 			break;
 		}
@@ -1265,18 +1265,18 @@ SLKC_API std::optional<CompilationError> slkc::fnToTypeName(
 				case AstNodeType::Interface: {
 					IdRefPtr fullIdRef;
 
-					SLKC_RETURN_IF_COMP_ERROR(getFullIdRef(compileEnv->allocator.get(), fn->parent->parent->sharedFromThis().castTo<MemberNode>(), fullIdRef));
+					SLKC_RETURN_IF_COMP_ERROR(getFullIdRef(compileEnv->allocator.get(), fn->parent->parent->sharedFromThis().template castTo<MemberNode>(), fullIdRef));
 
 					auto thisType = makeAstNode<CustomTypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document);
 
 					if (!thisType) {
 						return genOutOfMemoryCompError();
 					}
-					thisType->contextNode = compileEnv->document->rootModule.castTo<MemberNode>();
+					thisType->contextNode = compileEnv->document->rootModule.template castTo<MemberNode>();
 
 					thisType->idRefPtr = std::move(fullIdRef);
 
-					tn->thisType = thisType.castTo<TypeNameNode>();
+					tn->thisType = thisType.template castTo<TypeNameNode>();
 					break;
 				}
 				default:
@@ -1307,8 +1307,8 @@ SLKC_API std::optional<slkc::CompilationError> slkc::typeNameCmp(AstNodePtr<Type
 	switch (lhs->typeNameKind) {
 		case TypeNameKind::Custom: {
 			AstNodePtr<CustomTypeNameNode>
-				l = lhs.castTo<CustomTypeNameNode>(),
-				r = rhs.castTo<CustomTypeNameNode>();
+				l = lhs.template castTo<CustomTypeNameNode>(),
+				r = rhs.template castTo<CustomTypeNameNode>();
 
 			AstNodePtr<MemberNode>
 				lm,
@@ -1342,14 +1342,14 @@ SLKC_API std::optional<slkc::CompilationError> slkc::typeNameCmp(AstNodePtr<Type
 		}
 		case TypeNameKind::Array: {
 			return typeNameCmp(
-				lhs.castTo<ArrayTypeNameNode>()->elementType,
-				rhs.castTo<ArrayTypeNameNode>()->elementType,
+				lhs.template castTo<ArrayTypeNameNode>()->elementType,
+				rhs.template castTo<ArrayTypeNameNode>()->elementType,
 				out);
 		}
 		case TypeNameKind::Ref: {
 			return typeNameCmp(
-				lhs.castTo<RefTypeNameNode>()->referencedType,
-				rhs.castTo<RefTypeNameNode>()->referencedType,
+				lhs.template castTo<RefTypeNameNode>()->referencedType,
+				rhs.template castTo<RefTypeNameNode>()->referencedType,
 				out);
 		}
 		default:

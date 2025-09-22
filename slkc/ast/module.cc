@@ -61,7 +61,7 @@ SLKC_API AstNodePtr<AstNode> ModuleNode::doDuplicate(peff::Alloc *newAllocator) 
 		return {};
 	}
 
-	return duplicatedNode.castTo<AstNode>();
+	return duplicatedNode.template castTo<AstNode>();
 }
 
 SLKC_API ModuleNode::ModuleNode(

@@ -316,29 +316,21 @@ SLKC_API std::optional<CompilationError> slkc::_compileSimpleBinaryAssignOpExpr(
 		case ExprEvalPurpose::LValue: {
 			CompileExprResult result(compileEnv->allocator.get());
 
-			uint32_t lhsValueReg,
+			uint32_t lhsReg,
+				lhsValueReg,
 				rhsReg,
 				resultValueReg;
 
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(lhsReg));
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(lhsValueReg));
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(rhsReg));
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(resultValueReg));
 
-			if (auto e = _compileOrCastOperand(compileEnv, compilationContext, resultRegOut, ExprEvalPurpose::LValue, lhsType, expr->lhs, lhsType); e) {
-				if (auto re = _compileOrCastOperand(compileEnv, compilationContext, rhsReg, rhsEvalPurpose, desiredRhsType, expr->rhs, rhsType); re) {
-					if (!compileEnv->errors.pushBack(std::move(*e))) {
-						return genOutOfMemoryCompError();
-					}
-					e.reset();
-					return re;
-				} else {
-					return e;
-				}
-			}
+			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileEnv, compilationContext, lhsReg, ExprEvalPurpose::LValue, lhsType, expr->lhs, lhsType));
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
 				slake::Opcode::LVALUE,
 				lhsValueReg,
-				{ slake::Value(slake::ValueType::RegRef, resultRegOut) }));
+				{ slake::Value(slake::ValueType::RegRef, lhsReg) }));
 
 			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileEnv, compilationContext, rhsReg, rhsEvalPurpose, desiredRhsType, expr->rhs, rhsType));
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
@@ -348,8 +340,13 @@ SLKC_API std::optional<CompilationError> slkc::_compileSimpleBinaryAssignOpExpr(
 
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
 				slake::Opcode::STORE,
+				UINT32_MAX,
+				{ slake::Value(slake::ValueType::RegRef, lhsReg), slake::Value(slake::ValueType::RegRef, resultValueReg) }));
+
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
+				slake::Opcode::MOV,
 				resultRegOut,
-				{ slake::Value(slake::ValueType::RegRef, resultValueReg) }));
+				{ slake::Value(slake::ValueType::RegRef, lhsReg) }));
 			break;
 		}
 		case ExprEvalPurpose::Stmt:
@@ -361,11 +358,13 @@ SLKC_API std::optional<CompilationError> slkc::_compileSimpleBinaryAssignOpExpr(
 
 			uint32_t lhsReg,
 				lhsValueReg,
-				rhsReg;
+				rhsReg,
+				resultValueReg;
 
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(lhsReg));
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(lhsValueReg));
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(rhsReg));
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(resultValueReg));
 
 			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileEnv, compilationContext, lhsReg, ExprEvalPurpose::LValue, lhsType, expr->lhs, lhsType));
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
@@ -376,14 +375,17 @@ SLKC_API std::optional<CompilationError> slkc::_compileSimpleBinaryAssignOpExpr(
 			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileEnv, compilationContext, rhsReg, rhsEvalPurpose, desiredRhsType, expr->rhs, rhsType));
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
 				opcode,
-				resultRegOut,
-				{ slake::Value(slake::ValueType::RegRef, lhsReg), slake::Value(slake::ValueType::RegRef, rhsReg) }));
+				resultValueReg,
+				{ slake::Value(slake::ValueType::RegRef, lhsValueReg), slake::Value(slake::ValueType::RegRef, rhsReg) }));
 
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
 				slake::Opcode::STORE,
-				lhsReg,
-				{ slake::Value(slake::ValueType::RegRef, resultRegOut) }));
-
+				UINT32_MAX,
+				{ slake::Value(slake::ValueType::RegRef, lhsReg), slake::Value(slake::ValueType::RegRef, resultValueReg) }));
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
+				slake::Opcode::MOV,
+				resultRegOut,
+				{ slake::Value(slake::ValueType::RegRef, resultValueReg) }));
 			break;
 		}
 		case ExprEvalPurpose::Call:

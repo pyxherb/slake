@@ -313,7 +313,7 @@ namespace slake {
 
 		class GenericInstantiationContext final {
 		public:
-			std::atomic_size_t refCount;
+			std::atomic_size_t refCount = 0;
 			peff::RcObjectPtr<peff::Alloc> selfAllocator;
 			const Object *mappedObject;
 			const GenericArgList *genericArgs;

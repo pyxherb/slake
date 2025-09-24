@@ -35,8 +35,8 @@
 	#define SLAKE_API
 #endif
 
-#define SLAKE_REFERENCED_PARAM(n) (n)
-#define SLAKE_REFERENCED_VAR(n) (n)
+#define SLAKE_REFERENCED_PARAM(n) ((void)n)
+#define SLAKE_REFERENCED_VAR(n) ((void)n)
 
 #define SLAKE_REQUIRES_CONCEPT(...) PEFF_REQUIRES_CONCEPT(__VA_ARGS__)
 

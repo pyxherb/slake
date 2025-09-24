@@ -405,7 +405,7 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 
 						if (value->stackData) {
 							for (size_t i = 0; i < value->resumable->nRegs; ++i)
-								_gcWalk(context, *((Value *)(value->stackData + value->lenStackData - (value->offStackTop + sizeof(Value) * i))));
+								_gcWalk(context, *((Value *)(value->stackData + value->lenStackData - sizeof(Value) * i)));
 						}
 					}
 

@@ -194,8 +194,9 @@ SLAKE_API InternalExceptionPointer Runtime::_createNewCoroutineMajorFrame(
 	HostRefHolder holder(context->runtime->getFixedAlloc());
 
 	size_t prevStackTop = context->stackTop;
-	peff::ScopeGuard restoreStackTopGuard([context, prevStackTop]() noexcept {
+	peff::ScopeGuard restoreStackTopGuard([context, prevStackTop, coroutine]() noexcept {
 		context->stackTop = prevStackTop;
+		coroutine->offStackTop = 0;
 	});
 	MajorFramePtr newMajorFrame(MajorFrame::alloc(this, context));
 	if (!newMajorFrame) {
@@ -221,6 +222,7 @@ SLAKE_API InternalExceptionPointer Runtime::_createNewCoroutineMajorFrame(
 		if (!initialData) {
 			return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
 		}
+		coroutine->offStackTop = stackOffset;
 		memcpy(initialData, coroutine->stackData, coroutine->lenStackData);
 		coroutine->releaseStackData();
 	} else {
@@ -238,6 +240,7 @@ SLAKE_API InternalExceptionPointer Runtime::_createNewCoroutineMajorFrame(
 			}
 			default:;
 		}
+		coroutine->offStackTop = prevStackTop;
 	}
 
 	newMajorFrame->resumable = coroutine->resumable;
@@ -375,7 +378,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_addLocalVar(Context *context
 	stackOffset = context->stackTop;
 
 	if (frame->curCoroutine) {
-		objectRefOut = EntityRef::makeCoroutineLocalVarRef(frame->curCoroutine, stackOffset - frame->stackBase);
+		objectRefOut = EntityRef::makeCoroutineLocalVarRef(frame->curCoroutine, stackOffset - frame->curCoroutine->offStackTop);
 	} else {
 		objectRefOut = EntityRef::makeLocalVarRef(context, stackOffset);
 	}
@@ -1775,7 +1778,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 			Value returnValue;
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, ins.operands[0], returnValue));
 
-			if (size_t szFrame = context->_context.stackTop - curMajorFrame->stackBase; szFrame) {
+			if (size_t szFrame = context->_context.stackTop - curMajorFrame->curCoroutine->offStackTop; szFrame) {
 				char *p = curMajorFrame->curCoroutine->allocStackData(szFrame);
 				if (!p) {
 					return OutOfMemoryError::alloc();

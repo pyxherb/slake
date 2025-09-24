@@ -3,7 +3,7 @@
 
 using namespace slake;
 
-SLAKE_API CoroutineObject::CoroutineObject(Runtime *rt, peff::Alloc *selfAllocator) : Object(rt, selfAllocator, ObjectKind::Context), curContext(nullptr), curMajorFrame(nullptr), overloading(nullptr), stackData(nullptr), lenStackData(0), offStackTop(0) {
+SLAKE_API CoroutineObject::CoroutineObject(Runtime *rt, peff::Alloc *selfAllocator) : Object(rt, selfAllocator, ObjectKind::Coroutine), curContext(nullptr), curMajorFrame(nullptr), overloading(nullptr), stackData(nullptr), lenStackData(0), offStackTop(0) {
 }
 
 SLAKE_API CoroutineObject::~CoroutineObject() {

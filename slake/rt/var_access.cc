@@ -180,7 +180,7 @@ SLAKE_API Value Runtime::readVarUnsafe(const EntityRef &entityRef) const noexcep
 			if (entityRef.asCoroutineLocalVar.coroutine->curContext) {
 				(basePtr) = calcStackAddr(entityRef.asCoroutineLocalVar.coroutine->curContext->dataStack,
 					entityRef.asCoroutineLocalVar.coroutine->curContext->stackSize,
-					entityRef.asCoroutineLocalVar.stackOff + entityRef.asCoroutineLocalVar.coroutine->curMajorFrame->stackBase);
+					entityRef.asCoroutineLocalVar.stackOff + entityRef.asCoroutineLocalVar.coroutine->offStackTop);
 				stackTop = entityRef.asCoroutineLocalVar.coroutine->curContext->dataStackTopPtr;
 				stackBottom = entityRef.asCoroutineLocalVar.coroutine->curContext->dataStack;
 			} else {
@@ -557,7 +557,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 			if (entityRef.asCoroutineLocalVar.coroutine->curContext) {
 				(basePtr) = calcStackAddr(entityRef.asCoroutineLocalVar.coroutine->curContext->dataStack,
 					entityRef.asCoroutineLocalVar.coroutine->curContext->stackSize,
-					entityRef.asCoroutineLocalVar.stackOff + entityRef.asCoroutineLocalVar.coroutine->curMajorFrame->stackBase);
+					entityRef.asCoroutineLocalVar.stackOff + entityRef.asCoroutineLocalVar.coroutine->offStackTop);
 				stackTop = entityRef.asCoroutineLocalVar.coroutine->curContext->dataStackTopPtr;
 				stackBottom = entityRef.asCoroutineLocalVar.coroutine->curContext->dataStack;
 			} else {

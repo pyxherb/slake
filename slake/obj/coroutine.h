@@ -3,6 +3,7 @@
 
 #include "fn.h"
 #include "var.h"
+#include "context.h"
 
 namespace slake {
 	class CoroutineObject : public Object {

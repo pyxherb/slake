@@ -198,6 +198,16 @@ namespace slake {
 		SLAKE_API virtual void dealloc() override;
 	};
 
+	SLAKE_FORCEINLINE HeapTypeObject createDetachedHeapTypeObject() noexcept {
+		return HeapTypeObject(nullptr, &peff::g_nullAlloc);
+	}
+
+	template <typename T>
+	SLAKE_FORCEINLINE T createDetachedTypeDefObject() noexcept {
+		static_assert(std::is_base_of_v<TypeDefObject, T>);
+		return T(nullptr, &peff::g_nullAlloc);
+	}
+
 	struct TypeDefComparator {
 		SLAKE_API int operator()(const TypeDefObject *lhs, const TypeDefObject *rhs) const noexcept;
 	};

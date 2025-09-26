@@ -141,6 +141,37 @@ namespace slake {
 
 		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;
 	};
+
+	class StructObject : public ModuleObject {
+	private:
+		mutable ClassFlags _flags = 0;
+
+		friend class Runtime;
+
+	public:
+		GenericArgList genericArgs;
+		peff::HashMap<peff::String, TypeRef> mappedGenericArgs;
+
+		GenericParamList genericParams;
+
+		ObjectLayout *cachedObjectLayout = nullptr;
+
+		peff::DynArray<Value> cachedFieldInitValues;
+
+		SLAKE_API StructObject(Runtime *rt, peff::Alloc *selfAllocator);
+		SLAKE_API StructObject(Duplicator *duplicator, const StructObject &x, peff::Alloc *allocator, bool &succeededOut);
+		SLAKE_API virtual ~StructObject();
+
+		SLAKE_API virtual const GenericArgList *getGenericArgs() const override;
+
+		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
+
+		SLAKE_API static HostObjectRef<StructObject> alloc(Runtime *rt);
+		SLAKE_API static HostObjectRef<StructObject> alloc(Duplicator *duplicator, const StructObject *other);
+		SLAKE_API virtual void dealloc() override;
+
+		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;
+	};
 }
 
 #endif

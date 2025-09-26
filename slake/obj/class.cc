@@ -470,3 +470,136 @@ SLAKE_API void InterfaceObject::replaceAllocator(peff::Alloc *allocator) noexcep
 
 	implInterfaceIndices.replaceAllocator(allocator);
 }
+
+SLAKE_API Object *StructObject::duplicate(Duplicator *duplicator) const {
+	return (Object *)alloc(duplicator, this).get();
+}
+
+SLAKE_API slake::StructObject::StructObject(Runtime *rt, peff::Alloc *selfAllocator)
+	: ModuleObject(rt, selfAllocator, ObjectKind::Struct),
+	  genericArgs(selfAllocator),
+	  mappedGenericArgs(selfAllocator),
+	  genericParams(selfAllocator),
+	  cachedFieldInitValues(selfAllocator) {
+}
+
+SLAKE_API const GenericArgList *StructObject::getGenericArgs() const {
+	return &genericArgs;
+}
+
+SLAKE_API StructObject::StructObject(Duplicator *duplicator, const StructObject &x, peff::Alloc *allocator, bool &succeededOut)
+	: ModuleObject(duplicator, x, allocator, succeededOut),
+	  genericArgs(allocator),
+	  mappedGenericArgs(allocator),
+	  genericParams(allocator),
+	  cachedFieldInitValues(allocator) {
+	if (succeededOut) {
+		_flags = x._flags;
+
+		if (!genericArgs.resize(x.genericArgs.size())) {
+			succeededOut = false;
+			return;
+		}
+		memcpy(genericArgs.data(), x.genericArgs.data(), genericArgs.size() * sizeof(TypeRef));
+		for (auto [k, v] : x.mappedGenericArgs) {
+			peff::String name(allocator);
+
+			if (!name.build(k)) {
+				succeededOut = false;
+				return;
+			}
+
+			if (!(mappedGenericArgs.insert(std::move(name), TypeRef(v)))) {
+				succeededOut = false;
+				return;
+			}
+		}
+		if (!genericParams.resizeUninitialized(x.genericParams.size())) {
+			succeededOut = false;
+			return;
+		}
+		for (size_t i = 0; i < x.genericParams.size(); ++i) {
+			if (!x.genericParams.at(i).copy(genericParams.at(i))) {
+				for (size_t j = i; j; --j) {
+					peff::destroyAt<GenericParam>(&genericParams.at(j - 1));
+				}
+				succeededOut = false;
+				return;
+			}
+		}
+
+		// DO NOT copy the cached instantiated method table.
+	}
+}
+
+SLAKE_API StructObject::~StructObject() {
+	if (cachedObjectLayout)
+		cachedObjectLayout->dealloc();
+}
+
+SLAKE_API HostObjectRef<StructObject> slake::StructObject::alloc(Duplicator *duplicator, const StructObject *other) {
+	bool succeeded = true;
+
+	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = other->associatedRuntime->getCurGenAlloc();
+
+	std::unique_ptr<StructObject, peff::DeallocableDeleter<StructObject>> ptr(
+		peff::allocAndConstruct<StructObject>(
+			curGenerationAllocator.get(),
+			sizeof(std::max_align_t),
+			duplicator, *other, curGenerationAllocator.get(), succeeded));
+
+	if (!succeeded)
+		return nullptr;
+
+	if (!other->associatedRuntime->addObject(ptr.get()))
+		return nullptr;
+
+	Runtime::addSameKindObjectToList(&other->associatedRuntime->classObjectList, ptr.get());
+
+	return ptr.release();
+}
+
+SLAKE_API HostObjectRef<StructObject> slake::StructObject::alloc(Runtime *rt) {
+	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();
+
+	std::unique_ptr<StructObject, peff::DeallocableDeleter<StructObject>> ptr(
+		peff::allocAndConstruct<StructObject>(
+			curGenerationAllocator.get(),
+			sizeof(std::max_align_t),
+			rt, curGenerationAllocator.get()));
+
+	if (!rt->addObject(ptr.get()))
+		return nullptr;
+
+	Runtime::addSameKindObjectToList(&rt->classObjectList, ptr.get());
+
+	return ptr.release();
+}
+
+SLAKE_API void slake::StructObject::dealloc() {
+	Runtime::removeSameKindObjectToList(&associatedRuntime->classObjectList, this);
+	peff::destroyAndRelease<StructObject>(selfAllocator.get(), this, sizeof(std::max_align_t));
+}
+
+SLAKE_API void StructObject::replaceAllocator(peff::Alloc *allocator) noexcept {
+	this->ModuleObject::replaceAllocator(allocator);
+
+	genericArgs.replaceAllocator(allocator);
+
+	mappedGenericArgs.replaceAllocator(allocator);
+
+	for (auto i : mappedGenericArgs) {
+		i.first.replaceAllocator(allocator);
+	}
+
+	genericParams.replaceAllocator(allocator);
+
+	for (auto &i : genericParams) {
+		i.replaceAllocator(allocator);
+	}
+
+	if (cachedObjectLayout)
+		cachedObjectLayout->replaceAllocator(allocator);
+
+	cachedFieldInitValues.replaceAllocator(allocator);
+}

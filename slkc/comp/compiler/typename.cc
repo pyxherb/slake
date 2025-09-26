@@ -31,8 +31,8 @@ static std::optional<CompilationError> _collectInvolvedInterfaces(
 		if (!curFrame.index) {
 			for (auto &i : context.frames) {
 				if ((&i != &curFrame) && (i.interfaceNode == curFrame.interfaceNode)) {
-					auto it = (++context.frames.beginReversed());
-					return CompilationError(it->interfaceNode->implTypes.at(it->index - 1)->tokenRange, CompilationErrorKind::CyclicInheritedInterface);
+					auto source = context.frames.front();
+					return CompilationError(source.interfaceNode->implTypes.at(source.index - 1)->tokenRange, CompilationErrorKind::CyclicInheritedInterface);
 				}
 			}
 		}

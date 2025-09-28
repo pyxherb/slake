@@ -890,6 +890,33 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 
 				break;
 			}
+			case AstNodeType::Struct: {
+				AstNodePtr<StructNode> clsNode = m.template castTo<StructNode>();
+
+				slake::HostObjectRef<slake::ClassObject> cls;
+
+				if (!(cls = slake::ClassObject::alloc(compileEnv->runtime))) {
+					return genOutOfRuntimeMemoryCompError();
+				}
+
+				cls->setAccess(mod->accessModifier);
+
+				if (!cls->name.build(m->name)) {
+					return genOutOfRuntimeMemoryCompError();
+				}
+
+				SLKC_RETURN_IF_COMP_ERROR(compileGenericParams(compileEnv, &compilationContext, mod, clsNode->genericParams.data(), clsNode->genericParams.size(), cls->genericParams));
+
+				// TODO: Check if it is recursed.
+
+				SLKC_RETURN_IF_COMP_ERROR(compileModule(compileEnv, clsNode.template castTo<ModuleNode>(), cls.get()));
+
+				if (!modOut->addMember(cls.get())) {
+					return genOutOfRuntimeMemoryCompError();
+				}
+
+				break;
+			}
 			case AstNodeType::FnSlot: {
 				AstNodePtr<FnNode> slotNode = m.template castTo<FnNode>();
 				slake::HostObjectRef<slake::FnObject> slotObject;

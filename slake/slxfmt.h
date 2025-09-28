@@ -130,15 +130,25 @@ namespace slake {
 			ITD_PUB = 0x01	// Public
 			;
 
+		/// @brief Structure Type Descriptor (STD)
+		struct StructTypeDesc final {
+			uint8_t flags;
+			uint8_t nGenericParams;
+			uint8_t lenName;
+		};
+		constexpr static uint8_t
+			STD_PUB = 0x01	// Public
+			;
+
 		/// @brief Function Descriptor (FND)
 		struct FnDesc final {
 			uint16_t flags;			   // Flags
+			uint8_t nGenericParams;	   // Number of generic parameters
+			uint8_t nParams;		   // Number of parameters
 			uint32_t lenBody;		   // Length of body
 			uint32_t nSourceLocDescs;  // Number of SLDs
 			uint32_t nRegisters;	   // Number of registers
 			uint32_t nConstObjects;	   // Number of constant objects
-			uint8_t nGenericParams;	   // Number of generic parameters
-			uint8_t nParams;		   // Number of parameters
 		};
 		constexpr static uint16_t
 			FND_PUB = 0x0001,		 // Public
@@ -177,7 +187,7 @@ namespace slake {
 			uint8_t hasVarArgs;
 			uint16_t nParams;
 		};
-		/// @brief Reference Scope Descriptor (RSD)
+		/// @brief Reference Entry Descriptor (RED)
 		struct IdRefEntryDesc final {
 			uint16_t lenName;
 			uint8_t nGenericArgs;

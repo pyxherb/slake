@@ -12,6 +12,7 @@ namespace slake {
 			peff::Set<CustomTypeDefObject *> loadedCustomTypeDefs;
 			peff::Set<InterfaceObject *> loadedInterfaces;
 			peff::Set<ClassObject *> loadedClasses;
+			peff::Set<StructObject *> loadedStructs;
 			peff::Set<FnObject *> loadedFns;
 			HostRefHolder hostRefHolder;
 

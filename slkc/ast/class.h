@@ -69,6 +69,35 @@ namespace slkc {
 		}
 	};
 
+	class StructNode : public ModuleNode {
+	protected:
+		SLKC_API virtual AstNodePtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
+
+	public:
+		/// @brief Indicates if the cyclic inheritance is already checked.
+		bool isRecursedTypeChecked = false;
+		/// @brief Indicates if the class has cyclic inheritance.
+		bool isRecursedTypeFlag = false;
+
+		peff::DynArray<AstNodePtr<GenericParamNode>> genericParams;
+		peff::HashMap<std::string_view, size_t> genericParamIndices;
+		peff::DynArray<size_t> idxGenericParamCommaTokens;
+		size_t idxLAngleBracketToken = SIZE_MAX, idxRAngleBracketToken = SIZE_MAX;
+
+		bool isGenericParamsIndexed = false;
+
+		SLKC_API StructNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
+		SLKC_API StructNode(const StructNode &rhs, peff::Alloc *allocator, bool &succeededOut);
+		SLKC_API virtual ~StructNode();
+
+		SLKC_API std::optional<CompilationError> isRecursedType(bool &whetherOut);
+		SLKC_API std::optional<CompilationError> updateRecursedTypeStatus();
+		SLAKE_FORCEINLINE void resetRecursedTypeFlag() {
+			isRecursedTypeChecked = false;
+			isRecursedTypeFlag = false;
+		}
+	};
+
 	class ThisNode : public MemberNode {
 	protected:
 		SLKC_API virtual AstNodePtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;

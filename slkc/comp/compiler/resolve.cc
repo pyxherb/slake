@@ -30,7 +30,7 @@ SLKC_API std::optional<CompilationError> slkc::getFullIdRef(peff::Alloc *allocat
 			return genOutOfMemoryCompError();
 		}
 
-		switch (m->astNodeType) {
+		switch (m->getAstNodeType()) {
 			case AstNodeType::Fn:
 				if (!m->parent->parent)
 					goto end;
@@ -57,7 +57,7 @@ SLKC_API std::optional<CompilationError> slkc::resolveStaticMember(
 	AstNodePtr<MemberNode> &memberOut) {
 	AstNodePtr<MemberNode> result;
 
-	switch (memberNode->astNodeType) {
+	switch (memberNode->getAstNodeType()) {
 		case AstNodeType::Module: {
 			AstNodePtr<ModuleNode> mod = memberNode.template castTo<ModuleNode>();
 
@@ -85,6 +85,15 @@ SLKC_API std::optional<CompilationError> slkc::resolveStaticMember(
 
 			break;
 		}
+		case AstNodeType::Struct: {
+			AstNodePtr<StructNode> cls = memberNode.template castTo<StructNode>();
+
+			if (auto it = cls->memberIndices.find(name.name); it != cls->memberIndices.end()) {
+				result = cls->members.at(it.value());
+			}
+
+			break;
+		}
 		default:
 			result = {};
 	}
@@ -94,7 +103,7 @@ SLKC_API std::optional<CompilationError> slkc::resolveStaticMember(
 			SLKC_RETURN_IF_COMP_ERROR(document->instantiateGenericObject(result, name.genericArgs, result));
 		}
 
-		switch (result->astNodeType) {
+		switch (result->getAstNodeType()) {
 			case AstNodeType::Var: {
 				AstNodePtr<VarNode> m = result.template castTo<VarNode>();
 
@@ -138,7 +147,7 @@ SLKC_API std::optional<CompilationError> slkc::resolveInstanceMember(
 	AstNodePtr<MemberNode> &memberOut) {
 	AstNodePtr<MemberNode> result;
 
-	switch (memberNode->astNodeType) {
+	switch (memberNode->getAstNodeType()) {
 		case AstNodeType::Module: {
 			AstNodePtr<ModuleNode> mod = memberNode.template castTo<ModuleNode>();
 
@@ -279,7 +288,7 @@ SLKC_API std::optional<CompilationError> slkc::resolveInstanceMember(
 			SLKC_RETURN_IF_COMP_ERROR(document->instantiateGenericObject(result, name.genericArgs, result));
 		}
 
-		switch (result->astNodeType) {
+		switch (result->getAstNodeType()) {
 			case AstNodeType::Var: {
 				AstNodePtr<VarNode> m = result.template castTo<VarNode>();
 
@@ -328,7 +337,7 @@ SLKC_API std::optional<CompilationError> slkc::resolveIdRef(
 	bool isPostStaticParts = !isStatic;
 
 	auto updateStaticStatus = [&curMember, &isStatic]() {
-		switch (curMember->astNodeType) {
+		switch (curMember->getAstNodeType()) {
 			case AstNodeType::Var:
 				isStatic = false;
 				break;
@@ -415,7 +424,7 @@ SLKC_API std::optional<CompilationError> slkc::resolveIdRefWithScopeNode(
 			AstNodePtr<MemberNode> curScope = resolveScope;
 
 		reresolveWithNewScope:
-			switch (curScope->astNodeType) {
+			switch (curScope->getAstNodeType()) {
 				case AstNodeType::Class: {
 					AstNodePtr<ClassNode> m = curScope.template castTo<ClassNode>();
 
@@ -431,6 +440,19 @@ SLKC_API std::optional<CompilationError> slkc::resolveIdRefWithScopeNode(
 				}
 				case AstNodeType::Interface: {
 					AstNodePtr<InterfaceNode> m = curScope.template castTo<InterfaceNode>();
+
+					if (auto it = m->genericParamIndices.find(initialEntry.name); it != m->genericParamIndices.end()) {
+						memberOut = m->genericParams.at(it.value()).template castTo<MemberNode>();
+						return {};
+					}
+					if (m->parent) {
+						curScope = m->parent->sharedFromThis().template castTo<MemberNode>();
+						goto reresolveWithNewScope;
+					}
+					break;
+				}
+				case AstNodeType::Struct: {
+					AstNodePtr<StructNode> m = curScope.template castTo<StructNode>();
 
 					if (auto it = m->genericParamIndices.find(initialEntry.name); it != m->genericParamIndices.end()) {
 						memberOut = m->genericParams.at(it.value()).template castTo<MemberNode>();
@@ -461,7 +483,7 @@ SLKC_API std::optional<CompilationError> slkc::resolveIdRefWithScopeNode(
 	SLKC_RETURN_IF_COMP_ERROR(resolveIdRef(compileEnv, document, resolveScope, idRef, nEntries, memberOut, resolvedPartListOut, isStatic));
 
 	if (!memberOut) {
-		switch (resolveScope->astNodeType) {
+		switch (resolveScope->getAstNodeType()) {
 			case AstNodeType::Class: {
 				AstNodePtr<ClassNode> m = resolveScope.template castTo<ClassNode>();
 
@@ -503,9 +525,10 @@ SLKC_API std::optional<CompilationError> slkc::resolveIdRefWithScopeNode(
 				if (m->parent && (!isSealed)) {
 					AstNodePtr<MemberNode> p = m->parent->sharedFromThis().template castTo<MemberNode>();
 
-					switch (p->astNodeType) {
+					switch (p->getAstNodeType()) {
 						case AstNodeType::Class:
 						case AstNodeType::Interface:
+						case AstNodeType::Struct:
 						case AstNodeType::Module:
 							SLKC_RETURN_IF_COMP_ERROR(resolveIdRefWithScopeNode(compileEnv, document, walkedNodes, p.template castTo<MemberNode>(), idRef, nEntries, memberOut, resolvedPartListOut, isStatic));
 
@@ -545,9 +568,35 @@ SLKC_API std::optional<CompilationError> slkc::resolveIdRefWithScopeNode(
 				if (m->parent && (!isSealed)) {
 					AstNodePtr<MemberNode> p = m->parent->sharedFromThis().template castTo<MemberNode>();
 
-					switch (p->astNodeType) {
+					switch (p->getAstNodeType()) {
 						case AstNodeType::Class:
 						case AstNodeType::Interface:
+						case AstNodeType::Struct:
+						case AstNodeType::Module:
+							SLKC_RETURN_IF_COMP_ERROR(resolveIdRefWithScopeNode(compileEnv, document, walkedNodes, p, idRef, nEntries, memberOut, resolvedPartListOut, isStatic));
+
+							if (memberOut) {
+								return {};
+							}
+							break;
+					}
+				}
+				break;
+			}
+			case AstNodeType::Struct: {
+				AstNodePtr<StructNode> m = resolveScope.template castTo<StructNode>();
+
+				if (!walkedNodes.insert(m.template castTo<MemberNode>())) {
+					return genOutOfMemoryCompError();
+				}
+
+				if (m->parent && (!isSealed)) {
+					AstNodePtr<MemberNode> p = m->parent->sharedFromThis().template castTo<MemberNode>();
+
+					switch (p->getAstNodeType()) {
+						case AstNodeType::Class:
+						case AstNodeType::Interface:
+						case AstNodeType::Struct:
 						case AstNodeType::Module:
 							SLKC_RETURN_IF_COMP_ERROR(resolveIdRefWithScopeNode(compileEnv, document, walkedNodes, p, idRef, nEntries, memberOut, resolvedPartListOut, isStatic));
 
@@ -569,9 +618,10 @@ SLKC_API std::optional<CompilationError> slkc::resolveIdRefWithScopeNode(
 				if (m->parent) {
 					AstNodePtr<MemberNode> p = m->parent->sharedFromThis().template castTo<MemberNode>();
 
-					switch (p->astNodeType) {
+					switch (p->getAstNodeType()) {
 						case AstNodeType::Class:
 						case AstNodeType::Interface:
+						case AstNodeType::Struct:
 						case AstNodeType::Module:
 							SLKC_RETURN_IF_COMP_ERROR(resolveIdRefWithScopeNode(compileEnv, document, walkedNodes, p, idRef, nEntries, memberOut, resolvedPartListOut, isStatic));
 
@@ -597,7 +647,7 @@ SLKC_API std::optional<CompilationError> slkc::resolveIdRefWithScopeNode(
 				{
 					AstNodePtr<MemberNode> p = m->parent->sharedFromThis().template castTo<MemberNode>();
 
-					if (p->astNodeType != AstNodeType::FnSlot)
+					if (p->getAstNodeType() != AstNodeType::FnSlot)
 						std::terminate();
 					slot = p.template castTo<FnNode>();
 				}
@@ -649,9 +699,10 @@ resolved:
 	if (member) {
 		typeName->cachedResolveResult = peff::WeakPtr<MemberNode>(member);
 
-		switch (member->astNodeType) {
+		switch (member->getAstNodeType()) {
 			case AstNodeType::Class:
 			case AstNodeType::Interface:
+			case AstNodeType::Struct:
 			case AstNodeType::GenericParam:
 				memberNodeOut = member;
 				return {};
@@ -681,7 +732,7 @@ resolved:
 		return {};
 	}
 
-	switch (member->astNodeType) {
+	switch (member->getAstNodeType()) {
 		case AstNodeType::GenericParam: {
 			auto gp = member.template castTo<GenericParamNode>();
 
@@ -727,7 +778,7 @@ SLKC_API std::optional<CompilationError> slkc::visitBaseClass(AstNodePtr<TypeNam
 
 		SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(cls->document->sharedFromThis(), cls.template castTo<CustomTypeNameNode>(), baseType, walkedNodes));
 
-		if (baseType && (baseType->astNodeType == AstNodeType::Class)) {
+		if (baseType && (baseType->getAstNodeType() == AstNodeType::Class)) {
 			AstNodePtr<ClassNode> b = baseType.template castTo<ClassNode>();
 			bool isCyclicInherited;
 
@@ -748,7 +799,7 @@ SLKC_API std::optional<CompilationError> slkc::visitBaseInterface(AstNodePtr<Typ
 
 		SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(cls->document->sharedFromThis(), cls.template castTo<CustomTypeNameNode>(), baseType, walkedNodes));
 
-		if (baseType && (baseType->astNodeType == AstNodeType::Interface)) {
+		if (baseType && (baseType->getAstNodeType() == AstNodeType::Interface)) {
 			AstNodePtr<InterfaceNode> b = baseType.template castTo<InterfaceNode>();
 			bool isCyclicInherited;
 

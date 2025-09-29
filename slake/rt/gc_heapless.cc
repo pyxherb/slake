@@ -282,6 +282,36 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 
 					break;
 				}
+				case ObjectKind::Struct: {
+					for (auto i = ((StructObject *)v)->members.begin(); i != ((StructObject *)v)->members.end(); ++i) {
+						GCWalkContext::pushObject(context, i.value());
+					}
+					GCWalkContext::pushObject(context, ((StructObject *)v)->parent);
+
+					StructObject *value = (StructObject *)v;
+
+					for (size_t i = 0; i < value->fieldRecords.size(); ++i) {
+						_gcWalk(context, value->fieldRecords.at(i).type);
+						_gcWalk(context, readVarUnsafe(EntityRef::makeFieldRef(value, i)));
+					}
+
+					for (auto &i : value->genericParams) {
+						// i.baseType.loadDeferredType(this);
+						_gcWalk(context, i.baseType);
+						for (auto &j : i.interfaces) {
+							// j.loadDeferredType(this);
+							_gcWalk(context, j);
+						}
+					}
+					for (auto &i : value->genericArgs) {
+						// i.loadDeferredType(this);
+						_gcWalk(context, i);
+					}
+
+					_gcWalk(context, value->genericParams);
+
+					break;
+				}
 				case ObjectKind::Interface: {
 					// TODO: Walk generic parameters.
 					for (auto i = ((InterfaceObject *)v)->members.begin(); i != ((InterfaceObject *)v)->members.end(); ++i) {

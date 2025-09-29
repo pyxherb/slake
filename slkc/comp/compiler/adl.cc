@@ -58,13 +58,13 @@ SLKC_API std::optional<CompilationError> slkc::determineFnOverloading(
 		mismatched:;
 	}
 
-	switch (fnSlot->parent->astNodeType) {
+	switch (fnSlot->parent->getAstNodeType()) {
 		case AstNodeType::Module: {
 			if (fnSlot->parent->parent) {
 				AstNodePtr<ModuleNode> baseType = fnSlot->parent->parent->sharedFromThis().template castTo<ModuleNode>();
 
 				if (auto it = baseType->memberIndices.find(fnSlot->name); it != baseType->memberIndices.end()) {
-					if (baseType->members.at(it.value())->astNodeType != AstNodeType::FnSlot) {
+					if (baseType->members.at(it.value())->getAstNodeType() != AstNodeType::FnSlot) {
 						goto baseModuleMalformed;
 					}
 
@@ -87,7 +87,7 @@ SLKC_API std::optional<CompilationError> slkc::determineFnOverloading(
 				SLKC_RETURN_IF_COMP_ERROR(visitBaseClass(m->baseType, baseType, nullptr));
 				if (baseType) {
 					if (auto it = baseType->memberIndices.find(fnSlot->name); it != baseType->memberIndices.end()) {
-						if (baseType->members.at(it.value())->astNodeType != AstNodeType::FnSlot) {
+						if (baseType->members.at(it.value())->getAstNodeType() != AstNodeType::FnSlot) {
 							goto classBaseClassMalformed;
 						}
 
@@ -108,7 +108,7 @@ SLKC_API std::optional<CompilationError> slkc::determineFnOverloading(
 					SLKC_RETURN_IF_COMP_ERROR(visitBaseInterface(i, baseType, nullptr));
 					if (baseType) {
 						if (auto it = baseType->memberIndices.find(fnSlot->name); it != baseType->memberIndices.end()) {
-							if (baseType->members.at(it.value())->astNodeType != AstNodeType::FnSlot) {
+							if (baseType->members.at(it.value())->getAstNodeType() != AstNodeType::FnSlot) {
 								continue;
 							}
 
@@ -132,7 +132,7 @@ SLKC_API std::optional<CompilationError> slkc::determineFnOverloading(
 					SLKC_RETURN_IF_COMP_ERROR(visitBaseInterface(i, baseType, nullptr));
 					if (baseType) {
 						if (auto it = baseType->memberIndices.find(fnSlot->name); it != baseType->memberIndices.end()) {
-							if (baseType->members.at(it.value())->astNodeType != AstNodeType::FnSlot) {
+							if (baseType->members.at(it.value())->getAstNodeType() != AstNodeType::FnSlot) {
 								continue;
 							}
 

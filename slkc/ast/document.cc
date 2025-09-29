@@ -16,8 +16,8 @@ SLKC_API void Document::_doClearDeferredDestructibleAstNodes() {
 		destructibleAstNodeList = nullptr;
 
 		while (i) {
-			next = i->nextDestructible;
-			i->destructor(i);
+			next = i->_nextDestructible;
+			i->_destructor(i);
 			i = next;
 		};
 	}

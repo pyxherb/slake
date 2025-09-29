@@ -106,6 +106,37 @@ SLKC_API std::optional<CompilationError> slkc::indexInterfaceGenericParams(
 	return {};
 }
 
+SLKC_API std::optional<CompilationError> slkc::reindexStructGenericParams(
+	CompileEnvironment* compileEnv,
+	AstNodePtr<StructNode> structNode) {
+	for (size_t i = 0; i < structNode->genericParams.size(); ++i) {
+		AstNodePtr<GenericParamNode> &curParam = structNode->genericParams.at(i);
+		if (structNode->genericParamIndices.contains(curParam->name)) {
+			SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(CompilationError(curParam->tokenRange, CompilationErrorKind::GenericParamAlreadyDefined)));
+		}
+
+		if (!structNode->genericParamIndices.insert(curParam->name, +i)) {
+			return genOutOfMemoryCompError();
+		}
+	}
+
+	structNode->isGenericParamsIndexed = true;
+	return {};
+}
+
+SLKC_API std::optional<CompilationError> slkc::indexStructGenericParams(
+	CompileEnvironment* compileEnv,
+	AstNodePtr<StructNode> structNode) {
+	if (structNode->isGenericParamsIndexed) {
+		return {};
+	}
+
+	SLKC_RETURN_IF_COMP_ERROR(reindexStructGenericParams(compileEnv, structNode));
+	structNode->isGenericParamsIndexed = true;
+
+	return {};
+}
+
 SLKC_API std::optional<CompilationError> slkc::renormalizeModuleVarDefStmts(
 	CompileEnvironment *compileEnv,
 	AstNodePtr<ModuleNode> mod) {
@@ -182,7 +213,7 @@ SLKC_API std::optional<CompilationError> slkc::indexModuleMembers(
 	CompileEnvironment *compileEnv,
 	AstNodePtr<ModuleNode> moduleNode) {
 	for (auto i : moduleNode->members) {
-		switch (i->astNodeType) {
+		switch (i->getAstNodeType()) {
 			case AstNodeType::Module: {
 				AstNodePtr<ModuleNode> m = i.template castTo<ModuleNode>();
 
@@ -205,6 +236,16 @@ SLKC_API std::optional<CompilationError> slkc::indexModuleMembers(
 				AstNodePtr<InterfaceNode> m = i.template castTo<InterfaceNode>();
 
 				SLKC_RETURN_IF_COMP_ERROR(indexInterfaceGenericParams(compileEnv, m));
+
+				SLKC_RETURN_IF_COMP_ERROR(normalizeModuleVarDefStmts(compileEnv, m.template castTo<ModuleNode>()));
+
+				SLKC_RETURN_IF_COMP_ERROR(indexModuleMembers(compileEnv, m.template castTo<ModuleNode>()));
+				break;
+			}
+			case AstNodeType::Struct: {
+				AstNodePtr<StructNode> m = i.template castTo<StructNode>();
+
+				SLKC_RETURN_IF_COMP_ERROR(indexStructGenericParams(compileEnv, m));
 
 				SLKC_RETURN_IF_COMP_ERROR(normalizeModuleVarDefStmts(compileEnv, m.template castTo<ModuleNode>()));
 

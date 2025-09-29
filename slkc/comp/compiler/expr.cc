@@ -100,7 +100,7 @@ static std::optional<CompilationError> _loadTheRestOfIdRef(CompileEnvironment *c
 		idxReg = initialMemberReg;
 	}
 
-	if (parts.back().member->astNodeType == AstNodeType::Fn) {
+	if (parts.back().member->getAstNodeType() == AstNodeType::Fn) {
 		AstNodePtr<FnOverloadingNode> fn = parts.back().member.template castTo<FnOverloadingNode>();
 
 		if (parts.size() > 1) {
@@ -293,7 +293,7 @@ auto selectSingleMatchingOverloading = [](CompileEnvironment *compileEnv, const 
 };
 
 static std::optional<CompilationError> _determineNodeType(CompileEnvironment *compileEnv, AstNodePtr<MemberNode> node, AstNodePtr<TypeNameNode> &typeNameOut) {
-	switch (node->astNodeType) {
+	switch (node->getAstNodeType()) {
 		case AstNodeType::This: {
 			auto m = node.template castTo<ThisNode>()->thisType;
 
@@ -470,7 +470,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 				return CompilationError(e->idRefPtr->tokenRange, CompilationErrorKind::IdNotFound);
 			}
 
-			if (finalMember->astNodeType == AstNodeType::FnSlot) {
+			if (finalMember->getAstNodeType() == AstNodeType::FnSlot) {
 				SLKC_RETURN_IF_COMP_ERROR(selectSingleMatchingOverloading(compileEnv, e->idRefPtr->tokenRange, finalMember, desiredType, false, resultOut));
 
 				AstNodePtr<FnTypeNameNode> fnType;
@@ -720,7 +720,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 						}
 					}
 
-					if (finalMember->astNodeType == AstNodeType::FnSlot) {
+					if (finalMember->getAstNodeType() == AstNodeType::FnSlot) {
 						SLKC_RETURN_IF_COMP_ERROR(selectSingleMatchingOverloading(compileEnv, e->idRefPtr->tokenRange, finalMember, desiredType, false, resultOut));
 
 						AstNodePtr<FnTypeNameNode> fnType;
@@ -763,7 +763,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 					return CompilationError(e->idRefPtr->tokenRange, CompilationErrorKind::IdNotFound);
 				}
 
-				if (finalMember->astNodeType == AstNodeType::FnSlot) {
+				if (finalMember->getAstNodeType() == AstNodeType::FnSlot) {
 					SLKC_RETURN_IF_COMP_ERROR(selectSingleMatchingOverloading(compileEnv, e->idRefPtr->tokenRange, finalMember, desiredType, false, resultOut));
 
 					AstNodePtr<FnTypeNameNode> fnType;
@@ -1339,7 +1339,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 
 			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(compileEnv->document, e->targetType.template castTo<CustomTypeNameNode>(), m));
 
-			if (m->astNodeType != AstNodeType::Class) {
+			if (m->getAstNodeType() != AstNodeType::Class) {
 				return CompilationError(e->targetType->tokenRange, CompilationErrorKind::TypeIsNotConstructible);
 			}
 
@@ -1369,7 +1369,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::NEW, resultRegOut, { slake::Value(type) }));
 
 			if (auto it = c->memberIndices.find("new"); it != c->memberIndices.end()) {
-				if (c->members.at(it.value())->astNodeType != AstNodeType::FnSlot) {
+				if (c->members.at(it.value())->getAstNodeType() != AstNodeType::FnSlot) {
 					return CompilationError(e->targetType->tokenRange, CompilationErrorKind::TypeIsNotConstructible);
 				}
 				AstNodePtr<FnNode> constructor = c->members.at(it.value()).template castTo<FnNode>();

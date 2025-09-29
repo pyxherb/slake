@@ -64,9 +64,10 @@ SLKC_API std::optional<CompilationError> slkc::compileTypeName(
 				return CompilationError(typeName->tokenRange, CompilationErrorKind::DoesNotReferToATypeName);
 			}
 
-			switch (m->astNodeType) {
+			switch (m->getAstNodeType()) {
 				case AstNodeType::Class:
-				case AstNodeType::Interface: {
+				case AstNodeType::Interface:
+				case AstNodeType::Struct: {
 					slake::HostObjectRef<slake::CustomTypeDefObject> typeDef;
 
 					if (!(typeDef = slake::CustomTypeDefObject::alloc(compileEnv->runtime))) {
@@ -621,7 +622,7 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 	for (auto [k, v] : mod->memberIndices) {
 		AstNodePtr<MemberNode> m = mod->members.at(v);
 
-		if (m->astNodeType == AstNodeType::Import) {
+		if (m->getAstNodeType() == AstNodeType::Import) {
 			AstNodePtr<ImportNode> importNode = m.template castTo<ImportNode>();
 
 			for (auto &j : compileEnv->document->externalModuleProviders) {
@@ -647,7 +648,7 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 
 		NormalCompilationContext compilationContext(compileEnv, nullptr);
 
-		switch (m->astNodeType) {
+		switch (m->getAstNodeType()) {
 			case AstNodeType::Var: {
 				AstNodePtr<VarNode> varNode = m.template castTo<VarNode>();
 
@@ -704,7 +705,7 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 					if (clsNode->baseType->typeNameKind == TypeNameKind::Custom) {
 						if (!(compilationError = resolveCustomTypeName(clsNode->document->sharedFromThis(), clsNode->baseType.template castTo<CustomTypeNameNode>(), baseTypeNode))) {
 							if (baseTypeNode) {
-								if (baseTypeNode->astNodeType != AstNodeType::Class) {
+								if (baseTypeNode->getAstNodeType() != AstNodeType::Class) {
 									SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(CompilationError(clsNode->baseType->tokenRange, CompilationErrorKind::ExpectingClassName)));
 								}
 
@@ -737,7 +738,7 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 					if (i->typeNameKind == TypeNameKind::Custom) {
 						if (!(compilationError = resolveCustomTypeName(clsNode->document->sharedFromThis(), i.template castTo<CustomTypeNameNode>(), implementedTypeNode))) {
 							if (implementedTypeNode) {
-								if (implementedTypeNode->astNodeType != AstNodeType::Interface) {
+								if (implementedTypeNode->getAstNodeType() != AstNodeType::Interface) {
 									SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(CompilationError(i->tokenRange, CompilationErrorKind::ExpectingInterfaceName)));
 								} else {
 									if (auto e = collectInvolvedInterfaces(compileEnv->document, implementedTypeNode.template castTo<InterfaceNode>(), involvedInterfaces, true); e) {
@@ -775,13 +776,13 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 
 				for (auto &i : involvedInterfaces) {
 					for (auto &j : i->members) {
-						if (j->astNodeType == AstNodeType::FnSlot) {
+						if (j->getAstNodeType() == AstNodeType::FnSlot) {
 							AstNodePtr<FnNode> method = j.template castTo<FnNode>();
 
 							if (auto it = clsNode->memberIndices.find(j->name); it != clsNode->memberIndices.end()) {
 								AstNodePtr<MemberNode> correspondingMember = clsNode->members.at(it.value());
 
-								if (correspondingMember->astNodeType != AstNodeType::FnSlot) {
+								if (correspondingMember->getAstNodeType() != AstNodeType::FnSlot) {
 									for (auto &k : method->overloadings) {
 										SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(CompilationError(clsNode->tokenRange, AbstractMethodNotImplementedErrorExData{ k })));
 									}
@@ -848,7 +849,7 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 					if (i->typeNameKind == TypeNameKind::Custom) {
 						if (!(compilationError = resolveCustomTypeName(clsNode->document->sharedFromThis(), i.template castTo<CustomTypeNameNode>(), implementedTypeNode))) {
 							if (implementedTypeNode) {
-								if (implementedTypeNode->astNodeType != AstNodeType::Interface) {
+								if (implementedTypeNode->getAstNodeType() != AstNodeType::Interface) {
 									SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(CompilationError(i->tokenRange, CompilationErrorKind::ExpectingInterfaceName)));
 								}
 							} else {
@@ -893,9 +894,9 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 			case AstNodeType::Struct: {
 				AstNodePtr<StructNode> clsNode = m.template castTo<StructNode>();
 
-				slake::HostObjectRef<slake::ClassObject> cls;
+				slake::HostObjectRef<slake::StructObject> cls;
 
-				if (!(cls = slake::ClassObject::alloc(compileEnv->runtime))) {
+				if (!(cls = slake::StructObject::alloc(compileEnv->runtime))) {
 					return genOutOfRuntimeMemoryCompError();
 				}
 
@@ -943,9 +944,10 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 
 					compileEnv->reset();
 
-					switch (mod->astNodeType) {
+					switch (mod->getAstNodeType()) {
 						case AstNodeType::Class:
 						case AstNodeType::Interface:
+						case AstNodeType::Struct:
 							if (!(i->accessModifier & slake::ACCESS_STATIC)) {
 								if (!(compileEnv->thisNode = makeAstNode<ThisNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document)))
 									return genOutOfMemoryCompError();

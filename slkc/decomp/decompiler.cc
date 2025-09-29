@@ -147,7 +147,8 @@ SLKC_API bool slkc::decompileTypeName(peff::Alloc *allocator, DumpWriter *writer
 
 			switch (obj->typeObject->getObjectKind()) {
 				case slake::ObjectKind::Class:
-				case slake::ObjectKind::Interface: {
+				case slake::ObjectKind::Interface:
+				case slake::ObjectKind::Struct: {
 					SLKC_RETURN_IF_FALSE(writer->write("@"));
 
 					peff::DynArray<slake::IdRefEntry> moduleFullName(allocator);
@@ -718,6 +719,41 @@ SLKC_API bool slkc::decompileModuleMembers(peff::Alloc *allocator, DumpWriter *w
 
 						SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, obj->implTypes.at(i)));
 					}
+				}
+
+				SLKC_RETURN_IF_FALSE(writer->write(" {\n"));
+
+				SLKC_RETURN_IF_FALSE(decompileModuleMembers(allocator, writer, obj, indentLevel + 1));
+
+				for (size_t j = 0; j < indentLevel; ++j) {
+					SLKC_RETURN_IF_FALSE(writer->write("\t"));
+				}
+
+				SLKC_RETURN_IF_FALSE(writer->write("}\n"));
+				break;
+			}
+			case slake::ObjectKind::Struct: {
+				slake::StructObject *obj = (slake::StructObject *)v;
+
+				for (size_t j = 0; j < indentLevel; ++j) {
+					SLKC_RETURN_IF_FALSE(writer->write("\t"));
+				}
+
+				SLKC_RETURN_IF_FALSE(writer->write("struct "));
+
+				SLKC_RETURN_IF_FALSE(writer->write(obj->name));
+
+				if (obj->genericParams.size()) {
+					SLKC_RETURN_IF_FALSE(writer->write("<"));
+
+					for (size_t j = 0; j < obj->genericParams.size(); ++j) {
+						if (j) {
+							SLKC_RETURN_IF_FALSE(writer->write(", "));
+						}
+						SLKC_RETURN_IF_FALSE(decompileGenericParam(allocator, writer, obj->genericParams.at(j)));
+					}
+
+					SLKC_RETURN_IF_FALSE(writer->write(">"));
 				}
 
 				SLKC_RETURN_IF_FALSE(writer->write(" {\n"));

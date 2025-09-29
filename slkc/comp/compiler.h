@@ -564,6 +564,13 @@ namespace slkc {
 		CompileEnvironment *compileEnv,
 		AstNodePtr<InterfaceNode> interfaceNode);
 
+	[[nodiscard]] SLKC_API std::optional<CompilationError> reindexStructGenericParams(
+		CompileEnvironment *compileEnv,
+		AstNodePtr<StructNode> structNode);
+	[[nodiscard]] SLKC_API std::optional<CompilationError> indexStructGenericParams(
+		CompileEnvironment *compileEnv,
+		AstNodePtr<StructNode> structNode);
+
 	[[nodiscard]] SLKC_API std::optional<CompilationError> indexModuleMembers(
 		CompileEnvironment *compileEnv,
 		AstNodePtr<ModuleNode> moduleNode);

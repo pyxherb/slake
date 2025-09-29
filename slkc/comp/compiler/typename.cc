@@ -247,12 +247,12 @@ SLKC_API std::optional<CompilationError> slkc::isSameTypeInSignature(
 				}
 			}
 
-			if (lhsMember->astNodeType != rhsMember->astNodeType) {
+			if (lhsMember->getAstNodeType() != rhsMember->getAstNodeType()) {
 				whetherOut = false;
 				break;
 			}
 
-			switch (lhsMember->astNodeType) {
+			switch (lhsMember->getAstNodeType()) {
 				case AstNodeType::GenericParam: {
 					// TODO: Lookup the generic parameters recursively for classes, interfaces
 					// and functions.
@@ -264,12 +264,12 @@ SLKC_API std::optional<CompilationError> slkc::isSameTypeInSignature(
 					auto lp = l->parent,
 						 rp = r->parent;
 
-					if (lp->astNodeType != rp->astNodeType) {
+					if (lp->getAstNodeType() != rp->getAstNodeType()) {
 						whetherOut = false;
 						break;
 					}
 
-					switch (lp->astNodeType) {
+					switch (lp->getAstNodeType()) {
 						case AstNodeType::Class: {
 							if (lp != rp) {
 								whetherOut = false;
@@ -456,9 +456,9 @@ SLKC_API std::optional<CompilationError> slkc::isTypeConvertible(
 					SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, st, stm));
 					SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, dt, dtm));
 
-					switch (stm->astNodeType) {
+					switch (stm->getAstNodeType()) {
 						case AstNodeType::Class:
-							switch (dtm->astNodeType) {
+							switch (dtm->getAstNodeType()) {
 								case AstNodeType::Interface:
 									SLKC_RETURN_IF_COMP_ERROR(isImplementedByClass(document, dtm.template castTo<InterfaceNode>(), stm.template castTo<ClassNode>(), whetherOut));
 									break;
@@ -484,7 +484,7 @@ SLKC_API std::optional<CompilationError> slkc::isTypeConvertible(
 							}
 							break;
 						case AstNodeType::Interface:
-							switch (dtm->astNodeType) {
+							switch (dtm->getAstNodeType()) {
 								case AstNodeType::Interface:
 									SLKC_RETURN_IF_COMP_ERROR(isImplementedByInterface(document, dtm.template castTo<InterfaceNode>(), stm.template castTo<InterfaceNode>(), whetherOut));
 									if ((!isSealed) && (!whetherOut)) {
@@ -520,7 +520,7 @@ SLKC_API std::optional<CompilationError> slkc::isTypeConvertible(
 						case AstNodeType::GenericParam: {
 							auto sgp = stm.template castTo<GenericParamNode>();
 
-							switch (dtm->astNodeType) {
+							switch (dtm->getAstNodeType()) {
 								case AstNodeType::Interface:
 									if (sgp->genericConstraint->baseType && sgp->genericConstraint->baseType->typeNameKind == TypeNameKind::Custom) {
 										SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(sgp->genericConstraint->baseType, dest, isSealed, whetherOut));
@@ -907,7 +907,7 @@ SLKC_API std::optional<CompilationError> slkc::getUnpackedTypeOf(
 				return CompilationError(type->tokenRange, CompilationErrorKind::IdNotFound);
 			}
 
-			switch (m->astNodeType) {
+			switch (m->getAstNodeType()) {
 				case AstNodeType::GenericParam: {
 					auto p = m.template castTo<GenericParamNode>();
 
@@ -1026,7 +1026,7 @@ SLKC_API std::optional<CompilationError> slkc::fnToTypeName(
 
 	if (!(fn->accessModifier & slake::ACCESS_STATIC)) {
 		if (fn->parent && fn->parent->parent) {
-			switch (fn->parent->parent->astNodeType) {
+			switch (fn->parent->parent->getAstNodeType()) {
 				case AstNodeType::Class:
 				case AstNodeType::Interface: {
 					IdRefPtr fullIdRef;

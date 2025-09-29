@@ -15,10 +15,10 @@ SLKC_API AstNodePtr<AstNode> AttributeDefNode::doDuplicate(peff::Alloc *newAlloc
 SLKC_API AttributeDefNode::AttributeDefNode(
 	peff::Alloc *selfAllocator,
 	const peff::SharedPtr<Document> &document)
-	: ModuleNode(selfAllocator, document, AstNodeType::Attribute) {
+	: ModuleNode(selfAllocator, document, AstNodeType::Attribute), genericParams(selfAllocator), genericParamIndices(selfAllocator), idxGenericParamCommaTokens(selfAllocator) {
 }
 
-SLKC_API AttributeDefNode::AttributeDefNode(const AttributeDefNode &rhs, peff::Alloc *allocator, bool &succeededOut) : ModuleNode(rhs, allocator, succeededOut) {
+SLKC_API AttributeDefNode::AttributeDefNode(const AttributeDefNode &rhs, peff::Alloc *allocator, bool &succeededOut) : ModuleNode(rhs, allocator, succeededOut), genericParams(allocator), genericParamIndices(allocator), idxGenericParamCommaTokens(allocator) {
 	if (!succeededOut) {
 		return;
 	}

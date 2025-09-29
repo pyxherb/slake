@@ -279,7 +279,7 @@ SLKC_API std::optional<CompilationError> slkc::cleanupUnusedModuleTree(
 
 	for (;;) {
 		for (auto &i : cur->members) {
-			if (i->astNodeType == AstNodeType::Module) {
+			if (i->getAstNodeType() == AstNodeType::Module) {
 				return {};
 			}
 		}
@@ -288,7 +288,7 @@ SLKC_API std::optional<CompilationError> slkc::cleanupUnusedModuleTree(
 			break;
 		}
 
-		if (cur->parent->astNodeType != AstNodeType::Module)
+		if (cur->parent->getAstNodeType() != AstNodeType::Module)
 			std::terminate();
 
 		AstNodePtr<ModuleNode> parent = cur->parent->sharedFromThis().template castTo<ModuleNode>();
@@ -439,7 +439,7 @@ SLKC_API std::optional<CompilationError> FileSystemExternalModuleProvider::loadM
 				}
 
 				for (auto i : mod->members) {
-					if (i->astNodeType == AstNodeType::Import) {
+					if (i->getAstNodeType() == AstNodeType::Import) {
 						SLKC_RETURN_IF_COMP_ERROR(loadModule(compileEnv, i.template castTo<ImportNode>()->idRef.get()));
 					}
 				}

@@ -128,7 +128,7 @@ static std::optional<CompilationError> _walkNodeForGenericInstantiation(
 		}
 	}
 
-	switch (astNode->astNodeType) {
+	switch (astNode->getAstNodeType()) {
 		case AstNodeType::FnSlot: {
 			AstNodePtr<FnNode> fnSlot = astNode.template castTo<FnNode>();
 
@@ -273,6 +273,34 @@ static std::optional<CompilationError> _walkNodeForGenericInstantiation(
 			}
 			break;
 		}
+		case AstNodeType::Struct: {
+			AstNodePtr<StructNode> cls = astNode.template castTo<StructNode>();
+
+			for (auto j : cls->genericParams) {
+				SLKC_RETURN_IF_COMP_ERROR(_walkNodeForGenericInstantiation(j.template castTo<MemberNode>(), context));
+			}
+
+			if ((context.mappedNode != astNode) && (cls->genericParams.size())) {
+				GenericInstantiationContext innerContext(context.allocator.get(), context.genericArgs);
+
+				for (auto [k, v] : context.mappedGenericArgs) {
+					if (auto it = cls->genericParamIndices.find(k);
+						it == cls->genericParamIndices.end()) {
+						if (!innerContext.mappedGenericArgs.insert(std::string_view(k), AstNodePtr<TypeNameNode>(v))) {
+							return genOutOfMemoryCompError();
+						}
+					}
+				}
+				for (auto j : cls->members) {
+					SLKC_RETURN_IF_COMP_ERROR(_walkNodeForGenericInstantiation(j, innerContext));
+				}
+			} else {
+				for (auto j : cls->members) {
+					SLKC_RETURN_IF_COMP_ERROR(_walkNodeForGenericInstantiation(j, context));
+				}
+			}
+			break;
+		}
 		case AstNodeType::Interface: {
 			AstNodePtr<InterfaceNode> cls = astNode.template castTo<InterfaceNode>();
 
@@ -393,7 +421,7 @@ SLKC_API std::optional<CompilationError> Document::instantiateGenericObject(
 			});
 
 			// Map generic arguments.
-			switch (originalObject->astNodeType) {
+			switch (originalObject->getAstNodeType()) {
 				case AstNodeType::Fn: {
 					AstNodePtr<FnOverloadingNode> obj = duplicatedObject.template castTo<FnOverloadingNode>();
 

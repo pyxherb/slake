@@ -618,7 +618,7 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(LoaderContext &cont
 
 			AccessModifier access = 0;
 
-			if (desc.flags & slxfmt::ITD_PUB) {
+			if (desc.flags & slxfmt::STD_PUB) {
 				access |= ACCESS_PUB;
 			}
 
@@ -881,6 +881,12 @@ SLAKE_API InternalExceptionPointer loader::loadModule(LoaderContext &context, Ru
 
 	for (auto i : context.loadedInterfaces) {
 		SLAKE_RETURN_IF_EXCEPT(i->updateInheritanceRelationship(runtime->getFixedAlloc()));
+	}
+
+	context.loadedInterfaces.clear();
+
+	for (auto i : context.loadedStructs) {
+		SLAKE_RETURN_IF_EXCEPT(i->isRecursed(runtime->getFixedAlloc()));
 	}
 
 	context.loadedInterfaces.clear();

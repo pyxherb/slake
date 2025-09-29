@@ -510,7 +510,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 						expr->tokenRange,
 						CompilationErrorKind::OperatorNotFound);
 
-				if (operatorSlot->astNodeType != AstNodeType::FnSlot)
+				if (operatorSlot->getAstNodeType() != AstNodeType::FnSlot)
 					std::terminate();
 
 				peff::DynArray<AstNodePtr<FnOverloadingNode>> matchedOverloadingIndices(compileEnv->allocator.get());
@@ -1839,7 +1839,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 								expr->tokenRange,
 								CompilationErrorKind::OperatorNotFound);
 
-						if (operatorSlot->astNodeType != AstNodeType::FnSlot)
+						if (operatorSlot->getAstNodeType() != AstNodeType::FnSlot)
 							std::terminate();
 
 						peff::DynArray<AstNodePtr<FnOverloadingNode>> matchedOverloadingIndices(compileEnv->allocator.get());

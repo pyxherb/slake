@@ -3,7 +3,7 @@
 
 using namespace slkc;
 
-SLKC_API AstNode::AstNode(AstNodeType astNodeType, peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : astNodeType(astNodeType), selfAllocator(selfAllocator), document(document) {
+SLKC_API AstNode::AstNode(AstNodeType astNodeType, peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : _astNodeType(astNodeType), selfAllocator(selfAllocator), document(document) {
 	assert(document);
 	document->clearDeferredDestructibleAstNodes();
 }
@@ -12,7 +12,7 @@ SLAKE_API AstNode::AstNode(const AstNode &other, peff::Alloc *newAllocator) {
 	other.document->clearDeferredDestructibleAstNodes();
 	document = other.document;
 	selfAllocator = newAllocator;
-	astNodeType = other.astNodeType;
+	_astNodeType = other._astNodeType;
 	tokenRange = other.tokenRange;
 }
 
@@ -23,8 +23,8 @@ SLKC_API AstNodePtr<AstNode> AstNode::doDuplicate(peff::Alloc *newAllocator) con
 	std::terminate();
 }
 
-SLKC_API void slkc::addAstNodeToDestructibleList(AstNode *astNode, AstNodeDestructor destructor) {
-	astNode->nextDestructible = astNode->document->destructibleAstNodeList;
-	astNode->destructor = destructor;
+SLKC_API void slkc::addAstNodeToDestructibleList(AstNode *astNode, AstNodeDestructor _destructor) {
+	astNode->_nextDestructible = astNode->document->destructibleAstNodeList;
+	astNode->_destructor = _destructor;
 	astNode->document->destructibleAstNodeList = astNode;
 }

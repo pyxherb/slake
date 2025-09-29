@@ -312,6 +312,12 @@ SLKC_API std::optional<CompilationError> slkc::dumpModuleMembers(
 				}
 				break;
 			}
+			case slake::ObjectKind::Struct: {
+				if (!collectedStructs.pushBack((slake::StructObject *)v)) {
+					return genOutOfMemoryCompError();
+				}
+				break;
+			}
 			case slake::ObjectKind::Fn: {
 				if (!collectedFns.pushBack((slake::FnObject *)v)) {
 					return genOutOfMemoryCompError();
@@ -386,10 +392,10 @@ SLKC_API std::optional<CompilationError> slkc::dumpModuleMembers(
 
 	SLKC_RETURN_IF_COMP_ERROR(writer->writeU32(collectedStructs.size()));
 	for (auto i : collectedStructs) {
-		slake::slxfmt::InterfaceTypeDesc desc = {};
+		slake::slxfmt::StructTypeDesc desc = {};
 
 		if (i->accessModifier & slake::ACCESS_PUB) {
-			desc.flags |= slake::slxfmt::ITD_PUB;
+			desc.flags |= slake::slxfmt::STD_PUB;
 		}
 		desc.nGenericParams = i->genericParams.size();
 		desc.lenName = i->name.size();

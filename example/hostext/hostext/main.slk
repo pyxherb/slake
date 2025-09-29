@@ -21,6 +21,14 @@ interface ID: IF {
 interface IE: IC + ID {
 }*/
 
+struct SB {
+	let a: SA;
+}
+
+struct SA {
+	let b: SB;
+}
+
 interface IA {
 	fn testIA();
 }

@@ -373,7 +373,7 @@ static std::optional<CompilationError> _collectInvolvedInterfaces(
 			goto malformed;
 		}
 
-		if (m->astNodeType != AstNodeType::Interface) {
+		if (m->getAstNodeType() != AstNodeType::Interface) {
 			goto malformed;
 		}
 
@@ -454,7 +454,7 @@ static std::optional<CompilationError> _isStructRecursed(
 
 		AstNodePtr<MemberNode> v = curStruct->members.at(curFrame.index);
 
-		if (v->astNodeType == AstNodeType::Var) {
+		if (v->getAstNodeType() == AstNodeType::Var) {
 			AstNodePtr<VarNode> varMember = varMember.template castTo<VarNode>();
 
 			AstNodePtr<MemberNode> m;
@@ -462,7 +462,7 @@ static std::optional<CompilationError> _isStructRecursed(
 			if (auto t = varMember->type; varMember->type->typeNameKind == TypeNameKind::Custom) {
 				SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, t.template castTo<CustomTypeNameNode>(), m));
 
-				if (m->astNodeType == AstNodeType::Struct)
+				if (m->getAstNodeType() == AstNodeType::Struct)
 					if (!context.frames.pushBack({ m.template castTo<StructNode>(), 0 }))
 						return genOutOfMemoryCompError();
 			}
@@ -481,30 +481,6 @@ static std::optional<CompilationError> _isStructRecursed(
 	peff::Set<AstNodePtr<StructNode>> walkedStructs(document->allocator.get());
 
 	return _isStructRecursed(document, context, derived, walkedStructs);
-}
-
-SLKC_API std::optional<CompilationError> slkc::collectInvolvedInterfaces(
-	peff::SharedPtr<Document> document,
-	const AstNodePtr<InterfaceNode> &derived,
-	peff::Set<AstNodePtr<InterfaceNode>> &walkedInterfaces,
-	bool insertSelf) {
-	if (walkedInterfaces.contains(derived)) {
-		return {};
-	}
-	if (insertSelf) {
-		if (!walkedInterfaces.insert(AstNodePtr<InterfaceNode>(derived))) {
-			return genOutOfMemoryCompError();
-		}
-	}
-
-	CollectInvolvedInterfacesContext context(document->allocator.get());
-
-	SLKC_RETURN_IF_COMP_ERROR(_collectInvolvedInterfaces(document, context, derived, walkedInterfaces));
-
-	return {};
-
-malformed:
-	return {};
 }
 
 SLKC_API std::optional<CompilationError> slkc::isImplementedByInterface(
@@ -542,7 +518,7 @@ SLKC_API std::optional<CompilationError> slkc::isImplementedByClass(
 		AstNodePtr<MemberNode> m;
 		SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, currentType.template castTo<CustomTypeNameNode>(), m));
 
-		if (m->astNodeType != AstNodeType::Class) {
+		if (m->getAstNodeType() != AstNodeType::Class) {
 			goto malformed;
 		}
 
@@ -564,7 +540,7 @@ SLKC_API std::optional<CompilationError> slkc::isImplementedByClass(
 				goto malformed;
 			}
 
-			if (m->astNodeType != AstNodeType::Interface) {
+			if (m->getAstNodeType() != AstNodeType::Interface) {
 				goto malformed;
 			}
 
@@ -622,7 +598,7 @@ SLKC_API std::optional<CompilationError> slkc::isBaseOf(
 			goto malformed;
 		}
 
-		if (m->astNodeType != AstNodeType::Class) {
+		if (m->getAstNodeType() != AstNodeType::Class) {
 			goto malformed;
 		}
 

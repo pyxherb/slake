@@ -576,7 +576,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 				if (!m)
 					return CompilationError(tn->tokenRange, CompilationErrorKind::ExpectingTypeName);
 
-				if (AstNodeType::GenericParam != m->astNodeType) {
+				if (AstNodeType::GenericParam != m->getAstNodeType()) {
 					return CompilationError(tn->tokenRange, CompilationErrorKind::TypeIsNotSubstitutable);
 				}
 

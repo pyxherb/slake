@@ -60,29 +60,35 @@ namespace slkc {
 	using AstNodePtr = peff::SharedPtr<T>;
 
 	class AstNode : public peff::SharedFromThis<AstNode> {
+	private:
+		AstNodeType _astNodeType;
+
 	protected:
 		SLKC_API virtual AstNodePtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const;
 
 	public:
-		AstNodeType astNodeType;
 		peff::RcObjectPtr<peff::Alloc> selfAllocator;
 		Document *document;
 		TokenRange tokenRange;
 
-		AstNode *nextDestructible = nullptr;
-		AstNodeDestructor destructor = nullptr;
+		AstNode *_nextDestructible = nullptr;
+		AstNodeDestructor _destructor = nullptr;
 
 		SLKC_API AstNode(AstNodeType astNodeType, peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
 		SLKC_API AstNode(const AstNode &other, peff::Alloc *newAllocator);
 		SLKC_API virtual ~AstNode();
 
 		template <typename T>
-		SLAKE_FORCEINLINE peff::SharedPtr<T> duplicate(peff::Alloc *newAllocator) const {
+		SLAKE_FORCEINLINE peff::SharedPtr<T> duplicate(peff::Alloc *newAllocator) const noexcept {
 			return doDuplicate(newAllocator).template castTo<T>();
+		}
+
+		SLAKE_FORCEINLINE AstNodeType getAstNodeType() const noexcept {
+			return _astNodeType;
 		}
 	};
 
-	SLKC_API void addAstNodeToDestructibleList(AstNode *astNode, AstNodeDestructor destructor);
+	SLKC_API void addAstNodeToDestructibleList(AstNode *astNode, AstNodeDestructor _destructor);
 
 	template <typename T>
 	struct AstNodeControlBlock : public peff::SharedPtr<T>::DefaultSharedPtrControlBlock {

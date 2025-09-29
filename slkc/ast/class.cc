@@ -302,7 +302,11 @@ SLKC_API std::optional<CompilationError> StructNode::isRecursedType(bool &whethe
 }
 
 SLKC_API std::optional<CompilationError> StructNode::updateRecursedTypeStatus() {
-	// TODO: Implement it.
+	isRecursedTypeFlag = false;
+
+	SLKC_RETURN_IF_COMP_ERROR(isStructRecursed(document->sharedFromThis(), sharedFromThis().template castTo<StructNode>()));
+
+	isRecursedTypeFlag = true;
 
 	isRecursedTypeChecked = true;
 	return {};
@@ -454,7 +458,7 @@ static std::optional<CompilationError> _isStructRecursed(
 			for (auto &i : context.frames) {
 				if ((&i != &curFrame) && (i.structNode == curFrame.structNode)) {
 					auto source = context.frames.front();
-					return CompilationError(source.structNode->members.at(source.index - 1)->tokenRange, CompilationErrorKind::RecursedStruct);
+					return CompilationError(source.structNode->members.at(source.index - 1).template castTo<VarNode>()->type->tokenRange, CompilationErrorKind::RecursedStruct);
 				}
 			}
 		}
@@ -468,7 +472,7 @@ static std::optional<CompilationError> _isStructRecursed(
 		AstNodePtr<MemberNode> v = curStruct->members.at(curFrame.index);
 
 		if (v->getAstNodeType() == AstNodeType::Var) {
-			AstNodePtr<VarNode> varMember = varMember.template castTo<VarNode>();
+			AstNodePtr<VarNode> varMember = v.template castTo<VarNode>();
 
 			AstNodePtr<MemberNode> m;
 

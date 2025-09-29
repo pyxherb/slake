@@ -340,6 +340,11 @@ void dumpCompilationError(peff::SharedPtr<slkc::Parser> parser, const slkc::Comp
 				beginToken->sourceLocation.beginPosition.line + 1,
 				beginToken->sourceLocation.beginPosition.column + 1);
 			break;
+		case slkc::CompilationErrorKind::RecursedStruct:
+			printError("Error at %zu, %zu: Recursed structure type detected\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
 		case slkc::CompilationErrorKind::ExpectingId:
 			printError("Error at %zu, %zu: Expecting an identifier\n",
 				beginToken->sourceLocation.beginPosition.line + 1,

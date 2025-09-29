@@ -361,7 +361,7 @@ SLAKE_FORCEINLINE static InternalExceptionPointer _updateInterfaceInheritanceRel
 		TypeRef typeRef = interfaceObject->implTypes.at(curFrame.index);
 
 		// TODO: Return a malformed interface exception.
-		if (typeRef.typeDef->getTypeDefKind() != TypeDefKind::CustomTypeDef)
+		if ((!typeRef.typeDef) || (typeRef.typeDef->getTypeDefKind() != TypeDefKind::CustomTypeDef))
 			std::terminate();
 
 		CustomTypeDefObject *td = typeRef.getCustomTypeDef();
@@ -475,6 +475,64 @@ SLAKE_API Object *StructObject::duplicate(Duplicator *duplicator) const {
 	return (Object *)alloc(duplicator, this).get();
 }
 
+struct StructRecursionCheckFrame {
+	StructObject *structObject;
+	size_t index;
+};
+
+struct StructRecursionCheckContext {
+	peff::List<StructRecursionCheckFrame> frames;
+
+	SLAKE_FORCEINLINE StructRecursionCheckContext(peff::Alloc *allocator) : frames(allocator) {}
+};
+
+SLAKE_FORCEINLINE InternalExceptionPointer _isStructRecursed(StructObject *structObject, StructRecursionCheckContext &context) {
+	if (!context.frames.pushBack({ structObject, 0 }))
+		return OutOfMemoryError::alloc();
+
+	while (context.frames.size()) {
+		StructRecursionCheckFrame &curFrame = context.frames.back();
+
+		StructObject *structObject = curFrame.structObject;
+		// Check if the interface has cyclic inheritance.
+		if (!curFrame.index) {
+			for (auto &i : context.frames) {
+				if ((&i != &curFrame) && (i.structObject == curFrame.structObject))
+					std::terminate();
+			}
+		}
+		if (curFrame.index >= structObject->fieldRecords.size()) {
+			context.frames.popBack();
+			continue;
+		}
+
+		auto &curRecord = curFrame.structObject->fieldRecords.at(curFrame.index);
+
+		TypeRef typeRef = curRecord.type;
+		if (curRecord.type.typeId == TypeId::Instance) {
+			if (typeRef.typeDef->getTypeDefKind() != TypeDefKind::CustomTypeDef)
+				std::terminate();
+
+			CustomTypeDefObject *td = typeRef.getCustomTypeDef();
+
+			if (td->typeObject->getObjectKind() == ObjectKind::Struct) {
+				if (!context.frames.pushBack({ (StructObject *)td->typeObject, curFrame.index }))
+					return OutOfMemoryError::alloc();
+			}
+		}
+
+		++curFrame.index;
+	}
+
+	return {};
+}
+
+SLAKE_API InternalExceptionPointer StructObject::isRecursed(peff::Alloc* allocator) noexcept {
+	StructRecursionCheckContext context(allocator);
+
+	return _isStructRecursed(this, context);
+}
+
 SLAKE_API slake::StructObject::StructObject(Runtime *rt, peff::Alloc *selfAllocator)
 	: ModuleObject(rt, selfAllocator, ObjectKind::Struct),
 	  genericArgs(selfAllocator),
@@ -527,8 +585,6 @@ SLAKE_API StructObject::StructObject(Duplicator *duplicator, const StructObject 
 				return;
 			}
 		}
-
-		// DO NOT copy the cached instantiated method table.
 	}
 }
 

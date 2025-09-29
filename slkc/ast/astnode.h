@@ -124,6 +124,7 @@ namespace slkc {
 		AbstractMethodNotImplemented,
 		CyclicInheritedClass,
 		CyclicInheritedInterface,
+		RecursedStruct,
 		ExpectingId,
 		IdNotFound,
 		ParamAlreadyDefined,

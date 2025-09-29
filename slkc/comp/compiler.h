@@ -412,6 +412,9 @@ namespace slkc {
 		const AstNodePtr<InterfaceNode> &base,
 		const AstNodePtr<ClassNode> &derived,
 		bool &whetherOut);
+	[[nodiscard]] SLKC_API std::optional<CompilationError> isStructRecursed(
+		peff::SharedPtr<Document> document,
+		const AstNodePtr<StructNode> &derived);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> isBaseOf(
 		peff::SharedPtr<Document> document,
 		const AstNodePtr<ClassNode> &base,

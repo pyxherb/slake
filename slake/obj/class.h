@@ -166,6 +166,8 @@ namespace slake {
 
 		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
 
+		SLAKE_API InternalExceptionPointer isRecursed(peff::Alloc *allocator) noexcept;
+
 		SLAKE_API static HostObjectRef<StructObject> alloc(Runtime *rt);
 		SLAKE_API static HostObjectRef<StructObject> alloc(Duplicator *duplicator, const StructObject *other);
 		SLAKE_API virtual void dealloc() override;

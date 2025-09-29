@@ -323,3 +323,331 @@ SLKC_API ThisNode::ThisNode(const ThisNode &rhs, peff::Alloc *allocator, bool &s
 
 SLKC_API ThisNode::~ThisNode() {
 }
+
+struct CollectInvolvedInterfacesFrame {
+	AstNodePtr<InterfaceNode> interfaceNode;
+	size_t index;
+};
+
+struct CollectInvolvedInterfacesContext {
+	peff::List<CollectInvolvedInterfacesFrame> frames;
+
+	SLAKE_FORCEINLINE CollectInvolvedInterfacesContext(peff::Alloc *allocator) : frames(allocator) {}
+};
+
+static std::optional<CompilationError> _collectInvolvedInterfaces(
+	peff::SharedPtr<Document> document,
+	CollectInvolvedInterfacesContext &context,
+	AstNodePtr<InterfaceNode> interfaceNode,
+	peff::Set<AstNodePtr<InterfaceNode>> &walkedInterfaces) {
+	if (!context.frames.pushBack({ interfaceNode, 0 }))
+		return genOutOfMemoryCompError();
+
+	while (context.frames.size()) {
+		CollectInvolvedInterfacesFrame &curFrame = context.frames.back();
+
+		const AstNodePtr<InterfaceNode> &curInterface = curFrame.interfaceNode;
+
+		// Check if the interface has cyclic inheritance.
+		if (!curFrame.index) {
+			for (auto &i : context.frames) {
+				if ((&i != &curFrame) && (i.interfaceNode == curFrame.interfaceNode)) {
+					auto source = context.frames.front();
+					return CompilationError(source.interfaceNode->implTypes.at(source.index - 1)->tokenRange, CompilationErrorKind::CyclicInheritedInterface);
+				}
+			}
+		}
+		if (curFrame.index >= curInterface->implTypes.size()) {
+			if (!walkedInterfaces.insert(AstNodePtr<InterfaceNode>(curInterface)))
+				return genOutOfMemoryCompError();
+			context.frames.popBack();
+			continue;
+		}
+
+		AstNodePtr<TypeNameNode> t = curInterface->implTypes.at(curFrame.index);
+
+		AstNodePtr<MemberNode> m;
+		SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, t.template castTo<CustomTypeNameNode>(), m));
+
+		if (!m) {
+			goto malformed;
+		}
+
+		if (m->astNodeType != AstNodeType::Interface) {
+			goto malformed;
+		}
+
+		if (!context.frames.pushBack({ m.template castTo<InterfaceNode>(), 0 }))
+			return genOutOfMemoryCompError();
+
+		++curFrame.index;
+	}
+
+	return {};
+
+malformed:
+	return {};
+}
+
+SLKC_API std::optional<CompilationError> slkc::collectInvolvedInterfaces(
+	peff::SharedPtr<Document> document,
+	const AstNodePtr<InterfaceNode> &derived,
+	peff::Set<AstNodePtr<InterfaceNode>> &walkedInterfaces,
+	bool insertSelf) {
+	if (walkedInterfaces.contains(derived)) {
+		return {};
+	}
+	if (insertSelf) {
+		if (!walkedInterfaces.insert(AstNodePtr<InterfaceNode>(derived))) {
+			return genOutOfMemoryCompError();
+		}
+	}
+
+	CollectInvolvedInterfacesContext context(document->allocator.get());
+
+	SLKC_RETURN_IF_COMP_ERROR(_collectInvolvedInterfaces(document, context, derived, walkedInterfaces));
+
+	return {};
+
+malformed:
+	return {};
+}
+
+struct StructRecursionCheckFrame {
+	AstNodePtr<StructNode> structNode;
+	size_t index;
+};
+
+struct StructRecursionCheckContext {
+	peff::List<StructRecursionCheckFrame> frames;
+
+	SLAKE_FORCEINLINE StructRecursionCheckContext(peff::Alloc *allocator) : frames(allocator) {}
+};
+
+static std::optional<CompilationError> _isStructRecursed(
+	peff::SharedPtr<Document> document,
+	StructRecursionCheckContext &context,
+	AstNodePtr<StructNode> structNode,
+	peff::Set<AstNodePtr<StructNode>> &walkedStructs) {
+	if (!context.frames.pushBack({ structNode, 0 }))
+		return genOutOfMemoryCompError();
+
+	while (context.frames.size()) {
+		StructRecursionCheckFrame &curFrame = context.frames.back();
+
+		const AstNodePtr<StructNode> &curStruct = curFrame.structNode;
+
+		if (!curFrame.index) {
+			for (auto &i : context.frames) {
+				if ((&i != &curFrame) && (i.structNode == curFrame.structNode)) {
+					auto source = context.frames.front();
+					return CompilationError(source.structNode->members.at(source.index - 1)->tokenRange, CompilationErrorKind::RecursedStruct);
+				}
+			}
+		}
+		if (curFrame.index >= curStruct->members.size()) {
+			if (!walkedStructs.insert(AstNodePtr<StructNode>(curStruct)))
+				return genOutOfMemoryCompError();
+			context.frames.popBack();
+			continue;
+		}
+
+		AstNodePtr<MemberNode> v = curStruct->members.at(curFrame.index);
+
+		if (v->astNodeType == AstNodeType::Var) {
+			AstNodePtr<VarNode> varMember = varMember.template castTo<VarNode>();
+
+			AstNodePtr<MemberNode> m;
+
+			if (auto t = varMember->type; varMember->type->typeNameKind == TypeNameKind::Custom) {
+				SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, t.template castTo<CustomTypeNameNode>(), m));
+
+				if (m->astNodeType == AstNodeType::Struct)
+					if (!context.frames.pushBack({ m.template castTo<StructNode>(), 0 }))
+						return genOutOfMemoryCompError();
+			}
+		}
+
+		++curFrame.index;
+	}
+
+	return {};
+}
+
+[[nodiscard]] SLKC_API std::optional<CompilationError> slkc::isStructRecursed(
+	peff::SharedPtr<Document> document,
+	const AstNodePtr<StructNode> &derived) {
+	StructRecursionCheckContext context(document->allocator.get());
+	peff::Set<AstNodePtr<StructNode>> walkedStructs(document->allocator.get());
+
+	return _isStructRecursed(document, context, derived, walkedStructs);
+}
+
+SLKC_API std::optional<CompilationError> slkc::collectInvolvedInterfaces(
+	peff::SharedPtr<Document> document,
+	const AstNodePtr<InterfaceNode> &derived,
+	peff::Set<AstNodePtr<InterfaceNode>> &walkedInterfaces,
+	bool insertSelf) {
+	if (walkedInterfaces.contains(derived)) {
+		return {};
+	}
+	if (insertSelf) {
+		if (!walkedInterfaces.insert(AstNodePtr<InterfaceNode>(derived))) {
+			return genOutOfMemoryCompError();
+		}
+	}
+
+	CollectInvolvedInterfacesContext context(document->allocator.get());
+
+	SLKC_RETURN_IF_COMP_ERROR(_collectInvolvedInterfaces(document, context, derived, walkedInterfaces));
+
+	return {};
+
+malformed:
+	return {};
+}
+
+SLKC_API std::optional<CompilationError> slkc::isImplementedByInterface(
+	peff::SharedPtr<Document> document,
+	const AstNodePtr<InterfaceNode> &base,
+	const AstNodePtr<InterfaceNode> &derived,
+	bool &whetherOut) {
+	peff::Set<AstNodePtr<InterfaceNode>> interfaces(document->allocator.get());
+
+	SLKC_RETURN_IF_COMP_ERROR(collectInvolvedInterfaces(document, derived, interfaces, true));
+
+	whetherOut = interfaces.contains(base);
+	return {};
+}
+
+SLKC_API std::optional<CompilationError> slkc::isImplementedByClass(
+	peff::SharedPtr<Document> document,
+	const AstNodePtr<InterfaceNode> &base,
+	const AstNodePtr<ClassNode> &derived,
+	bool &whetherOut) {
+	peff::Set<AstNodePtr<ClassNode>> walkedClasses(document->allocator.get());
+
+	if (!walkedClasses.insert(AstNodePtr<ClassNode>(derived))) {
+		return genOutOfMemoryCompError();
+	}
+
+	AstNodePtr<ClassNode> currentClass = derived;
+	AstNodePtr<TypeNameNode> currentType = derived->baseType;
+
+	while (currentType) {
+		if (currentType->typeNameKind != TypeNameKind::Custom) {
+			goto malformed;
+		}
+
+		AstNodePtr<MemberNode> m;
+		SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, currentType.template castTo<CustomTypeNameNode>(), m));
+
+		if (m->astNodeType != AstNodeType::Class) {
+			goto malformed;
+		}
+
+		currentClass = m.template castTo<ClassNode>();
+
+		// Make sure that the function will work properly when the class has cyclic inheritance.
+		if (walkedClasses.contains(currentClass)) {
+			whetherOut = true;
+			return {};
+		}
+
+		for (size_t i = 0; i < currentClass->implTypes.size(); ++i) {
+			AstNodePtr<TypeNameNode> t = derived->implTypes.at(i);
+
+			AstNodePtr<MemberNode> m;
+			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, t.template castTo<CustomTypeNameNode>(), m));
+
+			if (!m) {
+				goto malformed;
+			}
+
+			if (m->astNodeType != AstNodeType::Interface) {
+				goto malformed;
+			}
+
+			AstNodePtr<InterfaceNode> interfaceNode = m.template castTo<InterfaceNode>();
+
+			if (interfaceNode == base) {
+				whetherOut = true;
+				return {};
+			}
+
+			SLKC_RETURN_IF_COMP_ERROR(isImplementedByInterface(document, base, interfaceNode, whetherOut));
+
+			if (whetherOut) {
+				whetherOut = true;
+				return {};
+			}
+		}
+
+		if (!walkedClasses.insert(AstNodePtr<ClassNode>(currentClass))) {
+			return genOutOfMemoryCompError();
+		}
+	}
+
+	whetherOut = false;
+	return {};
+
+malformed:
+	whetherOut = false;
+	return {};
+}
+
+SLKC_API std::optional<CompilationError> slkc::isBaseOf(
+	peff::SharedPtr<Document> document,
+	const AstNodePtr<ClassNode> &base,
+	const AstNodePtr<ClassNode> &derived,
+	bool &whetherOut) {
+	peff::Set<AstNodePtr<ClassNode>> walkedClasses(document->allocator.get());
+
+	if (!walkedClasses.insert(AstNodePtr<ClassNode>(derived))) {
+		return genOutOfMemoryCompError();
+	}
+
+	AstNodePtr<ClassNode> currentClass = derived;
+	AstNodePtr<TypeNameNode> currentType;
+
+	while ((currentType = currentClass->baseType)) {
+		if (currentType->typeNameKind != TypeNameKind::Custom) {
+			goto malformed;
+		}
+
+		AstNodePtr<MemberNode> m;
+		SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, currentType.template castTo<CustomTypeNameNode>(), m));
+
+		if (!m) {
+			goto malformed;
+		}
+
+		if (m->astNodeType != AstNodeType::Class) {
+			goto malformed;
+		}
+
+		currentClass = m.template castTo<ClassNode>();
+
+		// Make sure that the function will work properly when the class has cyclic inheritance.
+		if (walkedClasses.contains(currentClass)) {
+			whetherOut = true;
+			return {};
+		}
+
+		if (currentClass == base) {
+			whetherOut = true;
+			return {};
+		}
+
+		if (!walkedClasses.insert(AstNodePtr<ClassNode>(currentClass))) {
+			return genOutOfMemoryCompError();
+		}
+	}
+
+	whetherOut = false;
+	return {};
+
+malformed:
+	whetherOut = false;
+	return {};
+}

@@ -756,6 +756,17 @@ SLKC_API bool slkc::decompileModuleMembers(peff::Alloc *allocator, DumpWriter *w
 					SLKC_RETURN_IF_FALSE(writer->write(">"));
 				}
 
+				if (obj->implTypes.size()) {
+					SLKC_RETURN_IF_FALSE(writer->write(": "));
+					for (size_t i = 0; i < obj->implTypes.size(); ++i) {
+						if (i) {
+							SLKC_RETURN_IF_FALSE(writer->write(" + "));
+						}
+
+						SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, obj->implTypes.at(i)));
+					}
+				}
+
 				SLKC_RETURN_IF_FALSE(writer->write(" {\n"));
 
 				SLKC_RETURN_IF_FALSE(decompileModuleMembers(allocator, writer, obj, indentLevel + 1));

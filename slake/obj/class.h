@@ -154,6 +154,8 @@ namespace slake {
 
 		GenericParamList genericParams;
 
+		peff::DynArray<TypeRef> implTypes;	// Implemented interfaces
+
 		ObjectLayout *cachedObjectLayout = nullptr;
 
 		peff::DynArray<Value> cachedFieldInitValues;

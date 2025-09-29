@@ -227,14 +227,27 @@ SLKC_API StructNode::StructNode(
 	peff::Alloc *selfAllocator,
 	const peff::SharedPtr<Document> &document)
 	: ModuleNode(selfAllocator, document, AstNodeType::Struct),
+	  implTypes(selfAllocator),
 	  genericParams(selfAllocator),
 	  genericParamIndices(selfAllocator),
 	  idxGenericParamCommaTokens(selfAllocator) {
 }
 
-SLKC_API StructNode::StructNode(const StructNode &rhs, peff::Alloc *allocator, bool &succeededOut) : ModuleNode(rhs, allocator, succeededOut), genericParams(allocator), genericParamIndices(allocator), idxGenericParamCommaTokens(allocator) {
+SLKC_API StructNode::StructNode(const StructNode &rhs, peff::Alloc *allocator, bool &succeededOut) : ModuleNode(rhs, allocator, succeededOut), implTypes(allocator), genericParams(allocator), genericParamIndices(allocator), idxGenericParamCommaTokens(allocator) {
 	if (!succeededOut) {
 		return;
+	}
+
+	if (!implTypes.resize(rhs.implTypes.size())) {
+		succeededOut = false;
+		return;
+	}
+
+	for (size_t i = 0; i < implTypes.size(); ++i) {
+		if (!(implTypes.at(i) = rhs.implTypes.at(i)->duplicate<TypeNameNode>(allocator))) {
+			succeededOut = false;
+			return;
+		}
 	}
 
 	if (!genericParams.resize(rhs.genericParams.size())) {
@@ -474,7 +487,7 @@ static std::optional<CompilationError> _isStructRecursed(
 	return {};
 }
 
-[[nodiscard]] SLKC_API std::optional<CompilationError> slkc::isStructRecursed(
+SLKC_API std::optional<CompilationError> slkc::isStructRecursed(
 	peff::SharedPtr<Document> document,
 	const AstNodePtr<StructNode> &derived) {
 	StructRecursionCheckContext context(document->allocator.get());

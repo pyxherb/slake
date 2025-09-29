@@ -319,6 +319,7 @@ SLKC_API std::optional<CompilationError> slkc::isSameTypeInSignature(
 							break;
 						}
 					}
+					break;
 				}
 				default:
 					whetherOut = lhsMember == rhsMember;

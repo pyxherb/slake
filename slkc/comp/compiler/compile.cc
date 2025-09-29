@@ -800,13 +800,13 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 											SLKC_RETURN_IF_COMP_ERROR(isFnSignatureSame(k->params.data(), l->params.data(), k->params.size(), b));
 
 											if (b) {
-												goto matched;
+												goto classMatched;
 											}
 										}
 
 										SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(CompilationError(clsNode->tokenRange, AbstractMethodNotImplementedErrorExData{ k })));
 
-									matched:;
+									classMatched:;
 									}
 								}
 							} else {
@@ -908,7 +908,93 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 
 				SLKC_RETURN_IF_COMP_ERROR(compileGenericParams(compileEnv, &compilationContext, mod, clsNode->genericParams.data(), clsNode->genericParams.size(), cls->genericParams));
 
-				// TODO: Check if it is recursed.
+				peff::Set<AstNodePtr<InterfaceNode>> involvedInterfaces(compileEnv->allocator.get());
+
+				for (auto &i : clsNode->implTypes) {
+					AstNodePtr<MemberNode> implementedTypeNode;
+
+					if (i->typeNameKind == TypeNameKind::Custom) {
+						if (!(compilationError = resolveCustomTypeName(clsNode->document->sharedFromThis(), i.template castTo<CustomTypeNameNode>(), implementedTypeNode))) {
+							if (implementedTypeNode) {
+								if (implementedTypeNode->getAstNodeType() != AstNodeType::Interface) {
+									SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(CompilationError(i->tokenRange, CompilationErrorKind::ExpectingInterfaceName)));
+								} else {
+									if (auto e = collectInvolvedInterfaces(compileEnv->document, implementedTypeNode.template castTo<InterfaceNode>(), involvedInterfaces, true); e) {
+										if (e->errorKind != CompilationErrorKind::CyclicInheritedInterface)
+											return e;
+									}
+
+									bool isCyclicInherited = false;
+									SLKC_RETURN_IF_COMP_ERROR(clsNode->isRecursedType(isCyclicInherited));
+
+									if (isCyclicInherited) {
+										SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(CompilationError(clsNode->tokenRange, CompilationErrorKind::RecursedStruct)));
+										continue;
+									}
+								}
+							} else {
+								SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(CompilationError(i->tokenRange, CompilationErrorKind::ExpectingInterfaceName)));
+							}
+						} else {
+							SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(std::move(compilationError.value())));
+							compilationError.reset();
+						}
+					} else {
+						SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(CompilationError(i->tokenRange, CompilationErrorKind::ExpectingInterfaceName)));
+					}
+
+					slake::TypeRef t;
+
+					SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, &compilationContext, i, t));
+
+					if (!cls->implTypes.pushBack(std::move(t))) {
+						return genOutOfRuntimeMemoryCompError();
+					}
+				}
+
+				for (auto &i : involvedInterfaces) {
+					for (auto &j : i->members) {
+						if (j->getAstNodeType() == AstNodeType::FnSlot) {
+							AstNodePtr<FnNode> method = j.template castTo<FnNode>();
+
+							if (auto it = clsNode->memberIndices.find(j->name); it != clsNode->memberIndices.end()) {
+								AstNodePtr<MemberNode> correspondingMember = clsNode->members.at(it.value());
+
+								if (correspondingMember->getAstNodeType() != AstNodeType::FnSlot) {
+									for (auto &k : method->overloadings) {
+										SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(CompilationError(clsNode->tokenRange, AbstractMethodNotImplementedErrorExData{ k })));
+									}
+								} else {
+									AstNodePtr<FnNode> correspondingMethod = correspondingMember.template castTo<FnNode>();
+
+									for (auto &k : method->overloadings) {
+										bool b = false;
+
+										for (auto &l : correspondingMethod->overloadings) {
+											if (k->params.size() != l->params.size()) {
+												continue;
+											}
+
+											SLKC_RETURN_IF_COMP_ERROR(isFnSignatureSame(k->params.data(), l->params.data(), k->params.size(), b));
+
+											if (b) {
+												goto structMatched;
+											}
+										}
+
+										SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(CompilationError(clsNode->tokenRange, AbstractMethodNotImplementedErrorExData{ k })));
+
+									structMatched:;
+									}
+								}
+							} else {
+								for (auto &k : method->overloadings) {
+									SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(CompilationError(clsNode->tokenRange, AbstractMethodNotImplementedErrorExData{ k })));
+								}
+							}
+						}
+					}
+				}
 
 				SLKC_RETURN_IF_COMP_ERROR(compileModule(compileEnv, clsNode.template castTo<ModuleNode>(), cls.get()));
 

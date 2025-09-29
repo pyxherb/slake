@@ -399,6 +399,7 @@ SLKC_API std::optional<CompilationError> slkc::dumpModuleMembers(
 		}
 		desc.nGenericParams = i->genericParams.size();
 		desc.lenName = i->name.size();
+		desc.nImpls = i->implTypes.size();
 
 		SLKC_RETURN_IF_COMP_ERROR(writer->write((char *)&desc, sizeof(desc)));
 
@@ -406,6 +407,10 @@ SLKC_API std::optional<CompilationError> slkc::dumpModuleMembers(
 
 		for (auto &j : i->genericParams) {
 			SLKC_RETURN_IF_COMP_ERROR(dumpGenericParam(allocator, writer, j));
+		}
+
+		for (auto &j : i->implTypes) {
+			SLKC_RETURN_IF_COMP_ERROR(dumpTypeName(allocator, writer, j));
 		}
 
 		SLKC_RETURN_IF_COMP_ERROR(dumpModuleMembers(allocator, writer, i));

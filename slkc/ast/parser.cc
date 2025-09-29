@@ -862,6 +862,28 @@ accessModifierParseEnd:
 					return syntaxError;
 				}
 
+				if (Token *colonToken = peekToken(); colonToken->tokenId == TokenId::Colon) {
+					nextToken();
+
+					while (true) {
+						AstNodePtr<TypeNameNode> tn;
+
+						if ((syntaxError = parseTypeName(tn))) {
+							return syntaxError;
+						}
+
+						if (!structNode->implTypes.pushBack(std::move(tn))) {
+							return genOutOfMemoryError();
+						}
+
+						if (peekToken()->tokenId != TokenId::AddOp) {
+							break;
+						}
+
+						Token *orOpToken = nextToken();
+					}
+				}
+
 				Token *lBraceToken;
 
 				if ((syntaxError = expectToken((lBraceToken = peekToken()), TokenId::LBrace))) {

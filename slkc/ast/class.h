@@ -79,6 +79,7 @@ namespace slkc {
 		/// @brief Indicates if the class has cyclic inheritance.
 		bool isRecursedTypeFlag = false;
 
+		peff::DynArray<AstNodePtr<TypeNameNode>> implTypes;
 		peff::DynArray<AstNodePtr<GenericParamNode>> genericParams;
 		peff::HashMap<std::string_view, size_t> genericParamIndices;
 		peff::DynArray<size_t> idxGenericParamCommaTokens;

@@ -538,6 +538,7 @@ SLAKE_API slake::StructObject::StructObject(Runtime *rt, peff::Alloc *selfAlloca
 	  genericArgs(selfAllocator),
 	  mappedGenericArgs(selfAllocator),
 	  genericParams(selfAllocator),
+	  implTypes(selfAllocator),
 	  cachedFieldInitValues(selfAllocator) {
 }
 
@@ -550,6 +551,7 @@ SLAKE_API StructObject::StructObject(Duplicator *duplicator, const StructObject 
 	  genericArgs(allocator),
 	  mappedGenericArgs(allocator),
 	  genericParams(allocator),
+	  implTypes(allocator),
 	  cachedFieldInitValues(allocator) {
 	if (succeededOut) {
 		_flags = x._flags;
@@ -585,6 +587,11 @@ SLAKE_API StructObject::StructObject(Duplicator *duplicator, const StructObject 
 				return;
 			}
 		}
+		if (!implTypes.resize(x.implTypes.size())) {
+			succeededOut = false;
+			return;
+		}
+		memcpy(implTypes.data(), x.implTypes.data(), implTypes.size() * sizeof(TypeRef));
 	}
 }
 

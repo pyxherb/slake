@@ -135,6 +135,7 @@ namespace slake {
 			uint8_t flags;
 			uint8_t nGenericParams;
 			uint8_t lenName;
+			uint8_t nImpls;
 		};
 		constexpr static uint8_t
 			STD_PUB = 0x01	// Public

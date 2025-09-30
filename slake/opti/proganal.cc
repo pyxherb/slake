@@ -57,7 +57,7 @@ InternalExceptionPointer slake::opti::evalObjectType(
 	const EntityRef &entityRef,
 	TypeRef &typeOut) {
 	switch (entityRef.kind) {
-		case ObjectRefKind::FieldRef:
+		case ObjectRefKind::StaticFieldRef:
 		case ObjectRefKind::ArrayElementRef:
 		case ObjectRefKind::LocalVarRef:
 		case ObjectRefKind::ArgRef:
@@ -392,7 +392,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 					}
 
 					switch (entityRef.kind) {
-						case ObjectRefKind::FieldRef:
+						case ObjectRefKind::StaticFieldRef:
 							analyzedInfoOut.analyzedRegInfo.at(regIndex).storageType = RegStorageType::FieldVar;
 							break;
 						case ObjectRefKind::InstanceFieldRef:
@@ -492,7 +492,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 								case ObjectRefKind::InstanceFieldRef:
 									analyzedInfoOut.analyzedRegInfo.at(regIndex).storageType = RegStorageType::InstanceFieldVar;
 									break;
-								case ObjectRefKind::FieldRef:
+								case ObjectRefKind::StaticFieldRef:
 									analyzedInfoOut.analyzedRegInfo.at(regIndex).storageType = RegStorageType::FieldVar;
 									break;
 								default: {

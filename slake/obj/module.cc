@@ -71,7 +71,7 @@ SLAKE_API Object *ModuleObject::duplicate(Duplicator *duplicator) const {
 
 SLAKE_API EntityRef ModuleObject::getMember(const std::string_view &name) const {
 	if (auto it = fieldRecordIndices.find(name); it != fieldRecordIndices.endConst()) {
-		return EntityRef::makeFieldRef((ModuleObject *)this, it.value());
+		return EntityRef::makeStaticFieldRef((ModuleObject *)this, it.value());
 	}
 	if (auto it = members.find(name); it != members.end()) {
 		return EntityRef::makeObjectRef(it.value());
@@ -108,7 +108,7 @@ SLAKE_API bool ModuleObject::appendFieldRecord(FieldRecord &&fieldRecord) {
 		return false;
 	}
 
-	associatedRuntime->writeVarUnsafe(EntityRef::makeFieldRef(this, fieldRecords.size() - 1), associatedRuntime->defaultValueOf(fr.type));
+	associatedRuntime->writeVarUnsafe(EntityRef::makeStaticFieldRef(this, fieldRecords.size() - 1), associatedRuntime->defaultValueOf(fr.type));
 	return true;
 }
 

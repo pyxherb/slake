@@ -48,7 +48,7 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, const Value &i) {
 			const EntityRef &entityRef = i.getEntityRef();
 
 			switch (entityRef.kind) {
-				case ObjectRefKind::FieldRef:
+				case ObjectRefKind::StaticFieldRef:
 					GCWalkContext::pushObject(context, entityRef.asField.moduleObject);
 					break;
 				case ObjectRefKind::ArrayElementRef:
@@ -231,7 +231,7 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 						GCWalkContext::pushObject(context, i.value());
 					}
 					for (size_t i = 0; i < ((ModuleObject *)v)->fieldRecords.size(); ++i) {
-						_gcWalk(context, readVarUnsafe(EntityRef::makeFieldRef((ModuleObject *)v, i)));
+						_gcWalk(context, readVarUnsafe(EntityRef::makeStaticFieldRef((ModuleObject *)v, i)));
 					}
 
 					GCWalkContext::pushObject(context, ((ModuleObject *)v)->parent);
@@ -255,7 +255,7 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 
 					for (size_t i = 0; i < value->fieldRecords.size(); ++i) {
 						_gcWalk(context, value->fieldRecords.at(i).type);
-						_gcWalk(context, readVarUnsafe(EntityRef::makeFieldRef(value, i)));
+						_gcWalk(context, readVarUnsafe(EntityRef::makeStaticFieldRef(value, i)));
 					}
 
 					for (auto &i : value->implTypes) {
@@ -292,7 +292,7 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 
 					for (size_t i = 0; i < value->fieldRecords.size(); ++i) {
 						_gcWalk(context, value->fieldRecords.at(i).type);
-						_gcWalk(context, readVarUnsafe(EntityRef::makeFieldRef(value, i)));
+						_gcWalk(context, readVarUnsafe(EntityRef::makeStaticFieldRef(value, i)));
 					}
 
 					for (auto &i : value->genericParams) {
@@ -322,7 +322,7 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 					InterfaceObject *value = (InterfaceObject *)v;
 
 					for (size_t i = 0; i < value->fieldRecords.size(); ++i) {
-						_gcWalk(context, readVarUnsafe(EntityRef::makeFieldRef(value, i)));
+						_gcWalk(context, readVarUnsafe(EntityRef::makeStaticFieldRef(value, i)));
 					}
 
 					for (auto &i : value->implTypes) {

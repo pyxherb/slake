@@ -4,7 +4,7 @@ using namespace slake;
 
 SLAKE_API InternalExceptionPointer Runtime::tryAccessVar(const EntityRef &entityRef) const noexcept {
 	switch (entityRef.kind) {
-		case ObjectRefKind::FieldRef: {
+		case ObjectRefKind::StaticFieldRef: {
 			FieldRecord &fieldRecord = entityRef.asField.moduleObject->fieldRecords.at(entityRef.asField.index);
 
 			break;
@@ -63,7 +63,7 @@ SLAKE_API InternalExceptionPointer Runtime::readVar(const EntityRef &entityRef, 
 
 SLAKE_API Value Runtime::readVarUnsafe(const EntityRef &entityRef) const noexcept {
 	switch (entityRef.kind) {
-		case ObjectRefKind::FieldRef: {
+		case ObjectRefKind::StaticFieldRef: {
 			FieldRecord &fieldRecord = entityRef.asField.moduleObject->fieldRecords.at(entityRef.asField.index);
 
 			const char *const rawDataPtr = entityRef.asField.moduleObject->localFieldStorage.data() + fieldRecord.offset;
@@ -356,7 +356,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 	bool result;
 
 	switch (entityRef.kind) {
-		case ObjectRefKind::FieldRef: {
+		case ObjectRefKind::StaticFieldRef: {
 			if (entityRef.asField.index >= entityRef.asField.moduleObject->fieldRecords.size())
 				// TODO: Use a proper type of exception instead of this.
 				return raiseInvalidArrayIndexError(entityRef.asField.moduleObject->associatedRuntime, entityRef.asArray.index);

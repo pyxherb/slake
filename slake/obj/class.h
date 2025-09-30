@@ -16,6 +16,8 @@ namespace slake {
 		peff::String name;
 		size_t offset;
 		TypeRef type;
+		ModuleObject *initFieldObject;
+		size_t idxInitFieldRecord;
 
 		PEFF_FORCEINLINE ObjectFieldRecord(peff::Alloc *selfAllocator) : name(selfAllocator) {}
 
@@ -23,9 +25,6 @@ namespace slake {
 	};
 
 	struct ObjectLayout {
-#if _DEBUG
-		ClassObject *clsObject = nullptr;  // For debugging
-#endif
 		peff::RcObjectPtr<peff::Alloc> selfAllocator;
 		size_t totalSize = 0;
 		peff::DynArray<ObjectFieldRecord> fieldRecords;
@@ -76,8 +75,6 @@ namespace slake {
 
 		MethodTable *cachedInstantiatedMethodTable = nullptr;
 		ObjectLayout *cachedObjectLayout = nullptr;
-
-		peff::DynArray<Value> cachedFieldInitValues;
 
 		SLAKE_API ClassObject(Runtime *rt, peff::Alloc *selfAllocator);
 		SLAKE_API ClassObject(Duplicator *duplicator, const ClassObject &x, peff::Alloc *allocator, bool &succeededOut);
@@ -157,8 +154,6 @@ namespace slake {
 		peff::DynArray<TypeRef> implTypes;	// Implemented interfaces
 
 		ObjectLayout *cachedObjectLayout = nullptr;
-
-		peff::DynArray<Value> cachedFieldInitValues;
 
 		SLAKE_API StructObject(Runtime *rt, peff::Alloc *selfAllocator);
 		SLAKE_API StructObject(Duplicator *duplicator, const StructObject &x, peff::Alloc *allocator, bool &succeededOut);

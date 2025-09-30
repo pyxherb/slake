@@ -18,7 +18,7 @@ namespace slake {
 	// Value type definitions are defined in <slake/type.h>.
 
 	enum class ObjectRefKind : uint8_t {
-		FieldRef,
+		StaticFieldRef,
 		ArrayElementRef,
 		ObjectRef,
 		InstanceFieldRef,
@@ -79,12 +79,12 @@ namespace slake {
 		};
 		ObjectRefKind kind;
 
-		static SLAKE_FORCEINLINE EntityRef makeFieldRef(ModuleObject *moduleObject, size_t index) {
+		static SLAKE_FORCEINLINE EntityRef makeStaticFieldRef(ModuleObject *moduleObject, size_t index) {
 			EntityRef ref = {};
 
 			ref.asField.moduleObject = moduleObject;
 			ref.asField.index = index;
-			ref.kind = ObjectRefKind::FieldRef;
+			ref.kind = ObjectRefKind::StaticFieldRef;
 
 			return ref;
 		}

@@ -507,7 +507,7 @@ SLKC_API std::optional<CompilationError> slkc::dumpModuleMembers(
 		SLKC_RETURN_IF_COMP_ERROR(writer->write(curRecord.name.data(), curRecord.name.size()));
 
 		SLKC_RETURN_IF_COMP_ERROR(dumpTypeName(allocator, writer, curRecord.type));
-		SLKC_RETURN_IF_COMP_ERROR(dumpValue(allocator, writer, mod->associatedRuntime->readVarUnsafe(slake::EntityRef::makeFieldRef(mod, i))));
+		SLKC_RETURN_IF_COMP_ERROR(dumpValue(allocator, writer, mod->associatedRuntime->readVarUnsafe(slake::EntityRef::makeStaticFieldRef(mod, i))));
 	}
 	return {};
 }

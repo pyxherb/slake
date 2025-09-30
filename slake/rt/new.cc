@@ -80,31 +80,15 @@ SLAKE_API InternalExceptionPointer Runtime::initMethodTableForClass(ClassObject 
 	return {};
 }
 
-SLAKE_API InternalExceptionPointer Runtime::initObjectLayoutForClass(ClassObject *cls, ClassObject *parentClass) {
-	assert(!cls->cachedObjectLayout);
-	std::unique_ptr<ObjectLayout, peff::DeallocableDeleter<ObjectLayout>> objectLayout;
-
-	if (parentClass && parentClass->cachedObjectLayout) {
-		objectLayout = decltype(objectLayout)(parentClass->cachedObjectLayout->duplicate(getCurGenAlloc()));
-
-		if (!cls->cachedFieldInitValues.resize(parentClass->cachedFieldInitValues.size())) {
-			return OutOfMemoryError::alloc();
-		}
-
-		memcpy(cls->cachedFieldInitValues.data(), parentClass->cachedFieldInitValues.data(), sizeof(Value) * parentClass->cachedFieldInitValues.size());
-	} else {
-		objectLayout = decltype(objectLayout)(ObjectLayout::alloc(cls->selfAllocator.get()));
-		cls->cachedFieldInitValues = peff::DynArray<Value>(cls->selfAllocator.get());
-	}
-
-	for (size_t i = 0; i < cls->fieldRecords.size(); ++i) {
-		FieldRecord &clsFieldRecord = cls->fieldRecords.at(i);
+SLAKE_API InternalExceptionPointer Runtime::initObjectLayoutForModule(ModuleObject *mod, ObjectLayout *objectLayout) {
+	for (size_t i = 0; i < mod->fieldRecords.size(); ++i) {
+		FieldRecord &clsFieldRecord = mod->fieldRecords.at(i);
 
 		if (clsFieldRecord.accessModifier & ACCESS_STATIC) {
 			continue;
 		}
 
-		ObjectFieldRecord fieldRecord(cls->selfAllocator.get());
+		ObjectFieldRecord fieldRecord(mod->selfAllocator.get());
 
 		TypeRef type = clsFieldRecord.type;
 
@@ -117,14 +101,11 @@ SLAKE_API InternalExceptionPointer Runtime::initObjectLayoutForClass(ClassObject
 			}
 		}
 		fieldRecord.offset = objectLayout->totalSize;
+		fieldRecord.initFieldObject = mod;
+		fieldRecord.idxInitFieldRecord = i;
 
 		fieldRecord.type = type;
-		if (!fieldRecord.name.build(clsFieldRecord.name)) {
-			// stub
-			std::terminate();
-		}
-
-		if (!cls->cachedFieldInitValues.pushBack(readVarUnsafe(EntityRef::makeFieldRef(cls, i))))
+		if (!fieldRecord.name.build(clsFieldRecord.name))
 			return OutOfMemoryError::alloc();
 
 		if (!objectLayout->fieldNameMap.insert(fieldRecord.name, objectLayout->fieldRecords.size()))
@@ -135,12 +116,41 @@ SLAKE_API InternalExceptionPointer Runtime::initObjectLayoutForClass(ClassObject
 		objectLayout->totalSize += size;
 	}
 
-#if _DEBUG
-	objectLayout->clsObject = cls;
-#endif
+	return {};
+}
+
+SLAKE_API InternalExceptionPointer Runtime::initObjectLayoutForClass(ClassObject *cls, ClassObject *parentClass) {
+	assert(!cls->cachedObjectLayout);
+	std::unique_ptr<ObjectLayout, peff::DeallocableDeleter<ObjectLayout>> objectLayout;
+
+	if (parentClass && parentClass->cachedObjectLayout) {
+		objectLayout = decltype(objectLayout)(parentClass->cachedObjectLayout->duplicate(getCurGenAlloc()));
+	} else {
+		objectLayout = decltype(objectLayout)(ObjectLayout::alloc(cls->selfAllocator.get()));
+	}
+
+	if (!objectLayout)
+		return OutOfMemoryError::alloc();
+
+	SLAKE_RETURN_IF_EXCEPT(initObjectLayoutForModule(cls, objectLayout.get()));
 
 	// cls->cachedFieldInitVars.shrink_to_fit();
 	cls->cachedObjectLayout = objectLayout.release();
+
+	return {};
+}
+
+SLAKE_API InternalExceptionPointer Runtime::initObjectLayoutForStruct(StructObject *s) {
+	assert(!s->cachedObjectLayout);
+	std::unique_ptr<ObjectLayout, peff::DeallocableDeleter<ObjectLayout>> objectLayout(ObjectLayout::alloc(s->selfAllocator.get()));
+
+	if (!objectLayout)
+		return OutOfMemoryError::alloc();
+
+	SLAKE_RETURN_IF_EXCEPT(initObjectLayoutForModule(s, objectLayout.get()));
+
+	// cls->cachedFieldInitVars.shrink_to_fit();
+	s->cachedObjectLayout = objectLayout.release();
 
 	return {};
 }
@@ -193,10 +203,10 @@ SLAKE_API HostObjectRef<InstanceObject> slake::Runtime::newClassInstance(ClassOb
 	//
 	// Initialize the fields.
 	//
-	for (size_t i = 0; i < cls->cachedFieldInitValues.size(); ++i) {
-		ObjectFieldRecord &fieldRecord = cls->cachedObjectLayout->fieldRecords.at(i);
+	for (size_t i = 0; i < cls->fieldRecords.size(); ++i) {
+		const ObjectFieldRecord &fieldRecord = cls->cachedObjectLayout->fieldRecords.at(i);
 
-		Value data = cls->cachedFieldInitValues.at(i);
+		Value data = readVarUnsafe(EntityRef::makeStaticFieldRef(fieldRecord.initFieldObject, fieldRecord.idxInitFieldRecord));
 		SLAKE_UNWRAP_EXCEPT(writeVar(EntityRef::makeInstanceFieldRef(instance.get(), i), data));
 	}
 

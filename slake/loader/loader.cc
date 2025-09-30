@@ -820,7 +820,7 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(LoaderContext &cont
 			Value initialValue;
 			SLAKE_RETURN_IF_EXCEPT(loadValue(context, runtime, reader, moduleObject, initialValue));
 
-			SLAKE_RETURN_IF_EXCEPT(runtime->writeVar(EntityRef::makeFieldRef(moduleObject, i), initialValue));
+			SLAKE_RETURN_IF_EXCEPT(runtime->writeVar(EntityRef::makeStaticFieldRef(moduleObject, i), initialValue));
 		}
 	}
 

@@ -678,7 +678,7 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 				} else {
 					defaultValue = modOut->associatedRuntime->defaultValueOf(type);
 				}
-				modOut->associatedRuntime->writeVar(slake::EntityRef::makeFieldRef(modOut, modOut->fieldRecords.size() - 1), defaultValue).unwrap();
+				modOut->associatedRuntime->writeVar(slake::EntityRef::makeStaticFieldRef(modOut, modOut->fieldRecords.size() - 1), defaultValue).unwrap();
 
 				break;
 			}

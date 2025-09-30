@@ -188,8 +188,14 @@ SLAKE_API size_t Runtime::sizeofType(const TypeRef &type) const {
 		case TypeId::String:
 			return sizeof(void *);
 		case TypeId::Instance:
+			if (type.getCustomTypeDef()->typeObject->getObjectKind() == ObjectKind::Struct) {
+				if (auto l = ((StructObject *)type.getCustomTypeDef()->typeObject)->cachedObjectLayout; l)
+					return l->totalSize;
+				std::terminate();
+			}
+			return sizeof(void *);
 		case TypeId::Array:
-			return sizeof(void *) + sizeof(void *);
+			return sizeof(void *);
 		case TypeId::Any:
 			return sizeof(Value);
 		default:

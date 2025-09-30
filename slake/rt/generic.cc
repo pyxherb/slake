@@ -142,7 +142,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateModuleFields(Gene
 		FieldRecord &curFieldRecord = mod->fieldRecords.back();
 
 		SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(dispatcher, curFieldRecord.type, instantiationContext));
-		SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(dispatcher, EntityRef::makeFieldRef(mod, i), readVarUnsafe(EntityRef::makeFieldRef(tmpMod.get(), i)), instantiationContext));
+		SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(dispatcher, EntityRef::makeStaticFieldRef(mod, i), readVarUnsafe(EntityRef::makeStaticFieldRef(tmpMod.get(), i)), instantiationContext));
 	}
 
 	return {};

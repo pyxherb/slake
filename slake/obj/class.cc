@@ -44,6 +44,8 @@ SLAKE_API ObjectLayout *ObjectLayout::duplicate(peff::Alloc *allocator) const {
 			return nullptr;
 		}
 		fr.offset = fieldRecords.at(i).offset;
+		fr.idxInitFieldRecord = fieldRecords.at(i).idxInitFieldRecord;
+		fr.initFieldObject = fieldRecords.at(i).initFieldObject;
 		fr.type = fieldRecords.at(i).type;
 
 		if (!ptr->fieldNameMap.insert(fr.name, +i)) {
@@ -121,8 +123,7 @@ SLAKE_API slake::ClassObject::ClassObject(Runtime *rt, peff::Alloc *selfAllocato
 	  genericArgs(selfAllocator),
 	  mappedGenericArgs(selfAllocator),
 	  genericParams(selfAllocator),
-	  implTypes(selfAllocator),
-	  cachedFieldInitValues(selfAllocator) {
+	  implTypes(selfAllocator) {
 }
 
 SLAKE_API const GenericArgList *ClassObject::getGenericArgs() const {
@@ -134,8 +135,7 @@ SLAKE_API ClassObject::ClassObject(Duplicator *duplicator, const ClassObject &x,
 	  genericArgs(allocator),
 	  mappedGenericArgs(allocator),
 	  genericParams(allocator),
-	  implTypes(allocator),
-	  cachedFieldInitValues(allocator) {
+	  implTypes(allocator) {
 	if (succeededOut) {
 		_flags = x._flags;
 
@@ -282,8 +282,6 @@ SLAKE_API void ClassObject::replaceAllocator(peff::Alloc *allocator) noexcept {
 
 	if (cachedObjectLayout)
 		cachedObjectLayout->replaceAllocator(allocator);
-
-	cachedFieldInitValues.replaceAllocator(allocator);
 }
 
 SLAKE_API InterfaceObject::InterfaceObject(Runtime *rt, peff::Alloc *selfAllocator)
@@ -538,8 +536,7 @@ SLAKE_API slake::StructObject::StructObject(Runtime *rt, peff::Alloc *selfAlloca
 	  genericArgs(selfAllocator),
 	  mappedGenericArgs(selfAllocator),
 	  genericParams(selfAllocator),
-	  implTypes(selfAllocator),
-	  cachedFieldInitValues(selfAllocator) {
+	  implTypes(selfAllocator) {
 }
 
 SLAKE_API const GenericArgList *StructObject::getGenericArgs() const {
@@ -551,8 +548,7 @@ SLAKE_API StructObject::StructObject(Duplicator *duplicator, const StructObject 
 	  genericArgs(allocator),
 	  mappedGenericArgs(allocator),
 	  genericParams(allocator),
-	  implTypes(allocator),
-	  cachedFieldInitValues(allocator) {
+	  implTypes(allocator) {
 	if (succeededOut) {
 		_flags = x._flags;
 
@@ -663,6 +659,4 @@ SLAKE_API void StructObject::replaceAllocator(peff::Alloc *allocator) noexcept {
 
 	if (cachedObjectLayout)
 		cachedObjectLayout->replaceAllocator(allocator);
-
-	cachedFieldInitValues.replaceAllocator(allocator);
 }

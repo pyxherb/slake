@@ -18,12 +18,15 @@ SLAKE_API void ObjectLayout::replaceAllocator(peff::Alloc *allocator) noexcept {
 	}
 
 	fieldNameMap.replaceAllocator(allocator);
+
+	fieldRecordInitModuleFieldsNumber.replaceAllocator(allocator);
 }
 
 SLAKE_API ObjectLayout::ObjectLayout(peff::Alloc *selfAllocator)
 	: selfAllocator(selfAllocator),
 	  fieldRecords(selfAllocator),
-	  fieldNameMap(selfAllocator) {
+	  fieldNameMap(selfAllocator),
+	  fieldRecordInitModuleFieldsNumber(selfAllocator) {
 }
 
 SLAKE_API ObjectLayout *ObjectLayout::duplicate(peff::Alloc *allocator) const {
@@ -34,6 +37,10 @@ SLAKE_API ObjectLayout *ObjectLayout::duplicate(peff::Alloc *allocator) const {
 	if (!ptr->fieldRecords.resizeUninitialized(fieldRecords.size())) {
 		return nullptr;
 	}
+	if (!ptr->fieldRecordInitModuleFieldsNumber.resizeUninitialized(fieldRecordInitModuleFieldsNumber.size())) {
+		return nullptr;
+	}
+	memcpy(ptr->fieldRecordInitModuleFieldsNumber.data(), fieldRecordInitModuleFieldsNumber.data(), fieldRecordInitModuleFieldsNumber.size() * sizeof(std::pair<ModuleObject *, size_t>));
 	for (size_t i = 0; i < fieldRecords.size(); ++i) {
 		peff::constructAt<ObjectFieldRecord>(&ptr->fieldRecords.at(i), selfAllocator.get());
 	}
@@ -45,7 +52,6 @@ SLAKE_API ObjectLayout *ObjectLayout::duplicate(peff::Alloc *allocator) const {
 		}
 		fr.offset = fieldRecords.at(i).offset;
 		fr.idxInitFieldRecord = fieldRecords.at(i).idxInitFieldRecord;
-		fr.initFieldObject = fieldRecords.at(i).initFieldObject;
 		fr.type = fieldRecords.at(i).type;
 
 		if (!ptr->fieldNameMap.insert(fr.name, +i)) {
@@ -525,7 +531,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer _isStructRecursed(StructObject *struc
 	return {};
 }
 
-SLAKE_API InternalExceptionPointer StructObject::isRecursed(peff::Alloc* allocator) noexcept {
+SLAKE_API InternalExceptionPointer StructObject::isRecursed(peff::Alloc *allocator) noexcept {
 	StructRecursionCheckContext context(allocator);
 
 	return _isStructRecursed(this, context);

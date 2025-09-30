@@ -81,6 +81,7 @@ SLAKE_API InternalExceptionPointer Runtime::initMethodTableForClass(ClassObject 
 }
 
 SLAKE_API InternalExceptionPointer Runtime::initObjectLayoutForModule(ModuleObject *mod, ObjectLayout *objectLayout) {
+	size_t cnt = 0;
 	for (size_t i = 0; i < mod->fieldRecords.size(); ++i) {
 		FieldRecord &clsFieldRecord = mod->fieldRecords.at(i);
 
@@ -101,7 +102,6 @@ SLAKE_API InternalExceptionPointer Runtime::initObjectLayoutForModule(ModuleObje
 			}
 		}
 		fieldRecord.offset = objectLayout->totalSize;
-		fieldRecord.initFieldObject = mod;
 		fieldRecord.idxInitFieldRecord = i;
 
 		fieldRecord.type = type;
@@ -114,7 +114,12 @@ SLAKE_API InternalExceptionPointer Runtime::initObjectLayoutForModule(ModuleObje
 			return OutOfMemoryError::alloc();
 
 		objectLayout->totalSize += size;
+
+		++cnt;
 	}
+
+	if (!objectLayout->fieldRecordInitModuleFieldsNumber.pushBack({ mod, cnt }))
+		return OutOfMemoryError::alloc();
 
 	return {};
 }
@@ -203,11 +208,19 @@ SLAKE_API HostObjectRef<InstanceObject> slake::Runtime::newClassInstance(ClassOb
 	//
 	// Initialize the fields.
 	//
+	size_t index = 0, cnt = 0;
+	std::pair<ModuleObject *, size_t> p = cls->cachedObjectLayout->fieldRecordInitModuleFieldsNumber.at(0);
+
 	for (size_t i = 0; i < cls->fieldRecords.size(); ++i) {
 		const ObjectFieldRecord &fieldRecord = cls->cachedObjectLayout->fieldRecords.at(i);
 
-		Value data = readVarUnsafe(EntityRef::makeStaticFieldRef(fieldRecord.initFieldObject, fieldRecord.idxInitFieldRecord));
+		Value data = readVarUnsafe(EntityRef::makeStaticFieldRef(p.first, fieldRecord.idxInitFieldRecord));
 		SLAKE_UNWRAP_EXCEPT(writeVar(EntityRef::makeInstanceFieldRef(instance.get(), i), data));
+
+		if (cnt++ >= p.second) {
+			cnt = 0;
+			p = cls->cachedObjectLayout->fieldRecordInitModuleFieldsNumber.at(++index);
+		}
 	}
 
 	return instance;

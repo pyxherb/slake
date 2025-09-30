@@ -16,7 +16,6 @@ namespace slake {
 		peff::String name;
 		size_t offset;
 		TypeRef type;
-		ModuleObject *initFieldObject;
 		size_t idxInitFieldRecord;
 
 		PEFF_FORCEINLINE ObjectFieldRecord(peff::Alloc *selfAllocator) : name(selfAllocator) {}
@@ -27,6 +26,7 @@ namespace slake {
 	struct ObjectLayout {
 		peff::RcObjectPtr<peff::Alloc> selfAllocator;
 		size_t totalSize = 0;
+		peff::DynArray<std::pair<ModuleObject *, size_t>> fieldRecordInitModuleFieldsNumber;
 		peff::DynArray<ObjectFieldRecord> fieldRecords;
 		peff::HashMap<std::string_view, size_t> fieldNameMap;
 

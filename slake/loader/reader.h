@@ -7,7 +7,6 @@ namespace slake {
 	namespace loader {
 		enum class ReadResult {
 			Succeeded = 0,
-			Eof,
 			ReadError
 		};
 

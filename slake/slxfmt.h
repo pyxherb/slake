@@ -67,6 +67,7 @@ namespace slake {
 			Bool,			// Boolean
 			Array,			// Array
 			Object,			// Object
+			Struct,			// Structure
 			GenericArg,		// Generic argument
 			Ref,			// Reference
 			ParamTypeList,	// Parameter type list

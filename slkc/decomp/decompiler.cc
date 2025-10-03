@@ -147,8 +147,7 @@ SLKC_API bool slkc::decompileTypeName(peff::Alloc *allocator, DumpWriter *writer
 
 			switch (obj->typeObject->getObjectKind()) {
 				case slake::ObjectKind::Class:
-				case slake::ObjectKind::Interface:
-				case slake::ObjectKind::Struct: {
+				case slake::ObjectKind::Interface: {
 					SLKC_RETURN_IF_FALSE(writer->write("@"));
 
 					peff::DynArray<slake::IdRefEntry> moduleFullName(allocator);
@@ -160,6 +159,32 @@ SLKC_API bool slkc::decompileTypeName(peff::Alloc *allocator, DumpWriter *writer
 				}
 				case slake::ObjectKind::IdRef: {
 					SLKC_RETURN_IF_FALSE(writer->write("@"));
+					SLKC_RETURN_IF_FALSE(decompileIdRef(allocator, writer, (slake::IdRefObject *)obj->typeObject));
+					break;
+				}
+				default:
+					std::terminate();
+			}
+			break;
+		}
+		case slake::TypeId::StructInstance: {
+			auto obj = type.getCustomTypeDef();
+
+			slake::Runtime *runtime = obj->associatedRuntime;
+
+			switch (obj->typeObject->getObjectKind()) {
+				case slake::ObjectKind::Struct: {
+					SLKC_RETURN_IF_FALSE(writer->write("struct "));
+
+					peff::DynArray<slake::IdRefEntry> moduleFullName(allocator);
+
+					if (!runtime->getFullRef(allocator, (slake::MemberObject *)obj->typeObject, moduleFullName))
+						return false;
+
+					break;
+				}
+				case slake::ObjectKind::IdRef: {
+					SLKC_RETURN_IF_FALSE(writer->write("struct "));
 					SLKC_RETURN_IF_FALSE(decompileIdRef(allocator, writer, (slake::IdRefObject *)obj->typeObject));
 					break;
 				}

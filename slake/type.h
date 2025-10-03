@@ -52,9 +52,10 @@ namespace slake {
 		F64,	// 64-bit floating point number
 		Bool,	// Boolean
 
-		String,		 // String
-		Instance,	 // Object instance
-		GenericArg,	 // Generic argument
+		String,			 // String
+		Instance,		 // Object instance
+		StructInstance,	 // Structure instance
+		GenericArg,		 // Generic argument
 
 		Array,	  // Array
 		Ref,	  // Reference

@@ -26,6 +26,7 @@ namespace slake {
 	struct ObjectLayout {
 		peff::RcObjectPtr<peff::Alloc> selfAllocator;
 		size_t totalSize = 0;
+		size_t alignment = 1;
 		peff::DynArray<std::pair<ModuleObject *, size_t>> fieldRecordInitModuleFieldsNumber;
 		peff::DynArray<ObjectFieldRecord> fieldRecords;
 		peff::HashMap<std::string_view, size_t> fieldNameMap;

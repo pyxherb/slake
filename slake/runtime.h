@@ -389,6 +389,7 @@ namespace slake {
 		[[nodiscard]] SLAKE_API InternalExceptionPointer initObjectLayoutForClass(ClassObject *cls, ClassObject *parentClass);
 		[[nodiscard]] SLAKE_API InternalExceptionPointer initObjectLayoutForStruct(StructObject *s);
 		[[nodiscard]] SLAKE_API InternalExceptionPointer prepareClassForInstantiation(ClassObject *cls);
+		[[nodiscard]] SLAKE_API InternalExceptionPointer prepareStructForInstantiation(StructObject *cls);
 		SLAKE_API HostObjectRef<InstanceObject> newClassInstance(ClassObject *cls, NewClassInstanceFlags flags);
 		SLAKE_API HostObjectRef<ArrayObject> newArrayInstance(Runtime *rt, const TypeRef &type, size_t length);
 

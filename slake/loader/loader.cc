@@ -126,6 +126,28 @@ SLAKE_API InternalExceptionPointer loader::loadType(LoaderContext &context, Runt
 			}
 			break;
 		}
+		case slake::slxfmt::TypeId::Struct: {
+			HostObjectRef<CustomTypeDefObject> typeDef;
+
+			if (!(typeDef = CustomTypeDefObject::alloc(runtime))) {
+				return OutOfMemoryError::alloc();
+			}
+			HostObjectRef<IdRefObject> idRef;
+
+			SLAKE_RETURN_IF_EXCEPT(loadIdRef(context, runtime, reader, member, idRef));
+
+			typeDef->typeObject = idRef.get();
+
+			if (auto td = runtime->getEqualTypeDef(typeDef.get()); td) {
+				typeOut = TypeRef(TypeId::StructInstance, td);
+			} else {
+				typeOut = TypeRef(TypeId::StructInstance, typeDef.get());
+				if (!context.loadedCustomTypeDefs.insert(typeDef.get()))
+					return OutOfMemoryError::alloc();
+				SLAKE_RETURN_IF_EXCEPT(runtime->registerTypeDef(typeDef.get()));
+			}
+			break;
+		}
 		case slake::slxfmt::TypeId::GenericArg: {
 			HostObjectRef<StringObject> nameObject;
 

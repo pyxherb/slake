@@ -321,6 +321,16 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_createNewMajorFrame(
 SLAKE_API InternalExceptionPointer slake::Runtime::_addLocalVar(Context *context, MajorFrame *frame, TypeRef type, EntityRef &objectRefOut) noexcept {
 	size_t stackOffset;
 
+	switch (type.typeId) {
+		case TypeId::StructInstance: {
+			assert(type.getCustomTypeDef()->typeObject->getObjectKind() == ObjectKind::Struct);
+			SLAKE_RETURN_IF_EXCEPT(prepareStructForInstantiation((StructObject *)type.getCustomTypeDef()->typeObject));
+			break;
+		}
+		default:
+			break;
+	}
+
 	size_t size = sizeofType(type), align = alignofType(type);
 
 	if (align > 1) {
@@ -358,11 +368,20 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_addLocalVar(Context *context
 				return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
 #ifndef _NDEBUG
 			const size_t diff = alignof(void *) - ((uintptr_t)(calcStackAddr(context->dataStack, context->stackSize, context->stackTop)) % alignof(void *));
-			assert((diff == alignof(void*) || (!diff)));
+			assert((diff == alignof(void *) || (!diff)));
 #endif
 			*typeInfo = type.typeDef;
 			break;
 		}
+		case TypeId::StructInstance: {
+			Object **typeInfo = (Object **)context->stackAlloc(sizeof(void *));
+			if (!typeInfo)
+				return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
+			memcpy(typeInfo, type.typeDef, sizeof(void *));
+			break;
+		}
+		default:
+			std::terminate();
 	}
 
 	TypeModifier *typeModifier = (TypeModifier *)context->stackAlloc(sizeof(TypeModifier));

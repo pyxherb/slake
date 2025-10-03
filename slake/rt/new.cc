@@ -183,6 +183,20 @@ SLAKE_API InternalExceptionPointer Runtime::prepareClassForInstantiation(ClassOb
 	return {};
 }
 
+SLAKE_API InternalExceptionPointer Runtime::prepareStructForInstantiation(StructObject* cls) {
+	for (auto& i : cls->fieldRecords) {
+		if (i.type == TypeId::StructInstance) {
+			assert(i.type.getCustomTypeDef()->getObjectKind() == ObjectKind::Struct);
+			SLAKE_RETURN_IF_EXCEPT(prepareStructForInstantiation(((StructObject *)i.type.getCustomTypeDef()->typeObject)));
+		}
+	}
+
+	if (!cls->cachedObjectLayout)
+		SLAKE_RETURN_IF_EXCEPT(initObjectLayoutForStruct(cls));
+
+	return {};
+}
+
 /// @brief Create a new class instance.
 /// @param cls Class for instance creation.
 /// @return Created instance of the class.

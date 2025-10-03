@@ -189,7 +189,9 @@ SLAKE_API InternalExceptionPointer slake::isCompatible(peff::Alloc *allocator, c
 		case TypeId::U8:
 		case TypeId::U16:
 		case TypeId::U32:
-		case TypeId::U64: {
+		case TypeId::U64:
+		case TypeId::F32:
+		case TypeId::F64: {
 			if (type.typeId != valueTypeToTypeId(value.valueType)) {
 				resultOut = false;
 				return {};

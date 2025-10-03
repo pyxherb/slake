@@ -663,6 +663,8 @@ SLAKE_API void StructObject::replaceAllocator(peff::Alloc *allocator) noexcept {
 		i.replaceAllocator(allocator);
 	}
 
+	implTypes.replaceAllocator(allocator);
+
 	if (cachedObjectLayout)
 		cachedObjectLayout->replaceAllocator(allocator);
 }

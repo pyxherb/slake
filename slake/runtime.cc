@@ -188,12 +188,16 @@ SLAKE_API size_t Runtime::sizeofType(const TypeRef &type) const {
 		case TypeId::String:
 			return sizeof(void *);
 		case TypeId::Instance:
-			if (type.getCustomTypeDef()->typeObject->getObjectKind() == ObjectKind::Struct) {
-				if (auto l = ((StructObject *)type.getCustomTypeDef()->typeObject)->cachedObjectLayout; l)
-					return l->totalSize;
-				std::terminate();
-			}
 			return sizeof(void *);
+		case TypeId::StructInstance: {
+			assert(type.getCustomTypeDef()->typeObject->getObjectKind() == ObjectKind::Struct);
+			auto so = static_cast<StructObject *>(type.getCustomTypeDef()->typeObject);
+
+			if (!so->cachedObjectLayout)
+				std::terminate();
+
+			return so->cachedObjectLayout->totalSize;
+		}
 		case TypeId::Array:
 			return sizeof(void *);
 		case TypeId::Any:
@@ -229,8 +233,21 @@ SLAKE_API size_t Runtime::alignofType(const TypeRef &type) const {
 		case TypeId::Bool:
 			return sizeof(bool);
 		case TypeId::String:
+			return sizeof(void *);
 		case TypeId::Instance:
+			return sizeof(void *);
+		case TypeId::StructInstance: {
+			assert(type.getCustomTypeDef()->typeObject->getObjectKind() == ObjectKind::Struct);
+			auto so = static_cast<StructObject *>(type.getCustomTypeDef()->typeObject);
+
+			if (!so->cachedObjectLayout)
+				std::terminate();
+
+			return so->cachedObjectLayout->alignment;
+		}
 		case TypeId::Array:
+			return sizeof(void *);
+		case TypeId::TempRef:
 			return sizeof(void *);
 		default:
 			break;

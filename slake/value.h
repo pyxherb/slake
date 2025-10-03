@@ -25,6 +25,7 @@ namespace slake {
 		LocalVarRef,
 		CoroutineLocalVarRef,
 		Alloca,
+		CoroutineAlloca,
 		ArgRef,
 		ArgPackRef,
 		CoroutineArgRef,
@@ -60,6 +61,10 @@ namespace slake {
 				Context *context;
 				size_t stackOff;
 			} asAlloca;
+			struct {
+				CoroutineObject *coroutine;
+				size_t stackOff;
+			} asCoroutineAlloca;
 			struct {
 				MajorFrame *majorFrame;
 				size_t argIndex;
@@ -134,6 +139,26 @@ namespace slake {
 			ref.asCoroutineLocalVar.coroutine = coroutine;
 			ref.asCoroutineLocalVar.stackOff = offset;
 			ref.kind = ObjectRefKind::CoroutineLocalVarRef;
+
+			return ref;
+		}
+
+		static SLAKE_FORCEINLINE EntityRef makeAllocaRef(Context *context, size_t offset) {
+			EntityRef ref = {};
+
+			ref.asLocalVar.context = context;
+			ref.asLocalVar.stackOff = offset;
+			ref.kind = ObjectRefKind::Alloca;
+
+			return ref;
+		}
+
+		static SLAKE_FORCEINLINE EntityRef makeCoroutineAllocaRef(CoroutineObject *coroutine, size_t offset) {
+			EntityRef ref = {};
+
+			ref.asCoroutineLocalVar.coroutine = coroutine;
+			ref.asCoroutineLocalVar.stackOff = offset;
+			ref.kind = ObjectRefKind::CoroutineAlloca;
 
 			return ref;
 		}

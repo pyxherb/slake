@@ -96,6 +96,8 @@ SLAKE_API Value Runtime::readVarUnsafe(const EntityRef &entityRef) const noexcep
 				case TypeId::Array:
 				case TypeId::Fn:
 					return Value(EntityRef::makeObjectRef(*((Object **)rawDataPtr)));
+				case TypeId::StructInstance:
+					return entityRef;
 				case TypeId::Ref:
 					return Value(*((EntityRef *)rawDataPtr));
 				case TypeId::Any:
@@ -161,6 +163,8 @@ SLAKE_API Value Runtime::readVarUnsafe(const EntityRef &entityRef) const noexcep
 					}
 
 					return Value(EntityRef::makeObjectRef(*((Object **)(rawDataPtr + sizeof(void *)))));
+				case TypeId::StructInstance:
+					return entityRef;
 				case TypeId::Ref:
 					return Value(*((EntityRef *)(rawDataPtr)));
 				case TypeId::Any:
@@ -235,6 +239,8 @@ SLAKE_API Value Runtime::readVarUnsafe(const EntityRef &entityRef) const noexcep
 					}
 
 					return Value(EntityRef::makeObjectRef(*((Object **)(rawDataPtr + sizeof(void *)))));
+				case TypeId::StructInstance:
+					return entityRef;
 				case TypeId::Ref:
 					return Value(*((EntityRef *)(rawDataPtr)));
 				case TypeId::Any:
@@ -281,6 +287,8 @@ SLAKE_API Value Runtime::readVarUnsafe(const EntityRef &entityRef) const noexcep
 				case TypeId::Array:
 				case TypeId::Fn:
 					return Value(EntityRef::makeObjectRef(*((Object **)rawFieldPtr)));
+				case TypeId::StructInstance:
+					return entityRef;
 				case TypeId::Ref:
 					return Value(*((EntityRef *)rawFieldPtr));
 				case TypeId::Any:
@@ -322,6 +330,8 @@ SLAKE_API Value Runtime::readVarUnsafe(const EntityRef &entityRef) const noexcep
 				case TypeId::Array:
 				case TypeId::Fn:
 					return Value(EntityRef::makeObjectRef(((Object **)entityRef.asArray.arrayObject->data)[entityRef.asArray.index]));
+				case TypeId::StructInstance:
+					return entityRef;
 				case TypeId::Ref:
 					return Value(((EntityRef *)entityRef.asArray.arrayObject->data)[entityRef.asArray.index]);
 				case TypeId::Any:
@@ -533,7 +543,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 					if (!stackTopCheck(rawDataPtr + sizeof(void *) + sizeof(void *), stackTop)) {
 						std::terminate();
 					}
-					t.typeDef = *(TypeDefObject**)rawDataPtr;
+					t.typeDef = *(TypeDefObject **)rawDataPtr;
 					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
 					if (!result) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
@@ -672,7 +682,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 						std::terminate();
 					}
 
-					t.typeDef = *(TypeDefObject**)rawDataPtr;
+					t.typeDef = *(TypeDefObject **)rawDataPtr;
 					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
 					if (!result) {
 						return raiseMismatchedVarTypeError((Runtime *)this);

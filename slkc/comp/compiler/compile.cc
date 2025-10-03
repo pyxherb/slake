@@ -66,8 +66,7 @@ SLKC_API std::optional<CompilationError> slkc::compileTypeName(
 
 			switch (m->getAstNodeType()) {
 				case AstNodeType::Class:
-				case AstNodeType::Interface:
-				case AstNodeType::Struct: {
+				case AstNodeType::Interface: {
 					slake::HostObjectRef<slake::CustomTypeDefObject> typeDef;
 
 					if (!(typeDef = slake::CustomTypeDefObject::alloc(compileEnv->runtime))) {
@@ -89,6 +88,30 @@ SLKC_API std::optional<CompilationError> slkc::compileTypeName(
 					typeDef->typeObject = obj.get();
 
 					typeOut = slake::TypeRef(slake::TypeId::Instance, typeDef.get());
+					break;
+				}
+				case AstNodeType::Struct: {
+					slake::HostObjectRef<slake::CustomTypeDefObject> typeDef;
+
+					if (!(typeDef = slake::CustomTypeDefObject::alloc(compileEnv->runtime))) {
+						return genOutOfRuntimeMemoryCompError();
+					}
+
+					IdRefPtr fullName;
+
+					SLKC_RETURN_IF_COMP_ERROR(getFullIdRef(doc->allocator.get(), m, fullName));
+
+					slake::HostObjectRef<slake::IdRefObject> obj;
+
+					SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, compilationContext, fullName->entries.data(), fullName->entries.size(), nullptr, 0, false, obj));
+
+					if (!(compileEnv->hostRefHolder.addObject(obj.get()))) {
+						return genOutOfMemoryCompError();
+					}
+
+					typeDef->typeObject = obj.get();
+
+					typeOut = slake::TypeRef(slake::TypeId::StructInstance, typeDef.get());
 					break;
 				}
 				case AstNodeType::GenericParam: {

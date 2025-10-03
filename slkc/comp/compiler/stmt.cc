@@ -586,7 +586,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 
 			peff::DynArray<GenericConstraintPtr> originalConstraints(compileEnv->allocator.get());
 
-			for (auto& i : involvedGenericParams) {
+			for (auto &i : involvedGenericParams) {
 				GenericConstraintPtr constraint;
 
 				if (!(constraint = duplicateGenericConstraint(compileEnv->allocator.get(), i->genericConstraint.get())))
@@ -843,11 +843,20 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 		case StmtKind::CodeBlock: {
 			AstNodePtr<CodeBlockStmtNode> s = stmt.template castTo<CodeBlockStmtNode>();
 
-			SLKC_RETURN_IF_COMP_ERROR(
-				compilationContext->emitIns(
-					slake::Opcode::ENTER,
-					UINT32_MAX,
-					{}));
+			bool hasFrame = false;
+
+			for (auto i : s->body) {
+				if (i->stmtKind == StmtKind::VarDef) {
+					hasFrame = true;
+				}
+			}
+
+			if (hasFrame)
+				SLKC_RETURN_IF_COMP_ERROR(
+					compilationContext->emitIns(
+						slake::Opcode::ENTER,
+						UINT32_MAX,
+						{}));
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->enterBlock());
 			peff::ScopeGuard popBlockContextGuard([compilationContext]() noexcept {
 				compilationContext->leaveBlock();
@@ -857,11 +866,12 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 				SLKC_RETURN_IF_COMP_ERROR(compileStmt(compileEnv, compilationContext, s->body.at(i)));
 			}
 
-			SLKC_RETURN_IF_COMP_ERROR(
-				compilationContext->emitIns(
-					slake::Opcode::LEAVE,
-					UINT32_MAX,
-					{ slake::Value((uint32_t)1) }));
+			if (hasFrame)
+				SLKC_RETURN_IF_COMP_ERROR(
+					compilationContext->emitIns(
+						slake::Opcode::LEAVE,
+						UINT32_MAX,
+						{ slake::Value((uint32_t)1) }));
 			break;
 		}
 		case StmtKind::Goto:

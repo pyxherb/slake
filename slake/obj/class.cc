@@ -514,9 +514,6 @@ SLAKE_FORCEINLINE InternalExceptionPointer _isStructRecursed(StructObject *struc
 
 		TypeRef typeRef = curRecord.type;
 		if (curRecord.type.typeId == TypeId::Instance) {
-			if (typeRef.typeDef->getTypeDefKind() != TypeDefKind::CustomTypeDef)
-				std::terminate();
-
 			CustomTypeDefObject *td = typeRef.getCustomTypeDef();
 
 			if (td->typeObject->getObjectKind() == ObjectKind::Struct) {

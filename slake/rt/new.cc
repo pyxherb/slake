@@ -161,38 +161,91 @@ SLAKE_API InternalExceptionPointer Runtime::initObjectLayoutForStruct(StructObje
 }
 
 SLAKE_API InternalExceptionPointer Runtime::prepareClassForInstantiation(ClassObject *cls) {
-	ClassObject *p = nullptr;
+	peff::List<ClassObject *> unpreparedClasses(getFixedAlloc());
+	{
+		ClassObject *p = cls;
 
-	if (cls->baseType.typeId != TypeId::Void) {
-		if (cls->baseType.typeId != TypeId::Instance)
-			return allocOutOfMemoryErrorIfAllocFailed(MalformedClassStructureError::alloc(getFixedAlloc(), cls));
+		while (true) {
+			if (!unpreparedClasses.pushBack(+p))
+				return OutOfMemoryError::alloc();
 
-		Object *parentClass = (cls->baseType.getCustomTypeDef())->typeObject;
-		if (parentClass->getObjectKind() != ObjectKind::Class)
-			return allocOutOfMemoryErrorIfAllocFailed(MalformedClassStructureError::alloc(getFixedAlloc(), cls));
+			if (!p->baseType)
+				break;
 
-		SLAKE_RETURN_IF_EXCEPT(prepareClassForInstantiation((ClassObject *)parentClass));
-		p = (ClassObject *)parentClass;
+			if (p->baseType.typeId != TypeId::Instance)
+				return allocOutOfMemoryErrorIfAllocFailed(MalformedClassStructureError::alloc(getFixedAlloc(), p));
+
+			Object *parentClass = (p->baseType.getCustomTypeDef())->typeObject;
+			if (parentClass->getObjectKind() != ObjectKind::Class)
+				return allocOutOfMemoryErrorIfAllocFailed(MalformedClassStructureError::alloc(getFixedAlloc(), p));
+
+			p = (ClassObject *)parentClass;
+		}
 	}
 
-	if (!cls->cachedObjectLayout)
-		SLAKE_RETURN_IF_EXCEPT(initObjectLayoutForClass(cls, p));
-	if (!cls->cachedInstantiatedMethodTable)
-		SLAKE_RETURN_IF_EXCEPT(initMethodTableForClass(cls, p));
+	ClassObject *c, *p = nullptr;
+
+	while (unpreparedClasses.size()) {
+		c = unpreparedClasses.back();
+
+		if (!c->cachedObjectLayout)
+			SLAKE_RETURN_IF_EXCEPT(initObjectLayoutForClass(c, p));
+		if (!c->cachedInstantiatedMethodTable)
+			SLAKE_RETURN_IF_EXCEPT(initMethodTableForClass(c, p));
+
+		p = c;
+		unpreparedClasses.popBack();
+	}
 
 	return {};
 }
 
-SLAKE_API InternalExceptionPointer Runtime::prepareStructForInstantiation(StructObject* cls) {
-	for (auto& i : cls->fieldRecords) {
-		if (i.type == TypeId::StructInstance) {
-			assert(i.type.getCustomTypeDef()->getObjectKind() == ObjectKind::Struct);
-			SLAKE_RETURN_IF_EXCEPT(prepareStructForInstantiation(((StructObject *)i.type.getCustomTypeDef()->typeObject)));
+struct StructPreparationFrame {
+	StructObject *structObject;
+	size_t index;
+};
+
+struct StructPreparationContext {
+	peff::List<StructPreparationFrame> frames;
+
+	SLAKE_FORCEINLINE StructPreparationContext(peff::Alloc *allocator) : frames(allocator) {}
+};
+
+SLAKE_FORCEINLINE InternalExceptionPointer _prepareStructForInstantiation(StructObject *structObject, StructPreparationContext &context) {
+	if (!context.frames.pushBack({ structObject, 0 }))
+		return OutOfMemoryError::alloc();
+
+	while (context.frames.size()) {
+		StructPreparationFrame &curFrame = context.frames.back();
+
+		StructObject *structObject = curFrame.structObject;
+		if (curFrame.index >= structObject->fieldRecords.size()) {
+			if (!structObject->cachedObjectLayout)
+				SLAKE_RETURN_IF_EXCEPT(structObject->associatedRuntime->initObjectLayoutForStruct(structObject));
+			context.frames.popBack();
+			continue;
 		}
+
+		auto &curRecord = curFrame.structObject->fieldRecords.at(curFrame.index);
+
+		TypeRef typeRef = curRecord.type;
+		if (curRecord.type.typeId == TypeId::StructInstance) {
+			CustomTypeDefObject *td = typeRef.getCustomTypeDef();
+			assert(td->typeObject->getObjectKind() == ObjectKind::Struct);
+			if (!context.frames.pushBack({ (StructObject *)td->typeObject, curFrame.index }))
+				return OutOfMemoryError::alloc();
+		}
+
+		++curFrame.index;
 	}
 
-	if (!cls->cachedObjectLayout)
-		SLAKE_RETURN_IF_EXCEPT(initObjectLayoutForStruct(cls));
+	return {};
+}
+
+SLAKE_API InternalExceptionPointer Runtime::prepareStructForInstantiation(StructObject *cls) {
+	StructPreparationContext context(getFixedAlloc());
+
+	SLAKE_RETURN_IF_EXCEPT(_prepareStructForInstantiation(cls, context));
 
 	return {};
 }

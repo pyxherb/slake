@@ -21,7 +21,6 @@ SLAKE_FORCEINLINE static InternalExceptionPointer _normalizeReadResult(Runtime *
 	switch (readResult) {
 		case ReadResult::Succeeded:
 			break;
-		case ReadResult::Eof:
 		case ReadResult::ReadError:
 			return allocOutOfMemoryErrorIfAllocFailed(ReadError::alloc(runtime->getFixedAlloc()));
 		default:

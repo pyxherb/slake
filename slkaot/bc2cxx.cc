@@ -384,7 +384,7 @@ std::shared_ptr<cxxast::Expr> BC2CXX::compileValue(CompileContext &compileContex
 			break;
 		case ValueType::EntityRef: {
 			const EntityRef &entityRef = value.getEntityRef();
-			if (entityRef.kind != ObjectRefKind::ObjectRef)
+			if (entityRef.kind != EntityRefKind::ObjectRef)
 				std::terminate();
 			Object *object = entityRef.asObject;
 			if (object) {
@@ -511,7 +511,7 @@ std::shared_ptr<cxxast::Expr> BC2CXX::compileValueAsAny(CompileContext &compileC
 			break;
 		case ValueType::EntityRef: {
 			const EntityRef &entityRef = value.getEntityRef();
-			if (entityRef.kind != ObjectRefKind::ObjectRef)
+			if (entityRef.kind != EntityRefKind::ObjectRef)
 				std::terminate();
 			Object *object = entityRef.asObject;
 			if (object) {

@@ -17,26 +17,26 @@ namespace slake {
 
 	// Value type definitions are defined in <slake/type.h>.
 
-	enum class ObjectRefKind : uint8_t {
+	enum class EntityRefKind : uint8_t {
 		StaticFieldRef,
 		ArrayElementRef,
 		ObjectRef,
 		InstanceFieldRef,
 		LocalVarRef,
 		CoroutineLocalVarRef,
-		LocalVarStructRef,
-		LocalVarStructFieldRef,
 		ArgRef,
 		ArgPackRef,
 		CoroutineArgRef,
 		AotPtrRef,
+		StructRef,
+		StructFieldRef,
 	};
 
 	class StructObject;
 
-	struct FieldRef {
+	struct StaticFieldRef {
 		ModuleObject *moduleObject;
-		size_t index;
+		uint32_t index;
 	};
 
 	struct ArrayElementRef {
@@ -46,7 +46,7 @@ namespace slake {
 
 	struct ObjectFieldRef {
 		InstanceObject *instanceObject;
-		size_t fieldIndex;
+		uint32_t fieldIndex;
 	};
 
 	struct LocalVarRef {
@@ -64,39 +64,66 @@ namespace slake {
 		StructObject *structObject;
 	};
 
+	struct ArgRef {
+		MajorFrame *majorFrame;
+		uint32_t argIndex;
+	};
+
+	struct ArgPackRef {
+		MajorFrame *majorFrame;
+		uint32_t begin;
+		uint32_t end;
+	};
+
+	struct CoroutineArgRef {
+		CoroutineObject *coroutine;
+		uint32_t argIndex;
+	};
+
+	struct StructRef {
+		union {
+			StaticFieldRef asStaticField;
+			ArrayElementRef asArrayElement;
+			ObjectFieldRef asObjectField;
+			LocalVarRef asLocalVar;
+			CoroutineLocalVarRef asCoroutineLocalVar;
+			ArgRef asArg;
+			CoroutineArgRef asCoroutineArg;
+		};
+		StructObject *structObject;
+		EntityRefKind innerKind;
+	};
+
+	struct StructFieldRef {
+		StructRef structRef;
+		uint32_t idxField;
+	};
+
 	struct EntityRef {
 		union {
-			FieldRef asField;
-			ArrayElementRef asArray;
+			StaticFieldRef asStaticField;
+			ArrayElementRef asArrayElement;
 			Object *asObject;
 			ObjectFieldRef asObjectField;
 			LocalVarRef asLocalVar;
 			CoroutineLocalVarRef asCoroutineLocalVar;
-			struct {
-				MajorFrame *majorFrame;
-				size_t argIndex;
-			} asArg;
-			struct {
-				MajorFrame *majorFrame;
-				size_t begin;
-				size_t end;
-			} asArgPack;
-			struct {
-				CoroutineObject *coroutine;
-				uint32_t argIndex;
-			} asCoroutineArg;
+			ArgRef asArg;
+			ArgPackRef asArgPack;
+			CoroutineArgRef asCoroutineArg;
+			StructRef asStruct;
+			StructFieldRef asStructField;
 			struct {
 				void *ptr;
 			} asAotPtr;
 		};
-		ObjectRefKind kind;
+		EntityRefKind kind;
 
 		static SLAKE_FORCEINLINE EntityRef makeStaticFieldRef(ModuleObject *moduleObject, size_t index) {
 			EntityRef ref = {};
 
-			ref.asField.moduleObject = moduleObject;
-			ref.asField.index = index;
-			ref.kind = ObjectRefKind::StaticFieldRef;
+			ref.asStaticField.moduleObject = moduleObject;
+			ref.asStaticField.index = index;
+			ref.kind = EntityRefKind::StaticFieldRef;
 
 			return ref;
 		}
@@ -104,9 +131,9 @@ namespace slake {
 		static SLAKE_FORCEINLINE EntityRef makeArrayElementRef(ArrayObject *arrayObject, size_t index) {
 			EntityRef ref = {};
 
-			ref.asArray.arrayObject = arrayObject;
-			ref.asArray.index = index;
-			ref.kind = ObjectRefKind::ArrayElementRef;
+			ref.asArrayElement.arrayObject = arrayObject;
+			ref.asArrayElement.index = index;
+			ref.kind = EntityRefKind::ArrayElementRef;
 
 			return ref;
 		}
@@ -115,7 +142,7 @@ namespace slake {
 			EntityRef ref = {};
 
 			ref.asObject = instanceObject;
-			ref.kind = ObjectRefKind::ObjectRef;
+			ref.kind = EntityRefKind::ObjectRef;
 
 			return ref;
 		}
@@ -125,7 +152,7 @@ namespace slake {
 
 			ref.asObjectField.instanceObject = instanceObject;
 			ref.asObjectField.fieldIndex = fieldIndex;
-			ref.kind = ObjectRefKind::InstanceFieldRef;
+			ref.kind = EntityRefKind::InstanceFieldRef;
 
 			return ref;
 		}
@@ -135,7 +162,7 @@ namespace slake {
 
 			ref.asLocalVar.context = context;
 			ref.asLocalVar.stackOff = offset;
-			ref.kind = ObjectRefKind::LocalVarRef;
+			ref.kind = EntityRefKind::LocalVarRef;
 
 			return ref;
 		}
@@ -145,7 +172,7 @@ namespace slake {
 
 			ref.asCoroutineLocalVar.coroutine = coroutine;
 			ref.asCoroutineLocalVar.stackOff = offset;
-			ref.kind = ObjectRefKind::CoroutineLocalVarRef;
+			ref.kind = EntityRefKind::CoroutineLocalVarRef;
 
 			return ref;
 		}
@@ -155,7 +182,7 @@ namespace slake {
 
 			ref.asArg.majorFrame = majorFrame;
 			ref.asArg.argIndex = argIndex;
-			ref.kind = ObjectRefKind::ArgRef;
+			ref.kind = EntityRefKind::ArgRef;
 
 			return ref;
 		}
@@ -166,7 +193,7 @@ namespace slake {
 			ref.asArgPack.majorFrame = majorFrame;
 			ref.asArgPack.begin = begin;
 			ref.asArgPack.end = end;
-			ref.kind = ObjectRefKind::ArgPackRef;
+			ref.kind = EntityRefKind::ArgPackRef;
 
 			return ref;
 		}
@@ -176,7 +203,26 @@ namespace slake {
 
 			ref.asCoroutineArg.coroutine = coroutine;
 			ref.asCoroutineArg.argIndex = argIndex;
-			ref.kind = ObjectRefKind::CoroutineArgRef;
+			ref.kind = EntityRefKind::CoroutineArgRef;
+
+			return ref;
+		}
+
+		static SLAKE_FORCEINLINE EntityRef makeStructRef(const StructRef &structRef) {
+			EntityRef ref = {};
+
+			ref.asStruct = structRef;
+			ref.kind = EntityRefKind::StructRef;
+
+			return ref;
+		}
+
+		static SLAKE_FORCEINLINE EntityRef makeStructFieldRef(const StructRef &structRef, uint32_t fieldIndex) {
+			EntityRef ref = {};
+
+			ref.asStructField.structRef = structRef;
+			ref.asStructField.idxField = fieldIndex;
+			ref.kind = EntityRefKind::StructFieldRef;
 
 			return ref;
 		}
@@ -185,13 +231,13 @@ namespace slake {
 			EntityRef ref = {};
 
 			ref.asAotPtr.ptr = ptr;
-			ref.kind = ObjectRefKind::ArgRef;
+			ref.kind = EntityRefKind::ArgRef;
 
 			return ref;
 		}
 
 		explicit SLAKE_FORCEINLINE operator bool() const {
-			if (kind != ObjectRefKind::ObjectRef)
+			if (kind != EntityRefKind::ObjectRef)
 				return true;
 			return asObject;
 		}

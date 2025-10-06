@@ -445,10 +445,15 @@ namespace slake {
 			void *nativeStackBaseCurrentPtr = nullptr,
 			size_t nativeStackSize = 0);
 
-		[[nodiscard]] SLAKE_API InternalExceptionPointer tryAccessVar(const EntityRef &entityRef) const noexcept;
+		SLAKE_API static char *calcCoroutineLocalVarRefStackBasePtr(const CoroutineLocalVarRef &localVarRef);
+		SLAKE_API static char *calcLocalVarRefStackBasePtr(const LocalVarRef &localVarRef);
+		SLAKE_API static char *calcLocalVarRefStackRawDataPtr(char *p);
+
 		[[nodiscard]] SLAKE_API InternalExceptionPointer typeofVar(const EntityRef &entityRef, TypeRef &typeOut) const noexcept;
 		[[nodiscard]] SLAKE_API InternalExceptionPointer readVar(const EntityRef &entityRef, Value &valueOut) const noexcept;
 		[[nodiscard]] SLAKE_API Value readVarUnsafe(const EntityRef &entityRef) const noexcept;
+		SLAKE_API void readStructData(char *dest, const StructRef &structRef) const noexcept;
+		SLAKE_API Value readStructFieldData(const StructFieldRef &structFieldRef) const noexcept;
 		[[nodiscard]] SLAKE_API InternalExceptionPointer writeVar(const EntityRef &entityRef, const Value &value) const noexcept;
 		SLAKE_FORCEINLINE void writeVarUnsafe(const EntityRef& entityRef, const Value& value) const noexcept {
 			writeVar(entityRef, value).unwrap();

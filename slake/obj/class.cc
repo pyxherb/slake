@@ -196,7 +196,7 @@ SLAKE_API ClassObject::~ClassObject() {
 }
 
 SLAKE_API EntityRef ClassObject::getMember(const std::string_view &name) const {
-	for (ClassObject* i; i; i = (ClassObject*)i->baseType.getCustomTypeDef()->typeObject) {
+	for (const ClassObject* i = this; i; i = (ClassObject*)i->baseType.getCustomTypeDef()->typeObject) {
 		auto m = i->ModuleObject::getMember(name);
 		if (m)
 			return m;

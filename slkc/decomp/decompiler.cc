@@ -357,7 +357,7 @@ SLKC_API bool slkc::decompileValue(peff::Alloc *allocator, DumpWriter *writer, c
 			const slake::EntityRef &er = value.getEntityRef();
 
 			switch (er.kind) {
-				case slake::ObjectRefKind::ObjectRef: {
+				case slake::EntityRefKind::ObjectRef: {
 					slake::Object *obj = er.asObject;
 
 					if (!obj) {

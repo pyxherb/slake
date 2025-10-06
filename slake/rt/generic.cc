@@ -398,7 +398,7 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(MemberObjec
 
 			for (auto &i : nextWalkValueInits) {
 				if (writeVar(i.dest, i.value)) {
-					return GenericFieldInitError::alloc(const_cast<Runtime *>(this)->getFixedAlloc(), i.dest.asField.moduleObject, i.dest.asField.index);
+					return GenericFieldInitError::alloc(const_cast<Runtime *>(this)->getFixedAlloc(), i.dest.asStaticField.moduleObject, i.dest.asStaticField.index);
 				}
 			}
 		}
@@ -668,7 +668,7 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(MemberObjec
 		if (!entityRef)
 			std::terminate();
 
-		if (entityRef.kind != ObjectRefKind::ObjectRef)
+		if (entityRef.kind != EntityRefKind::ObjectRef)
 			std::terminate();
 
 		i->typeObject = entityRef.asObject;

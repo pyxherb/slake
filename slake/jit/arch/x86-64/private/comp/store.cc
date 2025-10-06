@@ -274,8 +274,8 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 			std::terminate();
 		case opti::RegStorageType::FieldVar: {
 			const EntityRef &entityRef = regAnalyzedInfo.expectedValue.getEntityRef();
-			FieldRecord &fieldRecord = entityRef.asField.moduleObject->fieldRecords.at(entityRef.asField.index);
-			char *rawDataPtr = entityRef.asField.moduleObject->localFieldStorage.data() + fieldRecord.offset;
+			FieldRecord &fieldRecord = entityRef.asStaticField.moduleObject->fieldRecords.at(entityRef.asStaticField.index);
+			char *rawDataPtr = entityRef.asStaticField.moduleObject->localFieldStorage.data() + fieldRecord.offset;
 
 			switch (fieldRecord.type.typeId) {
 				case TypeId::I8:

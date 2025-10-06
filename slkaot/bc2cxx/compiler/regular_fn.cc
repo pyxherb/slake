@@ -68,7 +68,7 @@ void BC2CXX::recompileRegularFnOverloading(CompileContext &compileContext, std::
 						EntityRef &entityRef = outputRegInfo.expectedValue.getEntityRef();
 
 						switch (entityRef.kind) {
-							case ObjectRefKind::ObjectRef: {
+							case EntityRefKind::ObjectRef: {
 								Object *object = entityRef.asObject;
 
 								std::string &varName = compileContext.getVirtualRegInfo(ins.output).vregVarName;
@@ -156,8 +156,8 @@ void BC2CXX::recompileRegularFnOverloading(CompileContext &compileContext, std::
 								}
 								break;
 							}
-							case ObjectRefKind::FieldRef: {
-								FieldRecord &fieldRecord = entityRef.asField.moduleObject->fieldRecords.at(entityRef.asField.index);
+							case EntityRefKind::StaticFieldRef: {
+								FieldRecord &fieldRecord = entityRef.asStaticField.moduleObject->fieldRecords.at(entityRef.asStaticField.index);
 
 								std::shared_ptr<cxxast::TypeName> t = compileType(compileContext, fieldRecord.type);
 
@@ -404,7 +404,7 @@ void BC2CXX::recompileRegularFnOverloading(CompileContext &compileContext, std::
 						EntityRef &entityRef = ins.operands[0].getEntityRef();
 
 						switch (entityRef.kind) {
-							case ObjectRefKind::ObjectRef:
+							case EntityRefKind::ObjectRef:
 								regType = Type(TypeId::Instance);
 								compileContext.mappedObjects.insert(entityRef.asObject);
 								type = genInstanceObjectTypeName();

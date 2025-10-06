@@ -85,25 +85,25 @@ SLAKE_API bool EntityRef::operator==(const EntityRef &rhs) const {
 	if (kind != rhs.kind)
 		return false;
 	switch (kind) {
-		case ObjectRefKind::StaticFieldRef:
-			if (asField.moduleObject != rhs.asField.moduleObject)
+		case EntityRefKind::StaticFieldRef:
+			if (asStaticField.moduleObject != rhs.asStaticField.moduleObject)
 				return false;
-			return asField.index == rhs.asField.index;
-		case ObjectRefKind::ArrayElementRef:
-			if (asArray.arrayObject != rhs.asArray.arrayObject)
+			return asStaticField.index == rhs.asStaticField.index;
+		case EntityRefKind::ArrayElementRef:
+			if (asArrayElement.arrayObject != rhs.asArrayElement.arrayObject)
 				return false;
-			return asField.index == rhs.asField.index;
-		case ObjectRefKind::ObjectRef:
+			return asStaticField.index == rhs.asStaticField.index;
+		case EntityRefKind::ObjectRef:
 			return asObject == rhs.asObject;
-		case ObjectRefKind::InstanceFieldRef:
+		case EntityRefKind::InstanceFieldRef:
 			if (asObjectField.instanceObject != rhs.asObjectField.instanceObject)
 				return false;
 			return asObjectField.fieldIndex == rhs.asObjectField.fieldIndex;
-		case ObjectRefKind::LocalVarRef:
+		case EntityRefKind::LocalVarRef:
 			if (asLocalVar.context != rhs.asLocalVar.context)
 				return false;
 			return asLocalVar.stackOff == rhs.asLocalVar.stackOff;
-		case ObjectRefKind::ArgRef:
+		case EntityRefKind::ArgRef:
 			if (asArg.majorFrame != rhs.asArg.majorFrame)
 				return false;
 			return asArg.argIndex == rhs.asArg.argIndex;
@@ -118,39 +118,39 @@ SLAKE_API bool EntityRef::operator<(const EntityRef &rhs) const {
 	if (kind > rhs.kind)
 		return false;
 	switch (kind) {
-		case ObjectRefKind::StaticFieldRef:
-			if (asField.moduleObject < rhs.asField.moduleObject)
+		case EntityRefKind::StaticFieldRef:
+			if (asStaticField.moduleObject < rhs.asStaticField.moduleObject)
 				return true;
-			if (asField.moduleObject > rhs.asField.moduleObject)
+			if (asStaticField.moduleObject > rhs.asStaticField.moduleObject)
 				return false;
-			return asField.index < rhs.asField.index;
-		case ObjectRefKind::ArrayElementRef:
-			if (asArray.arrayObject < rhs.asArray.arrayObject)
+			return asStaticField.index < rhs.asStaticField.index;
+		case EntityRefKind::ArrayElementRef:
+			if (asArrayElement.arrayObject < rhs.asArrayElement.arrayObject)
 				return true;
-			if (asArray.arrayObject > rhs.asArray.arrayObject)
+			if (asArrayElement.arrayObject > rhs.asArrayElement.arrayObject)
 				return false;
-			return asField.index < rhs.asField.index;
-		case ObjectRefKind::ObjectRef:
+			return asStaticField.index < rhs.asStaticField.index;
+		case EntityRefKind::ObjectRef:
 			return asObject < rhs.asObject;
-		case ObjectRefKind::InstanceFieldRef:
+		case EntityRefKind::InstanceFieldRef:
 			if (asObjectField.instanceObject < rhs.asObjectField.instanceObject)
 				return true;
 			if (asObjectField.instanceObject > rhs.asObjectField.instanceObject)
 				return false;
 			return asObjectField.fieldIndex < rhs.asObjectField.fieldIndex;
-		case ObjectRefKind::LocalVarRef:
+		case EntityRefKind::LocalVarRef:
 			if (asLocalVar.context < rhs.asLocalVar.context)
 				return true;
 			if (asLocalVar.context > rhs.asLocalVar.context)
 				return false;
 			return asLocalVar.stackOff < rhs.asLocalVar.stackOff;
-		case ObjectRefKind::ArgRef:
+		case EntityRefKind::ArgRef:
 			if (asArg.majorFrame < rhs.asArg.majorFrame)
 				return true;
 			if (asArg.majorFrame > rhs.asArg.majorFrame)
 				return false;
 			return asArg.argIndex < rhs.asArg.argIndex;
-		case ObjectRefKind::AotPtrRef:
+		case EntityRefKind::AotPtrRef:
 			return asAotPtr.ptr < rhs.asAotPtr.ptr;
 		default:
 			std::terminate();
@@ -204,7 +204,7 @@ SLAKE_API InternalExceptionPointer slake::isCompatible(peff::Alloc *allocator, c
 				return {};
 			}
 			const EntityRef &entityRef = value.getEntityRef();
-			if (entityRef.kind != ObjectRefKind::ObjectRef) {
+			if (entityRef.kind != EntityRefKind::ObjectRef) {
 				resultOut = false;
 				return {};
 			}
@@ -221,7 +221,7 @@ SLAKE_API InternalExceptionPointer slake::isCompatible(peff::Alloc *allocator, c
 			}
 
 			const EntityRef &entityRef = value.getEntityRef();
-			if (entityRef.kind != ObjectRefKind::ObjectRef) {
+			if (entityRef.kind != EntityRefKind::ObjectRef) {
 				resultOut = false;
 				return {};
 			}
@@ -277,7 +277,7 @@ SLAKE_API InternalExceptionPointer slake::isCompatible(peff::Alloc *allocator, c
 			}
 
 			const EntityRef &entityRef = value.getEntityRef();
-			if (entityRef.kind != ObjectRefKind::ObjectRef) {
+			if (entityRef.kind != EntityRefKind::ObjectRef) {
 				resultOut = false;
 				return {};
 			}
@@ -305,19 +305,19 @@ SLAKE_API InternalExceptionPointer slake::isCompatible(peff::Alloc *allocator, c
 			const EntityRef &entityRef = value.getEntityRef();
 			Runtime *rt;
 			switch (entityRef.kind) {
-				case ObjectRefKind::FieldRef:
+				case EntityRefKind::FieldRef:
 					rt = entityRef.asField.moduleObject->associatedRuntime;
 					break;
-				case ObjectRefKind::InstanceFieldRef:
+				case EntityRefKind::InstanceFieldRef:
 					rt = entityRef.asObjectField.instanceObject->associatedRuntime;
 					break;
-				case ObjectRefKind::LocalVarRef:
+				case EntityRefKind::LocalVarRef:
 					rt = entityRef.asLocalVar.context->runtime;
 					break;
-				case ObjectRefKind::ArrayElementRef:
+				case EntityRefKind::ArrayElementRef:
 					rt = entityRef.asArray.arrayObject->associatedRuntime;
 					break;
-				case ObjectRefKind::ArgRef:
+				case EntityRefKind::ArgRef:
 					rt = entityRef.asArg.majorFrame->curFn->associatedRuntime;
 					break;
 				default:

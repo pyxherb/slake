@@ -122,7 +122,7 @@ SLKC_API std::optional<CompilationError> slkc::dumpIdRef(
 			const slake::EntityRef &er = value.getEntityRef();
 
 			switch (er.kind) {
-				case slake::ObjectRefKind::ObjectRef: {
+				case slake::EntityRefKind::ObjectRef: {
 					if (!er.asObject) {
 						SLKC_RETURN_IF_COMP_ERROR(writer->writeU8((uint8_t)slake::slxfmt::ValueType::None));
 						break;

@@ -24,47 +24,54 @@ namespace slake {
 		InstanceFieldRef,
 		LocalVarRef,
 		CoroutineLocalVarRef,
-		Alloca,
-		CoroutineAlloca,
+		LocalVarStructRef,
+		LocalVarStructFieldRef,
 		ArgRef,
 		ArgPackRef,
 		CoroutineArgRef,
 		AotPtrRef,
 	};
 
+	class StructObject;
+
+	struct FieldRef {
+		ModuleObject *moduleObject;
+		size_t index;
+	};
+
+	struct ArrayElementRef {
+		ArrayObject *arrayObject;
+		size_t index;
+	};
+
+	struct ObjectFieldRef {
+		InstanceObject *instanceObject;
+		size_t fieldIndex;
+	};
+
+	struct LocalVarRef {
+		Context *context;
+		size_t stackOff;
+	};
+
+	struct CoroutineLocalVarRef {
+		CoroutineObject *coroutine;
+		size_t stackOff;
+	};
+
+	struct LocalVarStructRef {
+		void *ptr;
+		StructObject *structObject;
+	};
+
 	struct EntityRef {
 		union {
-			struct {
-				ModuleObject *moduleObject;
-				size_t index;
-			} asField;
-			struct {
-				ArrayObject *arrayObject;
-				size_t index;
-			} asArray;
-			struct {
-				Object *instanceObject;
-			} asObject;
-			struct {
-				InstanceObject *instanceObject;
-				size_t fieldIndex;
-			} asObjectField;
-			struct {
-				Context *context;
-				size_t stackOff;
-			} asLocalVar;
-			struct {
-				CoroutineObject *coroutine;
-				size_t stackOff;
-			} asCoroutineLocalVar;
-			struct {
-				Context *context;
-				size_t stackOff;
-			} asAlloca;
-			struct {
-				CoroutineObject *coroutine;
-				size_t stackOff;
-			} asCoroutineAlloca;
+			FieldRef asField;
+			ArrayElementRef asArray;
+			Object *asObject;
+			ObjectFieldRef asObjectField;
+			LocalVarRef asLocalVar;
+			CoroutineLocalVarRef asCoroutineLocalVar;
 			struct {
 				MajorFrame *majorFrame;
 				size_t argIndex;
@@ -107,7 +114,7 @@ namespace slake {
 		static SLAKE_FORCEINLINE EntityRef makeObjectRef(Object *instanceObject) {
 			EntityRef ref = {};
 
-			ref.asObject.instanceObject = instanceObject;
+			ref.asObject = instanceObject;
 			ref.kind = ObjectRefKind::ObjectRef;
 
 			return ref;
@@ -139,26 +146,6 @@ namespace slake {
 			ref.asCoroutineLocalVar.coroutine = coroutine;
 			ref.asCoroutineLocalVar.stackOff = offset;
 			ref.kind = ObjectRefKind::CoroutineLocalVarRef;
-
-			return ref;
-		}
-
-		static SLAKE_FORCEINLINE EntityRef makeAllocaRef(Context *context, size_t offset) {
-			EntityRef ref = {};
-
-			ref.asLocalVar.context = context;
-			ref.asLocalVar.stackOff = offset;
-			ref.kind = ObjectRefKind::Alloca;
-
-			return ref;
-		}
-
-		static SLAKE_FORCEINLINE EntityRef makeCoroutineAllocaRef(CoroutineObject *coroutine, size_t offset) {
-			EntityRef ref = {};
-
-			ref.asCoroutineLocalVar.coroutine = coroutine;
-			ref.asCoroutineLocalVar.stackOff = offset;
-			ref.kind = ObjectRefKind::CoroutineAlloca;
 
 			return ref;
 		}
@@ -206,7 +193,7 @@ namespace slake {
 		explicit SLAKE_FORCEINLINE operator bool() const {
 			if (kind != ObjectRefKind::ObjectRef)
 				return true;
-			return asObject.instanceObject;
+			return asObject;
 		}
 
 		SLAKE_API bool operator==(const EntityRef &rhs) const;

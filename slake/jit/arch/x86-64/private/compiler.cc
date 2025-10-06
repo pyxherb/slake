@@ -78,7 +78,7 @@ InternalExceptionPointer compileInstruction(
 
 			// Pass the second argument.
 			{
-				IdRefObject *refObj = (IdRefObject *)curIns.operands[0].getEntityRef().asObject.instanceObject;
+				IdRefObject *refObj = (IdRefObject *)curIns.operands[0].getEntityRef().asObject;
 
 				SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovImm64ToReg64Ins(REG_RDX, (uint8_t *)&refObj)));
 			}
@@ -155,7 +155,7 @@ InternalExceptionPointer compileInstruction(
 
 			// Pass the third argument.
 			{
-				IdRefObject *refObj = (IdRefObject *)curIns.operands[1].getEntityRef().asObject.instanceObject;
+				IdRefObject *refObj = (IdRefObject *)curIns.operands[1].getEntityRef().asObject;
 
 				SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovImm64ToReg64Ins(REG_R8, (uint8_t *)&refObj)));
 			}

@@ -207,7 +207,7 @@ InternalExceptionPointer slake::jit::x86_64::compileMovInstruction(
 
 			switch (entityRef.kind) {
 				case ObjectRefKind::ObjectRef: {
-					Object *imm0 = entityRef.asObject.instanceObject;
+					Object *imm0 = entityRef.asObject;
 
 					RegisterId regId = compileContext.allocGpReg();
 					if (compileContext.isRegInUse(regId)) {

@@ -195,6 +195,15 @@ SLAKE_API ClassObject::~ClassObject() {
 		cachedObjectLayout->dealloc();
 }
 
+SLAKE_API EntityRef ClassObject::getMember(const std::string_view &name) const {
+	for (ClassObject* i; i; i = (ClassObject*)i->baseType.getCustomTypeDef()->typeObject) {
+		auto m = i->ModuleObject::getMember(name);
+		if (m)
+			return m;
+	}
+	return EntityRef::makeObjectRef(nullptr);
+}
+
 SLAKE_API bool ClassObject::hasImplemented(InterfaceObject *pInterface) const {
 	for (auto &i : implTypes) {
 		InterfaceObject *interfaceObject = (InterfaceObject *)i.getCustomTypeDef()->typeObject;

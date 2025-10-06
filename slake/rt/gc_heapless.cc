@@ -55,7 +55,7 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, const Value &i) {
 					GCWalkContext::pushObject(context, entityRef.asArray.arrayObject);
 					break;
 				case ObjectRefKind::ObjectRef:
-					GCWalkContext::pushObject(context, entityRef.asObject.instanceObject);
+					GCWalkContext::pushObject(context, entityRef.asObject);
 					break;
 				case ObjectRefKind::InstanceFieldRef:
 					GCWalkContext::pushObject(context, entityRef.asObjectField.instanceObject);

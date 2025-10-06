@@ -123,13 +123,13 @@ SLKC_API std::optional<CompilationError> slkc::dumpIdRef(
 
 			switch (er.kind) {
 				case slake::ObjectRefKind::ObjectRef: {
-					if (!er.asObject.instanceObject) {
+					if (!er.asObject) {
 						SLKC_RETURN_IF_COMP_ERROR(writer->writeU8((uint8_t)slake::slxfmt::ValueType::None));
 						break;
 					}
-					switch (er.asObject.instanceObject->getObjectKind()) {
+					switch (er.asObject->getObjectKind()) {
 						case slake::ObjectKind::String: {
-							slake::StringObject *s = (slake::StringObject *)er.asObject.instanceObject;
+							slake::StringObject *s = (slake::StringObject *)er.asObject;
 							SLKC_RETURN_IF_COMP_ERROR(writer->writeU8((uint8_t)slake::slxfmt::ValueType::String));
 							SLKC_RETURN_IF_COMP_ERROR(writer->writeU32(s->data.size()));
 							if (s->data.size()) {
@@ -139,11 +139,11 @@ SLKC_API std::optional<CompilationError> slkc::dumpIdRef(
 						}
 						case slake::ObjectKind::IdRef: {
 							SLKC_RETURN_IF_COMP_ERROR(writer->writeU8((uint8_t)slake::slxfmt::ValueType::IdRef));
-							SLKC_RETURN_IF_COMP_ERROR(dumpIdRef(allocator, writer, (slake::IdRefObject *)er.asObject.instanceObject));
+							SLKC_RETURN_IF_COMP_ERROR(dumpIdRef(allocator, writer, (slake::IdRefObject *)er.asObject));
 							break;
 						}
 						case slake::ObjectKind::Array: {
-							slake::ArrayObject *a = (slake::ArrayObject *)er.asObject.instanceObject;
+							slake::ArrayObject *a = (slake::ArrayObject *)er.asObject;
 							SLKC_RETURN_IF_COMP_ERROR(writer->writeU8((uint8_t)slake::slxfmt::ValueType::Array));
 							SLKC_RETURN_IF_COMP_ERROR(dumpTypeName(allocator, writer, a->elementType));
 							SLKC_RETURN_IF_COMP_ERROR(writer->writeU32(a->length));

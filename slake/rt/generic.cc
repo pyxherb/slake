@@ -671,7 +671,7 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(MemberObjec
 		if (entityRef.kind != ObjectRefKind::ObjectRef)
 			std::terminate();
 
-		i->typeObject = entityRef.asObject.instanceObject;
+		i->typeObject = entityRef.asObject;
 	}*/
 
 	SLAKE_RETURN_IF_EXCEPT(setGenericCache(object, *instantiationContext->genericArgs, duplicatedValue));

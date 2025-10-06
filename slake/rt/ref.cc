@@ -12,89 +12,67 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 		if (!(scopeObject = _rootObject))
 			std::terminate();
 
-	Object *curObject;
+	for (size_t i = 0; i < ref->entries.size(); ++i) {
+		auto &curName = ref->entries.at(i);
 
-	while ((curObject = (Object *)scopeObject)) {
-		for (size_t i = 0; i < ref->entries.size(); ++i) {
-			auto &curName = ref->entries.at(i);
+		if (!scopeObject)
+			goto fail;
 
-			if (!scopeObject)
-				goto fail;
+		objectRefOut = scopeObject->getMember(curName.name);
 
-			objectRefOut = scopeObject->getMember(curName.name);
-
-			if (!objectRefOut) {
-				goto fail;
-			}
-
-			if (objectRefOut.kind == ObjectRefKind::ObjectRef) {
-				// TODO: Check if the instance object is a member object.
-				scopeObject = (MemberObject *)objectRefOut.asObject.instanceObject;
-
-				switch (scopeObject->getObjectKind()) {
-					case ObjectKind::Class:
-					case ObjectKind::Interface:
-					case ObjectKind::Fn:
-						if (curName.genericArgs.size()) {
-							peff::NullAlloc nullAlloc;
-							GenericInstantiationContext genericInstantiationContext(&nullAlloc, getFixedAlloc());
-
-							genericInstantiationContext.genericArgs = &curName.genericArgs;
-							MemberObject *m;
-							SLAKE_RETURN_IF_EXCEPT(instantiateGenericObject((MemberObject *)scopeObject, m, &genericInstantiationContext));
-							scopeObject = m;
-							objectRefOut = EntityRef::makeObjectRef(scopeObject);
-						}
-						break;
-				}
-			} else {
-				if (i + 1 != ref->entries.size())
-					return allocOutOfMemoryErrorIfAllocFailed(ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(this)->getFixedAlloc(), ref));
-			}
+		if (!objectRefOut) {
+			goto fail;
 		}
 
-		if (ref->paramTypes.hasValue() || ref->hasVarArgs) {
+		if (objectRefOut.kind == ObjectRefKind::ObjectRef) {
+			// TODO: Check if the instance object is a member object.
+			scopeObject = (MemberObject *)objectRefOut.asObject;
+
 			switch (scopeObject->getObjectKind()) {
-				case ObjectKind::Fn: {
-					FnObject *fnObject = ((FnObject *)scopeObject);
+				case ObjectKind::Class:
+				case ObjectKind::Interface:
+				case ObjectKind::Fn:
+					if (curName.genericArgs.size()) {
+						peff::NullAlloc nullAlloc;
+						GenericInstantiationContext genericInstantiationContext(&nullAlloc, getFixedAlloc());
 
-					FnOverloadingObject *overloading = findOverloading(fnObject, *ref->paramTypes, 0, ref->hasVarArgs);
-
-					if (!overloading)
-						return allocOutOfMemoryErrorIfAllocFailed(ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(this)->getFixedAlloc(), ref));
-
-					if (!(objectRefOut = EntityRef::makeObjectRef(overloading)))
-						return allocOutOfMemoryErrorIfAllocFailed(ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(this)->getFixedAlloc(), ref));
-
+						genericInstantiationContext.genericArgs = &curName.genericArgs;
+						MemberObject *m;
+						SLAKE_RETURN_IF_EXCEPT(instantiateGenericObject((MemberObject *)scopeObject, m, &genericInstantiationContext));
+						scopeObject = m;
+						objectRefOut = EntityRef::makeObjectRef(scopeObject);
+					}
 					break;
-				}
-				default:
-					return allocOutOfMemoryErrorIfAllocFailed(ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(this)->getFixedAlloc(), ref));
 			}
+		} else {
+			if (i + 1 != ref->entries.size())
+				return allocOutOfMemoryErrorIfAllocFailed(ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(this)->getFixedAlloc(), ref));
 		}
+	}
 
-		return {};
+	if (ref->paramTypes.hasValue() || ref->hasVarArgs) {
+		switch (scopeObject->getObjectKind()) {
+			case ObjectKind::Fn: {
+				FnObject *fnObject = ((FnObject *)scopeObject);
 
-	fail:
-		switch (curObject->getObjectKind()) {
-			case ObjectKind::Module:
-				if (!((ModuleObject*)curObject)->parent)
+				FnOverloadingObject *overloading = findOverloading(fnObject, *ref->paramTypes, 0, ref->hasVarArgs);
+
+				if (!overloading)
 					return allocOutOfMemoryErrorIfAllocFailed(ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(this)->getFixedAlloc(), ref));
-				scopeObject = ((ModuleObject *)curObject)->parent;
-				break;
-			case ObjectKind::Class: {
-				ClassObject *cls = (ClassObject *)curObject;
-				if (cls->baseType.typeId == TypeId::Instance) {
-					scopeObject = (MemberObject *)cls->baseType.getCustomTypeDef()->typeObject;
-				} else {
+
+				if (!(objectRefOut = EntityRef::makeObjectRef(overloading)))
 					return allocOutOfMemoryErrorIfAllocFailed(ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(this)->getFixedAlloc(), ref));
-				}
+
 				break;
 			}
 			default:
 				return allocOutOfMemoryErrorIfAllocFailed(ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(this)->getFixedAlloc(), ref));
 		}
 	}
+
+	return {};
+
+fail:;
 
 	return allocOutOfMemoryErrorIfAllocFailed(ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(this)->getFixedAlloc(), ref));
 }
@@ -107,7 +85,7 @@ SLAKE_API bool Runtime::getFullRef(peff::Alloc *allocator, const MemberObject *v
 			if (!name.build("(Orphaned)"))
 				return false;
 
-			if (!idRefOut.pushFront(IdRefEntry(std::move(name), {allocator}))) {
+			if (!idRefOut.pushFront(IdRefEntry(std::move(name), { allocator }))) {
 				return false;
 			}
 

@@ -217,6 +217,15 @@ SLKC_API std::optional<CompilationError> slkc::resolveInstanceMember(
 		interfaceResolutionSucceeded:
 			break;
 		}
+		case AstNodeType::Struct: {
+			AstNodePtr<StructNode> m = memberNode.template castTo<StructNode>();
+
+			if (auto it = m->memberIndices.find(name.name); it != m->memberIndices.end()) {
+				result = m->members.at(it.value());
+			}
+
+			break;
+		}
 		case AstNodeType::GenericParam: {
 			AstNodePtr<GenericParamNode> m = memberNode.template castTo<GenericParamNode>();
 

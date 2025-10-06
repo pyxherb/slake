@@ -13,7 +13,7 @@ slake::Value print(slake::Context *context, slake::MajorFrame *curMajorFrame) {
 	else {
 		Value varArgsValue;
 		varArgsValue = curMajorFrame->curFn->associatedRuntime->readVarUnsafe(slake::EntityRef::makeArgRef(curMajorFrame, 0));
-		ArrayObject *varArgs = (ArrayObject *)varArgsValue.getEntityRef().asObject.instanceObject;
+		ArrayObject *varArgs = (ArrayObject *)varArgsValue.getEntityRef().asObject;
 
 		for (uint8_t i = 0; i < varArgs->length; ++i) {
 			Value data;
@@ -58,7 +58,7 @@ slake::Value print(slake::Context *context, slake::MajorFrame *curMajorFrame) {
 					fputs(data.getBool() ? "true" : "false", stdout);
 					break;
 				case ValueType::EntityRef: {
-					Object *objectPtr = data.getEntityRef().asObject.instanceObject;
+					Object *objectPtr = data.getEntityRef().asObject;
 					if (!objectPtr)
 						fputs("null", stdout);
 					else {
@@ -314,17 +314,17 @@ int main(int argc, char **argv) {
 				throw std::bad_alloc();
 			fnObject->name.build("print");
 
-			((slake::ModuleObject *)((slake::ModuleObject *)rt->getRootObject()->getMember("hostext").asObject.instanceObject)
+			((slake::ModuleObject *)((slake::ModuleObject *)rt->getRootObject()->getMember("hostext").asObject)
 					->getMember("extfns")
-					.asObject.instanceObject)
+					.asObject)
 				->removeMember("print");
-			if (!((slake::ModuleObject *)((slake::ModuleObject *)rt->getRootObject()->getMember("hostext").asObject.instanceObject)
+			if (!((slake::ModuleObject *)((slake::ModuleObject *)rt->getRootObject()->getMember("hostext").asObject)
 						->getMember("extfns")
-						.asObject.instanceObject)
+						.asObject)
 					->addMember(fnObject.get()))
 				throw std::bad_alloc();
 
-			auto fn = (slake::FnObject *)mod->getMember("main").asObject.instanceObject;
+			auto fn = (slake::FnObject *)mod->getMember("main").asObject;
 			slake::FnOverloadingObject *overloading;
 
 			peff::DynArray<slake::TypeRef> params(&myAllocator);

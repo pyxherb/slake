@@ -59,7 +59,7 @@ void BC2CXX::recompileRegularFnOverloading(CompileContext &compileContext, std::
 				break;
 			case Opcode::LOAD: {
 				opti::RegAnalyzedInfo &outputRegInfo = programInfo.analyzedRegInfo.at(ins.output);
-				HostObjectRef<IdRefObject> id = (IdRefObject *)ins.operands[0].getEntityRef().asObject.instanceObject;
+				HostObjectRef<IdRefObject> id = (IdRefObject *)ins.operands[0].getEntityRef().asObject;
 
 				compileContext.mappedObjects.insert(id.get());
 
@@ -69,7 +69,7 @@ void BC2CXX::recompileRegularFnOverloading(CompileContext &compileContext, std::
 
 						switch (entityRef.kind) {
 							case ObjectRefKind::ObjectRef: {
-								Object *object = entityRef.asObject.instanceObject;
+								Object *object = entityRef.asObject;
 
 								std::string &varName = compileContext.getVirtualRegInfo(ins.output).vregVarName;
 
@@ -197,7 +197,7 @@ void BC2CXX::recompileRegularFnOverloading(CompileContext &compileContext, std::
 			}
 			case Opcode::RLOAD: {
 				uint32_t idxBaseReg = ins.operands[0].getRegIndex();
-				HostObjectRef<IdRefObject> id = (IdRefObject *)ins.operands[1].getEntityRef().asObject.instanceObject;
+				HostObjectRef<IdRefObject> id = (IdRefObject *)ins.operands[1].getEntityRef().asObject;
 
 				compileContext.mappedObjects.insert((Object *)id.get());
 
@@ -406,7 +406,7 @@ void BC2CXX::recompileRegularFnOverloading(CompileContext &compileContext, std::
 						switch (entityRef.kind) {
 							case ObjectRefKind::ObjectRef:
 								regType = Type(TypeId::Instance);
-								compileContext.mappedObjects.insert(entityRef.asObject.instanceObject);
+								compileContext.mappedObjects.insert(entityRef.asObject);
 								type = genInstanceObjectTypeName();
 								break;
 							default:

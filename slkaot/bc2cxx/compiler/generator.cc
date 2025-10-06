@@ -151,7 +151,7 @@ void BC2CXX::recompileGeneratorFnOverloading(CompileContext &compileContext, std
 			case Opcode::LOAD: {
 				opti::RegAnalyzedInfo &outputRegInfo = programInfo.analyzedRegInfo.at(ins.output);
 
-				HostObjectRef<IdRefObject> id = (IdRefObject *)ins.operands[0].getEntityRef().asObject.instanceObject;
+				HostObjectRef<IdRefObject> id = (IdRefObject *)ins.operands[0].getEntityRef().asObject;
 
 				compileContext.mappedObjects.insert((Object *)id.get());
 
@@ -163,7 +163,7 @@ void BC2CXX::recompileGeneratorFnOverloading(CompileContext &compileContext, std
 
 						switch (entityRef.kind) {
 							case ObjectRefKind::ObjectRef: {
-								Object *object = entityRef.asObject.instanceObject;
+								Object *object = entityRef.asObject;
 
 								if (auto astNode = getMappedAstNode(object);
 									astNode) {
@@ -266,7 +266,7 @@ void BC2CXX::recompileGeneratorFnOverloading(CompileContext &compileContext, std
 			case Opcode::RLOAD: {
 				opti::RegAnalyzedInfo &outputRegInfo = programInfo.analyzedRegInfo.at(ins.output);
 				uint32_t idxBaseReg = ins.operands[0].getRegIndex();
-				HostObjectRef<IdRefObject> id = (IdRefObject *)ins.operands[1].getEntityRef().asObject.instanceObject;
+				HostObjectRef<IdRefObject> id = (IdRefObject *)ins.operands[1].getEntityRef().asObject;
 
 				compileContext.mappedObjects.insert((Object *)id.get());
 
@@ -307,7 +307,7 @@ void BC2CXX::recompileGeneratorFnOverloading(CompileContext &compileContext, std
 
 						switch (entityRef.kind) {
 							case ObjectRefKind::ObjectRef: {
-								Object *object = entityRef.asObject.instanceObject;
+								Object *object = entityRef.asObject;
 
 								if (auto astNode = getMappedAstNode(object);
 									astNode) {

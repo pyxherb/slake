@@ -1024,7 +1024,7 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 																		vregState.phyReg)));
 					}
 				} else {
-					Object *imm0 = rhs.getEntityRef().asObject.instanceObject;
+					Object *imm0 = rhs.getEntityRef().asObject;
 					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
 																	emitMovImm64ToMemIns(
 																		MemoryLocation{

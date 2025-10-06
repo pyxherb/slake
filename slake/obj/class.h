@@ -81,6 +81,8 @@ namespace slake {
 		SLAKE_API ClassObject(Duplicator *duplicator, const ClassObject &x, peff::Alloc *allocator, bool &succeededOut);
 		SLAKE_API virtual ~ClassObject();
 
+		SLAKE_API virtual EntityRef getMember(const std::string_view &name) const override;
+
 		SLAKE_API virtual const GenericArgList *getGenericArgs() const override;
 
 		/// @brief Check if the class has implemented the interface.

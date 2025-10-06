@@ -358,7 +358,7 @@ SLKC_API bool slkc::decompileValue(peff::Alloc *allocator, DumpWriter *writer, c
 
 			switch (er.kind) {
 				case slake::ObjectRefKind::ObjectRef: {
-					slake::Object *obj = er.asObject.instanceObject;
+					slake::Object *obj = er.asObject;
 
 					if (!obj) {
 						SLKC_RETURN_IF_FALSE(writer->write("null"));

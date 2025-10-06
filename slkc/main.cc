@@ -766,7 +766,7 @@ int main(int argc, char *argv[]) {
 					slkc::IdRefEntry &e = moduleName->entries.at(i);
 
 					if (auto curMod = lastModule->getMember(e.name); curMod) {
-						lastModule = (slake::ModuleObject *)curMod.asObject.instanceObject;
+						lastModule = (slake::ModuleObject *)curMod.asObject;
 
 						continue;
 					}

@@ -94,7 +94,7 @@ SLAKE_API bool EntityRef::operator==(const EntityRef &rhs) const {
 				return false;
 			return asField.index == rhs.asField.index;
 		case ObjectRefKind::ObjectRef:
-			return asObject.instanceObject == rhs.asObject.instanceObject;
+			return asObject == rhs.asObject;
 		case ObjectRefKind::InstanceFieldRef:
 			if (asObjectField.instanceObject != rhs.asObjectField.instanceObject)
 				return false;
@@ -131,7 +131,7 @@ SLAKE_API bool EntityRef::operator<(const EntityRef &rhs) const {
 				return false;
 			return asField.index < rhs.asField.index;
 		case ObjectRefKind::ObjectRef:
-			return asObject.instanceObject < rhs.asObject.instanceObject;
+			return asObject < rhs.asObject;
 		case ObjectRefKind::InstanceFieldRef:
 			if (asObjectField.instanceObject < rhs.asObjectField.instanceObject)
 				return true;
@@ -208,7 +208,7 @@ SLAKE_API InternalExceptionPointer slake::isCompatible(peff::Alloc *allocator, c
 				resultOut = false;
 				return {};
 			}
-			if (entityRef.asObject.instanceObject->getObjectKind() != ObjectKind::String) {
+			if (entityRef.asObject->getObjectKind() != ObjectKind::String) {
 				resultOut = false;
 				return {};
 			}
@@ -225,7 +225,7 @@ SLAKE_API InternalExceptionPointer slake::isCompatible(peff::Alloc *allocator, c
 				resultOut = false;
 				return {};
 			}
-			Object *objectPtr = entityRef.asObject.instanceObject;
+			Object *objectPtr = entityRef.asObject;
 
 			if (!objectPtr) {
 				resultOut = true;
@@ -281,7 +281,7 @@ SLAKE_API InternalExceptionPointer slake::isCompatible(peff::Alloc *allocator, c
 				resultOut = false;
 				return {};
 			}
-			Object *objectPtr = entityRef.asObject.instanceObject;
+			Object *objectPtr = entityRef.asObject;
 			if (objectPtr->getObjectKind() != ObjectKind::Array) {
 				resultOut = false;
 				return {};

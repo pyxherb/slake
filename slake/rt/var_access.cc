@@ -418,7 +418,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 				case TypeId::String:
 				case TypeId::Instance:
 				case TypeId::Array:
-					*((Object **)rawDataPtr) = value.getEntityRef().asObject.instanceObject;
+					*((Object **)rawDataPtr) = value.getEntityRef().asObject;
 					break;
 				default:
 					// All fields should be checked during the instantiation.
@@ -536,7 +536,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 					if (!result) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
-					*((Object **)(rawDataPtr)) = value.getEntityRef().asObject.instanceObject;
+					*((Object **)(rawDataPtr)) = value.getEntityRef().asObject;
 					break;
 				case TypeId::Instance:
 				case TypeId::Array:
@@ -548,7 +548,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 					if (!result) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
-					*((Object **)(rawDataPtr + sizeof(void *))) = value.getEntityRef().asObject.instanceObject;
+					*((Object **)(rawDataPtr + sizeof(void *))) = value.getEntityRef().asObject;
 					break;
 				default:
 					// All fields should be checked during the instantiation.
@@ -674,7 +674,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 					if (!result) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
-					*((Object **)(rawDataPtr)) = value.getEntityRef().asObject.instanceObject;
+					*((Object **)(rawDataPtr)) = value.getEntityRef().asObject;
 					break;
 				case TypeId::Instance:
 				case TypeId::Array:
@@ -687,7 +687,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 					if (!result) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
-					*((Object **)(rawDataPtr + sizeof(void *))) = value.getEntityRef().asObject.instanceObject;
+					*((Object **)(rawDataPtr + sizeof(void *))) = value.getEntityRef().asObject;
 					break;
 				default:
 					// All fields should be checked during the instantiation.
@@ -744,7 +744,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 				case TypeId::String:
 				case TypeId::Instance:
 				case TypeId::Array:
-					*((Object **)rawFieldPtr) = value.getEntityRef().asObject.instanceObject;
+					*((Object **)rawFieldPtr) = value.getEntityRef().asObject;
 					break;
 				default:
 					// All fields should be checked during the instantiation.
@@ -799,7 +799,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 				case TypeId::String:
 				case TypeId::Instance:
 				case TypeId::Array: {
-					((Object **)entityRef.asArray.arrayObject->data)[entityRef.asArray.index] = value.getEntityRef().asObject.instanceObject;
+					((Object **)entityRef.asArray.arrayObject->data)[entityRef.asArray.index] = value.getEntityRef().asObject;
 					break;
 				}
 			}

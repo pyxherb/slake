@@ -67,7 +67,7 @@ using namespace slake;
 		// The register does not present.
 		return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(runtime->getFixedAlloc()));
 	}
-	Value *const reg = (Value *)calcStackAddr((char *)stackData, stackSize, curMajorFrame->offRegs + sizeof(Value) * index);
+	Value *const reg = (Value *)calcStackAddr((char *)stackData, stackSize, curMajorFrame->offRegs + sizeof(Value) * (index + 1));
 	*reg = value;
 	return {};
 }
@@ -83,7 +83,7 @@ using namespace slake;
 		// The register does not present.
 		return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(runtime->getFixedAlloc()));
 	}
-	valueOut = *(Value *)calcStackAddr((char *)stackData, stackSize, curMajorFrame->offRegs + sizeof(Value) * index);
+	valueOut = *(Value *)calcStackAddr((char *)stackData, stackSize, curMajorFrame->offRegs + sizeof(Value) * (index + 1));
 	return {};
 }
 
@@ -249,12 +249,12 @@ SLAKE_API InternalExceptionPointer Runtime::_createNewCoroutineMajorFrame(
 
 	newMajorFrame->returnValueOutReg = returnValueOut;
 
-	restoreStackTopGuard.release();
-
 	newMajorFrame->stackBase = prevStackTop;
 	if (!context->majorFrames.pushBack(std::move(newMajorFrame))) {
 		return OutOfMemoryError::alloc();
 	}
+
+	restoreStackTopGuard.release();
 	return {};
 }
 
@@ -286,8 +286,8 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_createNewMajorFrame(
 		// Used in the creation of top major frame.
 		newMajorFrame->curFn = nullptr;
 		newMajorFrame->resumable->nRegs = 1;
-		Value *regs = (Value *)context->stackAlloc(sizeof(Value) * 1);
 		newMajorFrame->offRegs = context->stackTop;
+		Value *regs = (Value *)context->stackAlloc(sizeof(Value) * 1);
 		*regs = Value(ValueType::Undefined);
 	} else {
 		newMajorFrame->curFn = fn;
@@ -299,8 +299,8 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_createNewMajorFrame(
 			case FnOverloadingKind::Regular: {
 				RegularFnOverloadingObject *ol = (RegularFnOverloadingObject *)fn;
 				newMajorFrame->resumable->nRegs = ol->nRegisters;
-				Value *regs = (Value *)context->stackAlloc(sizeof(Value) * ol->nRegisters);
 				newMajorFrame->offRegs = context->stackTop;
+				Value *regs = (Value *)context->stackAlloc(sizeof(Value) * ol->nRegisters);
 				for (size_t i = 0; i < ol->nRegisters; ++i)
 					regs[i] = Value(ValueType::Undefined);
 				break;
@@ -432,6 +432,9 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 			TypeRef type = ins.operands[0].getTypeName();
 
 			EntityRef entityRef;
+			if(ins.output == 0) {
+				puts("");
+			}
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _addLocalVar(&context->_context, curMajorFrame, type, entityRef));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, stackSize, curMajorFrame, ins.output, entityRef));
 			break;
@@ -2307,7 +2310,7 @@ SLAKE_API InternalExceptionPointer Runtime::resumeCoroutine(
 			return exceptPtr;
 		}
 
-		resultOut = ((const Value *)calcStackAddr(context->_context.dataStack, context->_context.stackSize, topMajorFrame->offRegs))[0];
+		resultOut = ((const Value *)calcStackAddr(context->_context.dataStack, context->_context.stackSize, topMajorFrame->offRegs + sizeof(Value)))[0];
 
 		contextRef->_context.leaveMajor();
 	}

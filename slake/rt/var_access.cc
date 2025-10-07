@@ -222,7 +222,7 @@ SLAKE_API Value Runtime::readVarUnsafe(const EntityRef &entityRef) const noexcep
 
 					StructRef sr;
 
-					TypeDefObject **ptd = (TypeDefObject **)rawDataPtr;
+					TypeDefObject **ptd = (TypeDefObject **)rawDataPtr;	 // For debugging
 					TypeDefObject *td;
 					memcpy(&td, rawDataPtr, sizeof(void *));
 					sr.structObject = (StructObject *)((CustomTypeDefObject *)td)->typeObject;
@@ -569,7 +569,7 @@ SLAKE_API Value Runtime::readStructFieldData(const StructFieldRef &structRef) co
 		}
 		case EntityRefKind::CoroutineLocalVarRef: {
 			char *basePtr = calcCoroutineLocalVarRefStackBasePtr(structRef.structRef.asCoroutineLocalVar);
-			const char *const rawDataPtr = calcLocalVarRefStackRawDataPtr(basePtr) + structRef.structRef.structObject->cachedObjectLayout->fieldRecords.at(structRef.idxField).offset;
+			const char *const rawDataPtr = calcLocalVarRefStackRawDataPtr(basePtr) + sizeof(void *) + structRef.structRef.structObject->cachedObjectLayout->fieldRecords.at(structRef.idxField).offset;
 
 			char *stackTop, *stackBottom;
 
@@ -1219,7 +1219,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 	return {};
 }
 
-SLAKE_API InternalExceptionPointer Runtime::writeStructFieldData(const StructFieldRef& structRef, const Value& value) const noexcept {
+SLAKE_API InternalExceptionPointer Runtime::writeStructFieldData(const StructFieldRef &structRef, const Value &value) const noexcept {
 	bool result;
 
 	switch (structRef.structRef.innerKind) {
@@ -1411,7 +1411,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeStructFieldData(const StructFie
 		}
 		case EntityRefKind::CoroutineLocalVarRef: {
 			char *basePtr = calcCoroutineLocalVarRefStackBasePtr(structRef.structRef.asCoroutineLocalVar);
-			const char *const rawDataPtr = calcLocalVarRefStackRawDataPtr(basePtr) + structRef.structRef.structObject->cachedObjectLayout->fieldRecords.at(structRef.idxField).offset;
+			const char *const rawDataPtr = calcLocalVarRefStackRawDataPtr(basePtr) + sizeof(void *) + structRef.structRef.structObject->cachedObjectLayout->fieldRecords.at(structRef.idxField).offset;
 
 			char *stackTop, *stackBottom;
 

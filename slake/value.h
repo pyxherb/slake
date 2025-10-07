@@ -268,7 +268,7 @@ namespace slake {
 		double asF64;
 		bool asBool;
 		TypeRef asType;
-		EntityRef asObjectRef;
+		EntityRef asEntityRef;
 
 		ValueData() noexcept = default;
 		SLAKE_FORCEINLINE constexpr ValueData(const ValueData &other) noexcept = default;
@@ -356,7 +356,7 @@ namespace slake {
 		SLAKE_FORCEINLINE constexpr Value(bool data) noexcept : valueType(ValueType::Bool), data(data) {
 		}
 		SLAKE_FORCEINLINE Value(const EntityRef &entityRef) noexcept : valueType(ValueType::EntityRef) {
-			this->data.asObjectRef = entityRef;
+			this->data.asEntityRef = entityRef;
 		}
 		SLAKE_FORCEINLINE Value(ValueType vt) noexcept : valueType(vt) {
 		}
@@ -452,11 +452,11 @@ namespace slake {
 
 		SLAKE_FORCEINLINE EntityRef &getEntityRef() noexcept {
 			assert(valueType == ValueType::EntityRef);
-			return data.asObjectRef;
+			return data.asEntityRef;
 		}
 		SLAKE_FORCEINLINE const EntityRef &getEntityRef() const noexcept {
 			assert(valueType == ValueType::EntityRef);
-			return data.asObjectRef;
+			return data.asEntityRef;
 		}
 
 		Value &operator=(const Value &other) noexcept = default;

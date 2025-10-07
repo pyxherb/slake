@@ -168,8 +168,8 @@ SLAKE_API Value Runtime::readVarUnsafe(const EntityRef &entityRef) const noexcep
 				stackTop = entityRef.asCoroutineLocalVar.coroutine->curContext->dataStackTopPtr;
 				stackBottom = entityRef.asCoroutineLocalVar.coroutine->curContext->dataStack;
 			} else {
-				stackTop = entityRef.asCoroutineLocalVar.coroutine->stackData;
-				stackBottom = entityRef.asCoroutineLocalVar.coroutine->stackData + entityRef.asCoroutineLocalVar.coroutine->lenStackData;
+				stackTop = entityRef.asCoroutineLocalVar.coroutine->stackData + entityRef.asCoroutineLocalVar.coroutine->lenStackData;
+				stackBottom = entityRef.asCoroutineLocalVar.coroutine->stackData;
 			};
 
 			if (!stackBottomCheck(basePtr, stackBottom)) {
@@ -222,7 +222,10 @@ SLAKE_API Value Runtime::readVarUnsafe(const EntityRef &entityRef) const noexcep
 
 					StructRef sr;
 
-					sr.structObject = (StructObject *)((CustomTypeDefObject*)*(TypeDefObject **)(rawDataPtr))->typeObject;
+					TypeDefObject **ptd = (TypeDefObject **)rawDataPtr;
+					TypeDefObject *td;
+					memcpy(&td, rawDataPtr, sizeof(void *));
+					sr.structObject = (StructObject *)((CustomTypeDefObject *)td)->typeObject;
 					sr.asLocalVar = entityRef.asLocalVar;
 					sr.innerKind = entityRef.kind;
 
@@ -452,6 +455,7 @@ SLAKE_API Value Runtime::readStructFieldData(const StructFieldRef &structRef) co
 	const size_t szField = sizeofType(structRef.structRef.structObject->cachedObjectLayout->fieldRecords.at(structRef.idxField).type);
 	switch (structRef.structRef.innerKind) {
 		case EntityRefKind::StaticFieldRef: {
+			// stub
 			FieldRecord &fieldRecord = structRef.structRef.asStaticField.moduleObject->fieldRecords.at(structRef.structRef.asStaticField.index);
 
 			const char *const rawDataPtr = structRef.structRef.asStaticField.moduleObject->localFieldStorage.data() + fieldRecord.offset;
@@ -564,8 +568,8 @@ SLAKE_API Value Runtime::readStructFieldData(const StructFieldRef &structRef) co
 			break;
 		}
 		case EntityRefKind::CoroutineLocalVarRef: {
-			char *basePtr = calcCoroutineLocalVarRefStackBasePtr(structRef.structRef.asCoroutineLocalVar) + sizeof(void *) + structRef.structRef.structObject->cachedObjectLayout->fieldRecords.at(structRef.idxField).offset;
-			const char *const rawDataPtr = calcLocalVarRefStackRawDataPtr(basePtr);
+			char *basePtr = calcCoroutineLocalVarRefStackBasePtr(structRef.structRef.asCoroutineLocalVar);
+			const char *const rawDataPtr = calcLocalVarRefStackRawDataPtr(basePtr) + structRef.structRef.structObject->cachedObjectLayout->fieldRecords.at(structRef.idxField).offset;
 
 			char *stackTop, *stackBottom;
 
@@ -573,8 +577,8 @@ SLAKE_API Value Runtime::readStructFieldData(const StructFieldRef &structRef) co
 				stackTop = structRef.structRef.asCoroutineLocalVar.coroutine->curContext->dataStackTopPtr;
 				stackBottom = structRef.structRef.asCoroutineLocalVar.coroutine->curContext->dataStack;
 			} else {
-				stackTop = structRef.structRef.asCoroutineLocalVar.coroutine->stackData;
-				stackBottom = structRef.structRef.asCoroutineLocalVar.coroutine->stackData + structRef.structRef.asCoroutineLocalVar.coroutine->lenStackData;
+				stackTop = structRef.structRef.asCoroutineLocalVar.coroutine->stackData + structRef.structRef.asCoroutineLocalVar.coroutine->lenStackData;
+				stackBottom = structRef.structRef.asCoroutineLocalVar.coroutine->stackData;
 			};
 
 			if (!stackBottomCheck(basePtr, stackBottom)) {
@@ -633,6 +637,7 @@ SLAKE_API Value Runtime::readStructFieldData(const StructFieldRef &structRef) co
 			break;
 		}
 		case EntityRefKind::InstanceFieldRef: {
+			// stub
 			ObjectFieldRecord &fieldRecord =
 				structRef.structRef.asObjectField.instanceObject->_class->cachedObjectLayout->fieldRecords.at(
 					structRef.structRef.asObjectField.fieldIndex);
@@ -680,6 +685,7 @@ SLAKE_API Value Runtime::readStructFieldData(const StructFieldRef &structRef) co
 			break;
 		}
 		case EntityRefKind::ArrayElementRef: {
+			// stub
 			assert(structRef.structRef.asArrayElement.index < structRef.structRef.asArrayElement.arrayObject->length);
 
 			switch (structRef.structRef.asArrayElement.arrayObject->elementType.typeId) {
@@ -722,11 +728,13 @@ SLAKE_API Value Runtime::readStructFieldData(const StructFieldRef &structRef) co
 			break;
 		}
 		case EntityRefKind::ArgRef: {
+			// stub
 			const ArgRecord &argRecord = structRef.structRef.asArg.majorFrame->resumable->argStack.at(structRef.structRef.asArg.argIndex);
 
 			std::terminate();
 		}
 		case EntityRefKind::CoroutineArgRef: {
+			// stub
 			if (structRef.structRef.asCoroutineArg.coroutine->curContext) {
 				const ArgRecord &argRecord = structRef.structRef.asCoroutineArg.coroutine->resumable->argStack.at(structRef.structRef.asArg.argIndex);
 
@@ -928,8 +936,6 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 					std::terminate();
 			}
 
-			assert(readVarUnsafe(entityRef) == value);
-
 			break;
 		}
 		case EntityRefKind::CoroutineLocalVarRef: {
@@ -942,8 +948,8 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 				stackTop = entityRef.asCoroutineLocalVar.coroutine->curContext->dataStackTopPtr;
 				stackBottom = entityRef.asCoroutineLocalVar.coroutine->curContext->dataStack;
 			} else {
-				stackTop = entityRef.asCoroutineLocalVar.coroutine->stackData;
-				stackBottom = entityRef.asCoroutineLocalVar.coroutine->stackData + entityRef.asCoroutineLocalVar.coroutine->lenStackData;
+				stackTop = entityRef.asCoroutineLocalVar.coroutine->stackData + entityRef.asCoroutineLocalVar.coroutine->lenStackData;
+				stackBottom = entityRef.asCoroutineLocalVar.coroutine->stackData;
 			};
 
 			if (!stackBottomCheck(basePtr, stackBottom)) {
@@ -1194,6 +1200,480 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 				argRecord.value = value;
 			} else {
 				ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->resumable->argStack.at(entityRef.asArg.argIndex);
+
+				SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), argRecord.type, value, result));
+				if (!result) {
+					return raiseMismatchedVarTypeError((Runtime *)this);
+				}
+
+				argRecord.value = value;
+			}
+			break;
+		}
+		case EntityRefKind::StructFieldRef:
+			return writeStructFieldData(entityRef.asStructField, value);
+		default:
+			std::terminate();
+	}
+
+	return {};
+}
+
+SLAKE_API InternalExceptionPointer Runtime::writeStructFieldData(const StructFieldRef& structRef, const Value& value) const noexcept {
+	bool result;
+
+	switch (structRef.structRef.innerKind) {
+		case EntityRefKind::StaticFieldRef: {
+			// stub
+			if (structRef.structRef.asStaticField.index >= structRef.structRef.asStaticField.moduleObject->fieldRecords.size())
+				// TODO: Use a proper type of exception instead of this.
+				return raiseInvalidArrayIndexError(structRef.structRef.asStaticField.moduleObject->associatedRuntime, structRef.structRef.asArrayElement.index);
+
+			const FieldRecord &fieldRecord =
+				structRef.structRef.asStaticField.moduleObject->fieldRecords.at(structRef.structRef.asStaticField.index);
+
+			SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), fieldRecord.type, value, result));
+			if (!result) {
+				return raiseMismatchedVarTypeError(structRef.structRef.asStaticField.moduleObject->associatedRuntime);
+			}
+
+			char *const rawDataPtr = structRef.structRef.asStaticField.moduleObject->localFieldStorage.data() + fieldRecord.offset;
+
+			switch (fieldRecord.type.typeId) {
+				case TypeId::I8:
+					*((int8_t *)rawDataPtr) = value.getI8();
+					break;
+				case TypeId::I16:
+					*((int16_t *)rawDataPtr) = value.getI16();
+					break;
+				case TypeId::I32:
+					*((int32_t *)rawDataPtr) = value.getI32();
+					break;
+				case TypeId::I64:
+					*((int64_t *)rawDataPtr) = value.getI64();
+					break;
+				case TypeId::U8:
+					*((uint8_t *)rawDataPtr) = value.getU8();
+					break;
+				case TypeId::U16:
+					*((uint16_t *)rawDataPtr) = value.getU16();
+					break;
+				case TypeId::U32:
+					*((uint32_t *)rawDataPtr) = value.getU32();
+					break;
+				case TypeId::U64:
+					*((uint64_t *)rawDataPtr) = value.getU64();
+					break;
+				case TypeId::F32:
+					*((float *)rawDataPtr) = value.getF32();
+					break;
+				case TypeId::F64:
+					*((double *)rawDataPtr) = value.getF64();
+					break;
+				case TypeId::Bool:
+					*((bool *)rawDataPtr) = value.getBool();
+					break;
+				case TypeId::String:
+				case TypeId::Instance:
+				case TypeId::Array:
+					*((Object **)rawDataPtr) = value.getEntityRef().asObject;
+					break;
+				default:
+					// All fields should be checked during the instantiation.
+					std::terminate();
+			}
+
+			break;
+		}
+		case EntityRefKind::LocalVarRef: {
+			char *const basePtr = calcLocalVarRefStackBasePtr(structRef.structRef.asLocalVar);
+			const char *const rawDataPtr = calcLocalVarRefStackRawDataPtr(basePtr);
+
+			char *stackTop, *stackBottom;
+
+			stackTop = structRef.structRef.asLocalVar.context->dataStackTopPtr;
+			stackBottom = structRef.structRef.asLocalVar.context->dataStack;
+
+			if (!stackBottomCheck(basePtr, stackBottom)) {
+				std::terminate();
+			}
+
+			if (!stackTopCheck(rawDataPtr, stackTop)) {
+				std::terminate();
+			}
+
+			TypeRef t = *(TypeId *)(rawDataPtr - sizeof(TypeModifier) - sizeof(TypeId));
+			t.typeModifier = *(TypeModifier *)(rawDataPtr - sizeof(TypeModifier));
+
+			switch (t.typeId) {
+				case TypeId::I8:
+					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
+					if (!result) {
+						return raiseMismatchedVarTypeError((Runtime *)this);
+					}
+					*((int8_t *)(rawDataPtr)) = value.getI8();
+					break;
+				case TypeId::I16:
+					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
+					if (!result) {
+						return raiseMismatchedVarTypeError((Runtime *)this);
+					}
+					*((int16_t *)(rawDataPtr)) = value.getI16();
+					break;
+				case TypeId::I32:
+					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
+					if (!result) {
+						return raiseMismatchedVarTypeError((Runtime *)this);
+					}
+					*((int32_t *)(rawDataPtr)) = value.getI32();
+					break;
+				case TypeId::I64:
+					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
+					if (!result) {
+						return raiseMismatchedVarTypeError((Runtime *)this);
+					}
+					*((int64_t *)(rawDataPtr)) = value.getI64();
+					break;
+				case TypeId::U8:
+					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
+					if (!result) {
+						return raiseMismatchedVarTypeError((Runtime *)this);
+					}
+					*((uint8_t *)(rawDataPtr)) = value.getU8();
+					break;
+				case TypeId::U16:
+					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
+					if (!result) {
+						return raiseMismatchedVarTypeError((Runtime *)this);
+					}
+					*((uint16_t *)(rawDataPtr)) = value.getU16();
+					break;
+				case TypeId::U32:
+					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
+					if (!result) {
+						return raiseMismatchedVarTypeError((Runtime *)this);
+					}
+					*((uint32_t *)(rawDataPtr)) = value.getU32();
+					break;
+				case TypeId::U64:
+					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
+					if (!result) {
+						return raiseMismatchedVarTypeError((Runtime *)this);
+					}
+					*((uint64_t *)(rawDataPtr)) = value.getU64();
+					break;
+				case TypeId::F32:
+					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
+					if (!result) {
+						return raiseMismatchedVarTypeError((Runtime *)this);
+					}
+					*((float *)(rawDataPtr)) = value.getF32();
+					break;
+				case TypeId::F64:
+					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
+					if (!result) {
+						return raiseMismatchedVarTypeError((Runtime *)this);
+					}
+					*((double *)(rawDataPtr)) = value.getF64();
+					break;
+				case TypeId::Bool:
+					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
+					if (!result) {
+						return raiseMismatchedVarTypeError((Runtime *)this);
+					}
+					*((bool *)(rawDataPtr)) = value.getBool();
+					break;
+				case TypeId::String:
+					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
+					if (!result) {
+						return raiseMismatchedVarTypeError((Runtime *)this);
+					}
+					*((Object **)(rawDataPtr)) = value.getEntityRef().asObject;
+					break;
+				case TypeId::Instance:
+				case TypeId::Array:
+					if (!stackTopCheck(rawDataPtr + sizeof(void *) + sizeof(void *), stackTop)) {
+						std::terminate();
+					}
+					t.typeDef = *(TypeDefObject **)rawDataPtr;
+					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
+					if (!result) {
+						return raiseMismatchedVarTypeError((Runtime *)this);
+					}
+					*((Object **)(rawDataPtr + sizeof(void *))) = value.getEntityRef().asObject;
+					break;
+				default:
+					// All fields should be checked during the instantiation.
+					std::terminate();
+			}
+
+			break;
+		}
+		case EntityRefKind::CoroutineLocalVarRef: {
+			char *basePtr = calcCoroutineLocalVarRefStackBasePtr(structRef.structRef.asCoroutineLocalVar);
+			const char *const rawDataPtr = calcLocalVarRefStackRawDataPtr(basePtr) + structRef.structRef.structObject->cachedObjectLayout->fieldRecords.at(structRef.idxField).offset;
+
+			char *stackTop, *stackBottom;
+
+			if (structRef.structRef.asCoroutineLocalVar.coroutine->curContext) {
+				stackTop = structRef.structRef.asCoroutineLocalVar.coroutine->curContext->dataStackTopPtr;
+				stackBottom = structRef.structRef.asCoroutineLocalVar.coroutine->curContext->dataStack;
+			} else {
+				stackTop = structRef.structRef.asCoroutineLocalVar.coroutine->stackData + structRef.structRef.asCoroutineLocalVar.coroutine->lenStackData;
+				stackBottom = structRef.structRef.asCoroutineLocalVar.coroutine->stackData;
+			};
+
+			if (!stackBottomCheck(basePtr, stackBottom)) {
+				std::terminate();
+			}
+
+			if (!stackTopCheck(rawDataPtr, stackTop)) {
+				std::terminate();
+			}
+
+			TypeRef t = structRef.structRef.structObject->cachedObjectLayout->fieldRecords.at(structRef.idxField).type;
+
+			switch (t.typeId) {
+				case TypeId::I8:
+					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
+					if (!result) {
+						return raiseMismatchedVarTypeError((Runtime *)this);
+					}
+					*((int8_t *)(rawDataPtr)) = value.getI8();
+					break;
+				case TypeId::I16:
+					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
+					if (!result) {
+						return raiseMismatchedVarTypeError((Runtime *)this);
+					}
+					*((int16_t *)(rawDataPtr)) = value.getI16();
+					break;
+				case TypeId::I32:
+					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
+					if (!result) {
+						return raiseMismatchedVarTypeError((Runtime *)this);
+					}
+					*((int32_t *)(rawDataPtr)) = value.getI32();
+					break;
+				case TypeId::I64:
+					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
+					if (!result) {
+						return raiseMismatchedVarTypeError((Runtime *)this);
+					}
+					*((int64_t *)(rawDataPtr)) = value.getI64();
+					break;
+				case TypeId::U8:
+					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
+					if (!result) {
+						return raiseMismatchedVarTypeError((Runtime *)this);
+					}
+					*((uint8_t *)(rawDataPtr)) = value.getU8();
+					break;
+				case TypeId::U16:
+					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
+					if (!result) {
+						return raiseMismatchedVarTypeError((Runtime *)this);
+					}
+					*((uint16_t *)(rawDataPtr)) = value.getU16();
+					break;
+				case TypeId::U32:
+					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
+					if (!result) {
+						return raiseMismatchedVarTypeError((Runtime *)this);
+					}
+					*((uint32_t *)(rawDataPtr)) = value.getU32();
+					break;
+				case TypeId::U64:
+					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
+					if (!result) {
+						return raiseMismatchedVarTypeError((Runtime *)this);
+					}
+					*((uint64_t *)(rawDataPtr)) = value.getU64();
+					break;
+				case TypeId::F32:
+					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
+					if (!result) {
+						return raiseMismatchedVarTypeError((Runtime *)this);
+					}
+					*((float *)(rawDataPtr)) = value.getF32();
+					break;
+				case TypeId::F64:
+					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
+					if (!result) {
+						return raiseMismatchedVarTypeError((Runtime *)this);
+					}
+					*((double *)(rawDataPtr)) = value.getF64();
+					break;
+				case TypeId::Bool:
+					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
+					if (!result) {
+						return raiseMismatchedVarTypeError((Runtime *)this);
+					}
+					*((bool *)(rawDataPtr)) = value.getBool();
+					break;
+				case TypeId::String:
+					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
+					if (!result) {
+						return raiseMismatchedVarTypeError((Runtime *)this);
+					}
+					*((Object **)(rawDataPtr)) = value.getEntityRef().asObject;
+					break;
+				case TypeId::Instance:
+				case TypeId::Array:
+					if (!stackTopCheck(rawDataPtr + sizeof(void *) + sizeof(void *), stackTop)) {
+						std::terminate();
+					}
+
+					t.typeDef = *(TypeDefObject **)rawDataPtr;
+					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
+					if (!result) {
+						return raiseMismatchedVarTypeError((Runtime *)this);
+					}
+					*((Object **)(rawDataPtr + sizeof(void *))) = value.getEntityRef().asObject;
+					break;
+				default:
+					// All fields should be checked during the instantiation.
+					std::terminate();
+			}
+			break;
+		}
+		case EntityRefKind::InstanceFieldRef: {
+			// stub
+			ObjectFieldRecord &fieldRecord =
+				structRef.structRef.asObjectField.instanceObject->_class->cachedObjectLayout->fieldRecords.at(
+					structRef.structRef.asObjectField.fieldIndex);
+
+			SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), fieldRecord.type, value, result));
+			if (!result) {
+				return raiseMismatchedVarTypeError((Runtime *)this);
+			}
+
+			char *const rawFieldPtr = structRef.structRef.asObjectField.instanceObject->rawFieldData + fieldRecord.offset;
+
+			switch (fieldRecord.type.typeId) {
+				case TypeId::I8:
+					*((int8_t *)rawFieldPtr) = value.getI8();
+					break;
+				case TypeId::I16:
+					*((int16_t *)rawFieldPtr) = value.getI16();
+					break;
+				case TypeId::I32:
+					*((int32_t *)rawFieldPtr) = value.getI32();
+					break;
+				case TypeId::I64:
+					*((int64_t *)rawFieldPtr) = value.getI64();
+					break;
+				case TypeId::U8:
+					*((uint8_t *)rawFieldPtr) = value.getU8();
+					break;
+				case TypeId::U16:
+					*((uint16_t *)rawFieldPtr) = value.getU16();
+					break;
+				case TypeId::U32:
+					*((uint32_t *)rawFieldPtr) = value.getU32();
+					break;
+				case TypeId::U64:
+					*((uint64_t *)rawFieldPtr) = value.getU64();
+					break;
+				case TypeId::F32:
+					*((float *)rawFieldPtr) = value.getF32();
+					break;
+				case TypeId::F64:
+					*((double *)rawFieldPtr) = value.getF64();
+					break;
+				case TypeId::Bool:
+					*((bool *)rawFieldPtr) = value.getBool();
+					break;
+				case TypeId::String:
+				case TypeId::Instance:
+				case TypeId::Array:
+					*((Object **)rawFieldPtr) = value.getEntityRef().asObject;
+					break;
+				default:
+					// All fields should be checked during the instantiation.
+					std::terminate();
+			}
+			break;
+		}
+		case EntityRefKind::ArrayElementRef: {
+			// stub
+			if (structRef.structRef.asArrayElement.index > structRef.structRef.asArrayElement.arrayObject->length) {
+				return raiseInvalidArrayIndexError((Runtime *)this, structRef.structRef.asArrayElement.index);
+			}
+
+			SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), structRef.structRef.asArrayElement.arrayObject->elementType, value, result));
+			if (!result) {
+				return raiseMismatchedVarTypeError((Runtime *)this);
+			}
+
+			switch (structRef.structRef.asArrayElement.arrayObject->elementType.typeId) {
+				case TypeId::I8:
+					((int8_t *)structRef.structRef.asArrayElement.arrayObject->data)[structRef.structRef.asArrayElement.index] = value.getI8();
+					break;
+				case TypeId::I16:
+					((int16_t *)structRef.structRef.asArrayElement.arrayObject->data)[structRef.structRef.asArrayElement.index] = value.getI16();
+					break;
+				case TypeId::I32:
+					((int32_t *)structRef.structRef.asArrayElement.arrayObject->data)[structRef.structRef.asArrayElement.index] = value.getI32();
+					break;
+				case TypeId::I64:
+					((int64_t *)structRef.structRef.asArrayElement.arrayObject->data)[structRef.structRef.asArrayElement.index] = value.getI64();
+					break;
+				case TypeId::U8:
+					((uint8_t *)structRef.structRef.asArrayElement.arrayObject->data)[structRef.structRef.asArrayElement.index] = value.getU8();
+					break;
+				case TypeId::U16:
+					((uint16_t *)structRef.structRef.asArrayElement.arrayObject->data)[structRef.structRef.asArrayElement.index] = value.getU16();
+					break;
+				case TypeId::U32:
+					((uint32_t *)structRef.structRef.asArrayElement.arrayObject->data)[structRef.structRef.asArrayElement.index] = value.getU32();
+					break;
+				case TypeId::U64:
+					((uint64_t *)structRef.structRef.asArrayElement.arrayObject->data)[structRef.structRef.asArrayElement.index] = value.getU64();
+					break;
+				case TypeId::F32:
+					((float *)structRef.structRef.asArrayElement.arrayObject->data)[structRef.structRef.asArrayElement.index] = value.getF32();
+					break;
+				case TypeId::F64:
+					((double *)structRef.structRef.asArrayElement.arrayObject->data)[structRef.structRef.asArrayElement.index] = value.getF64();
+					break;
+				case TypeId::Bool:
+					((bool *)structRef.structRef.asArrayElement.arrayObject->data)[structRef.structRef.asArrayElement.index] = value.getBool();
+					break;
+				case TypeId::String:
+				case TypeId::Instance:
+				case TypeId::Array: {
+					((Object **)structRef.structRef.asArrayElement.arrayObject->data)[structRef.structRef.asArrayElement.index] = value.getEntityRef().asObject;
+					break;
+				}
+			}
+			break;
+		}
+		case EntityRefKind::ArgRef: {
+			// stub
+			ArgRecord &argRecord = structRef.structRef.asArg.majorFrame->resumable->argStack.at(structRef.structRef.asArg.argIndex);
+
+			SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), argRecord.type, value, result));
+			if (!result) {
+				return raiseMismatchedVarTypeError((Runtime *)this);
+			}
+
+			argRecord.value = value;
+			break;
+		}
+		case EntityRefKind::CoroutineArgRef: {
+			// stub
+			if (structRef.structRef.asCoroutineArg.coroutine->curContext) {
+				ArgRecord &argRecord = structRef.structRef.asCoroutineArg.coroutine->curMajorFrame->resumable->argStack.at(structRef.structRef.asArg.argIndex);
+
+				SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), argRecord.type, value, result));
+				if (!result) {
+					return raiseMismatchedVarTypeError((Runtime *)this);
+				}
+
+				argRecord.value = value;
+			} else {
+				ArgRecord &argRecord = structRef.structRef.asCoroutineArg.coroutine->resumable->argStack.at(structRef.structRef.asArg.argIndex);
 
 				SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), argRecord.type, value, result));
 				if (!result) {

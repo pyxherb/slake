@@ -455,6 +455,7 @@ namespace slake {
 		SLAKE_API void readStructData(char *dest, const StructRef &structRef) const noexcept;
 		SLAKE_API Value readStructFieldData(const StructFieldRef &structFieldRef) const noexcept;
 		[[nodiscard]] SLAKE_API InternalExceptionPointer writeVar(const EntityRef &entityRef, const Value &value) const noexcept;
+		SLAKE_API InternalExceptionPointer writeStructFieldData(const StructFieldRef &structFieldRef, const Value &value) const noexcept;
 		SLAKE_FORCEINLINE void writeVarUnsafe(const EntityRef& entityRef, const Value& value) const noexcept {
 			writeVar(entityRef, value).unwrap();
 		}

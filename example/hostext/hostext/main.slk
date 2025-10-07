@@ -204,10 +204,10 @@ pub fn *main() -> i32 {
 	/*a() with 123;*/
 
 	let s: SA;
-	
-	hostext.extfns.print(s.a, "\n");
-	hostext.extfns.print(s.b, "\n");
-	hostext.extfns.print(s.c, "\n");
+
+	s.a = 12345678;
+	s.b = 45678901;
+	s.c = 78901234;
 
 	hostext.extfns.print("Entered main\n");
 
@@ -286,6 +286,10 @@ pub fn *main() -> i32 {
 	}
 
 	extfns.print("Sum: ", sum, "\n");*/
+	
+	hostext.extfns.print(s.a, "\n");
+	hostext.extfns.print(s.b, "\n");
+	hostext.extfns.print(s.c, "\n");
 
 	return 114514;
 }

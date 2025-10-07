@@ -67,7 +67,8 @@ using namespace slake;
 		// The register does not present.
 		return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(runtime->getFixedAlloc()));
 	}
-	*(Value *)calcStackAddr((char *)stackData, stackSize, curMajorFrame->offRegs + sizeof(Value) * index) = value;
+	Value *const reg = (Value *)calcStackAddr((char *)stackData, stackSize, curMajorFrame->offRegs + sizeof(Value) * index);
+	*reg = value;
 	return {};
 }
 
@@ -212,8 +213,9 @@ SLAKE_API InternalExceptionPointer Runtime::_createNewCoroutineMajorFrame(
 	coroutine->bindToContext(context, newMajorFrame.get());
 
 	if (coroutine->stackData) {
-		if (size_t diff = context->stackTop % sizeof(std::max_align_t); diff) {
-			if (!context->stackAlloc(sizeof(std::max_align_t) - diff))
+		size_t align = alignof(std::max_align_t);
+		if (size_t diff = align - (uintptr_t)(calcStackAddr(context->dataStack, context->stackSize, context->stackTop)) % align; (diff != align) && diff) {
+			if (!context->stackAlloc(align - diff))
 				return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
 		}
 		newMajorFrame->offRegs = context->stackTop;
@@ -377,7 +379,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_addLocalVar(Context *context
 			TypeDefObject **typeInfo = (TypeDefObject **)context->stackAlloc(sizeof(void *));
 			if (!typeInfo)
 				return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
-			*typeInfo = type.typeDef;
+			memcpy(typeInfo, &type.typeDef, sizeof(void*));
 			break;
 		}
 		default:
@@ -489,8 +491,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 
 					if (auto it = structObject->cachedObjectLayout->fieldNameMap.find(curName.name); it != structObject->cachedObjectLayout->fieldNameMap.end()) {
 						entityRef = EntityRef::makeStructFieldRef(lhsEntityRef.asStruct, it.value());
-					}
-					else {
+					} else {
 						entityRef = structObject->getMember(curName.name);
 
 						if (curName.genericArgs.size()) {
@@ -564,6 +565,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 			Value data;
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, readVar(entityRef, data));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, stackSize, curMajorFrame, ins.output, data));
+
 			break;
 		}
 		case Opcode::ENTER: {

@@ -80,18 +80,15 @@ namespace slake {
 		uint32_t argIndex;
 	};
 
+	// Because struct is a value type,
+	// destroying the parent container will make the entire struct
+	// inaccessible, thus any reference to it should be a temporary reference.
+	// Passing temporary reference out of current scope is invalid, so we don't
+	// care about the structure's parent scope, just walking the structure
+	// itself.
 	struct StructRef {
-		union {
-			StaticFieldRef asStaticField;
-			ArrayElementRef asArrayElement;
-			ObjectFieldRef asObjectField;
-			LocalVarRef asLocalVar;
-			CoroutineLocalVarRef asCoroutineLocalVar;
-			ArgRef asArg;
-			CoroutineArgRef asCoroutineArg;
-		};
 		StructObject *structObject;
-		EntityRefKind innerKind;
+		void *basePtr;
 	};
 
 	struct StructFieldRef {

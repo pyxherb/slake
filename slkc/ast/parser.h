@@ -155,6 +155,7 @@ namespace slkc {
 		}
 
 		[[nodiscard]] SLKC_API std::optional<SyntaxError> splitRshOpToken();
+		[[nodiscard]] SLKC_API std::optional<SyntaxError> splitRDBracketsToken();
 
 		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseVarDefs(peff::DynArray<VarDefEntryPtr> &varDefEntries);
 

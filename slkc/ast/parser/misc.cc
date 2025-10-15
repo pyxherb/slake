@@ -135,3 +135,35 @@ SLKC_API std::optional<SyntaxError> Parser::splitRshOpToken() {
 
 	return {};
 }
+
+SLKC_API std::optional<SyntaxError> Parser::splitRDBracketsToken() {
+	switch (Token *token = peekToken(); token->tokenId) {
+		case TokenId::RDBracket: {
+			token->tokenId = TokenId::RBracket;
+			token->sourceText = token->sourceText.substr(0, 1);
+			token->sourceLocation.endPosition.column -= 1;
+
+			OwnedTokenPtr extraClosingToken;
+			if (!(extraClosingToken = OwnedTokenPtr(peff::allocAndConstruct<Token>(token->allocator.get(), ASTNODE_ALIGNMENT, token->allocator.get(), peff::WeakPtr<Document>(document))))) {
+				return genOutOfMemoryError();
+			}
+
+			extraClosingToken->tokenId = TokenId::RBracket;
+			extraClosingToken->sourceLocation =
+				SourceLocation{
+					SourcePosition{ token->sourceLocation.beginPosition.line, token->sourceLocation.beginPosition.column + 1 },
+					token->sourceLocation.endPosition
+				};
+			extraClosingToken->sourceText = token->sourceText.substr(1);
+
+			if (!tokenList.insert(parseContext.idxCurrentToken + 1, std::move(extraClosingToken))) {
+				return genOutOfMemoryError();
+			}
+
+			break;
+		}
+		default:;
+	}
+
+	return {};
+}

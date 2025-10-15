@@ -53,9 +53,9 @@ namespace slkc {
 		peff::String name;
 		AstNodePtr<TypeNameNode> type;
 		AstNodePtr<ExprNode> initialValue;
-		bool isTypeSealed = false;
+		peff::DynArray<AstNodePtr<AttributeNode>> attributes;
 
-		SLKC_API VarDefEntry(peff::Alloc *selfAllocator, peff::String &&name, const AstNodePtr<TypeNameNode> &type, const AstNodePtr<ExprNode> &initialValue, bool isTypeSealed = false);
+		SLKC_API VarDefEntry(peff::Alloc *selfAllocator);
 		SLKC_API virtual ~VarDefEntry();
 
 		SLKC_API void dealloc() noexcept;

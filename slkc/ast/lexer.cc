@@ -172,12 +172,14 @@ SLKC_API const char *slkc::getTokenName(TokenId tokenId) {
 			return "<=>";
 		case TokenId::DollarOp:
 			return "$";
+		case TokenId::AbstractKeyword:
+			return "abstract";
+		case TokenId::AllocaKeyword:
+			return "alloca";
 		case TokenId::AsKeyword:
 			return "as";
 		case TokenId::AttributeKeyword:
 			return "attribute";
-		case TokenId::AllocaKeyword:
-			return "alloca";
 		case TokenId::AsyncKeyword:
 			return "async";
 		case TokenId::AwaitKeyword:
@@ -216,6 +218,8 @@ SLKC_API const char *slkc::getTokenName(TokenId tokenId) {
 			return "if";
 		case TokenId::ImportKeyword:
 			return "import";
+		case TokenId::InKeyword:
+			return "in";
 		case TokenId::LetKeyword:
 			return "let";
 		case TokenId::MatchKeyword:
@@ -228,10 +232,12 @@ SLKC_API const char *slkc::getTokenName(TokenId tokenId) {
 			return "new";
 		case TokenId::NullKeyword:
 			return "null";
-		case TokenId::OverrideKeyword:
-			return "override";
 		case TokenId::OperatorKeyword:
 			return "operator";
+		case TokenId::OutKeyword:
+			return "out";
+		case TokenId::OverrideKeyword:
+			return "override";
 		case TokenId::PubKeyword:
 			return "pub";
 		case TokenId::ReturnKeyword:
@@ -254,8 +260,10 @@ SLKC_API const char *slkc::getTokenName(TokenId tokenId) {
 			return "true";
 		case TokenId::TryKeyword:
 			return "try";
-		case TokenId::UseKeyword:
-			return "use";
+		case TokenId::UsingKeyword:
+			return "using";
+		case TokenId::VarKeyword:
+			return "var";
 		case TokenId::WhileKeyword:
 			return "while";
 		case TokenId::WithKeyword:

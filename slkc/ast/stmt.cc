@@ -36,7 +36,7 @@ SLKC_API ExprStmtNode::ExprStmtNode(const ExprStmtNode &rhs, peff::Alloc *alloca
 SLKC_API ExprStmtNode::~ExprStmtNode() {
 }
 
-SLKC_API VarDefEntry::VarDefEntry(peff::Alloc *selfAllocator, peff::String &&name, const AstNodePtr<TypeNameNode> &type, const AstNodePtr<ExprNode> &initialValue, bool isTypeSealed) : selfAllocator(selfAllocator), name(std::move(name)), type(type), initialValue(initialValue), isTypeSealed(isTypeSealed) {
+SLKC_API VarDefEntry::VarDefEntry(peff::Alloc *selfAllocator) : selfAllocator(selfAllocator), name(selfAllocator), attributes(selfAllocator) {
 }
 SLKC_API VarDefEntry::~VarDefEntry() {
 }
@@ -45,24 +45,21 @@ SLKC_API void VarDefEntry::dealloc() noexcept {
 }
 
 SLKC_API VarDefEntryPtr slkc::duplicateVarDefEntry(VarDefEntry *varDefEntry, peff::Alloc *allocator) {
-	peff::String copiedName(allocator);
-	if (!copiedName.build(varDefEntry->name)) {
+	VarDefEntryPtr ptr(peff::allocAndConstruct<VarDefEntry>(allocator, ASTNODE_ALIGNMENT, allocator));
+
+	if (!ptr->name.build(varDefEntry->name)) {
 		return {};
 	}
 
-	AstNodePtr<TypeNameNode> type = varDefEntry->type->duplicate<TypeNameNode>(allocator);
-	if (!type) {
+	if (varDefEntry->type && !(ptr->type = varDefEntry->type->duplicate<TypeNameNode>(allocator))) {
 		return {};
 	}
 
-	AstNodePtr<ExprNode> initialValue;
-	if (varDefEntry->initialValue) {
-		if (!(initialValue = varDefEntry->initialValue->duplicate<ExprNode>(allocator))) {
-			return {};
-		}
+	if (varDefEntry->initialValue && !(ptr->initialValue = varDefEntry->initialValue->duplicate<ExprNode>(allocator))) {
+		return {};
 	}
 
-	return VarDefEntryPtr(peff::allocAndConstruct<VarDefEntry>(allocator, ASTNODE_ALIGNMENT, allocator, std::move(copiedName), type, initialValue));
+	return ptr;
 }
 
 SLKC_API AstNodePtr<AstNode> VarDefStmtNode::doDuplicate(peff::Alloc *newAllocator) const {

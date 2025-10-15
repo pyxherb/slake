@@ -5,12 +5,8 @@ using namespace slkc;
 SLKC_API std::optional<SyntaxError> Parser::parseVarDefs(peff::DynArray<VarDefEntryPtr> &varDefEntries) {
 	Token *currentToken;
 	std::optional<SyntaxError> syntaxError;
-	AstNodePtr<TypeNameNode> type;
-	AstNodePtr<ExprNode> initialValue;
 
 	for (;;) {
-		bool isSealed = false;
-
 		peff::DynArray<AstNodePtr<AttributeNode>> attributes(resourceAllocator.get());
 
 		if ((syntaxError = parseAttributes(attributes))) {
@@ -25,21 +21,29 @@ SLKC_API std::optional<SyntaxError> Parser::parseVarDefs(peff::DynArray<VarDefEn
 				return genOutOfMemoryError();
 		}
 
-		peff::String copiedName(resourceAllocator.get());
-		if (!copiedName.build(currentToken->sourceText)) {
+		VarDefEntryPtr entryPtr(
+			peff::allocAndConstruct<VarDefEntry>(
+				resourceAllocator.get(),
+				ASTNODE_ALIGNMENT,
+				resourceAllocator.get()));
+		if (!entryPtr) {
 			return genOutOfMemoryError();
 		}
 
-		if (peekToken()->tokenId == TokenId::FinalKeyword) {
-			Token *finalToken = nextToken();
+		VarDefEntry *entry = entryPtr.get();
 
-			isSealed = true;
+		if (!varDefEntries.pushBack(std::move(entryPtr))) {
+			return genOutOfMemoryError();
+		}
+
+		if (!entry->name.build(currentToken->sourceText)) {
+			return genOutOfMemoryError();
 		}
 
 		if ((currentToken = peekToken())->tokenId == TokenId::Colon) {
 			nextToken();
 
-			if ((syntaxError = parseTypeName(type))) {
+			if ((syntaxError = parseTypeName(entry->type))) {
 				if (!syntaxErrors.pushBack(std::move(syntaxError.value())))
 					return genOutOfMemoryError();
 				syntaxError.reset();
@@ -49,30 +53,14 @@ SLKC_API std::optional<SyntaxError> Parser::parseVarDefs(peff::DynArray<VarDefEn
 		if ((currentToken = peekToken())->tokenId == TokenId::AssignOp) {
 			nextToken();
 
-			if ((syntaxError = parseExpr(0, initialValue))) {
+			if ((syntaxError = parseExpr(0, entry->initialValue))) {
 				if (!syntaxErrors.pushBack(std::move(syntaxError.value())))
 					return genOutOfMemoryError();
 				syntaxError.reset();
 			}
 		}
 
-		VarDefEntryPtr entry(
-			peff::allocAndConstruct<VarDefEntry>(
-				resourceAllocator.get(),
-				ASTNODE_ALIGNMENT,
-				resourceAllocator.get(),
-				std::move(copiedName),
-				type,
-				initialValue,
-				isSealed));
-
-		if (!entry) {
-			return genOutOfMemoryError();
-		}
-
-		if (!varDefEntries.pushBack(std::move(entry))) {
-			return genOutOfMemoryError();
-		}
+		entry->attributes = std::move(attributes);
 
 		if ((currentToken = peekToken())->tokenId != TokenId::Comma) {
 			break;

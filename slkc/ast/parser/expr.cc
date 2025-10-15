@@ -64,6 +64,9 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 						if ((syntaxError = parseExpr(0, expr->countExpr)))
 							goto genBadExpr;
 
+						if ((syntaxError = splitRDBracketsToken()))
+							goto genBadExpr;
+
 						Token *rBracketToken;
 
 						if ((syntaxError = expectToken((rBracketToken = peekToken()), TokenId::RBracket)))
@@ -491,6 +494,9 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr
 					lhs = expr.template castTo<ExprNode>();
 
 					if ((syntaxError = parseExpr(0, expr->rhs)))
+						goto genBadExpr;
+
+					if ((syntaxError = splitRDBracketsToken()))
 						goto genBadExpr;
 
 					Token *rBracketToken;

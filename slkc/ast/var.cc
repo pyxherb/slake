@@ -23,7 +23,7 @@ SLKC_API VarNode::VarNode(const VarNode &rhs, peff::Alloc *allocator, bool &succ
 		return;
 	}
 
-	if (!(type = rhs.type->duplicate<TypeNameNode>(allocator))) {
+	if (rhs.type && !(type = rhs.type->duplicate<TypeNameNode>(allocator))) {
 		succeededOut = false;
 		return;
 	}
@@ -34,7 +34,6 @@ SLKC_API VarNode::VarNode(const VarNode &rhs, peff::Alloc *allocator, bool &succ
 	}
 
 	isTypeDeducedFromInitialValue = rhs.isTypeDeducedFromInitialValue;
-	isTypeSealed = rhs.isTypeSealed;
 	idxReg = rhs.idxReg;
 
 	succeededOut = true;

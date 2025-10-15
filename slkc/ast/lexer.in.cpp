@@ -80,9 +80,10 @@ SLKC_API std::optional<LexicalError> Lexer::lex(const std::string_view &src, pef
 				<InitialCondition>"$"		{ token->tokenId = TokenId::DollarOp; break; }
 				<InitialCondition>"@"		{ token->tokenId = TokenId::At; break; }
 
+				<InitialCondition>"abstract"	{ token->tokenId = TokenId::AbstractKeyword; break; }
 				<InitialCondition>"alloca"		{ token->tokenId = TokenId::AllocaKeyword; break; }
-				<InitialCondition>"attribute"	{ token->tokenId = TokenId::AttributeKeyword; break; }
 				<InitialCondition>"as"			{ token->tokenId = TokenId::AsKeyword; break; }
+				<InitialCondition>"attribute"	{ token->tokenId = TokenId::AttributeKeyword; break; }
 				<InitialCondition>"async"		{ token->tokenId = TokenId::AsyncKeyword; break; }
 				<InitialCondition>"await"		{ token->tokenId = TokenId::AwaitKeyword; break; }
 				<InitialCondition>"base"		{ token->tokenId = TokenId::BaseKeyword; break; }
@@ -101,16 +102,19 @@ SLKC_API std::optional<LexicalError> Lexer::lex(const std::string_view &src, pef
 				<InitialCondition>"fn"			{ token->tokenId = TokenId::FnKeyword; break; }
 				<InitialCondition>"for"			{ token->tokenId = TokenId::ForKeyword; break; }
 				<InitialCondition>"final"		{ token->tokenId = TokenId::FinalKeyword; break; }
+				<InitialCondition>"goto"		{ token->tokenId = TokenId::GotoKeyword; break; }
 				<InitialCondition>"if"			{ token->tokenId = TokenId::IfKeyword; break; }
 				<InitialCondition>"import"		{ token->tokenId = TokenId::ImportKeyword; break; }
+				<InitialCondition>"in"			{ token->tokenId = TokenId::InKeyword; break; }
 				<InitialCondition>"let"			{ token->tokenId = TokenId::LetKeyword; break; }
 				<InitialCondition>"module"		{ token->tokenId = TokenId::ModuleKeyword; break; }
 				<InitialCondition>"match"		{ token->tokenId = TokenId::MatchKeyword; break; }
 				<InitialCondition>"native"		{ token->tokenId = TokenId::NativeKeyword; break; }
 				<InitialCondition>"new"			{ token->tokenId = TokenId::NewKeyword; break; }
 				<InitialCondition>"null"		{ token->tokenId = TokenId::NullKeyword; break; }
-				<InitialCondition>"override"	{ token->tokenId = TokenId::OverrideKeyword; break; }
+				<InitialCondition>"out"			{ token->tokenId = TokenId::OutKeyword; break; }
 				<InitialCondition>"operator"	{ token->tokenId = TokenId::OperatorKeyword; break; }
+				<InitialCondition>"override"	{ token->tokenId = TokenId::OverrideKeyword; break; }
 				<InitialCondition>"pub"			{ token->tokenId = TokenId::PubKeyword; break; }
 				<InitialCondition>"return"		{ token->tokenId = TokenId::ReturnKeyword; break; }
 				<InitialCondition>"static"		{ token->tokenId = TokenId::StaticKeyword; break; }
@@ -122,7 +126,8 @@ SLKC_API std::optional<LexicalError> Lexer::lex(const std::string_view &src, pef
 				<InitialCondition>"interface"	{ token->tokenId = TokenId::InterfaceKeyword; break; }
 				<InitialCondition>"true"		{ token->tokenId = TokenId::TrueKeyword; break; }
 				<InitialCondition>"try"			{ token->tokenId = TokenId::TryKeyword; break; }
-				<InitialCondition>"use"			{ token->tokenId = TokenId::UseKeyword; break; }
+				<InitialCondition>"using"		{ token->tokenId = TokenId::UsingKeyword; break; }
+				<InitialCondition>"var"			{ token->tokenId = TokenId::VarKeyword; break; }
 				<InitialCondition>"virtual"		{ token->tokenId = TokenId::VirtualKeyword; break; }
 				<InitialCondition>"with"		{ token->tokenId = TokenId::WithKeyword; break; }
 				<InitialCondition>"while"		{ token->tokenId = TokenId::WhileKeyword; break; }

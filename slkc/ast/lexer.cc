@@ -222,6 +222,8 @@ SLKC_API const char *slkc::getTokenName(TokenId tokenId) {
 			return "in";
 		case TokenId::LetKeyword:
 			return "let";
+		case TokenId::MacroKeyword:
+			return "macro";
 		case TokenId::MatchKeyword:
 			return "match";
 		case TokenId::ModuleKeyword:

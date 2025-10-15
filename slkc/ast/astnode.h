@@ -13,6 +13,8 @@ namespace slkc {
 		Attribute,
 		FnSlot,
 		Fn,
+		MacroSlot,
+		Macro,
 		Stmt,
 		Expr,
 		TypeName,

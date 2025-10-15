@@ -326,6 +326,13 @@ namespace slkc {
 		SLKC_API UnpackedArgsTypeNameNode(const UnpackedArgsTypeNameNode &rhs, peff::Alloc *allocator, bool &succeededOut);
 		SLKC_API virtual ~UnpackedArgsTypeNameNode();
 	};
+
+	enum class MetaTypeKind : uint8_t {
+		Id = 0,
+		Tokens,
+		Expr,
+		Stmt
+	};
 }
 
 #endif

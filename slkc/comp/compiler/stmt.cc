@@ -456,7 +456,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 					compilationContext->emitIns(
 						slake::Opcode::RET,
 						UINT32_MAX,
-						{ slake::Value(slake::EntityRef::makeObjectRef(nullptr)) }));
+						{}));
 			}
 			break;
 		}
@@ -482,7 +482,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 					compilationContext->emitIns(
 						slake::Opcode::YIELD,
 						UINT32_MAX,
-						{ slake::Value(slake::EntityRef::makeObjectRef(nullptr)) }));
+						{ }));
 			}
 			break;
 		}

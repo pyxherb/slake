@@ -85,6 +85,8 @@ SLAKE_API bool EntityRef::operator==(const EntityRef &rhs) const {
 	if (kind != rhs.kind)
 		return false;
 	switch (kind) {
+		case EntityRefKind::Invalid:
+			break;
 		case EntityRefKind::StaticFieldRef:
 			if (asStaticField.moduleObject != rhs.asStaticField.moduleObject)
 				return false;
@@ -118,6 +120,8 @@ SLAKE_API bool EntityRef::operator<(const EntityRef &rhs) const {
 	if (kind > rhs.kind)
 		return false;
 	switch (kind) {
+		case EntityRefKind::Invalid:
+			break;
 		case EntityRefKind::StaticFieldRef:
 			if (asStaticField.moduleObject < rhs.asStaticField.moduleObject)
 				return true;

@@ -201,7 +201,7 @@ SLAKE_API EntityRef ClassObject::getMember(const std::string_view &name) const {
 		if (m)
 			return m;
 	}
-	return EntityRef::makeObjectRef(nullptr);
+	return EntityRef::makeInvalidRef();
 }
 
 SLAKE_API bool ClassObject::hasImplemented(InterfaceObject *pInterface) const {

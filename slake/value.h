@@ -18,6 +18,7 @@ namespace slake {
 	// Value type definitions are defined in <slake/type.h>.
 
 	enum class EntityRefKind : uint8_t {
+		Invalid = 0,
 		StaticFieldRef,
 		ArrayElementRef,
 		ObjectRef,
@@ -114,6 +115,14 @@ namespace slake {
 			} asAotPtr;
 		};
 		EntityRefKind kind;
+
+		static SLAKE_FORCEINLINE EntityRef makeInvalidRef() {
+			EntityRef ref = {};
+
+			ref.kind = EntityRefKind::Invalid;
+
+			return ref;
+		}
 
 		static SLAKE_FORCEINLINE EntityRef makeStaticFieldRef(ModuleObject *moduleObject, size_t index) {
 			EntityRef ref = {};
@@ -234,9 +243,7 @@ namespace slake {
 		}
 
 		explicit SLAKE_FORCEINLINE operator bool() const {
-			if (kind != EntityRefKind::ObjectRef)
-				return true;
-			return asObject;
+			return kind != EntityRefKind::Invalid;
 		}
 
 		SLAKE_API bool operator==(const EntityRef &rhs) const;
@@ -355,7 +362,7 @@ namespace slake {
 		SLAKE_FORCEINLINE Value(const EntityRef &entityRef) noexcept : valueType(ValueType::EntityRef) {
 			this->data.asEntityRef = entityRef;
 		}
-		SLAKE_FORCEINLINE Value(ValueType vt) noexcept : valueType(vt) {
+		SLAKE_FORCEINLINE Value(ValueType vt) noexcept : valueType(vt), data(/*Uninitialized*/) {
 		}
 		SLAKE_FORCEINLINE constexpr Value(ValueType vt, uint32_t index) noexcept : valueType(vt), data(index) {
 		}

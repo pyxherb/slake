@@ -76,7 +76,7 @@ SLAKE_API EntityRef ModuleObject::getMember(const std::string_view &name) const 
 	if (auto it = members.find(name); it != members.end()) {
 		return EntityRef::makeObjectRef(it.value());
 	}
-	return EntityRef::makeObjectRef(nullptr);
+	return EntityRef::makeInvalidRef();
 }
 
 SLAKE_API bool ModuleObject::addMember(MemberObject *member) {

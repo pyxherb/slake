@@ -35,7 +35,7 @@ SLAKE_API EntityRef InstanceObject::getMember(const std::string_view &name) cons
 		return EntityRef::makeInstanceFieldRef((InstanceObject *)this, it.value());
 	}
 
-	return EntityRef::makeObjectRef(nullptr);
+	return EntityRef::makeInvalidRef();
 }
 
 SLAKE_API HostObjectRef<InstanceObject> slake::InstanceObject::alloc(Runtime *rt) {

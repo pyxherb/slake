@@ -7,6 +7,8 @@ SLAKE_API bool Value::operator==(const Value &rhs) const {
 		return false;
 
 	switch (valueType) {
+		case ValueType::Invalid:
+			break;
 		case ValueType::I8:
 			return data.asI8 == rhs.data.asI8;
 		case ValueType::I16:

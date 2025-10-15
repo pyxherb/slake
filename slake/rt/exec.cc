@@ -379,7 +379,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_addLocalVar(Context *context
 			TypeDefObject **typeInfo = (TypeDefObject **)context->stackAlloc(sizeof(void *));
 			if (!typeInfo)
 				return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
-			memcpy(typeInfo, &type.typeDef, sizeof(void*));
+			memcpy(typeInfo, &type.typeDef, sizeof(void *));
 			break;
 		}
 		default:
@@ -432,7 +432,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 			TypeRef type = ins.operands[0].getTypeName();
 
 			EntityRef entityRef;
-			if(ins.output == 0) {
+			if (ins.output == 0) {
 				puts("");
 			}
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _addLocalVar(&context->_context, curMajorFrame, type, entityRef));
@@ -1735,22 +1735,34 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 		case Opcode::RET: {
 			uint32_t returnValueOutReg = curMajorFrame->returnValueOutReg;
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount(this, ins, false, 1));
+			Value returnValue = Value(ValueType::Invalid);
 
-			Value returnValue;
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, ins.operands[0], returnValue));
+			switch (ins.nOperands) {
+				case 0:
+					break;
+				case 1:
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, ins.operands[0], returnValue));
+					break;
+				default:
+					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+			}
 
 			if (CoroutineObject *co = curMajorFrame->curCoroutine; co) {
-				co->finalResult = returnValue;
 				co->resumable = curMajorFrame->resumable;
+				if (returnValue != ValueType::Invalid)
+					co->finalResult = returnValue;
 				co->setDone();
+			}
+
+			if (returnValue == ValueType::Invalid) {
+				if (returnValueOutReg != UINT32_MAX)
+					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
 				context->_context.leaveMajor();
 			} else {
 				context->_context.leaveMajor();
-			}
-
-			if (returnValueOutReg != UINT32_MAX) {
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, stackSize, context->_context.majorFrames.back().get(), returnValueOutReg, returnValue));
+				if (returnValueOutReg != UINT32_MAX) {
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, stackSize, context->_context.majorFrames.back().get(), returnValueOutReg, returnValue));
+				}
 			}
 
 			isContextChangedOut = true;
@@ -1826,11 +1838,19 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 				// TODO: Return an exception,
 				std::terminate();
 			}
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount(this, ins, false, 1));
 
 			uint32_t returnValueOutReg = curMajorFrame->returnValueOutReg;
-			Value returnValue;
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, ins.operands[0], returnValue));
+			Value returnValue = Value(ValueType::Invalid);
+
+			switch (ins.nOperands) {
+				case 0:
+					break;
+				case 1:
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, ins.operands[0], returnValue));
+					break;
+				default:
+					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+			}
 
 			if (size_t szFrame = context->_context.stackTop - curMajorFrame->curCoroutine->offStackTop; szFrame) {
 				char *p = curMajorFrame->curCoroutine->allocStackData(szFrame);
@@ -1845,11 +1865,17 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 
 			curMajorFrame->curCoroutine->resumable = curMajorFrame->resumable;
 
-			context->_context.leaveMajor();
-
-			MajorFrame *prevFrame = context->_context.majorFrames.back().get();
-			if (returnValueOutReg != UINT32_MAX) {
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, stackSize, prevFrame, returnValueOutReg, returnValue));
+			if (returnValue == ValueType::Invalid) {
+				if (returnValueOutReg != UINT32_MAX) {
+					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+				}
+				context->_context.leaveMajor();
+			} else {
+				context->_context.leaveMajor();
+				MajorFrame *prevFrame = context->_context.majorFrames.back().get();
+				if (returnValueOutReg != UINT32_MAX) {
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, stackSize, prevFrame, returnValueOutReg, returnValue));
+				}
 			}
 
 			isContextChangedOut = true;

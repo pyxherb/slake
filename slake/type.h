@@ -9,19 +9,20 @@
 
 namespace slake {
 	enum class ValueType : uint8_t {
-		I8 = 0,	 // Signed 8-bit integer
-		I16,	 // Signed 16-bit integer
-		I32,	 // Signed 32-bit integer
-		I64,	 // Signed 64-bit integer
-		ISize,	 // Signed platform-dependent integer
-		U8,		 // Unsigned 8-bit integer
-		U16,	 // Unsigned 16-bit integer
-		U32,	 // Unsigned 32-bit integer
-		U64,	 // Unsigned 64-bit integer
-		USize,	 // Unsigned platform-dependent integer
-		F32,	 // 32-bit floating point number
-		F64,	 // 64-bit floating point number
-		Bool,	 // Boolean
+		Invalid = 0,  // Used internally
+		I8,			  // Signed 8-bit integer
+		I16,		  // Signed 16-bit integer
+		I32,		  // Signed 32-bit integer
+		I64,		  // Signed 64-bit integer
+		ISize,		  // Signed platform-dependent integer
+		U8,			  // Unsigned 8-bit integer
+		U16,		  // Unsigned 16-bit integer
+		U32,		  // Unsigned 32-bit integer
+		U64,		  // Unsigned 64-bit integer
+		USize,		  // Unsigned platform-dependent integer
+		F32,		  // 32-bit floating point number
+		F64,		  // 64-bit floating point number
+		Bool,		  // Boolean
 
 		EntityRef,	// Entity reference
 
@@ -30,7 +31,7 @@ namespace slake {
 
 		Label,	// Label reference
 
-		Undefined = UINT8_MAX,
+		Undefined = UINT8_MAX,	// For empty registers, etc.
 	};
 
 	enum class TypeId : uint8_t {

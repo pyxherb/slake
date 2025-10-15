@@ -318,7 +318,7 @@ SLAKE_API void JITCompileContext::stackFree(int32_t saveOffset, size_t size) {
 void slake::jit::x86_64::loadInsWrapper(
 	JITExecContext *context,
 	IdRefObject *idRefObject) {
-	EntityRef entityRef;
+	Reference entityRef;
 	InternalExceptionPointer e = context->runtime->resolveIdRef(idRefObject, entityRef, nullptr);
 	if (e) {
 		context->exception = e.get();
@@ -331,7 +331,7 @@ void slake::jit::x86_64::rloadInsWrapper(
 	JITExecContext *context,
 	MemberObject *baseObject,
 	IdRefObject *idRefObject) {
-	EntityRef entityRef;
+	Reference entityRef;
 	InternalExceptionPointer e = context->runtime->resolveIdRef(idRefObject, entityRef, baseObject);
 	if (e) {
 		context->exception = e.get();

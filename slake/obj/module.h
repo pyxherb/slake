@@ -60,7 +60,7 @@ namespace slake {
 
 		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
 
-		SLAKE_API virtual EntityRef getMember(const std::string_view &name) const override;
+		SLAKE_API virtual Reference getMember(const std::string_view &name) const override;
 		[[nodiscard]] SLAKE_API virtual bool addMember(MemberObject *member);
 		SLAKE_API virtual void removeMember(const std::string_view &name);
 		[[nodiscard]] SLAKE_API virtual bool removeMemberAndTrim(const std::string_view &name);

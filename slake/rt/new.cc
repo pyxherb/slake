@@ -281,8 +281,8 @@ SLAKE_API HostObjectRef<InstanceObject> slake::Runtime::newClassInstance(ClassOb
 	for (size_t i = 0; i < cls->fieldRecords.size(); ++i) {
 		const ObjectFieldRecord &fieldRecord = cls->cachedObjectLayout->fieldRecords.at(i);
 
-		Value data = readVarUnsafe(EntityRef::makeStaticFieldRef(p.first, fieldRecord.idxInitFieldRecord));
-		SLAKE_UNWRAP_EXCEPT(writeVar(EntityRef::makeInstanceFieldRef(instance.get(), i), data));
+		Value data = readVarUnsafe(Reference::makeStaticFieldRef(p.first, fieldRecord.idxInitFieldRecord));
+		SLAKE_UNWRAP_EXCEPT(writeVar(Reference::makeInstanceFieldRef(instance.get(), i), data));
 
 		if (cnt++ >= p.second) {
 			cnt = 0;
@@ -386,10 +386,10 @@ SLAKE_API HostObjectRef<ArrayObject> Runtime::newArrayInstance(Runtime *rt, cons
 		case TypeId::String:
 		case TypeId::Instance:
 		case TypeId::Array: {
-			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(EntityRef));
-			if (!(obj->data = obj->selfAllocator->alloc(sizeof(EntityRef) * length, alignof(EntityRef))))
+			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(Reference));
+			if (!(obj->data = obj->selfAllocator->alloc(sizeof(Reference) * length, alignof(Reference))))
 				return nullptr;
-			obj->elementAlignment = alignof(EntityRef);
+			obj->elementAlignment = alignof(Reference);
 			obj->length = length;
 			return obj.get();
 		}

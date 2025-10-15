@@ -260,7 +260,7 @@ namespace slake {
 		[[nodiscard]] SLAKE_API InternalExceptionPointer _mapGenericParams(const Object *v, GenericInstantiationContext *instantiationContext) const;
 		[[nodiscard]] SLAKE_API InternalExceptionPointer _mapGenericParams(const FnOverloadingObject *ol, GenericInstantiationContext *instantiationContext) const;
 
-		[[nodiscard]] SLAKE_API InternalExceptionPointer _instantiateGenericObject(GenericInstantiationDispatcher &dispatcher, EntityRef dest, Value value, GenericInstantiationContext *instantiationContext);
+		[[nodiscard]] SLAKE_API InternalExceptionPointer _instantiateGenericObject(GenericInstantiationDispatcher &dispatcher, Reference dest, Value value, GenericInstantiationContext *instantiationContext);
 		[[nodiscard]] SLAKE_API InternalExceptionPointer _instantiateGenericObject(GenericInstantiationDispatcher &dispatcher, TypeRef &type, GenericInstantiationContext *instantiationContext);
 		[[nodiscard]] SLAKE_API InternalExceptionPointer _instantiateGenericObject(GenericInstantiationDispatcher &dispatcher, Value &value, GenericInstantiationContext *instantiationContext);
 		[[nodiscard]] SLAKE_API InternalExceptionPointer _instantiateGenericObject(GenericInstantiationDispatcher &dispatcher, Object *v, GenericInstantiationContext *instantiationContext);
@@ -275,7 +275,7 @@ namespace slake {
 		friend class ModuleObject;
 
 	public:
-		[[nodiscard]] SLAKE_API InternalExceptionPointer _addLocalVar(Context *context, MajorFrame *frame, TypeRef type, EntityRef &objectRefOut) noexcept;
+		[[nodiscard]] SLAKE_API InternalExceptionPointer _addLocalVar(Context *context, MajorFrame *frame, TypeRef type, Reference &objectRefOut) noexcept;
 		[[nodiscard]] SLAKE_API InternalExceptionPointer _fillArgs(
 			MajorFrame *newMajorFrame,
 			const FnOverloadingObject *fn,
@@ -365,7 +365,7 @@ namespace slake {
 		/// @param ref Reference to be resolved.
 		/// @param scopeObject Scope value for resolving.
 		/// @return Resolved value which is referred by the reference.
-		SLAKE_API InternalExceptionPointer resolveIdRef(IdRefObject *ref, EntityRef &objectRefOut, Object *scopeObject = nullptr);
+		SLAKE_API InternalExceptionPointer resolveIdRef(IdRefObject *ref, Reference &objectRefOut, Object *scopeObject = nullptr);
 
 		SLAKE_API static void addSameKindObjectToList(Object **list, Object *object);
 		SLAKE_API static void removeSameKindObjectToList(Object **list, Object *object);
@@ -449,12 +449,12 @@ namespace slake {
 		SLAKE_API static char *calcLocalVarRefStackBasePtr(const LocalVarRef &localVarRef);
 		SLAKE_API static char *calcLocalVarRefStackRawDataPtr(char *p);
 
-		[[nodiscard]] SLAKE_API InternalExceptionPointer typeofVar(const EntityRef &entityRef, TypeRef &typeOut) const noexcept;
-		[[nodiscard]] SLAKE_API InternalExceptionPointer readVar(const EntityRef &entityRef, Value &valueOut) const noexcept;
-		[[nodiscard]] SLAKE_API Value readVarUnsafe(const EntityRef &entityRef) const noexcept;
+		[[nodiscard]] SLAKE_API InternalExceptionPointer typeofVar(const Reference &entityRef, TypeRef &typeOut) const noexcept;
+		[[nodiscard]] SLAKE_API InternalExceptionPointer readVar(const Reference &entityRef, Value &valueOut) const noexcept;
+		[[nodiscard]] SLAKE_API Value readVarUnsafe(const Reference &entityRef) const noexcept;
 		SLAKE_API void readStructData(char *dest, const StructRef &structRef) const noexcept;
-		[[nodiscard]] SLAKE_API InternalExceptionPointer writeVar(const EntityRef &entityRef, const Value &value) const noexcept;
-		SLAKE_FORCEINLINE void writeVarUnsafe(const EntityRef& entityRef, const Value& value) const noexcept {
+		[[nodiscard]] SLAKE_API InternalExceptionPointer writeVar(const Reference &entityRef, const Value &value) const noexcept;
+		SLAKE_FORCEINLINE void writeVarUnsafe(const Reference& entityRef, const Value& value) const noexcept {
 			writeVar(entityRef, value).unwrap();
 		}
 

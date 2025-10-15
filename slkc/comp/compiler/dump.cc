@@ -118,8 +118,8 @@ SLKC_API std::optional<CompilationError> slkc::dumpIdRef(
 			SLKC_RETURN_IF_COMP_ERROR(writer->writeU8((uint8_t)slake::slxfmt::ValueType::Reg));
 			SLKC_RETURN_IF_COMP_ERROR(writer->writeU32(value.getRegIndex()));
 			break;
-		case slake::ValueType::EntityRef: {
-			const slake::EntityRef &er = value.getEntityRef();
+		case slake::ValueType::Reference: {
+			const slake::Reference &er = value.getReference();
 
 			switch (er.kind) {
 				case slake::EntityRefKind::ObjectRef: {
@@ -528,7 +528,7 @@ SLKC_API std::optional<CompilationError> slkc::dumpModuleMembers(
 		SLKC_RETURN_IF_COMP_ERROR(writer->write(curRecord.name.data(), curRecord.name.size()));
 
 		SLKC_RETURN_IF_COMP_ERROR(dumpTypeName(allocator, writer, curRecord.type));
-		SLKC_RETURN_IF_COMP_ERROR(dumpValue(allocator, writer, mod->associatedRuntime->readVarUnsafe(slake::EntityRef::makeStaticFieldRef(mod, i))));
+		SLKC_RETURN_IF_COMP_ERROR(dumpValue(allocator, writer, mod->associatedRuntime->readVarUnsafe(slake::Reference::makeStaticFieldRef(mod, i))));
 	}
 	return {};
 }

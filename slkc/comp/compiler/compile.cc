@@ -458,7 +458,7 @@ SLKC_API std::optional<CompilationError> slkc::compileValueExpr(
 				return genOutOfMemoryCompError();
 			}
 
-			slake::EntityRef entityRef = slake::EntityRef::makeObjectRef(id.get());
+			slake::Reference entityRef = slake::Reference::makeObjectRef(id.get());
 
 			valueOut = slake::Value(entityRef);
 			break;
@@ -540,7 +540,7 @@ SLKC_API std::optional<CompilationError> slkc::compileValueExpr(
 				return genOutOfMemoryCompError();
 			}
 
-			slake::EntityRef entityRef = slake::EntityRef::makeObjectRef(s.get());
+			slake::Reference entityRef = slake::Reference::makeObjectRef(s.get());
 
 			valueOut = slake::Value(entityRef);
 			break;
@@ -554,7 +554,7 @@ SLKC_API std::optional<CompilationError> slkc::compileValueExpr(
 		case ExprKind::Null: {
 			AstNodePtr<NullLiteralExprNode> e = expr.template castTo<NullLiteralExprNode>();
 
-			slake::EntityRef entityRef = slake::EntityRef::makeObjectRef(nullptr);
+			slake::Reference entityRef = slake::Reference::makeObjectRef(nullptr);
 
 			valueOut = slake::Value(entityRef);
 			break;
@@ -701,7 +701,7 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 				} else {
 					defaultValue = modOut->associatedRuntime->defaultValueOf(type);
 				}
-				modOut->associatedRuntime->writeVar(slake::EntityRef::makeStaticFieldRef(modOut, modOut->fieldRecords.size() - 1), defaultValue).unwrap();
+				modOut->associatedRuntime->writeVar(slake::Reference::makeStaticFieldRef(modOut, modOut->fieldRecords.size() - 1), defaultValue).unwrap();
 
 				break;
 			}

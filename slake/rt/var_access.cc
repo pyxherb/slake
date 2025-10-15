@@ -25,16 +25,16 @@ SLAKE_API char *Runtime::calcLocalVarRefStackRawDataPtr(char *p) {
 		   sizeof(TypeId) + sizeof(TypeModifier);
 }
 
-SLAKE_API InternalExceptionPointer Runtime::typeofVar(const EntityRef &entityRef, TypeRef &typeOut) const noexcept {
+SLAKE_API InternalExceptionPointer Runtime::typeofVar(const Reference &entityRef, TypeRef &typeOut) const noexcept {
 	std::terminate();
 }
 
-SLAKE_API InternalExceptionPointer Runtime::readVar(const EntityRef &entityRef, Value &valueOut) const noexcept {
+SLAKE_API InternalExceptionPointer Runtime::readVar(const Reference &entityRef, Value &valueOut) const noexcept {
 	new (&valueOut) Value(readVarUnsafe(entityRef));
 	return {};
 }
 
-SLAKE_API Value Runtime::readVarUnsafe(const EntityRef &entityRef) const noexcept {
+SLAKE_API Value Runtime::readVarUnsafe(const Reference &entityRef) const noexcept {
 	switch (entityRef.kind) {
 		case EntityRefKind::StaticFieldRef: {
 			FieldRecord &fieldRecord = entityRef.asStaticField.moduleObject->fieldRecords.at(entityRef.asStaticField.index);
@@ -68,11 +68,11 @@ SLAKE_API Value Runtime::readVarUnsafe(const EntityRef &entityRef) const noexcep
 				case TypeId::Instance:
 				case TypeId::Array:
 				case TypeId::Fn:
-					return Value(EntityRef::makeObjectRef(*((Object **)rawDataPtr)));
+					return Value(Reference::makeObjectRef(*((Object **)rawDataPtr)));
 				case TypeId::StructInstance:
 					return entityRef;
 				case TypeId::Ref:
-					return Value(*((EntityRef *)rawDataPtr));
+					return Value(*((Reference *)rawDataPtr));
 				case TypeId::Any:
 					return Value(*((Value *)rawDataPtr));
 				default:
@@ -133,7 +133,7 @@ SLAKE_API Value Runtime::readVarUnsafe(const EntityRef &entityRef) const noexcep
 						std::terminate();
 					}
 
-					return Value(EntityRef::makeObjectRef(*((Object **)(rawDataPtr + sizeof(void *)))));
+					return Value(Reference::makeObjectRef(*((Object **)(rawDataPtr + sizeof(void *)))));
 				case TypeId::StructInstance: {
 					if (!stackTopCheck(rawDataPtr + sizeof(void *), stackTop)) {
 						std::terminate();
@@ -144,10 +144,10 @@ SLAKE_API Value Runtime::readVarUnsafe(const EntityRef &entityRef) const noexcep
 					sr.structObject = (StructObject *)((CustomTypeDefObject *)*(TypeDefObject **)(rawDataPtr))->typeObject;
 					sr.basePtr = &((TypeDefObject **)rawDataPtr)[1];
 
-					return Value(EntityRef::makeStructRef(sr));
+					return Value(Reference::makeStructRef(sr));
 				}
 				case TypeId::Ref:
-					return Value(*((EntityRef *)(rawDataPtr)));
+					return Value(*((Reference *)(rawDataPtr)));
 				case TypeId::Any:
 					return Value(*((Value *)(rawDataPtr)));
 				default:
@@ -213,7 +213,7 @@ SLAKE_API Value Runtime::readVarUnsafe(const EntityRef &entityRef) const noexcep
 						std::terminate();
 					}
 
-					return Value(EntityRef::makeObjectRef(*((Object **)(rawDataPtr + sizeof(void *)))));
+					return Value(Reference::makeObjectRef(*((Object **)(rawDataPtr + sizeof(void *)))));
 				case TypeId::StructInstance: {
 					if (!stackTopCheck(rawDataPtr + sizeof(void *), stackTop)) {
 						std::terminate();
@@ -227,10 +227,10 @@ SLAKE_API Value Runtime::readVarUnsafe(const EntityRef &entityRef) const noexcep
 					sr.structObject = (StructObject *)((CustomTypeDefObject *)td)->typeObject;
 					sr.basePtr = &ptd[1];
 
-					return Value(EntityRef::makeStructRef(sr));
+					return Value(Reference::makeStructRef(sr));
 				}
 				case TypeId::Ref:
-					return Value(*((EntityRef *)(rawDataPtr)));
+					return Value(*((Reference *)(rawDataPtr)));
 				case TypeId::Any:
 					return Value(*((Value *)(rawDataPtr)));
 				default:
@@ -274,11 +274,11 @@ SLAKE_API Value Runtime::readVarUnsafe(const EntityRef &entityRef) const noexcep
 				case TypeId::Instance:
 				case TypeId::Array:
 				case TypeId::Fn:
-					return Value(EntityRef::makeObjectRef(*((Object **)rawFieldPtr)));
+					return Value(Reference::makeObjectRef(*((Object **)rawFieldPtr)));
 				case TypeId::StructInstance:
 					return entityRef;
 				case TypeId::Ref:
-					return Value(*((EntityRef *)rawFieldPtr));
+					return Value(*((Reference *)rawFieldPtr));
 				case TypeId::Any:
 					return Value(*((Value *)rawFieldPtr));
 				default:
@@ -317,11 +317,11 @@ SLAKE_API Value Runtime::readVarUnsafe(const EntityRef &entityRef) const noexcep
 				case TypeId::String:
 				case TypeId::Array:
 				case TypeId::Fn:
-					return Value(EntityRef::makeObjectRef(((Object **)entityRef.asArrayElement.arrayObject->data)[entityRef.asArrayElement.index]));
+					return Value(Reference::makeObjectRef(((Object **)entityRef.asArrayElement.arrayObject->data)[entityRef.asArrayElement.index]));
 				case TypeId::StructInstance:
 					return entityRef;
 				case TypeId::Ref:
-					return Value(((EntityRef *)entityRef.asArrayElement.arrayObject->data)[entityRef.asArrayElement.index]);
+					return Value(((Reference *)entityRef.asArrayElement.arrayObject->data)[entityRef.asArrayElement.index]);
 				case TypeId::Any:
 					return Value(((Value *)entityRef.asArrayElement.arrayObject->data)[entityRef.asArrayElement.index]);
 				default:
@@ -378,17 +378,17 @@ SLAKE_API Value Runtime::readVarUnsafe(const EntityRef &entityRef) const noexcep
 				case TypeId::Instance:
 				case TypeId::Array:
 				case TypeId::Fn:
-					return Value(EntityRef::makeObjectRef(*((Object **)rawDataPtr)));
+					return Value(Reference::makeObjectRef(*((Object **)rawDataPtr)));
 				case TypeId::StructInstance: {
 					StructRef sr;
 
 					sr.structObject = (StructObject *)(fieldRecord.type.getCustomTypeDef())->typeObject;
 					sr.basePtr = (void *)rawDataPtr;
 
-					return Value(EntityRef::makeStructRef(sr));
+					return Value(Reference::makeStructRef(sr));
 				}
 				case TypeId::Ref:
-					return Value(*((EntityRef *)rawDataPtr));
+					return Value(*((Reference *)rawDataPtr));
 				case TypeId::Any:
 					return Value(*((Value *)rawDataPtr));
 				default:
@@ -402,7 +402,7 @@ SLAKE_API Value Runtime::readVarUnsafe(const EntityRef &entityRef) const noexcep
 	std::terminate();
 }
 
-SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef, const Value &value) const noexcept {
+SLAKE_API InternalExceptionPointer Runtime::writeVar(const Reference &entityRef, const Value &value) const noexcept {
 	bool result;
 
 	switch (entityRef.kind) {
@@ -458,7 +458,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 				case TypeId::String:
 				case TypeId::Instance:
 				case TypeId::Array:
-					*((Object **)rawDataPtr) = value.getEntityRef().asObject;
+					*((Object **)rawDataPtr) = value.getReference().asObject;
 					break;
 				default:
 					// All fields should be checked during the instantiation.
@@ -570,7 +570,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 					if (!result) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
-					*((Object **)(rawDataPtr)) = value.getEntityRef().asObject;
+					*((Object **)(rawDataPtr)) = value.getReference().asObject;
 					break;
 				case TypeId::Instance:
 				case TypeId::Array:
@@ -582,7 +582,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 					if (!result) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
-					*((Object **)(rawDataPtr + sizeof(void *))) = value.getEntityRef().asObject;
+					*((Object **)(rawDataPtr + sizeof(void *))) = value.getReference().asObject;
 					break;
 				default:
 					// All fields should be checked during the instantiation.
@@ -699,7 +699,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 					if (!result) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
-					*((Object **)(rawDataPtr)) = value.getEntityRef().asObject;
+					*((Object **)(rawDataPtr)) = value.getReference().asObject;
 					break;
 				case TypeId::Instance:
 				case TypeId::Array:
@@ -712,7 +712,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 					if (!result) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
-					*((Object **)(rawDataPtr + sizeof(void *))) = value.getEntityRef().asObject;
+					*((Object **)(rawDataPtr + sizeof(void *))) = value.getReference().asObject;
 					break;
 				default:
 					// All fields should be checked during the instantiation.
@@ -769,7 +769,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 				case TypeId::String:
 				case TypeId::Instance:
 				case TypeId::Array:
-					*((Object **)rawFieldPtr) = value.getEntityRef().asObject;
+					*((Object **)rawFieldPtr) = value.getReference().asObject;
 					break;
 				default:
 					// All fields should be checked during the instantiation.
@@ -824,7 +824,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 				case TypeId::String:
 				case TypeId::Instance:
 				case TypeId::Array: {
-					((Object **)entityRef.asArrayElement.arrayObject->data)[entityRef.asArrayElement.index] = value.getEntityRef().asObject;
+					((Object **)entityRef.asArrayElement.arrayObject->data)[entityRef.asArrayElement.index] = value.getReference().asObject;
 					break;
 				}
 			}
@@ -905,7 +905,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 				case TypeId::String:
 				case TypeId::Instance:
 				case TypeId::Array:
-					*((Object **)rawDataPtr) = value.getEntityRef().asObject;
+					*((Object **)rawDataPtr) = value.getReference().asObject;
 					break;
 				default:
 					// All fields should be checked during the instantiation.

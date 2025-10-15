@@ -282,7 +282,7 @@ SLAKE_API Value Runtime::defaultValueOf(const TypeRef &type) const {
 		case TypeId::String:
 		case TypeId::Instance:
 		case TypeId::Array:
-			return Value(slake::EntityRef::makeObjectRef(nullptr));
+			return Value(slake::Reference::makeObjectRef(nullptr));
 		default:
 			break;
 	}
@@ -292,7 +292,7 @@ SLAKE_API Value Runtime::defaultValueOf(const TypeRef &type) const {
 SLAKE_API InternalExceptionPointer Runtime::loadDeferredCustomTypeDef(CustomTypeDefObject *customTypeDef) {
 	IdRefObject *idRefObject = (IdRefObject *)customTypeDef->typeObject;
 
-	slake::EntityRef entityRef;
+	slake::Reference entityRef;
 	SLAKE_RETURN_IF_EXCEPT(resolveIdRef(idRefObject, entityRef));
 
 	if (!entityRef)

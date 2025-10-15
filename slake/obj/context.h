@@ -94,11 +94,11 @@ namespace slake {
 	struct Context {
 		Runtime *runtime;
 		peff::RcObjectPtr<peff::Alloc> selfAllocator;
-		peff::DynArray<MajorFramePtr> majorFrames;	// Major frame list
-		ContextFlags flags = 0;						// Flags
-		char *dataStack = nullptr;					// Data stack
-		char *dataStackTopPtr = nullptr;			// Data stack top pointer
-		size_t stackTop = 0;						// Stack top
+		peff::List<MajorFramePtr> majorFrames;	// Major frame list
+		ContextFlags flags = 0;					// Flags
+		char *dataStack = nullptr;				// Data stack
+		char *dataStackTopPtr = nullptr;		// Data stack top pointer
+		size_t stackTop = 0;					// Stack top
 		size_t stackSize;
 
 		SLAKE_API char *stackAlloc(size_t size);

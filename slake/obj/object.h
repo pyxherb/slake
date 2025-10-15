@@ -179,7 +179,7 @@ namespace slake {
 			return _objectKind;
 		}
 
-		SLAKE_API virtual EntityRef getMember(const std::string_view &name) const;
+		SLAKE_API virtual Reference getMember(const std::string_view &name) const;
 	};
 
 	template <typename T = Object>

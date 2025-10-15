@@ -25,17 +25,17 @@ SLAKE_API Object *InstanceObject::duplicate(Duplicator *duplicator) const {
 	return (Object *)alloc(this).get();
 }
 
-SLAKE_API EntityRef InstanceObject::getMember(const std::string_view &name) const {
+SLAKE_API Reference InstanceObject::getMember(const std::string_view &name) const {
 	if (auto it = _class->cachedInstantiatedMethodTable->methods.find(name);
 		it != _class->cachedInstantiatedMethodTable->methods.end())
-		return EntityRef::makeObjectRef(it.value());
+		return Reference::makeObjectRef(it.value());
 
 	if (auto it = _class->cachedObjectLayout->fieldNameMap.find(name);
 		it != _class->cachedObjectLayout->fieldNameMap.end()) {
-		return EntityRef::makeInstanceFieldRef((InstanceObject *)this, it.value());
+		return Reference::makeInstanceFieldRef((InstanceObject *)this, it.value());
 	}
 
-	return EntityRef::makeInvalidRef();
+	return Reference::makeInvalidRef();
 }
 
 SLAKE_API HostObjectRef<InstanceObject> slake::InstanceObject::alloc(Runtime *rt) {

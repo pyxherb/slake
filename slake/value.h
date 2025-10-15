@@ -97,7 +97,7 @@ namespace slake {
 		uint32_t idxField;
 	};
 
-	struct EntityRef {
+	struct Reference {
 		union {
 			StaticFieldRef asStaticField;
 			ArrayElementRef asArrayElement;
@@ -116,16 +116,16 @@ namespace slake {
 		};
 		EntityRefKind kind;
 
-		static SLAKE_FORCEINLINE EntityRef makeInvalidRef() {
-			EntityRef ref = {};
+		static SLAKE_FORCEINLINE Reference makeInvalidRef() {
+			Reference ref = {};
 
 			ref.kind = EntityRefKind::Invalid;
 
 			return ref;
 		}
 
-		static SLAKE_FORCEINLINE EntityRef makeStaticFieldRef(ModuleObject *moduleObject, size_t index) {
-			EntityRef ref = {};
+		static SLAKE_FORCEINLINE Reference makeStaticFieldRef(ModuleObject *moduleObject, size_t index) {
+			Reference ref = {};
 
 			ref.asStaticField.moduleObject = moduleObject;
 			ref.asStaticField.index = index;
@@ -134,8 +134,8 @@ namespace slake {
 			return ref;
 		}
 
-		static SLAKE_FORCEINLINE EntityRef makeArrayElementRef(ArrayObject *arrayObject, size_t index) {
-			EntityRef ref = {};
+		static SLAKE_FORCEINLINE Reference makeArrayElementRef(ArrayObject *arrayObject, size_t index) {
+			Reference ref = {};
 
 			ref.asArrayElement.arrayObject = arrayObject;
 			ref.asArrayElement.index = index;
@@ -144,8 +144,8 @@ namespace slake {
 			return ref;
 		}
 
-		static SLAKE_FORCEINLINE EntityRef makeObjectRef(Object *instanceObject) {
-			EntityRef ref = {};
+		static SLAKE_FORCEINLINE Reference makeObjectRef(Object *instanceObject) {
+			Reference ref = {};
 
 			ref.asObject = instanceObject;
 			ref.kind = EntityRefKind::ObjectRef;
@@ -153,8 +153,8 @@ namespace slake {
 			return ref;
 		}
 
-		static SLAKE_FORCEINLINE EntityRef makeInstanceFieldRef(InstanceObject *instanceObject, size_t fieldIndex) {
-			EntityRef ref = {};
+		static SLAKE_FORCEINLINE Reference makeInstanceFieldRef(InstanceObject *instanceObject, size_t fieldIndex) {
+			Reference ref = {};
 
 			ref.asObjectField.instanceObject = instanceObject;
 			ref.asObjectField.fieldIndex = fieldIndex;
@@ -163,8 +163,8 @@ namespace slake {
 			return ref;
 		}
 
-		static SLAKE_FORCEINLINE EntityRef makeLocalVarRef(Context *context, size_t offset) {
-			EntityRef ref = {};
+		static SLAKE_FORCEINLINE Reference makeLocalVarRef(Context *context, size_t offset) {
+			Reference ref = {};
 
 			ref.asLocalVar.context = context;
 			ref.asLocalVar.stackOff = offset;
@@ -173,8 +173,8 @@ namespace slake {
 			return ref;
 		}
 
-		static SLAKE_FORCEINLINE EntityRef makeCoroutineLocalVarRef(CoroutineObject *coroutine, size_t offset) {
-			EntityRef ref = {};
+		static SLAKE_FORCEINLINE Reference makeCoroutineLocalVarRef(CoroutineObject *coroutine, size_t offset) {
+			Reference ref = {};
 
 			ref.asCoroutineLocalVar.coroutine = coroutine;
 			ref.asCoroutineLocalVar.stackOff = offset;
@@ -183,8 +183,8 @@ namespace slake {
 			return ref;
 		}
 
-		static SLAKE_FORCEINLINE EntityRef makeArgRef(MajorFrame *majorFrame, size_t argIndex) {
-			EntityRef ref = {};
+		static SLAKE_FORCEINLINE Reference makeArgRef(MajorFrame *majorFrame, size_t argIndex) {
+			Reference ref = {};
 
 			ref.asArg.majorFrame = majorFrame;
 			ref.asArg.argIndex = argIndex;
@@ -193,8 +193,8 @@ namespace slake {
 			return ref;
 		}
 
-		static SLAKE_FORCEINLINE EntityRef makeArgPackRef(MajorFrame *majorFrame, size_t begin, size_t end) {
-			EntityRef ref = {};
+		static SLAKE_FORCEINLINE Reference makeArgPackRef(MajorFrame *majorFrame, size_t begin, size_t end) {
+			Reference ref = {};
 
 			ref.asArgPack.majorFrame = majorFrame;
 			ref.asArgPack.begin = begin;
@@ -204,8 +204,8 @@ namespace slake {
 			return ref;
 		}
 
-		static SLAKE_FORCEINLINE EntityRef makeCoroutineArgRef(CoroutineObject *coroutine, size_t argIndex) {
-			EntityRef ref = {};
+		static SLAKE_FORCEINLINE Reference makeCoroutineArgRef(CoroutineObject *coroutine, size_t argIndex) {
+			Reference ref = {};
 
 			ref.asCoroutineArg.coroutine = coroutine;
 			ref.asCoroutineArg.argIndex = argIndex;
@@ -214,8 +214,8 @@ namespace slake {
 			return ref;
 		}
 
-		static SLAKE_FORCEINLINE EntityRef makeStructRef(const StructRef &structRef) {
-			EntityRef ref = {};
+		static SLAKE_FORCEINLINE Reference makeStructRef(const StructRef &structRef) {
+			Reference ref = {};
 
 			ref.asStruct = structRef;
 			ref.kind = EntityRefKind::StructRef;
@@ -223,8 +223,8 @@ namespace slake {
 			return ref;
 		}
 
-		static SLAKE_FORCEINLINE EntityRef makeStructFieldRef(const StructRef &structRef, uint32_t fieldIndex) {
-			EntityRef ref = {};
+		static SLAKE_FORCEINLINE Reference makeStructFieldRef(const StructRef &structRef, uint32_t fieldIndex) {
+			Reference ref = {};
 
 			ref.asStructField.structRef = structRef;
 			ref.asStructField.idxField = fieldIndex;
@@ -233,8 +233,8 @@ namespace slake {
 			return ref;
 		}
 
-		static SLAKE_FORCEINLINE EntityRef makeAotPtrRef(void *ptr) {
-			EntityRef ref = {};
+		static SLAKE_FORCEINLINE Reference makeAotPtrRef(void *ptr) {
+			Reference ref = {};
 
 			ref.asAotPtr.ptr = ptr;
 			ref.kind = EntityRefKind::ArgRef;
@@ -246,8 +246,8 @@ namespace slake {
 			return kind != EntityRefKind::Invalid;
 		}
 
-		SLAKE_API bool operator==(const EntityRef &rhs) const;
-		SLAKE_API bool operator<(const EntityRef &rhs) const;
+		SLAKE_API bool operator==(const Reference &rhs) const;
+		SLAKE_API bool operator<(const Reference &rhs) const;
 	};
 
 #ifndef ssize_t
@@ -272,7 +272,7 @@ namespace slake {
 		double asF64;
 		bool asBool;
 		TypeRef asType;
-		EntityRef asEntityRef;
+		Reference asReference;
 
 		ValueData() noexcept = default;
 		SLAKE_FORCEINLINE constexpr ValueData(const ValueData &other) noexcept = default;
@@ -359,8 +359,8 @@ namespace slake {
 		}
 		SLAKE_FORCEINLINE constexpr Value(bool data) noexcept : valueType(ValueType::Bool), data(data) {
 		}
-		SLAKE_FORCEINLINE Value(const EntityRef &entityRef) noexcept : valueType(ValueType::EntityRef) {
-			this->data.asEntityRef = entityRef;
+		SLAKE_FORCEINLINE Value(const Reference &entityRef) noexcept : valueType(ValueType::Reference) {
+			this->data.asReference = entityRef;
 		}
 		SLAKE_FORCEINLINE Value(ValueType vt) noexcept : valueType(vt), data(/*Uninitialized*/) {
 		}
@@ -454,13 +454,13 @@ namespace slake {
 			return data.asType;
 		}
 
-		SLAKE_FORCEINLINE EntityRef &getEntityRef() noexcept {
-			assert(valueType == ValueType::EntityRef);
-			return data.asEntityRef;
+		SLAKE_FORCEINLINE Reference &getReference() noexcept {
+			assert(valueType == ValueType::Reference);
+			return data.asReference;
 		}
-		SLAKE_FORCEINLINE const EntityRef &getEntityRef() const noexcept {
-			assert(valueType == ValueType::EntityRef);
-			return data.asEntityRef;
+		SLAKE_FORCEINLINE const Reference &getReference() const noexcept {
+			assert(valueType == ValueType::Reference);
+			return data.asReference;
 		}
 
 		Value &operator=(const Value &other) noexcept = default;

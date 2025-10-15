@@ -9,7 +9,7 @@ struct TypeSlotGenericInstantiationTask {
 
 struct ValueInitGenericInstantiationTask {
 	peff::RcObjectPtr<Runtime::GenericInstantiationContext> context;
-	EntityRef dest;
+	Reference dest;
 	Value value;
 };
 
@@ -142,13 +142,13 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateModuleFields(Gene
 		FieldRecord &curFieldRecord = mod->fieldRecords.back();
 
 		SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(dispatcher, curFieldRecord.type, instantiationContext));
-		SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(dispatcher, EntityRef::makeStaticFieldRef(mod, i), readVarUnsafe(EntityRef::makeStaticFieldRef(tmpMod.get(), i)), instantiationContext));
+		SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(dispatcher, Reference::makeStaticFieldRef(mod, i), readVarUnsafe(Reference::makeStaticFieldRef(tmpMod.get(), i)), instantiationContext));
 	}
 
 	return {};
 }
 
-SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateGenericObject(GenericInstantiationDispatcher &dispatcher, EntityRef dest, Value value, GenericInstantiationContext *instantiationContext) {
+SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateGenericObject(GenericInstantiationDispatcher &dispatcher, Reference dest, Value value, GenericInstantiationContext *instantiationContext) {
 	return dispatcher.pushValueInit({ instantiationContext, dest, value });
 }
 
@@ -169,7 +169,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateGenericObject(Gen
 		case ValueType::F32:
 		case ValueType::F64:
 		case ValueType::Bool:
-		case ValueType::EntityRef:
+		case ValueType::Reference:
 		case ValueType::RegRef:
 			break;
 		case ValueType::TypeName:
@@ -662,7 +662,7 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(MemberObjec
 	}
 
 	/* for (auto i : deferredTypeDefs) {
-		slake::EntityRef entityRef;
+		slake::Reference entityRef;
 		SLAKE_RETURN_IF_EXCEPT(resolveIdRef((IdRefObject*)i->typeObject, entityRef));
 
 		if (!entityRef)

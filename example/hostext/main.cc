@@ -12,13 +12,13 @@ slake::Value print(slake::Context *context, slake::MajorFrame *curMajorFrame) {
 		putchar('\n');
 	else {
 		Value varArgsValue;
-		varArgsValue = curMajorFrame->curFn->associatedRuntime->readVarUnsafe(slake::EntityRef::makeArgRef(curMajorFrame, 0));
-		ArrayObject *varArgs = (ArrayObject *)varArgsValue.getEntityRef().asObject;
+		varArgsValue = curMajorFrame->curFn->associatedRuntime->readVarUnsafe(slake::Reference::makeArgRef(curMajorFrame, 0));
+		ArrayObject *varArgs = (ArrayObject *)varArgsValue.getReference().asObject;
 
 		for (uint8_t i = 0; i < varArgs->length; ++i) {
 			Value data;
 			if (auto e = curMajorFrame->curFn->associatedRuntime->readVar(
-					EntityRef::makeArrayElementRef(varArgs, i),
+					Reference::makeArrayElementRef(varArgs, i),
 					data)) {
 				throw std::runtime_error("An exception has thrown");
 			}
@@ -57,8 +57,8 @@ slake::Value print(slake::Context *context, slake::MajorFrame *curMajorFrame) {
 				case ValueType::Bool:
 					fputs(data.getBool() ? "true" : "false", stdout);
 					break;
-				case ValueType::EntityRef: {
-					Object *objectPtr = data.getEntityRef().asObject;
+				case ValueType::Reference: {
+					Object *objectPtr = data.getReference().asObject;
 					if (!objectPtr)
 						fputs("null", stdout);
 					else {

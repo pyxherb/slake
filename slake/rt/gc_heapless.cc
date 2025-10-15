@@ -44,8 +44,8 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, const Value &i) {
 		case ValueType::F64:
 		case ValueType::Bool:
 			break;
-		case ValueType::EntityRef: {
-			const EntityRef &entityRef = i.getEntityRef();
+		case ValueType::Reference: {
+			const Reference &entityRef = i.getReference();
 
 			switch (entityRef.kind) {
 				case EntityRefKind::StaticFieldRef:
@@ -231,7 +231,7 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 						GCWalkContext::pushObject(context, i.value());
 					}
 					for (size_t i = 0; i < ((ModuleObject *)v)->fieldRecords.size(); ++i) {
-						_gcWalk(context, readVarUnsafe(EntityRef::makeStaticFieldRef((ModuleObject *)v, i)));
+						_gcWalk(context, readVarUnsafe(Reference::makeStaticFieldRef((ModuleObject *)v, i)));
 					}
 
 					GCWalkContext::pushObject(context, ((ModuleObject *)v)->parent);
@@ -255,7 +255,7 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 
 					for (size_t i = 0; i < value->fieldRecords.size(); ++i) {
 						_gcWalk(context, value->fieldRecords.at(i).type);
-						_gcWalk(context, readVarUnsafe(EntityRef::makeStaticFieldRef(value, i)));
+						_gcWalk(context, readVarUnsafe(Reference::makeStaticFieldRef(value, i)));
 					}
 
 					for (auto &i : value->implTypes) {
@@ -292,7 +292,7 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 
 					for (size_t i = 0; i < value->fieldRecords.size(); ++i) {
 						_gcWalk(context, value->fieldRecords.at(i).type);
-						_gcWalk(context, readVarUnsafe(EntityRef::makeStaticFieldRef(value, i)));
+						_gcWalk(context, readVarUnsafe(Reference::makeStaticFieldRef(value, i)));
 					}
 
 					for (auto &i : value->genericParams) {
@@ -322,7 +322,7 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 					InterfaceObject *value = (InterfaceObject *)v;
 
 					for (size_t i = 0; i < value->fieldRecords.size(); ++i) {
-						_gcWalk(context, readVarUnsafe(EntityRef::makeStaticFieldRef(value, i)));
+						_gcWalk(context, readVarUnsafe(Reference::makeStaticFieldRef(value, i)));
 					}
 
 					for (auto &i : value->implTypes) {
@@ -493,9 +493,8 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, char *dataStack, size_t 
 SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Context &ctxt) {
 	bool isWalkableObjectDetected = false;
 
-	for (size_t i = 0; i < ctxt.majorFrames.size(); ++i) {
-		MajorFrame *majorFrame = ctxt.majorFrames.at(i).get();
-		_gcWalk(context, ctxt.dataStack, ctxt.stackSize, majorFrame);
+	for (auto &i : ctxt.majorFrames) {
+		_gcWalk(context, ctxt.dataStack, ctxt.stackSize, i.get());
 	}
 }
 
@@ -758,7 +757,7 @@ rescanDeletables:
 			case GCTarget::TypeDef:
 				if (!isTypeDefObject(i))
 					continue;
-				unregisterTypeDef((TypeDefObject*)i);
+				unregisterTypeDef((TypeDefObject *)i);
 				break;
 			case GCTarget::All:
 				break;

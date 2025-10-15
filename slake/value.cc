@@ -31,8 +31,8 @@ SLAKE_API bool Value::operator==(const Value &rhs) const {
 			return data.asUSize == rhs.data.asUSize;
 		case ValueType::Bool:
 			return data.asBool == rhs.data.asBool;
-		case ValueType::EntityRef: {
-			return data.asEntityRef == data.asEntityRef;
+		case ValueType::Reference: {
+			return data.asReference == data.asReference;
 		}
 		case ValueType::RegRef:
 			return data.asU32 == rhs.data.asU32;
@@ -74,8 +74,8 @@ SLAKE_API bool Value::operator<(const Value &rhs) const {
 			return data.asUSize < rhs.data.asUSize;
 		case ValueType::Bool:
 			return data.asBool < rhs.data.asBool;
-		case ValueType::EntityRef:
-			return data.asEntityRef < rhs.data.asEntityRef;
+		case ValueType::Reference:
+			return data.asReference < rhs.data.asReference;
 		case ValueType::RegRef:
 			return data.asU32 < rhs.data.asU32;
 		case ValueType::TypeName:

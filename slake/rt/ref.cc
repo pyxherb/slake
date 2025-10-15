@@ -4,7 +4,7 @@ using namespace slake;
 
 SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 	IdRefObject *ref,
-	EntityRef &objectRefOut,
+	Reference &objectRefOut,
 	Object *scopeObject) {
 	assert(ref);
 
@@ -40,7 +40,7 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 						MemberObject *m;
 						SLAKE_RETURN_IF_EXCEPT(instantiateGenericObject((MemberObject *)scopeObject, m, &genericInstantiationContext));
 						scopeObject = m;
-						objectRefOut = EntityRef::makeObjectRef(scopeObject);
+						objectRefOut = Reference::makeObjectRef(scopeObject);
 					}
 					break;
 			}
@@ -60,7 +60,7 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 				if (!overloading)
 					return allocOutOfMemoryErrorIfAllocFailed(ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(this)->getFixedAlloc(), ref));
 
-				if (!(objectRefOut = EntityRef::makeObjectRef(overloading)))
+				if (!(objectRefOut = Reference::makeObjectRef(overloading)))
 					return allocOutOfMemoryErrorIfAllocFailed(ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(this)->getFixedAlloc(), ref));
 
 				break;

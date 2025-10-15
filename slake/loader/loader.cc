@@ -292,7 +292,7 @@ SLAKE_API InternalExceptionPointer loader::loadValue(LoaderContext &context, Run
 
 	switch (vt) {
 		case slake::slxfmt::ValueType::None: {
-			valueOut = Value(EntityRef::makeObjectRef(nullptr));
+			valueOut = Value(Reference::makeObjectRef(nullptr));
 			break;
 		}
 		case slake::slxfmt::ValueType::I8: {
@@ -392,7 +392,7 @@ SLAKE_API InternalExceptionPointer loader::loadValue(LoaderContext &context, Run
 				SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read(strObj->data.data(), lenName)));
 			}
 
-			valueOut = Value(EntityRef::makeObjectRef(strObj.get()));
+			valueOut = Value(Reference::makeObjectRef(strObj.get()));
 			break;
 		}
 		case slake::slxfmt::ValueType::IdRef: {
@@ -400,7 +400,7 @@ SLAKE_API InternalExceptionPointer loader::loadValue(LoaderContext &context, Run
 
 			SLAKE_RETURN_IF_EXCEPT(loadIdRef(context, runtime, reader, member, idRefObj));
 
-			valueOut = Value(EntityRef::makeObjectRef(idRefObj.get()));
+			valueOut = Value(Reference::makeObjectRef(idRefObj.get()));
 			break;
 		}
 		case slake::slxfmt::ValueType::Array: {
@@ -841,7 +841,7 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(LoaderContext &cont
 			Value initialValue;
 			SLAKE_RETURN_IF_EXCEPT(loadValue(context, runtime, reader, moduleObject, initialValue));
 
-			SLAKE_RETURN_IF_EXCEPT(runtime->writeVar(EntityRef::makeStaticFieldRef(moduleObject, i), initialValue));
+			SLAKE_RETURN_IF_EXCEPT(runtime->writeVar(Reference::makeStaticFieldRef(moduleObject, i), initialValue));
 		}
 	}
 

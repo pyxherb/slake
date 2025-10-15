@@ -24,7 +24,7 @@ namespace slake {
 		F64,		  // 64-bit floating point number
 		Bool,		  // Boolean
 
-		EntityRef,	// Entity reference
+		Reference,	// Entity reference
 
 		RegRef,	   // Register reference
 		TypeName,  // Type name

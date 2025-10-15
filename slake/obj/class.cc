@@ -195,13 +195,13 @@ SLAKE_API ClassObject::~ClassObject() {
 		cachedObjectLayout->dealloc();
 }
 
-SLAKE_API EntityRef ClassObject::getMember(const std::string_view &name) const {
+SLAKE_API Reference ClassObject::getMember(const std::string_view &name) const {
 	for (const ClassObject* i = this; i; i = (ClassObject*)i->baseType.getCustomTypeDef()->typeObject) {
 		auto m = i->ModuleObject::getMember(name);
 		if (m)
 			return m;
 	}
-	return EntityRef::makeInvalidRef();
+	return Reference::makeInvalidRef();
 }
 
 SLAKE_API bool ClassObject::hasImplemented(InterfaceObject *pInterface) const {

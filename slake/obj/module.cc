@@ -69,14 +69,14 @@ SLAKE_API Object *ModuleObject::duplicate(Duplicator *duplicator) const {
 	return (Object *)alloc(duplicator, this).get();
 }
 
-SLAKE_API EntityRef ModuleObject::getMember(const std::string_view &name) const {
+SLAKE_API Reference ModuleObject::getMember(const std::string_view &name) const {
 	if (auto it = fieldRecordIndices.find(name); it != fieldRecordIndices.endConst()) {
-		return EntityRef::makeStaticFieldRef((ModuleObject *)this, it.value());
+		return Reference::makeStaticFieldRef((ModuleObject *)this, it.value());
 	}
 	if (auto it = members.find(name); it != members.end()) {
-		return EntityRef::makeObjectRef(it.value());
+		return Reference::makeObjectRef(it.value());
 	}
-	return EntityRef::makeInvalidRef();
+	return Reference::makeInvalidRef();
 }
 
 SLAKE_API bool ModuleObject::addMember(MemberObject *member) {
@@ -108,7 +108,7 @@ SLAKE_API bool ModuleObject::appendFieldRecord(FieldRecord &&fieldRecord) {
 		return false;
 	}
 
-	associatedRuntime->writeVarUnsafe(EntityRef::makeStaticFieldRef(this, fieldRecords.size() - 1), associatedRuntime->defaultValueOf(fr.type));
+	associatedRuntime->writeVarUnsafe(Reference::makeStaticFieldRef(this, fieldRecords.size() - 1), associatedRuntime->defaultValueOf(fr.type));
 	return true;
 }
 

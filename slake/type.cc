@@ -81,7 +81,7 @@ SLAKE_API ValueType typeIdToValueType(TypeId typeId) {
 	std::terminate();
 }
 
-SLAKE_API bool EntityRef::operator==(const EntityRef &rhs) const {
+SLAKE_API bool Reference::operator==(const Reference &rhs) const {
 	if (kind != rhs.kind)
 		return false;
 	switch (kind) {
@@ -114,7 +114,7 @@ SLAKE_API bool EntityRef::operator==(const EntityRef &rhs) const {
 	}
 }
 
-SLAKE_API bool EntityRef::operator<(const EntityRef &rhs) const {
+SLAKE_API bool Reference::operator<(const Reference &rhs) const {
 	if (kind < rhs.kind)
 		return true;
 	if (kind > rhs.kind)
@@ -203,11 +203,11 @@ SLAKE_API InternalExceptionPointer slake::isCompatible(peff::Alloc *allocator, c
 			break;
 		}
 		case TypeId::String: {
-			if (value.valueType != ValueType::EntityRef) {
+			if (value.valueType != ValueType::Reference) {
 				resultOut = false;
 				return {};
 			}
-			const EntityRef &entityRef = value.getEntityRef();
+			const Reference &entityRef = value.getReference();
 			if (entityRef.kind != EntityRefKind::ObjectRef) {
 				resultOut = false;
 				return {};
@@ -219,12 +219,12 @@ SLAKE_API InternalExceptionPointer slake::isCompatible(peff::Alloc *allocator, c
 			break;
 		}
 		case TypeId::Instance: {
-			if (value.valueType != ValueType::EntityRef) {
+			if (value.valueType != ValueType::Reference) {
 				resultOut = false;
 				return {};
 			}
 
-			const EntityRef &entityRef = value.getEntityRef();
+			const Reference &entityRef = value.getReference();
 			if (entityRef.kind != EntityRefKind::ObjectRef) {
 				resultOut = false;
 				return {};
@@ -275,12 +275,12 @@ SLAKE_API InternalExceptionPointer slake::isCompatible(peff::Alloc *allocator, c
 			break;
 		}
 		case TypeId::Array: {
-			if (value.valueType != ValueType::EntityRef) {
+			if (value.valueType != ValueType::Reference) {
 				resultOut = false;
 				return {};
 			}
 
-			const EntityRef &entityRef = value.getEntityRef();
+			const Reference &entityRef = value.getReference();
 			if (entityRef.kind != EntityRefKind::ObjectRef) {
 				resultOut = false;
 				return {};
@@ -301,12 +301,12 @@ SLAKE_API InternalExceptionPointer slake::isCompatible(peff::Alloc *allocator, c
 		}
 			/*
 		case TypeId::Ref: {
-			if (value.valueType != ValueType::EntityRef) {
+			if (value.valueType != ValueType::Reference) {
 				resultOut = false;
 				return {};
 			}
 
-			const EntityRef &entityRef = value.getEntityRef();
+			const Reference &entityRef = value.getReference();
 			Runtime *rt;
 			switch (entityRef.kind) {
 				case EntityRefKind::FieldRef:

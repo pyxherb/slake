@@ -589,7 +589,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 
 					idRefObject->hasVarArgs = true;
 
-					SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::RLOAD, operatorReg, { slake::Value(slake::ValueType::RegRef, rhsReg), slake::Value(slake::EntityRef::makeObjectRef(idRefObject.get())) }));
+					SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::RLOAD, operatorReg, { slake::Value(slake::ValueType::RegRef, rhsReg), slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));
 				} else {
 					slake::HostObjectRef<slake::IdRefObject> idRefObject;
 
@@ -610,7 +610,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 
 					idRefObject->hasVarArgs = true;
 
-					SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::LOAD, operatorReg, { slake::Value(slake::EntityRef::makeObjectRef(idRefObject.get())) }));
+					SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::LOAD, operatorReg, { slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));
 				}
 
 				uint32_t reg;
@@ -1903,7 +1903,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 								SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, compilationContext, matchedOverloading->params.at(i)->type, idRefObject->paramTypes->at(i)));
 							}
 
-							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::RLOAD, operatorReg, { slake::Value(slake::ValueType::RegRef, lhsReg), slake::Value(slake::EntityRef::makeObjectRef(idRefObject.get())) }));
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::RLOAD, operatorReg, { slake::Value(slake::ValueType::RegRef, lhsReg), slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));
 						} else {
 							slake::HostObjectRef<slake::IdRefObject> idRefObject;
 
@@ -1924,7 +1924,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 								SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, compilationContext, matchedOverloading->params.at(i)->type, idRefObject->paramTypes->at(i)));
 							}
 
-							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::LOAD, operatorReg, { slake::Value(slake::EntityRef::makeObjectRef(idRefObject.get())) }));
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::LOAD, operatorReg, { slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));
 						}
 
 						uint32_t reg;

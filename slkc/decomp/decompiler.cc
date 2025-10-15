@@ -353,8 +353,8 @@ SLKC_API bool slkc::decompileValue(peff::Alloc *allocator, DumpWriter *writer, c
 		case slake::ValueType::Bool:
 			SLKC_RETURN_IF_FALSE(writer->write(value.getBool() ? "true" : "false"));
 			break;
-		case slake::ValueType::EntityRef: {
-			const slake::EntityRef &er = value.getEntityRef();
+		case slake::ValueType::Reference: {
+			const slake::Reference &er = value.getReference();
 
 			switch (er.kind) {
 				case slake::EntityRefKind::ObjectRef: {
@@ -452,7 +452,7 @@ SLKC_API bool slkc::decompileValue(peff::Alloc *allocator, DumpWriter *writer, c
 									SLKC_RETURN_IF_FALSE(writer->write(", "));
 								}
 
-								slake::EntityRef rer = slake::EntityRef::makeArrayElementRef(a, i);
+								slake::Reference rer = slake::Reference::makeArrayElementRef(a, i);
 
 								SLKC_RETURN_IF_FALSE(decompileValue(allocator, writer, a->associatedRuntime->readVarUnsafe(rer)));
 							}

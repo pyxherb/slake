@@ -331,7 +331,12 @@ namespace slkc {
 		Id = 0,
 		Tokens,
 		Expr,
-		Stmt
+		Stmt,
+		Type,
+		Class,
+		Struct,
+		Interface,
+		GenericParam
 	};
 }
 

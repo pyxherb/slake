@@ -6,15 +6,15 @@ import {
 
 class AnotherGeneric<X, U> {
 	class ChildGeneric<V, T(Test)> {
-		pub let xyz: i32;
+		public let xyz: i32;
 
-		pub fn _setX(abc: T) {
+		public fn _setX(abc: T) {
 			this.xyz = abc.getX();
 			extfns.print("[ChildGeneric]setX: ", this.xyz, "\n");
 			return;
 		}
 
-		pub fn _getX(): i32 {
+		public fn _getX(): i32 {
 			extfns.print("[ChildGeneric]Fetched xyz: ", this.xyz, "\n");
 			return this.xyz;
 		}
@@ -24,55 +24,55 @@ class AnotherGeneric<X, U> {
 /// # Test Class
 /// This is a test class LOL
 class Test {
-	pub let x: i32;
-	pub let lab: Test;
+	public let x: i32;
+	public let lab: Test;
 
-	pub fn delete() {
+	public fn delete() {
 		extfns.print("Destructing Test...\n");
 		return;
 	}
 
-	pub fn new(x: i32) {
+	public fn new(x: i32) {
 		this.x = x;
 		return;
 	}
 
-	pub fn getX(): i32 {
+	public fn getX(): i32 {
 		extfns.print("Fetched x: ", this.x, "\n");
 		return this.x;
 	}
 
-	pub fn test(x: i32&) {
+	public fn test(x: i32&) {
 		x = 114514;
 		return;
 	}
 
-	pub operator +(rhs: i32) : i32 {
+	public operator +(rhs: i32) : i32 {
 		return this.x + rhs;
 	}
 }
 
 class Derived(Test) {
-	pub let y: i32;
+	public let y: i32;
 
-	pub fn delete() {
+	public fn delete() {
 		extfns.print("Destructing Derived...\n");
 		return;
 	}
 
-	pub fn new(y: i32) {
+	public fn new(y: i32) {
 		this.x = y * 2;
 		this.x = y * 4;
 		return;
 	}
 
-	pub fn getY(): i32 {
+	public fn getY(): i32 {
 		extfns.print("Fetched y: ", this.y, "\n");
 		return this.y;
 	}
 }
 
-pub fn main() async: i32 {
+public fn main() async: i32 {
 	hostext.extfns.print("Entered main\n");
 
 	let test: Test = new Derived(50);

@@ -11,49 +11,49 @@ module std.math;
 //
 // Sine functions
 //
-pub native f32 sin(f32 x);
-pub native f32 sinFast(f32 x);
-pub native f32 sinAccu(f32 x);
-pub native f64 sin(f64 x);
-pub native f64 sinFast(f64 x);
-pub native f64 sinAccu(f64 x);
+public native f32 sin(f32 x);
+public native f32 sinFast(f32 x);
+public native f32 sinAccu(f32 x);
+public native f64 sin(f64 x);
+public native f64 sinFast(f64 x);
+public native f64 sinAccu(f64 x);
 
 //
 // Cosine functions
 //
-pub native f32 cos(f32 x);
-pub native f32 cosFast(f32 x);
-pub native f32 cosAccu(f32 x);
-pub native f64 cos(f64 x);
-pub native f64 cosFast(f64 x);
-pub native f64 cosAccu(f64 x);
+public native f32 cos(f32 x);
+public native f32 cosFast(f32 x);
+public native f32 cosAccu(f32 x);
+public native f64 cos(f64 x);
+public native f64 cosFast(f64 x);
+public native f64 cosAccu(f64 x);
 
 //
 // Tangent functions
 //
-pub native f32 tan(f32 x);
-pub native f32 tanFast(f32 x);
-pub native f32 tanAccu(f32 x);
-pub native f64 tan(f64 x);
-pub native f64 tanFast(f64 x);
-pub native f64 tanAccu(f64 x);
+public native f32 tan(f32 x);
+public native f32 tanFast(f32 x);
+public native f32 tanAccu(f32 x);
+public native f64 tan(f64 x);
+public native f64 tanFast(f64 x);
+public native f64 tanAccu(f64 x);
 
 //
 // Square root functions
 //
-pub native f32 sqrt(f32 x);
-pub native f32 sqrtFast(f32 x);
-pub native f32 sqrtAccu(f32 x);
-pub native f64 sqrt(f64 x);
-pub native f64 sqrtFast(f64 x);
-pub native f64 sqrtAccu(f64 x);
+public native f32 sqrt(f32 x);
+public native f32 sqrtFast(f32 x);
+public native f32 sqrtAccu(f32 x);
+public native f64 sqrt(f64 x);
+public native f64 sqrtFast(f64 x);
+public native f64 sqrtAccu(f64 x);
 
 //
 // Cube root functions
 //
-pub native f32 cbrt(f32 x);
-pub native f32 cbrtFast(f32 x);
-pub native f32 cbrtAccu(f32 x);
-pub native f64 cbrt(f64 x);
-pub native f64 cbrtFast(f64 x);
-pub native f64 cbrtAccu(f64 x);
+public native f32 cbrt(f32 x);
+public native f32 cbrtFast(f32 x);
+public native f32 cbrtAccu(f32 x);
+public native f64 cbrt(f64 x);
+public native f64 cbrtFast(f64 x);
+public native f64 cbrtAccu(f64 x);

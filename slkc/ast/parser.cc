@@ -508,8 +508,8 @@ SLKC_API std::optional<SyntaxError> Parser::parseProgramStmt() {
 
 	for (;;) {
 		switch ((currentToken = peekToken())->tokenId) {
-			case TokenId::PubKeyword:
-				access |= slake::ACCESS_PUB;
+			case TokenId::PublicKeyword:
+				access |= slake::ACCESS_PUBLIC;
 				nextToken();
 				break;
 			case TokenId::StaticKeyword:

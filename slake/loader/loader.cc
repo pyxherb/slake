@@ -519,7 +519,7 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(LoaderContext &cont
 			AccessModifier access = 0;
 
 			if (desc.flags & slxfmt::CTD_PUB) {
-				access |= ACCESS_PUB;
+				access |= ACCESS_PUBLIC;
 			}
 			if (desc.flags & slxfmt::CTD_FINAL) {
 				access |= ACCESS_FINAL;
@@ -583,7 +583,7 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(LoaderContext &cont
 			AccessModifier access = 0;
 
 			if (desc.flags & slxfmt::ITD_PUB) {
-				access |= ACCESS_PUB;
+				access |= ACCESS_PUBLIC;
 			}
 
 			if (!interfaceObject->name.resize(desc.lenName)) {
@@ -640,7 +640,7 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(LoaderContext &cont
 			AccessModifier access = 0;
 
 			if (desc.flags & slxfmt::STD_PUB) {
-				access |= ACCESS_PUB;
+				access |= ACCESS_PUBLIC;
 			}
 
 			if (!structObject->name.resize(desc.lenName)) {
@@ -705,7 +705,7 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(LoaderContext &cont
 				SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read((char *)&fnd, sizeof(fnd))));
 
 				if (fnd.flags & slxfmt::FND_PUB) {
-					fnOverloadingObject->access |= ACCESS_PUB;
+					fnOverloadingObject->access |= ACCESS_PUBLIC;
 				}
 				if (fnd.flags & slxfmt::FND_FINAL) {
 					fnOverloadingObject->access |= ACCESS_FINAL;
@@ -811,7 +811,7 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(LoaderContext &cont
 			AccessModifier access = 0;
 
 			if (vad.flags & slxfmt::VAD_PUB) {
-				access |= ACCESS_PUB;
+				access |= ACCESS_PUBLIC;
 			}
 
 			if (vad.flags & slxfmt::VAD_FINAL) {

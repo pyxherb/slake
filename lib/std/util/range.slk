@@ -5,26 +5,26 @@ class Range<T>: @iter::BidirIterable<T> {
 	@T->(usize n) stepper;
 	usize i;
 
-	pub operator new(@T begin, @T end, @T->(usize n) stepper) {
+	public operator new(@T begin, @T end, @T->(usize n) stepper) {
 		this.begin = begin;
 		this.end = end;
 		this.stepper = stepper;
 		i = 0;
 	}
 
-	pub override @T next() {
+	public override @T next() {
 		return stepper(++i);
 	}
 
-	pub override @T last() {
+	public override @T last() {
 		return stepper(--i);
 	}
 
-	pub override @T cur() {
+	public override @T cur() {
 		return stepper(i);
 	}
 
-	pub @T operator[](usize n) {
+	public @T operator[](usize n) {
 		return stepper(n);
 	}
 }

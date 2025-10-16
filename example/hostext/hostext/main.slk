@@ -39,7 +39,7 @@ class ImplTest: IA + IB {
 	fn testIA() {
 		extfns.print("Called testIA");
 	}
-	
+
 	fn testIB() {
 		extfns.print("Called testIB");
 	}
@@ -74,15 +74,15 @@ class TestDerived<T>(TestParent<T>) {
 
 class AnotherGeneric<X, U> {
 	class ChildGeneric<V, T(Test)> {
-		pub let xyz: i32;
+		public let xyz: i32;
 
-		pub fn _setX(abc: T) {
+		public fn _setX(abc: T) {
 			this.xyz = abc.getX();
 			extfns.print("[ChildGeneric]setX: ", this.xyz, "\n");
 			return;
 		}
 
-		pub fn _getX() -> i32 {
+		public fn _getX() -> i32 {
 			extfns.print("[ChildGeneric]Fetched xyz: ", this.xyz, "\n");
 			return this.xyz;
 		}
@@ -90,73 +90,73 @@ class AnotherGeneric<X, U> {
 }
 
 class Test {
-	pub let x: i32;
-	pub let lab: Test;
+	public let x: i32;
+	public let lab: Test;
 
-	pub operator delete() {
+	public operator delete() {
 		extfns.print("Destructing Test...\n");
 		return;
 	}
 
-	pub operator new(x: i32) {
+	public operator new(x: i32) {
 		this.x = x;
 		return;
 	}
 
-	pub fn getX() -> i32 {
+	public fn getX() -> i32 {
 		extfns.print("Fetched x: ", this.x, "\n");
 		return this.x;
 	}
 
-	pub fn test(x: i32&) {
+	public fn test(x: i32&) {
 		x = 114514;
 		return;
 	}
 
-	pub fn testFunc(x: i32, y: i32) {
+	public fn testFunc(x: i32, y: i32) {
 		extfns.print("Called testFunc from Test");
 		return;
 	}
 
-	pub operator +(rhs: i32) -> i32 {
+	public operator +(rhs: i32) -> i32 {
 		return this.x + rhs;
 	}
 }
 
 class Derived(Test) {
-	pub let y: i32;
+	public let y: i32;
 
-	pub operator delete() {
+	public operator delete() {
 		extfns.print("Destructing Derived...\n");
 		return;
 	}
 
-	pub operator new(y: i32) {
+	public operator new(y: i32) {
 		this.x = y * 2;
 		this.x = y * 4;
 		return;
 	}
 
-	pub fn getY() -> i32 {
+	public fn getY() -> i32 {
 		extfns.print("Fetched y: ", this.y, "\n");
 		return this.y;
 	}
 
-	pub fn testFunc(x: i32) {
+	public fn testFunc(x: i32) {
 		extfns.print("Called testFunc from Derived");
 		return;
 	}
 }
 
 class VirtualBase {
-	pub fn test(test: i32) virtual {
+	public fn test(test: i32) virtual {
 		extfns.print("Called VirtualBase's test\n");
 		return;
 	}
 }
 
 class VirtualDerived(VirtualBase) {
-	pub fn test(test: i32) virtual {
+	public fn test(test: i32) virtual {
 		extfns.print("Called VirtualDerived's test\n");
 		return;
 	}
@@ -200,7 +200,7 @@ fn t() {
 /*fn t2() -> simd_t<i32, (4 + 8)> {
 }*/
 
-pub fn *main() -> i32 {
+public fn *main() -> i32 {
 	/*a() with 123;*/
 
 	let s: SA;
@@ -267,7 +267,7 @@ pub fn *main() -> i32 {
 	let implTest: ImplTest = new ImplTest();
 
 	let interfaceTest: InterfaceTest<ImplTest> = new InterfaceTest<ImplTest>();
-	
+
 	/*let callableTest: CallableTest<(i32, u32, f32)>;
 
 	callableTest.call(114, 514 as u32, 1919810.0f);*/
@@ -286,7 +286,7 @@ pub fn *main() -> i32 {
 	}
 
 	extfns.print("Sum: ", sum, "\n");*/
-	
+
 	hostext.extfns.print(s.a, "\n");
 	hostext.extfns.print(s.b, "\n");
 	hostext.extfns.print(s.c, "\n");

@@ -1,9 +1,9 @@
 module plat.fs.path;
 
-pub class Path {
-	pub native operator new(string path);
+public class Path {
+	public native operator new(string path);
 
-	pub native string getRootName();
-	pub native string getRootDir();
-	pub native string getBody();
+	public native string getRootName();
+	public native string getRootDir();
+	public native string getBody();
 }

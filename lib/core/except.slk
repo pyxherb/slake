@@ -1,65 +1,65 @@
 module core.except;
 
-pub interface IException {
+public interface IException {
 	fn what(): string;
 }
 
-pub native class RuntimeError: IException {
+public native class RuntimeError: IException {
 	fn what() virtual override: string;
 }
 
-pub native class OutOfMemoryError(RuntimeError) {
+public native class OutOfMemoryError(RuntimeError) {
 	fn what() virtual override: string;
 }
 
-pub native class LogicalError: IException {
+public native class LogicalError: IException {
 	fn what() virtual override: string;
 }
 
-pub native class DivideByZeroError(LogicalError) {
+public native class DivideByZeroError(LogicalError) {
 	fn what() virtual override: string;
 }
 
-pub native class InvalidOpcodeError(LogicalError) {
+public native class InvalidOpcodeError(LogicalError) {
 	fn what() virtual override: string;
 }
 
-pub native class InvalidOperandsError(LogicalError) {
+public native class InvalidOperandsError(LogicalError) {
 	fn what() virtual override: string;
 }
 
-pub native class InvalidRegisterIndexError(LogicalError) {
+public native class InvalidRegisterIndexError(LogicalError) {
 	fn what() virtual override: string;
 }
 
-pub native class UnsupportedError(LogicalError) {
+public native class UnsupportedError(LogicalError) {
 	fn what() virtual override: string;
 }
 
-pub native class ReferencedMemberNotFoundError(LogicalError) {
+public native class ReferencedMemberNotFoundError(LogicalError) {
 	fn what() virtual override: string;
 }
 
-pub native class StackOverflowError(LogicalError) {
+public native class StackOverflowError(LogicalError) {
 	fn what() virtual override: string;
 }
 
-pub native class MalformedClassStructureError(LogicalError) {
+public native class MalformedClassStructureError(LogicalError) {
 	fn what() virtual override: string;
 }
 
-pub native class GenericInstantiationError(LogicalError) {
+public native class GenericInstantiationError(LogicalError) {
 	fn what() virtual override: string;
 }
 
-pub native class InvalidArgumentIndexError(LogicalError) {
+public native class InvalidArgumentIndexError(LogicalError) {
 	fn what() virtual override: string;
 }
 
-pub native class InvalidLocalVarIndexError(LogicalError) {
+public native class InvalidLocalVarIndexError(LogicalError) {
 	fn what() virtual override: string;
 }
 
-pub native class MismatchedVarTypeError(LogicalError) {
+public native class MismatchedVarTypeError(LogicalError) {
 	fn what() virtual override: string;
 }

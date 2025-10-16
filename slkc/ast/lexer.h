@@ -148,7 +148,7 @@ namespace slkc {
 		OperatorKeyword,
 		OutKeyword,
 		OverrideKeyword,
-		PubKeyword,
+		PublicKeyword,
 		ReturnKeyword,
 		StaticKeyword,
 		StructKeyword,

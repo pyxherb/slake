@@ -744,7 +744,7 @@ int main(int argc, char *argv[]) {
 			}
 
 			slake::HostObjectRef<slake::ModuleObject> modObj = slake::ModuleObject::alloc(runtime.get());
-			modObj->setAccess(slake::ACCESS_PUB | slake::ACCESS_STATIC);
+			modObj->setAccess(slake::ACCESS_PUBLIC | slake::ACCESS_STATIC);
 
 			if (auto e = slkc::compileModule(&compileEnv, mod, modObj.get()); e) {
 				encounteredErrors = true;

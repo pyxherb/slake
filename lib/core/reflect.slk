@@ -1,5 +1,5 @@
 module core.reflect;
 
 class Class {
-	pub native let name: string;
+	public native let name: string;
 }

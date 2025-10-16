@@ -307,7 +307,7 @@ int main(int argc, char **argv) {
 			auto printFn = slake::NativeFnOverloadingObject::alloc(
 				fnObject.get(),
 				print);
-			printFn->setAccess(slake::ACCESS_PUB);
+			printFn->setAccess(slake::ACCESS_PUBLIC);
 			printFn->returnType = slake::TypeId::Void;
 			printFn->setVarArgs();
 			if (!fnObject->overloadings.insert({ printFn->paramTypes, (bool)(printFn->overloadingFlags & slake::OL_VARG), printFn->genericParams.size() }, printFn.get()))

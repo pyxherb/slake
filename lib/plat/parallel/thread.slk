@@ -7,25 +7,25 @@ use {
 /// @intro
 /// Class for thread manupulation, each instance represents a single thread.
 /// @end
-pub class Thread {
+public class Thread {
 	/// @brief Current thread.
-	pub static native @Thread current;
+	public static native @Thread current;
 
 	/// @intro
 	/// Maximum number of concurrent threads supported by hardware, 0 if
 	/// incomputable.
 	/// @end
 	/// @since 1.0
-	pub static const native u32 hardwareConcurrency;
+	public static const native u32 hardwareConcurrency;
 
 	/// @brief State of the thread.
-	pub const native @State state;
+	public const native @State state;
 	/// @brief Internal ID of the thread.
-	pub const native u32 id;
+	public const native u32 id;
 
 	/// @brief Yield and switch to another thread immediately.
 	/// @since 1.0
-	pub static native void yield();
+	public static native void yield();
 
 	/// @brief States of threads.
 	/// @since 1.0
@@ -39,21 +39,21 @@ pub class Thread {
 
 	/// @param{proc} A callable object that will be used as the thread routine.
 	/// @param{...} Arguments to the procedure.
-	pub native operator new(any proc, ...);
-	pub native operator delete();
+	public native operator new(any proc, ...);
+	public native operator delete();
 
 	/// @brief Kill the thread.
-	pub native void kill();
+	public native void kill();
 
 	/// @brief Suspend the thread.
-	pub native void suspend();
+	public native void suspend();
 
 	/// @brief Resume the thread.
-	pub native void resume();
+	public native void resume();
 
 	/// @brief Join the thread to current thread.
-	pub native void join();
+	public native void join();
 
 	/// @brief Run the thread.
-	pub native void run();
+	public native void run();
 }

@@ -3,20 +3,20 @@ module std.util.mm;
 import core.mm;
 
 interface IAllocator {
-	pub fn allocate(size: usize, alignment: usize): IMemory;
-	pub fn deallocate(memory: IMemory);
+	public fn allocate(size: usize, alignment: usize): IMemory;
+	public fn deallocate(memory: IMemory);
 }
 
 class StdAllocator: IAllocator {
-	pub fn allocate(size: usize, alignment: usize): IMemory;
-	pub fn deallocate(memory: IMemory);
+	public fn allocate(size: usize, alignment: usize): IMemory;
+	public fn deallocate(memory: IMemory);
 }
 
 class MonotonicBufferAllocatorMemory: IMemory {
 	let allocator: MonotonicBufferAllocator;
 	let offset: usize, length: usize;
 
-	pub fn data() virtual override: u8[] {
+	public fn data() virtual override: u8[] {
 		return allocator.buffer.slice(offset, length);
 	}
 }
@@ -24,8 +24,8 @@ class MonotonicBufferAllocatorMemory: IMemory {
 class MonotonicBufferAllocator: IAllocator {
 	let buffer: u8[];
 	let offset: usize, totalSize: usize;
-	
-	pub fn allocate(size: usize, alignment: usize): IMemory {
+
+	public fn allocate(size: usize, alignment: usize): IMemory {
 		const size: usize = sizeof(MonotonicBufferAllocatorMemory) + usize;
 
 		if (totalSize - offset < size) {

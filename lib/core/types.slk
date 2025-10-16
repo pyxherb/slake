@@ -4,7 +4,7 @@ use {
 	core.traits
 }
 
-pub interface I32
+public interface I32
 	: IAdd<i32, I32>, IAdd<I32, I32>,
 	ISub<i32, I32>, ISub<I32, I32>,
 	IMul<i32, I32>, IMul<I32, I32>,
@@ -18,44 +18,44 @@ pub interface I32
 	ILsh<u32, I32>, ILsh<U32, I32>,
 	IRsh<u32, I32>, IRsh<U32, I32>,
 	ICmp<i32>, ICmp<I32> {
-	pub native operator +(rhs: i32): I32;
-	pub native operator +(rhs: I32): I32;
+	public native operator +(rhs: i32): I32;
+	public native operator +(rhs: I32): I32;
 
-	pub native operator -(rhs: i32): I32;
-	pub native operator -(rhs: I32): I32;
+	public native operator -(rhs: i32): I32;
+	public native operator -(rhs: I32): I32;
 
-	pub native operator *(rhs: i32): I32;
-	pub native operator *(rhs: I32): I32;
+	public native operator *(rhs: i32): I32;
+	public native operator *(rhs: I32): I32;
 
-	pub native operator /(rhs: i32): I32;
-	pub native operator /(rhs: I32): I32;
+	public native operator /(rhs: i32): I32;
+	public native operator /(rhs: I32): I32;
 
-	pub native operator %(rhs: i32): I32;
-	pub native operator %(rhs: I32): I32;
+	public native operator %(rhs: i32): I32;
+	public native operator %(rhs: I32): I32;
 
-	pub native operator &(rhs: i32): I32;
-	pub native operator &(rhs: I32): I32;
+	public native operator &(rhs: i32): I32;
+	public native operator &(rhs: I32): I32;
 
-	pub native operator |(rhs: i32): I32;
-	pub native operator |(rhs: I32): I32;
+	public native operator |(rhs: i32): I32;
+	public native operator |(rhs: I32): I32;
 
-	pub native operator ^(rhs: i32): I32;
-	pub native operator ^(rhs: I32): I32;
+	public native operator ^(rhs: i32): I32;
+	public native operator ^(rhs: I32): I32;
 
-	pub native operator &&(rhs: i32): bool;
-	pub native operator &&(rhs: I32): bool;
+	public native operator &&(rhs: i32): bool;
+	public native operator &&(rhs: I32): bool;
 
-	pub native operator ||(rhs: i32): bool;
-	pub native operator ||(rhs: I32): bool;
+	public native operator ||(rhs: i32): bool;
+	public native operator ||(rhs: I32): bool;
 
-	pub native operator <<(rhs: u32): I32;
-	pub native operator <<(rhs: U32): I32;
+	public native operator <<(rhs: u32): I32;
+	public native operator <<(rhs: U32): I32;
 
-	pub native operator >>(rhs: u32): I32;
-	pub native operator >>(rhs: U32): I32;
+	public native operator >>(rhs: u32): I32;
+	public native operator >>(rhs: U32): I32;
 
-	pub native operator <=>(rhs: i32): i32;
-	pub native operator <=>(rhs: I32): i32;
+	public native operator <=>(rhs: i32): i32;
+	public native operator <=>(rhs: I32): i32;
 }
 
 native def isSame<T1, T2>(): bool;

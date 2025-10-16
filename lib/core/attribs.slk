@@ -7,20 +7,20 @@ attribute Deprecated {
 attribute Keep {
 }
 
-pub enum JITMode {
+public enum JITMode {
 	Default = 0,
 	ForceJIT,
 	NoJIT
 }
 
-pub attribute JIT {
+public attribute JIT {
 	mode?: JITMode
 }
 
-pub attribute UniqueOptimizerID {
+public attribute UniqueOptimizerID {
 	uuid: string
 }
 
-pub attribute ReserveStackSize {
+public attribute ReserveStackSize {
 	size: u32
 }

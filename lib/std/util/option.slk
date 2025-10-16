@@ -2,38 +2,38 @@ module core.option;
 
 import core.except;
 
-pub class BadOptionAccessError: IException {
+public class BadOptionAccessError: IException {
 	fn what() virtual override: string {
 		return "Bad option access";
 	}
 }
 
-pub class Option<T> {
+public class Option<T> {
 	T _data;
 	bool _hasValue;
 
-	pub fn new() {
+	public fn new() {
 		this._hasValue = false;
 	}
 
-	pub fn new(T data) {
+	public fn new(T data) {
 		this._data = data;
 		this._hasValue = true;
 	}
 
-	pub fn get(): T {
+	public fn get(): T {
 		if(!_hasValue) {
 			throw new BadOptionAccessError();
 		}
 		return _data;
 	}
 
-	pub fn set(T data) {
+	public fn set(T data) {
 		this._data = data;
 		this._hasValue = true;
 	}
 
-	pub fn reset() {
+	public fn reset() {
 		this._data = default<T>;
 		this._hasValue = false;
 	}

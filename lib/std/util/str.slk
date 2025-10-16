@@ -1,2 +1,5 @@
 module std.util.str;
 
+public fn findFirstOf(s: u8string, c: u8) -> usize;
+public fn findFirstOf(s: u16string, c: u16) -> usize;
+public fn findFirstOf(s: u32string, c: u32) -> usize;

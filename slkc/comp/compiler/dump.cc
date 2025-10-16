@@ -354,7 +354,7 @@ SLKC_API std::optional<CompilationError> slkc::dumpModuleMembers(
 	for (auto i : collectedClasses) {
 		slake::slxfmt::ClassTypeDesc desc = {};
 
-		if (i->accessModifier & slake::ACCESS_PUB) {
+		if (i->accessModifier & slake::ACCESS_PUBLIC) {
 			desc.flags |= slake::slxfmt::CTD_PUB;
 		}
 		if (i->accessModifier & slake::ACCESS_FINAL) {
@@ -389,7 +389,7 @@ SLKC_API std::optional<CompilationError> slkc::dumpModuleMembers(
 	for (auto i : collectedInterfaces) {
 		slake::slxfmt::InterfaceTypeDesc desc = {};
 
-		if (i->accessModifier & slake::ACCESS_PUB) {
+		if (i->accessModifier & slake::ACCESS_PUBLIC) {
 			desc.flags |= slake::slxfmt::ITD_PUB;
 		}
 		desc.nGenericParams = i->genericParams.size();
@@ -415,7 +415,7 @@ SLKC_API std::optional<CompilationError> slkc::dumpModuleMembers(
 	for (auto i : collectedStructs) {
 		slake::slxfmt::StructTypeDesc desc = {};
 
-		if (i->accessModifier & slake::ACCESS_PUB) {
+		if (i->accessModifier & slake::ACCESS_PUBLIC) {
 			desc.flags |= slake::slxfmt::STD_PUB;
 		}
 		desc.nGenericParams = i->genericParams.size();
@@ -453,7 +453,7 @@ SLKC_API std::optional<CompilationError> slkc::dumpModuleMembers(
 
 			slake::slxfmt::FnDesc fnd = {};
 
-			if (ol->access & slake::ACCESS_PUB) {
+			if (ol->access & slake::ACCESS_PUBLIC) {
 				fnd.flags |= slake::slxfmt::FND_PUB;
 			}
 			if (ol->access & slake::ACCESS_FINAL) {
@@ -506,7 +506,7 @@ SLKC_API std::optional<CompilationError> slkc::dumpModuleMembers(
 
 		slake::slxfmt::VarDesc vad = {};
 
-		if (curRecord.accessModifier & slake::ACCESS_PUB) {
+		if (curRecord.accessModifier & slake::ACCESS_PUBLIC) {
 			vad.flags |= slake::slxfmt::VAD_PUB;
 		}
 

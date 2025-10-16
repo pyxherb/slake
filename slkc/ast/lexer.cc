@@ -240,8 +240,8 @@ SLKC_API const char *slkc::getTokenName(TokenId tokenId) {
 			return "out";
 		case TokenId::OverrideKeyword:
 			return "override";
-		case TokenId::PubKeyword:
-			return "pub";
+		case TokenId::PublicKeyword:
+			return "public";
 		case TokenId::ReturnKeyword:
 			return "return";
 		case TokenId::StaticKeyword:

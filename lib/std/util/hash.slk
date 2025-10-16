@@ -1,5 +1,5 @@
 module std.util.hash;
 
-pub interface IHashable {
+public interface IHashable {
 	fn hash(): u32;
 }

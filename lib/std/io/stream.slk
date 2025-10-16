@@ -4,26 +4,26 @@ use {
     except = core.except
 }
 
-pub trait TBasicStream {
+public trait TBasicStream {
     bool eof();
     void close();
 }
 
-pub trait TSeekableStream : @TBasicStream {
+public trait TSeekableStream : @TBasicStream {
 	void seekAbs(u64 off);
     void seekDiff(i64 off);
     void seekEnd(u64 off);
 	usize tell();
 }
 
-pub trait TInputStream : @IBasicStream {
+public trait TInputStream : @IBasicStream {
 	byte[] read(usize nBytes);
 }
 
-pub trait TOutputStream : @IBasicStream {
+public trait TOutputStream : @IBasicStream {
 	usize write(byte[] data);
     void flush();
 }
 
-pub trait TIOStream : @TInputStream, @TOutputStream {
+public trait TIOStream : @TInputStream, @TOutputStream {
 }

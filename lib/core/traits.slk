@@ -1,93 +1,93 @@
 module core.traits;
 
-pub interface IAdd<T, Result> {
+public interface IAdd<T, Result> {
 	operator +(rhs: T): Result;
 }
 
-pub interface ISub<T, Result> {
+public interface ISub<T, Result> {
 	operator -(rhs: T): Result;
 }
 
-pub interface IMul<T, Result> {
+public interface IMul<T, Result> {
 	operator *(rhs: T): Result;
 }
 
-pub interface IDiv<T, Result> {
+public interface IDiv<T, Result> {
 	operator /(rhs: T): Result;
 }
 
-pub interface IMod<T, Result> {
+public interface IMod<T, Result> {
 	operator %(rhs: T): Result;
 }
 
-pub interface IAnd<T, Result> {
+public interface IAnd<T, Result> {
 	operator &(rhs: T): Result;
 }
 
-pub interface IOr<T, Result> {
+public interface IOr<T, Result> {
 	operator |(rhs: T): Result;
 }
 
-pub interface IXor<T, Result> {
+public interface IXor<T, Result> {
 	operator ^(rhs: T): Result;
 }
 
-pub interface ILogicalAnd<T, Result> {
+public interface ILogicalAnd<T, Result> {
 	operator &&(rhs: T): Result;
 }
 
-pub interface ILogicalOr<T, Result> {
+public interface ILogicalOr<T, Result> {
 	operator ||(rhs: T): Result;
 }
 
-pub interface ILsh<T, Result> {
+public interface ILsh<T, Result> {
 	operator <<(rhs: T): Result;
 }
 
-pub interface IRsh<T, Result> {
+public interface IRsh<T, Result> {
 	operator >>(rhs: T): Result;
 }
 
-pub interface IAssignAdd<T, Result> {
+public interface IAssignAdd<T, Result> {
 	operator +=(rhs: T): Result;
 }
 
-pub interface IAssignSub<T, Result> {
+public interface IAssignSub<T, Result> {
 	operator -=(rhs: T): Result;
 }
 
-pub interface IAssignMul<T, Result> {
+public interface IAssignMul<T, Result> {
 	operator *=(rhs: T): Result;
 }
 
-pub interface IAssignDiv<T, Result> {
+public interface IAssignDiv<T, Result> {
 	operator /=(rhs: T): Result;
 }
 
-pub interface IAssignMod<T, Result> {
+public interface IAssignMod<T, Result> {
 	operator %=(rhs: T): Result;
 }
 
-pub interface IAssignAnd<T, Result> {
+public interface IAssignAnd<T, Result> {
 	operator &=(rhs: T): Result;
 }
 
-pub interface IAssignOr<T, Result> {
+public interface IAssignOr<T, Result> {
 	operator |=(rhs: T): Result;
 }
 
-pub interface IAssignXor<T, Result> {
+public interface IAssignXor<T, Result> {
 	operator ^=(rhs: T): Result;
 }
 
-pub interface ICmp<T> {
+public interface ICmp<T> {
 	operator <=>(rhs: T): i32;
 }
 
-pub interface IHashable {
+public interface IHashable {
 	fn hashCode(): u32;
 }
 
-pub interface IHashable64 {
+public interface IHashable64 {
 	fn hashCode64(): u64;
 }

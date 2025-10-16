@@ -116,7 +116,7 @@ SLKC_API std::optional<LexicalError> Lexer::lex(const std::string_view &src, pef
 				<InitialCondition>"out"			{ token->tokenId = TokenId::OutKeyword; break; }
 				<InitialCondition>"operator"	{ token->tokenId = TokenId::OperatorKeyword; break; }
 				<InitialCondition>"override"	{ token->tokenId = TokenId::OverrideKeyword; break; }
-				<InitialCondition>"pub"			{ token->tokenId = TokenId::PubKeyword; break; }
+				<InitialCondition>"public"		{ token->tokenId = TokenId::PublicKeyword; break; }
 				<InitialCondition>"return"		{ token->tokenId = TokenId::ReturnKeyword; break; }
 				<InitialCondition>"static"		{ token->tokenId = TokenId::StaticKeyword; break; }
 				<InitialCondition>"struct"		{ token->tokenId = TokenId::StructKeyword; break; }

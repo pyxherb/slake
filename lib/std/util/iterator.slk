@@ -1,9 +1,9 @@
 module std.util.iterator;
 
-pub interface IIterable<T> {
+public interface IIterable<T> {
 	fn next(): T;
 }
 
-pub interface BidirIterable<T>: IIterator<T> {
+public interface BidirIterable<T>: IIterator<T> {
 	fn prev(): T;
 }

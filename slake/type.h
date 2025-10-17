@@ -24,12 +24,12 @@ namespace slake {
 		F64,		  // 64-bit floating point number
 		Bool,		  // Boolean
 
-		Reference,	// Entity reference
+		Reference,	// Reference
 
-		RegRef,	   // Register reference
+		RegIndex,  // Register index
 		TypeName,  // Type name
 
-		Label,	// Label reference
+		Label,	// Label
 
 		Undefined = UINT8_MAX,	// For empty registers, etc.
 	};

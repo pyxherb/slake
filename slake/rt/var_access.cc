@@ -36,7 +36,7 @@ SLAKE_API InternalExceptionPointer Runtime::readVar(const Reference &entityRef, 
 
 SLAKE_API Value Runtime::readVarUnsafe(const Reference &entityRef) const noexcept {
 	switch (entityRef.kind) {
-		case EntityRefKind::StaticFieldRef: {
+		case ReferenceKind::StaticFieldRef: {
 			FieldRecord &fieldRecord = entityRef.asStaticField.moduleObject->fieldRecords.at(entityRef.asStaticField.index);
 
 			const char *const rawDataPtr = entityRef.asStaticField.moduleObject->localFieldStorage.data() + fieldRecord.offset;
@@ -82,7 +82,7 @@ SLAKE_API Value Runtime::readVarUnsafe(const Reference &entityRef) const noexcep
 
 			break;
 		}
-		case EntityRefKind::LocalVarRef: {
+		case ReferenceKind::LocalVarRef: {
 			char *const basePtr = calcLocalVarRefStackBasePtr(entityRef.asLocalVar);
 			const char *const rawDataPtr = calcLocalVarRefStackRawDataPtr(basePtr);
 
@@ -157,7 +157,7 @@ SLAKE_API Value Runtime::readVarUnsafe(const Reference &entityRef) const noexcep
 
 			break;
 		}
-		case EntityRefKind::CoroutineLocalVarRef: {
+		case ReferenceKind::CoroutineLocalVarRef: {
 			char *basePtr = calcCoroutineLocalVarRefStackBasePtr(entityRef.asCoroutineLocalVar);
 			const char *const rawDataPtr = calcLocalVarRefStackRawDataPtr(basePtr);
 
@@ -240,7 +240,7 @@ SLAKE_API Value Runtime::readVarUnsafe(const Reference &entityRef) const noexcep
 
 			break;
 		}
-		case EntityRefKind::InstanceFieldRef: {
+		case ReferenceKind::InstanceFieldRef: {
 			ObjectFieldRecord &fieldRecord =
 				entityRef.asObjectField.instanceObject->_class->cachedObjectLayout->fieldRecords.at(
 					entityRef.asObjectField.fieldIndex);
@@ -287,7 +287,7 @@ SLAKE_API Value Runtime::readVarUnsafe(const Reference &entityRef) const noexcep
 			}
 			break;
 		}
-		case EntityRefKind::ArrayElementRef: {
+		case ReferenceKind::ArrayElementRef: {
 			assert(entityRef.asArrayElement.index < entityRef.asArrayElement.arrayObject->length);
 
 			switch (entityRef.asArrayElement.arrayObject->elementType.typeId) {
@@ -329,12 +329,12 @@ SLAKE_API Value Runtime::readVarUnsafe(const Reference &entityRef) const noexcep
 			}
 			break;
 		}
-		case EntityRefKind::ArgRef: {
+		case ReferenceKind::ArgRef: {
 			const ArgRecord &argRecord = entityRef.asArg.majorFrame->resumable->argStack.at(entityRef.asArg.argIndex);
 
 			return argRecord.value;
 		}
-		case EntityRefKind::CoroutineArgRef: {
+		case ReferenceKind::CoroutineArgRef: {
 			if (entityRef.asCoroutineArg.coroutine->curContext) {
 				const ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->resumable->argStack.at(entityRef.asArg.argIndex);
 
@@ -346,7 +346,7 @@ SLAKE_API Value Runtime::readVarUnsafe(const Reference &entityRef) const noexcep
 			}
 			break;
 		}
-		case EntityRefKind::StructFieldRef: {
+		case ReferenceKind::StructFieldRef: {
 			const ObjectFieldRecord &fieldRecord = entityRef.asStructField.structRef.structObject->cachedObjectLayout->fieldRecords.at(entityRef.asStructField.idxField);
 
 			const char *rawDataPtr = ((char *)entityRef.asStructField.structRef.basePtr) + fieldRecord.offset;
@@ -406,7 +406,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const Reference &entityRef,
 	bool result;
 
 	switch (entityRef.kind) {
-		case EntityRefKind::StaticFieldRef: {
+		case ReferenceKind::StaticFieldRef: {
 			if (entityRef.asStaticField.index >= entityRef.asStaticField.moduleObject->fieldRecords.size())
 				// TODO: Use a proper type of exception instead of this.
 				return raiseInvalidArrayIndexError(entityRef.asStaticField.moduleObject->associatedRuntime, entityRef.asArrayElement.index);
@@ -467,7 +467,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const Reference &entityRef,
 
 			break;
 		}
-		case EntityRefKind::LocalVarRef: {
+		case ReferenceKind::LocalVarRef: {
 			char *const basePtr = calcLocalVarRefStackBasePtr(entityRef.asLocalVar);
 			const char *const rawDataPtr = calcLocalVarRefStackRawDataPtr(basePtr);
 
@@ -591,7 +591,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const Reference &entityRef,
 
 			break;
 		}
-		case EntityRefKind::CoroutineLocalVarRef: {
+		case ReferenceKind::CoroutineLocalVarRef: {
 			char *basePtr = calcCoroutineLocalVarRefStackBasePtr(entityRef.asCoroutineLocalVar);
 			const char *const rawDataPtr = calcLocalVarRefStackRawDataPtr(basePtr);
 
@@ -720,7 +720,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const Reference &entityRef,
 			}
 			break;
 		}
-		case EntityRefKind::InstanceFieldRef: {
+		case ReferenceKind::InstanceFieldRef: {
 			ObjectFieldRecord &fieldRecord =
 				entityRef.asObjectField.instanceObject->_class->cachedObjectLayout->fieldRecords.at(
 					entityRef.asObjectField.fieldIndex);
@@ -777,7 +777,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const Reference &entityRef,
 			}
 			break;
 		}
-		case EntityRefKind::ArrayElementRef: {
+		case ReferenceKind::ArrayElementRef: {
 			if (entityRef.asArrayElement.index > entityRef.asArrayElement.arrayObject->length) {
 				return raiseInvalidArrayIndexError((Runtime *)this, entityRef.asArrayElement.index);
 			}
@@ -830,7 +830,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const Reference &entityRef,
 			}
 			break;
 		}
-		case EntityRefKind::ArgRef: {
+		case ReferenceKind::ArgRef: {
 			ArgRecord &argRecord = entityRef.asArg.majorFrame->resumable->argStack.at(entityRef.asArg.argIndex);
 
 			SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), argRecord.type, value, result));
@@ -841,7 +841,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const Reference &entityRef,
 			argRecord.value = value;
 			break;
 		}
-		case EntityRefKind::CoroutineArgRef: {
+		case ReferenceKind::CoroutineArgRef: {
 			if (entityRef.asCoroutineArg.coroutine->curContext) {
 				ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->curMajorFrame->resumable->argStack.at(entityRef.asArg.argIndex);
 
@@ -863,7 +863,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const Reference &entityRef,
 			}
 			break;
 		}
-		case EntityRefKind::StructFieldRef: {
+		case ReferenceKind::StructFieldRef: {
 			const ObjectFieldRecord &fieldRecord = entityRef.asStructField.structRef.structObject->cachedObjectLayout->fieldRecords.at(entityRef.asStructField.idxField);
 
 			const char *rawDataPtr = ((char *)entityRef.asStructField.structRef.basePtr) + fieldRecord.offset;

@@ -796,20 +796,20 @@ SLKC_API WrapperExprNode::WrapperExprNode(const WrapperExprNode &rhs, peff::Allo
 SLKC_API WrapperExprNode::~WrapperExprNode() {
 }
 
-SLKC_API AstNodePtr<AstNode> RegRefExprNode::doDuplicate(peff::Alloc *newAllocator) const {
+SLKC_API AstNodePtr<AstNode> RegIndexExprNode::doDuplicate(peff::Alloc *newAllocator) const {
 	bool succeeded = false;
-	AstNodePtr<RegRefExprNode> duplicatedNode(makeAstNode<RegRefExprNode>(newAllocator, *this, newAllocator, succeeded));
+	AstNodePtr<RegIndexExprNode> duplicatedNode(makeAstNode<RegIndexExprNode>(newAllocator, *this, newAllocator, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
 
 	return duplicatedNode.template castTo<AstNode>();
 }
-SLKC_API RegRefExprNode::RegRefExprNode(
+SLKC_API RegIndexExprNode::RegIndexExprNode(
 	peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document, uint32_t reg, AstNodePtr<TypeNameNode> type)
-	: ExprNode(ExprKind::RegRef, selfAllocator, document), reg(reg), type(type) {
+	: ExprNode(ExprKind::RegIndex, selfAllocator, document), reg(reg), type(type) {
 }
-SLKC_API RegRefExprNode::RegRefExprNode(const RegRefExprNode &rhs, peff::Alloc *allocator, bool &succeededOut)
+SLKC_API RegIndexExprNode::RegIndexExprNode(const RegIndexExprNode &rhs, peff::Alloc *allocator, bool &succeededOut)
 	: ExprNode(rhs, allocator) {
 	reg = rhs.reg;
 
@@ -817,7 +817,7 @@ SLKC_API RegRefExprNode::RegRefExprNode(const RegRefExprNode &rhs, peff::Alloc *
 
 	succeededOut = true;
 }
-SLKC_API RegRefExprNode::~RegRefExprNode() {
+SLKC_API RegIndexExprNode::~RegIndexExprNode() {
 }
 
 SLKC_API AstNodePtr<AstNode> BadExprNode::doDuplicate(peff::Alloc *newAllocator) const {

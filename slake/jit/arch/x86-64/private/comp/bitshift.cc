@@ -414,7 +414,7 @@ InternalExceptionPointer slake::jit::x86_64::compileShlInstruction(
 		case ValueType::U64:
 			lhsExpectedValue = lhs;
 			break;
-		case ValueType::RegRef:
+		case ValueType::RegIndex:
 			lhsExpectedValue = analyzedInfo.analyzedRegInfo.at(lhs.getRegIndex()).expectedValue;
 			break;
 		default:
@@ -433,7 +433,7 @@ InternalExceptionPointer slake::jit::x86_64::compileShlInstruction(
 		case ValueType::U64:
 			lhsExpectedValue = rhs;
 			break;
-		case ValueType::RegRef:
+		case ValueType::RegIndex:
 			lhsExpectedValue = analyzedInfo.analyzedRegInfo.at(rhs.getRegIndex()).expectedValue;
 			break;
 		default:
@@ -924,7 +924,7 @@ InternalExceptionPointer slake::jit::x86_64::compileShrInstruction(
 		case ValueType::U64:
 			lhsExpectedValue = lhs;
 			break;
-		case ValueType::RegRef:
+		case ValueType::RegIndex:
 			lhsExpectedValue = analyzedInfo.analyzedRegInfo.at(lhs.getRegIndex()).expectedValue;
 			break;
 		default:
@@ -943,7 +943,7 @@ InternalExceptionPointer slake::jit::x86_64::compileShrInstruction(
 		case ValueType::U64:
 			lhsExpectedValue = rhs;
 			break;
-		case ValueType::RegRef:
+		case ValueType::RegIndex:
 			lhsExpectedValue = analyzedInfo.analyzedRegInfo.at(rhs.getRegIndex()).expectedValue;
 			break;
 		default:
@@ -1434,7 +1434,7 @@ InternalExceptionPointer slake::jit::x86_64::compileSarInstruction(
 		case ValueType::U64:
 			lhsExpectedValue = lhs;
 			break;
-		case ValueType::RegRef:
+		case ValueType::RegIndex:
 			lhsExpectedValue = analyzedInfo.analyzedRegInfo.at(lhs.getRegIndex()).expectedValue;
 			break;
 		default:
@@ -1453,7 +1453,7 @@ InternalExceptionPointer slake::jit::x86_64::compileSarInstruction(
 		case ValueType::U64:
 			lhsExpectedValue = rhs;
 			break;
-		case ValueType::RegRef:
+		case ValueType::RegIndex:
 			lhsExpectedValue = analyzedInfo.analyzedRegInfo.at(rhs.getRegIndex()).expectedValue;
 			break;
 		default:

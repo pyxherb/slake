@@ -372,7 +372,7 @@ SLAKE_API InternalExceptionPointer loader::loadValue(LoaderContext &context, Run
 		case slake::slxfmt::ValueType::Reg: {
 			uint32_t data;
 			SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->readU32(data)));
-			valueOut = Value(ValueType::RegRef, (uint32_t)data);
+			valueOut = Value(ValueType::RegIndex, (uint32_t)data);
 			break;
 		}
 		case slake::slxfmt::ValueType::String: {

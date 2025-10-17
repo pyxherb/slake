@@ -114,7 +114,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 							compilationContext->emitIns(
 								slake::Opcode::STORE,
 								UINT32_MAX,
-								{ slake::Value(slake::ValueType::RegRef, localVarReg), slake::Value(slake::ValueType::RegRef, initialValueReg) }));
+								{ slake::Value(slake::ValueType::RegIndex, localVarReg), slake::Value(slake::ValueType::RegIndex, initialValueReg) }));
 					} else {
 						if (!i->type) {
 							return CompilationError(stmt->tokenRange, CompilationErrorKind::RequiresInitialValue);
@@ -300,7 +300,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 							compilationContext->emitIns(
 								slake::Opcode::STORE,
 								UINT32_MAX,
-								{ slake::Value(slake::ValueType::RegRef, localVarReg), slake::Value(slake::ValueType::RegRef, initialValueReg) }));
+								{ slake::Value(slake::ValueType::RegIndex, localVarReg), slake::Value(slake::ValueType::RegIndex, initialValueReg) }));
 					} else {
 						if (!i->type) {
 							return CompilationError(stmt->tokenRange, CompilationErrorKind::RequiresInitialValue);
@@ -359,7 +359,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 					compilationContext->emitIns(
 						slake::Opcode::JT,
 						UINT32_MAX,
-						{ slake::Value(slake::ValueType::Label, bodyLabel), slake::Value(slake::ValueType::RegRef, conditionReg) }));
+						{ slake::Value(slake::ValueType::Label, bodyLabel), slake::Value(slake::ValueType::RegIndex, conditionReg) }));
 			} else {
 				compilationContext->setLabelOffset(continueLabel, compilationContext->getCurInsOff());
 
@@ -429,7 +429,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 				compilationContext->emitIns(
 					slake::Opcode::JT,
 					UINT32_MAX,
-					{ slake::Value(slake::ValueType::Label, bodyLabel), slake::Value(slake::ValueType::RegRef, conditionReg) }));
+					{ slake::Value(slake::ValueType::Label, bodyLabel), slake::Value(slake::ValueType::RegIndex, conditionReg) }));
 
 			compilationContext->setLabelOffset(breakLabel, compilationContext->getCurInsOff());
 			break;
@@ -450,7 +450,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 					compilationContext->emitIns(
 						slake::Opcode::RET,
 						UINT32_MAX,
-						{ slake::Value(slake::ValueType::RegRef, reg) }));
+						{ slake::Value(slake::ValueType::RegIndex, reg) }));
 			} else {
 				SLKC_RETURN_IF_COMP_ERROR(
 					compilationContext->emitIns(
@@ -476,7 +476,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 					compilationContext->emitIns(
 						slake::Opcode::YIELD,
 						UINT32_MAX,
-						{ slake::Value(slake::ValueType::RegRef, reg) }));
+						{ slake::Value(slake::ValueType::RegIndex, reg) }));
 			} else {
 				SLKC_RETURN_IF_COMP_ERROR(
 					compilationContext->emitIns(
@@ -720,7 +720,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 
 						cmpExpr->tokenRange = curCase->condition->tokenRange;
 
-						if (!(cmpExpr->lhs = makeAstNode<RegRefExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, conditionReg, conditionType).template castTo<ExprNode>())) {
+						if (!(cmpExpr->lhs = makeAstNode<RegIndexExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, conditionReg, conditionType).template castTo<ExprNode>())) {
 							return genOutOfMemoryCompError();
 						}
 
@@ -743,7 +743,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 						if (!prevCaseConditions.insert(AstNodePtr<ExprNode>(resultExpr)))
 							return genOutOfMemoryCompError();
 
-						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::JT, UINT32_MAX, { slake::Value(slake::ValueType::Label, evalValueLabel), slake::Value(slake::ValueType::RegRef, cmpResultReg) }));
+						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::JT, UINT32_MAX, { slake::Value(slake::ValueType::Label, evalValueLabel), slake::Value(slake::ValueType::RegIndex, cmpResultReg) }));
 					}
 
 					matchValueEvalLabels.insert(s->caseOffsets.at(i), +evalValueLabel);
@@ -792,7 +792,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 
 						cmpExpr->tokenRange = curCase->condition->tokenRange;
 
-						if (!(cmpExpr->lhs = makeAstNode<RegRefExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, conditionReg, conditionType).template castTo<ExprNode>())) {
+						if (!(cmpExpr->lhs = makeAstNode<RegIndexExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, conditionReg, conditionType).template castTo<ExprNode>())) {
 							return genOutOfMemoryCompError();
 						}
 
@@ -812,7 +812,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 							SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, cmpExpr.template castTo<ExprNode>(), ExprEvalPurpose::RValue, boolTypeName.template castTo<TypeNameNode>(), cmpResultReg, cmpExprResult));
 						}
 
-						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::JT, UINT32_MAX, { slake::Value(slake::ValueType::Label, evalValueLabel), slake::Value(slake::ValueType::RegRef, cmpResultReg) }));
+						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::JT, UINT32_MAX, { slake::Value(slake::ValueType::Label, evalValueLabel), slake::Value(slake::ValueType::RegIndex, cmpResultReg) }));
 					}
 
 					matchValueEvalLabels.insert(s->caseOffsets.at(i), +evalValueLabel);

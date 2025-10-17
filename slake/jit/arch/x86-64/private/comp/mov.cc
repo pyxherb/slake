@@ -206,7 +206,7 @@ InternalExceptionPointer slake::jit::x86_64::compileMovInstruction(
 			Reference entityRef = src.getReference();
 
 			switch (entityRef.kind) {
-				case EntityRefKind::ObjectRef: {
+				case ReferenceKind::ObjectRef: {
 					Object *imm0 = entityRef.asObject;
 
 					RegisterId regId = compileContext.allocGpReg();
@@ -226,7 +226,7 @@ InternalExceptionPointer slake::jit::x86_64::compileMovInstruction(
 			}
 			break;
 		}
-		case ValueType::RegRef: {
+		case ValueType::RegIndex: {
 			uint32_t srcRegIndex = src.getRegIndex();
 			auto &srcRegInfo = analyzedInfo.analyzedRegInfo.at(srcRegIndex);
 			auto &srcVregInfo = compileContext.virtualRegStates.at(srcRegIndex);

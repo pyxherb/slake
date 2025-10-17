@@ -114,7 +114,7 @@ SLKC_API std::optional<CompilationError> slkc::dumpIdRef(
 			SLKC_RETURN_IF_COMP_ERROR(writer->writeU8((uint8_t)slake::slxfmt::ValueType::TypeName));
 			SLKC_RETURN_IF_COMP_ERROR(dumpTypeName(allocator, writer, value.getTypeName()));
 			break;
-		case slake::ValueType::RegRef:
+		case slake::ValueType::RegIndex:
 			SLKC_RETURN_IF_COMP_ERROR(writer->writeU8((uint8_t)slake::slxfmt::ValueType::Reg));
 			SLKC_RETURN_IF_COMP_ERROR(writer->writeU32(value.getRegIndex()));
 			break;
@@ -122,7 +122,7 @@ SLKC_API std::optional<CompilationError> slkc::dumpIdRef(
 			const slake::Reference &er = value.getReference();
 
 			switch (er.kind) {
-				case slake::EntityRefKind::ObjectRef: {
+				case slake::ReferenceKind::ObjectRef: {
 					if (!er.asObject) {
 						SLKC_RETURN_IF_COMP_ERROR(writer->writeU8((uint8_t)slake::slxfmt::ValueType::None));
 						break;

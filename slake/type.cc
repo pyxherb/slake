@@ -85,27 +85,27 @@ SLAKE_API bool Reference::operator==(const Reference &rhs) const {
 	if (kind != rhs.kind)
 		return false;
 	switch (kind) {
-		case EntityRefKind::Invalid:
+		case ReferenceKind::Invalid:
 			break;
-		case EntityRefKind::StaticFieldRef:
+		case ReferenceKind::StaticFieldRef:
 			if (asStaticField.moduleObject != rhs.asStaticField.moduleObject)
 				return false;
 			return asStaticField.index == rhs.asStaticField.index;
-		case EntityRefKind::ArrayElementRef:
+		case ReferenceKind::ArrayElementRef:
 			if (asArrayElement.arrayObject != rhs.asArrayElement.arrayObject)
 				return false;
 			return asStaticField.index == rhs.asStaticField.index;
-		case EntityRefKind::ObjectRef:
+		case ReferenceKind::ObjectRef:
 			return asObject == rhs.asObject;
-		case EntityRefKind::InstanceFieldRef:
+		case ReferenceKind::InstanceFieldRef:
 			if (asObjectField.instanceObject != rhs.asObjectField.instanceObject)
 				return false;
 			return asObjectField.fieldIndex == rhs.asObjectField.fieldIndex;
-		case EntityRefKind::LocalVarRef:
+		case ReferenceKind::LocalVarRef:
 			if (asLocalVar.context != rhs.asLocalVar.context)
 				return false;
 			return asLocalVar.stackOff == rhs.asLocalVar.stackOff;
-		case EntityRefKind::ArgRef:
+		case ReferenceKind::ArgRef:
 			if (asArg.majorFrame != rhs.asArg.majorFrame)
 				return false;
 			return asArg.argIndex == rhs.asArg.argIndex;
@@ -120,41 +120,41 @@ SLAKE_API bool Reference::operator<(const Reference &rhs) const {
 	if (kind > rhs.kind)
 		return false;
 	switch (kind) {
-		case EntityRefKind::Invalid:
+		case ReferenceKind::Invalid:
 			break;
-		case EntityRefKind::StaticFieldRef:
+		case ReferenceKind::StaticFieldRef:
 			if (asStaticField.moduleObject < rhs.asStaticField.moduleObject)
 				return true;
 			if (asStaticField.moduleObject > rhs.asStaticField.moduleObject)
 				return false;
 			return asStaticField.index < rhs.asStaticField.index;
-		case EntityRefKind::ArrayElementRef:
+		case ReferenceKind::ArrayElementRef:
 			if (asArrayElement.arrayObject < rhs.asArrayElement.arrayObject)
 				return true;
 			if (asArrayElement.arrayObject > rhs.asArrayElement.arrayObject)
 				return false;
 			return asStaticField.index < rhs.asStaticField.index;
-		case EntityRefKind::ObjectRef:
+		case ReferenceKind::ObjectRef:
 			return asObject < rhs.asObject;
-		case EntityRefKind::InstanceFieldRef:
+		case ReferenceKind::InstanceFieldRef:
 			if (asObjectField.instanceObject < rhs.asObjectField.instanceObject)
 				return true;
 			if (asObjectField.instanceObject > rhs.asObjectField.instanceObject)
 				return false;
 			return asObjectField.fieldIndex < rhs.asObjectField.fieldIndex;
-		case EntityRefKind::LocalVarRef:
+		case ReferenceKind::LocalVarRef:
 			if (asLocalVar.context < rhs.asLocalVar.context)
 				return true;
 			if (asLocalVar.context > rhs.asLocalVar.context)
 				return false;
 			return asLocalVar.stackOff < rhs.asLocalVar.stackOff;
-		case EntityRefKind::ArgRef:
+		case ReferenceKind::ArgRef:
 			if (asArg.majorFrame < rhs.asArg.majorFrame)
 				return true;
 			if (asArg.majorFrame > rhs.asArg.majorFrame)
 				return false;
 			return asArg.argIndex < rhs.asArg.argIndex;
-		case EntityRefKind::AotPtrRef:
+		case ReferenceKind::AotPtrRef:
 			return asAotPtr.ptr < rhs.asAotPtr.ptr;
 		default:
 			std::terminate();
@@ -208,7 +208,7 @@ SLAKE_API InternalExceptionPointer slake::isCompatible(peff::Alloc *allocator, c
 				return {};
 			}
 			const Reference &entityRef = value.getReference();
-			if (entityRef.kind != EntityRefKind::ObjectRef) {
+			if (entityRef.kind != ReferenceKind::ObjectRef) {
 				resultOut = false;
 				return {};
 			}
@@ -225,7 +225,7 @@ SLAKE_API InternalExceptionPointer slake::isCompatible(peff::Alloc *allocator, c
 			}
 
 			const Reference &entityRef = value.getReference();
-			if (entityRef.kind != EntityRefKind::ObjectRef) {
+			if (entityRef.kind != ReferenceKind::ObjectRef) {
 				resultOut = false;
 				return {};
 			}
@@ -281,7 +281,7 @@ SLAKE_API InternalExceptionPointer slake::isCompatible(peff::Alloc *allocator, c
 			}
 
 			const Reference &entityRef = value.getReference();
-			if (entityRef.kind != EntityRefKind::ObjectRef) {
+			if (entityRef.kind != ReferenceKind::ObjectRef) {
 				resultOut = false;
 				return {};
 			}
@@ -309,19 +309,19 @@ SLAKE_API InternalExceptionPointer slake::isCompatible(peff::Alloc *allocator, c
 			const Reference &entityRef = value.getReference();
 			Runtime *rt;
 			switch (entityRef.kind) {
-				case EntityRefKind::FieldRef:
+				case ReferenceKind::FieldRef:
 					rt = entityRef.asField.moduleObject->associatedRuntime;
 					break;
-				case EntityRefKind::InstanceFieldRef:
+				case ReferenceKind::InstanceFieldRef:
 					rt = entityRef.asObjectField.instanceObject->associatedRuntime;
 					break;
-				case EntityRefKind::LocalVarRef:
+				case ReferenceKind::LocalVarRef:
 					rt = entityRef.asLocalVar.context->runtime;
 					break;
-				case EntityRefKind::ArrayElementRef:
+				case ReferenceKind::ArrayElementRef:
 					rt = entityRef.asArray.arrayObject->associatedRuntime;
 					break;
-				case EntityRefKind::ArgRef:
+				case ReferenceKind::ArgRef:
 					rt = entityRef.asArg.majorFrame->curFn->associatedRuntime;
 					break;
 				default:

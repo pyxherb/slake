@@ -298,7 +298,7 @@ SLAKE_API InternalExceptionPointer Runtime::loadDeferredCustomTypeDef(CustomType
 	if (!entityRef)
 		std::terminate();
 
-	if (entityRef.kind != EntityRefKind::ObjectRef)
+	if (entityRef.kind != ReferenceKind::ObjectRef)
 		std::terminate();
 
 	customTypeDef->typeObject = entityRef.asObject;

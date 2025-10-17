@@ -24,7 +24,7 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 			goto fail;
 		}
 
-		if (objectRefOut.kind == EntityRefKind::ObjectRef) {
+		if (objectRefOut.kind == ReferenceKind::ObjectRef) {
 			// TODO: Check if the instance object is a member object.
 			scopeObject = (MemberObject *)objectRefOut.asObject;
 

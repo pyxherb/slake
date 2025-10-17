@@ -31,7 +31,7 @@ static std::optional<CompilationError> _compileSimpleRValueUnaryExpr(
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
 				slake::Opcode::NEG,
 				resultRegOut,
-				{ slake::Value(slake::ValueType::RegRef, tmpReg) }));
+				{ slake::Value(slake::ValueType::RegIndex, tmpReg) }));
 
 			break;
 		}

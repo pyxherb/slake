@@ -673,7 +673,7 @@ InternalExceptionPointer slake::jit::x86_64::compileAddInstruction(
 		case ValueType::Bool:
 			lhsExpectedValue = lhs;
 			break;
-		case ValueType::RegRef:
+		case ValueType::RegIndex:
 			lhsExpectedValue = analyzedInfo.analyzedRegInfo.at(lhs.getRegIndex()).expectedValue;
 			break;
 		default:
@@ -695,7 +695,7 @@ InternalExceptionPointer slake::jit::x86_64::compileAddInstruction(
 		case ValueType::Bool:
 			lhsExpectedValue = rhs;
 			break;
-		case ValueType::RegRef:
+		case ValueType::RegIndex:
 			lhsExpectedValue = analyzedInfo.analyzedRegInfo.at(rhs.getRegIndex()).expectedValue;
 			break;
 		default:

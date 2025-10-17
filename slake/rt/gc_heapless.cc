@@ -48,35 +48,35 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, const Value &i) {
 			const Reference &entityRef = i.getReference();
 
 			switch (entityRef.kind) {
-				case EntityRefKind::StaticFieldRef:
+				case ReferenceKind::StaticFieldRef:
 					GCWalkContext::pushObject(context, entityRef.asStaticField.moduleObject);
 					break;
-				case EntityRefKind::ArrayElementRef:
+				case ReferenceKind::ArrayElementRef:
 					GCWalkContext::pushObject(context, entityRef.asArrayElement.arrayObject);
 					break;
-				case EntityRefKind::ObjectRef:
+				case ReferenceKind::ObjectRef:
 					GCWalkContext::pushObject(context, entityRef.asObject);
 					break;
-				case EntityRefKind::InstanceFieldRef:
+				case ReferenceKind::InstanceFieldRef:
 					GCWalkContext::pushObject(context, entityRef.asObjectField.instanceObject);
 					break;
-				case EntityRefKind::LocalVarRef:
+				case ReferenceKind::LocalVarRef:
 					_gcWalk(context, *entityRef.asLocalVar.context);
 					_gcWalk(context, readVarUnsafe(entityRef));
 					break;
-				case EntityRefKind::CoroutineLocalVarRef:
+				case ReferenceKind::CoroutineLocalVarRef:
 					GCWalkContext::pushObject(context, entityRef.asCoroutineLocalVar.coroutine);
 					_gcWalk(context, readVarUnsafe(entityRef));
 					break;
-				case EntityRefKind::ArgRef:
+				case ReferenceKind::ArgRef:
 					break;
-				case EntityRefKind::CoroutineArgRef:
+				case ReferenceKind::CoroutineArgRef:
 					GCWalkContext::pushObject(context, entityRef.asCoroutineArg.coroutine);
 					break;
 			}
 			break;
 		}
-		case ValueType::RegRef:
+		case ValueType::RegIndex:
 			break;
 		case ValueType::TypeName:
 			_gcWalk(context, i.getTypeName());

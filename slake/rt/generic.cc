@@ -170,7 +170,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateGenericObject(Gen
 		case ValueType::F64:
 		case ValueType::Bool:
 		case ValueType::Reference:
-		case ValueType::RegRef:
+		case ValueType::RegIndex:
 			break;
 		case ValueType::TypeName:
 			SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(dispatcher, value.getTypeName(), instantiationContext));
@@ -668,7 +668,7 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(MemberObjec
 		if (!entityRef)
 			std::terminate();
 
-		if (entityRef.kind != EntityRefKind::ObjectRef)
+		if (entityRef.kind != ReferenceKind::ObjectRef)
 			std::terminate();
 
 		i->typeObject = entityRef.asObject;

@@ -42,7 +42,7 @@ namespace slkc {
 
 		Wrapper,  // Expression wrapper
 
-		RegRef,	 // Register reference
+		RegIndex,	 // Register reference
 
 		Bad,  // Bad expression
 	};
@@ -566,7 +566,7 @@ namespace slkc {
 		SLKC_API virtual ~WrapperExprNode();
 	};
 
-	class RegRefExprNode : public ExprNode {
+	class RegIndexExprNode : public ExprNode {
 	protected:
 		SLKC_API virtual AstNodePtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
 
@@ -574,9 +574,9 @@ namespace slkc {
 		uint32_t reg;
 		AstNodePtr<TypeNameNode> type;
 
-		SLKC_API RegRefExprNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document, uint32_t reg, AstNodePtr<TypeNameNode> type);
-		SLKC_API RegRefExprNode(const RegRefExprNode &rhs, peff::Alloc *allocator, bool &succeededOut);
-		SLKC_API virtual ~RegRefExprNode();
+		SLKC_API RegIndexExprNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document, uint32_t reg, AstNodePtr<TypeNameNode> type);
+		SLKC_API RegIndexExprNode(const RegIndexExprNode &rhs, peff::Alloc *allocator, bool &succeededOut);
+		SLKC_API virtual ~RegIndexExprNode();
 	};
 
 	class BadExprNode : public ExprNode {

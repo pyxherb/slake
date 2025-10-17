@@ -289,7 +289,7 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 				case TypeId::F32:
 				case TypeId::F64:
 				case TypeId::Bool: {
-					if (rhs.valueType == ValueType::RegRef) {
+					if (rhs.valueType == ValueType::RegIndex) {
 						switch (fieldRecord.type.typeId) {
 							case TypeId::I8:
 							case TypeId::U8:
@@ -715,7 +715,7 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 
 			switch (localVarState.type.typeId) {
 			case TypeId::Value: {
-				if (rhs.valueType == ValueType::RegRef) {
+				if (rhs.valueType == ValueType::RegIndex) {
 					switch (localVarState.type.getValueTypeExData()) {
 					case TypeId::I8:
 					case TypeId::U8:
@@ -989,7 +989,7 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 			case TypeId::Instance:
 			case TypeId::Array:
 			case TypeId::FnDelegate: {
-				if (rhs.valueType == ValueType::RegRef) {
+				if (rhs.valueType == ValueType::RegIndex) {
 					uint32_t regOff = rhs.getRegIndex();
 					VirtualRegState &vregState = compileContext.virtualRegStates.at(regOff);
 

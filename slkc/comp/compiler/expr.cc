@@ -119,7 +119,7 @@ static std::optional<CompilationError> _loadTheRestOfIdRef(CompileEnvironment *c
 
 						SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(idxNewReg));
 
-						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::RLOAD, idxNewReg, { slake::Value(slake::ValueType::RegRef, idxReg), slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));
+						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::RLOAD, idxNewReg, { slake::Value(slake::ValueType::RegIndex, idxReg), slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));
 						idxReg = idxNewReg;
 					}
 
@@ -149,7 +149,7 @@ static std::optional<CompilationError> _loadTheRestOfIdRef(CompileEnvironment *c
 
 					SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(idxNewReg));
 
-					SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::RLOAD, idxNewReg, { slake::Value(slake::ValueType::RegRef, idxReg), slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));
+					SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::RLOAD, idxNewReg, { slake::Value(slake::ValueType::RegIndex, idxReg), slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));
 					idxReg = idxNewReg;
 				}
 			} else {
@@ -168,7 +168,7 @@ static std::optional<CompilationError> _loadTheRestOfIdRef(CompileEnvironment *c
 
 						SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(idxNewReg));
 
-						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::RLOAD, idxNewReg, { slake::Value(slake::ValueType::RegRef, idxReg), slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));
+						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::RLOAD, idxNewReg, { slake::Value(slake::ValueType::RegIndex, idxReg), slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));
 						idxReg = idxNewReg;
 					}
 
@@ -242,7 +242,7 @@ static std::optional<CompilationError> _loadTheRestOfIdRef(CompileEnvironment *c
 
 					SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(idxNewReg));
 
-					SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::RLOAD, idxNewReg, { slake::Value(slake::ValueType::RegRef, idxReg), slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));
+					SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::RLOAD, idxNewReg, { slake::Value(slake::ValueType::RegIndex, idxReg), slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));
 					idxReg = idxNewReg;
 				}
 
@@ -251,7 +251,7 @@ static std::optional<CompilationError> _loadTheRestOfIdRef(CompileEnvironment *c
 		}
 	}
 
-	SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::MOV, resultRegOut, { slake::Value(slake::ValueType::RegRef, idxReg) }));
+	SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::MOV, resultRegOut, { slake::Value(slake::ValueType::RegIndex, idxReg) }));
 	return {};
 };
 auto selectSingleMatchingOverloading = [](CompileEnvironment *compileEnv, const TokenRange &tokenRange, AstNodePtr<MemberNode> &finalMember, AstNodePtr<TypeNameNode> desiredType, bool isStatic, CompileExprResult &resultOut) -> std::optional<CompilationError> {
@@ -506,7 +506,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 						compilationContext->emitIns(
 							slake::Opcode::MOV,
 							resultRegOut,
-							{ slake::Value(slake::ValueType::RegRef, finalRegister) }));
+							{ slake::Value(slake::ValueType::RegIndex, finalRegister) }));
 					break;
 				}
 				case ExprEvalPurpose::RValue: {
@@ -517,13 +517,13 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 							compilationContext->emitIns(
 								slake::Opcode::LVALUE,
 								resultRegOut,
-								{ slake::Value(slake::ValueType::RegRef, finalRegister) }));
+								{ slake::Value(slake::ValueType::RegIndex, finalRegister) }));
 					} else {
 						SLKC_RETURN_IF_COMP_ERROR(
 							compilationContext->emitIns(
 								slake::Opcode::MOV,
 								resultRegOut,
-								{ slake::Value(slake::ValueType::RegRef, finalRegister) }));
+								{ slake::Value(slake::ValueType::RegIndex, finalRegister) }));
 					}
 					break;
 				}
@@ -543,13 +543,13 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 							compilationContext->emitIns(
 								slake::Opcode::LVALUE,
 								resultRegOut,
-								{ slake::Value(slake::ValueType::RegRef, finalRegister) }));
+								{ slake::Value(slake::ValueType::RegIndex, finalRegister) }));
 					} else {
 						SLKC_RETURN_IF_COMP_ERROR(
 							compilationContext->emitIns(
 								slake::Opcode::MOV,
 								resultRegOut,
-								{ slake::Value(slake::ValueType::RegRef, finalRegister) }));
+								{ slake::Value(slake::ValueType::RegIndex, finalRegister) }));
 					}
 					break;
 				}
@@ -628,12 +628,12 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 								CompilationWarning(e->tokenRange, CompilationWarningKind::UnusedExprResult)));
 							break;
 						case ExprEvalPurpose::LValue: {
-							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::MOV, initialMemberReg, { slake::Value(slake::ValueType::RegRef, it->idxReg) }));
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::MOV, initialMemberReg, { slake::Value(slake::ValueType::RegIndex, it->idxReg) }));
 							break;
 						}
 						case ExprEvalPurpose::RValue:
 						case ExprEvalPurpose::Call: {
-							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::LVALUE, initialMemberReg, { slake::Value(slake::ValueType::RegRef, it->idxReg) }));
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::LVALUE, initialMemberReg, { slake::Value(slake::ValueType::RegIndex, it->idxReg) }));
 							break;
 						}
 						case ExprEvalPurpose::Unpacking:
@@ -671,7 +671,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 							SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(tmpReg));
 
 							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::LARG, tmpReg, { slake::Value((uint32_t)it.value()) }));
-							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::LVALUE, initialMemberReg, { slake::Value(slake::ValueType::RegRef, tmpReg) }));
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::LVALUE, initialMemberReg, { slake::Value(slake::ValueType::RegIndex, tmpReg) }));
 
 							break;
 						}
@@ -739,7 +739,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 						compilationContext->emitIns(
 							slake::Opcode::MOV,
 							finalRegister,
-							{ slake::Value(slake::ValueType::RegRef, initialMemberReg) }));
+							{ slake::Value(slake::ValueType::RegIndex, initialMemberReg) }));
 				}
 			} else {
 				size_t curIdx = 0;
@@ -800,7 +800,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 						compilationContext->emitIns(
 							slake::Opcode::MOV,
 							resultRegOut,
-							{ slake::Value(slake::ValueType::RegRef, finalRegister) }));
+							{ slake::Value(slake::ValueType::RegIndex, finalRegister) }));
 					break;
 				}
 				case ExprEvalPurpose::RValue: {
@@ -811,13 +811,13 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 							compilationContext->emitIns(
 								slake::Opcode::LVALUE,
 								resultRegOut,
-								{ slake::Value(slake::ValueType::RegRef, finalRegister) }));
+								{ slake::Value(slake::ValueType::RegIndex, finalRegister) }));
 					} else {
 						SLKC_RETURN_IF_COMP_ERROR(
 							compilationContext->emitIns(
 								slake::Opcode::MOV,
 								resultRegOut,
-								{ slake::Value(slake::ValueType::RegRef, finalRegister) }));
+								{ slake::Value(slake::ValueType::RegIndex, finalRegister) }));
 					}
 					break;
 				}
@@ -837,13 +837,13 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 							compilationContext->emitIns(
 								slake::Opcode::LVALUE,
 								resultRegOut,
-								{ slake::Value(slake::ValueType::RegRef, finalRegister) }));
+								{ slake::Value(slake::ValueType::RegIndex, finalRegister) }));
 					} else {
 						SLKC_RETURN_IF_COMP_ERROR(
 							compilationContext->emitIns(
 								slake::Opcode::MOV,
 								resultRegOut,
-								{ slake::Value(slake::ValueType::RegRef, finalRegister) }));
+								{ slake::Value(slake::ValueType::RegIndex, finalRegister) }));
 					}
 					break;
 				}
@@ -852,7 +852,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 						compilationContext->emitIns(
 							slake::Opcode::MOV,
 							resultRegOut,
-							{ slake::Value(slake::ValueType::RegRef, finalRegister) }));
+							{ slake::Value(slake::ValueType::RegIndex, finalRegister) }));
 					break;
 				}
 				default:
@@ -1050,7 +1050,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 								compilationContext->emitIns(
 									slake::Opcode::AT,
 									curElementSlotRegIndex,
-									{ slake::Value(slake::ValueType::RegRef, resultRegOut), slake::Value((uint32_t)i) }));
+									{ slake::Value(slake::ValueType::RegIndex, resultRegOut), slake::Value((uint32_t)i) }));
 
 							CompileExprResult result(compileEnv->allocator.get());
 
@@ -1060,7 +1060,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 								compilationContext->emitIns(
 									slake::Opcode::STORE,
 									UINT32_MAX,
-									{ slake::Value(slake::ValueType::RegRef, curElementSlotRegIndex), slake::Value(slake::ValueType::RegRef, curElementRegIndex) }));
+									{ slake::Value(slake::ValueType::RegIndex, curElementSlotRegIndex), slake::Value(slake::ValueType::RegIndex, curElementRegIndex) }));
 						}
 					} else {
 						// Just simply evaluate each element.
@@ -1229,14 +1229,14 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 							compilationContext->emitIns(
 								slake::Opcode::PUSHAP,
 								UINT32_MAX,
-								{ slake::Value(slake::ValueType::RegRef, reg) }));
+								{ slake::Value(slake::ValueType::RegIndex, reg) }));
 						break;
 					default:
 						SLKC_RETURN_IF_COMP_ERROR(
 							compilationContext->emitIns(
 								slake::Opcode::PUSHARG,
 								UINT32_MAX,
-								{ slake::Value(slake::ValueType::RegRef, reg) }));
+								{ slake::Value(slake::ValueType::RegIndex, reg) }));
 				}
 			}
 
@@ -1267,9 +1267,9 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 					break;
 				case ExprEvalPurpose::Stmt:
 					if (thisReg != UINT32_MAX) {
-						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::MCALL, UINT32_MAX, { slake::Value(slake::ValueType::RegRef, targetReg), slake::Value(slake::ValueType::RegRef, result.idxThisRegOut) }));
+						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::MCALL, UINT32_MAX, { slake::Value(slake::ValueType::RegIndex, targetReg), slake::Value(slake::ValueType::RegIndex, result.idxThisRegOut) }));
 					} else {
-						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::CALL, UINT32_MAX, { slake::Value(slake::ValueType::RegRef, targetReg) }));
+						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::CALL, UINT32_MAX, { slake::Value(slake::ValueType::RegIndex, targetReg) }));
 					}
 					break;
 				case ExprEvalPurpose::LValue: {
@@ -1280,9 +1280,9 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 					}
 
 					if (thisReg != UINT32_MAX) {
-						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::MCALL, resultRegOut, { slake::Value(slake::ValueType::RegRef, targetReg), slake::Value(slake::ValueType::RegRef, result.idxThisRegOut) }));
+						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::MCALL, resultRegOut, { slake::Value(slake::ValueType::RegIndex, targetReg), slake::Value(slake::ValueType::RegIndex, result.idxThisRegOut) }));
 					} else {
-						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::CALL, resultRegOut, { slake::Value(slake::ValueType::RegRef, targetReg) }));
+						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::CALL, resultRegOut, { slake::Value(slake::ValueType::RegIndex, targetReg) }));
 					}
 					break;
 				}
@@ -1297,17 +1297,17 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 						SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(tmpRegIndex));
 
 						if (result.idxThisRegOut != UINT32_MAX) {
-							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::MCALL, tmpRegIndex, { slake::Value(slake::ValueType::RegRef, targetReg), slake::Value(slake::ValueType::RegRef, result.idxThisRegOut) }));
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::MCALL, tmpRegIndex, { slake::Value(slake::ValueType::RegIndex, targetReg), slake::Value(slake::ValueType::RegIndex, result.idxThisRegOut) }));
 						} else {
-							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::CALL, tmpRegIndex, { slake::Value(slake::ValueType::RegRef, targetReg) }));
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::CALL, tmpRegIndex, { slake::Value(slake::ValueType::RegIndex, targetReg) }));
 						}
 
-						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::LVALUE, resultRegOut, { slake::Value(slake::ValueType::RegRef, tmpRegIndex) }));
+						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::LVALUE, resultRegOut, { slake::Value(slake::ValueType::RegIndex, tmpRegIndex) }));
 					} else {
 						if (result.idxThisRegOut != UINT32_MAX) {
-							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::MCALL, resultRegOut, { slake::Value(slake::ValueType::RegRef, targetReg), slake::Value(slake::ValueType::RegRef, result.idxThisRegOut) }));
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::MCALL, resultRegOut, { slake::Value(slake::ValueType::RegIndex, targetReg), slake::Value(slake::ValueType::RegIndex, result.idxThisRegOut) }));
 						} else {
-							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::CALL, resultRegOut, { slake::Value(slake::ValueType::RegRef, targetReg) }));
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::CALL, resultRegOut, { slake::Value(slake::ValueType::RegIndex, targetReg) }));
 						}
 					}
 
@@ -1472,10 +1472,10 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 						compilationContext->emitIns(
 							slake::Opcode::PUSHARG,
 							UINT32_MAX,
-							{ slake::Value(slake::ValueType::RegRef, reg) }));
+							{ slake::Value(slake::ValueType::RegIndex, reg) }));
 				}
 
-				SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::CTORCALL, UINT32_MAX, { slake::Value(slake::ValueType::RegRef, ctorCallTarget), slake::Value(slake::ValueType::RegRef, resultRegOut) }));
+				SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::CTORCALL, UINT32_MAX, { slake::Value(slake::ValueType::RegIndex, ctorCallTarget), slake::Value(slake::ValueType::RegIndex, resultRegOut) }));
 			} else {
 			}
 
@@ -1527,7 +1527,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 				slake::TypeRef type;
 				SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, compilationContext, targetType, type));
 
-				SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::CAST, resultRegOut, { slake::Value(type), slake::Value(slake::ValueType::RegRef, idxReg) }));
+				SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::CAST, resultRegOut, { slake::Value(type), slake::Value(slake::ValueType::RegIndex, idxReg) }));
 			} else {
 				CompileExprResult result(compileEnv->allocator.get());
 				if (!leftValue) {
@@ -1658,7 +1658,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 
 						cmpExpr->tokenRange = curCase.first->tokenRange;
 
-						if (!(cmpExpr->lhs = makeAstNode<RegRefExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, conditionReg, conditionType).template castTo<ExprNode>())) {
+						if (!(cmpExpr->lhs = makeAstNode<RegIndexExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, conditionReg, conditionType).template castTo<ExprNode>())) {
 							return genOutOfMemoryCompError();
 						}
 
@@ -1678,7 +1678,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 							SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, cmpExpr.template castTo<ExprNode>(), ExprEvalPurpose::RValue, boolTypeName.template castTo<TypeNameNode>(), cmpResultReg, cmpExprResult));
 						}
 
-						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::JT, UINT32_MAX, { slake::Value(slake::ValueType::Label, evalValueLabel), slake::Value(slake::ValueType::RegRef, cmpResultReg) }));
+						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::JT, UINT32_MAX, { slake::Value(slake::ValueType::Label, evalValueLabel), slake::Value(slake::ValueType::RegIndex, cmpResultReg) }));
 					} else {
 						if (isDefaultSet)
 							return CompilationError(curCase.first->tokenRange, CompilationErrorKind::DuplicatedMatchCaseBranch);
@@ -1745,7 +1745,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 
 				for (size_t i = 0, j = 0; i < phiRegisterValueMap.size(); ++i, j += 2) {
 					operands.at(j) = phiRegisterValueMap.at(i).first;
-					operands.at(j + 1) = slake::Value(slake::ValueType::RegRef, phiRegisterValueMap.at(i).second);
+					operands.at(j + 1) = slake::Value(slake::ValueType::RegIndex, phiRegisterValueMap.at(i).second);
 				}
 
 				SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::PHI, resultRegOut, operands.data(), operands.size()));
@@ -1755,10 +1755,10 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 			resultOut.evaluatedType = returnType;
 			break;
 		}
-		case ExprKind::RegRef: {
-			auto e = expr.template castTo<RegRefExprNode>();
+		case ExprKind::RegIndex: {
+			auto e = expr.template castTo<RegIndexExprNode>();
 
-			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::MOV, resultRegOut, { slake::Value(slake::ValueType::RegRef, e->reg) }));
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::MOV, resultRegOut, { slake::Value(slake::ValueType::RegIndex, e->reg) }));
 
 			resultOut.evaluatedType = e->type;
 

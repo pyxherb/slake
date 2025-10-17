@@ -222,7 +222,7 @@ SLAKE_API RegularFnOverloadingObject::RegularFnOverloadingObject(const RegularFn
 				if (operand.valueType == ValueType::Reference) {
 					const Reference &entityRef = operand.getReference();
 					switch (entityRef.kind) {
-						case EntityRefKind::ObjectRef:
+						case ReferenceKind::ObjectRef:
 							if (entityRef.asObject)
 								curIns.operands[j] = Reference::makeObjectRef(entityRef.asObject->duplicate(nullptr));
 							else

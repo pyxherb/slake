@@ -17,7 +17,7 @@ namespace slake {
 
 	// Value type definitions are defined in <slake/type.h>.
 
-	enum class EntityRefKind : uint8_t {
+	enum class ReferenceKind : uint8_t {
 		Invalid = 0,
 		StaticFieldRef,
 		ArrayElementRef,
@@ -114,12 +114,12 @@ namespace slake {
 				void *ptr;
 			} asAotPtr;
 		};
-		EntityRefKind kind;
+		ReferenceKind kind;
 
 		static SLAKE_FORCEINLINE Reference makeInvalidRef() {
 			Reference ref = {};
 
-			ref.kind = EntityRefKind::Invalid;
+			ref.kind = ReferenceKind::Invalid;
 
 			return ref;
 		}
@@ -129,7 +129,7 @@ namespace slake {
 
 			ref.asStaticField.moduleObject = moduleObject;
 			ref.asStaticField.index = index;
-			ref.kind = EntityRefKind::StaticFieldRef;
+			ref.kind = ReferenceKind::StaticFieldRef;
 
 			return ref;
 		}
@@ -139,7 +139,7 @@ namespace slake {
 
 			ref.asArrayElement.arrayObject = arrayObject;
 			ref.asArrayElement.index = index;
-			ref.kind = EntityRefKind::ArrayElementRef;
+			ref.kind = ReferenceKind::ArrayElementRef;
 
 			return ref;
 		}
@@ -148,7 +148,7 @@ namespace slake {
 			Reference ref = {};
 
 			ref.asObject = instanceObject;
-			ref.kind = EntityRefKind::ObjectRef;
+			ref.kind = ReferenceKind::ObjectRef;
 
 			return ref;
 		}
@@ -158,7 +158,7 @@ namespace slake {
 
 			ref.asObjectField.instanceObject = instanceObject;
 			ref.asObjectField.fieldIndex = fieldIndex;
-			ref.kind = EntityRefKind::InstanceFieldRef;
+			ref.kind = ReferenceKind::InstanceFieldRef;
 
 			return ref;
 		}
@@ -168,7 +168,7 @@ namespace slake {
 
 			ref.asLocalVar.context = context;
 			ref.asLocalVar.stackOff = offset;
-			ref.kind = EntityRefKind::LocalVarRef;
+			ref.kind = ReferenceKind::LocalVarRef;
 
 			return ref;
 		}
@@ -178,7 +178,7 @@ namespace slake {
 
 			ref.asCoroutineLocalVar.coroutine = coroutine;
 			ref.asCoroutineLocalVar.stackOff = offset;
-			ref.kind = EntityRefKind::CoroutineLocalVarRef;
+			ref.kind = ReferenceKind::CoroutineLocalVarRef;
 
 			return ref;
 		}
@@ -188,7 +188,7 @@ namespace slake {
 
 			ref.asArg.majorFrame = majorFrame;
 			ref.asArg.argIndex = argIndex;
-			ref.kind = EntityRefKind::ArgRef;
+			ref.kind = ReferenceKind::ArgRef;
 
 			return ref;
 		}
@@ -199,7 +199,7 @@ namespace slake {
 			ref.asArgPack.majorFrame = majorFrame;
 			ref.asArgPack.begin = begin;
 			ref.asArgPack.end = end;
-			ref.kind = EntityRefKind::ArgPackRef;
+			ref.kind = ReferenceKind::ArgPackRef;
 
 			return ref;
 		}
@@ -209,7 +209,7 @@ namespace slake {
 
 			ref.asCoroutineArg.coroutine = coroutine;
 			ref.asCoroutineArg.argIndex = argIndex;
-			ref.kind = EntityRefKind::CoroutineArgRef;
+			ref.kind = ReferenceKind::CoroutineArgRef;
 
 			return ref;
 		}
@@ -218,7 +218,7 @@ namespace slake {
 			Reference ref = {};
 
 			ref.asStruct = structRef;
-			ref.kind = EntityRefKind::StructRef;
+			ref.kind = ReferenceKind::StructRef;
 
 			return ref;
 		}
@@ -228,7 +228,7 @@ namespace slake {
 
 			ref.asStructField.structRef = structRef;
 			ref.asStructField.idxField = fieldIndex;
-			ref.kind = EntityRefKind::StructFieldRef;
+			ref.kind = ReferenceKind::StructFieldRef;
 
 			return ref;
 		}
@@ -237,13 +237,13 @@ namespace slake {
 			Reference ref = {};
 
 			ref.asAotPtr.ptr = ptr;
-			ref.kind = EntityRefKind::ArgRef;
+			ref.kind = ReferenceKind::ArgRef;
 
 			return ref;
 		}
 
 		explicit SLAKE_FORCEINLINE operator bool() const {
-			return kind != EntityRefKind::Invalid;
+			return kind != ReferenceKind::Invalid;
 		}
 
 		SLAKE_API bool operator==(const Reference &rhs) const;
@@ -436,7 +436,7 @@ namespace slake {
 		}
 
 		SLAKE_FORCEINLINE uint32_t getRegIndex() const noexcept {
-			assert(valueType == ValueType::RegRef);
+			assert(valueType == ValueType::RegIndex);
 			return data.asU32;
 		}
 

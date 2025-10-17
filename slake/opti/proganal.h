@@ -35,7 +35,7 @@ namespace slake {
 			uint32_t idxArg;
 		};
 
-		using RegReferencedPoint = std::pair<uint32_t, uint32_t>;
+		using RegIndexerencedPoint = std::pair<uint32_t, uint32_t>;
 
 		struct RegAnalyzedInfo {
 			RegLifetime lifetime;

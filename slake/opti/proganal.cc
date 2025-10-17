@@ -170,7 +170,7 @@ InternalExceptionPointer slake::opti::evalValueType(
 			SLAKE_RETURN_IF_EXCEPT(evalObjectType(analyzeContext, entityRef, typeOut));
 			break;
 		}
-		case ValueType::RegRef: {
+		case ValueType::RegIndex: {
 			uint32_t regIndex = value.getRegIndex();
 
 			if (!analyzeContext.analyzedInfoOut.analyzedRegInfo.contains(regIndex)) {
@@ -213,7 +213,7 @@ InternalExceptionPointer slake::opti::evalConstValue(
 		case ValueType::Bool:
 			constValueOut = value;
 			break;
-		case ValueType::RegRef: {
+		case ValueType::RegIndex: {
 			uint32_t idxReg = value.getRegIndex();
 
 			if (!analyzeContext.analyzedInfoOut.analyzedRegInfo.contains(idxReg)) {
@@ -309,7 +309,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 		}
 
 		for (size_t j = 0; j < curIns.nOperands; ++j) {
-			if (curIns.operands[j].valueType == ValueType::RegRef) {
+			if (curIns.operands[j].valueType == ValueType::RegIndex) {
 				uint32_t index = curIns.operands[j].getRegIndex();
 
 				if (!analyzedInfoOut.analyzedRegInfo.contains(index)) {
@@ -421,7 +421,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 								i));
 					}
 
-					if (curIns.operands[0].valueType != ValueType::RegRef) {
+					if (curIns.operands[0].valueType != ValueType::RegIndex) {
 						return allocOutOfMemoryErrorIfAllocFailed(
 							MalformedProgramError::alloc(
 								runtime->getFixedAlloc(),
@@ -586,7 +586,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 								analyzedInfoOut.analyzedRegInfo.at(regIndex).type));
 							break;
 						}
-						case ValueType::RegRef:
+						case ValueType::RegIndex:
 							analyzedInfoOut.analyzedRegInfo.at(regIndex) = analyzedInfoOut.analyzedRegInfo.at(curIns.operands[0].getRegIndex());
 							break;
 						default: {
@@ -731,7 +731,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 								i));
 					}
 
-					if (curIns.operands[0].valueType != ValueType::RegRef) {
+					if (curIns.operands[0].valueType != ValueType::RegIndex) {
 						return allocOutOfMemoryErrorIfAllocFailed(
 							MalformedProgramError::alloc(
 								runtime->getFixedAlloc(),
@@ -795,7 +795,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 								i));
 					}
 
-					if (curIns.operands[0].valueType != ValueType::RegRef) {
+					if (curIns.operands[0].valueType != ValueType::RegIndex) {
 						return allocOutOfMemoryErrorIfAllocFailed(
 							MalformedProgramError::alloc(
 								runtime->getFixedAlloc(),
@@ -897,7 +897,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 					case ValueType::F64:
 					case ValueType::Reference:
 						break;
-					case ValueType::RegRef:
+					case ValueType::RegIndex:
 						markRegAsForOutput(analyzeContext, curIns.operands[0].getRegIndex());
 						break;
 					default:
@@ -921,7 +921,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				}
 
 				Value callTarget = curIns.operands[0];
-				if (callTarget.valueType != ValueType::RegRef) {
+				if (callTarget.valueType != ValueType::RegIndex) {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
 							runtime->getFixedAlloc(),
@@ -984,7 +984,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				}
 
 				Value callTarget = curIns.operands[0];
-				if (callTarget.valueType != ValueType::RegRef) {
+				if (callTarget.valueType != ValueType::RegIndex) {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
 							runtime->getFixedAlloc(),
@@ -1064,7 +1064,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 					case ValueType::F64:
 					case ValueType::Reference:
 						break;
-					case ValueType::RegRef:
+					case ValueType::RegIndex:
 						markRegAsForOutput(analyzeContext, curIns.operands[0].getRegIndex());
 						break;
 					default:

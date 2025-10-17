@@ -357,7 +357,7 @@ SLKC_API bool slkc::decompileValue(peff::Alloc *allocator, DumpWriter *writer, c
 			const slake::Reference &er = value.getReference();
 
 			switch (er.kind) {
-				case slake::EntityRefKind::ObjectRef: {
+				case slake::ReferenceKind::ObjectRef: {
 					slake::Object *obj = er.asObject;
 
 					if (!obj) {
@@ -469,7 +469,7 @@ SLKC_API bool slkc::decompileValue(peff::Alloc *allocator, DumpWriter *writer, c
 			}
 			break;
 		}
-		case slake::ValueType::RegRef: {
+		case slake::ValueType::RegIndex: {
 			char s[19];
 			sprintf(s, "%%%u", value.getRegIndex());
 			SLKC_RETURN_IF_FALSE(writer->write(s));

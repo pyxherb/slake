@@ -4,7 +4,7 @@ using namespace slkc;
 
 SLKC_API AstNodePtr<AstNode> VoidTypeNameNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
 	AstNodePtr<VoidTypeNameNode> duplicatedNode(makeAstNode<VoidTypeNameNode>(newAllocator, *this, newAllocator, context));
-	if(!duplicatedNode) {
+	if (!duplicatedNode) {
 		return {};
 	}
 
@@ -22,7 +22,7 @@ SLKC_API VoidTypeNameNode::~VoidTypeNameNode() {
 
 SLKC_API AstNodePtr<AstNode> I8TypeNameNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
 	peff::SharedPtr<I8TypeNameNode> duplicatedNode(peff::makeSharedWithControlBlock<I8TypeNameNode, AstNodeControlBlock<I8TypeNameNode>>(newAllocator, *this, newAllocator, context));
-	if(!duplicatedNode) {
+	if (!duplicatedNode) {
 		return {};
 	}
 
@@ -40,7 +40,7 @@ SLKC_API I8TypeNameNode::~I8TypeNameNode() {
 
 SLKC_API AstNodePtr<AstNode> I16TypeNameNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
 	peff::SharedPtr<I16TypeNameNode> duplicatedNode(peff::makeSharedWithControlBlock<I16TypeNameNode, AstNodeControlBlock<I16TypeNameNode>>(newAllocator, *this, newAllocator, context));
-	if(!duplicatedNode) {
+	if (!duplicatedNode) {
 		return {};
 	}
 
@@ -58,7 +58,7 @@ SLKC_API I16TypeNameNode::~I16TypeNameNode() {
 
 SLKC_API AstNodePtr<AstNode> I32TypeNameNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
 	peff::SharedPtr<I32TypeNameNode> duplicatedNode(peff::makeSharedWithControlBlock<I32TypeNameNode, AstNodeControlBlock<I32TypeNameNode>>(newAllocator, *this, newAllocator, context));
-	if(!duplicatedNode) {
+	if (!duplicatedNode) {
 		return {};
 	}
 
@@ -76,7 +76,7 @@ SLKC_API I32TypeNameNode::~I32TypeNameNode() {
 
 SLKC_API AstNodePtr<AstNode> I64TypeNameNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
 	peff::SharedPtr<I64TypeNameNode> duplicatedNode(peff::makeSharedWithControlBlock<I64TypeNameNode, AstNodeControlBlock<I64TypeNameNode>>(newAllocator, *this, newAllocator, context));
-	if(!duplicatedNode) {
+	if (!duplicatedNode) {
 		return {};
 	}
 
@@ -94,7 +94,7 @@ SLKC_API I64TypeNameNode::~I64TypeNameNode() {
 
 SLKC_API AstNodePtr<AstNode> U8TypeNameNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
 	peff::SharedPtr<U8TypeNameNode> duplicatedNode(peff::makeSharedWithControlBlock<U8TypeNameNode, AstNodeControlBlock<U8TypeNameNode>>(newAllocator, *this, newAllocator, context));
-	if(!duplicatedNode) {
+	if (!duplicatedNode) {
 		return {};
 	}
 
@@ -112,7 +112,7 @@ SLKC_API U8TypeNameNode::~U8TypeNameNode() {
 
 SLKC_API AstNodePtr<AstNode> U16TypeNameNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
 	peff::SharedPtr<U16TypeNameNode> duplicatedNode(peff::makeSharedWithControlBlock<U16TypeNameNode, AstNodeControlBlock<U16TypeNameNode>>(newAllocator, *this, newAllocator, context));
-	if(!duplicatedNode) {
+	if (!duplicatedNode) {
 		return {};
 	}
 
@@ -130,7 +130,7 @@ SLKC_API U16TypeNameNode::~U16TypeNameNode() {
 
 SLKC_API AstNodePtr<AstNode> U32TypeNameNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
 	peff::SharedPtr<U32TypeNameNode> duplicatedNode(peff::makeSharedWithControlBlock<U32TypeNameNode, AstNodeControlBlock<U32TypeNameNode>>(newAllocator, *this, newAllocator, context));
-	if(!duplicatedNode) {
+	if (!duplicatedNode) {
 		return {};
 	}
 
@@ -148,7 +148,7 @@ SLKC_API U32TypeNameNode::~U32TypeNameNode() {
 
 SLKC_API AstNodePtr<AstNode> U64TypeNameNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
 	peff::SharedPtr<U64TypeNameNode> duplicatedNode(peff::makeSharedWithControlBlock<U64TypeNameNode, AstNodeControlBlock<U64TypeNameNode>>(newAllocator, *this, newAllocator, context));
-	if(!duplicatedNode) {
+	if (!duplicatedNode) {
 		return {};
 	}
 
@@ -166,7 +166,7 @@ SLKC_API U64TypeNameNode::~U64TypeNameNode() {
 
 SLKC_API AstNodePtr<AstNode> ISizeTypeNameNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
 	AstNodePtr<ISizeTypeNameNode> duplicatedNode(makeAstNode<ISizeTypeNameNode>(newAllocator, *this, newAllocator, context));
-	if(!duplicatedNode) {
+	if (!duplicatedNode) {
 		return {};
 	}
 
@@ -184,7 +184,7 @@ SLKC_API ISizeTypeNameNode::~ISizeTypeNameNode() {
 
 SLKC_API AstNodePtr<AstNode> USizeTypeNameNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
 	AstNodePtr<USizeTypeNameNode> duplicatedNode(makeAstNode<USizeTypeNameNode>(newAllocator, *this, newAllocator, context));
-	if(!duplicatedNode) {
+	if (!duplicatedNode) {
 		return {};
 	}
 
@@ -202,7 +202,7 @@ SLKC_API USizeTypeNameNode::~USizeTypeNameNode() {
 
 SLKC_API AstNodePtr<AstNode> F32TypeNameNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
 	peff::SharedPtr<F32TypeNameNode> duplicatedNode(peff::makeSharedWithControlBlock<F32TypeNameNode, AstNodeControlBlock<F32TypeNameNode>>(newAllocator, *this, newAllocator, context));
-	if(!duplicatedNode) {
+	if (!duplicatedNode) {
 		return {};
 	}
 
@@ -220,7 +220,7 @@ SLKC_API F32TypeNameNode::~F32TypeNameNode() {
 
 SLKC_API AstNodePtr<AstNode> F64TypeNameNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
 	peff::SharedPtr<F64TypeNameNode> duplicatedNode(peff::makeSharedWithControlBlock<F64TypeNameNode, AstNodeControlBlock<F64TypeNameNode>>(newAllocator, *this, newAllocator, context));
-	if(!duplicatedNode) {
+	if (!duplicatedNode) {
 		return {};
 	}
 
@@ -238,7 +238,7 @@ SLKC_API F64TypeNameNode::~F64TypeNameNode() {
 
 SLKC_API AstNodePtr<AstNode> StringTypeNameNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
 	AstNodePtr<StringTypeNameNode> duplicatedNode(makeAstNode<StringTypeNameNode>(newAllocator, *this, newAllocator, context));
-	if(!duplicatedNode) {
+	if (!duplicatedNode) {
 		return {};
 	}
 
@@ -256,7 +256,7 @@ SLKC_API StringTypeNameNode::~StringTypeNameNode() {
 
 SLKC_API AstNodePtr<AstNode> BoolTypeNameNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
 	AstNodePtr<BoolTypeNameNode> duplicatedNode(makeAstNode<BoolTypeNameNode>(newAllocator, *this, newAllocator, context));
-	if(!duplicatedNode) {
+	if (!duplicatedNode) {
 		return {};
 	}
 
@@ -311,7 +311,7 @@ SLKC_API AnyTypeNameNode::~AnyTypeNameNode() {
 SLKC_API AstNodePtr<AstNode> CustomTypeNameNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
 	bool succeeded = false;
 	AstNodePtr<CustomTypeNameNode> duplicatedNode(makeAstNode<CustomTypeNameNode>(newAllocator, *this, newAllocator, context, succeeded));
-	if((!duplicatedNode) || (!succeeded)) {
+	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
 
@@ -322,7 +322,7 @@ SLKC_API CustomTypeNameNode::CustomTypeNameNode(peff::Alloc *selfAllocator, cons
 }
 
 SLKC_API CustomTypeNameNode::CustomTypeNameNode(const CustomTypeNameNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut) : TypeNameNode(rhs, allocator, context) {
-	if(!(idRefPtr = duplicateIdRef(allocator, rhs.idRefPtr.get()))) {
+	if (!(idRefPtr = duplicateIdRef(allocator, rhs.idRefPtr.get()))) {
 		succeededOut = false;
 		return;
 	}
@@ -367,7 +367,7 @@ SLKC_API UnpackingTypeNameNode::~UnpackingTypeNameNode() {
 SLKC_API AstNodePtr<AstNode> ArrayTypeNameNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
 	bool succeeded = false;
 	AstNodePtr<ArrayTypeNameNode> duplicatedNode(makeAstNode<ArrayTypeNameNode>(newAllocator, *this, newAllocator, context, succeeded));
-	if((!duplicatedNode) || (!succeeded)) {
+	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
 
@@ -436,6 +436,48 @@ SLKC_API TupleTypeNameNode::TupleTypeNameNode(const TupleTypeNameNode &rhs, peff
 SLKC_API TupleTypeNameNode::~TupleTypeNameNode() {
 }
 
+SLKC_API AstNodePtr<AstNode> SIMDTypeNameNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
+	bool succeeded = false;
+	AstNodePtr<SIMDTypeNameNode> duplicatedNode(makeAstNode<SIMDTypeNameNode>(newAllocator, *this, newAllocator, context, succeeded));
+	if ((!duplicatedNode) || (!succeeded)) {
+		return {};
+	}
+
+	return duplicatedNode.template castTo<AstNode>();
+}
+
+SLKC_API SIMDTypeNameNode::SIMDTypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : TypeNameNode(TypeNameKind::SIMD, selfAllocator, document) {
+}
+
+SLKC_API SIMDTypeNameNode::SIMDTypeNameNode(const SIMDTypeNameNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut) : TypeNameNode(rhs, allocator, context) {
+	if (!context.pushTask([this, &rhs, allocator, &context]() -> bool {
+			if (!(elementType = rhs.elementType->duplicate<TypeNameNode>(allocator)))
+				return false;
+			return true;
+		})) {
+		succeededOut = false;
+		return;
+	}
+
+	if (!context.pushTask([this, &rhs, allocator, &context]() -> bool {
+			if (!(width = rhs.width->duplicate<ExprNode>(allocator)))
+				return false;
+			return true;
+		})) {
+		succeededOut = false;
+		return;
+	}
+
+	idxLAngleBracketToken = rhs.idxLAngleBracketToken;
+	idxCommaToken = rhs.idxCommaToken;
+	idxRAngleBracketToken = rhs.idxRAngleBracketToken;
+
+	succeededOut = true;
+}
+
+SLKC_API SIMDTypeNameNode::~SIMDTypeNameNode() {
+}
+
 SLKC_API AstNodePtr<AstNode> FnTypeNameNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
 	bool succeeded = false;
 	AstNodePtr<FnTypeNameNode> duplicatedNode(makeAstNode<FnTypeNameNode>(newAllocator, *this, newAllocator, context, succeeded));
@@ -496,7 +538,7 @@ SLKC_API FnTypeNameNode::~FnTypeNameNode() {
 SLKC_API AstNodePtr<AstNode> RefTypeNameNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
 	bool succeeded = false;
 	AstNodePtr<RefTypeNameNode> duplicatedNode(makeAstNode<RefTypeNameNode>(newAllocator, *this, newAllocator, context, succeeded));
-	if((!duplicatedNode) || (!succeeded)) {
+	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
 

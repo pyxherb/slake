@@ -244,6 +244,67 @@ SLKC_API std::optional<CompilationError> slkc::compileTypeName(
 			typeOut = slake::TypeRef(slake::TypeId::Tuple, obj.get());
 			break;
 		}
+		case TypeNameKind::SIMD: {
+			AstNodePtr<SIMDTypeNameNode> t = typeName.template castTo<SIMDTypeNameNode>();
+			peff::SharedPtr<Document> doc = t->document->sharedFromThis();
+
+			slake::HostObjectRef<slake::SIMDTypeDefObject> obj;
+
+			if (!(obj = slake::SIMDTypeDefObject::alloc(compileEnv->runtime))) {
+				return genOutOfRuntimeMemoryCompError();
+			}
+
+			slake::HostObjectRef<slake::HeapTypeObject> heapType;
+
+			if (!(heapType = slake::HeapTypeObject::alloc(compileEnv->runtime)))
+				return genOutOfRuntimeMemoryCompError();
+
+			SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, compilationContext, t->elementType, heapType->typeRef));
+
+			if (!(compileEnv->hostRefHolder.addObject(heapType.get())))
+				return genOutOfMemoryCompError();
+
+			AstNodePtr<ExprNode> width;
+
+			SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, t->width, width));
+
+			if (!width) {
+				return CompilationError(t->width->tokenRange, CompilationErrorKind::RequiresCompTimeExpr);
+			}
+
+			if (width->exprKind != ExprKind::U32) {
+				AstNodePtr<CastExprNode> ce;
+
+				if (!(ce = makeAstNode<CastExprNode>(t->document->allocator.get(), t->document->allocator.get(), t->document->sharedFromThis()))) {
+					return genOutOfMemoryCompError();
+				}
+
+				AstNodePtr<U32TypeNameNode> u32Type;
+
+				if (!(u32Type = makeAstNode<U32TypeNameNode>(t->document->allocator.get(), t->document->allocator.get(), t->document->sharedFromThis()))) {
+					return genOutOfMemoryCompError();
+				}
+
+				ce->source = width;
+				ce->targetType = u32Type.template castTo<TypeNameNode>();
+
+				SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, ce.template castTo<ExprNode>(), width));
+
+				if (!width) {
+					return CompilationError(t->width->tokenRange, CompilationErrorKind::TypeArgTypeMismatched);
+				}
+			}
+
+			obj->type = heapType.get();
+			obj->width = width.template castTo<U32LiteralExprNode>()->data;
+
+			if (!(compileEnv->hostRefHolder.addObject(obj.get()))) {
+				return genOutOfMemoryCompError();
+			}
+
+			typeOut = slake::TypeRef(slake::TypeId::SIMD, obj.get());
+			break;
+		}
 		case TypeNameKind::ParamTypeList: {
 			AstNodePtr<ParamTypeListTypeNameNode> t = typeName.template castTo<ParamTypeListTypeNameNode>();
 			peff::SharedPtr<Document> doc = t->document->sharedFromThis();

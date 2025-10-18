@@ -322,54 +322,6 @@ SLKC_API std::optional<SyntaxError> Parser::parseTypeName(AstNodePtr<TypeNameNod
 
 			break;
 		}
-		case TokenId::SIMDTypeName: {
-			AstNodePtr<SIMDTypeNameNode> tn;
-
-			nextToken();
-
-			if (!(tn = makeAstNode<SIMDTypeNameNode>(
-					  resourceAllocator.get(),
-					  resourceAllocator.get(),
-					  document)))
-				return genOutOfMemoryError();
-
-			typeNameOut = tn.template castTo<TypeNameNode>();
-
-			Token *lAngleBracketToken;
-
-			if (auto e = expectToken(lAngleBracketToken = peekToken(), TokenId::LtOp); e)
-				return e;
-
-			tn->idxLAngleBracketToken = lAngleBracketToken->index;
-
-			nextToken();
-
-			if (auto e = parseTypeName(tn->elementType); e)
-				return e;
-
-			Token *commaToken;
-
-			if (auto e = expectToken(commaToken = peekToken(), TokenId::Comma))
-				return e;
-
-			tn->idxCommaToken = commaToken->index;
-
-			nextToken();
-
-			if (auto e = parseExpr(140, tn->width); e)
-				return e;
-
-			Token *rAngleBracketToken;
-
-			if (auto e = expectToken(rAngleBracketToken = peekToken(), TokenId::GtOp))
-				return e;
-
-			tn->idxRAngleBracketToken = rAngleBracketToken->index;
-
-			nextToken();
-
-			break;
-		}
 		case TokenId::Id: {
 			IdRefPtr id;
 			if ((syntaxError = parseIdRef(id)))

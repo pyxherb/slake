@@ -23,12 +23,20 @@ SLKC_API VarNode::VarNode(const VarNode &rhs, peff::Alloc *allocator, Duplicatio
 		return;
 	}
 
-	if (rhs.type && !(type = rhs.type->duplicate<TypeNameNode>(allocator))) {
+	if (!context.pushTask([this, &rhs, allocator, &context]() -> bool {
+			if (rhs.type && !(type = rhs.type->duplicate<TypeNameNode>(allocator)))
+				return false;
+			return true;
+		})) {
 		succeededOut = false;
 		return;
 	}
 
-	if (rhs.initialValue && !(initialValue = rhs.initialValue->duplicate<ExprNode>(allocator))) {
+	if (!context.pushTask([this, &rhs, allocator, &context]() -> bool {
+			if (rhs.initialValue && !(initialValue = rhs.initialValue->duplicate<ExprNode>(allocator)))
+				return false;
+			return true;
+		})) {
 		succeededOut = false;
 		return;
 	}

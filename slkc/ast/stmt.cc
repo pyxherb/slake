@@ -25,7 +25,11 @@ SLKC_API ExprStmtNode::ExprStmtNode(peff::Alloc *selfAllocator, const peff::Shar
 }
 
 SLKC_API ExprStmtNode::ExprStmtNode(const ExprStmtNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut) : StmtNode(rhs, allocator, context) {
-	if (!(expr = rhs.expr->duplicate<ExprNode>(allocator))) {
+	if (!context.pushTask([this, &rhs, allocator, &context]() -> bool {
+			if (!(expr = rhs.expr->duplicate<ExprNode>(allocator)))
+				return false;
+			return true;
+		})) {
 		succeededOut = false;
 		return;
 	}
@@ -158,17 +162,29 @@ SLKC_API ForStmtNode::ForStmtNode(const ForStmtNode &rhs, peff::Alloc *allocator
 		}
 	}
 
-	if (!(cond = rhs.cond->duplicate<ExprNode>(allocator))) {
+	if (!context.pushTask([this, &rhs, allocator, &context]() -> bool {
+			if (!(cond = rhs.cond->duplicate<ExprNode>(allocator)))
+				return false;
+			return true;
+		})) {
 		succeededOut = false;
 		return;
 	}
 
-	if (!(step = rhs.step->duplicate<ExprNode>(allocator))) {
+	if (!context.pushTask([this, &rhs, allocator, &context]() -> bool {
+			if (!(step = rhs.step->duplicate<ExprNode>(allocator)))
+				return false;
+			return true;
+		})) {
 		succeededOut = false;
 		return;
 	}
 
-	if (!(body = rhs.body->duplicate<StmtNode>(allocator))) {
+	if (!context.pushTask([this, &rhs, allocator, &context]() -> bool {
+			if (!(body = rhs.body->duplicate<StmtNode>(allocator)))
+				return false;
+			return true;
+		})) {
 		succeededOut = false;
 		return;
 	}
@@ -198,12 +214,20 @@ SLKC_API ForEachStmtNode::ForEachStmtNode(const ForEachStmtNode &rhs, peff::Allo
 		return;
 	}
 
-	if (!(cond = rhs.cond->duplicate<ExprNode>(allocator))) {
+	if (!context.pushTask([this, &rhs, allocator, &context]() -> bool {
+			if (!(cond = rhs.cond->duplicate<ExprNode>(allocator)))
+				return false;
+			return true;
+		})) {
 		succeededOut = false;
 		return;
 	}
 
-	if (!(body = rhs.body->duplicate<StmtNode>(allocator))) {
+	if (!context.pushTask([this, &rhs, allocator, &context]() -> bool {
+			if (!(body = rhs.body->duplicate<StmtNode>(allocator)))
+				return false;
+			return true;
+		})) {
 		succeededOut = false;
 		return;
 	}
@@ -228,12 +252,20 @@ SLKC_API WhileStmtNode::WhileStmtNode(peff::Alloc *selfAllocator, const peff::Sh
 }
 
 SLKC_API WhileStmtNode::WhileStmtNode(const WhileStmtNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut) : StmtNode(rhs, allocator, context) {
-	if (!(cond = rhs.cond->duplicate<ExprNode>(allocator))) {
+	if (!context.pushTask([this, &rhs, allocator, &context]() -> bool {
+			if (!(cond = rhs.cond->duplicate<ExprNode>(allocator)))
+				return false;
+			return true;
+		})) {
 		succeededOut = false;
 		return;
 	}
 
-	if (!(body = rhs.body->duplicate<StmtNode>(allocator))) {
+	if (!context.pushTask([this, &rhs, allocator, &context]() -> bool {
+			if (!(body = rhs.body->duplicate<StmtNode>(allocator)))
+				return false;
+			return true;
+		})) {
 		succeededOut = false;
 		return;
 	}
@@ -258,7 +290,11 @@ SLKC_API ReturnStmtNode::ReturnStmtNode(peff::Alloc *selfAllocator, const peff::
 }
 
 SLKC_API ReturnStmtNode::ReturnStmtNode(const ReturnStmtNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut) : StmtNode(rhs, allocator, context) {
-	if (!(value = rhs.value->duplicate<ExprNode>(allocator))) {
+	if (!context.pushTask([this, &rhs, allocator, &context]() -> bool {
+			if (!(value = rhs.value->duplicate<ExprNode>(allocator)))
+				return false;
+			return true;
+		})) {
 		succeededOut = false;
 		return;
 	}
@@ -283,7 +319,11 @@ SLKC_API YieldStmtNode::YieldStmtNode(peff::Alloc *selfAllocator, const peff::Sh
 }
 
 SLKC_API YieldStmtNode::YieldStmtNode(const YieldStmtNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut) : StmtNode(rhs, allocator, context) {
-	if (!(value = rhs.value->duplicate<ExprNode>(allocator))) {
+	if (!context.pushTask([this, &rhs, allocator, &context]() -> bool {
+			if (!(value = rhs.value->duplicate<ExprNode>(allocator)))
+				return false;
+			return true;
+		})) {
 		succeededOut = false;
 		return;
 	}
@@ -308,17 +348,29 @@ SLKC_API IfStmtNode::IfStmtNode(peff::Alloc *selfAllocator, const peff::SharedPt
 }
 
 SLKC_API IfStmtNode::IfStmtNode(const IfStmtNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut) : StmtNode(rhs, allocator, context) {
-	if (!(cond = rhs.cond->duplicate<ExprNode>(allocator))) {
+	if (!context.pushTask([this, &rhs, allocator, &context]() -> bool {
+			if (!(cond = rhs.cond->duplicate<ExprNode>(allocator)))
+				return false;
+			return true;
+		})) {
 		succeededOut = false;
 		return;
 	}
 
-	if (!(trueBody = rhs.trueBody->duplicate<StmtNode>(allocator))) {
+	if (!context.pushTask([this, &rhs, allocator, &context]() -> bool {
+			if (!(trueBody = rhs.trueBody->duplicate<StmtNode>(allocator)))
+				return false;
+			return true;
+		})) {
 		succeededOut = false;
 		return;
 	}
 
-	if (!(falseBody = rhs.falseBody->duplicate<StmtNode>(allocator))) {
+	if (!context.pushTask([this, &rhs, allocator, &context]() -> bool {
+			if (!(falseBody = rhs.falseBody->duplicate<StmtNode>(allocator)))
+				return false;
+			return true;
+		})) {
 		succeededOut = false;
 		return;
 	}
@@ -379,12 +431,20 @@ SLKC_API WithStmtNode::WithStmtNode(const WithStmtNode &rhs, peff::Alloc *alloca
 		}
 	}
 
-	if (!(trueBody = rhs.trueBody->duplicate<StmtNode>(allocator))) {
+	if (!context.pushTask([this, &rhs, allocator, &context]() -> bool {
+			if (!(trueBody = rhs.trueBody->duplicate<StmtNode>(allocator)))
+				return false;
+			return true;
+		})) {
 		succeededOut = false;
 		return;
 	}
 
-	if (!(falseBody = rhs.falseBody->duplicate<StmtNode>(allocator))) {
+	if (!context.pushTask([this, &rhs, allocator, &context]() -> bool {
+			if (!(falseBody = rhs.falseBody->duplicate<StmtNode>(allocator)))
+				return false;
+			return true;
+		})) {
 		succeededOut = false;
 		return;
 	}
@@ -409,7 +469,11 @@ SLKC_API CaseLabelStmtNode::CaseLabelStmtNode(peff::Alloc *selfAllocator, const 
 }
 
 SLKC_API CaseLabelStmtNode::CaseLabelStmtNode(const CaseLabelStmtNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut) : StmtNode(rhs, allocator, context) {
-	if (!(condition = rhs.condition->duplicate<ExprNode>(allocator))) {
+	if (!context.pushTask([this, &rhs, allocator, &context]() -> bool {
+			if (!(condition = rhs.condition->duplicate<ExprNode>(allocator)))
+				return false;
+			return true;
+		})) {
 		succeededOut = false;
 		return;
 	}
@@ -434,7 +498,11 @@ SLKC_API SwitchStmtNode::SwitchStmtNode(peff::Alloc *selfAllocator, const peff::
 }
 
 SLKC_API SwitchStmtNode::SwitchStmtNode(const SwitchStmtNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut) : StmtNode(rhs, allocator, context), caseOffsets(allocator), body(allocator) {
-	if (!(condition = rhs.condition->duplicate<ExprNode>(allocator))) {
+	if (!context.pushTask([this, &rhs, allocator, &context]() -> bool {
+			if (!(condition = rhs.condition->duplicate<ExprNode>(allocator)))
+				return false;
+			return true;
+		})) {
 		succeededOut = false;
 		return;
 	}
@@ -452,7 +520,11 @@ SLKC_API SwitchStmtNode::SwitchStmtNode(const SwitchStmtNode &rhs, peff::Alloc *
 	memcpy(caseOffsets.data(), rhs.caseOffsets.data(), sizeof(size_t) * caseOffsets.size());
 
 	for (size_t i = 0; i < body.size(); ++i) {
-		if (!(body.at(i) = rhs.body.at(i)->duplicate<StmtNode>(allocator))) {
+		if (!context.pushTask([this, i, &rhs, allocator, &context]() -> bool {
+				if (!(body.at(i) = rhs.body.at(i)->duplicate<StmtNode>(allocator)))
+					return true;
+				return false;
+			})) {
 			succeededOut = false;
 			return;
 		}
@@ -509,7 +581,11 @@ SLKC_API CodeBlockStmtNode::CodeBlockStmtNode(const CodeBlockStmtNode &rhs, peff
 	}
 
 	for (size_t i = 0; i < body.size(); ++i) {
-		if (!(body.at(i) = rhs.body.at(i)->duplicate<StmtNode>(allocator))) {
+		if (!context.pushTask([this, i, &rhs, allocator, &context]() -> bool {
+				if (!(body.at(i) = rhs.body.at(i)->duplicate<StmtNode>(allocator)))
+					return false;
+				return true;
+			})) {
 			succeededOut = false;
 			return;
 		}
@@ -535,7 +611,11 @@ SLKC_API BadStmtNode::BadStmtNode(peff::Alloc *selfAllocator, const peff::Shared
 }
 
 SLKC_API BadStmtNode::BadStmtNode(const BadStmtNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut) : StmtNode(rhs, allocator, context) {
-	if (!(body = rhs.body->duplicate<StmtNode>(allocator))) {
+	if (!context.pushTask([this, &rhs, allocator, &context]() -> bool {
+			if (!(body = rhs.body->duplicate<StmtNode>(allocator)))
+				return false;
+			return true;
+		})) {
 		succeededOut = false;
 		return;
 	}

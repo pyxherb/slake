@@ -31,7 +31,11 @@ SLKC_API MacroNode::MacroNode(const MacroNode &rhs, peff::Alloc *allocator, Dupl
 		return;
 	}*/
 
-	if (rhs.returnType && !(returnType = rhs.returnType->duplicate<TypeNameNode>(allocator))) {
+	if (!context.pushTask([this, &rhs, allocator, &context]() -> bool {
+			if (rhs.returnType && !(returnType = rhs.returnType->duplicate<TypeNameNode>(allocator)))
+				return false;
+			return true;
+		})) {
 		succeededOut = false;
 		return;
 	}
@@ -42,12 +46,16 @@ SLKC_API MacroNode::MacroNode(const MacroNode &rhs, peff::Alloc *allocator, Dupl
 	}
 
 	for (size_t i = 0; i < params.size(); ++i) {
-		if (!(params.at(i) = rhs.params.at(i)->duplicate<VarNode>(allocator))) {
+		if (!context.pushTask([this, i, &rhs, allocator, &context]() -> bool {
+				if (!(params.at(i) = rhs.params.at(i)->duplicate<VarNode>(allocator)))
+					return false;
+
+				params.at(i)->setParent(this);
+				return true;
+			})) {
 			succeededOut = false;
 			return;
 		}
-
-		params.at(i)->setParent(this);
 	}
 
 	for (auto i : rhs.paramIndices) {

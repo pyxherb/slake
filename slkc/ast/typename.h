@@ -271,23 +271,6 @@ namespace slkc {
 		SLKC_API virtual ~TupleTypeNameNode();
 	};
 
-	class SIMDTypeNameNode : public TypeNameNode {
-	protected:
-		SLKC_API virtual AstNodePtr<AstNode> doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const override;
-
-	public:
-		AstNodePtr<TypeNameNode> elementType;
-		AstNodePtr<ExprNode> width;
-
-		size_t idxLAngleBracketToken = SIZE_MAX,
-			   idxCommaToken = SIZE_MAX,
-			   idxRAngleBracketToken = SIZE_MAX;
-
-		SLKC_API SIMDTypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
-		SLKC_API SIMDTypeNameNode(const SIMDTypeNameNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut);
-		SLKC_API virtual ~SIMDTypeNameNode();
-	};
-
 	class ParamTypeListTypeNameNode : public TypeNameNode {
 	protected:
 		SLKC_API virtual AstNodePtr<AstNode> doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const override;

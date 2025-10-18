@@ -30,7 +30,11 @@ SLKC_API MemberNode::MemberNode(const MemberNode &rhs, peff::Alloc *allocator, D
 	}
 
 	for (size_t i = 0; i < genericArgs.size(); ++i) {
-		if (!(genericArgs.at(i) = rhs.genericArgs.at(i)->duplicate<TypeNameNode>(allocator))) {
+		if (!context.pushTask([this, i, &rhs, allocator, &context]() -> bool {
+				if (!(genericArgs.at(i) = rhs.genericArgs.at(i)->duplicate<TypeNameNode>(allocator)))
+					return false;
+				return true;
+			})) {
 			succeededOut = false;
 			return;
 		}
@@ -42,7 +46,11 @@ SLKC_API MemberNode::MemberNode(const MemberNode &rhs, peff::Alloc *allocator, D
 	}
 
 	for (size_t i = 0; i < attributes.size(); ++i) {
-		if (!(attributes.at(i) = rhs.attributes.at(i)->duplicate<AttributeNode>(allocator))) {
+		if (!context.pushTask([this, i, &rhs, allocator, &context]() -> bool {
+				if (!(attributes.at(i) = rhs.attributes.at(i)->duplicate<AttributeNode>(allocator)))
+					return false;
+				return true;
+			})) {
 			succeededOut = false;
 			return;
 		}
@@ -88,7 +96,11 @@ SLKC_API ModuleNode::ModuleNode(const ModuleNode &rhs, peff::Alloc *allocator, D
 	}
 
 	for (size_t i = 0; i < varDefStmts.size(); ++i) {
-		if (!(varDefStmts.at(i) = rhs.varDefStmts.at(i)->duplicate<VarDefStmtNode>(allocator))) {
+		if (!context.pushTask([this, i, &rhs, allocator, &context]() -> bool {
+				if (!(varDefStmts.at(i) = rhs.varDefStmts.at(i)->duplicate<VarDefStmtNode>(allocator)))
+					return false;
+				return true;
+			})) {
 			succeededOut = false;
 			return;
 		}
@@ -100,7 +112,11 @@ SLKC_API ModuleNode::ModuleNode(const ModuleNode &rhs, peff::Alloc *allocator, D
 	}
 
 	for (size_t i = 0; i < anonymousImports.size(); ++i) {
-		if (!(anonymousImports.at(i) = rhs.anonymousImports.at(i)->duplicate<ImportNode>(allocator))) {
+		if (!context.pushTask([this, i, &rhs, allocator, &context]() -> bool {
+				if (!(anonymousImports.at(i) = rhs.anonymousImports.at(i)->duplicate<ImportNode>(allocator)))
+					return false;
+				return true;
+			})) {
 			succeededOut = false;
 			return;
 		}
@@ -112,14 +128,16 @@ SLKC_API ModuleNode::ModuleNode(const ModuleNode &rhs, peff::Alloc *allocator, D
 	}
 
 	for (size_t i = 0; i < members.size(); ++i) {
-		AstNodePtr<MemberNode> &m = members.at(i);
-		const AstNodePtr<MemberNode> &rm = rhs.members.at(i);
-		if (!(m = rm->duplicate<MemberNode>(allocator))) {
-			succeededOut = false;
-			return;
-		}
+		if (!context.pushTask([this, i, &rhs, allocator, &context]() -> bool {
+				AstNodePtr<MemberNode> &m = members.at(i);
+				const AstNodePtr<MemberNode> &rm = rhs.members.at(i);
+				if (!(m = rm->duplicate<MemberNode>(allocator)))
+					return false;
 
-		if (!indexMember(i)) {
+				if (!indexMember(i))
+					return false;
+				return true;
+			})) {
 			succeededOut = false;
 			return;
 		}

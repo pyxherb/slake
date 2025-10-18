@@ -2,9 +2,9 @@
 
 using namespace slkc;
 
-SLKC_API AstNodePtr<AstNode> FnNode::doDuplicate(peff::Alloc *newAllocator) const {
+SLKC_API AstNodePtr<AstNode> FnNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
 	bool succeeded = false;
-	AstNodePtr<FnNode> duplicatedNode(makeAstNode<FnNode>(newAllocator, *this, newAllocator, succeeded));
+	AstNodePtr<FnNode> duplicatedNode(makeAstNode<FnNode>(newAllocator, *this, newAllocator, context, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -19,7 +19,7 @@ SLKC_API FnNode::FnNode(
 	  overloadings(selfAllocator) {
 }
 
-SLKC_API FnNode::FnNode(const FnNode &rhs, peff::Alloc *allocator, bool &succeededOut) : MemberNode(rhs, allocator, succeededOut), overloadings(allocator) {
+SLKC_API FnNode::FnNode(const FnNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut) : MemberNode(rhs, allocator, context, succeededOut), overloadings(allocator) {
 	if (!succeededOut) {
 		return;
 	}
@@ -44,9 +44,9 @@ SLKC_API FnNode::FnNode(const FnNode &rhs, peff::Alloc *allocator, bool &succeed
 SLKC_API FnNode::~FnNode() {
 }
 
-SLKC_API AstNodePtr<AstNode> FnOverloadingNode::doDuplicate(peff::Alloc *newAllocator) const {
+SLKC_API AstNodePtr<AstNode> FnOverloadingNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
 	bool succeeded = false;
-	AstNodePtr<FnOverloadingNode> duplicatedNode(makeAstNode<FnOverloadingNode>(newAllocator, *this, newAllocator, succeeded));
+	AstNodePtr<FnOverloadingNode> duplicatedNode(makeAstNode<FnOverloadingNode>(newAllocator, *this, newAllocator, context, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -66,8 +66,8 @@ SLKC_API FnOverloadingNode::FnOverloadingNode(
 	  idxGenericParamCommaTokens(selfAllocator) {
 }
 
-SLKC_API FnOverloadingNode::FnOverloadingNode(const FnOverloadingNode &rhs, peff::Alloc *allocator, bool &succeededOut)
-	: MemberNode(rhs, allocator, succeededOut),
+SLKC_API FnOverloadingNode::FnOverloadingNode(const FnOverloadingNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut)
+	: MemberNode(rhs, allocator, context, succeededOut),
 	  params(allocator),
 	  paramIndices(allocator),
 	  genericParams(allocator),
@@ -81,7 +81,12 @@ SLKC_API FnOverloadingNode::FnOverloadingNode(const FnOverloadingNode &rhs, peff
 		return;
 	}*/
 
-	if (rhs.returnType && !(returnType = rhs.returnType->duplicate<TypeNameNode>(allocator))) {
+	if (!context.pushTask([this, &rhs, allocator, &context]() -> bool {
+			if (rhs.returnType && !(returnType = rhs.returnType->duplicate<TypeNameNode>(allocator))) {
+				return false;
+			}
+			return true;
+		})) {
 		succeededOut = false;
 		return;
 	}
@@ -92,12 +97,21 @@ SLKC_API FnOverloadingNode::FnOverloadingNode(const FnOverloadingNode &rhs, peff
 	}
 
 	for (size_t i = 0; i < params.size(); ++i) {
-		if (!(params.at(i) = rhs.params.at(i)->duplicate<VarNode>(allocator))) {
+		if (!context.pushTask([this, i, &rhs, allocator, &context]() -> bool {
+				if (!(params.at(i) = rhs.params.at(i)->duplicate<VarNode>(allocator))) {
+					return false;
+				}
+
+				if (!(paramIndices.insert(params.at(i)->name, +i))) {
+					return false;
+				}
+
+				params.at(i)->setParent(this);
+				return true;
+			})) {
 			succeededOut = false;
 			return;
 		}
-
-		params.at(i)->setParent(this);
 	}
 
 	if (!genericParams.resize(rhs.genericParams.size())) {
@@ -106,30 +120,16 @@ SLKC_API FnOverloadingNode::FnOverloadingNode(const FnOverloadingNode &rhs, peff
 	}
 
 	for (size_t i = 0; i < genericParams.size(); ++i) {
-		if (!(genericParams.at(i) = rhs.genericParams.at(i)->duplicate<GenericParamNode>(allocator))) {
-			succeededOut = false;
-			return;
-		}
+		if (!context.pushTask([this, i, &rhs, allocator, &context]() -> bool {
+				if (!(genericParams.at(i) = rhs.genericParams.at(i)->duplicate<GenericParamNode>(allocator)))
+					return false;
 
-		if (!genericParamIndices.insert(genericParams.at(i)->name, +i)) {
-			succeededOut = false;
-			return;
-		}
+				if (!genericParamIndices.insert(genericParams.at(i)->name, +i))
+					return false;
 
-		genericParams.at(i)->setParent(this);
-	}
-
-	for (auto i : rhs.paramIndices) {
-		auto &curParam = params.at(i.second);
-		if (!(paramIndices.insert(curParam->name, +i.second))) {
-			succeededOut = false;
-			return;
-		}
-	}
-
-	for (auto i : rhs.genericParamIndices) {
-		auto &curParam = genericParams.at(i.second);
-		if (!(paramIndices.insert(curParam->name, +i.second))) {
+				genericParams.at(i)->setParent(this);
+				return true;
+			})) {
 			succeededOut = false;
 			return;
 		}

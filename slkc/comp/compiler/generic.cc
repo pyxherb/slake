@@ -187,7 +187,9 @@ static std::optional<CompilationError> _walkNodeForGenericInstantiation(
 								for (size_t k = 0; k < innerTypeName->paramTypes.size(); ++k) {
 									bool succeeded;
 
-									AstNodePtr<VarNode> p = makeAstNode<VarNode>(context.allocator.get(), *curParam.get(), context.allocator.get(), succeeded);
+									DuplicationContext dc(context.allocator.get());
+
+									AstNodePtr<VarNode> p = makeAstNode<VarNode>(context.allocator.get(), *curParam.get(), context.allocator.get(), dc, succeeded);
 
 									if ((!p) || (!succeeded)) {
 										return genOutOfMemoryCompError();

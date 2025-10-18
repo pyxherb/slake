@@ -3,12 +3,16 @@
 
 using namespace slkc;
 
+SLAKE_API BaseAstNodeDuplicationTask::~BaseAstNodeDuplicationTask() {
+
+}
+
 SLKC_API AstNode::AstNode(AstNodeType astNodeType, peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : _astNodeType(astNodeType), selfAllocator(selfAllocator), document(document) {
 	assert(document);
 	document->clearDeferredDestructibleAstNodes();
 }
 
-SLAKE_API AstNode::AstNode(const AstNode &other, peff::Alloc *newAllocator) {
+SLAKE_API AstNode::AstNode(const AstNode &other, peff::Alloc *newAllocator, DuplicationContext &context) {
 	other.document->clearDeferredDestructibleAstNodes();
 	document = other.document;
 	selfAllocator = newAllocator;
@@ -19,7 +23,7 @@ SLAKE_API AstNode::AstNode(const AstNode &other, peff::Alloc *newAllocator) {
 SLKC_API AstNode::~AstNode() {
 }
 
-SLKC_API AstNodePtr<AstNode> AstNode::doDuplicate(peff::Alloc *newAllocator) const {
+SLKC_API AstNodePtr<AstNode> AstNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
 	std::terminate();
 }
 

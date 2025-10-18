@@ -46,7 +46,7 @@ namespace slkc {
 		bool isFinal = false;
 
 		SLKC_API TypeNameNode(TypeNameKind typeNameKind, peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
-		SLKC_API TypeNameNode(const TypeNameNode &rhs, peff::Alloc *selfAllocator);
+		SLKC_API TypeNameNode(const TypeNameNode &rhs, peff::Alloc *selfAllocator, DuplicationContext &context);
 		SLKC_API virtual ~TypeNameNode();
 	};
 }

@@ -2,9 +2,9 @@
 
 using namespace slkc;
 
-SLKC_API AstNodePtr<AstNode> AttributeDefNode::doDuplicate(peff::Alloc *newAllocator) const {
+SLKC_API AstNodePtr<AstNode> AttributeDefNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
 	bool succeeded = false;
-	AstNodePtr<AttributeDefNode> duplicatedNode(makeAstNode<AttributeDefNode>(newAllocator, *this, newAllocator, succeeded));
+	AstNodePtr<AttributeDefNode> duplicatedNode(makeAstNode<AttributeDefNode>(newAllocator, *this, newAllocator, context, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -18,7 +18,7 @@ SLKC_API AttributeDefNode::AttributeDefNode(
 	: ModuleNode(selfAllocator, document, AstNodeType::Attribute), genericParams(selfAllocator), genericParamIndices(selfAllocator), idxGenericParamCommaTokens(selfAllocator) {
 }
 
-SLKC_API AttributeDefNode::AttributeDefNode(const AttributeDefNode &rhs, peff::Alloc *allocator, bool &succeededOut) : ModuleNode(rhs, allocator, succeededOut), genericParams(allocator), genericParamIndices(allocator), idxGenericParamCommaTokens(allocator) {
+SLKC_API AttributeDefNode::AttributeDefNode(const AttributeDefNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut) : ModuleNode(rhs, allocator, context, succeededOut), genericParams(allocator), genericParamIndices(allocator), idxGenericParamCommaTokens(allocator) {
 	if (!succeededOut) {
 		return;
 	}
@@ -29,9 +29,9 @@ SLKC_API AttributeDefNode::AttributeDefNode(const AttributeDefNode &rhs, peff::A
 SLKC_API AttributeDefNode::~AttributeDefNode() {
 }
 
-SLKC_API AstNodePtr<AstNode> AttributeNode::doDuplicate(peff::Alloc *newAllocator) const {
+SLKC_API AstNodePtr<AstNode> AttributeNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
 	bool succeeded = false;
-	AstNodePtr<AttributeNode> duplicatedNode(makeAstNode<AttributeNode>(newAllocator, *this, newAllocator, succeeded));
+	AstNodePtr<AttributeNode> duplicatedNode(makeAstNode<AttributeNode>(newAllocator, *this, newAllocator, context, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -47,7 +47,7 @@ SLKC_API AttributeNode::AttributeNode(
 	  idxCommaTokens(selfAllocator) {
 }
 
-SLKC_API AttributeNode::AttributeNode(const AttributeNode &rhs, peff::Alloc *allocator, bool &succeededOut) : AstNode(rhs, allocator), fieldData(allocator), idxCommaTokens(allocator) {
+SLKC_API AttributeNode::AttributeNode(const AttributeNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut) : AstNode(rhs, allocator, context), fieldData(allocator), idxCommaTokens(allocator) {
 	if (!(attributeName = duplicateIdRef(allocator, rhs.attributeName.get()))) {
 		succeededOut = false;
 		return;
@@ -59,16 +59,26 @@ SLKC_API AttributeNode::AttributeNode(const AttributeNode &rhs, peff::Alloc *all
 	}
 
 	for (size_t i = 0; i < rhs.fieldData.size(); ++i) {
-		AstNodePtr<ExprNode> dd;
-		if (!(dd = rhs.fieldData.at(i)->duplicate<ExprNode>(allocator))) {
+		if (!context.pushTask([this, i, &rhs, allocator, &context]() -> bool {
+				AstNodePtr<ExprNode> dd;
+				if (!(dd = rhs.fieldData.at(i)->duplicate<ExprNode>(allocator))) {
+					return false;
+				}
+
+				fieldData.at(i) = dd;
+				return true;
+			})) {
 			succeededOut = false;
 			return;
 		}
-
-		fieldData.at(i) = dd;
 	}
 
-	if (!(appliedFor = appliedFor->duplicate<TypeNameNode>(allocator))) {
+	if (!context.pushTask([this, &rhs, allocator, &context]() -> bool {
+			if (!(appliedFor = appliedFor->duplicate<TypeNameNode>(allocator))) {
+				return false;
+			}
+			return true;
+		})) {
 		succeededOut = false;
 		return;
 	}

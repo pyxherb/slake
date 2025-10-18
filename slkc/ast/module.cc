@@ -16,7 +16,7 @@ SLKC_API MemberNode::MemberNode(
 	  attributes(selfAllocator) {
 }
 
-SLKC_API MemberNode::MemberNode(const MemberNode &rhs, peff::Alloc *allocator, bool &succeededOut) : AstNode(rhs, allocator), name(allocator), genericArgs(allocator), attributes(allocator) {
+SLKC_API MemberNode::MemberNode(const MemberNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut) : AstNode(rhs, allocator, context), name(allocator), genericArgs(allocator), attributes(allocator) {
 	if (!name.build(rhs.name)) {
 		succeededOut = false;
 		return;
@@ -54,9 +54,9 @@ SLKC_API MemberNode::MemberNode(const MemberNode &rhs, peff::Alloc *allocator, b
 SLKC_API MemberNode::~MemberNode() {
 }
 
-SLKC_API AstNodePtr<AstNode> ModuleNode::doDuplicate(peff::Alloc *newAllocator) const {
+SLKC_API AstNodePtr<AstNode> ModuleNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
 	bool succeeded = false;
-	AstNodePtr<ModuleNode> duplicatedNode(makeAstNode<ModuleNode>(newAllocator, *this, newAllocator, succeeded));
+	AstNodePtr<ModuleNode> duplicatedNode(makeAstNode<ModuleNode>(newAllocator, *this, newAllocator, context, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -75,7 +75,7 @@ SLKC_API ModuleNode::ModuleNode(
 	  varDefStmts(selfAllocator) {
 }
 
-SLKC_API ModuleNode::ModuleNode(const ModuleNode &rhs, peff::Alloc *allocator, bool &succeededOut) : MemberNode(rhs, allocator, succeededOut), members(allocator), memberIndices(allocator), anonymousImports(allocator), varDefStmts(allocator) {
+SLKC_API ModuleNode::ModuleNode(const ModuleNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut) : MemberNode(rhs, allocator, context, succeededOut), members(allocator), memberIndices(allocator), anonymousImports(allocator), varDefStmts(allocator) {
 	if (!succeededOut) {
 		return;
 	}

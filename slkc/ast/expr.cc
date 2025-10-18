@@ -5,16 +5,16 @@ using namespace slkc;
 SLKC_API ExprNode::ExprNode(ExprKind exprKind, peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : AstNode(AstNodeType::TypeName, selfAllocator, document), exprKind(exprKind) {
 }
 
-SLKC_API ExprNode::ExprNode(const ExprNode &rhs, peff::Alloc *allocator) : AstNode(rhs, allocator), exprKind(rhs.exprKind) {
+SLKC_API ExprNode::ExprNode(const ExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context) : AstNode(rhs, allocator, context), exprKind(rhs.exprKind) {
 }
 
 SLKC_API ExprNode::~ExprNode() {
 }
 
-SLKC_API AstNodePtr<AstNode> UnaryExprNode::doDuplicate(peff::Alloc *newAllocator) const {
+SLKC_API AstNodePtr<AstNode> UnaryExprNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
 	bool succeeded = false;
 
-	AstNodePtr<UnaryExprNode> duplicatedNode(makeAstNode<UnaryExprNode>(newAllocator, *this, newAllocator, succeeded));
+	AstNodePtr<UnaryExprNode> duplicatedNode(makeAstNode<UnaryExprNode>(newAllocator, *this, newAllocator, context, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -28,8 +28,13 @@ SLKC_API UnaryExprNode::UnaryExprNode(
 	: ExprNode(ExprKind::Unary, selfAllocator, document) {
 }
 
-SLKC_API UnaryExprNode::UnaryExprNode(const UnaryExprNode &rhs, peff::Alloc *selfAllocator, bool &succeededOut) : ExprNode(rhs, selfAllocator), unaryOp(rhs.unaryOp) {
-	if (!(operand = rhs.operand->duplicate<ExprNode>(selfAllocator))) {
+SLKC_API UnaryExprNode::UnaryExprNode(const UnaryExprNode &rhs, peff::Alloc *selfAllocator, DuplicationContext &context, bool &succeededOut) : ExprNode(rhs, selfAllocator, context), unaryOp(rhs.unaryOp) {
+	if (!context.pushTask([this, &rhs, selfAllocator, &context]() -> bool {
+			if (!(operand = rhs.operand->duplicate<ExprNode>(selfAllocator))) {
+				return false;
+			}
+			return true;
+		})) {
 		succeededOut = false;
 		return;
 	}
@@ -109,9 +114,9 @@ SLKC_API const char *slkc::getBinaryOperatorOverloadingName(BinaryOp op) {
 	return nullptr;
 }
 
-SLKC_API AstNodePtr<AstNode> BinaryExprNode::doDuplicate(peff::Alloc *newAllocator) const {
+SLKC_API AstNodePtr<AstNode> BinaryExprNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
 	bool succeeded = false;
-	AstNodePtr<BinaryExprNode> duplicatedNode(makeAstNode<BinaryExprNode>(newAllocator, *this, newAllocator, succeeded));
+	AstNodePtr<BinaryExprNode> duplicatedNode(makeAstNode<BinaryExprNode>(newAllocator, *this, newAllocator, context, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -125,12 +130,22 @@ SLKC_API BinaryExprNode::BinaryExprNode(
 	: ExprNode(ExprKind::Binary, selfAllocator, document) {
 }
 
-SLKC_API BinaryExprNode::BinaryExprNode(const BinaryExprNode &rhs, peff::Alloc *allocator, bool &succeededOut) : ExprNode(rhs, allocator), binaryOp(rhs.binaryOp) {
-	if (!(this->lhs = rhs.lhs->duplicate<ExprNode>(allocator))) {
+SLKC_API BinaryExprNode::BinaryExprNode(const BinaryExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut) : ExprNode(rhs, allocator, context), binaryOp(rhs.binaryOp) {
+	if (!context.pushTask([this, &rhs, allocator, &context]() -> bool {
+			if (!(this->lhs = rhs.lhs->duplicate<ExprNode>(allocator))) {
+				return false;
+			}
+			return true;
+		})) {
 		succeededOut = false;
 		return;
 	}
-	if (!(this->rhs = rhs.rhs->duplicate<ExprNode>(allocator))) {
+	if (!context.pushTask([this, &rhs, allocator, &context]() -> bool {
+			if (!(this->rhs = rhs.rhs->duplicate<ExprNode>(allocator))) {
+				return false;
+			}
+			return true;
+		})) {
 		succeededOut = false;
 		return;
 	}
@@ -141,9 +156,9 @@ SLKC_API BinaryExprNode::BinaryExprNode(const BinaryExprNode &rhs, peff::Alloc *
 SLKC_API BinaryExprNode::~BinaryExprNode() {
 }
 
-SLKC_API AstNodePtr<AstNode> TernaryExprNode::doDuplicate(peff::Alloc *newAllocator) const {
+SLKC_API AstNodePtr<AstNode> TernaryExprNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
 	bool succeeded = false;
-	AstNodePtr<TernaryExprNode> duplicatedNode(makeAstNode<TernaryExprNode>(newAllocator, *this, newAllocator, succeeded));
+	AstNodePtr<TernaryExprNode> duplicatedNode(makeAstNode<TernaryExprNode>(newAllocator, *this, newAllocator, context, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -160,16 +175,31 @@ SLKC_API TernaryExprNode::TernaryExprNode(
 	  rhs(rhs) {
 }
 
-SLKC_API TernaryExprNode::TernaryExprNode(const TernaryExprNode &rhs, peff::Alloc *allocator, bool &succeededOut) : ExprNode(rhs, allocator) {
-	if (!(this->cond = rhs.cond->duplicate<ExprNode>(allocator))) {
+SLKC_API TernaryExprNode::TernaryExprNode(const TernaryExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut) : ExprNode(rhs, allocator, context) {
+	if (!context.pushTask([this, &rhs, allocator, &context]() -> bool {
+			if (!(this->cond = rhs.cond->duplicate<ExprNode>(allocator))) {
+				return false;
+			}
+			return true;
+		})) {
 		succeededOut = false;
 		return;
 	}
-	if (!(this->lhs = rhs.lhs->duplicate<ExprNode>(allocator))) {
+	if (!context.pushTask([this, &rhs, allocator, &context]() -> bool {
+			if (!(this->lhs = rhs.lhs->duplicate<ExprNode>(allocator))) {
+				return false;
+			}
+			return true;
+		})) {
 		succeededOut = false;
 		return;
 	}
-	if (!(this->rhs = rhs.rhs->duplicate<ExprNode>(allocator))) {
+	if (!context.pushTask([this, &rhs, allocator, &context]() -> bool {
+			if (!(this->rhs = rhs.rhs->duplicate<ExprNode>(allocator))) {
+				return false;
+			}
+			return true;
+		})) {
 		succeededOut = false;
 		return;
 	}
@@ -180,9 +210,9 @@ SLKC_API TernaryExprNode::TernaryExprNode(const TernaryExprNode &rhs, peff::Allo
 SLKC_API TernaryExprNode::~TernaryExprNode() {
 }
 
-SLKC_API AstNodePtr<AstNode> LooseIdExprNode::doDuplicate(peff::Alloc *newAllocator) const {
+SLKC_API AstNodePtr<AstNode> LooseIdExprNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
 	bool succeeded = false;
-	AstNodePtr<LooseIdExprNode> duplicatedNode(makeAstNode<LooseIdExprNode>(newAllocator, *this, newAllocator, succeeded));
+	AstNodePtr<LooseIdExprNode> duplicatedNode(makeAstNode<LooseIdExprNode>(newAllocator, *this, newAllocator, context, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -197,7 +227,7 @@ SLKC_API LooseIdExprNode::LooseIdExprNode(
 	: ExprNode(ExprKind::IdRef, selfAllocator, document),
 	  id(std::move(id)) {
 }
-SLKC_API LooseIdExprNode::LooseIdExprNode(const LooseIdExprNode &rhs, peff::Alloc *allocator, bool &succeededOut) : ExprNode(rhs, allocator), id(allocator) {
+SLKC_API LooseIdExprNode::LooseIdExprNode(const LooseIdExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut) : ExprNode(rhs, allocator, context), id(allocator) {
 	if (!(id.build(rhs.id))) {
 		succeededOut = false;
 		return;
@@ -208,9 +238,9 @@ SLKC_API LooseIdExprNode::LooseIdExprNode(const LooseIdExprNode &rhs, peff::Allo
 SLKC_API LooseIdExprNode::~LooseIdExprNode() {
 }
 
-SLKC_API AstNodePtr<AstNode> IdRefExprNode::doDuplicate(peff::Alloc *newAllocator) const {
+SLKC_API AstNodePtr<AstNode> IdRefExprNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
 	bool succeeded = false;
-	AstNodePtr<IdRefExprNode> duplicatedNode(makeAstNode<IdRefExprNode>(newAllocator, *this, newAllocator, succeeded));
+	AstNodePtr<IdRefExprNode> duplicatedNode(makeAstNode<IdRefExprNode>(newAllocator, *this, newAllocator, context, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -225,7 +255,7 @@ SLKC_API IdRefExprNode::IdRefExprNode(
 	: ExprNode(ExprKind::IdRef, selfAllocator, document),
 	  idRefPtr(std::move(idRefPtr)) {
 }
-SLKC_API IdRefExprNode::IdRefExprNode(const IdRefExprNode &rhs, peff::Alloc *allocator, bool &succeededOut) : ExprNode(rhs, allocator) {
+SLKC_API IdRefExprNode::IdRefExprNode(const IdRefExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut) : ExprNode(rhs, allocator, context) {
 	if (!(idRefPtr = duplicateIdRef(allocator, rhs.idRefPtr.get()))) {
 		succeededOut = false;
 		return;
@@ -236,9 +266,9 @@ SLKC_API IdRefExprNode::IdRefExprNode(const IdRefExprNode &rhs, peff::Alloc *all
 SLKC_API IdRefExprNode::~IdRefExprNode() {
 }
 
-SLKC_API AstNodePtr<AstNode> HeadedIdRefExprNode::doDuplicate(peff::Alloc *newAllocator) const {
+SLKC_API AstNodePtr<AstNode> HeadedIdRefExprNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
 	bool succeeded = false;
-	AstNodePtr<HeadedIdRefExprNode> duplicatedNode(makeAstNode<HeadedIdRefExprNode>(newAllocator, *this, newAllocator, succeeded));
+	AstNodePtr<HeadedIdRefExprNode> duplicatedNode(makeAstNode<HeadedIdRefExprNode>(newAllocator, *this, newAllocator, context, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -254,8 +284,13 @@ SLKC_API HeadedIdRefExprNode::HeadedIdRefExprNode(
 	: ExprNode(ExprKind::HeadedIdRef, selfAllocator, document),
 	  idRefPtr(std::move(idRefPtr)) {
 }
-SLKC_API HeadedIdRefExprNode::HeadedIdRefExprNode(const HeadedIdRefExprNode &rhs, peff::Alloc *allocator, bool &succeededOut) : ExprNode(rhs, allocator) {
-	if (!(head = rhs.head->duplicate<ExprNode>(allocator))) {
+SLKC_API HeadedIdRefExprNode::HeadedIdRefExprNode(const HeadedIdRefExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut) : ExprNode(rhs, allocator, context) {
+	if (!context.pushTask([this, &rhs, allocator, &context]() -> bool {
+			if (!(this->head = rhs.head->duplicate<ExprNode>(allocator))) {
+				return false;
+			}
+			return true;
+		})) {
 		succeededOut = false;
 		return;
 	}
@@ -269,8 +304,8 @@ SLKC_API HeadedIdRefExprNode::HeadedIdRefExprNode(const HeadedIdRefExprNode &rhs
 SLKC_API HeadedIdRefExprNode::~HeadedIdRefExprNode() {
 }
 
-SLKC_API AstNodePtr<AstNode> I8LiteralExprNode::doDuplicate(peff::Alloc *newAllocator) const {
-	peff::SharedPtr<I8LiteralExprNode> duplicatedNode(peff::makeSharedWithControlBlock<I8LiteralExprNode, AstNodeControlBlock<I8LiteralExprNode>>(newAllocator, *this, newAllocator));
+SLKC_API AstNodePtr<AstNode> I8LiteralExprNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
+	peff::SharedPtr<I8LiteralExprNode> duplicatedNode(peff::makeSharedWithControlBlock<I8LiteralExprNode, AstNodeControlBlock<I8LiteralExprNode>>(newAllocator, *this, newAllocator, context));
 	if (!duplicatedNode) {
 		return {};
 	}
@@ -285,13 +320,13 @@ SLKC_API I8LiteralExprNode::I8LiteralExprNode(
 	: ExprNode(ExprKind::I8, selfAllocator, document),
 	  data(data) {
 }
-SLKC_API I8LiteralExprNode::I8LiteralExprNode(const I8LiteralExprNode &rhs, peff::Alloc *allocator) : ExprNode(rhs, allocator), data(rhs.data) {
+SLKC_API I8LiteralExprNode::I8LiteralExprNode(const I8LiteralExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context) : ExprNode(rhs, allocator, context), data(rhs.data) {
 }
 SLKC_API I8LiteralExprNode::~I8LiteralExprNode() {
 }
 
-SLKC_API AstNodePtr<AstNode> I16LiteralExprNode::doDuplicate(peff::Alloc *newAllocator) const {
-	peff::SharedPtr<I16LiteralExprNode> duplicatedNode(peff::makeSharedWithControlBlock<I16LiteralExprNode, AstNodeControlBlock<I16LiteralExprNode>>(newAllocator, *this, newAllocator));
+SLKC_API AstNodePtr<AstNode> I16LiteralExprNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
+	peff::SharedPtr<I16LiteralExprNode> duplicatedNode(peff::makeSharedWithControlBlock<I16LiteralExprNode, AstNodeControlBlock<I16LiteralExprNode>>(newAllocator, *this, newAllocator, context));
 	if (!duplicatedNode) {
 		return {};
 	}
@@ -306,13 +341,13 @@ SLKC_API I16LiteralExprNode::I16LiteralExprNode(
 	: ExprNode(ExprKind::I16, selfAllocator, document),
 	  data(data) {
 }
-SLKC_API I16LiteralExprNode::I16LiteralExprNode(const I16LiteralExprNode &rhs, peff::Alloc *allocator) : ExprNode(rhs, allocator), data(rhs.data) {
+SLKC_API I16LiteralExprNode::I16LiteralExprNode(const I16LiteralExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context) : ExprNode(rhs, allocator, context), data(rhs.data) {
 }
 SLKC_API I16LiteralExprNode::~I16LiteralExprNode() {
 }
 
-SLKC_API AstNodePtr<AstNode> I32LiteralExprNode::doDuplicate(peff::Alloc *newAllocator) const {
-	peff::SharedPtr<I32LiteralExprNode> duplicatedNode(peff::makeSharedWithControlBlock<I32LiteralExprNode, AstNodeControlBlock<I32LiteralExprNode>>(newAllocator, *this, newAllocator));
+SLKC_API AstNodePtr<AstNode> I32LiteralExprNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
+	peff::SharedPtr<I32LiteralExprNode> duplicatedNode(peff::makeSharedWithControlBlock<I32LiteralExprNode, AstNodeControlBlock<I32LiteralExprNode>>(newAllocator, *this, newAllocator, context));
 	if (!duplicatedNode) {
 		return {};
 	}
@@ -327,13 +362,13 @@ SLKC_API I32LiteralExprNode::I32LiteralExprNode(
 	: ExprNode(ExprKind::I32, selfAllocator, document),
 	  data(data) {
 }
-SLKC_API I32LiteralExprNode::I32LiteralExprNode(const I32LiteralExprNode &rhs, peff::Alloc *allocator) : ExprNode(rhs, allocator), data(rhs.data) {
+SLKC_API I32LiteralExprNode::I32LiteralExprNode(const I32LiteralExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context) : ExprNode(rhs, allocator, context), data(rhs.data) {
 }
 SLKC_API I32LiteralExprNode::~I32LiteralExprNode() {
 }
 
-SLKC_API AstNodePtr<AstNode> I64LiteralExprNode::doDuplicate(peff::Alloc *newAllocator) const {
-	peff::SharedPtr<I64LiteralExprNode> duplicatedNode(peff::makeSharedWithControlBlock<I64LiteralExprNode, AstNodeControlBlock<I64LiteralExprNode>>(newAllocator, *this, newAllocator));
+SLKC_API AstNodePtr<AstNode> I64LiteralExprNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
+	peff::SharedPtr<I64LiteralExprNode> duplicatedNode(peff::makeSharedWithControlBlock<I64LiteralExprNode, AstNodeControlBlock<I64LiteralExprNode>>(newAllocator, *this, newAllocator, context));
 	if (!duplicatedNode) {
 		return {};
 	}
@@ -348,13 +383,13 @@ SLKC_API I64LiteralExprNode::I64LiteralExprNode(
 	: ExprNode(ExprKind::I64, selfAllocator, document),
 	  data(data) {
 }
-SLKC_API I64LiteralExprNode::I64LiteralExprNode(const I64LiteralExprNode &rhs, peff::Alloc *allocator) : ExprNode(rhs, allocator), data(rhs.data) {
+SLKC_API I64LiteralExprNode::I64LiteralExprNode(const I64LiteralExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context) : ExprNode(rhs, allocator, context), data(rhs.data) {
 }
 SLKC_API I64LiteralExprNode::~I64LiteralExprNode() {
 }
 
-SLKC_API AstNodePtr<AstNode> U8LiteralExprNode::doDuplicate(peff::Alloc *newAllocator) const {
-	peff::SharedPtr<U8LiteralExprNode> duplicatedNode(peff::makeSharedWithControlBlock<U8LiteralExprNode, AstNodeControlBlock<U8LiteralExprNode>>(newAllocator, *this, newAllocator));
+SLKC_API AstNodePtr<AstNode> U8LiteralExprNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
+	peff::SharedPtr<U8LiteralExprNode> duplicatedNode(peff::makeSharedWithControlBlock<U8LiteralExprNode, AstNodeControlBlock<U8LiteralExprNode>>(newAllocator, *this, newAllocator, context));
 	if (!duplicatedNode) {
 		return {};
 	}
@@ -369,13 +404,13 @@ SLKC_API U8LiteralExprNode::U8LiteralExprNode(
 	: ExprNode(ExprKind::U8, selfAllocator, document),
 	  data(data) {
 }
-SLKC_API U8LiteralExprNode::U8LiteralExprNode(const U8LiteralExprNode &rhs, peff::Alloc *allocator) : ExprNode(rhs, allocator), data(rhs.data) {
+SLKC_API U8LiteralExprNode::U8LiteralExprNode(const U8LiteralExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context) : ExprNode(rhs, allocator, context), data(rhs.data) {
 }
 SLKC_API U8LiteralExprNode::~U8LiteralExprNode() {
 }
 
-SLKC_API AstNodePtr<AstNode> U16LiteralExprNode::doDuplicate(peff::Alloc *newAllocator) const {
-	peff::SharedPtr<U16LiteralExprNode> duplicatedNode(peff::makeSharedWithControlBlock<U16LiteralExprNode, AstNodeControlBlock<U16LiteralExprNode>>(newAllocator, *this, newAllocator));
+SLKC_API AstNodePtr<AstNode> U16LiteralExprNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
+	peff::SharedPtr<U16LiteralExprNode> duplicatedNode(peff::makeSharedWithControlBlock<U16LiteralExprNode, AstNodeControlBlock<U16LiteralExprNode>>(newAllocator, *this, newAllocator, context));
 	if (!duplicatedNode) {
 		return {};
 	}
@@ -390,13 +425,13 @@ SLKC_API U16LiteralExprNode::U16LiteralExprNode(
 	: ExprNode(ExprKind::U16, selfAllocator, document),
 	  data(data) {
 }
-SLKC_API U16LiteralExprNode::U16LiteralExprNode(const U16LiteralExprNode &rhs, peff::Alloc *allocator) : ExprNode(rhs, allocator), data(rhs.data) {
+SLKC_API U16LiteralExprNode::U16LiteralExprNode(const U16LiteralExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context) : ExprNode(rhs, allocator, context), data(rhs.data) {
 }
 SLKC_API U16LiteralExprNode::~U16LiteralExprNode() {
 }
 
-SLKC_API AstNodePtr<AstNode> U32LiteralExprNode::doDuplicate(peff::Alloc *newAllocator) const {
-	peff::SharedPtr<U32LiteralExprNode> duplicatedNode(peff::makeSharedWithControlBlock<U32LiteralExprNode, AstNodeControlBlock<U32LiteralExprNode>>(newAllocator, *this, newAllocator));
+SLKC_API AstNodePtr<AstNode> U32LiteralExprNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
+	peff::SharedPtr<U32LiteralExprNode> duplicatedNode(peff::makeSharedWithControlBlock<U32LiteralExprNode, AstNodeControlBlock<U32LiteralExprNode>>(newAllocator, *this, newAllocator, context));
 	if (!duplicatedNode) {
 		return {};
 	}
@@ -410,13 +445,13 @@ SLKC_API U32LiteralExprNode::U32LiteralExprNode(
 	: ExprNode(ExprKind::U32, selfAllocator, document),
 	  data(data) {
 }
-SLKC_API U32LiteralExprNode::U32LiteralExprNode(const U32LiteralExprNode &rhs, peff::Alloc *allocator) : ExprNode(rhs, allocator), data(rhs.data) {
+SLKC_API U32LiteralExprNode::U32LiteralExprNode(const U32LiteralExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context) : ExprNode(rhs, allocator, context), data(rhs.data) {
 }
 SLKC_API U32LiteralExprNode::~U32LiteralExprNode() {
 }
 
-SLKC_API AstNodePtr<AstNode> U64LiteralExprNode::doDuplicate(peff::Alloc *newAllocator) const {
-	peff::SharedPtr<U64LiteralExprNode> duplicatedNode(peff::makeSharedWithControlBlock<U64LiteralExprNode, AstNodeControlBlock<U64LiteralExprNode>>(newAllocator, *this, newAllocator));
+SLKC_API AstNodePtr<AstNode> U64LiteralExprNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
+	peff::SharedPtr<U64LiteralExprNode> duplicatedNode(peff::makeSharedWithControlBlock<U64LiteralExprNode, AstNodeControlBlock<U64LiteralExprNode>>(newAllocator, *this, newAllocator, context));
 	if (!duplicatedNode) {
 		return {};
 	}
@@ -431,13 +466,13 @@ SLKC_API U64LiteralExprNode::U64LiteralExprNode(
 	: ExprNode(ExprKind::U64, selfAllocator, document),
 	  data(data) {
 }
-SLKC_API U64LiteralExprNode::U64LiteralExprNode(const U64LiteralExprNode &rhs, peff::Alloc *allocator) : ExprNode(rhs, allocator), data(rhs.data) {
+SLKC_API U64LiteralExprNode::U64LiteralExprNode(const U64LiteralExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context) : ExprNode(rhs, allocator, context), data(rhs.data) {
 }
 SLKC_API U64LiteralExprNode::~U64LiteralExprNode() {
 }
 
-SLKC_API AstNodePtr<AstNode> F32LiteralExprNode::doDuplicate(peff::Alloc *newAllocator) const {
-	peff::SharedPtr<F32LiteralExprNode> duplicatedNode(peff::makeSharedWithControlBlock<F32LiteralExprNode, AstNodeControlBlock<F32LiteralExprNode>>(newAllocator, *this, newAllocator));
+SLKC_API AstNodePtr<AstNode> F32LiteralExprNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
+	peff::SharedPtr<F32LiteralExprNode> duplicatedNode(peff::makeSharedWithControlBlock<F32LiteralExprNode, AstNodeControlBlock<F32LiteralExprNode>>(newAllocator, *this, newAllocator, context));
 	if (!duplicatedNode) {
 		return {};
 	}
@@ -452,13 +487,13 @@ SLKC_API F32LiteralExprNode::F32LiteralExprNode(
 	: ExprNode(ExprKind::F32, selfAllocator, document),
 	  data(data) {
 }
-SLKC_API F32LiteralExprNode::F32LiteralExprNode(const F32LiteralExprNode &rhs, peff::Alloc *allocator) : ExprNode(rhs, allocator), data(rhs.data) {
+SLKC_API F32LiteralExprNode::F32LiteralExprNode(const F32LiteralExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context) : ExprNode(rhs, allocator, context), data(rhs.data) {
 }
 SLKC_API F32LiteralExprNode::~F32LiteralExprNode() {
 }
 
-SLKC_API AstNodePtr<AstNode> F64LiteralExprNode::doDuplicate(peff::Alloc *newAllocator) const {
-	peff::SharedPtr<F64LiteralExprNode> duplicatedNode(peff::makeSharedWithControlBlock<F64LiteralExprNode, AstNodeControlBlock<F64LiteralExprNode>>(newAllocator, *this, newAllocator));
+SLKC_API AstNodePtr<AstNode> F64LiteralExprNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
+	peff::SharedPtr<F64LiteralExprNode> duplicatedNode(peff::makeSharedWithControlBlock<F64LiteralExprNode, AstNodeControlBlock<F64LiteralExprNode>>(newAllocator, *this, newAllocator, context));
 	if (!duplicatedNode) {
 		return {};
 	}
@@ -473,13 +508,13 @@ SLKC_API F64LiteralExprNode::F64LiteralExprNode(
 	: ExprNode(ExprKind::F64, selfAllocator, document),
 	  data(data) {
 }
-SLKC_API F64LiteralExprNode::F64LiteralExprNode(const F64LiteralExprNode &rhs, peff::Alloc *allocator) : ExprNode(rhs, allocator), data(rhs.data) {
+SLKC_API F64LiteralExprNode::F64LiteralExprNode(const F64LiteralExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context) : ExprNode(rhs, allocator, context), data(rhs.data) {
 }
 SLKC_API F64LiteralExprNode::~F64LiteralExprNode() {
 }
 
-SLKC_API AstNodePtr<AstNode> BoolLiteralExprNode::doDuplicate(peff::Alloc *newAllocator) const {
-	AstNodePtr<BoolLiteralExprNode> duplicatedNode(makeAstNode<BoolLiteralExprNode>(newAllocator, *this, newAllocator));
+SLKC_API AstNodePtr<AstNode> BoolLiteralExprNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
+	AstNodePtr<BoolLiteralExprNode> duplicatedNode(makeAstNode<BoolLiteralExprNode>(newAllocator, *this, newAllocator, context));
 	if (!duplicatedNode) {
 		return {};
 	}
@@ -493,14 +528,14 @@ SLKC_API BoolLiteralExprNode::BoolLiteralExprNode(
 	: ExprNode(ExprKind::Bool, selfAllocator, document),
 	  data(data) {
 }
-SLKC_API BoolLiteralExprNode::BoolLiteralExprNode(const BoolLiteralExprNode &rhs, peff::Alloc *allocator) : ExprNode(rhs, allocator), data(rhs.data) {
+SLKC_API BoolLiteralExprNode::BoolLiteralExprNode(const BoolLiteralExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context) : ExprNode(rhs, allocator, context), data(rhs.data) {
 }
 SLKC_API BoolLiteralExprNode::~BoolLiteralExprNode() {
 }
 
-SLKC_API AstNodePtr<AstNode> StringLiteralExprNode::doDuplicate(peff::Alloc *newAllocator) const {
+SLKC_API AstNodePtr<AstNode> StringLiteralExprNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
 	bool succeeded = false;
-	AstNodePtr<StringLiteralExprNode> duplicatedNode(makeAstNode<StringLiteralExprNode>(newAllocator, *this, newAllocator, succeeded));
+	AstNodePtr<StringLiteralExprNode> duplicatedNode(makeAstNode<StringLiteralExprNode>(newAllocator, *this, newAllocator, context, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -514,7 +549,7 @@ SLKC_API StringLiteralExprNode::StringLiteralExprNode(
 	: ExprNode(ExprKind::String, selfAllocator, document),
 	  data(std::move(data)) {
 }
-SLKC_API StringLiteralExprNode::StringLiteralExprNode(const StringLiteralExprNode &rhs, peff::Alloc *allocator, bool &succeededOut) : ExprNode(rhs, allocator), data(allocator) {
+SLKC_API StringLiteralExprNode::StringLiteralExprNode(const StringLiteralExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut) : ExprNode(rhs, allocator, context), data(allocator) {
 	if (!data.build(rhs.data)) {
 		succeededOut = false;
 		return;
@@ -525,8 +560,8 @@ SLKC_API StringLiteralExprNode::StringLiteralExprNode(const StringLiteralExprNod
 SLKC_API StringLiteralExprNode::~StringLiteralExprNode() {
 }
 
-SLKC_API AstNodePtr<AstNode> NullLiteralExprNode::doDuplicate(peff::Alloc *newAllocator) const {
-	AstNodePtr<NullLiteralExprNode> duplicatedNode(makeAstNode<NullLiteralExprNode>(newAllocator, *this, newAllocator));
+SLKC_API AstNodePtr<AstNode> NullLiteralExprNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
+	AstNodePtr<NullLiteralExprNode> duplicatedNode(makeAstNode<NullLiteralExprNode>(newAllocator, *this, newAllocator, context));
 	if (!duplicatedNode) {
 		return {};
 	}
@@ -538,14 +573,14 @@ SLKC_API NullLiteralExprNode::NullLiteralExprNode(
 	const peff::SharedPtr<Document> &document)
 	: ExprNode(ExprKind::Null, selfAllocator, document) {
 }
-SLKC_API NullLiteralExprNode::NullLiteralExprNode(const NullLiteralExprNode &rhs, peff::Alloc *allocator) : ExprNode(rhs, allocator) {
+SLKC_API NullLiteralExprNode::NullLiteralExprNode(const NullLiteralExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context) : ExprNode(rhs, allocator, context) {
 }
 SLKC_API NullLiteralExprNode::~NullLiteralExprNode() {
 }
 
-SLKC_API AstNodePtr<AstNode> InitializerListExprNode::doDuplicate(peff::Alloc *newAllocator) const {
+SLKC_API AstNodePtr<AstNode> InitializerListExprNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
 	bool succeeded = false;
-	AstNodePtr<InitializerListExprNode> duplicatedNode(makeAstNode<InitializerListExprNode>(newAllocator, *this, newAllocator, succeeded));
+	AstNodePtr<InitializerListExprNode> duplicatedNode(makeAstNode<InitializerListExprNode>(newAllocator, *this, newAllocator, context, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -558,14 +593,19 @@ SLKC_API InitializerListExprNode::InitializerListExprNode(
 	: ExprNode(ExprKind::InitializerList, selfAllocator, document),
 	  elements(selfAllocator) {
 }
-SLKC_API InitializerListExprNode::InitializerListExprNode(const InitializerListExprNode &rhs, peff::Alloc *allocator, bool &succeededOut) : ExprNode(rhs, allocator), elements(allocator) {
+SLKC_API InitializerListExprNode::InitializerListExprNode(const InitializerListExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut) : ExprNode(rhs, allocator, context), elements(allocator) {
 	if (!elements.resize(rhs.elements.size())) {
 		succeededOut = false;
 		return;
 	}
 
 	for (size_t i = 0; i < elements.size(); ++i) {
-		if (!(elements.at(i) = rhs.elements.at(i)->duplicate<ExprNode>(allocator))) {
+		if (!context.pushTask([this, i, &rhs, allocator, &context]() -> bool {
+				if (!(elements.at(i) = rhs.elements.at(i)->duplicate<ExprNode>(allocator))) {
+					return false;
+				}
+				return true;
+			})) {
 			succeededOut = false;
 			return;
 		}
@@ -576,9 +616,9 @@ SLKC_API InitializerListExprNode::InitializerListExprNode(const InitializerListE
 SLKC_API InitializerListExprNode::~InitializerListExprNode() {
 }
 
-SLKC_API AstNodePtr<AstNode> CallExprNode::doDuplicate(peff::Alloc *newAllocator) const {
+SLKC_API AstNodePtr<AstNode> CallExprNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
 	bool succeeded = false;
-	AstNodePtr<CallExprNode> duplicatedNode(makeAstNode<CallExprNode>(newAllocator, *this, newAllocator, succeeded));
+	AstNodePtr<CallExprNode> duplicatedNode(makeAstNode<CallExprNode>(newAllocator, *this, newAllocator, context, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -595,14 +635,24 @@ SLKC_API CallExprNode::CallExprNode(
 	  args(std::move(args)),
 	  idxCommaTokens(selfAllocator) {
 }
-SLKC_API CallExprNode::CallExprNode(const CallExprNode &rhs, peff::Alloc *allocator, bool &succeededOut)
-	: ExprNode(rhs, allocator), args(allocator), idxCommaTokens(allocator) {
-	if (rhs.target && !(target = rhs.target->duplicate<ExprNode>(allocator))) {
+SLKC_API CallExprNode::CallExprNode(const CallExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut)
+	: ExprNode(rhs, allocator, context), args(allocator), idxCommaTokens(allocator) {
+	if (!context.pushTask([this, &rhs, allocator, &context]() -> bool {
+			if (rhs.target && !(target = rhs.target->duplicate<ExprNode>(allocator))) {
+				return false;
+			}
+			return true;
+		})) {
 		succeededOut = false;
 		return;
 	}
 
-	if (rhs.withObject && !(withObject = rhs.withObject->duplicate<ExprNode>(allocator))) {
+	if (!context.pushTask([this, &rhs, allocator, &context]() -> bool {
+			if (rhs.withObject && !(withObject = rhs.withObject->duplicate<ExprNode>(allocator))) {
+				return false;
+			}
+			return true;
+		})) {
 		succeededOut = false;
 		return;
 	}
@@ -613,7 +663,12 @@ SLKC_API CallExprNode::CallExprNode(const CallExprNode &rhs, peff::Alloc *alloca
 	}
 
 	for (size_t i = 0; i < args.size(); ++i) {
-		if (!(args.at(i) = rhs.args.at(i)->duplicate<ExprNode>(allocator))) {
+		if (!context.pushTask([this, i, &rhs, allocator, &context]() -> bool {
+				if (!(args.at(i) = rhs.args.at(i)->duplicate<ExprNode>(allocator))) {
+					return false;
+				}
+				return true;
+			})) {
 			succeededOut = false;
 			return;
 		}
@@ -622,9 +677,9 @@ SLKC_API CallExprNode::CallExprNode(const CallExprNode &rhs, peff::Alloc *alloca
 SLKC_API CallExprNode::~CallExprNode() {
 }
 
-SLKC_API AstNodePtr<AstNode> NewExprNode::doDuplicate(peff::Alloc *newAllocator) const {
+SLKC_API AstNodePtr<AstNode> NewExprNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
 	bool succeeded = false;
-	AstNodePtr<NewExprNode> duplicatedNode(makeAstNode<NewExprNode>(newAllocator, *this, newAllocator, succeeded));
+	AstNodePtr<NewExprNode> duplicatedNode(makeAstNode<NewExprNode>(newAllocator, *this, newAllocator, context, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -638,9 +693,14 @@ SLKC_API NewExprNode::NewExprNode(
 	  args(selfAllocator),
 	  idxCommaTokens(selfAllocator) {
 }
-SLKC_API NewExprNode::NewExprNode(const NewExprNode &rhs, peff::Alloc *allocator, bool &succeededOut)
-	: ExprNode(rhs, allocator), args(allocator), idxCommaTokens(allocator) {
-	if (!(targetType = rhs.targetType->duplicate<TypeNameNode>(allocator))) {
+SLKC_API NewExprNode::NewExprNode(const NewExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut)
+	: ExprNode(rhs, allocator, context), args(allocator), idxCommaTokens(allocator) {
+	if (!context.pushTask([this, &rhs, allocator, &context]() -> bool {
+			if (!(targetType = rhs.targetType->duplicate<TypeNameNode>(allocator))) {
+				return false;
+			}
+			return true;
+		})) {
 		succeededOut = false;
 		return;
 	}
@@ -651,7 +711,12 @@ SLKC_API NewExprNode::NewExprNode(const NewExprNode &rhs, peff::Alloc *allocator
 	}
 
 	for (size_t i = 0; i < args.size(); ++i) {
-		if (!(args.at(i) = rhs.args.at(i)->duplicate<ExprNode>(allocator))) {
+		if (!context.pushTask([this, i, &rhs, allocator, &context]() -> bool {
+				if (!(args.at(i) = rhs.args.at(i)->duplicate<ExprNode>(allocator))) {
+					return false;
+				}
+				return true;
+			})) {
 			succeededOut = false;
 			return;
 		}
@@ -660,9 +725,9 @@ SLKC_API NewExprNode::NewExprNode(const NewExprNode &rhs, peff::Alloc *allocator
 SLKC_API NewExprNode::~NewExprNode() {
 }
 
-SLKC_API AstNodePtr<AstNode> AllocaExprNode::doDuplicate(peff::Alloc *newAllocator) const {
+SLKC_API AstNodePtr<AstNode> AllocaExprNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
 	bool succeeded = false;
-	AstNodePtr<AllocaExprNode> duplicatedNode(makeAstNode<AllocaExprNode>(newAllocator, *this, newAllocator, succeeded));
+	AstNodePtr<AllocaExprNode> duplicatedNode(makeAstNode<AllocaExprNode>(newAllocator, *this, newAllocator, context, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -675,14 +740,22 @@ SLKC_API AllocaExprNode::AllocaExprNode(
 	: ExprNode(ExprKind::Alloca, selfAllocator, document),
 	  idxCommaTokens(selfAllocator) {
 }
-SLKC_API AllocaExprNode::AllocaExprNode(const AllocaExprNode &rhs, peff::Alloc *allocator, bool &succeededOut)
-	: ExprNode(rhs, allocator), idxCommaTokens(allocator) {
-	if (!(countExpr = rhs.countExpr->duplicate<ExprNode>(allocator))) {
+SLKC_API AllocaExprNode::AllocaExprNode(const AllocaExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut)
+	: ExprNode(rhs, allocator, context), idxCommaTokens(allocator) {
+	if (!context.pushTask([this, &rhs, allocator, &context]() -> bool {
+			if (!(countExpr = rhs.countExpr->duplicate<ExprNode>(allocator)))
+				return false;
+			return true;
+		})) {
 		succeededOut = false;
 		return;
 	}
 
-	if (!(targetType = rhs.targetType->duplicate<TypeNameNode>(allocator))) {
+	if (!context.pushTask([this, &rhs, allocator, &context]() -> bool {
+			if (!(targetType = rhs.targetType->duplicate<TypeNameNode>(allocator)))
+				return false;
+			return true;
+		})) {
 		succeededOut = false;
 		return;
 	}
@@ -690,9 +763,9 @@ SLKC_API AllocaExprNode::AllocaExprNode(const AllocaExprNode &rhs, peff::Alloc *
 SLKC_API AllocaExprNode::~AllocaExprNode() {
 }
 
-SLKC_API AstNodePtr<AstNode> CastExprNode::doDuplicate(peff::Alloc *newAllocator) const {
+SLKC_API AstNodePtr<AstNode> CastExprNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
 	bool succeeded = false;
-	AstNodePtr<CastExprNode> duplicatedNode(makeAstNode<CastExprNode>(newAllocator, *this, newAllocator, succeeded));
+	AstNodePtr<CastExprNode> duplicatedNode(makeAstNode<CastExprNode>(newAllocator, *this, newAllocator, context, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -703,14 +776,22 @@ SLKC_API CastExprNode::CastExprNode(
 	peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document)
 	: ExprNode(ExprKind::Cast, selfAllocator, document) {
 }
-SLKC_API CastExprNode::CastExprNode(const CastExprNode &rhs, peff::Alloc *allocator, bool &succeededOut)
-	: ExprNode(rhs, allocator) {
-	if (!(targetType = rhs.targetType->duplicate<TypeNameNode>(allocator))) {
+SLKC_API CastExprNode::CastExprNode(const CastExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut)
+	: ExprNode(rhs, allocator, context) {
+	if (!context.pushTask([this, &rhs, allocator, &context]() -> bool {
+			if (!(targetType = rhs.targetType->duplicate<TypeNameNode>(allocator)))
+				return false;
+			return true;
+		})) {
 		succeededOut = false;
 		return;
 	}
 
-	if (!(source = rhs.source->duplicate<ExprNode>(allocator))) {
+	if (!context.pushTask([this, &rhs, allocator, &context]() -> bool {
+			if (!(source = rhs.source->duplicate<ExprNode>(allocator)))
+				return false;
+			return true;
+		})) {
 		succeededOut = false;
 		return;
 	}
@@ -722,9 +803,9 @@ SLKC_API CastExprNode::CastExprNode(const CastExprNode &rhs, peff::Alloc *alloca
 SLKC_API CastExprNode::~CastExprNode() {
 }
 
-SLKC_API AstNodePtr<AstNode> MatchExprNode::doDuplicate(peff::Alloc *newAllocator) const {
+SLKC_API AstNodePtr<AstNode> MatchExprNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
 	bool succeeded = false;
-	AstNodePtr<MatchExprNode> duplicatedNode(makeAstNode<MatchExprNode>(newAllocator, *this, newAllocator, succeeded));
+	AstNodePtr<MatchExprNode> duplicatedNode(makeAstNode<MatchExprNode>(newAllocator, *this, newAllocator, context, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -736,14 +817,22 @@ SLKC_API MatchExprNode::MatchExprNode(
 	: ExprNode(ExprKind::Match, selfAllocator, document),
 	  cases(selfAllocator) {
 }
-SLKC_API MatchExprNode::MatchExprNode(const MatchExprNode &rhs, peff::Alloc *allocator, bool &succeededOut)
-	: ExprNode(rhs, allocator), cases(allocator) {
-	if (!(returnType = rhs.returnType->duplicate<TypeNameNode>(allocator))) {
+SLKC_API MatchExprNode::MatchExprNode(const MatchExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut)
+	: ExprNode(rhs, allocator, context), cases(allocator) {
+	if (!context.pushTask([this, &rhs, allocator, &context]() -> bool {
+			if (!(returnType = rhs.returnType->duplicate<TypeNameNode>(allocator)))
+				return false;
+			return true;
+		})) {
 		succeededOut = false;
 		return;
 	}
 
-	if (!(condition = rhs.condition->duplicate<ExprNode>(allocator))) {
+	if (!context.pushTask([this, &rhs, allocator, &context]() -> bool {
+			if (!(condition = rhs.condition->duplicate<ExprNode>(allocator)))
+				return false;
+			return true;
+		})) {
 		succeededOut = false;
 		return;
 	}
@@ -754,12 +843,20 @@ SLKC_API MatchExprNode::MatchExprNode(const MatchExprNode &rhs, peff::Alloc *all
 	}
 
 	for (size_t i = 0; i < cases.size(); ++i) {
-		if (!(cases.at(i).first = rhs.cases.at(i).first->duplicate<ExprNode>(allocator))) {
+		if (!context.pushTask([this, i, &rhs, allocator, &context]() -> bool {
+				if (!(cases.at(i).first = rhs.cases.at(i).first->duplicate<ExprNode>(allocator)))
+					return false;
+				return true;
+			})) {
 			succeededOut = false;
 			return;
 		}
 
-		if (!(cases.at(i).second = rhs.cases.at(i).second->duplicate<ExprNode>(allocator))) {
+		if (!context.pushTask([this, i, &rhs, allocator, &context]() -> bool {
+				if (!(cases.at(i).second = rhs.cases.at(i).second->duplicate<ExprNode>(allocator)))
+					return false;
+				return true;
+			})) {
 			succeededOut = false;
 			return;
 		}
@@ -770,9 +867,9 @@ SLKC_API MatchExprNode::MatchExprNode(const MatchExprNode &rhs, peff::Alloc *all
 SLKC_API MatchExprNode::~MatchExprNode() {
 }
 
-SLKC_API AstNodePtr<AstNode> WrapperExprNode::doDuplicate(peff::Alloc *newAllocator) const {
+SLKC_API AstNodePtr<AstNode> WrapperExprNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
 	bool succeeded = false;
-	AstNodePtr<WrapperExprNode> duplicatedNode(makeAstNode<WrapperExprNode>(newAllocator, *this, newAllocator, succeeded));
+	AstNodePtr<WrapperExprNode> duplicatedNode(makeAstNode<WrapperExprNode>(newAllocator, *this, newAllocator, context, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -784,9 +881,13 @@ SLKC_API WrapperExprNode::WrapperExprNode(
 	: ExprNode(ExprKind::Wrapper, selfAllocator, document),
 	  target(target) {
 }
-SLKC_API WrapperExprNode::WrapperExprNode(const WrapperExprNode &rhs, peff::Alloc *allocator, bool &succeededOut)
-	: ExprNode(rhs, allocator) {
-	if (!(target = rhs.target->duplicate<ExprNode>(allocator))) {
+SLKC_API WrapperExprNode::WrapperExprNode(const WrapperExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut)
+	: ExprNode(rhs, allocator, context) {
+	if (!context.pushTask([this, &rhs, allocator, &context]() -> bool {
+			if (!(target = rhs.target->duplicate<ExprNode>(allocator)))
+				return false;
+			return true;
+		})) {
 		succeededOut = false;
 		return;
 	}
@@ -796,9 +897,9 @@ SLKC_API WrapperExprNode::WrapperExprNode(const WrapperExprNode &rhs, peff::Allo
 SLKC_API WrapperExprNode::~WrapperExprNode() {
 }
 
-SLKC_API AstNodePtr<AstNode> RegIndexExprNode::doDuplicate(peff::Alloc *newAllocator) const {
+SLKC_API AstNodePtr<AstNode> RegIndexExprNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
 	bool succeeded = false;
-	AstNodePtr<RegIndexExprNode> duplicatedNode(makeAstNode<RegIndexExprNode>(newAllocator, *this, newAllocator, succeeded));
+	AstNodePtr<RegIndexExprNode> duplicatedNode(makeAstNode<RegIndexExprNode>(newAllocator, *this, newAllocator, context, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -809,8 +910,8 @@ SLKC_API RegIndexExprNode::RegIndexExprNode(
 	peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document, uint32_t reg, AstNodePtr<TypeNameNode> type)
 	: ExprNode(ExprKind::RegIndex, selfAllocator, document), reg(reg), type(type) {
 }
-SLKC_API RegIndexExprNode::RegIndexExprNode(const RegIndexExprNode &rhs, peff::Alloc *allocator, bool &succeededOut)
-	: ExprNode(rhs, allocator) {
+SLKC_API RegIndexExprNode::RegIndexExprNode(const RegIndexExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut)
+	: ExprNode(rhs, allocator, context) {
 	reg = rhs.reg;
 
 	type = rhs.type;
@@ -820,9 +921,9 @@ SLKC_API RegIndexExprNode::RegIndexExprNode(const RegIndexExprNode &rhs, peff::A
 SLKC_API RegIndexExprNode::~RegIndexExprNode() {
 }
 
-SLKC_API AstNodePtr<AstNode> BadExprNode::doDuplicate(peff::Alloc *newAllocator) const {
+SLKC_API AstNodePtr<AstNode> BadExprNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
 	bool succeeded = false;
-	AstNodePtr<BadExprNode> duplicatedNode(makeAstNode<BadExprNode>(newAllocator, *this, newAllocator, succeeded));
+	AstNodePtr<BadExprNode> duplicatedNode(makeAstNode<BadExprNode>(newAllocator, *this, newAllocator, context, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -836,9 +937,13 @@ SLKC_API BadExprNode::BadExprNode(
 	: ExprNode(ExprKind::Bad, selfAllocator, document),
 	  incompleteExpr(incompleteExpr) {
 }
-SLKC_API BadExprNode::BadExprNode(const BadExprNode &rhs, peff::Alloc *allocator, bool &succeededOut)
-	: ExprNode(rhs, allocator) {
-	if (!(incompleteExpr = rhs.incompleteExpr->duplicate<ExprNode>(allocator))) {
+SLKC_API BadExprNode::BadExprNode(const BadExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut)
+	: ExprNode(rhs, allocator, context) {
+	if (!context.pushTask([this, &rhs, allocator, &context]() -> bool {
+			if (!(incompleteExpr = rhs.incompleteExpr->duplicate<ExprNode>(allocator)))
+				return false;
+			return true;
+		})) {
 		succeededOut = false;
 		return;
 	}

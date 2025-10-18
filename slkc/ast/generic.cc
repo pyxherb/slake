@@ -60,9 +60,9 @@ ParamTypeListGenericConstraintPtr slkc::duplicateParamTypeListGenericConstraint(
 	return ptr;
 }
 
-SLKC_API AstNodePtr<AstNode> GenericParamNode::doDuplicate(peff::Alloc *newAllocator) const {
+SLKC_API AstNodePtr<AstNode> GenericParamNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
 	bool succeeded = false;
-	AstNodePtr<GenericParamNode> duplicatedNode(makeAstNode<GenericParamNode>(newAllocator, *this, newAllocator, succeeded));
+	AstNodePtr<GenericParamNode> duplicatedNode(makeAstNode<GenericParamNode>(newAllocator, *this, newAllocator, context, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -76,7 +76,7 @@ SLKC_API GenericParamNode::GenericParamNode(
 	: MemberNode(AstNodeType::GenericParam, selfAllocator, document) {
 }
 
-SLKC_API GenericParamNode::GenericParamNode(const GenericParamNode &rhs, peff::Alloc *allocator, bool &succeededOut) : MemberNode(rhs, allocator, succeededOut) {
+SLKC_API GenericParamNode::GenericParamNode(const GenericParamNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut) : MemberNode(rhs, allocator, context, succeededOut) {
 	if (!succeededOut) {
 		return;
 	}

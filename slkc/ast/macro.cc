@@ -2,9 +2,9 @@
 
 using namespace slkc;
 
-SLKC_API AstNodePtr<AstNode> MacroNode::doDuplicate(peff::Alloc *newAllocator) const {
+SLKC_API AstNodePtr<AstNode> MacroNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
 	bool succeeded = false;
-	AstNodePtr<MacroNode> duplicatedNode(makeAstNode<MacroNode>(newAllocator, *this, newAllocator, succeeded));
+	AstNodePtr<MacroNode> duplicatedNode(makeAstNode<MacroNode>(newAllocator, *this, newAllocator, context, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -21,8 +21,8 @@ SLKC_API MacroNode::MacroNode(
 	  idxParamCommaTokens(selfAllocator) {
 }
 
-SLKC_API MacroNode::MacroNode(const MacroNode &rhs, peff::Alloc *allocator, bool &succeededOut)
-	: MemberNode(rhs, allocator, succeededOut),
+SLKC_API MacroNode::MacroNode(const MacroNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut)
+	: MemberNode(rhs, allocator, context, succeededOut),
 	  params(allocator),
 	  paramIndices(allocator),
 	  idxParamCommaTokens(allocator) {

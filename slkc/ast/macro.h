@@ -9,7 +9,7 @@ namespace slkc {
 
 	class MacroNode : public MemberNode {
 	protected:
-		SLKC_API virtual AstNodePtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
+		SLKC_API virtual AstNodePtr<AstNode> doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const override;
 
 	public:
 		peff::DynArray<AstNodePtr<VarNode>> params;
@@ -25,7 +25,7 @@ namespace slkc {
 		AstNodePtr<CodeBlockStmtNode> body;
 
 		SLKC_API MacroNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
-		SLKC_API MacroNode(const MacroNode &rhs, peff::Alloc *allocator, bool &succeededOut);
+		SLKC_API MacroNode(const MacroNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut);
 		SLKC_API virtual ~MacroNode();
 	};
 }

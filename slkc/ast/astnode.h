@@ -3,6 +3,7 @@
 
 #include "lexer.h"
 #include <peff/advutils/shared_ptr.h>
+#include <peff/base/deallocable.h>
 
 namespace slkc {
 	enum class AstNodeType : uint8_t {
@@ -61,15 +62,70 @@ namespace slkc {
 
 	typedef void (*AstNodeDestructor)(AstNode *astNode);
 
-	template<typename T>
+	template <typename T>
 	using AstNodePtr = peff::SharedPtr<T>;
+
+	struct BaseAstNodeDuplicationTask {
+		peff::RcObjectPtr<peff::Alloc> allocator;
+
+		SLAKE_FORCEINLINE BaseAstNodeDuplicationTask(peff::Alloc *allocator) : allocator(allocator) {}
+		SLAKE_API ~BaseAstNodeDuplicationTask();
+
+		virtual void dealloc() = 0;
+		[[nodiscard]] virtual bool perform() = 0;
+	};
+
+	template <typename T>
+	struct AstNodeDuplicationTask final : public BaseAstNodeDuplicationTask {
+		using ThisType = AstNodeDuplicationTask<T>;
+
+		T callable;
+
+		SLAKE_FORCEINLINE AstNodeDuplicationTask(peff::Alloc *allocator, T &&callable) : BaseAstNodeDuplicationTask(allocator), callable(std::move(callable)) {}
+		SLAKE_FORCEINLINE virtual ~AstNodeDuplicationTask() {}
+
+		SLAKE_FORCEINLINE static ThisType *alloc(peff::Alloc *allocator, T &&callable) noexcept {
+			return peff::allocAndConstruct<ThisType>(allocator, alignof(ThisType), allocator, std::move(callable));
+		}
+		SLAKE_FORCEINLINE virtual void dealloc() override {
+			peff::destroyAndRelease<ThisType>(allocator.get(), this, alignof(ThisType));
+		}
+		[[nodiscard]] virtual bool perform() override {
+			return callable();
+		}
+	};
+
+	struct DuplicationContext {
+		peff::RcObjectPtr<peff::Alloc> allocator;
+		peff::List<std::unique_ptr<BaseAstNodeDuplicationTask, peff::DeallocableDeleter<BaseAstNodeDuplicationTask>>> tasks;
+
+		PEFF_FORCEINLINE DuplicationContext(peff::Alloc *allocator) : allocator(allocator), tasks(allocator) {}
+
+		[[nodiscard]] PEFF_FORCEINLINE bool exec() noexcept {
+			while (tasks.size()) {
+				if (!tasks.front()->perform())
+					return false;
+				tasks.popFront();
+			}
+			return true;
+		}
+
+		template <typename T>
+		[[nodiscard]] bool pushTask(T &&callable) noexcept {
+			return tasks.pushBack(
+				std::unique_ptr<
+					BaseAstNodeDuplicationTask,
+					peff::DeallocableDeleter<BaseAstNodeDuplicationTask>>(
+					AstNodeDuplicationTask<T>::alloc(allocator.get(), std::move(callable))));
+		}
+	};
 
 	class AstNode : public peff::SharedFromThis<AstNode> {
 	private:
 		AstNodeType _astNodeType;
 
 	protected:
-		SLKC_API virtual AstNodePtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const;
+		SLKC_API virtual AstNodePtr<AstNode> doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const;
 
 	public:
 		peff::RcObjectPtr<peff::Alloc> selfAllocator;
@@ -80,12 +136,22 @@ namespace slkc {
 		AstNodeDestructor _destructor = nullptr;
 
 		SLKC_API AstNode(AstNodeType astNodeType, peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
-		SLKC_API AstNode(const AstNode &other, peff::Alloc *newAllocator);
+		SLKC_API AstNode(const AstNode &other, peff::Alloc *newAllocator, DuplicationContext &context);
 		SLKC_API virtual ~AstNode();
 
 		template <typename T>
 		SLAKE_FORCEINLINE peff::SharedPtr<T> duplicate(peff::Alloc *newAllocator) const noexcept {
-			return doDuplicate(newAllocator).template castTo<T>();
+			DuplicationContext context(newAllocator);
+
+			auto newNode = doDuplicate(newAllocator, context);
+
+			if (!newNode)
+				return {};
+
+			if (!context.exec())
+				return {};
+
+			return newNode.template castTo<T>();
 		}
 
 		SLAKE_FORCEINLINE AstNodeType getAstNodeType() const noexcept {

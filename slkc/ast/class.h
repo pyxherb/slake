@@ -7,7 +7,7 @@
 namespace slkc {
 	class ClassNode : public ModuleNode {
 	protected:
-		SLKC_API virtual AstNodePtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
+		SLKC_API virtual AstNodePtr<AstNode> doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const override;
 
 	public:
 		/// @brief Indicates if the cyclic inheritance is already checked.
@@ -25,7 +25,7 @@ namespace slkc {
 		bool isGenericParamsIndexed = false;
 
 		SLKC_API ClassNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
-		SLKC_API ClassNode(const ClassNode &rhs, peff::Alloc *allocator, bool &succeededOut);
+		SLKC_API ClassNode(const ClassNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut);
 		SLKC_API virtual ~ClassNode();
 
 		SLKC_API std::optional<CompilationError> isCyclicInherited(bool &whetherOut);
@@ -38,7 +38,7 @@ namespace slkc {
 
 	class InterfaceNode : public ModuleNode {
 	protected:
-		SLKC_API virtual AstNodePtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
+		SLKC_API virtual AstNodePtr<AstNode> doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const override;
 
 	public:
 		/// @brief Indicates if the cyclic inheritance is already checked.
@@ -57,7 +57,7 @@ namespace slkc {
 		bool isGenericParamsIndexed = false;
 
 		SLKC_API InterfaceNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
-		SLKC_API InterfaceNode(const InterfaceNode &rhs, peff::Alloc *allocator, bool &succeededOut);
+		SLKC_API InterfaceNode(const InterfaceNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut);
 		SLKC_API virtual ~InterfaceNode();
 
 		SLKC_API std::optional<CompilationError> isCyclicInherited(bool &whetherOut);
@@ -71,7 +71,7 @@ namespace slkc {
 
 	class StructNode : public ModuleNode {
 	protected:
-		SLKC_API virtual AstNodePtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
+		SLKC_API virtual AstNodePtr<AstNode> doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const override;
 
 	public:
 		/// @brief Indicates if the cyclic inheritance is already checked.
@@ -88,7 +88,7 @@ namespace slkc {
 		bool isGenericParamsIndexed = false;
 
 		SLKC_API StructNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
-		SLKC_API StructNode(const StructNode &rhs, peff::Alloc *allocator, bool &succeededOut);
+		SLKC_API StructNode(const StructNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut);
 		SLKC_API virtual ~StructNode();
 
 		SLKC_API std::optional<CompilationError> isRecursedType(bool &whetherOut);
@@ -101,13 +101,13 @@ namespace slkc {
 
 	class ThisNode : public MemberNode {
 	protected:
-		SLKC_API virtual AstNodePtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
+		SLKC_API virtual AstNodePtr<AstNode> doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const override;
 
 	public:
 		AstNodePtr<MemberNode> thisType;
 
 		SLKC_API ThisNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
-		SLKC_API ThisNode(const ThisNode &rhs, peff::Alloc *allocator, bool &succeededOut);
+		SLKC_API ThisNode(const ThisNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut);
 		SLKC_API virtual ~ThisNode();
 	};
 }

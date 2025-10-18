@@ -2,9 +2,9 @@
 
 using namespace slkc;
 
-SLKC_API AstNodePtr<AstNode> VarNode::doDuplicate(peff::Alloc *newAllocator) const {
+SLKC_API AstNodePtr<AstNode> VarNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
 	bool succeeded = false;
-	AstNodePtr<VarNode> duplicatedNode(makeAstNode<VarNode>(newAllocator, *this, newAllocator, succeeded));
+	AstNodePtr<VarNode> duplicatedNode(makeAstNode<VarNode>(newAllocator, *this, newAllocator, context, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -18,7 +18,7 @@ SLKC_API VarNode::VarNode(
 	: MemberNode(AstNodeType::Var, selfAllocator, document) {
 }
 
-SLKC_API VarNode::VarNode(const VarNode &rhs, peff::Alloc *allocator, bool &succeededOut) : MemberNode(rhs, allocator, succeededOut) {
+SLKC_API VarNode::VarNode(const VarNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut) : MemberNode(rhs, allocator, context, succeededOut) {
 	if (!succeededOut) {
 		return;
 	}

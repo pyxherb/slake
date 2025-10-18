@@ -2,9 +2,9 @@
 
 using namespace slkc;
 
-SLKC_API AstNodePtr<AstNode> ImportNode::doDuplicate(peff::Alloc *newAllocator) const {
+SLKC_API AstNodePtr<AstNode> ImportNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
 	bool succeeded = false;
-	AstNodePtr<ImportNode> duplicatedNode(makeAstNode<ImportNode>(newAllocator, *this, newAllocator, succeeded));
+	AstNodePtr<ImportNode> duplicatedNode(makeAstNode<ImportNode>(newAllocator, *this, newAllocator, context, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -18,7 +18,7 @@ SLKC_API ImportNode::ImportNode(
 	: MemberNode(AstNodeType::Import, selfAllocator, document) {
 }
 
-SLKC_API ImportNode::ImportNode(const ImportNode &rhs, peff::Alloc *allocator, bool &succeededOut) : MemberNode(rhs, allocator, succeededOut) {
+SLKC_API ImportNode::ImportNode(const ImportNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut) : MemberNode(rhs, allocator, context, succeededOut) {
 	if (!succeededOut) {
 		return;
 	}

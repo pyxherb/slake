@@ -15,7 +15,7 @@ namespace slkc {
 		peff::DynArray<AstNodePtr<AttributeNode>> attributes;
 
 		SLKC_API MemberNode(AstNodeType astNodeType, peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
-		SLKC_API MemberNode(const MemberNode &rhs, peff::Alloc *allocator, bool &succeededOut);
+		SLKC_API MemberNode(const MemberNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut);
 		SLKC_API virtual ~MemberNode();
 
 		SLAKE_FORCEINLINE void setParent(MemberNode *parent) noexcept {
@@ -30,7 +30,7 @@ namespace slkc {
 
 	class ModuleNode : public MemberNode {
 	protected:
-		SLKC_API virtual AstNodePtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
+		SLKC_API virtual AstNodePtr<AstNode> doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const override;
 
 	public:
 		peff::SharedPtr<Parser> parser;
@@ -42,7 +42,7 @@ namespace slkc {
 		bool isVarDefStmtsNormalized = false;
 
 		SLKC_API ModuleNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document, AstNodeType astNodeType = AstNodeType::Module);
-		SLKC_API ModuleNode(const ModuleNode &rhs, peff::Alloc *allocator, bool &succeededOut);
+		SLKC_API ModuleNode(const ModuleNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut);
 		SLKC_API virtual ~ModuleNode();
 
 		[[nodiscard]] SLKC_API size_t pushMember(AstNodePtr<MemberNode> memberNode) noexcept;

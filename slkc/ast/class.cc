@@ -2,9 +2,9 @@
 
 using namespace slkc;
 
-SLKC_API AstNodePtr<AstNode> ClassNode::doDuplicate(peff::Alloc *newAllocator) const {
+SLKC_API AstNodePtr<AstNode> ClassNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
 	bool succeeded = false;
-	AstNodePtr<ClassNode> duplicatedNode(makeAstNode<ClassNode>(newAllocator, *this, newAllocator, succeeded));
+	AstNodePtr<ClassNode> duplicatedNode(makeAstNode<ClassNode>(newAllocator, *this, newAllocator, context, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -22,12 +22,17 @@ SLKC_API ClassNode::ClassNode(
 	  implTypes(selfAllocator) {
 }
 
-SLKC_API ClassNode::ClassNode(const ClassNode &rhs, peff::Alloc *allocator, bool &succeededOut) : ModuleNode(rhs, allocator, succeededOut), genericParams(allocator), genericParamIndices(allocator), idxGenericParamCommaTokens(allocator), implTypes(allocator) {
+SLKC_API ClassNode::ClassNode(const ClassNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut) : ModuleNode(rhs, allocator, context, succeededOut), genericParams(allocator), genericParamIndices(allocator), idxGenericParamCommaTokens(allocator), implTypes(allocator) {
 	if (!succeededOut) {
 		return;
 	}
 
-	if (rhs.baseType && !(baseType = rhs.baseType->duplicate<TypeNameNode>(allocator))) {
+	if (!context.pushTask([this, &rhs, allocator, &context]() -> bool {
+			if (rhs.baseType && !(baseType = rhs.baseType->duplicate<TypeNameNode>(allocator))) {
+				return false;
+			}
+			return true;
+		})) {
 		succeededOut = false;
 		return;
 	}
@@ -38,7 +43,11 @@ SLKC_API ClassNode::ClassNode(const ClassNode &rhs, peff::Alloc *allocator, bool
 	}
 
 	for (size_t i = 0; i < implTypes.size(); ++i) {
-		if (!(implTypes.at(i) = rhs.implTypes.at(i)->duplicate<TypeNameNode>(allocator))) {
+		if (!context.pushTask([this, i, &rhs, allocator, &context]() -> bool {
+				if (!(implTypes.at(i) = rhs.implTypes.at(i)->duplicate<TypeNameNode>(allocator)))
+					return false;
+				return true;
+			})) {
 			succeededOut = false;
 			return;
 		}
@@ -50,16 +59,25 @@ SLKC_API ClassNode::ClassNode(const ClassNode &rhs, peff::Alloc *allocator, bool
 	}
 
 	for (size_t i = 0; i < genericParams.size(); ++i) {
-		if (!(genericParams.at(i) = rhs.genericParams.at(i)->duplicate<GenericParamNode>(allocator))) {
+		if (!context.pushTask([this, i, &rhs, allocator, &context]() -> bool {
+				if (!(genericParams.at(i) = rhs.genericParams.at(i)->duplicate<GenericParamNode>(allocator)))
+					return false;
+
+				genericParams.at(i)->setParent(this);
+				return true;
+			})) {
 			succeededOut = false;
 			return;
 		}
-
-		genericParams.at(i)->setParent(this);
 	}
 
 	for (const auto &[k, v] : rhs.genericParamIndices) {
-		if (!genericParamIndices.insert(genericParams.at(v)->name, +v)) {
+		if (!context.pushTask([this, v, &rhs, allocator, &context]() -> bool {
+				if (!genericParamIndices.insert(genericParams.at(v)->name, +v)) {
+					return false;
+				}
+				return true;
+			})) {
 			succeededOut = false;
 			return;
 		}
@@ -102,9 +120,9 @@ SLKC_API std::optional<CompilationError> ClassNode::updateCyclicInheritedStatus(
 	return {};
 }
 
-SLKC_API AstNodePtr<AstNode> InterfaceNode::doDuplicate(peff::Alloc *newAllocator) const {
+SLKC_API AstNodePtr<AstNode> InterfaceNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
 	bool succeeded = false;
-	AstNodePtr<InterfaceNode> duplicatedNode(makeAstNode<InterfaceNode>(newAllocator, *this, newAllocator, succeeded));
+	AstNodePtr<InterfaceNode> duplicatedNode(makeAstNode<InterfaceNode>(newAllocator, *this, newAllocator, context, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -122,7 +140,7 @@ SLKC_API InterfaceNode::InterfaceNode(
 	  implTypes(selfAllocator) {
 }
 
-SLKC_API InterfaceNode::InterfaceNode(const InterfaceNode &rhs, peff::Alloc *allocator, bool &succeededOut) : ModuleNode(rhs, allocator, succeededOut), genericParams(allocator), genericParamIndices(allocator), idxGenericParamCommaTokens(allocator), implTypes(allocator) {
+SLKC_API InterfaceNode::InterfaceNode(const InterfaceNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut) : ModuleNode(rhs, allocator, context, succeededOut), genericParams(allocator), genericParamIndices(allocator), idxGenericParamCommaTokens(allocator), implTypes(allocator) {
 	if (!succeededOut) {
 		return;
 	}
@@ -133,7 +151,11 @@ SLKC_API InterfaceNode::InterfaceNode(const InterfaceNode &rhs, peff::Alloc *all
 	}
 
 	for (size_t i = 0; i < implTypes.size(); ++i) {
-		if (!(implTypes.at(i) = rhs.implTypes.at(i)->duplicate<TypeNameNode>(allocator))) {
+		if (!context.pushTask([this, i, &rhs, allocator, &context]() -> bool {
+				if (!(implTypes.at(i) = rhs.implTypes.at(i)->duplicate<TypeNameNode>(allocator)))
+					return false;
+				return true;
+			})) {
 			succeededOut = false;
 			return;
 		}
@@ -145,16 +167,25 @@ SLKC_API InterfaceNode::InterfaceNode(const InterfaceNode &rhs, peff::Alloc *all
 	}
 
 	for (size_t i = 0; i < genericParams.size(); ++i) {
-		if (!(genericParams.at(i) = rhs.genericParams.at(i)->duplicate<GenericParamNode>(allocator))) {
+		if (!context.pushTask([this, i, &rhs, allocator, &context]() -> bool {
+				if (!(genericParams.at(i) = rhs.genericParams.at(i)->duplicate<GenericParamNode>(allocator)))
+					return false;
+
+				genericParams.at(i)->setParent(this);
+				return true;
+			})) {
 			succeededOut = false;
 			return;
 		}
-
-		genericParams.at(i)->setParent(this);
 	}
 
 	for (const auto &[k, v] : rhs.genericParamIndices) {
-		if (!genericParamIndices.insert(genericParams.at(v)->name, +v)) {
+		if (!context.pushTask([this, v, &rhs, allocator, &context]() -> bool {
+				if (!genericParamIndices.insert(genericParams.at(v)->name, +v)) {
+					return false;
+				}
+				return true;
+			})) {
 			succeededOut = false;
 			return;
 		}
@@ -213,9 +244,9 @@ SLKC_API std::optional<CompilationError> InterfaceNode::updateCyclicInheritedSta
 	return {};
 }
 
-SLKC_API AstNodePtr<AstNode> StructNode::doDuplicate(peff::Alloc *newAllocator) const {
+SLKC_API AstNodePtr<AstNode> StructNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
 	bool succeeded = false;
-	AstNodePtr<StructNode> duplicatedNode(makeAstNode<StructNode>(newAllocator, *this, newAllocator, succeeded));
+	AstNodePtr<StructNode> duplicatedNode(makeAstNode<StructNode>(newAllocator, *this, newAllocator, context, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -233,7 +264,7 @@ SLKC_API StructNode::StructNode(
 	  idxGenericParamCommaTokens(selfAllocator) {
 }
 
-SLKC_API StructNode::StructNode(const StructNode &rhs, peff::Alloc *allocator, bool &succeededOut) : ModuleNode(rhs, allocator, succeededOut), implTypes(allocator), genericParams(allocator), genericParamIndices(allocator), idxGenericParamCommaTokens(allocator) {
+SLKC_API StructNode::StructNode(const StructNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut) : ModuleNode(rhs, allocator, context, succeededOut), implTypes(allocator), genericParams(allocator), genericParamIndices(allocator), idxGenericParamCommaTokens(allocator) {
 	if (!succeededOut) {
 		return;
 	}
@@ -244,7 +275,11 @@ SLKC_API StructNode::StructNode(const StructNode &rhs, peff::Alloc *allocator, b
 	}
 
 	for (size_t i = 0; i < implTypes.size(); ++i) {
-		if (!(implTypes.at(i) = rhs.implTypes.at(i)->duplicate<TypeNameNode>(allocator))) {
+		if (!context.pushTask([this, i, &rhs, allocator, &context]() -> bool {
+				if (!(implTypes.at(i) = rhs.implTypes.at(i)->duplicate<TypeNameNode>(allocator)))
+					return false;
+				return true;
+			})) {
 			succeededOut = false;
 			return;
 		}
@@ -256,16 +291,25 @@ SLKC_API StructNode::StructNode(const StructNode &rhs, peff::Alloc *allocator, b
 	}
 
 	for (size_t i = 0; i < genericParams.size(); ++i) {
-		if (!(genericParams.at(i) = rhs.genericParams.at(i)->duplicate<GenericParamNode>(allocator))) {
+		if (!context.pushTask([this, i, &rhs, allocator, &context]() -> bool {
+				if (!(genericParams.at(i) = rhs.genericParams.at(i)->duplicate<GenericParamNode>(allocator)))
+					return false;
+
+				genericParams.at(i)->setParent(this);
+				return true;
+			})) {
 			succeededOut = false;
 			return;
 		}
-
-		genericParams.at(i)->setParent(this);
 	}
 
 	for (const auto &[k, v] : rhs.genericParamIndices) {
-		if (!genericParamIndices.insert(genericParams.at(v)->name, +v)) {
+		if (!context.pushTask([this, v, &rhs, allocator, &context]() -> bool {
+				if (!genericParamIndices.insert(genericParams.at(v)->name, +v)) {
+					return false;
+				}
+				return true;
+			})) {
 			succeededOut = false;
 			return;
 		}
@@ -312,9 +356,9 @@ SLKC_API std::optional<CompilationError> StructNode::updateRecursedTypeStatus() 
 	return {};
 }
 
-SLKC_API AstNodePtr<AstNode> ThisNode::doDuplicate(peff::Alloc *newAllocator) const {
+SLKC_API AstNodePtr<AstNode> ThisNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
 	bool succeeded = false;
-	AstNodePtr<ThisNode> duplicatedNode(makeAstNode<ThisNode>(newAllocator, *this, newAllocator, succeeded));
+	AstNodePtr<ThisNode> duplicatedNode(makeAstNode<ThisNode>(newAllocator, *this, newAllocator, context, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -328,7 +372,7 @@ SLKC_API ThisNode::ThisNode(
 	: MemberNode(AstNodeType::This, selfAllocator, document) {
 }
 
-SLKC_API ThisNode::ThisNode(const ThisNode &rhs, peff::Alloc *allocator, bool &succeededOut) : MemberNode(rhs, allocator, succeededOut) {
+SLKC_API ThisNode::ThisNode(const ThisNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut) : MemberNode(rhs, allocator, context, succeededOut) {
 	if (!succeededOut) {
 		return;
 	}

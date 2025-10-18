@@ -2,6 +2,29 @@
 
 using namespace slkc;
 
+void *ParseCoroutine::promise_type::operator new(size_t size, Parser *parser) noexcept {
+	char *p = (char *)parser->resourceAllocator->alloc(size + sizeof(PromiseState), sizeof(std::max_align_t));
+
+	if (!p)
+		return nullptr;
+
+	PromiseState state = {
+		parser
+	};
+
+	memcpy(p + size, &state, sizeof(state));
+
+	return p;
+}
+
+SLKC_API void ParseCoroutine::promise_type::operator delete(void *p, size_t size) noexcept {
+	PromiseState state;
+
+	memcpy(&state, (char *)p + size, sizeof(state));
+
+	state.parser->resourceAllocator->release(p, size, sizeof(std::max_align_t));
+}
+
 SLKC_API Parser::Parser(peff::SharedPtr<Document> document, TokenList &&tokenList, peff::Alloc *resourceAllocator) : document(document), tokenList(std::move(tokenList)), resourceAllocator(resourceAllocator), syntaxErrors(resourceAllocator) {
 }
 

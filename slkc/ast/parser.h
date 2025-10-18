@@ -12,6 +12,7 @@
 #include "import.h"
 #include "class.h"
 #include "document.h"
+#include <coroutine>
 
 namespace slkc {
 	enum class SyntaxErrorKind : int {
@@ -108,6 +109,70 @@ namespace slkc {
 
 		SLAKE_FORCEINLINE const NoMatchingTokensFoundErrorExData &getNoMatchingTokensFoundErrorExData() const {
 			return std::get<NoMatchingTokensFoundErrorExData>(exData);
+		}
+	};
+
+	class Parser;
+
+	struct ParseParams {
+	};
+
+	struct ParseCoroutine {
+		struct promise_type;
+
+		using Handle = std::coroutine_handle<promise_type>;
+
+		struct PromiseState {
+			Parser *parser;
+		};
+
+		struct promise_type {
+			std::optional<SyntaxError> syntaxError;
+
+			SLAKE_FORCEINLINE static ParseCoroutine get_return_object_on_allocation_failure() noexcept {
+				return ParseCoroutine({});
+			}
+
+			SLAKE_FORCEINLINE ParseCoroutine get_return_object() noexcept {
+				return ParseCoroutine(Handle::from_promise(*this));
+			}
+
+			SLAKE_FORCEINLINE std::suspend_always initial_suspend() noexcept {
+				return {};
+			}
+
+			SLAKE_FORCEINLINE std::suspend_always final_suspend() noexcept {
+				return {};
+			}
+
+			SLAKE_FORCEINLINE void return_value(std::optional<SyntaxError> &&value) noexcept {
+				syntaxError = std::move(value);
+			}
+
+			SLAKE_FORCEINLINE void unhandled_exception() { std::terminate(); }
+
+			SLKC_API static void *operator new(size_t size, Parser *parser) noexcept;
+
+			SLKC_API static void operator delete(void *p, size_t size) noexcept;
+		};
+
+		Handle coroutineHandle;
+
+		SLAKE_FORCEINLINE ParseCoroutine(Handle coroutineHandle) : coroutineHandle(coroutineHandle) {}
+		SLAKE_FORCEINLINE ~ParseCoroutine() {
+			if (coroutineHandle)
+				coroutineHandle.destroy();
+		}
+
+		SLAKE_FORCEINLINE std::optional<SyntaxError> operator()() {
+			if (!coroutineHandle.done()) {
+				coroutineHandle.resume();
+				if (!coroutineHandle)
+					std::terminate();
+				return std::move(coroutineHandle.promise().syntaxError);
+			}
+
+			std::terminate();
 		}
 	};
 

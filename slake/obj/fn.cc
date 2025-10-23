@@ -408,6 +408,13 @@ SLAKE_API int FnSignatureComparator::operator()(const FnSignature &lhs, const Fn
 		return 1;
 	}
 
+	if (lhs.overridenType < rhs.overridenType) {
+		return -1;
+	}
+	if (lhs.overridenType > rhs.overridenType) {
+		return 1;
+	}
+
 	return 0;
 }
 
@@ -426,7 +433,7 @@ SLAKE_API FnObject::FnObject(const FnObject &x, peff::Alloc *allocator, bool &su
 
 			ol->fnObject = this;
 
-			if (!overloadings.insert({ ol->paramTypes, ol->isWithVarArgs(), ol->genericParams.size() }, +ol)) {
+			if (!overloadings.insert({ ol->paramTypes, ol->isWithVarArgs(), ol->genericParams.size(), ol->overridenType }, +ol)) {
 				succeededOut = false;
 				return;
 			}
@@ -506,27 +513,4 @@ SLAKE_API InternalExceptionPointer FnObject::resortOverloadings() noexcept {
 	}
 
 	return {};
-}
-
-SLAKE_API FnOverloadingObject *slake::findOverloading(
-	FnObject *fnObject,
-	const peff::DynArray<TypeRef> &paramTypes,
-	size_t nGenericParams,
-	bool hasVarArg) {
-	if (auto it = fnObject->overloadings.find({ paramTypes, hasVarArg, nGenericParams }); it != fnObject->overloadings.end())
-		return it.value();
-	return nullptr;
-}
-
-SLAKE_API bool slake::isDuplicatedOverloading(
-	const FnOverloadingObject *overloading,
-	const peff::DynArray<TypeRef> &paramTypes,
-	size_t nGenericParams,
-	bool hasVarArg) {
-	FnSignatureComparator cmp;
-
-	return !cmp(
-		{ overloading->paramTypes, overloading->isWithVarArgs(),
-			overloading->genericParams.size() },
-		{ paramTypes, hasVarArg, nGenericParams });
 }

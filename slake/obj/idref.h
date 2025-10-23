@@ -46,6 +46,7 @@ namespace slake {
 		peff::DynArray<IdRefEntry> entries;
 		peff::Option<peff::DynArray<TypeRef>> paramTypes;
 		bool hasVarArgs;
+		TypeRef overridenType;
 
 		SLAKE_API IdRefObject(Runtime *rt, peff::Alloc *selfAllocator);
 		SLAKE_API IdRefObject(const IdRefObject &x, peff::Alloc *allocator, bool &succeededOut);

@@ -84,6 +84,8 @@ namespace slake {
 		peff::DynArray<TypeRef> paramTypes;
 		TypeRef returnType;
 
+		TypeRef overridenType;
+
 		OverloadingFlags overloadingFlags = 0;
 
 		SLAKE_API FnOverloadingObject(
@@ -240,6 +242,9 @@ namespace slake {
 		const peff::DynArray<TypeRef> &paramTypes;
 		bool hasVarArg;
 		size_t nGenericParams;
+		TypeRef overridenType;
+
+		SLAKE_FORCEINLINE FnSignature(const peff::DynArray<TypeRef> &paramTypes, bool hasVarArg, size_t nGenericParams, const TypeRef &overridenType) : paramTypes(paramTypes), hasVarArg(hasVarArg), nGenericParams(nGenericParams), overridenType(overridenType) {}
 	};
 
 	struct FnSignatureComparator {
@@ -274,17 +279,6 @@ namespace slake {
 
 		SLAKE_API InternalExceptionPointer resortOverloadings() noexcept;
 	};
-
-	SLAKE_API FnOverloadingObject *findOverloading(
-		FnObject *fnObject,
-		const peff::DynArray<TypeRef> &paramTypes,
-		size_t nGenericParams,
-		bool hasVarArg);
-	SLAKE_API bool isDuplicatedOverloading(
-		const FnOverloadingObject *overloading,
-		const peff::DynArray<TypeRef> &paramTypes,
-		size_t nGenericParams,
-		bool hasVarArg);
 }
 
 #endif

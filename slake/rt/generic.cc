@@ -586,7 +586,8 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(MemberObjec
 								if (!value->overloadings.insert(
 										{ matchedOverloading->paramTypes,
 											matchedOverloading->isWithVarArgs(),
-											matchedOverloading->genericParams.size() },
+											matchedOverloading->genericParams.size(),
+											matchedOverloading->overridenType },
 										+matchedOverloading))
 									return OutOfMemoryError::alloc();
 							}

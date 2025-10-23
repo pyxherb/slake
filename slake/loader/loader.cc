@@ -746,6 +746,9 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(LoaderContext &cont
 					SLAKE_RETURN_IF_EXCEPT(loadType(context, runtime, reader, fnOverloadingObject.get(), fnOverloadingObject->paramTypes.at(k)));
 				}
 
+				// stub
+				fnOverloadingObject->overridenType = TypeId::Void;
+
 				for (size_t k = 0; k < fnd.lenBody; ++k) {
 					Opcode opcode;
 
@@ -777,9 +780,10 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(LoaderContext &cont
 				}
 
 				if (!fnObject->overloadings.insert(
-					{fnOverloadingObject->paramTypes,
-					(bool)(fnOverloadingObject->overloadingFlags & OL_VARG),
-							fnOverloadingObject->genericParams.size() },
+						FnSignature{ fnOverloadingObject->paramTypes,
+							fnOverloadingObject->isWithVarArgs(),
+							fnOverloadingObject->genericParams.size(),
+							fnOverloadingObject->overridenType },
 						fnOverloadingObject.get())) {
 					return OutOfMemoryError::alloc();
 				}

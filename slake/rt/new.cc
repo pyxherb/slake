@@ -35,7 +35,8 @@ SLAKE_API InternalExceptionPointer Runtime::initMethodTableForClass(ClassObject 
 
 					for (auto j : fn->overloadings) {
 						bool result;
-						if (isDuplicatedOverloading(j.second, destructorParamTypes, 0, false)) {
+						static FnSignatureComparator cmp;
+						if (cmp(FnSignature(j.second->paramTypes, j.second->isWithVarArgs(), j.second->genericParams.size(), j.second->overridenType), FnSignature(destructorParamTypes, false, 0, TypeId::Void))) {
 							if (!methodTable->destructors.pushFront(+j.second)) {
 								return OutOfMemoryError::alloc();
 							}

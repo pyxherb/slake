@@ -80,7 +80,10 @@ SLAKE_API Reference ModuleObject::getMember(const std::string_view &name) const 
 }
 
 SLAKE_API bool ModuleObject::addMember(MemberObject *member) {
-	return members.insert(member->name, +member);
+	if (!members.insert(member->name, +member))
+		return false;
+	member->setParent(this);
+	return true;
 }
 
 SLAKE_API void ModuleObject::removeMember(const std::string_view &name) {

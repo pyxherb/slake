@@ -91,7 +91,10 @@ SLKC_API std::optional<CompilationError> slkc::_compileOrCastOperand(
 	return CompilationError(operand->tokenRange, std::move(exData));
 }
 
-static std::optional<CompilationError> _loadTheRestOfIdRef(CompileEnvironment *compileEnv, CompilationContext *compilationContext, uint32_t resultRegOut, CompileExprResult &resultOut, IdRef *idRef, ResolvedIdRefPartList &parts, uint32_t initialMemberReg, size_t curIdx, AstNodePtr<FnTypeNameNode> extraFnArgs) {
+static std::optional<CompilationError> _loadTheRestOfIdRef(CompileEnvironment *compileEnv, CompilationContext *compilationContext, ExprEvalPurpose evalPurpose, uint32_t resultRegOut, CompileExprResult &resultOut, IdRef *idRef, ResolvedIdRefPartList &parts, uint32_t initialMemberReg, size_t curIdx, AstNodePtr<FnTypeNameNode> extraFnArgs);
+static std::optional<CompilationError> _determineNodeType(CompileEnvironment *compileEnv, AstNodePtr<MemberNode> node, AstNodePtr<TypeNameNode> &typeNameOut);
+
+static std::optional<CompilationError> _loadTheRestOfIdRef(CompileEnvironment *compileEnv, CompilationContext *compilationContext, ExprEvalPurpose evalPurpose, uint32_t resultRegOut, CompileExprResult &resultOut, IdRef *idRef, ResolvedIdRefPartList &parts, uint32_t initialMemberReg, size_t curIdx, AstNodePtr<FnTypeNameNode> extraFnArgs) {
 	uint32_t idxReg;
 
 	if (initialMemberReg == UINT32_MAX) {
@@ -110,7 +113,23 @@ static std::optional<CompilationError> _loadTheRestOfIdRef(CompileEnvironment *c
 				for (size_t i = curIdx; i < parts.size() - 1; ++i) {
 					ResolvedIdRefPart &part = parts.at(i);
 
-					SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, compilationContext, idRef->entries.data() + curIdx, part.nEntries, nullptr, 0, false, idRefObject));
+					if ((i + 1 == parts.size() - 1) &&
+						(evalPurpose == ExprEvalPurpose::Call) &&
+						(!part.isStatic) &&
+						(part.member->getAstNodeType() == AstNodeType::Interface)) {
+						// TODO: Add explicit override selection.
+						AstNodePtr<CustomTypeNameNode> overridenType;
+
+						if (!(overridenType = makeAstNode<CustomTypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document)))
+							return genOutOfMemoryCompError();
+
+						SLKC_RETURN_IF_COMP_ERROR(getFullIdRef(compileEnv->allocator.get(), part.member, overridenType->idRefPtr));
+
+						AstNodePtr<TypeNameNode> ot = overridenType.castTo<TypeNameNode>();
+
+						SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, compilationContext, idRef->entries.data() + curIdx, part.nEntries, nullptr, 0, false, ot, idRefObject));
+					} else
+						SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, compilationContext, idRef->entries.data() + curIdx, part.nEntries, nullptr, 0, false, {}, idRefObject));
 
 					if (part.isStatic) {
 						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::LOAD, idxReg, { slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));
@@ -128,7 +147,7 @@ static std::optional<CompilationError> _loadTheRestOfIdRef(CompileEnvironment *c
 
 				{
 					ResolvedIdRefPart &part = parts.back();
-					SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, compilationContext, idRef->entries.data() + curIdx, part.nEntries, nullptr, 0, false, idRefObject));
+					SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, compilationContext, idRef->entries.data() + curIdx, part.nEntries, nullptr, 0, false, {}, idRefObject));
 
 					if (extraFnArgs) {
 						idRefObject->paramTypes = peff::DynArray<slake::TypeRef>(compileEnv->runtime->getCurGenAlloc());
@@ -159,7 +178,7 @@ static std::optional<CompilationError> _loadTheRestOfIdRef(CompileEnvironment *c
 				for (size_t i = curIdx; i < parts.size() - 1; ++i) {
 					ResolvedIdRefPart &part = parts.at(i);
 
-					SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, compilationContext, idRef->entries.data() + curIdx, part.nEntries, nullptr, 0, false, idRefObject));
+					SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, compilationContext, idRef->entries.data() + curIdx, part.nEntries, nullptr, 0, false, {}, idRefObject));
 
 					if (part.isStatic) {
 						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::LOAD, idxReg, { slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));
@@ -184,7 +203,7 @@ static std::optional<CompilationError> _loadTheRestOfIdRef(CompileEnvironment *c
 
 				SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(idxReg));
 
-				SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, compilationContext, fullIdRef->entries.data(), fullIdRef->entries.size(), nullptr, 0, false, idRefObject));
+				SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, compilationContext, fullIdRef->entries.data(), fullIdRef->entries.size(), nullptr, 0, false, {}, idRefObject));
 
 				if (extraFnArgs) {
 					idRefObject->paramTypes = peff::DynArray<slake::TypeRef>(compileEnv->runtime->getCurGenAlloc());
@@ -208,7 +227,7 @@ static std::optional<CompilationError> _loadTheRestOfIdRef(CompileEnvironment *c
 			SLKC_RETURN_IF_COMP_ERROR(getFullIdRef(compileEnv->allocator.get(), fn.template castTo<MemberNode>(), fullIdRef));
 
 			slake::HostObjectRef<slake::IdRefObject> idRefObject;
-			SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, compilationContext, fullIdRef->entries.data(), fullIdRef->entries.size(), nullptr, 0, false, idRefObject));
+			SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, compilationContext, fullIdRef->entries.data(), fullIdRef->entries.size(), nullptr, 0, false, {}, idRefObject));
 
 			if (extraFnArgs) {
 				idRefObject->paramTypes = peff::DynArray<slake::TypeRef>(compileEnv->runtime->getCurGenAlloc());
@@ -233,7 +252,7 @@ static std::optional<CompilationError> _loadTheRestOfIdRef(CompileEnvironment *c
 			for (size_t i = curIdx; i < parts.size(); ++i) {
 				ResolvedIdRefPart &part = parts.at(i);
 
-				SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, compilationContext, idRef->entries.data() + curIdx, part.nEntries, nullptr, 0, false, idRefObject));
+				SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, compilationContext, idRef->entries.data() + curIdx, part.nEntries, nullptr, 0, false, {}, idRefObject));
 
 				if (part.isStatic) {
 					SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::LOAD, idxReg, { slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));
@@ -478,9 +497,9 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 
 				parts.back().member = finalMember;
 
-				SLKC_RETURN_IF_COMP_ERROR(_loadTheRestOfIdRef(compileEnv, compilationContext, finalRegister, resultOut, e->idRefPtr.get(), parts, headRegister, 0, fnType));
+				SLKC_RETURN_IF_COMP_ERROR(_loadTheRestOfIdRef(compileEnv, compilationContext, evalPurpose, finalRegister, resultOut, e->idRefPtr.get(), parts, headRegister, 0, fnType));
 			} else {
-				SLKC_RETURN_IF_COMP_ERROR(_loadTheRestOfIdRef(compileEnv, compilationContext, finalRegister, resultOut, e->idRefPtr.get(), parts, headRegister, 0, {}));
+				SLKC_RETURN_IF_COMP_ERROR(_loadTheRestOfIdRef(compileEnv, compilationContext, evalPurpose, finalRegister, resultOut, e->idRefPtr.get(), parts, headRegister, 0, {}));
 			}
 
 			SLKC_RETURN_IF_COMP_ERROR(_determineNodeType(compileEnv, finalMember, resultOut.evaluatedType));
@@ -728,9 +747,9 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 
 						parts.back().member = finalMember;
 
-						SLKC_RETURN_IF_COMP_ERROR(_loadTheRestOfIdRef(compileEnv, compilationContext, finalRegister, resultOut, e->idRefPtr.get(), parts, initialMemberReg, 1, fnType));
+						SLKC_RETURN_IF_COMP_ERROR(_loadTheRestOfIdRef(compileEnv, compilationContext, evalPurpose, finalRegister, resultOut, e->idRefPtr.get(), parts, initialMemberReg, 1, fnType));
 					} else {
-						SLKC_RETURN_IF_COMP_ERROR(_loadTheRestOfIdRef(compileEnv, compilationContext, finalRegister, resultOut, e->idRefPtr.get(), parts, initialMemberReg, 1, {}));
+						SLKC_RETURN_IF_COMP_ERROR(_loadTheRestOfIdRef(compileEnv, compilationContext, evalPurpose, finalRegister, resultOut, e->idRefPtr.get(), parts, initialMemberReg, 1, {}));
 					}
 				} else {
 					finalMember = initialMember;
@@ -771,9 +790,9 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 
 					parts.back().member = finalMember;
 
-					SLKC_RETURN_IF_COMP_ERROR(_loadTheRestOfIdRef(compileEnv, compilationContext, finalRegister, resultOut, e->idRefPtr.get(), parts, UINT32_MAX, 0, fnType));
+					SLKC_RETURN_IF_COMP_ERROR(_loadTheRestOfIdRef(compileEnv, compilationContext, evalPurpose, finalRegister, resultOut, e->idRefPtr.get(), parts, UINT32_MAX, 0, fnType));
 				} else {
-					SLKC_RETURN_IF_COMP_ERROR(_loadTheRestOfIdRef(compileEnv, compilationContext, finalRegister, resultOut, e->idRefPtr.get(), parts, UINT32_MAX, 0, {}));
+					SLKC_RETURN_IF_COMP_ERROR(_loadTheRestOfIdRef(compileEnv, compilationContext, evalPurpose, finalRegister, resultOut, e->idRefPtr.get(), parts, UINT32_MAX, 0, {}));
 				}
 			}
 
@@ -1161,7 +1180,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 						return CompilationError(e->args.at(i)->tokenRange, CompilationErrorKind::ErrorDeducingArgType);
 					}
 
-					//SLKC_RETURN_IF_COMP_ERROR(simplifyParamListTypeNameTree(argTypes.at(j), compileEnv->allocator.get(), argTypes.at(j)));
+					// SLKC_RETURN_IF_COMP_ERROR(simplifyParamListTypeNameTree(argTypes.at(j), compileEnv->allocator.get(), argTypes.at(j)));
 
 					if (argTypes.at(j)->typeNameKind == TypeNameKind::UnpackedArgs) {
 						AstNodePtr<UnpackedArgsTypeNameNode> t = argTypes.at(i).template castTo<UnpackedArgsTypeNameNode>();
@@ -1204,7 +1223,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 			auto tn = fnType.template castTo<FnTypeNameNode>();
 
 			for (size_t i = 0; i < e->args.size(); ++i) {
-			 	CompileExprResult argResult(compileEnv->allocator.get());
+				CompileExprResult argResult(compileEnv->allocator.get());
 
 				uint32_t reg;
 
@@ -1221,7 +1240,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 
 				AstNodePtr<TypeNameNode> argType = argResult.evaluatedType;
 
-				//SLKC_RETURN_IF_COMP_ERROR(simplifyParamListTypeNameTree(argResult.evaluatedType, compileEnv->allocator.get(), argType));
+				// SLKC_RETURN_IF_COMP_ERROR(simplifyParamListTypeNameTree(argResult.evaluatedType, compileEnv->allocator.get(), argType));
 
 				switch (argType->typeNameKind) {
 					case TypeNameKind::UnpackedArgs:
@@ -1431,7 +1450,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 					IdRefPtr fullIdRef;
 					SLKC_RETURN_IF_COMP_ERROR(getFullIdRef(compileEnv->allocator.get(), constructor.template castTo<MemberNode>(), fullIdRef));
 
-					SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, compilationContext, fullIdRef->entries.data(), fullIdRef->entries.size(), nullptr, 0, false, idRefObject));
+					SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, compilationContext, fullIdRef->entries.data(), fullIdRef->entries.size(), nullptr, 0, false, {}, idRefObject));
 
 					idRefObject->paramTypes = peff::DynArray<slake::TypeRef>(compileEnv->runtime->getCurGenAlloc());
 

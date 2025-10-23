@@ -525,6 +525,7 @@ namespace slkc {
 		AstNodePtr<TypeNameNode> *paramTypes,
 		size_t nParams,
 		bool hasVarArgs,
+		AstNodePtr<TypeNameNode> overridenType,
 		slake::HostObjectRef<slake::IdRefObject> &idRefOut);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> compileValueExpr(
 		CompileEnvironment *compileEnv,
@@ -708,6 +709,9 @@ namespace slkc {
 		SLKC_API virtual std::optional<CompilationError> loadModule(CompileEnvironment *compileEnv, IdRef *moduleName) override;
 		SLKC_API bool registerImportPath(peff::String &&path);
 	};
+
+	extern size_t szDefaultParseThreadStack;
+	extern size_t szDefaultCompileThreadStack;
 }
 
 #endif

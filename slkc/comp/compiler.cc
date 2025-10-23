@@ -2,6 +2,9 @@
 
 using namespace slkc;
 
+size_t slkc::szDefaultParseThreadStack = 1024 * 1024 * 2;
+size_t slkc::szDefaultCompileThreadStack = 1024 * 1024 * 16;
+
 SLKC_API CompilationContext::CompilationContext(CompilationContext *parent) : parent(parent) {
 }
 SLKC_API CompilationContext::~CompilationContext() {

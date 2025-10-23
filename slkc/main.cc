@@ -146,6 +146,144 @@ const SingleArgOptionMap g_singleArgOptions = {
 
 		 return 0;
 	 } },
+	{ "-CTS", [](const OptionMatchContext &matchContext, const char *option, const char *arg) -> int {
+		 MatchUserData *userData = ((MatchUserData *)matchContext.userData);
+
+		 std::string_view s(arg);
+
+		 size_t size = 0;
+		 bool encounteredUnit = false;
+
+		 for (size_t i = 0; i < s.size(); ++i) {
+			 switch (s[i]) {
+				 case '0':
+				 case '1':
+				 case '2':
+				 case '3':
+				 case '4':
+				 case '5':
+				 case '6':
+				 case '7':
+				 case '8':
+				 case '9':
+					 if (encounteredUnit) {
+						 printError("Invalid stack size");
+						 return EINVAL;
+					 }
+					 if (size >= SIZE_MAX / 10) {
+						 printError("Stack size exceeds hardware memory limit");
+						 return EINVAL;
+					 }
+					 size += s[i] - '0';
+					 break;
+				 case 'K':
+					 if (size >= SIZE_MAX / 1024) {
+						 printError("Stack size exceeds hardware memory limit");
+						 return EINVAL;
+					 }
+					 size *= 1024;
+					 encounteredUnit = true;
+					 break;
+				 case 'M':
+					 if (size >= SIZE_MAX / 1024 / 1024) {
+						 printError("Stack size exceeds hardware memory limit");
+						 return EINVAL;
+					 }
+					 size *= 1024 * 1024;
+					 encounteredUnit = true;
+					 break;
+				 case 'G':
+					 if (size >= SIZE_MAX / 1024 / 1024 / 1024) {
+						 printError("Stack size exceeds hardware memory limit");
+						 return EINVAL;
+					 }
+					 size *= 1024 * 1024 * 1024;
+					 encounteredUnit = true;
+					 break;
+				 default:
+					 printError("Invalid stack size");
+					 return EINVAL;
+			 }
+		 }
+
+		 if (!size) {
+			 printError("Invalid stack size");
+			 return EINVAL;
+		 }
+
+		 slkc::szDefaultCompileThreadStack = size;
+
+		 return 0;
+	 } },
+	{ "-PTS", [](const OptionMatchContext &matchContext, const char *option, const char *arg) -> int {
+		 MatchUserData *userData = ((MatchUserData *)matchContext.userData);
+
+		 std::string_view s(arg);
+
+		 size_t size = 0;
+		 bool encounteredUnit = false;
+
+		 for (size_t i = 0; i < s.size(); ++i) {
+			 switch (s[i]) {
+				 case '0':
+				 case '1':
+				 case '2':
+				 case '3':
+				 case '4':
+				 case '5':
+				 case '6':
+				 case '7':
+				 case '8':
+				 case '9':
+					 if (encounteredUnit) {
+						 printError("Invalid stack size");
+						 return EINVAL;
+					 }
+					 if (size >= SIZE_MAX / 10) {
+						 printError("Stack size exceeds hardware memory limit");
+						 return EINVAL;
+					 }
+					 size += s[i] - '0';
+					 break;
+				 case 'K':
+					 if (size >= SIZE_MAX / 1024) {
+						 printError("Stack size exceeds hardware memory limit");
+						 return EINVAL;
+					 }
+					 size *= 1024;
+					 encounteredUnit = true;
+					 break;
+				 case 'M':
+					 if (size >= SIZE_MAX / 1024 / 1024) {
+						 printError("Stack size exceeds hardware memory limit");
+						 return EINVAL;
+					 }
+					 size *= 1024 * 1024;
+					 encounteredUnit = true;
+					 break;
+				 case 'G':
+					 if (size >= SIZE_MAX / 1024 / 1024 / 1024) {
+						 printError("Stack size exceeds hardware memory limit");
+						 return EINVAL;
+					 }
+					 size *= 1024 * 1024 * 1024;
+					 encounteredUnit = true;
+					 break;
+				 default:
+					 printError("Invalid stack size");
+					 return EINVAL;
+			 }
+		 }
+
+		 if (!size) {
+			 printError("Invalid stack size");
+			 return EINVAL;
+		 }
+
+		 slkc::szDefaultParseThreadStack = size;
+
+		 return 0;
+	 } },
 	{ "-o", [](const OptionMatchContext &matchContext, const char *option, const char *arg) -> int {
 		 g_outputFileName = arg;
 

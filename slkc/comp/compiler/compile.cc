@@ -79,7 +79,7 @@ SLKC_API std::optional<CompilationError> slkc::compileTypeName(
 
 					slake::HostObjectRef<slake::IdRefObject> obj;
 
-					SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, compilationContext, fullName->entries.data(), fullName->entries.size(), nullptr, 0, false, obj));
+					SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, compilationContext, fullName->entries.data(), fullName->entries.size(), nullptr, 0, false, {}, obj));
 
 					if (!(compileEnv->hostRefHolder.addObject(obj.get()))) {
 						return genOutOfMemoryCompError();
@@ -103,7 +103,7 @@ SLKC_API std::optional<CompilationError> slkc::compileTypeName(
 
 					slake::HostObjectRef<slake::IdRefObject> obj;
 
-					SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, compilationContext, fullName->entries.data(), fullName->entries.size(), nullptr, 0, false, obj));
+					SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, compilationContext, fullName->entries.data(), fullName->entries.size(), nullptr, 0, false, {}, obj));
 
 					if (!(compileEnv->hostRefHolder.addObject(obj.get()))) {
 						return genOutOfMemoryCompError();
@@ -383,6 +383,7 @@ SLKC_API std::optional<CompilationError> slkc::compileIdRef(
 	AstNodePtr<TypeNameNode> *paramTypes,
 	size_t nParams,
 	bool hasVarArgs,
+	AstNodePtr<TypeNameNode> overridenType,
 	slake::HostObjectRef<slake::IdRefObject> &idRefOut) {
 	slake::HostObjectRef<slake::IdRefObject> id;
 	assert(nEntries);
@@ -452,6 +453,7 @@ SLKC_API std::optional<CompilationError> slkc::compileValueExpr(
 					nullptr,
 					0,
 					false,
+					{},
 					id));
 
 			if (!compileEnv->hostRefHolder.addObject(id.get())) {
@@ -635,7 +637,7 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 			SLKC_RETURN_IF_COMP_ERROR(j->loadModule(compileEnv, i->idRef.get()));
 		}
 
-		SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, &compilationContext, i->idRef->entries.data(), i->idRef->entries.size(), nullptr, 0, false, id));
+		SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, &compilationContext, i->idRef->entries.data(), i->idRef->entries.size(), nullptr, 0, false, {}, id));
 
 		if (!modOut->unnamedImports.pushBack(id.get())) {
 			return genOutOfRuntimeMemoryCompError();
@@ -656,7 +658,7 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 
 			slake::HostObjectRef<slake::IdRefObject> id;
 
-			SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, &compilationContext, importNode->idRef->entries.data(), importNode->idRef->entries.size(), nullptr, 0, false, id));
+			SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, &compilationContext, importNode->idRef->entries.data(), importNode->idRef->entries.size(), nullptr, 0, false, {}, id));
 
 			if (!modOut->unnamedImports.pushBack(id.get())) {
 				return genOutOfMemoryCompError();
@@ -1146,7 +1148,7 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 						fnObject->nRegisters = compContext.nTotalRegs;
 					}
 
-					if (!slotObject->overloadings.insert({ fnObject->paramTypes, (bool)(fnObject->overloadingFlags & slake::OL_VARG), fnObject->genericParams.size() }, fnObject.get())) {
+					if (!slotObject->overloadings.insert(slake::FnSignature{ fnObject->paramTypes, fnObject->isWithVarArgs(), fnObject->genericParams.size(), slake::TypeId::Void }, fnObject.get())) {
 						return genOutOfRuntimeMemoryCompError();
 					}
 				}

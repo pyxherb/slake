@@ -10,8 +10,8 @@ SLKC_API CompilationContext::CompilationContext(CompilationContext *parent) : pa
 SLKC_API CompilationContext::~CompilationContext() {
 }
 
-SLKC_API AstNodePtr<VarNode> CompilationContext::lookupLocalVar(const std::string_view &name) {
-	for (CompilationContext *i = this; i; i = i->parent) {
+SLKC_API AstNodePtr<VarNode> CompilationContext::lookupLocalVar(const std::string_view &name) const {
+	for (const CompilationContext *i = this; i; i = i->parent) {
 		AstNodePtr<VarNode> varNode = i->getLocalVar(name);
 
 		if (varNode) {
@@ -53,7 +53,7 @@ SLKC_API std::optional<CompilationError> NormalCompilationContext::setLabelName(
 	}
 	return {};
 }
-SLKC_API uint32_t NormalCompilationContext::getLabelOffset(uint32_t labelId) {
+SLKC_API uint32_t NormalCompilationContext::getLabelOffset(uint32_t labelId) const {
 	return labels.at(labelId)->offset;
 }
 
@@ -129,18 +129,18 @@ SLKC_API std::optional<CompilationError> NormalCompilationContext::allocLocalVar
 
 	return {};
 }
-SLKC_API AstNodePtr<VarNode> NormalCompilationContext::getLocalVarInCurLevel(const std::string_view &name) {
+SLKC_API AstNodePtr<VarNode> NormalCompilationContext::getLocalVarInCurLevel(const std::string_view &name) const {
 	if (auto it = curBlockLayer.localVars.find(name); it != curBlockLayer.localVars.end()) {
 		return it.value();
 	}
 
 	return {};
 }
-SLKC_API AstNodePtr<VarNode> NormalCompilationContext::getLocalVar(const std::string_view &name) {
+SLKC_API AstNodePtr<VarNode> NormalCompilationContext::getLocalVar(const std::string_view &name) const {
 	if (auto v = getLocalVarInCurLevel(name); v)
 		return v;
 
-	for (auto i = savedBlockLayers.beginReversed(); i != savedBlockLayers.endReversed(); ++i) {
+	for (auto i = savedBlockLayers.beginConstReversed(); i != savedBlockLayers.endConstReversed(); ++i) {
 		if (auto it = i->localVars.find(name); it != i->localVars.end()) {
 			return it.value();
 		}
@@ -158,18 +158,18 @@ SLKC_API void NormalCompilationContext::setContinueLabel(uint32_t labelId, uint3
 	continueStmtBlockLevel = blockLevel;
 }
 
-SLKC_API uint32_t NormalCompilationContext::getBreakLabel() {
+SLKC_API uint32_t NormalCompilationContext::getBreakLabel() const {
 	return breakStmtJumpDestLabel;
 }
-SLKC_API uint32_t NormalCompilationContext::getContinueLabel() {
+SLKC_API uint32_t NormalCompilationContext::getContinueLabel() const {
 	return continueStmtJumpDestLabel;
 }
 
-SLKC_API uint32_t NormalCompilationContext::getBreakLabelBlockLevel() {
+SLKC_API uint32_t NormalCompilationContext::getBreakLabelBlockLevel() const {
 	return breakStmtBlockLevel;
 }
 
-SLKC_API uint32_t NormalCompilationContext::getContinueLabelBlockLevel() {
+SLKC_API uint32_t NormalCompilationContext::getContinueLabelBlockLevel() const {
 	return continueStmtBlockLevel;
 }
 

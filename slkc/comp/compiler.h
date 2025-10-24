@@ -41,7 +41,7 @@ namespace slkc {
 		[[nodiscard]] virtual std::optional<CompilationError> allocLabel(uint32_t &labelIdOut) = 0;
 		virtual void setLabelOffset(uint32_t labelId, uint32_t offset) const = 0;
 		[[nodiscard]] virtual std::optional<CompilationError> setLabelName(uint32_t labelId, const std::string_view &name) = 0;
-		virtual uint32_t getLabelOffset(uint32_t labelId) = 0;
+		virtual uint32_t getLabelOffset(uint32_t labelId) const = 0;
 
 		[[nodiscard]] virtual std::optional<CompilationError> allocReg(uint32_t &regOut) = 0;
 
@@ -49,17 +49,17 @@ namespace slkc {
 		[[nodiscard]] virtual std::optional<CompilationError> emitIns(slake::Opcode opcode, uint32_t outputRegIndex, slake::Value *operands, size_t nOperands) = 0;
 
 		[[nodiscard]] virtual std::optional<CompilationError> allocLocalVar(const TokenRange &tokenRange, const std::string_view &name, uint32_t reg, AstNodePtr<TypeNameNode> type, AstNodePtr<VarNode> &localVarOut) = 0;
-		[[nodiscard]] virtual AstNodePtr<VarNode> getLocalVarInCurLevel(const std::string_view &name) = 0;
-		virtual AstNodePtr<VarNode> getLocalVar(const std::string_view &name) = 0;
+		[[nodiscard]] virtual AstNodePtr<VarNode> getLocalVarInCurLevel(const std::string_view &name) const = 0;
+		virtual AstNodePtr<VarNode> getLocalVar(const std::string_view &name) const = 0;
 
 		virtual void setBreakLabel(uint32_t labelId, uint32_t blockLevel) = 0;
 		virtual void setContinueLabel(uint32_t labelId, uint32_t blockLevel) = 0;
 
-		virtual uint32_t getBreakLabel() = 0;
-		virtual uint32_t getContinueLabel() = 0;
+		virtual uint32_t getBreakLabel() const = 0;
+		virtual uint32_t getContinueLabel() const = 0;
 
-		virtual uint32_t getBreakLabelBlockLevel() = 0;
-		virtual uint32_t getContinueLabelBlockLevel() = 0;
+		virtual uint32_t getBreakLabelBlockLevel() const = 0;
+		virtual uint32_t getContinueLabelBlockLevel() const = 0;
 
 		virtual uint32_t getCurInsOff() const = 0;
 
@@ -68,7 +68,7 @@ namespace slkc {
 
 		virtual uint32_t getBlockLevel() = 0;
 
-		SLKC_API AstNodePtr<VarNode> lookupLocalVar(const std::string_view &name);
+		SLKC_API AstNodePtr<VarNode> lookupLocalVar(const std::string_view &name) const;
 	};
 
 	struct CompileEnvironment;
@@ -117,7 +117,7 @@ namespace slkc {
 		SLKC_API virtual std::optional<CompilationError> allocLabel(uint32_t &labelIdOut) override;
 		SLKC_API virtual void setLabelOffset(uint32_t labelId, uint32_t offset) const override;
 		SLKC_API virtual std::optional<CompilationError> setLabelName(uint32_t labelId, const std::string_view &name) override;
-		SLKC_API virtual uint32_t getLabelOffset(uint32_t labelId) override;
+		SLKC_API virtual uint32_t getLabelOffset(uint32_t labelId) const override;
 
 		SLKC_API virtual std::optional<CompilationError> allocReg(uint32_t &regOut) override;
 
@@ -125,17 +125,17 @@ namespace slkc {
 		SLKC_API virtual std::optional<CompilationError> emitIns(slake::Opcode opcode, uint32_t outputRegIndex, slake::Value *operands, size_t nOperands) override;
 
 		SLKC_API virtual std::optional<CompilationError> allocLocalVar(const TokenRange &tokenRange, const std::string_view &name, uint32_t reg, AstNodePtr<TypeNameNode> type, AstNodePtr<VarNode> &localVarOut) override;
-		SLKC_API virtual AstNodePtr<VarNode> getLocalVarInCurLevel(const std::string_view &name) override;
-		SLKC_API virtual AstNodePtr<VarNode> getLocalVar(const std::string_view &name) override;
+		SLKC_API virtual AstNodePtr<VarNode> getLocalVarInCurLevel(const std::string_view &name) const override;
+		SLKC_API virtual AstNodePtr<VarNode> getLocalVar(const std::string_view &name) const override;
 
 		SLKC_API virtual void setBreakLabel(uint32_t labelId, uint32_t blockLevel) override;
 		SLKC_API virtual void setContinueLabel(uint32_t labelId, uint32_t blockLevel) override;
 
-		SLKC_API virtual uint32_t getBreakLabel() override;
-		SLKC_API virtual uint32_t getContinueLabel() override;
+		SLKC_API virtual uint32_t getBreakLabel() const override;
+		SLKC_API virtual uint32_t getContinueLabel() const override;
 
-		SLKC_API virtual uint32_t getBreakLabelBlockLevel() override;
-		SLKC_API virtual uint32_t getContinueLabelBlockLevel() override;
+		SLKC_API virtual uint32_t getBreakLabelBlockLevel() const override;
+		SLKC_API virtual uint32_t getContinueLabelBlockLevel() const override;
 
 		SLKC_API virtual uint32_t getCurInsOff() const override;
 

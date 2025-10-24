@@ -546,6 +546,11 @@ SLKC_API bool slkc::decompileIdRef(peff::Alloc *allocator, DumpWriter *writer, s
 		}
 	}
 
+	if (idRefIn->overridenType) {
+		SLKC_RETURN_IF_FALSE(writer->write(" override "));
+		SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, idRefIn->overridenType));
+	}
+
 	return true;
 }
 

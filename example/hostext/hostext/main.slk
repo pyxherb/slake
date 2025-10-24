@@ -28,27 +28,27 @@ struct SA {
 }
 
 interface IA {
-	fn testIA();
+	fn testIA() virtual;
 }
 
 interface IB {
-	fn testIB();
+	fn testIB() virtual;
 }
 
 class ImplTest: IA + IB {
-	fn testIA() {
+	fn testIA() virtual {
 		extfns.print("Called testIA");
 	}
 
-	fn testIB() {
+	fn testIB() virtual {
 		extfns.print("Called testIB");
 	}
 }
 
 class InterfaceTest<T: IA + IB> {
 	fn test(instance: T) {
-		instance.testIA();
-		instance.testIB();
+		(instance as IA).testIA();
+		(instance as IB).testIB();
 	}
 }
 

@@ -110,8 +110,9 @@ SLAKE_API bool Reference::operator==(const Reference &rhs) const {
 				return false;
 			return asArg.argIndex == rhs.asArg.argIndex;
 		default:
-			std::terminate();
+			break;
 	}
+	std::terminate();
 }
 
 SLAKE_API bool Reference::operator<(const Reference &rhs) const {
@@ -157,8 +158,9 @@ SLAKE_API bool Reference::operator<(const Reference &rhs) const {
 		case ReferenceKind::AotPtrRef:
 			return asAotPtr.ptr < rhs.asAotPtr.ptr;
 		default:
-			std::terminate();
+			break;
 	}
+	std::terminate();
 }
 
 SLAKE_API TypeRef TypeRef::duplicate(bool &succeededOut) const {

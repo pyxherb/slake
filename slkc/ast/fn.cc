@@ -91,6 +91,16 @@ SLKC_API FnOverloadingNode::FnOverloadingNode(const FnOverloadingNode &rhs, peff
 		return;
 	}
 
+	if (!context.pushTask([this, &rhs, allocator, &context]() -> bool {
+			if (rhs.overridenType && !(overridenType = rhs.overridenType->duplicate<TypeNameNode>(allocator))) {
+				return false;
+			}
+			return true;
+		})) {
+		succeededOut = false;
+		return;
+	}
+
 	if (!params.resize(rhs.params.size())) {
 		succeededOut = false;
 		return;

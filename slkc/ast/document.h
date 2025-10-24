@@ -7,8 +7,11 @@
 #include <peff/advutils/shared_ptr.h>
 
 namespace slkc {
-#define SLKC_RETURN_IF_COMP_ERROR(...) \
-	if (std::optional<slkc::CompilationError> _ = (__VA_ARGS__); _) return _
+#define SLKC_RETURN_IF_COMP_ERROR(...)                              \
+	if (std::optional<slkc::CompilationError> _ = (__VA_ARGS__); _) \
+		return _;                                                   \
+	else                                                            \
+		;
 
 	enum class CompilationWarningKind : int {
 		UnusedExprResult = 0,

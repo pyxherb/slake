@@ -429,6 +429,12 @@ SLKC_API std::optional<CompilationError> slkc::compileIdRef(
 	}
 
 	id->hasVarArgs = hasVarArgs;
+
+	if (overridenType) {
+		SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, compilationContext, overridenType, id->overridenType));
+	} else
+		id->overridenType = slake::TypeId::Void;
+
 	idRefOut = id;
 
 	return {};

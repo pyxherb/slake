@@ -410,6 +410,19 @@ SLKC_API std::optional<SyntaxError> Parser::parseFn(AstNodePtr<FnOverloadingNode
 	Token *overrideToken;
 	if ((overrideToken = peekToken())->tokenId == TokenId::OverrideKeyword) {
 		nextToken();
+
+		Token *lookaheadToken = peekToken();
+		switch (lookaheadToken->tokenId) {
+			case TokenId::ReturnTypeOp:
+			case TokenId::Semicolon:
+			case TokenId::LBrace:
+				break;
+			default:
+				if ((syntaxError = parseTypeName(fnNodeOut->overridenType))) {
+					return syntaxError;
+				}
+				break;
+		}
 	}
 
 	Token *returnTypeToken;

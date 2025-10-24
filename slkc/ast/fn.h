@@ -45,6 +45,8 @@ namespace slkc {
 
 		AstNodePtr<TypeNameNode> returnType;
 
+		AstNodePtr<TypeNameNode> overridenType;
+
 		AstNodePtr<CodeBlockStmtNode> body;
 		FnFlags fnFlags = 0;
 

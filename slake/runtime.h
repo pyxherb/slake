@@ -173,7 +173,8 @@ namespace slake {
 			peff::Map<
 				GenericArgList,	 // Generic arguments.
 				MemberObject *,	 // Cached instantiated value.
-				GenericArgListLtComparator>;
+				GenericArgListComparator,
+				true>;
 
 		using GenericCacheDirectory = peff::Map<
 			MemberObject *,  // Original uninstantiated generic value.
@@ -207,7 +208,7 @@ namespace slake {
 		Object *contextObjectList = nullptr;
 		Object *classObjectList = nullptr;
 
-		peff::Set<TypeDefObject *, TypeDefLtComparator> typeDefs;
+		peff::Set<TypeDefObject *, TypeDefComparator, true> typeDefs;
 
 		SLAKE_API TypeDefObject *getEqualTypeDef(TypeDefObject *typeDef) const noexcept;
 		SLAKE_API void unregisterTypeDef(TypeDefObject *typeDef) noexcept;

@@ -505,7 +505,7 @@ SLAKE_API InternalExceptionPointer FnObject::resortOverloadings() noexcept {
 	// implement on-demand resorting?
 	auto oldOverloadings = std::move(overloadings);
 
-	overloadings = peff::Map<FnSignature, FnOverloadingObject *, FnSignatureLtComparator>(selfAllocator.get());
+	overloadings = peff::Map<FnSignature, FnOverloadingObject *, FnSignatureComparator, true>(selfAllocator.get());
 
 	for (auto [k, v] : oldOverloadings) {
 		if (!overloadings.insert(FnSignature(k), +v))

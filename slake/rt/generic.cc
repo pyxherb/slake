@@ -77,7 +77,7 @@ SLAKE_API InternalExceptionPointer Runtime::invalidateGenericCache(MemberObject 
 
 SLAKE_API InternalExceptionPointer Runtime::setGenericCache(MemberObject *object, const GenericArgList &genericArgs, MemberObject *instantiatedObject) {
 	if (!_genericCacheDir.contains(object)) {
-		if (!_genericCacheDir.insert(+object, GenericCacheTable(getFixedAlloc(), GenericArgListLtComparator(getFixedAlloc()))))
+		if (!_genericCacheDir.insert(+object, GenericCacheTable(getFixedAlloc(), GenericArgListComparator())))
 			return OutOfMemoryError::alloc();
 	}
 	// Store the instance into the cache.

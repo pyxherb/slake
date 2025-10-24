@@ -8,7 +8,7 @@ namespace slake {
 		class LoaderContext {
 		public:
 			peff::RcObjectPtr<peff::Alloc> allocator;
-			peff::Set<IdRefObject *, IdRefLtComparator> loadedIdRefs;
+			peff::Set<IdRefObject *, IdRefComparator, true> loadedIdRefs;
 			peff::Set<CustomTypeDefObject *> loadedCustomTypeDefs;
 			peff::Set<InterfaceObject *> loadedInterfaces;
 			peff::Set<ClassObject *> loadedClasses;

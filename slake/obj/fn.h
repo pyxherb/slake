@@ -263,7 +263,7 @@ namespace slake {
 
 	class FnObject : public MemberObject {
 	public:
-		peff::Map<FnSignature, FnOverloadingObject *, FnSignatureLtComparator> overloadings;
+		peff::Map<FnSignature, FnOverloadingObject *, FnSignatureComparator, true> overloadings;
 
 		SLAKE_API FnObject(Runtime *rt, peff::Alloc *selfAllocator);
 		SLAKE_API FnObject(const FnObject &x, peff::Alloc *allocator, bool &succeededOut);

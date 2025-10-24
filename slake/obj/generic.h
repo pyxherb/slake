@@ -38,7 +38,6 @@ namespace slake {
 
 	/// @brief Three-way comparator for containers.
 	struct GenericArgListComparator {
-		SLAKE_FORCEINLINE GenericArgListComparator() {}
 		SLAKE_API int operator()(const GenericArgList &lhs, const GenericArgList &rhs) const noexcept;
 	};
 
@@ -46,7 +45,6 @@ namespace slake {
 	struct GenericArgListLtComparator {
 		GenericArgListComparator innerComparator;
 
-		SLAKE_FORCEINLINE GenericArgListLtComparator(peff::Alloc *allocator) {}
 		SLAKE_FORCEINLINE bool operator()(const GenericArgList& lhs, const GenericArgList& rhs) const noexcept {
 			return innerComparator(lhs, rhs) < 0;
 		}

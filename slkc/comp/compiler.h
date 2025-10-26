@@ -391,6 +391,7 @@ namespace slkc {
 			AstNodePtr<TypeNameNode> &typeNameOut);
 
 	/// @brief Collect interfaces involved in the whole inheritance chain.
+	/// @note Note that this function does not clear current set.
 	/// @param document Document to be operated.
 	/// @param derived Leaf interface node.
 	/// @param walkedInterfaces Where the involved interfaces are stored.
@@ -603,7 +604,7 @@ namespace slkc {
 		CompileEnvironment *compileEnv,
 		AstNodePtr<ModuleNode> mod);
 
-	[[nodiscard]] SLKC_API std::optional<CompilationError> isFnSignatureSame(AstNodePtr<VarNode> *lParams, AstNodePtr<VarNode> *rParams, size_t nParams, bool &whetherOut);
+	[[nodiscard]] SLKC_API std::optional<CompilationError> isFnSignatureSame(AstNodePtr<VarNode> *lParams, AstNodePtr<VarNode> *rParams, size_t nParams, AstNodePtr<TypeNameNode> lOverridenType, AstNodePtr<TypeNameNode> rOverridenType, bool &whetherOut);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> isFnSignatureDuplicated(AstNodePtr<FnOverloadingNode> lhs, AstNodePtr<FnOverloadingNode> rhs, bool &whetherOut);
 
 	[[nodiscard]] SLKC_API std::optional<CompilationError> visitBaseClass(AstNodePtr<TypeNameNode> cls, AstNodePtr<ClassNode> &classOut, peff::Set<AstNodePtr<MemberNode>> *walkedNodes);

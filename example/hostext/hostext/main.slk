@@ -6,6 +6,23 @@ attribute TestAttribute {
 	let test: i32;
 }
 
+interface ICA {
+	fn a() virtual;
+}
+
+interface ICB {
+	fn a() virtual;
+}
+
+interface ICC {
+	fn a() virtual;
+}
+
+class C: ICA + ICB + ICC {
+	fn a() virtual override {
+	}
+}
+
 /*interface IF: IE {
 }
 

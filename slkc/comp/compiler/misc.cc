@@ -182,7 +182,19 @@ SLKC_API std::optional<CompilationError> slkc::isFnSignatureSame(
 	AstNodePtr<VarNode> *lParams,
 	AstNodePtr<VarNode> *rParams,
 	size_t nParams,
+	AstNodePtr<TypeNameNode> lOverridenType,
+	AstNodePtr<TypeNameNode> rOverridenType,
 	bool &whetherOut) {
+	if (lOverridenType || rOverridenType) {
+		if ((!lOverridenType) || (!rOverridenType)) {
+			whetherOut = false;
+			return {};
+		}
+		SLKC_RETURN_IF_COMP_ERROR(isSameType(lOverridenType, rOverridenType, whetherOut));
+		if (!whetherOut)
+			return {};
+	}
+
 	for (size_t i = 0; i < nParams; ++i) {
 		const AstNodePtr<VarNode> &lCurParam = lParams[i], rCurParam = rParams[i];
 
@@ -206,7 +218,7 @@ SLKC_API std::optional<CompilationError> slkc::isFnSignatureDuplicated(AstNodePt
 		whetherOut = false;
 		return {};
 	}
-	return isFnSignatureSame(lhs->params.data(), rhs->params.data(), lhs->params.size(), whetherOut);
+	return isFnSignatureSame(lhs->params.data(), rhs->params.data(), lhs->params.size(), lhs->overridenType, rhs->overridenType, whetherOut);
 }
 
 SLKC_API std::optional<CompilationError> slkc::indexModuleMembers(

@@ -805,44 +805,166 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 					}
 				}
 
-				for (auto &i : involvedInterfaces) {
-					for (auto &j : i->members) {
-						if (j->getAstNodeType() == AstNodeType::FnSlot) {
-							AstNodePtr<FnNode> method = j.template castTo<FnNode>();
+				auto comparedNodesComparator = [](const std::pair<AstNodePtr<FnOverloadingNode>, AstNodePtr<FnOverloadingNode>> &lhs,
+												   const std::pair<AstNodePtr<FnOverloadingNode>, AstNodePtr<FnOverloadingNode>> &rhs) -> int {
+					if (lhs.first > rhs.first)
+						return 1;
+					if (lhs.first < rhs.first)
+						return -1;
+					if (lhs.second > rhs.second)
+						return 1;
+					if (lhs.second < rhs.second)
+						return -1;
+					return 0;
+				};
 
-							if (auto it = clsNode->memberIndices.find(j->name); it != clsNode->memberIndices.end()) {
-								AstNodePtr<MemberNode> correspondingMember = clsNode->members.at(it.value());
+				peff::Set<std::pair<AstNodePtr<FnOverloadingNode>, AstNodePtr<FnOverloadingNode>>, decltype(comparedNodesComparator), true> comparedNodes(
+					compileEnv->allocator.get(),
+					std::move(comparedNodesComparator));
 
-								if (correspondingMember->getAstNodeType() != AstNodeType::FnSlot) {
-									for (auto &k : method->overloadings) {
-										SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(CompilationError(clsNode->tokenRange, AbstractMethodNotImplementedErrorExData{ k })));
-									}
-								} else {
-									AstNodePtr<FnNode> correspondingMethod = correspondingMember.template castTo<FnNode>();
+				bool conflictedInterfacesDetected = false;
+				for (auto lhsIt = involvedInterfaces.begin(); lhsIt != involvedInterfaces.end(); ++lhsIt) {
+					for (auto rhsIt = lhsIt.next(); rhsIt != involvedInterfaces.end(); ++rhsIt) {
+						for (auto &lhsMember : (*lhsIt)->members) {
+							if (lhsMember->getAstNodeType() == AstNodeType::FnSlot) {
+								AstNodePtr<FnNode> lhs = lhsMember.template castTo<FnNode>();
 
-									for (auto &k : method->overloadings) {
-										bool b = false;
+								if (auto rhsMember = (*rhsIt)->memberIndices.find(lhsMember->name); rhsMember != (*rhsIt)->memberIndices.end()) {
+									AstNodePtr<MemberNode> correspondingMember = (*rhsIt)->members.at(rhsMember.value());
 
-										for (auto &l : correspondingMethod->overloadings) {
-											if (k->params.size() != l->params.size()) {
-												continue;
+									if (correspondingMember->getAstNodeType() != AstNodeType::FnSlot) {
+										// Corresponding member should not be not a function.
+										std::terminate();
+									} else {
+										AstNodePtr<FnNode> rhs = correspondingMember.template castTo<FnNode>();
+
+										for (auto &curLhsOverloading : lhs->overloadings) {
+											bool b = false;
+
+											for (auto &curRhsOverloading : rhs->overloadings) {
+												if (comparedNodes.contains({ curLhsOverloading, curRhsOverloading }) ||
+													comparedNodes.contains({ curRhsOverloading, curLhsOverloading }))
+													continue;
+												if (!comparedNodes.insert({ curLhsOverloading, curRhsOverloading }))
+													return genOutOfMemoryCompError();
+
+												if (curLhsOverloading->params.size() != curRhsOverloading->params.size()) {
+													continue;
+												}
+
+												SLKC_RETURN_IF_COMP_ERROR(isFnSignatureSame(curLhsOverloading->params.data(), curRhsOverloading->params.data(), curLhsOverloading->params.size(), {}, {}, b));
+
+												// No conflict, continue.
+												if (!b)
+													continue;
+
+												if (auto overridenIt = clsNode->memberIndices.find(lhsMember->name); overridenIt != clsNode->memberIndices.end()) {
+													AstNodePtr<MemberNode> correspondingOverridenMember = clsNode->members.at(overridenIt.value());
+
+													if (correspondingOverridenMember->getAstNodeType() == AstNodeType::FnSlot) {
+														AstNodePtr<FnNode> correspondingOverridenMethod = correspondingOverridenMember.castTo<FnNode>();
+
+														bool overridenWhether;
+
+														for (auto &curOverridenOverloading : correspondingOverridenMethod->overloadings) {
+															SLKC_RETURN_IF_COMP_ERROR(isFnSignatureSame(
+																curLhsOverloading->params.data(),
+																curOverridenOverloading->params.data(),
+																curLhsOverloading->params.size(),
+																curOverridenOverloading->overridenType,
+																{},
+																overridenWhether));
+															// Unspecialized overriden, continue.
+															if (overridenWhether) {
+																b = false;
+																goto checkInterfaceMethodsConflicted;
+															}
+
+															/*
+															{
+																AstNodePtr<CustomTypeNameNode> customOverridenType;
+
+																if (!(customOverridenType = makeAstNode<CustomTypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document)))
+																	return genOutOfMemoryCompError();
+
+																SLKC_RETURN_IF_COMP_ERROR(getFullIdRef(compileEnv->allocator.get(), lhsIt->castTo<MemberNode>(), customOverridenType->idRefPtr));
+
+																customOverridenType->contextNode = lhsIt->castTo<MemberNode>();
+
+																SLKC_RETURN_IF_COMP_ERROR(
+																	isFnSignatureSame(
+																		curLhsOverloading->params.data(),
+																		curOverridenOverloading->params.data(),
+																		curLhsOverloading->params.size(),
+																		customOverridenType.castTo<TypeNameNode>(),
+																		curLhsOverloading->overridenType,
+																		overridenWhether));
+																// Specialized overriden, continue.
+																if (overridenWhether) {
+																	b = false;
+																	goto checkInterfaceMethodsConflicted;
+																}
+															}*/
+														}
+													}
+												}
+
+											checkInterfaceMethodsConflicted:
+												if (b) {
+													conflictedInterfacesDetected = true;
+													SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(CompilationError(curRhsOverloading->tokenRange, CompilationErrorKind::InterfaceMethodsConflicted)));
+													goto interfaceMethodsConflicted;
+												}
 											}
-
-											SLKC_RETURN_IF_COMP_ERROR(isFnSignatureSame(k->params.data(), l->params.data(), k->params.size(), b));
-
-											if (b) {
-												goto classMatched;
-											}
+										interfaceMethodsConflicted:;
 										}
-
-										SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(CompilationError(clsNode->tokenRange, AbstractMethodNotImplementedErrorExData{ k })));
-
-									classMatched:;
 									}
 								}
-							} else {
-								for (auto &k : method->overloadings) {
-									SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(CompilationError(clsNode->tokenRange, AbstractMethodNotImplementedErrorExData{ k })));
+							}
+						}
+					}
+				}
+
+				if (!conflictedInterfacesDetected) {
+					for (auto &i : involvedInterfaces) {
+						for (auto &j : i->members) {
+							if (j->getAstNodeType() == AstNodeType::FnSlot) {
+								AstNodePtr<FnNode> method = j.template castTo<FnNode>();
+
+								if (auto it = clsNode->memberIndices.find(j->name); it != clsNode->memberIndices.end()) {
+									AstNodePtr<MemberNode> correspondingMember = clsNode->members.at(it.value());
+
+									if (correspondingMember->getAstNodeType() != AstNodeType::FnSlot) {
+										for (auto &k : method->overloadings) {
+											SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(CompilationError(clsNode->tokenRange, AbstractMethodNotImplementedErrorExData{ k })));
+										}
+									} else {
+										AstNodePtr<FnNode> correspondingMethod = correspondingMember.template castTo<FnNode>();
+
+										for (auto &k : method->overloadings) {
+											bool b = false;
+
+											for (auto &l : correspondingMethod->overloadings) {
+												if (k->params.size() != l->params.size()) {
+													continue;
+												}
+
+												SLKC_RETURN_IF_COMP_ERROR(isFnSignatureSame(k->params.data(), l->params.data(), k->params.size(), {}, {}, b));
+
+												if (b) {
+													goto classMatched;
+												}
+											}
+
+											SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(CompilationError(clsNode->tokenRange, AbstractMethodNotImplementedErrorExData{ k })));
+
+										classMatched:;
+										}
+									}
+								} else {
+									for (auto &k : method->overloadings) {
+										SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(CompilationError(clsNode->tokenRange, AbstractMethodNotImplementedErrorExData{ k })));
+									}
 								}
 							}
 						}
@@ -1006,7 +1128,7 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 												continue;
 											}
 
-											SLKC_RETURN_IF_COMP_ERROR(isFnSignatureSame(k->params.data(), l->params.data(), k->params.size(), b));
+											SLKC_RETURN_IF_COMP_ERROR(isFnSignatureSame(k->params.data(), l->params.data(), k->params.size(), {}, {}, b));
 
 											if (b) {
 												goto structMatched;

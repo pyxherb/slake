@@ -241,6 +241,7 @@ namespace slkc {
 		TypeIsNotSubstitutable,
 		RequiresCompTimeExpr,
 		TypeArgTypeMismatched,
+		InterfaceMethodsConflicted,
 
 		ImportLimitExceeded,
 		MalformedModuleName,

@@ -633,6 +633,11 @@ void dumpCompilationError(peff::SharedPtr<slkc::Parser> parser, const slkc::Comp
 				beginToken->sourceLocation.beginPosition.line + 1,
 				beginToken->sourceLocation.beginPosition.column + 1);
 			break;
+		case slkc::CompilationErrorKind::InterfaceMethodsConflicted:
+			printError("Error at %zu, %zu: Interface methods conflicted\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
 		case slkc::CompilationErrorKind::ImportLimitExceeded:
 			printError("Error at %zu, %zu: Import item number exceeded\n",
 				beginToken->sourceLocation.beginPosition.line + 1,

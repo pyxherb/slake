@@ -805,26 +805,11 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 					}
 				}
 
-				auto comparedNodesComparator = [](const std::pair<AstNodePtr<FnOverloadingNode>, AstNodePtr<FnOverloadingNode>> &lhs,
-												   const std::pair<AstNodePtr<FnOverloadingNode>, AstNodePtr<FnOverloadingNode>> &rhs) -> int {
-					if (lhs.first > rhs.first)
-						return 1;
-					if (lhs.first < rhs.first)
-						return -1;
-					if (lhs.second > rhs.second)
-						return 1;
-					if (lhs.second < rhs.second)
-						return -1;
-					return 0;
-				};
-
-				peff::Set<std::pair<AstNodePtr<FnOverloadingNode>, AstNodePtr<FnOverloadingNode>>, decltype(comparedNodesComparator), true> comparedNodes(
-					compileEnv->allocator.get(),
-					std::move(comparedNodesComparator));
-
 				bool conflictedInterfacesDetected = false;
 				for (auto lhsIt = involvedInterfaces.begin(); lhsIt != involvedInterfaces.end(); ++lhsIt) {
-					for (auto rhsIt = lhsIt.next(); rhsIt != involvedInterfaces.end(); ++rhsIt) {
+					for (auto rhsIt = involvedInterfaces.begin(); rhsIt != involvedInterfaces.end(); ++rhsIt) {
+						if (lhsIt == rhsIt)
+							continue;
 						for (auto &lhsMember : (*lhsIt)->members) {
 							if (lhsMember->getAstNodeType() == AstNodeType::FnSlot) {
 								AstNodePtr<FnNode> lhs = lhsMember.template castTo<FnNode>();
@@ -842,12 +827,6 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 											bool b = false;
 
 											for (auto &curRhsOverloading : rhs->overloadings) {
-												if (comparedNodes.contains({ curLhsOverloading, curRhsOverloading }) ||
-													comparedNodes.contains({ curRhsOverloading, curLhsOverloading }))
-													continue;
-												if (!comparedNodes.insert({ curLhsOverloading, curRhsOverloading }))
-													return genOutOfMemoryCompError();
-
 												if (curLhsOverloading->params.size() != curRhsOverloading->params.size()) {
 													continue;
 												}
@@ -913,10 +892,9 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 												if (b) {
 													conflictedInterfacesDetected = true;
 													SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(CompilationError(curRhsOverloading->tokenRange, CompilationErrorKind::InterfaceMethodsConflicted)));
-													goto interfaceMethodsConflicted;
+													continue;
 												}
 											}
-										interfaceMethodsConflicted:;
 										}
 									}
 								}

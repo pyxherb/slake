@@ -19,8 +19,6 @@ interface ICC {
 }
 
 class C: ICA + ICB + ICC {
-	fn a() virtual override {
-	}
 }
 
 /*interface IF: IE {

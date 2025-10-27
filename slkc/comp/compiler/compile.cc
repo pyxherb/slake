@@ -805,17 +805,46 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 					}
 				}
 
+				auto cmp = [](const std::pair<AstNodePtr<InterfaceNode>, AstNodePtr<InterfaceNode>> &lhs,
+							   const std::pair<AstNodePtr<InterfaceNode>, AstNodePtr<InterfaceNode>> &rhs) -> int {
+					if (lhs.first < rhs.first)
+						return -1;
+					if (lhs.first > rhs.first)
+						return 1;
+					if (lhs.second < rhs.second)
+						return -1;
+					if (lhs.second > rhs.second)
+						return 1;
+					return 0;
+				};
+
+				peff::Set<std::pair<AstNodePtr<InterfaceNode>, AstNodePtr<InterfaceNode>>, decltype(cmp), true> reportedConflictingInterfacesSet(
+					compileEnv->allocator.get(),
+					std::move(cmp));
+
 				bool conflictedInterfacesDetected = false;
-				for (auto lhsIt = involvedInterfaces.begin(); lhsIt != involvedInterfaces.end(); ++lhsIt) {
-					for (auto rhsIt = involvedInterfaces.begin(); rhsIt != involvedInterfaces.end(); ++rhsIt) {
-						if (lhsIt == rhsIt)
+				for (auto lhsIt = clsNode->implTypes.begin(); lhsIt != clsNode->implTypes.end(); ++lhsIt) {
+					for (auto rhsIt = lhsIt + 1; rhsIt != clsNode->implTypes.end(); ++rhsIt) {
+						AstNodePtr<InterfaceNode> lhsParent, rhsParent;
+
+						SLKC_RETURN_IF_COMP_ERROR(visitBaseInterface(*lhsIt, lhsParent, nullptr));
+						SLKC_RETURN_IF_COMP_ERROR(visitBaseInterface(*rhsIt, rhsParent, nullptr));
+
+						if ((!lhsParent) || (!rhsParent))
 							continue;
-						for (auto &lhsMember : (*lhsIt)->members) {
+
+						if (reportedConflictingInterfacesSet.contains({ lhsParent, rhsParent }) ||
+							reportedConflictingInterfacesSet.contains({ rhsParent, lhsParent }))
+							continue;
+						if (!reportedConflictingInterfacesSet.insert({ lhsParent, rhsParent }))
+							return genOutOfMemoryCompError();
+
+						for (auto &lhsMember : lhsParent->members) {
 							if (lhsMember->getAstNodeType() == AstNodeType::FnSlot) {
 								AstNodePtr<FnNode> lhs = lhsMember.template castTo<FnNode>();
 
-								if (auto rhsMember = (*rhsIt)->memberIndices.find(lhsMember->name); rhsMember != (*rhsIt)->memberIndices.end()) {
-									AstNodePtr<MemberNode> correspondingMember = (*rhsIt)->members.at(rhsMember.value());
+								if (auto rhsMember = rhsParent->memberIndices.find(lhsMember->name); rhsMember != rhsParent->memberIndices.end()) {
+									AstNodePtr<MemberNode> correspondingMember = rhsParent->members.at(rhsMember.value());
 
 									if (correspondingMember->getAstNodeType() != AstNodeType::FnSlot) {
 										// Corresponding member should not be not a function.
@@ -891,7 +920,7 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 											checkInterfaceMethodsConflicted:
 												if (b) {
 													conflictedInterfacesDetected = true;
-													SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(CompilationError(curRhsOverloading->tokenRange, CompilationErrorKind::InterfaceMethodsConflicted)));
+													SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(CompilationError((*lhsIt)->tokenRange, CompilationErrorKind::InterfaceMethodsConflicted)));
 													continue;
 												}
 											}

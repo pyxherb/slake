@@ -3,8 +3,8 @@
 
 using namespace slkc;
 
-SLKC_API std::optional<SyntaxError> Parser::parseTypeName(AstNodePtr<TypeNameNode> &typeNameOut, bool withCircumfixes) {
-	std::optional<SyntaxError> syntaxError;
+SLKC_API peff::Option<SyntaxError> Parser::parseTypeName(AstNodePtr<TypeNameNode> &typeNameOut, bool withCircumfixes) {
+	peff::Option<SyntaxError> syntaxError;
 	Token *t = peekToken();
 
 	switch (t->tokenId) {

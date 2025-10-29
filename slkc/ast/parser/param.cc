@@ -2,13 +2,13 @@
 
 using namespace slkc;
 
-SLKC_API std::optional<SyntaxError> Parser::parseParams(
+SLKC_API peff::Option<SyntaxError> Parser::parseParams(
 	peff::DynArray<AstNodePtr<VarNode>> &paramsOut,
 	bool &varArgOut,
 	peff::DynArray<size_t> &idxCommaTokensOut,
 	size_t &lAngleBracketIndexOut,
 	size_t &rAngleBracketIndexOut) {
-	std::optional<SyntaxError> syntaxError;
+	peff::Option<SyntaxError> syntaxError;
 
 	Token *lParentheseToken = peekToken();
 

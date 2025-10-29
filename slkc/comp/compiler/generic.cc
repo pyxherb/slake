@@ -2,7 +2,7 @@
 
 using namespace slkc;
 
-SLKC_API std::optional<CompilationError> Document::lookupGenericCacheTable(
+SLKC_API peff::Option<CompilationError> Document::lookupGenericCacheTable(
 	AstNodePtr<MemberNode> originalObject,
 	GenericCacheTable *&tableOut) {
 	if (auto it = genericCacheDir.find(originalObject); it != genericCacheDir.end()) {
@@ -13,7 +13,7 @@ SLKC_API std::optional<CompilationError> Document::lookupGenericCacheTable(
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> Document::lookupGenericCache(
+SLKC_API peff::Option<CompilationError> Document::lookupGenericCache(
 	AstNodePtr<MemberNode> originalObject,
 	const peff::DynArray<AstNodePtr<TypeNameNode>> &genericArgs,
 	AstNodePtr<MemberNode> &memberOut) const {
@@ -32,7 +32,7 @@ SLKC_API std::optional<CompilationError> Document::lookupGenericCache(
 	return {};
 }
 
-static std::optional<CompilationError> _walkTypeNameForGenericInstantiation(
+static peff::Option<CompilationError> _walkTypeNameForGenericInstantiation(
 	AstNodePtr<TypeNameNode> &typeName,
 	const GenericInstantiationContext &context) {
 	if (!typeName) {
@@ -108,7 +108,7 @@ static std::optional<CompilationError> _walkTypeNameForGenericInstantiation(
 	return {};
 }
 
-static std::optional<CompilationError> _walkNodeForGenericInstantiation(
+static peff::Option<CompilationError> _walkNodeForGenericInstantiation(
 	AstNodePtr<MemberNode> astNode,
 	const GenericInstantiationContext &context) {
 	if (!astNode) {
@@ -358,7 +358,7 @@ static std::optional<CompilationError> _walkNodeForGenericInstantiation(
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> Document::instantiateGenericObject(
+SLKC_API peff::Option<CompilationError> Document::instantiateGenericObject(
 	AstNodePtr<MemberNode> originalObject,
 	const peff::DynArray<AstNodePtr<TypeNameNode>> &genericArgs,
 	AstNodePtr<MemberNode> &memberOut) {

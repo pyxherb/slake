@@ -2,7 +2,7 @@
 
 using namespace slkc;
 
-SLKC_API std::optional<SyntaxError> Parser::lookaheadUntil(size_t nTokenIds, const TokenId tokenIds[]) {
+SLKC_API peff::Option<SyntaxError> Parser::lookaheadUntil(size_t nTokenIds, const TokenId tokenIds[]) {
 	// stub.
 	return {};
 
@@ -104,7 +104,7 @@ SLKC_API Token *Parser::peekToken(bool keepNewLine, bool keepWhitespace, bool ke
 	return tokenList.back().get();
 }
 
-SLKC_API std::optional<SyntaxError> Parser::splitRshOpToken() {
+SLKC_API peff::Option<SyntaxError> Parser::splitRshOpToken() {
 	switch (Token *token = peekToken(); token->tokenId) {
 		case TokenId::RshOp: {
 			token->tokenId = TokenId::GtOp;
@@ -136,7 +136,7 @@ SLKC_API std::optional<SyntaxError> Parser::splitRshOpToken() {
 	return {};
 }
 
-SLKC_API std::optional<SyntaxError> Parser::splitRDBracketsToken() {
+SLKC_API peff::Option<SyntaxError> Parser::splitRDBracketsToken() {
 	switch (Token *token = peekToken(); token->tokenId) {
 		case TokenId::RDBracket: {
 			token->tokenId = TokenId::RBracket;

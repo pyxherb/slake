@@ -330,11 +330,11 @@ namespace slkc {
 	class Lexer {
 	public:
 		TokenList tokenList;
-		std::optional<LexicalError> lexicalError;
+		peff::Option<LexicalError> lexicalError;
 
 		SLAKE_FORCEINLINE Lexer(peff::Alloc *allocator) : tokenList(allocator) {
 		}
-		[[nodiscard]] SLKC_API std::optional<LexicalError> lex(const std::string_view &src, peff::Alloc *allocator, const peff::SharedPtr<Document> &document);
+		[[nodiscard]] SLKC_API peff::Option<LexicalError> lex(const std::string_view &src, peff::Alloc *allocator, const peff::SharedPtr<Document> &document);
 	};
 
 	SLKC_API const char *getTokenName(TokenId tokenId);

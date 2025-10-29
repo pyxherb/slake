@@ -5,7 +5,7 @@ using namespace slkc;
 SLKC_API Writer::~Writer() {
 }
 
-SLKC_API std::optional<CompilationError> slkc::dumpGenericParam(
+SLKC_API peff::Option<CompilationError> slkc::dumpGenericParam(
 	peff::Alloc *allocator,
 	Writer *writer,
 	const slake::GenericParam &genericParam) {
@@ -25,7 +25,7 @@ SLKC_API std::optional<CompilationError> slkc::dumpGenericParam(
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> slkc::dumpIdRefEntries(
+SLKC_API peff::Option<CompilationError> slkc::dumpIdRefEntries(
 	peff::Alloc *allocator,
 	Writer *writer,
 	const peff::DynArray<slake::IdRefEntry> &entries) {
@@ -41,7 +41,7 @@ SLKC_API std::optional<CompilationError> slkc::dumpIdRefEntries(
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> slkc::dumpIdRef(
+SLKC_API peff::Option<CompilationError> slkc::dumpIdRef(
 	peff::Alloc *allocator,
 	Writer *writer,
 	slake::IdRefObject *ref) {
@@ -61,7 +61,7 @@ SLKC_API std::optional<CompilationError> slkc::dumpIdRef(
 	return {};
 }
 
-[[nodiscard]] SLKC_API std::optional<CompilationError> slkc::dumpValue(
+[[nodiscard]] SLKC_API peff::Option<CompilationError> slkc::dumpValue(
 	peff::Alloc *allocator,
 	Writer *writer,
 	const slake::Value &value) {
@@ -169,7 +169,7 @@ SLKC_API std::optional<CompilationError> slkc::dumpIdRef(
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> slkc::dumpTypeName(
+SLKC_API peff::Option<CompilationError> slkc::dumpTypeName(
 	peff::Alloc *allocator,
 	Writer *writer,
 	const slake::TypeRef &type) {
@@ -310,7 +310,7 @@ SLKC_API std::optional<CompilationError> slkc::dumpTypeName(
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> slkc::dumpModuleMembers(
+SLKC_API peff::Option<CompilationError> slkc::dumpModuleMembers(
 	peff::Alloc *allocator,
 	Writer *writer,
 	slake::ModuleObject *mod) {
@@ -533,7 +533,7 @@ SLKC_API std::optional<CompilationError> slkc::dumpModuleMembers(
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> slkc::dumpModule(
+SLKC_API peff::Option<CompilationError> slkc::dumpModule(
 	peff::Alloc *allocator,
 	Writer *writer,
 	slake::ModuleObject *mod) {

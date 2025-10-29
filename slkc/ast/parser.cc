@@ -9,8 +9,8 @@ SLKC_API Parser::~Parser() {
 	assert(!document);
 }
 
-SLKC_API std::optional<SyntaxError> Parser::parseOperatorName(std::string_view &nameOut) {
-	std::optional<SyntaxError> syntaxError;
+SLKC_API peff::Option<SyntaxError> Parser::parseOperatorName(std::string_view &nameOut) {
+	peff::Option<SyntaxError> syntaxError;
 
 	Token *t = peekToken();
 
@@ -163,8 +163,8 @@ SLKC_API std::optional<SyntaxError> Parser::parseOperatorName(std::string_view &
 	return {};
 }
 
-SLKC_API std::optional<SyntaxError> Parser::parseIdName(peff::String &nameOut) {
-	std::optional<SyntaxError> syntaxError;
+SLKC_API peff::Option<SyntaxError> Parser::parseIdName(peff::String &nameOut) {
+	peff::Option<SyntaxError> syntaxError;
 	Token *t = peekToken();
 
 	switch (t->tokenId) {
@@ -180,8 +180,8 @@ SLKC_API std::optional<SyntaxError> Parser::parseIdName(peff::String &nameOut) {
 	return {};
 }
 
-SLKC_API std::optional<SyntaxError> Parser::parseIdRef(IdRefPtr &idRefOut) {
-	std::optional<SyntaxError> syntaxError;
+SLKC_API peff::Option<SyntaxError> Parser::parseIdRef(IdRefPtr &idRefOut) {
+	peff::Option<SyntaxError> syntaxError;
 	IdRefPtr idRefPtr(peff::allocAndConstruct<IdRef>(resourceAllocator.get(), ASTNODE_ALIGNMENT, resourceAllocator.get()));
 	if (!idRefPtr)
 		return genOutOfMemoryError();
@@ -298,7 +298,7 @@ end:
 	return {};
 }
 
-[[nodiscard]] SLKC_API std::optional<SyntaxError> Parser::parseArgs(peff::DynArray<AstNodePtr<ExprNode>> &argsOut, peff::DynArray<size_t> &idxCommaTokensOut) {
+[[nodiscard]] SLKC_API peff::Option<SyntaxError> Parser::parseArgs(peff::DynArray<AstNodePtr<ExprNode>> &argsOut, peff::DynArray<size_t> &idxCommaTokensOut) {
 	while (true) {
 		if (peekToken()->tokenId == TokenId::RParenthese) {
 			break;
@@ -324,8 +324,8 @@ end:
 	return {};
 }
 
-SLKC_API std::optional<SyntaxError> Parser::parseFn(AstNodePtr<FnOverloadingNode> &fnNodeOut) {
-	std::optional<SyntaxError> syntaxError;
+SLKC_API peff::Option<SyntaxError> Parser::parseFn(AstNodePtr<FnOverloadingNode> &fnNodeOut) {
+	peff::Option<SyntaxError> syntaxError;
 
 	FnFlags initialFlags = 0;
 	Token *fnToken;
@@ -489,8 +489,8 @@ SLKC_API std::optional<SyntaxError> Parser::parseFn(AstNodePtr<FnOverloadingNode
 	return {};
 }
 
-SLKC_API std::optional<SyntaxError> Parser::parseClassStmts() {
-	std::optional<SyntaxError> syntaxError;
+SLKC_API peff::Option<SyntaxError> Parser::parseClassStmts() {
+	peff::Option<SyntaxError> syntaxError;
 
 	Token *t;
 
@@ -507,8 +507,8 @@ SLKC_API std::optional<SyntaxError> Parser::parseClassStmts() {
 	return {};
 }
 
-SLKC_API std::optional<SyntaxError> Parser::parseProgramStmt() {
-	std::optional<SyntaxError> syntaxError;
+SLKC_API peff::Option<SyntaxError> Parser::parseProgramStmt() {
+	peff::Option<SyntaxError> syntaxError;
 
 	peff::DynArray<AstNodePtr<AttributeNode>> attributes(resourceAllocator.get());
 
@@ -1170,8 +1170,8 @@ accessModifierParseEnd:
 	return {};
 }
 
-SLKC_API std::optional<SyntaxError> Parser::parseProgram(const AstNodePtr<ModuleNode> &initialMod, IdRefPtr &moduleNameOut) {
-	std::optional<SyntaxError> syntaxError;
+SLKC_API peff::Option<SyntaxError> Parser::parseProgram(const AstNodePtr<ModuleNode> &initialMod, IdRefPtr &moduleNameOut) {
+	peff::Option<SyntaxError> syntaxError;
 
 	Token *t;
 

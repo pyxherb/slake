@@ -261,7 +261,7 @@ namespace slkc {
 	};
 
 	struct ErrorParsingImportedModuleErrorExData {
-		std::optional<LexicalError> lexicalError;
+		peff::Option<LexicalError> lexicalError;
 		AstNodePtr<ModuleNode> mod;
 
 		SLAKE_FORCEINLINE ErrorParsingImportedModuleErrorExData(LexicalError &&lexicalError) : lexicalError(std::move(lexicalError)) {}
@@ -299,7 +299,7 @@ namespace slkc {
 			ErrorParsingImportedModuleErrorExData &&exData)
 			: tokenRange(tokenRange),
 			  errorKind(CompilationErrorKind::ErrorParsingImportedModule),
-			  exData(exData) {
+			  exData(std::move(exData)) {
 			assert(tokenRange);
 		}
 

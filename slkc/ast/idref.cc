@@ -15,7 +15,7 @@ SLKC_API void IdRef::dealloc() noexcept {
 	peff::destroyAndRelease<IdRef>(selfAllocator.get(), this, ASTNODE_ALIGNMENT);
 }
 
-SLKC_API std::optional<IdRefEntry> slkc::duplicateIdRefEntry(peff::Alloc *selfAllocator, const IdRefEntry &rhs) {
+SLKC_API peff::Option<IdRefEntry> slkc::duplicateIdRefEntry(peff::Alloc *selfAllocator, const IdRefEntry &rhs) {
 	IdRefEntry newIdRefEntry(selfAllocator);
 
 	if (!newIdRefEntry.genericArgs.build(rhs.genericArgs)) {
@@ -54,9 +54,9 @@ SLKC_API IdRefPtr slkc::duplicateIdRef(peff::Alloc *selfAllocator, IdRef *rhs) {
 	}
 
 	for (size_t i = 0; i < rhs->entries.size(); ++i) {
-		std::optional<IdRefEntry> duplicatedEntry = duplicateIdRefEntry(selfAllocator, rhs->entries.at(i));
+		peff::Option<IdRefEntry> duplicatedEntry = duplicateIdRefEntry(selfAllocator, rhs->entries.at(i));
 
-		if (!duplicatedEntry.has_value())
+		if (!duplicatedEntry.hasValue())
 			return {};
 
 		peff::constructAt<IdRefEntry>(&newIdRefPtr->entries.at(i), std::move(*duplicatedEntry));

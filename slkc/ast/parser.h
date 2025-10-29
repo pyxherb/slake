@@ -132,11 +132,11 @@ namespace slkc {
 			return SyntaxError(TokenRange{ 0 }, SyntaxErrorKind::OutOfMemory);
 		}
 
-		SLKC_API std::optional<SyntaxError> lookaheadUntil(size_t nTokenIds, const TokenId tokenIds[]);
+		SLKC_API peff::Option<SyntaxError> lookaheadUntil(size_t nTokenIds, const TokenId tokenIds[]);
 		SLKC_API Token *nextToken(bool keepNewLine = false, bool keepWhitespace = false, bool keepComment = false);
 		SLKC_API Token *peekToken(bool keepNewLine = false, bool keepWhitespace = false, bool keepComment = false);
 
-		[[nodiscard]] SLAKE_FORCEINLINE std::optional<SyntaxError> expectToken(Token *token, TokenId tokenId) {
+		[[nodiscard]] SLAKE_FORCEINLINE peff::Option<SyntaxError> expectToken(Token *token, TokenId tokenId) {
 			if (token->tokenId != tokenId) {
 				ExpectingSingleTokenErrorExData exData = { tokenId };
 
@@ -146,7 +146,7 @@ namespace slkc {
 			return {};
 		}
 
-		[[nodiscard]] SLAKE_FORCEINLINE std::optional<SyntaxError> expectToken(Token *token) {
+		[[nodiscard]] SLAKE_FORCEINLINE peff::Option<SyntaxError> expectToken(Token *token) {
 			if (token->tokenId == TokenId::End) {
 				ExpectingTokensErrorExData exData(resourceAllocator.get());
 
@@ -156,37 +156,37 @@ namespace slkc {
 			return {};
 		}
 
-		[[nodiscard]] SLKC_API std::optional<SyntaxError> splitRshOpToken();
-		[[nodiscard]] SLKC_API std::optional<SyntaxError> splitRDBracketsToken();
+		[[nodiscard]] SLKC_API peff::Option<SyntaxError> splitRshOpToken();
+		[[nodiscard]] SLKC_API peff::Option<SyntaxError> splitRDBracketsToken();
 
-		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseVarDefs(peff::DynArray<VarDefEntryPtr> &varDefEntries);
+		[[nodiscard]] SLKC_API peff::Option<SyntaxError> parseVarDefs(peff::DynArray<VarDefEntryPtr> &varDefEntries);
 
-		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseIdRef(IdRefPtr &idRefOut);
-		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseExpr(int precedence, AstNodePtr<ExprNode> &exprOut);
-		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseStmt(AstNodePtr<StmtNode> &stmtOut);
-		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseTypeName(AstNodePtr<TypeNameNode> &typeNameOut, bool withCircumfixes = true);
+		[[nodiscard]] SLKC_API peff::Option<SyntaxError> parseIdRef(IdRefPtr &idRefOut);
+		[[nodiscard]] SLKC_API peff::Option<SyntaxError> parseExpr(int precedence, AstNodePtr<ExprNode> &exprOut);
+		[[nodiscard]] SLKC_API peff::Option<SyntaxError> parseStmt(AstNodePtr<StmtNode> &stmtOut);
+		[[nodiscard]] SLKC_API peff::Option<SyntaxError> parseTypeName(AstNodePtr<TypeNameNode> &typeNameOut, bool withCircumfixes = true);
 
-		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseAttribute(AstNodePtr<AttributeNode> &attributeOut);
-		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseAttributes(peff::DynArray<AstNodePtr<AttributeNode>> &attributesOut);
+		[[nodiscard]] SLKC_API peff::Option<SyntaxError> parseAttribute(AstNodePtr<AttributeNode> &attributeOut);
+		[[nodiscard]] SLKC_API peff::Option<SyntaxError> parseAttributes(peff::DynArray<AstNodePtr<AttributeNode>> &attributesOut);
 
-		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseArgs(peff::DynArray<AstNodePtr<ExprNode>> &argsOut, peff::DynArray<size_t> &idxCommaTokensOut);
-		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseGenericConstraint(GenericConstraintPtr &constraintOut);
-		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseParamTypeListGenericConstraint(ParamTypeListGenericConstraintPtr &constraintOut);
-		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseGenericParams(peff::DynArray<AstNodePtr<GenericParamNode>> &genericParamsOut, peff::DynArray<size_t> &idxCommaTokensOut, size_t &lAngleBracketIndexOut, size_t &rAngleBracketIndexOut);
-		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseParams(peff::DynArray<AstNodePtr<VarNode>> &paramsOut, bool &varArgOut, peff::DynArray<size_t> &idxCommaTokensOut, size_t &lAngleBracketIndexOut, size_t &rAngleBracketIndexOut);
+		[[nodiscard]] SLKC_API peff::Option<SyntaxError> parseArgs(peff::DynArray<AstNodePtr<ExprNode>> &argsOut, peff::DynArray<size_t> &idxCommaTokensOut);
+		[[nodiscard]] SLKC_API peff::Option<SyntaxError> parseGenericConstraint(GenericConstraintPtr &constraintOut);
+		[[nodiscard]] SLKC_API peff::Option<SyntaxError> parseParamTypeListGenericConstraint(ParamTypeListGenericConstraintPtr &constraintOut);
+		[[nodiscard]] SLKC_API peff::Option<SyntaxError> parseGenericParams(peff::DynArray<AstNodePtr<GenericParamNode>> &genericParamsOut, peff::DynArray<size_t> &idxCommaTokensOut, size_t &lAngleBracketIndexOut, size_t &rAngleBracketIndexOut);
+		[[nodiscard]] SLKC_API peff::Option<SyntaxError> parseParams(peff::DynArray<AstNodePtr<VarNode>> &paramsOut, bool &varArgOut, peff::DynArray<size_t> &idxCommaTokensOut, size_t &lAngleBracketIndexOut, size_t &rAngleBracketIndexOut);
 
-		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseFn(AstNodePtr<FnOverloadingNode> &fnNodeOut);
-		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseOperatorName(std::string_view &nameOut);
-		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseIdName(peff::String &nameOut);
+		[[nodiscard]] SLKC_API peff::Option<SyntaxError> parseFn(AstNodePtr<FnOverloadingNode> &fnNodeOut);
+		[[nodiscard]] SLKC_API peff::Option<SyntaxError> parseOperatorName(std::string_view &nameOut);
+		[[nodiscard]] SLKC_API peff::Option<SyntaxError> parseIdName(peff::String &nameOut);
 
-		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseClassStmts();
+		[[nodiscard]] SLKC_API peff::Option<SyntaxError> parseClassStmts();
 
-		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseProgramStmt();
+		[[nodiscard]] SLKC_API peff::Option<SyntaxError> parseProgramStmt();
 
 		/// @brief Parse a whole program.
 		/// @return The syntax error that forced the parser to interrupt the parse progress.
 		/// @note Don't forget that there still may be syntax errors emitted even the parse progress is not interrupted.
-		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseProgram(const AstNodePtr<ModuleNode> &initialMod, IdRefPtr &moduleNameOut);
+		[[nodiscard]] SLKC_API peff::Option<SyntaxError> parseProgram(const AstNodePtr<ModuleNode> &initialMod, IdRefPtr &moduleNameOut);
 	};
 }
 

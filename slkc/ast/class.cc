@@ -101,7 +101,7 @@ SLKC_API ClassNode::ClassNode(const ClassNode &rhs, peff::Alloc *allocator, Dupl
 SLKC_API ClassNode::~ClassNode() {
 }
 
-SLKC_API std::optional<CompilationError> ClassNode::isCyclicInherited(bool &whetherOut) {
+SLKC_API peff::Option<CompilationError> ClassNode::isCyclicInherited(bool &whetherOut) {
 	if (isCyclicInheritanceChecked) {
 		whetherOut = isCyclicInheritedFlag;
 		return {};
@@ -113,7 +113,7 @@ SLKC_API std::optional<CompilationError> ClassNode::isCyclicInherited(bool &whet
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> ClassNode::updateCyclicInheritedStatus() {
+SLKC_API peff::Option<CompilationError> ClassNode::updateCyclicInheritedStatus() {
 	SLKC_RETURN_IF_COMP_ERROR(isBaseOf(document->sharedFromThis(), sharedFromThis().template castTo<ClassNode>(), sharedFromThis().template castTo<ClassNode>(), isCyclicInheritedFlag));
 
 	isCyclicInheritanceChecked = true;
@@ -209,7 +209,7 @@ SLKC_API InterfaceNode::InterfaceNode(const InterfaceNode &rhs, peff::Alloc *all
 SLKC_API InterfaceNode::~InterfaceNode() {
 }
 
-SLKC_API std::optional<CompilationError> InterfaceNode::isCyclicInherited(bool &whetherOut) {
+SLKC_API peff::Option<CompilationError> InterfaceNode::isCyclicInherited(bool &whetherOut) {
 	if (isCyclicInheritanceChecked) {
 		whetherOut = isCyclicInheritedFlag;
 		return {};
@@ -221,14 +221,14 @@ SLKC_API std::optional<CompilationError> InterfaceNode::isCyclicInherited(bool &
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> InterfaceNode::updateCyclicInheritedStatus() {
+SLKC_API peff::Option<CompilationError> InterfaceNode::updateCyclicInheritedStatus() {
 	peff::Set<AstNodePtr<InterfaceNode>> involvedInterfaces(document->allocator.get());
 
 	if (auto e = collectInvolvedInterfaces(document->sharedFromThis(), sharedFromThis().template castTo<InterfaceNode>(), involvedInterfaces, true); e) {
 		if (e->errorKind == CompilationErrorKind::CyclicInheritedInterface) {
 			isCyclicInheritedFlag = true;
 			isCyclicInheritanceChecked = true;
-			if (!cyclicInheritanceError.has_value()) {
+			if (!cyclicInheritanceError.hasValue()) {
 				cyclicInheritanceError = std::move(*e);
 			}
 			e.reset();
@@ -333,7 +333,7 @@ SLKC_API StructNode::StructNode(const StructNode &rhs, peff::Alloc *allocator, D
 SLKC_API StructNode::~StructNode() {
 }
 
-SLKC_API std::optional<CompilationError> StructNode::isRecursedType(bool &whetherOut) {
+SLKC_API peff::Option<CompilationError> StructNode::isRecursedType(bool &whetherOut) {
 	if (isRecursedTypeChecked) {
 		whetherOut = isRecursedTypeFlag;
 		return {};
@@ -345,7 +345,7 @@ SLKC_API std::optional<CompilationError> StructNode::isRecursedType(bool &whethe
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> StructNode::updateRecursedTypeStatus() {
+SLKC_API peff::Option<CompilationError> StructNode::updateRecursedTypeStatus() {
 	isRecursedTypeFlag = false;
 
 	SLKC_RETURN_IF_COMP_ERROR(isStructRecursed(document->sharedFromThis(), sharedFromThis().template castTo<StructNode>()));
@@ -396,7 +396,7 @@ struct CollectInvolvedInterfacesContext {
 	SLAKE_FORCEINLINE CollectInvolvedInterfacesContext(peff::Alloc *allocator) : frames(allocator) {}
 };
 
-static std::optional<CompilationError> _collectInvolvedInterfaces(
+static peff::Option<CompilationError> _collectInvolvedInterfaces(
 	peff::SharedPtr<Document> document,
 	CollectInvolvedInterfacesContext &context,
 	AstNodePtr<InterfaceNode> interfaceNode,
@@ -450,7 +450,7 @@ malformed:
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> slkc::collectInvolvedInterfaces(
+SLKC_API peff::Option<CompilationError> slkc::collectInvolvedInterfaces(
 	peff::SharedPtr<Document> document,
 	const AstNodePtr<InterfaceNode> &derived,
 	peff::Set<AstNodePtr<InterfaceNode>> &walkedInterfaces,
@@ -485,7 +485,7 @@ struct StructRecursionCheckContext {
 	SLAKE_FORCEINLINE StructRecursionCheckContext(peff::Alloc *allocator) : frames(allocator) {}
 };
 
-static std::optional<CompilationError> _isStructRecursed(
+static peff::Option<CompilationError> _isStructRecursed(
 	peff::SharedPtr<Document> document,
 	StructRecursionCheckContext &context,
 	AstNodePtr<StructNode> structNode,
@@ -535,7 +535,7 @@ static std::optional<CompilationError> _isStructRecursed(
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> slkc::isStructRecursed(
+SLKC_API peff::Option<CompilationError> slkc::isStructRecursed(
 	peff::SharedPtr<Document> document,
 	const AstNodePtr<StructNode> &derived) {
 	StructRecursionCheckContext context(document->allocator.get());
@@ -544,7 +544,7 @@ SLKC_API std::optional<CompilationError> slkc::isStructRecursed(
 	return _isStructRecursed(document, context, derived, walkedStructs);
 }
 
-SLKC_API std::optional<CompilationError> slkc::isImplementedByInterface(
+SLKC_API peff::Option<CompilationError> slkc::isImplementedByInterface(
 	peff::SharedPtr<Document> document,
 	const AstNodePtr<InterfaceNode> &base,
 	const AstNodePtr<InterfaceNode> &derived,
@@ -557,7 +557,7 @@ SLKC_API std::optional<CompilationError> slkc::isImplementedByInterface(
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> slkc::isImplementedByClass(
+SLKC_API peff::Option<CompilationError> slkc::isImplementedByClass(
 	peff::SharedPtr<Document> document,
 	const AstNodePtr<InterfaceNode> &base,
 	const AstNodePtr<ClassNode> &derived,
@@ -633,7 +633,7 @@ malformed:
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> slkc::isBaseOf(
+SLKC_API peff::Option<CompilationError> slkc::isBaseOf(
 	peff::SharedPtr<Document> document,
 	const AstNodePtr<ClassNode> &base,
 	const AstNodePtr<ClassNode> &derived,

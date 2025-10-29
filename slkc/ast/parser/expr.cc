@@ -2,10 +2,10 @@
 
 using namespace slkc;
 
-SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr<ExprNode> &exprOut) {
+SLKC_API peff::Option<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr<ExprNode> &exprOut) {
 	Token *prefixToken;
 
-	std::optional<SyntaxError> syntaxError;
+	peff::Option<SyntaxError> syntaxError;
 	AstNodePtr<ExprNode> lhs, rhs;
 
 	if ((syntaxError = expectToken((prefixToken = peekToken()))))

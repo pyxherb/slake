@@ -16,7 +16,7 @@ namespace slkc {
 		}
 	};
 
-	SLKC_API std::optional<IdRefEntry> duplicateIdRefEntry(peff::Alloc *selfAllocator, const IdRefEntry &rhs);
+	SLKC_API peff::Option<IdRefEntry> duplicateIdRefEntry(peff::Alloc *selfAllocator, const IdRefEntry &rhs);
 
 	class IdRef final {
 	public:

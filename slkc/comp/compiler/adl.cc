@@ -2,7 +2,7 @@
 
 using namespace slkc;
 
-SLKC_API std::optional<CompilationError> slkc::determineFnOverloading(
+SLKC_API peff::Option<CompilationError> slkc::determineFnOverloading(
 	CompileEnvironment *compileEnv,
 	AstNodePtr<FnNode> fnSlot,
 	const AstNodePtr<TypeNameNode> *argTypes,

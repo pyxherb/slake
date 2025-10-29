@@ -2,9 +2,9 @@
 
 using namespace slkc;
 
-SLKC_API std::optional<SyntaxError> Parser::parseVarDefs(peff::DynArray<VarDefEntryPtr> &varDefEntries) {
+SLKC_API peff::Option<SyntaxError> Parser::parseVarDefs(peff::DynArray<VarDefEntryPtr> &varDefEntries) {
 	Token *currentToken;
-	std::optional<SyntaxError> syntaxError;
+	peff::Option<SyntaxError> syntaxError;
 
 	for (;;) {
 		peff::DynArray<AstNodePtr<AttributeNode>> attributes(resourceAllocator.get());
@@ -72,10 +72,10 @@ SLKC_API std::optional<SyntaxError> Parser::parseVarDefs(peff::DynArray<VarDefEn
 	return {};
 }
 
-SLKC_API std::optional<SyntaxError> Parser::parseStmt(AstNodePtr<StmtNode> &stmtOut) {
+SLKC_API peff::Option<SyntaxError> Parser::parseStmt(AstNodePtr<StmtNode> &stmtOut) {
 	Token *prefixToken;
 
-	std::optional<SyntaxError> syntaxError;
+	peff::Option<SyntaxError> syntaxError;
 
 	if ((syntaxError = expectToken((prefixToken = peekToken()))))
 		goto genBadStmt;

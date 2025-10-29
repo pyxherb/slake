@@ -2,14 +2,14 @@
 
 using namespace slkc;
 
-SLKC_API std::optional<SyntaxError> Parser::parseGenericConstraint(GenericConstraintPtr &constraintOut) {
+SLKC_API peff::Option<SyntaxError> Parser::parseGenericConstraint(GenericConstraintPtr &constraintOut) {
 	GenericConstraintPtr constraint(peff::allocAndConstruct<GenericConstraint>(resourceAllocator.get(), alignof(GenericConstraint), resourceAllocator.get()));
 
 	if (!constraint) {
 		return genOutOfMemoryError();
 	}
 
-	std::optional<SyntaxError> syntaxError;
+	peff::Option<SyntaxError> syntaxError;
 
 	if (Token *lParentheseToken = peekToken(); lParentheseToken->tokenId == TokenId::LParenthese) {
 		nextToken();
@@ -52,14 +52,14 @@ SLKC_API std::optional<SyntaxError> Parser::parseGenericConstraint(GenericConstr
 	return {};
 }
 
-SLKC_API std::optional<SyntaxError> Parser::parseParamTypeListGenericConstraint(ParamTypeListGenericConstraintPtr &constraintOut) {
+SLKC_API peff::Option<SyntaxError> Parser::parseParamTypeListGenericConstraint(ParamTypeListGenericConstraintPtr &constraintOut) {
 	ParamTypeListGenericConstraintPtr constraint(peff::allocAndConstruct<ParamTypeListGenericConstraint>(resourceAllocator.get(), alignof(ParamTypeListGenericConstraint), resourceAllocator.get()));
 
 	if (!constraint) {
 		return genOutOfMemoryError();
 	}
 
-	std::optional<SyntaxError> syntaxError;
+	peff::Option<SyntaxError> syntaxError;
 
 	if (Token *lParentheseToken = peekToken(); lParentheseToken->tokenId == TokenId::LParenthese) {
 		nextToken();
@@ -102,12 +102,12 @@ SLKC_API std::optional<SyntaxError> Parser::parseParamTypeListGenericConstraint(
 	return {};
 }
 
-SLKC_API std::optional<SyntaxError> Parser::parseGenericParams(
+SLKC_API peff::Option<SyntaxError> Parser::parseGenericParams(
 	peff::DynArray<AstNodePtr<GenericParamNode>> &genericParamsOut,
 	peff::DynArray<size_t> &idxCommaTokensOut,
 	size_t &lAngleBracketIndexOut,
 	size_t &rAngleBracketIndexOut) {
-	std::optional<SyntaxError> syntaxError;
+	peff::Option<SyntaxError> syntaxError;
 
 	Token *lAngleBracketToken = peekToken();
 

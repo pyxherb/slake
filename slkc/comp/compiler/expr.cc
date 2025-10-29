@@ -3,7 +3,7 @@
 using namespace slkc;
 
 template <typename LE, typename DT, typename TN>
-SLAKE_FORCEINLINE std::optional<CompilationError> _compileLiteralExpr(
+SLAKE_FORCEINLINE peff::Option<CompilationError> _compileLiteralExpr(
 	CompileEnvironment *compileEnv,
 	CompilationContext *compilationContext,
 	const AstNodePtr<ExprNode> &expr,
@@ -49,7 +49,7 @@ SLAKE_FORCEINLINE std::optional<CompilationError> _compileLiteralExpr(
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> slkc::_compileOrCastOperand(
+SLKC_API peff::Option<CompilationError> slkc::_compileOrCastOperand(
 	CompileEnvironment *compileEnv,
 	CompilationContext *compilationContext,
 	uint32_t regOut,
@@ -91,10 +91,10 @@ SLKC_API std::optional<CompilationError> slkc::_compileOrCastOperand(
 	return CompilationError(operand->tokenRange, std::move(exData));
 }
 
-static std::optional<CompilationError> _loadTheRestOfIdRef(CompileEnvironment *compileEnv, CompilationContext *compilationContext, ExprEvalPurpose evalPurpose, uint32_t resultRegOut, CompileExprResult &resultOut, IdRef *idRef, ResolvedIdRefPartList &parts, uint32_t initialMemberReg, size_t curIdx, AstNodePtr<FnTypeNameNode> extraFnArgs);
-static std::optional<CompilationError> _determineNodeType(CompileEnvironment *compileEnv, AstNodePtr<MemberNode> node, AstNodePtr<TypeNameNode> &typeNameOut);
+static peff::Option<CompilationError> _loadTheRestOfIdRef(CompileEnvironment *compileEnv, CompilationContext *compilationContext, ExprEvalPurpose evalPurpose, uint32_t resultRegOut, CompileExprResult &resultOut, IdRef *idRef, ResolvedIdRefPartList &parts, uint32_t initialMemberReg, size_t curIdx, AstNodePtr<FnTypeNameNode> extraFnArgs);
+static peff::Option<CompilationError> _determineNodeType(CompileEnvironment *compileEnv, AstNodePtr<MemberNode> node, AstNodePtr<TypeNameNode> &typeNameOut);
 
-static std::optional<CompilationError> _loadTheRestOfIdRef(CompileEnvironment *compileEnv, CompilationContext *compilationContext, ExprEvalPurpose evalPurpose, uint32_t resultRegOut, CompileExprResult &resultOut, IdRef *idRef, ResolvedIdRefPartList &parts, uint32_t initialMemberReg, size_t curIdx, AstNodePtr<FnTypeNameNode> extraFnArgs) {
+static peff::Option<CompilationError> _loadTheRestOfIdRef(CompileEnvironment *compileEnv, CompilationContext *compilationContext, ExprEvalPurpose evalPurpose, uint32_t resultRegOut, CompileExprResult &resultOut, IdRef *idRef, ResolvedIdRefPartList &parts, uint32_t initialMemberReg, size_t curIdx, AstNodePtr<FnTypeNameNode> extraFnArgs) {
 	uint32_t idxReg;
 
 	if (initialMemberReg == UINT32_MAX) {
@@ -279,7 +279,7 @@ static std::optional<CompilationError> _loadTheRestOfIdRef(CompileEnvironment *c
 	SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::MOV, resultRegOut, { slake::Value(slake::ValueType::RegIndex, idxReg) }));
 	return {};
 };
-auto selectSingleMatchingOverloading = [](CompileEnvironment *compileEnv, const TokenRange &tokenRange, AstNodePtr<MemberNode> &finalMember, AstNodePtr<TypeNameNode> desiredType, bool isStatic, CompileExprResult &resultOut) -> std::optional<CompilationError> {
+auto selectSingleMatchingOverloading = [](CompileEnvironment *compileEnv, const TokenRange &tokenRange, AstNodePtr<MemberNode> &finalMember, AstNodePtr<TypeNameNode> desiredType, bool isStatic, CompileExprResult &resultOut) -> peff::Option<CompilationError> {
 	AstNodePtr<FnNode> m = finalMember.template castTo<FnNode>();
 
 	resultOut.callTargetFnSlot = m;
@@ -317,7 +317,7 @@ auto selectSingleMatchingOverloading = [](CompileEnvironment *compileEnv, const 
 	return {};
 };
 
-static std::optional<CompilationError> _determineNodeType(CompileEnvironment *compileEnv, AstNodePtr<MemberNode> node, AstNodePtr<TypeNameNode> &typeNameOut) {
+static peff::Option<CompilationError> _determineNodeType(CompileEnvironment *compileEnv, AstNodePtr<MemberNode> node, AstNodePtr<TypeNameNode> &typeNameOut) {
 	switch (node->getAstNodeType()) {
 		case AstNodeType::This: {
 			auto m = node.template castTo<ThisNode>()->thisType;
@@ -383,7 +383,7 @@ static std::optional<CompilationError> _determineNodeType(CompileEnvironment *co
 	return {};
 };
 
-SLKC_API std::optional<CompilationError> slkc::compileExpr(
+SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 	CompileEnvironment *compileEnv,
 	CompilationContext *compilationContext,
 	const AstNodePtr<ExprNode> &expr,

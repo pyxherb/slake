@@ -2,7 +2,7 @@
 
 using namespace slkc;
 
-SLKC_API std::optional<CompilationError> slkc::compileTypeName(
+SLKC_API peff::Option<CompilationError> slkc::compileTypeName(
 	CompileEnvironment *compileEnv,
 	CompilationContext *compilationContext,
 	AstNodePtr<TypeNameNode> typeName,
@@ -375,7 +375,7 @@ SLKC_API std::optional<CompilationError> slkc::compileTypeName(
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> slkc::compileIdRef(
+SLKC_API peff::Option<CompilationError> slkc::compileIdRef(
 	CompileEnvironment *compileEnv,
 	CompilationContext *compilationContext,
 	const IdRefEntry *entries,
@@ -440,7 +440,7 @@ SLKC_API std::optional<CompilationError> slkc::compileIdRef(
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> slkc::compileValueExpr(
+SLKC_API peff::Option<CompilationError> slkc::compileValueExpr(
 	CompileEnvironment *compileEnv,
 	CompilationContext *compilationContext,
 	AstNodePtr<ExprNode> expr,
@@ -574,14 +574,14 @@ SLKC_API std::optional<CompilationError> slkc::compileValueExpr(
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> slkc::compileGenericParams(
+SLKC_API peff::Option<CompilationError> slkc::compileGenericParams(
 	CompileEnvironment *compileEnv,
 	CompilationContext *compilationContext,
 	AstNodePtr<ModuleNode> mod,
 	AstNodePtr<GenericParamNode> *genericParams,
 	size_t nGenericParams,
 	slake::GenericParamList &genericParamListOut) {
-	std::optional<CompilationError> e;
+	peff::Option<CompilationError> e;
 
 	for (size_t j = 0; j < nGenericParams; ++j) {
 		auto gpNode = genericParams[j];
@@ -629,11 +629,11 @@ SLKC_API std::optional<CompilationError> slkc::compileGenericParams(
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> slkc::compileModule(
+SLKC_API peff::Option<CompilationError> slkc::compileModule(
 	CompileEnvironment *compileEnv,
 	AstNodePtr<ModuleNode> mod,
 	slake::ModuleObject *modOut) {
-	std::optional<CompilationError> compilationError;
+	peff::Option<CompilationError> compilationError;
 	for (auto i : mod->anonymousImports) {
 		NormalCompilationContext compilationContext(compileEnv, nullptr);
 
@@ -1036,7 +1036,7 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 				SLKC_RETURN_IF_COMP_ERROR(clsNode->isCyclicInherited(isCyclicInherited));
 
 				if (isCyclicInherited) {
-					if (clsNode->cyclicInheritanceError.has_value()) {
+					if (clsNode->cyclicInheritanceError.hasValue()) {
 						SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(std::move(*clsNode->cyclicInheritanceError)));
 						clsNode->cyclicInheritanceError.reset();
 						continue;
@@ -1177,7 +1177,7 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 				}
 
 				for (auto &i : slotNode->overloadings) {
-					std::optional<CompilationError> e;
+					peff::Option<CompilationError> e;
 
 					for (size_t j = &i - slotNode->overloadings.data() + 1; j < slotNode->overloadings.size(); ++j) {
 						bool whether;

@@ -2,7 +2,7 @@
 
 using namespace slkc;
 
-SLKC_API std::optional<CompilationError> slkc::getFullIdRef(peff::Alloc *allocator, AstNodePtr<MemberNode> m, IdRefPtr &idRefOut) {
+SLKC_API peff::Option<CompilationError> slkc::getFullIdRef(peff::Alloc *allocator, AstNodePtr<MemberNode> m, IdRefPtr &idRefOut) {
 	IdRefPtr p(peff::allocAndConstruct<IdRef>(allocator, ASTNODE_ALIGNMENT, allocator));
 
 	for (;;) {
@@ -49,7 +49,7 @@ end:
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> slkc::resolveStaticMember(
+SLKC_API peff::Option<CompilationError> slkc::resolveStaticMember(
 	CompileEnvironment *compileEnv,
 	peff::SharedPtr<Document> document,
 	const AstNodePtr<MemberNode> &memberNode,
@@ -139,7 +139,7 @@ SLKC_API std::optional<CompilationError> slkc::resolveStaticMember(
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> slkc::resolveInstanceMember(
+SLKC_API peff::Option<CompilationError> slkc::resolveInstanceMember(
 	CompileEnvironment *compileEnv,
 	peff::SharedPtr<Document> document,
 	AstNodePtr<MemberNode> memberNode,
@@ -332,7 +332,7 @@ SLKC_API std::optional<CompilationError> slkc::resolveInstanceMember(
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> slkc::resolveIdRef(
+SLKC_API peff::Option<CompilationError> slkc::resolveIdRef(
 	CompileEnvironment *compileEnv,
 	peff::SharedPtr<Document> document,
 	const AstNodePtr<MemberNode> &resolveRoot,
@@ -410,7 +410,7 @@ SLKC_API std::optional<CompilationError> slkc::resolveIdRef(
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> slkc::resolveIdRefWithScopeNode(
+SLKC_API peff::Option<CompilationError> slkc::resolveIdRefWithScopeNode(
 	CompileEnvironment *compileEnv,
 	peff::SharedPtr<Document> document,
 	peff::Set<AstNodePtr<MemberNode>> &walkedNodes,
@@ -681,7 +681,7 @@ SLKC_API std::optional<CompilationError> slkc::resolveIdRefWithScopeNode(
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> slkc::resolveCustomTypeName(
+SLKC_API peff::Option<CompilationError> slkc::resolveCustomTypeName(
 	peff::SharedPtr<Document> document,
 	const AstNodePtr<CustomTypeNameNode> &typeName,
 	AstNodePtr<MemberNode> &memberNodeOut,
@@ -727,7 +727,7 @@ resolved:
 }
 
 [[nodiscard]] SLKC_API
-	std::optional<CompilationError>
+	peff::Option<CompilationError>
 	slkc::resolveBaseOverridenCustomTypeName(
 		peff::SharedPtr<Document> document,
 		const AstNodePtr<CustomTypeNameNode>& typeName,
@@ -781,7 +781,7 @@ resolved:
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> slkc::visitBaseClass(AstNodePtr<TypeNameNode> cls, AstNodePtr<ClassNode> &classOut, peff::Set<AstNodePtr<MemberNode>> *walkedNodes) {
+SLKC_API peff::Option<CompilationError> slkc::visitBaseClass(AstNodePtr<TypeNameNode> cls, AstNodePtr<ClassNode> &classOut, peff::Set<AstNodePtr<MemberNode>> *walkedNodes) {
 	if (cls && (cls->typeNameKind == TypeNameKind::Custom)) {
 		AstNodePtr<MemberNode> baseType;
 
@@ -802,7 +802,7 @@ SLKC_API std::optional<CompilationError> slkc::visitBaseClass(AstNodePtr<TypeNam
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> slkc::visitBaseInterface(AstNodePtr<TypeNameNode> cls, AstNodePtr<InterfaceNode> &classOut, peff::Set<AstNodePtr<MemberNode>> *walkedNodes) {
+SLKC_API peff::Option<CompilationError> slkc::visitBaseInterface(AstNodePtr<TypeNameNode> cls, AstNodePtr<InterfaceNode> &classOut, peff::Set<AstNodePtr<MemberNode>> *walkedNodes) {
 	if (cls && (cls->typeNameKind == TypeNameKind::Custom)) {
 		AstNodePtr<MemberNode> baseType;
 

@@ -684,7 +684,7 @@ public:
 			fclose(fp);
 	}
 
-	virtual std::optional<slkc::CompilationError> write(const char *src, size_t size) override {
+	virtual peff::Option<slkc::CompilationError> write(const char *src, size_t size) override {
 		if (fwrite(src, size, 1, fp) < 1) {
 			return slkc::CompilationError(slkc::TokenRange{ 0 }, slkc::CompilationErrorKind::ErrorWritingCompiledModule);
 		}

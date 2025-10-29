@@ -2,7 +2,7 @@
 
 using namespace slkc;
 
-SLKC_API std::optional<CompilationError> slkc::reindexFnParams(
+SLKC_API peff::Option<CompilationError> slkc::reindexFnParams(
 	CompileEnvironment *compileEnv,
 	AstNodePtr<FnOverloadingNode> fn) {
 	for (size_t i = 0; i < fn->params.size(); ++i) {
@@ -31,7 +31,7 @@ SLKC_API std::optional<CompilationError> slkc::reindexFnParams(
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> slkc::indexFnParams(
+SLKC_API peff::Option<CompilationError> slkc::indexFnParams(
 	CompileEnvironment *compileEnv,
 	AstNodePtr<FnOverloadingNode> fn) {
 	if (fn->isParamsIndexed) {
@@ -44,7 +44,7 @@ SLKC_API std::optional<CompilationError> slkc::indexFnParams(
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> slkc::reindexClassGenericParams(
+SLKC_API peff::Option<CompilationError> slkc::reindexClassGenericParams(
 	CompileEnvironment *compileEnv,
 	AstNodePtr<ClassNode> cls) {
 	for (size_t i = 0; i < cls->genericParams.size(); ++i) {
@@ -62,7 +62,7 @@ SLKC_API std::optional<CompilationError> slkc::reindexClassGenericParams(
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> slkc::indexClassGenericParams(
+SLKC_API peff::Option<CompilationError> slkc::indexClassGenericParams(
 	CompileEnvironment *compileEnv,
 	AstNodePtr<ClassNode> cls) {
 	if (cls->isGenericParamsIndexed) {
@@ -75,7 +75,7 @@ SLKC_API std::optional<CompilationError> slkc::indexClassGenericParams(
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> slkc::reindexInterfaceGenericParams(
+SLKC_API peff::Option<CompilationError> slkc::reindexInterfaceGenericParams(
 	CompileEnvironment *compileEnv,
 	AstNodePtr<InterfaceNode> interfaceNode) {
 	for (size_t i = 0; i < interfaceNode->genericParams.size(); ++i) {
@@ -93,7 +93,7 @@ SLKC_API std::optional<CompilationError> slkc::reindexInterfaceGenericParams(
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> slkc::indexInterfaceGenericParams(
+SLKC_API peff::Option<CompilationError> slkc::indexInterfaceGenericParams(
 	CompileEnvironment *compileEnv,
 	AstNodePtr<InterfaceNode> interfaceNode) {
 	if (interfaceNode->isGenericParamsIndexed) {
@@ -106,7 +106,7 @@ SLKC_API std::optional<CompilationError> slkc::indexInterfaceGenericParams(
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> slkc::reindexStructGenericParams(
+SLKC_API peff::Option<CompilationError> slkc::reindexStructGenericParams(
 	CompileEnvironment* compileEnv,
 	AstNodePtr<StructNode> structNode) {
 	for (size_t i = 0; i < structNode->genericParams.size(); ++i) {
@@ -124,7 +124,7 @@ SLKC_API std::optional<CompilationError> slkc::reindexStructGenericParams(
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> slkc::indexStructGenericParams(
+SLKC_API peff::Option<CompilationError> slkc::indexStructGenericParams(
 	CompileEnvironment* compileEnv,
 	AstNodePtr<StructNode> structNode) {
 	if (structNode->isGenericParamsIndexed) {
@@ -137,7 +137,7 @@ SLKC_API std::optional<CompilationError> slkc::indexStructGenericParams(
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> slkc::renormalizeModuleVarDefStmts(
+SLKC_API peff::Option<CompilationError> slkc::renormalizeModuleVarDefStmts(
 	CompileEnvironment *compileEnv,
 	AstNodePtr<ModuleNode> mod) {
 	for (auto &i : mod->varDefStmts) {
@@ -165,7 +165,7 @@ SLKC_API std::optional<CompilationError> slkc::renormalizeModuleVarDefStmts(
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> slkc::normalizeModuleVarDefStmts(
+SLKC_API peff::Option<CompilationError> slkc::normalizeModuleVarDefStmts(
 	CompileEnvironment *compileEnv,
 	AstNodePtr<ModuleNode> mod) {
 	if (mod->isVarDefStmtsNormalized) {
@@ -178,7 +178,7 @@ SLKC_API std::optional<CompilationError> slkc::normalizeModuleVarDefStmts(
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> slkc::isFnSignatureSame(
+SLKC_API peff::Option<CompilationError> slkc::isFnSignatureSame(
 	AstNodePtr<VarNode> *lParams,
 	AstNodePtr<VarNode> *rParams,
 	size_t nParams,
@@ -209,7 +209,7 @@ SLKC_API std::optional<CompilationError> slkc::isFnSignatureSame(
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> slkc::isFnSignatureDuplicated(AstNodePtr<FnOverloadingNode> lhs, AstNodePtr<FnOverloadingNode> rhs, bool &whetherOut) {
+SLKC_API peff::Option<CompilationError> slkc::isFnSignatureDuplicated(AstNodePtr<FnOverloadingNode> lhs, AstNodePtr<FnOverloadingNode> rhs, bool &whetherOut) {
 	if (lhs->params.size() != rhs->params.size()) {
 		whetherOut = false;
 		return {};
@@ -221,7 +221,7 @@ SLKC_API std::optional<CompilationError> slkc::isFnSignatureDuplicated(AstNodePt
 	return isFnSignatureSame(lhs->params.data(), rhs->params.data(), lhs->params.size(), lhs->overridenType, rhs->overridenType, whetherOut);
 }
 
-SLKC_API std::optional<CompilationError> slkc::indexModuleMembers(
+SLKC_API peff::Option<CompilationError> slkc::indexModuleMembers(
 	CompileEnvironment *compileEnv,
 	AstNodePtr<ModuleNode> moduleNode) {
 	for (auto i : moduleNode->members) {

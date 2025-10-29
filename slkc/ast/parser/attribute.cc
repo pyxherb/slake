@@ -2,8 +2,8 @@
 
 using namespace slkc;
 
-SLKC_API std::optional<SyntaxError> Parser::parseAttribute(AstNodePtr<AttributeNode> &attributeOut) {
-	std::optional<SyntaxError> syntaxError;
+SLKC_API peff::Option<SyntaxError> Parser::parseAttribute(AstNodePtr<AttributeNode> &attributeOut) {
+	peff::Option<SyntaxError> syntaxError;
 
 	AstNodePtr<AttributeNode> attribute;
 
@@ -80,8 +80,8 @@ SLKC_API std::optional<SyntaxError> Parser::parseAttribute(AstNodePtr<AttributeN
 	return {};
 }
 
-SLKC_API std::optional<SyntaxError> Parser::parseAttributes(peff::DynArray<AstNodePtr<AttributeNode>> &attributesOut) {
-	std::optional<SyntaxError> syntaxError;
+SLKC_API peff::Option<SyntaxError> Parser::parseAttributes(peff::DynArray<AstNodePtr<AttributeNode>> &attributesOut) {
+	peff::Option<SyntaxError> syntaxError;
 	Token *currentToken;
 
 	for (;;) {

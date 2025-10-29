@@ -8,7 +8,7 @@
 
 namespace slkc {
 #define SLKC_RETURN_IF_COMP_ERROR(...)                              \
-	if (std::optional<slkc::CompilationError> _ = (__VA_ARGS__); _) \
+	if (peff::Option<slkc::CompilationError> _ = (__VA_ARGS__); _) \
 		return _;                                                   \
 	else                                                            \
 		;
@@ -40,7 +40,7 @@ namespace slkc {
 
 	struct TypeNameListCmp {
 		Document *document;
-		mutable std::optional<slkc::CompilationError> storedError;
+		mutable peff::Option<slkc::CompilationError> storedError;
 
 		SLAKE_FORCEINLINE TypeNameListCmp(Document *document) : document(document) {}
 
@@ -90,20 +90,20 @@ namespace slkc {
 		SLKC_API Document(peff::Alloc *allocator);
 		SLKC_API virtual ~Document();
 
-		SLKC_API std::optional<CompilationError> lookupGenericCacheTable(AstNodePtr<MemberNode> originalObject, GenericCacheTable *&tableOut);
+		SLKC_API peff::Option<CompilationError> lookupGenericCacheTable(AstNodePtr<MemberNode> originalObject, GenericCacheTable *&tableOut);
 
-		SLKC_API std::optional<CompilationError> lookupGenericCacheTable(
+		SLKC_API peff::Option<CompilationError> lookupGenericCacheTable(
 			AstNodePtr<MemberNode> originalObject,
 			const GenericCacheTable *&tableOut) const {
 			return const_cast<Document *>(this)->lookupGenericCacheTable(originalObject, const_cast<GenericCacheTable *&>(tableOut));
 		}
 
-		SLKC_API std::optional<CompilationError> lookupGenericCache(
+		SLKC_API peff::Option<CompilationError> lookupGenericCache(
 			AstNodePtr<MemberNode> originalObject,
 			const peff::DynArray<AstNodePtr<TypeNameNode>> &genericArgs,
 			AstNodePtr<MemberNode> &memberOut) const;
 
-		SLKC_API std::optional<CompilationError> instantiateGenericObject(
+		SLKC_API peff::Option<CompilationError> instantiateGenericObject(
 			AstNodePtr<MemberNode> originalObject,
 			const peff::DynArray<AstNodePtr<TypeNameNode>> &genericArgs,
 			AstNodePtr<MemberNode> &memberOut);

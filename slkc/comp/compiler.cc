@@ -29,7 +29,7 @@ SLKC_API NormalCompilationContext::NormalCompilationContext(CompileEnvironment *
 SLKC_API NormalCompilationContext::~NormalCompilationContext() {
 }
 
-SLKC_API std::optional<CompilationError> NormalCompilationContext::allocLabel(uint32_t &labelIdOut) {
+SLKC_API peff::Option<CompilationError> NormalCompilationContext::allocLabel(uint32_t &labelIdOut) {
 	peff::SharedPtr<Label> label = peff::makeShared<Label>(allocator.get(), peff::String(allocator.get()));
 
 	if (!label) {
@@ -47,7 +47,7 @@ SLKC_API std::optional<CompilationError> NormalCompilationContext::allocLabel(ui
 SLKC_API void NormalCompilationContext::setLabelOffset(uint32_t labelId, uint32_t offset) const {
 	labels.at(labelId)->offset = offset;
 }
-SLKC_API std::optional<CompilationError> NormalCompilationContext::setLabelName(uint32_t labelId, const std::string_view &name) {
+SLKC_API peff::Option<CompilationError> NormalCompilationContext::setLabelName(uint32_t labelId, const std::string_view &name) {
 	if (!labels.at(labelId)->name.build(name)) {
 		return genOutOfMemoryCompError();
 	}
@@ -57,7 +57,7 @@ SLKC_API uint32_t NormalCompilationContext::getLabelOffset(uint32_t labelId) con
 	return labels.at(labelId)->offset;
 }
 
-SLKC_API std::optional<CompilationError> NormalCompilationContext::allocReg(uint32_t &regOut) {
+SLKC_API peff::Option<CompilationError> NormalCompilationContext::allocReg(uint32_t &regOut) {
 	if (nTotalRegs < UINT32_MAX) {
 		regOut = nTotalRegs++;
 		return {};
@@ -66,7 +66,7 @@ SLKC_API std::optional<CompilationError> NormalCompilationContext::allocReg(uint
 	return CompilationError({ 0 }, CompilationErrorKind::RegLimitExceeded);
 }
 
-SLKC_API std::optional<CompilationError> NormalCompilationContext::emitIns(slake::Opcode opcode, uint32_t outputRegIndex, const std::initializer_list<slake::Value> &operands) {
+SLKC_API peff::Option<CompilationError> NormalCompilationContext::emitIns(slake::Opcode opcode, uint32_t outputRegIndex, const std::initializer_list<slake::Value> &operands) {
 	slake::Instruction insOut;
 
 	insOut.opcode = opcode;
@@ -87,7 +87,7 @@ SLKC_API std::optional<CompilationError> NormalCompilationContext::emitIns(slake
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> NormalCompilationContext::emitIns(slake::Opcode opcode, uint32_t outputRegIndex, slake::Value *operands, size_t nOperands)
+SLKC_API peff::Option<CompilationError> NormalCompilationContext::emitIns(slake::Opcode opcode, uint32_t outputRegIndex, slake::Value *operands, size_t nOperands)
 {
 	slake::Instruction insOut;
 
@@ -106,7 +106,7 @@ SLKC_API std::optional<CompilationError> NormalCompilationContext::emitIns(slake
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> NormalCompilationContext::allocLocalVar(const TokenRange &tokenRange, const std::string_view &name, uint32_t reg, AstNodePtr<TypeNameNode> type, AstNodePtr<VarNode> &localVarOut) {
+SLKC_API peff::Option<CompilationError> NormalCompilationContext::allocLocalVar(const TokenRange &tokenRange, const std::string_view &name, uint32_t reg, AstNodePtr<TypeNameNode> type, AstNodePtr<VarNode> &localVarOut) {
 	AstNodePtr<VarNode> newVar;
 
 	if (!(newVar = makeAstNode<VarNode>(allocator.get(), allocator.get(), document))) {
@@ -177,7 +177,7 @@ SLKC_API uint32_t NormalCompilationContext::getCurInsOff() const {
 	return baseInsOff + generatedInstructions.size();
 }
 
-SLKC_API std::optional<CompilationError> NormalCompilationContext::enterBlock() {
+SLKC_API peff::Option<CompilationError> NormalCompilationContext::enterBlock() {
 	if (!savedBlockLayers.pushBack(std::move(curBlockLayer))) {
 		return genOutOfMemoryCompError();
 	}
@@ -202,7 +202,7 @@ SLKC_API void CompileEnvironment::onRefZero() noexcept {
 	peff::destroyAndRelease<CompileEnvironment>(selfAllocator.get(), this, sizeof(std::max_align_t));
 }
 
-SLKC_API std::optional<CompilationError> slkc::evalExprType(
+SLKC_API peff::Option<CompilationError> slkc::evalExprType(
 	CompileEnvironment *compileEnv,
 	CompilationContext *compilationContext,
 	const AstNodePtr<ExprNode> &expr,
@@ -218,7 +218,7 @@ SLKC_API std::optional<CompilationError> slkc::evalExprType(
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> slkc::completeParentModules(
+SLKC_API peff::Option<CompilationError> slkc::completeParentModules(
 	CompileEnvironment *compileEnv,
 	IdRef *modulePath,
 	AstNodePtr<ModuleNode> leaf) {
@@ -275,7 +275,7 @@ SLKC_API std::optional<CompilationError> slkc::completeParentModules(
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> slkc::cleanupUnusedModuleTree(
+SLKC_API peff::Option<CompilationError> slkc::cleanupUnusedModuleTree(
 	CompileEnvironment *compileEnv,
 	AstNodePtr<ModuleNode> leaf) {
 	AstNodePtr<ModuleNode> cur = leaf;
@@ -317,7 +317,7 @@ FileSystemExternalModuleProvider::FileSystemExternalModuleProvider(peff::Alloc *
 FileSystemExternalModuleProvider::~FileSystemExternalModuleProvider() {
 }
 
-SLKC_API std::optional<CompilationError> FileSystemExternalModuleProvider::loadModule(CompileEnvironment *compileEnv, IdRef *moduleName) {
+SLKC_API peff::Option<CompilationError> FileSystemExternalModuleProvider::loadModule(CompileEnvironment *compileEnv, IdRef *moduleName) {
 	peff::String suffixPath(compileEnv->allocator.get());
 
 	{

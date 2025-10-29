@@ -28,8 +28,8 @@ namespace slkc {
 		SLKC_API ClassNode(const ClassNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut);
 		SLKC_API virtual ~ClassNode();
 
-		SLKC_API std::optional<CompilationError> isCyclicInherited(bool &whetherOut);
-		SLKC_API std::optional<CompilationError> updateCyclicInheritedStatus();
+		SLKC_API peff::Option<CompilationError> isCyclicInherited(bool &whetherOut);
+		SLKC_API peff::Option<CompilationError> updateCyclicInheritedStatus();
 		SLAKE_FORCEINLINE void resetCyclicInheritanceFlag() {
 			isCyclicInheritanceChecked = false;
 			isCyclicInheritedFlag = false;
@@ -46,7 +46,7 @@ namespace slkc {
 		/// @brief Indicates if the interface has cyclic inheritance.
 		bool isCyclicInheritedFlag = false;
 		/// @brief Error indicates which one type name caused the inheritance error.
-		std::optional<CompilationError> cyclicInheritanceError;
+		peff::Option<CompilationError> cyclicInheritanceError;
 
 		peff::DynArray<AstNodePtr<TypeNameNode>> implTypes;
 		peff::DynArray<AstNodePtr<GenericParamNode>> genericParams;
@@ -60,8 +60,8 @@ namespace slkc {
 		SLKC_API InterfaceNode(const InterfaceNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut);
 		SLKC_API virtual ~InterfaceNode();
 
-		SLKC_API std::optional<CompilationError> isCyclicInherited(bool &whetherOut);
-		SLKC_API std::optional<CompilationError> updateCyclicInheritedStatus();
+		SLKC_API peff::Option<CompilationError> isCyclicInherited(bool &whetherOut);
+		SLKC_API peff::Option<CompilationError> updateCyclicInheritedStatus();
 		SLAKE_FORCEINLINE void resetCyclicInheritanceFlag() {
 			isCyclicInheritanceChecked = false;
 			isCyclicInheritedFlag = false;
@@ -91,8 +91,8 @@ namespace slkc {
 		SLKC_API StructNode(const StructNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut);
 		SLKC_API virtual ~StructNode();
 
-		SLKC_API std::optional<CompilationError> isRecursedType(bool &whetherOut);
-		SLKC_API std::optional<CompilationError> updateRecursedTypeStatus();
+		SLKC_API peff::Option<CompilationError> isRecursedType(bool &whetherOut);
+		SLKC_API peff::Option<CompilationError> updateRecursedTypeStatus();
 		SLAKE_FORCEINLINE void resetRecursedTypeFlag() {
 			isRecursedTypeChecked = false;
 			isRecursedTypeFlag = false;

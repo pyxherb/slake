@@ -2,7 +2,7 @@
 
 using namespace slkc;
 
-SLKC_API std::optional<CompilationError> slkc::compileStmt(
+SLKC_API peff::Option<CompilationError> slkc::compileStmt(
 	CompileEnvironment *compileEnv,
 	CompilationContext *compilationContext,
 	const AstNodePtr<StmtNode> &stmt) {

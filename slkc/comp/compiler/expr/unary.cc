@@ -2,7 +2,7 @@
 
 using namespace slkc;
 
-static std::optional<CompilationError> _compileSimpleRValueUnaryExpr(
+static peff::Option<CompilationError> _compileSimpleRValueUnaryExpr(
 	CompileEnvironment *compileEnv,
 	CompilationContext *compilationContext,
 	AstNodePtr<UnaryExprNode> expr,
@@ -44,7 +44,7 @@ static std::optional<CompilationError> _compileSimpleRValueUnaryExpr(
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> slkc::compileUnaryExpr(
+SLKC_API peff::Option<CompilationError> slkc::compileUnaryExpr(
 	CompileEnvironment *compileEnv,
 	CompilationContext *compilationContext,
 	AstNodePtr<UnaryExprNode> expr,

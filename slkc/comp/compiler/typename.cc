@@ -3,7 +3,7 @@
 
 using namespace slkc;
 
-SLKC_API std::optional<CompilationError> slkc::removeRefOfType(
+SLKC_API peff::Option<CompilationError> slkc::removeRefOfType(
 	AstNodePtr<TypeNameNode> src,
 	AstNodePtr<TypeNameNode> &typeNameOut) {
 	switch (src->typeNameKind) {
@@ -17,7 +17,7 @@ SLKC_API std::optional<CompilationError> slkc::removeRefOfType(
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> slkc::isLValueType(
+SLKC_API peff::Option<CompilationError> slkc::isLValueType(
 	AstNodePtr<TypeNameNode> src,
 	bool &whetherOut) {
 	if (!src) {
@@ -37,7 +37,7 @@ SLKC_API std::optional<CompilationError> slkc::isLValueType(
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> slkc::isSameType(
+SLKC_API peff::Option<CompilationError> slkc::isSameType(
 	const AstNodePtr<TypeNameNode> &lhs,
 	const AstNodePtr<TypeNameNode> &rhs,
 	bool &whetherOut) {
@@ -92,7 +92,7 @@ SLKC_API std::optional<CompilationError> slkc::isSameType(
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> slkc::getTypePromotionLevel(
+SLKC_API peff::Option<CompilationError> slkc::getTypePromotionLevel(
 	const AstNodePtr<TypeNameNode> &typeName,
 	int &levelOut) {
 	switch (typeName->typeNameKind) {
@@ -140,7 +140,7 @@ SLKC_API std::optional<CompilationError> slkc::getTypePromotionLevel(
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> slkc::determinePromotionalType(
+SLKC_API peff::Option<CompilationError> slkc::determinePromotionalType(
 	AstNodePtr<TypeNameNode> lhs,
 	AstNodePtr<TypeNameNode> rhs,
 	AstNodePtr<TypeNameNode> &typeNameOut) {
@@ -213,7 +213,7 @@ SLKC_API std::optional<CompilationError> slkc::determinePromotionalType(
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> slkc::isSameTypeInSignature(
+SLKC_API peff::Option<CompilationError> slkc::isSameTypeInSignature(
 	const AstNodePtr<TypeNameNode> &lhs,
 	const AstNodePtr<TypeNameNode> &rhs,
 	bool &whetherOut) {
@@ -334,7 +334,7 @@ SLKC_API std::optional<CompilationError> slkc::isSameTypeInSignature(
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> slkc::isTypeConvertible(
+SLKC_API peff::Option<CompilationError> slkc::isTypeConvertible(
 	const AstNodePtr<TypeNameNode> &src,
 	const AstNodePtr<TypeNameNode> &dest,
 	bool isSealed,
@@ -592,7 +592,7 @@ SLKC_API std::optional<CompilationError> slkc::isTypeConvertible(
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> slkc::_isTypeNameParamListTypeNameTree(
+SLKC_API peff::Option<CompilationError> slkc::_isTypeNameParamListTypeNameTree(
 	AstNodePtr<TypeNameNode> type,
 	bool &whetherOut) {
 	if (!type) {
@@ -658,7 +658,7 @@ SLKC_API std::optional<CompilationError> slkc::_isTypeNameParamListTypeNameTree(
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> slkc::_doExpandParamListTypeNameTree(
+SLKC_API peff::Option<CompilationError> slkc::_doExpandParamListTypeNameTree(
 	AstNodePtr<TypeNameNode> &type) {
 	if (!type) {
 		return {};
@@ -710,7 +710,7 @@ SLKC_API std::optional<CompilationError> slkc::_doExpandParamListTypeNameTree(
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> slkc::simplifyParamListTypeNameTree(
+SLKC_API peff::Option<CompilationError> slkc::simplifyParamListTypeNameTree(
 	AstNodePtr<TypeNameNode> type,
 	peff::Alloc *allocator,
 	AstNodePtr<TypeNameNode> &typeNameOut) {
@@ -736,7 +736,7 @@ SLKC_API std::optional<CompilationError> slkc::simplifyParamListTypeNameTree(
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> slkc::_isTypeNameGenericParamFacade(
+SLKC_API peff::Option<CompilationError> slkc::_isTypeNameGenericParamFacade(
 	AstNodePtr<TypeNameNode> type,
 	bool &whetherOut) {
 	if (!type) {
@@ -810,7 +810,7 @@ SLKC_API std::optional<CompilationError> slkc::_isTypeNameGenericParamFacade(
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> slkc::_doExpandGenericParamFacadeTypeNameTree(
+SLKC_API peff::Option<CompilationError> slkc::_doExpandGenericParamFacadeTypeNameTree(
 	AstNodePtr<TypeNameNode> &type) {
 	if (!type) {
 		return {};
@@ -867,7 +867,7 @@ SLKC_API std::optional<CompilationError> slkc::_doExpandGenericParamFacadeTypeNa
 	return {};
 }
 
-[[nodiscard]] SLKC_API std::optional<CompilationError> slkc::simplifyGenericParamFacadeTypeNameTree(
+[[nodiscard]] SLKC_API peff::Option<CompilationError> slkc::simplifyGenericParamFacadeTypeNameTree(
 	AstNodePtr<TypeNameNode> type,
 	peff::Alloc *allocator,
 	AstNodePtr<TypeNameNode> &typeNameOut) {
@@ -893,7 +893,7 @@ SLKC_API std::optional<CompilationError> slkc::_doExpandGenericParamFacadeTypeNa
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> slkc::getUnpackedTypeOf(
+SLKC_API peff::Option<CompilationError> slkc::getUnpackedTypeOf(
 	AstNodePtr<TypeNameNode> type,
 	AstNodePtr<TypeNameNode> &typeNameOut) {
 	peff::SharedPtr<Document> document = type->document->sharedFromThis();
@@ -1001,7 +1001,7 @@ SLKC_API std::optional<CompilationError> slkc::getUnpackedTypeOf(
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> slkc::fnToTypeName(
+SLKC_API peff::Option<CompilationError> slkc::fnToTypeName(
 	CompileEnvironment *compileEnv,
 	AstNodePtr<FnOverloadingNode> fn,
 	AstNodePtr<FnTypeNameNode> &evaluatedTypeOut) {
@@ -1057,7 +1057,7 @@ SLKC_API std::optional<CompilationError> slkc::fnToTypeName(
 	return {};
 }
 
-SLKC_API std::optional<slkc::CompilationError> slkc::typeNameCmp(AstNodePtr<TypeNameNode> lhs, AstNodePtr<TypeNameNode> rhs, int &out) noexcept {
+SLKC_API peff::Option<slkc::CompilationError> slkc::typeNameCmp(AstNodePtr<TypeNameNode> lhs, AstNodePtr<TypeNameNode> rhs, int &out) noexcept {
 	peff::SharedPtr<Document> doc = lhs->document->sharedFromThis();
 
 	if (doc != rhs->document->sharedFromThis())
@@ -1127,7 +1127,7 @@ SLKC_API std::optional<slkc::CompilationError> slkc::typeNameCmp(AstNodePtr<Type
 	std::terminate();
 }
 
-SLKC_API std::optional<slkc::CompilationError> slkc::typeNameListCmp(const peff::DynArray<AstNodePtr<TypeNameNode>> &lhs, const peff::DynArray<AstNodePtr<TypeNameNode>> &rhs, int &out) noexcept {
+SLKC_API peff::Option<slkc::CompilationError> slkc::typeNameListCmp(const peff::DynArray<AstNodePtr<TypeNameNode>> &lhs, const peff::DynArray<AstNodePtr<TypeNameNode>> &rhs, int &out) noexcept {
 	if (lhs.size() < rhs.size()) {
 		out = -1;
 		return {};

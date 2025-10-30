@@ -846,6 +846,17 @@ SLAKE_API int TypeDefComparator::operator()(const TypeDefObject *lhs, const Type
 
 			break;
 		}
+		case TypeDefKind::UnpackingTypeDef: {
+			UnpackingTypeDefObject *l = (UnpackingTypeDefObject *)lhs,
+								   *r = (UnpackingTypeDefObject *)rhs;
+
+			if (l->type < r->type)
+				return -1;
+			if (l->type > r->type)
+				return 1;
+
+			break;
+		}
 		default:
 			std::terminate();
 	}

@@ -289,6 +289,7 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(MemberObjec
 	size_t iterateTimes = 0;
 
 	peff::Set<CustomTypeDefObject *> deferredTypeDefs(getFixedAlloc());
+	peff::Set<FnObject *> fns(getFixedAlloc());
 
 	while (dispatcher.hasNext) {
 		dispatcher.hasNext = false;
@@ -360,6 +361,31 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(MemberObjec
 						if (!isSucceeded)
 							return OutOfMemoryError::alloc();
 						SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(dispatcher, (type.getRefTypeDef())->referencedType->typeRef, i.context.get()));
+						if (auto td = getEqualTypeDef(type.typeDef); td)
+							type.typeDef = td;
+						else
+							registerTypeDef(type.typeDef);
+						break;
+					}
+					case TypeId::ParamTypeList: {
+						bool isSucceeded;
+						type = type.duplicate(isSucceeded);
+						if (!isSucceeded)
+							return OutOfMemoryError::alloc();
+						for (auto j : ((ParamTypeListTypeDefObject *)type.typeDef)->paramTypes)
+							SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(dispatcher, j->typeRef, i.context.get()));
+						if (auto td = getEqualTypeDef(type.typeDef); td)
+							type.typeDef = td;
+						else
+							registerTypeDef(type.typeDef);
+						break;
+					}
+					case TypeId::Unpacking: {
+						bool isSucceeded;
+						type = type.duplicate(isSucceeded);
+						if (!isSucceeded)
+							return OutOfMemoryError::alloc();
+						SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(dispatcher, (type.getUnpackingTypeDef())->type->typeRef, i.context.get()));
 						if (auto td = getEqualTypeDef(type.typeDef); td)
 							type.typeDef = td;
 						else
@@ -565,6 +591,11 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(MemberObjec
 					case ObjectKind::Fn: {
 						FnObject *value = (FnObject *)v;
 
+						if (!fns.contains(value)) {
+							if (!fns.insert(+value))
+								return OutOfMemoryError::alloc();
+						}
+
 						if (i.context->mappedObject == value) {
 							//
 							// We expect there's only one overloading can be instantiated.
@@ -593,6 +624,7 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(MemberObjec
 							}
 						} else {
 							for (auto j : value->overloadings) {
+								size_t originalTypeSlotSize = dispatcher.nextWalkTypeSlots.size();
 								if (j.second->genericParams.size()) {
 									peff::HashMap<peff::String, TypeRef> copiedMappedGenericArgs(getFixedAlloc());
 
@@ -631,8 +663,6 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(MemberObjec
 									SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(dispatcher, j.second, i.context.get()));
 								}
 							}
-
-							SLAKE_RETURN_IF_EXCEPT(value->resortOverloadings());
 						}
 						break;
 					}
@@ -660,6 +690,37 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(MemberObjec
 				}
 			}
 		}
+	}
+
+	for (auto i : fns) {
+		for (auto j : i->overloadings) {
+			// Expand the parameter pack.
+			size_t originalParamNum;
+			size_t nParams;
+			do {
+				originalParamNum = j.second->paramTypes.size();
+				nParams = j.second->paramTypes.size();
+				for (size_t k = 0; k < nParams; ++k) {
+					auto &param = j.second->paramTypes.at(k);
+					if (param.typeId == TypeId::Unpacking) {
+						UnpackingTypeDefObject *typeDef = ((UnpackingTypeDefObject *)param.typeDef);
+						ParamTypeListTypeDefObject *paramTypeList = (ParamTypeListTypeDefObject *)typeDef->type->typeRef.typeDef;
+
+						if (paramTypeList->getTypeDefKind() != TypeDefKind::ParamTypeListTypeDef)
+							std::terminate();
+
+						if (!j.second->paramTypes.reserveSlots(k, paramTypeList->paramTypes.size() - 1))
+							return OutOfMemoryError::alloc();
+
+						for (size_t l = 0; l < paramTypeList->paramTypes.size(); ++l) {
+							j.second->paramTypes.at(k + l) = paramTypeList->paramTypes.at(l)->typeRef;
+						}
+						nParams = j.second->paramTypes.size();
+					}
+				}
+			} while (originalParamNum != nParams);
+		}
+		SLAKE_RETURN_IF_EXCEPT(i->resortOverloadings());
 	}
 
 	/* for (auto i : deferredTypeDefs) {

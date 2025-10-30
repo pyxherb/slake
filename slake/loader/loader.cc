@@ -242,6 +242,31 @@ SLAKE_API InternalExceptionPointer loader::loadType(LoaderContext &context, Runt
 			}
 			break;
 		}
+		case slake::slxfmt::TypeId::Unpacking: {
+			HostObjectRef<UnpackingTypeDefObject> typeDef;
+
+			if (!(typeDef = UnpackingTypeDefObject::alloc(runtime))) {
+				return OutOfMemoryError::alloc();
+			}
+
+			HostObjectRef<HeapTypeObject> heapType;
+
+			if (!(heapType = HeapTypeObject::alloc(runtime))) {
+				return OutOfMemoryError::alloc();
+			}
+
+			SLAKE_RETURN_IF_EXCEPT(loadType(context, runtime, reader, member, heapType->typeRef));
+
+			typeDef->type = heapType.get();
+
+			if (auto td = runtime->getEqualTypeDef(typeDef.get()); td) {
+				typeOut = TypeRef(TypeId::Unpacking, td);
+			} else {
+				typeOut = TypeRef(TypeId::Unpacking, typeDef.get());
+				SLAKE_RETURN_IF_EXCEPT(runtime->registerTypeDef(typeDef.get()));
+			}
+			break;
+		}
 		default:
 			std::terminate();
 	}

@@ -32,6 +32,8 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 				case ObjectKind::Class:
 				case ObjectKind::Interface:
 				case ObjectKind::Fn:
+					if (curName.name == "myTest")
+						puts("");
 					if (curName.genericArgs.size()) {
 						peff::NullAlloc nullAlloc;
 						GenericInstantiationContext genericInstantiationContext(&nullAlloc, getFixedAlloc());
@@ -55,12 +57,14 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 			case ObjectKind::Fn: {
 				FnObject *fnObject = ((FnObject *)scopeObject);
 
-				auto it = fnObject->overloadings.find(FnSignature{ *ref->paramTypes, ref->hasVarArgs, 0, ref->overridenType });
+				const GenericArgList &paramTypes = *ref->paramTypes;
+
+				auto it = fnObject->overloadings.find(FnSignature{ paramTypes, ref->hasVarArgs, 0, ref->overridenType });
 
 				if (it != fnObject->overloadings.end())
 					objectRefOut = Reference::makeObjectRef(it.value());
 				else {
-					it = fnObject->overloadings.find(FnSignature{ *ref->paramTypes, ref->hasVarArgs, 0, TypeId::Void });
+					it = fnObject->overloadings.find(FnSignature{ paramTypes, ref->hasVarArgs, 0, TypeId::Void });
 
 					if (it == fnObject->overloadings.end())
 						return allocOutOfMemoryErrorIfAllocFailed(ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(this)->getFixedAlloc(), ref));

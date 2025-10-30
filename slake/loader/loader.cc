@@ -489,6 +489,8 @@ SLAKE_API InternalExceptionPointer loader::loadIdRef(LoaderContext &context, Run
 
 	SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->readBool(idRefOut->hasVarArgs)));
 
+	SLAKE_RETURN_IF_EXCEPT(loadType(context, runtime, reader, member, idRefOut->overridenType));
+
 	if (auto it = context.loadedIdRefs.find(idRefOut.get()); it != context.loadedIdRefs.end()) {
 		idRefOut = *it;
 	} else {

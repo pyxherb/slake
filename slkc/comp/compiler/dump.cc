@@ -47,8 +47,6 @@ SLKC_API peff::Option<CompilationError> slkc::dumpIdRef(
 	slake::IdRefObject *ref) {
 	SLKC_RETURN_IF_COMP_ERROR(dumpIdRefEntries(allocator, writer, ref->entries));
 
-	if (ref->entries.at(0).name == "")
-		puts("");
 	if (!ref->paramTypes.hasValue()) {
 		SLKC_RETURN_IF_COMP_ERROR(writer->writeU32(UINT32_MAX));
 	} else {
@@ -58,6 +56,7 @@ SLKC_API peff::Option<CompilationError> slkc::dumpIdRef(
 		}
 	}
 	SLKC_RETURN_IF_COMP_ERROR(writer->writeBool(ref->hasVarArgs));
+	SLKC_RETURN_IF_COMP_ERROR(dumpTypeName(allocator, writer, ref->overridenType));
 	return {};
 }
 

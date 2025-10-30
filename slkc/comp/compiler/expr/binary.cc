@@ -576,6 +576,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 					if (!idRefObject->entries.pushBack(std::move(e))) {
 						return genOutOfRuntimeMemoryCompError();
 					}
+					SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, compilationContext, decayedRhsType, idRefObject->overridenType));
 
 					idRefObject->paramTypes = peff::DynArray<slake::TypeRef>(compileEnv->runtime->getCurGenAlloc());
 
@@ -596,7 +597,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 					IdRefPtr fullName;
 					SLKC_RETURN_IF_COMP_ERROR(getFullIdRef(compileEnv->allocator.get(), operatorSlot, fullName));
 
-					SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, compilationContext, fullName->entries.data(), fullName->entries.size(), nullptr, 0, true, {}, idRefObject));
+					SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, compilationContext, fullName->entries.data(), fullName->entries.size(), nullptr, 0, true, decayedRhsType, idRefObject));
 
 					idRefObject->paramTypes = peff::DynArray<slake::TypeRef>(compileEnv->runtime->getCurGenAlloc());
 
@@ -1787,6 +1788,19 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 			}
 			case TypeNameKind::Custom: {
 				switch (expr->binaryOp) {
+					case BinaryOp::Assign:
+						SLKC_RETURN_IF_COMP_ERROR(
+							_compileSimpleAssignBinaryExpr(
+								compileEnv,
+								compilationContext,
+								expr,
+								evalPurpose,
+								lhsType, lhsType,
+								decayedRhsType, decayedLhsType, ExprEvalPurpose::RValue,
+								resultRegOut,
+								resultOut));
+						resultOut.evaluatedType = lhsType;
+						break;
 					case BinaryOp::Add:
 					case BinaryOp::Sub:
 					case BinaryOp::Mul:
@@ -1799,7 +1813,6 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 					case BinaryOp::LOr:
 					case BinaryOp::Shl:
 					case BinaryOp::Shr:
-					case BinaryOp::Assign:
 					case BinaryOp::AddAssign:
 					case BinaryOp::SubAssign:
 					case BinaryOp::MulAssign:
@@ -1892,6 +1905,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 							if (!idRefObject->entries.pushBack(std::move(e))) {
 								return genOutOfRuntimeMemoryCompError();
 							}
+							SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, compilationContext, decayedLhsType, idRefObject->overridenType));
 
 							idRefObject->paramTypes = peff::DynArray<slake::TypeRef>(compileEnv->runtime->getCurGenAlloc());
 
@@ -1913,6 +1927,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 
 							IdRefPtr fullName;
 							SLKC_RETURN_IF_COMP_ERROR(getFullIdRef(compileEnv->allocator.get(), operatorSlot, fullName));
+
+							compileIdRef(compileEnv, compilationContext, fullName->entries.data(), fullName->entries.size(), nullptr, 0, matchedOverloading->fnFlags & FN_VARG, {}, idRefObject);
 
 							idRefObject->paramTypes = peff::DynArray<slake::TypeRef>(compileEnv->runtime->getCurGenAlloc());
 
@@ -1975,7 +1991,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								break;
 							}
 						}
-
+						resultOut.evaluatedType = matchedOverloading->returnType;
 						break;
 					}
 					case BinaryOp::StrictEq:

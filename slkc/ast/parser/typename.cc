@@ -166,11 +166,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseTypeName(AstNodePtr<TypeNameNode
 
 			typeNameOut->tokenRange = TokenRange{ t->index };
 
-			Token *lParentheseToken;
-			if ((syntaxError = expectToken((lParentheseToken = peekToken()), TokenId::LParenthese)))
-				return SyntaxError(TokenRange{ lParentheseToken->index }, ExpectingSingleTokenErrorExData{ TokenId::LParenthese });
-
-			nextToken();
+			Token *lParentheseToken = nextToken();
 
 			for (;;) {
 				if (peekToken()->tokenId == TokenId::RParenthese) {

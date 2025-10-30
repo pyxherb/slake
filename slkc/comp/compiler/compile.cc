@@ -7,6 +7,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileTypeName(
 	CompilationContext *compilationContext,
 	AstNodePtr<TypeNameNode> typeName,
 	slake::TypeRef &typeOut) {
+	typeOut = slake::TypeId::Void;
+
 	switch (typeName->typeNameKind) {
 		case TypeNameKind::Void:
 			typeOut = slake::TypeRef(slake::TypeId::Void);
@@ -365,6 +367,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileTypeName(
 				return genOutOfMemoryCompError();
 			}
 
+			obj->type = heapType.get();
+
 			typeOut = slake::TypeRef(slake::TypeId::Unpacking, obj.get());
 			break;
 		}
@@ -430,10 +434,10 @@ SLKC_API peff::Option<CompilationError> slkc::compileIdRef(
 
 	id->hasVarArgs = hasVarArgs;
 
-	if (overridenType) {
+	id->overridenType = slake::TypeId::Void;
+
+	if (overridenType)
 		SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, compilationContext, overridenType, id->overridenType));
-	} else
-		id->overridenType = slake::TypeId::Void;
 
 	idRefOut = id;
 

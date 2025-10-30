@@ -6,7 +6,7 @@ attribute TestAttribute {
 	let test: i32;
 }
 
-interface ICA {
+/*interface ICA {
 	fn a() virtual;
 }
 
@@ -19,7 +19,7 @@ interface ICC {
 }
 
 class C: ICA + ICB + ICC {
-}
+}*/
 
 /*interface IF: IE {
 }
@@ -164,14 +164,14 @@ class Derived(Test) {
 }
 
 class VirtualBase {
-	public fn test(test: i32) virtual {
+	public fn testBase(test: i32) virtual {
 		extfns.print("Called VirtualBase's test\n");
 		return;
 	}
 }
 
 class VirtualDerived(VirtualBase) {
-	public fn test(test: i32) virtual {
+	public fn testBase(test: i32) virtual {
 		extfns.print("Called VirtualDerived's test\n");
 		return;
 	}
@@ -226,18 +226,16 @@ public fn *main() -> i32 {
 
 	hostext.extfns.print("Entered main\n");
 
-	// This causes crashing.
 	let vt: VirtualBase = new VirtualDerived();
 
-	vt.test(123);
-	// Above causes crashing.
-
+	vt.testBase(123);
+	
 	let testDerived: TestDerived<i32> = new TestDerived<i32>();
 
 	testDerived.myTest(123, 456);
 
 	let test: Derived = new Derived(1);
-	/*test.lab = test;*/
+	test.lab = test;
 
 	test.testFunc(123, 456);
 
@@ -245,7 +243,7 @@ public fn *main() -> i32 {
 	x._setX(test);
 	x._getX();
 
-	/*extfns.print(test + 123);*/
+	extfns.print(test + 123);
 
 	let v : u32 = 1919810 + 0;
 
@@ -287,8 +285,7 @@ public fn *main() -> i32 {
 
 	callableTest.call(114, 514 as u32, 1919810.0f);*/
 
-	/*
-	match const (123) -> i32 {
+	/*match const (123) -> i32 {
 		456: 789,
 		abc: 0xdef
 	};*/

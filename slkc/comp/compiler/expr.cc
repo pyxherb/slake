@@ -292,12 +292,12 @@ auto selectSingleMatchingOverloading = [](CompileEnvironment *compileEnv, const 
 	} else {
 		if (desiredType && (desiredType->typeNameKind == TypeNameKind::Fn)) {
 			AstNodePtr<FnTypeNameNode> tn = desiredType.template castTo<FnTypeNameNode>();
-			peff::DynArray<AstNodePtr<FnOverloadingNode>> matchedOverloadingIndices(compileEnv->allocator.get());
+			peff::DynArray<AstNodePtr<FnOverloadingNode>> matchedOverloadings(compileEnv->allocator.get());
 
 			// TODO: Check tn->isForAdl and do strictly equality check.
-			SLKC_RETURN_IF_COMP_ERROR(determineFnOverloading(compileEnv, m, tn->paramTypes.data(), tn->paramTypes.size(), isStatic, matchedOverloadingIndices));
+			SLKC_RETURN_IF_COMP_ERROR(determineFnOverloading(compileEnv, m, tn->paramTypes.data(), tn->paramTypes.size(), isStatic, matchedOverloadings));
 
-			switch (matchedOverloadingIndices.size()) {
+			switch (matchedOverloadings.size()) {
 				case 0:
 					return CompilationError(tokenRange, CompilationErrorKind::NoMatchingFnOverloading);
 				case 1:
@@ -306,9 +306,9 @@ auto selectSingleMatchingOverloading = [](CompileEnvironment *compileEnv, const 
 					return CompilationError(tokenRange, CompilationErrorKind::UnableToDetermineOverloading);
 			}
 
-			finalMember = m->overloadings.at(matchedOverloadingIndices.back()).template castTo<MemberNode>();
+			finalMember = matchedOverloadings.back().template castTo<MemberNode>();
 
-			resultOut.callTargetMatchedOverloadings = std::move(matchedOverloadingIndices);
+			resultOut.callTargetMatchedOverloadings = std::move(matchedOverloadings);
 		} else {
 			return CompilationError(tokenRange, CompilationErrorKind::UnableToDetermineOverloading);
 		}
@@ -580,7 +580,6 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 				}
 				case ExprEvalPurpose::Unpacking:
 					return CompilationError(e->idRefPtr->tokenRange, CompilationErrorKind::TargetIsNotCallable);
-					break;
 				default:
 					std::terminate();
 			}

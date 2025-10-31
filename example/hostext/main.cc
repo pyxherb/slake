@@ -1,6 +1,6 @@
 #include <slake/runtime.h>
 #include <slake/loader/loader.h>
-// #include <slake/opti/proganal.h>
+#include <slake/opti/proganal.h>
 // #include <slake/lib/std.h>
 
 #include <iostream>
@@ -332,7 +332,6 @@ int main(int argc, char **argv) {
 
 			overloading = fn->overloadings.at(slake::FnSignature(params, false, 0, slake::TypeId::Void));
 
-			/*
 			slake::opti::ProgramAnalyzedInfo analyzedInfo(rt.get(), &myAllocator);
 			if (auto e = slake::opti::analyzeProgramInfo(rt.get(), &myAllocator, (slake::RegularFnOverloadingObject *)overloading, analyzedInfo, hostRefHolder);
 				e) {
@@ -358,7 +357,7 @@ int main(int argc, char **argv) {
 			for (auto it = analyzedInfo.analyzedRegInfo.begin(); it != analyzedInfo.analyzedRegInfo.end(); ++it) {
 				printf("Register #%u\n", it.key());
 				printf("Lifetime: %zu-%zu\n", it.value().lifetime.offBeginIns, it.value().lifetime.offEndIns);
-			}*/
+			}
 
 			{
 				slake::HostObjectRef<slake::CoroutineObject> co;

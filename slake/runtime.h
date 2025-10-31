@@ -450,7 +450,7 @@ namespace slake {
 		SLAKE_API static char *calcLocalVarRefStackBasePtr(const LocalVarRef &localVarRef);
 		SLAKE_API static char *calcLocalVarRefStackRawDataPtr(char *p);
 
-		[[nodiscard]] SLAKE_API InternalExceptionPointer typeofVar(const Reference &entityRef, TypeRef &typeOut) const noexcept;
+		[[nodiscard]] SLAKE_API TypeRef typeofVar(const Reference &entityRef) const noexcept;
 		[[nodiscard]] SLAKE_API InternalExceptionPointer readVar(const Reference &entityRef, Value &valueOut) const noexcept;
 		[[nodiscard]] SLAKE_API Value readVarUnsafe(const Reference &entityRef) const noexcept;
 		SLAKE_API void readStructData(char *dest, const StructRef &structRef) const noexcept;

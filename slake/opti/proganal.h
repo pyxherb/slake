@@ -39,7 +39,7 @@ namespace slake {
 
 		struct RegAnalyzedInfo {
 			RegLifetime lifetime;
-			Type type;
+			TypeRef type;
 			Value expectedValue = Value(ValueType::Undefined);
 			union {
 				FieldVarRegStorageInfo asFieldVar;
@@ -50,7 +50,7 @@ namespace slake {
 		};
 
 		struct LocalVarAnalyzedInfo {
-			Type type;
+			TypeRef type;
 		};
 
 		struct FnCallAnalyzedInfo {
@@ -87,7 +87,7 @@ namespace slake {
 			HostRefHolder &hostRefHolder;
 			uint32_t idxCurIns = 0;
 			Object *lastCallTarget;
-			Type lastCallTargetType;
+			TypeRef lastCallTargetType;
 			peff::DynArray<uint32_t> argPushInsOffs;
 
 			SLAKE_FORCEINLINE ProgramAnalyzeContext(
@@ -106,14 +106,19 @@ namespace slake {
 		};
 
 		void markRegAsForOutput(ProgramAnalyzeContext &analyzeContext, uint32_t i);
+		InternalExceptionPointer wrapIntoHeapType(
+			Runtime *runtime,
+			TypeRef type,
+			HostRefHolder &hostRefHolder,
+			HeapTypeObject *&heapTypeOut);
 		InternalExceptionPointer wrapIntoRefType(
 			Runtime *runtime,
-			Type type,
+			TypeRef type,
 			HostRefHolder &hostRefHolder,
 			TypeRef &typeOut);
 		InternalExceptionPointer wrapIntoArrayType(
 			Runtime *runtime,
-			Type type,
+			TypeRef type,
 			HostRefHolder &hostRefHolder,
 			TypeRef &typeOut);
 		InternalExceptionPointer evalObjectType(

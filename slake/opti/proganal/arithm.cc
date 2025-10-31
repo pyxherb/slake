@@ -14,7 +14,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 		  evaluatedLhs(ValueType::Undefined),
 		  evaluatedRhs(ValueType::Undefined),
 		  result = (ValueType::Undefined);
-	Type lhsType, rhsType, resultType;
+	TypeRef lhsType, rhsType, resultType;
 
 	switch (curIns.opcode) {
 		case Opcode::ADD: {
@@ -885,8 +885,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 						analyzeContext.idxCurIns));
 			}
 
-			SLAKE_RETURN_IF_EXCEPT(analyzeContext.runtime->compareTypes(analyzeContext.resourceAllocator.get(), lhsType, rhsType, cmpResult));
-			if (cmpResult) {
+			if (lhsType.comparesTo(rhsType)) {
 				return allocOutOfMemoryErrorIfAllocFailed(
 					MalformedProgramError::alloc(
 						analyzeContext.runtime->getFixedAlloc(),
@@ -2046,7 +2045,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 				  evaluatedLhs(ValueType::Undefined),
 				  evaluatedRhs(ValueType::Undefined),
 				  result = (ValueType::Undefined);
-			Type lhsType, resultType;
+			TypeRef lhsType, resultType;
 
 			SLAKE_RETURN_IF_EXCEPT(evalValueType(analyzeContext, lhs, lhsType));
 
@@ -2131,7 +2130,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 				  evaluatedLhs(ValueType::Undefined),
 				  evaluatedRhs(ValueType::Undefined),
 				  result = (ValueType::Undefined);
-			Type lhsType, resultType;
+			TypeRef lhsType, resultType;
 
 			SLAKE_RETURN_IF_EXCEPT(evalValueType(analyzeContext, lhs, lhsType));
 
@@ -2174,7 +2173,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 				  evaluatedLhs(ValueType::Undefined),
 				  evaluatedRhs(ValueType::Undefined),
 				  result = (ValueType::Undefined);
-			Type lhsType, resultType;
+			TypeRef lhsType, resultType;
 
 			SLAKE_RETURN_IF_EXCEPT(evalValueType(analyzeContext, lhs, lhsType));
 

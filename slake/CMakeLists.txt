@@ -39,7 +39,7 @@ add_subdirectory("plat")
 add_subdirectory("obj")
 add_subdirectory("rt")
 # add_subdirectory("jit")
-# add_subdirectory("opti")
+add_subdirectory("opti")
 add_subdirectory("loader")
 add_subdirectory("aot")
 

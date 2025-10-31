@@ -25,7 +25,101 @@ SLAKE_API char *Runtime::calcLocalVarRefStackRawDataPtr(char *p) {
 		   sizeof(TypeId) + sizeof(TypeModifier);
 }
 
-SLAKE_API InternalExceptionPointer Runtime::typeofVar(const Reference &entityRef, TypeRef &typeOut) const noexcept {
+SLAKE_API TypeRef Runtime::typeofVar(const Reference &entityRef) const noexcept {
+	switch (entityRef.kind) {
+		case ReferenceKind::StaticFieldRef: {
+			FieldRecord &fieldRecord = entityRef.asStaticField.moduleObject->fieldRecords.at(entityRef.asStaticField.index);
+
+			const char *const rawDataPtr = entityRef.asStaticField.moduleObject->localFieldStorage.data() + fieldRecord.offset;
+
+			return fieldRecord.type;
+		}
+		case ReferenceKind::LocalVarRef: {
+			char *const basePtr = calcLocalVarRefStackBasePtr(entityRef.asLocalVar);
+			const char *const rawDataPtr = calcLocalVarRefStackRawDataPtr(basePtr);
+
+			char *stackTop, *stackBottom;
+
+			stackTop = entityRef.asLocalVar.context->dataStackTopPtr;
+			stackBottom = entityRef.asLocalVar.context->dataStack;
+
+			if (!stackBottomCheck(basePtr, stackBottom)) {
+				std::terminate();
+			}
+
+			if (!stackTopCheck(rawDataPtr, stackTop)) {
+				std::terminate();
+			}
+
+			TypeRef t = *(TypeId *)(rawDataPtr - sizeof(TypeModifier) - sizeof(TypeId));
+			t.typeModifier = *(TypeModifier *)(rawDataPtr - sizeof(TypeModifier));
+
+			return t;
+		}
+		case ReferenceKind::CoroutineLocalVarRef: {
+			char *basePtr = calcCoroutineLocalVarRefStackBasePtr(entityRef.asCoroutineLocalVar);
+			const char *const rawDataPtr = calcLocalVarRefStackRawDataPtr(basePtr);
+
+			char *stackTop, *stackBottom;
+
+			if (entityRef.asCoroutineLocalVar.coroutine->curContext) {
+				stackTop = entityRef.asCoroutineLocalVar.coroutine->curContext->dataStackTopPtr;
+				stackBottom = entityRef.asCoroutineLocalVar.coroutine->curContext->dataStack;
+			} else {
+				stackTop = entityRef.asCoroutineLocalVar.coroutine->stackData + entityRef.asCoroutineLocalVar.coroutine->lenStackData;
+				stackBottom = entityRef.asCoroutineLocalVar.coroutine->stackData;
+			};
+
+			if (!stackBottomCheck(basePtr, stackBottom)) {
+				std::terminate();
+			}
+
+			if (!stackTopCheck(rawDataPtr, stackTop)) {
+				std::terminate();
+			}
+
+			TypeRef t = *(TypeId *)(rawDataPtr - sizeof(TypeModifier) - sizeof(TypeId));
+			t.typeModifier = *(TypeModifier *)(rawDataPtr - sizeof(TypeModifier));
+
+			return t;
+		}
+		case ReferenceKind::InstanceFieldRef: {
+			ObjectFieldRecord &fieldRecord =
+				entityRef.asObjectField.instanceObject->_class->cachedObjectLayout->fieldRecords.at(
+					entityRef.asObjectField.fieldIndex);
+
+			return fieldRecord.type;
+		}
+		case ReferenceKind::ArrayElementRef: {
+			assert(entityRef.asArrayElement.index < entityRef.asArrayElement.arrayObject->length);
+
+			return entityRef.asArrayElement.arrayObject->elementType;
+		}
+		case ReferenceKind::ArgRef: {
+			const ArgRecord &argRecord = entityRef.asArg.majorFrame->resumable->argStack.at(entityRef.asArg.argIndex);
+
+			return argRecord.type;
+		}
+		case ReferenceKind::CoroutineArgRef: {
+			if (entityRef.asCoroutineArg.coroutine->curContext) {
+				const ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->resumable->argStack.at(entityRef.asArg.argIndex);
+
+				return argRecord.type;
+			} else {
+				const ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->curMajorFrame->resumable->argStack.at(entityRef.asArg.argIndex);
+
+				return argRecord.type;
+			}
+			break;
+		}
+		case ReferenceKind::StructFieldRef: {
+			const ObjectFieldRecord &fieldRecord = entityRef.asStructField.structRef.structObject->cachedObjectLayout->fieldRecords.at(entityRef.asStructField.idxField);
+
+			return fieldRecord.type;
+		}
+		default:
+			break;
+	}
 	std::terminate();
 }
 

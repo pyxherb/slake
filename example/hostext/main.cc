@@ -121,15 +121,6 @@ void printTraceback(slake::Runtime *rt, slake::ContextObject *context) {
 		}
 
 		printf("\t%s: 0x%08x", name.c_str(), i->resumable->curIns);
-		switch (i->curFn->overloadingKind) {
-			case slake::FnOverloadingKind::Regular: {
-				if (auto sld = ((slake::RegularFnOverloadingObject *)i->curFn)->getSourceLocationDesc(i->resumable->curIns); sld) {
-					printf(" at %d:%d", sld->line, sld->column);
-				}
-				break;
-			}
-			default:;
-		}
 		putchar('\n');
 	}
 }

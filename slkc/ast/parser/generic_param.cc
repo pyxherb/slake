@@ -143,7 +143,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseGenericParams(
 				{
 					peff::ScopeGuard setTokenRangeGuard([this, nameToken, &genericParamNode]() noexcept {
 						if (genericParamNode) {
-							genericParamNode->tokenRange = TokenRange{ nameToken->index, parseContext.idxPrevToken };
+							genericParamNode->tokenRange = TokenRange{ document->mainModule, nameToken->index, parseContext.idxPrevToken };
 						}
 					});
 
@@ -169,7 +169,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseGenericParams(
 				{
 					peff::ScopeGuard setTokenRangeGuard([this, nameToken, &genericParamNode]() noexcept {
 						if (genericParamNode) {
-							genericParamNode->tokenRange = TokenRange{ nameToken->index, parseContext.idxPrevToken };
+							genericParamNode->tokenRange = TokenRange{ document->mainModule, nameToken->index, parseContext.idxPrevToken };
 						}
 					});
 

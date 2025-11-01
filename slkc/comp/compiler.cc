@@ -24,7 +24,7 @@ SLKC_API AstNodePtr<VarNode> CompilationContext::lookupLocalVar(const std::strin
 SLKC_API NormalCompilationContext::BlockLayer::~BlockLayer() {
 }
 
-SLKC_API NormalCompilationContext::NormalCompilationContext(CompileEnvironment *compileEnv, CompilationContext *parent) : CompilationContext(parent), allocator(compileEnv->allocator), savedBlockLayers(compileEnv->allocator.get()), curBlockLayer(compileEnv->allocator.get()), labels(compileEnv->allocator.get()), labelNameIndices(compileEnv->allocator.get()), generatedInstructions(compileEnv->allocator.get()), document(compileEnv->document), baseBlockLevel(parent ? parent->getBlockLevel() : 0), baseInsOff(parent ? parent->getCurInsOff() : 0) {
+SLKC_API NormalCompilationContext::NormalCompilationContext(CompileEnvironment *compileEnv, CompilationContext *parent) : CompilationContext(parent), allocator(compileEnv->allocator), savedBlockLayers(compileEnv->allocator.get()), curBlockLayer(compileEnv->allocator.get()), labels(compileEnv->allocator.get()), labelNameIndices(compileEnv->allocator.get()), generatedInstructions(compileEnv->allocator.get()), document(compileEnv->document), baseBlockLevel(parent ? parent->getBlockLevel() : 0), baseInsOff(parent ? parent->getCurInsOff() : 0), sourceLocDescs(compileEnv->allocator.get()), sourceLocDescsMap(compileEnv->allocator.get()) {
 }
 SLKC_API NormalCompilationContext::~NormalCompilationContext() {
 }
@@ -63,7 +63,7 @@ SLKC_API peff::Option<CompilationError> NormalCompilationContext::allocReg(uint3
 		return {};
 	}
 
-	return CompilationError({ 0 }, CompilationErrorKind::RegLimitExceeded);
+	return CompilationError({ document->mainModule, 0 }, CompilationErrorKind::RegLimitExceeded);
 }
 
 SLKC_API peff::Option<CompilationError> NormalCompilationContext::emitIns(slake::Opcode opcode, uint32_t outputRegIndex, const std::initializer_list<slake::Value> &operands) {
@@ -87,8 +87,7 @@ SLKC_API peff::Option<CompilationError> NormalCompilationContext::emitIns(slake:
 	return {};
 }
 
-SLKC_API peff::Option<CompilationError> NormalCompilationContext::emitIns(slake::Opcode opcode, uint32_t outputRegIndex, slake::Value *operands, size_t nOperands)
-{
+SLKC_API peff::Option<CompilationError> NormalCompilationContext::emitIns(slake::Opcode opcode, uint32_t outputRegIndex, slake::Value *operands, size_t nOperands) {
 	slake::Instruction insOut;
 
 	insOut.opcode = opcode;
@@ -193,6 +192,10 @@ SLKC_API void NormalCompilationContext::leaveBlock() {
 
 SLKC_API uint32_t NormalCompilationContext::getBlockLevel() {
 	return baseBlockLevel + savedBlockLayers.size();
+}
+
+SLKC_API peff::Option<CompilationError> NormalCompilationContext::registerSourceLocDesc(slake::slxfmt::SourceLocDesc sld, uint32_t &indexOut) {
+	return {};
 }
 
 SLKC_API CompileEnvironment::~CompileEnvironment() {
@@ -414,7 +417,7 @@ SLKC_API peff::Option<CompilationError> FileSystemExternalModuleProvider::loadMo
 
 					std::string_view sv(fileContent.get(), fileSize);
 
-					if (auto e = lexer.lex(sv, peff::getDefaultAlloc(), compileEnv->document); e) {
+					if (auto e = lexer.lex(mod.get(), sv, peff::getDefaultAlloc(), compileEnv->document); e) {
 						auto ce = CompilationError(moduleName->tokenRange, ErrorParsingImportedModuleErrorExData(std::move(*e)));
 						e.reset();
 						return std::move(ce);

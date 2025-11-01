@@ -17,7 +17,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseVarDefs(peff::DynArray<VarDefEnt
 			if (!syntaxErrors.pushBack(std::move(syntaxError.value())))
 				return genOutOfMemoryError();
 			syntaxError.reset();
-			if (!syntaxErrors.pushBack(SyntaxError(currentToken->index, SyntaxErrorKind::ExpectingId)))
+			if (!syntaxErrors.pushBack(SyntaxError({ document->mainModule, currentToken->index }, SyntaxErrorKind::ExpectingId)))
 				return genOutOfMemoryError();
 		}
 
@@ -82,7 +82,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseStmt(AstNodePtr<StmtNode> &stmtO
 
 	{
 		peff::ScopeGuard setTokenRangeGuard([this, prefixToken, &stmtOut]() noexcept {
-			stmtOut->tokenRange = TokenRange{ prefixToken->index, parseContext.idxPrevToken };
+			stmtOut->tokenRange = TokenRange{ document->mainModule, prefixToken->index, parseContext.idxPrevToken };
 		});
 
 		switch (prefixToken->tokenId) {
@@ -798,6 +798,6 @@ SLKC_API peff::Option<SyntaxError> Parser::parseStmt(AstNodePtr<StmtNode> &stmtO
 genBadStmt:
 	if (!(stmtOut = makeAstNode<BadStmtNode>(resourceAllocator.get(), resourceAllocator.get(), document, stmtOut).template castTo<StmtNode>()))
 		return genOutOfMemoryError();
-	stmtOut->tokenRange = { prefixToken->index, parseContext.idxCurrentToken };
+	stmtOut->tokenRange = { document->mainModule, prefixToken->index, parseContext.idxCurrentToken };
 	return syntaxError;
 }

@@ -129,7 +129,7 @@ namespace slkc {
 		SLKC_API ~Parser();
 
 		SLKC_API SyntaxError genOutOfMemoryError() {
-			return SyntaxError(TokenRange{ 0 }, SyntaxErrorKind::OutOfMemory);
+			return SyntaxError(TokenRange{ document->mainModule, 0 }, SyntaxErrorKind::OutOfMemory);
 		}
 
 		SLKC_API peff::Option<SyntaxError> lookaheadUntil(size_t nTokenIds, const TokenId tokenIds[]);
@@ -140,7 +140,7 @@ namespace slkc {
 			if (token->tokenId != tokenId) {
 				ExpectingSingleTokenErrorExData exData = { tokenId };
 
-				return SyntaxError(TokenRange{ token->index }, std::move(exData));
+				return SyntaxError(TokenRange{ document->mainModule, token->index }, std::move(exData));
 			}
 
 			return {};
@@ -150,7 +150,7 @@ namespace slkc {
 			if (token->tokenId == TokenId::End) {
 				ExpectingTokensErrorExData exData(resourceAllocator.get());
 
-				return SyntaxError(TokenRange{ token->index }, std::move(exData));
+				return SyntaxError(TokenRange{ document->mainModule, token->index }, std::move(exData));
 			}
 
 			return {};

@@ -68,6 +68,8 @@ namespace slkc {
 
 		virtual uint32_t getBlockLevel() = 0;
 
+		virtual peff::Option<CompilationError> registerSourceLocDesc(slake::slxfmt::SourceLocDesc sld, uint32_t &indexOut) = 0;
+
 		SLKC_API AstNodePtr<VarNode> lookupLocalVar(const std::string_view &name) const;
 	};
 
@@ -101,6 +103,9 @@ namespace slkc {
 		BlockLayer curBlockLayer;
 
 		uint32_t nTotalRegs = 0;
+
+		peff::DynArray<slake::slxfmt::SourceLocDesc> sourceLocDescs;
+		peff::Set<slake::slxfmt::SourceLocDesc &> sourceLocDescsMap;
 
 		peff::DynArray<peff::SharedPtr<Label>> labels;
 		peff::HashMap<std::string_view, size_t> labelNameIndices;
@@ -143,6 +148,8 @@ namespace slkc {
 		SLKC_API virtual void leaveBlock() override;
 
 		SLKC_API virtual uint32_t getBlockLevel() override;
+
+		SLKC_API virtual peff::Option<CompilationError> registerSourceLocDesc(slake::slxfmt::SourceLocDesc sld, uint32_t &indexOut) override;
 	};
 
 	struct CompileEnvironment {
@@ -609,6 +616,17 @@ namespace slkc {
 
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> visitBaseClass(AstNodePtr<TypeNameNode> cls, AstNodePtr<ClassNode> &classOut, peff::Set<AstNodePtr<MemberNode>> *walkedNodes);
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> visitBaseInterface(AstNodePtr<TypeNameNode> cls, AstNodePtr<InterfaceNode> &classOut, peff::Set<AstNodePtr<MemberNode>> *walkedNodes);
+
+	SLAKE_FORCEINLINE slake::slxfmt::SourceLocDesc tokenRangeToSld(const TokenRange& tokenRange) {
+		slake::slxfmt::SourceLocDesc sld;
+
+		SourceLocation srcLoc = tokenRange.moduleNode->parser->tokenList.at(tokenRange.beginIndex)->sourceLocation;
+
+		sld.line = srcLoc.beginPosition.line;
+		sld.column = srcLoc.beginPosition.column;
+
+		return sld;
+	}
 
 	class Writer {
 	public:

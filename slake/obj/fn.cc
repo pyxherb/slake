@@ -12,11 +12,13 @@ SLAKE_API Instruction::Instruction()
 }
 
 SLAKE_API Instruction::Instruction(Instruction &&rhs)
-	: opcode(rhs.opcode),
+	: offSourceLocDesc(rhs.offSourceLocDesc),
+	  opcode(rhs.opcode),
 	  nOperands(rhs.nOperands),
 	  output(rhs.output),
 	  operands(rhs.operands),
 	  operandsAllocator(rhs.operandsAllocator) {
+	rhs.offSourceLocDesc = SIZE_MAX;
 	rhs.opcode = (Opcode)0xff;
 	rhs.nOperands = 0;
 	rhs.output = UINT32_MAX;
@@ -243,24 +245,6 @@ SLAKE_API RegularFnOverloadingObject::RegularFnOverloadingObject(const RegularFn
 
 SLAKE_API RegularFnOverloadingObject::~RegularFnOverloadingObject() {
 	instructions.clear();
-}
-
-SLAKE_API const slxfmt::SourceLocDesc *RegularFnOverloadingObject::getSourceLocationDesc(uint32_t offIns) const {
-	const slxfmt::SourceLocDesc *curDesc = nullptr;
-
-	for (auto &i : sourceLocDescs) {
-		if ((offIns >= i.offIns) &&
-			(offIns < i.offIns + i.nIns)) {
-			if (curDesc) {
-				if ((i.offIns >= curDesc->offIns) &&
-					(i.nIns < curDesc->nIns))
-					curDesc = &i;
-			} else
-				curDesc = &i;
-		}
-	}
-
-	return curDesc;
 }
 
 SLAKE_API Object *slake::RegularFnOverloadingObject::duplicate(Duplicator *duplicator) const {

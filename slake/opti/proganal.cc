@@ -356,6 +356,12 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				analyzedInfoOut.analyzedRegInfo.at(index).lifetime.offEndIns = i;
 			}
 		}
+	}
+
+	for (uint32_t &i = analyzeContext.idxCurIns; i < nIns; ++i) {
+		const Instruction &curIns = fnObject->instructions.at(i);
+
+		uint32_t regIndex = curIns.output;
 
 		switch (curIns.opcode) {
 			case Opcode::LOAD: {

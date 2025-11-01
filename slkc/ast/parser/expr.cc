@@ -15,7 +15,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr<
 		{
 			peff::ScopeGuard setTokenRangeGuard([this, prefixToken, &lhs]() noexcept {
 				if (lhs) {
-					lhs->tokenRange = TokenRange{ prefixToken->index, parseContext.idxPrevToken };
+					lhs->tokenRange = TokenRange{ document->mainModule, prefixToken->index, parseContext.idxPrevToken };
 				}
 			});
 
@@ -423,7 +423,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr<
 				default:
 					nextToken();
 					return SyntaxError(
-						TokenRange{ prefixToken->index },
+						TokenRange{ document->mainModule, prefixToken->index },
 						SyntaxErrorKind::ExpectingExpr);
 			}
 		}
@@ -433,7 +433,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr<
 		for (;;) {
 			peff::ScopeGuard setTokenRangeGuard([this, prefixToken, &lhs]() noexcept {
 				if (lhs) {
-					lhs->tokenRange = TokenRange{ prefixToken->index, parseContext.idxPrevToken };
+					lhs->tokenRange = TokenRange{ document->mainModule, prefixToken->index, parseContext.idxPrevToken };
 				}
 			});
 
@@ -1278,6 +1278,6 @@ end:
 genBadExpr:
 	if (!(exprOut = makeAstNode<BadExprNode>(resourceAllocator.get(), resourceAllocator.get(), document, lhs).template castTo<ExprNode>()))
 		return genOutOfMemoryError();
-	exprOut->tokenRange = { prefixToken->index, parseContext.idxCurrentToken };
+	exprOut->tokenRange = { document->mainModule, prefixToken->index, parseContext.idxCurrentToken };
 	return syntaxError;
 }

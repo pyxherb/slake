@@ -8,8 +8,8 @@ SLKC_API peff::Option<SyntaxError> Parser::lookaheadUntil(size_t nTokenIds, cons
 
 	Token *token;
 	while ((token->tokenId != TokenId::End)) {
-		for(size_t i = 0 ; i < nTokenIds; ++i) {
-			if(token->tokenId == tokenIds[i]) {
+		for (size_t i = 0; i < nTokenIds; ++i) {
+			if (token->tokenId == tokenIds[i]) {
 				return {};
 			}
 		}
@@ -18,13 +18,13 @@ SLKC_API peff::Option<SyntaxError> Parser::lookaheadUntil(size_t nTokenIds, cons
 
 	NoMatchingTokensFoundErrorExData exData(resourceAllocator.get());
 
-	for(size_t i = 0 ; i < nTokenIds; ++i) {
+	for (size_t i = 0; i < nTokenIds; ++i) {
 		TokenId copiedTokenId = tokenIds[i];
-		if(!exData.expectingTokenIds.insert(std::move(copiedTokenId)))
+		if (!exData.expectingTokenIds.insert(std::move(copiedTokenId)))
 			return genOutOfMemoryError();
 	}
 
-	return SyntaxError(token->index, std::move(exData));
+	return SyntaxError({ token->sourceLocation.moduleNode, token->index }, std::move(exData));
 }
 
 SLKC_API Token *Parser::nextToken(bool keepNewLine, bool keepWhitespace, bool keepComment) {
@@ -119,12 +119,13 @@ SLKC_API peff::Option<SyntaxError> Parser::splitRshOpToken() {
 			extraClosingToken->tokenId = TokenId::GtOp;
 			extraClosingToken->sourceLocation =
 				SourceLocation{
+					token->sourceLocation.moduleNode,
 					SourcePosition{ token->sourceLocation.beginPosition.line, token->sourceLocation.beginPosition.column + 1 },
 					token->sourceLocation.endPosition
 				};
 			extraClosingToken->sourceText = token->sourceText.substr(1);
 
-			if(!tokenList.insert(parseContext.idxCurrentToken + 1, std::move(extraClosingToken))) {
+			if (!tokenList.insert(parseContext.idxCurrentToken + 1, std::move(extraClosingToken))) {
 				return genOutOfMemoryError();
 			}
 
@@ -151,6 +152,7 @@ SLKC_API peff::Option<SyntaxError> Parser::splitRDBracketsToken() {
 			extraClosingToken->tokenId = TokenId::RBracket;
 			extraClosingToken->sourceLocation =
 				SourceLocation{
+					token->sourceLocation.moduleNode,
 					SourcePosition{ token->sourceLocation.beginPosition.line, token->sourceLocation.beginPosition.column + 1 },
 					token->sourceLocation.endPosition
 				};

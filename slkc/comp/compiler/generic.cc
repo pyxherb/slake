@@ -430,6 +430,7 @@ SLKC_API peff::Option<CompilationError> Document::instantiateGenericObject(
 					if (genericArgs.size() != obj->genericParams.size()) {
 						return CompilationError(
 							TokenRange{
+								genericArgs.front()->tokenRange.moduleNode,
 								genericArgs.front()->tokenRange.beginIndex,
 								genericArgs.back()->tokenRange.endIndex },
 							CompilationErrorKind::MismatchedGenericArgNumber);
@@ -451,6 +452,7 @@ SLKC_API peff::Option<CompilationError> Document::instantiateGenericObject(
 					if (genericArgs.size() != obj->genericParams.size()) {
 						return CompilationError(
 							TokenRange{
+								genericArgs.front()->tokenRange.moduleNode,
 								genericArgs.front()->tokenRange.beginIndex,
 								genericArgs.back()->tokenRange.endIndex },
 							CompilationErrorKind::MismatchedGenericArgNumber);
@@ -471,6 +473,7 @@ SLKC_API peff::Option<CompilationError> Document::instantiateGenericObject(
 					if (genericArgs.size() != obj->genericParams.size()) {
 						return CompilationError(
 							TokenRange{
+								genericArgs.front()->tokenRange.moduleNode,
 								genericArgs.front()->tokenRange.beginIndex,
 								genericArgs.back()->tokenRange.endIndex },
 							CompilationErrorKind::MismatchedGenericArgNumber);
@@ -488,6 +491,7 @@ SLKC_API peff::Option<CompilationError> Document::instantiateGenericObject(
 				default:
 					return CompilationError(
 						TokenRange{
+							genericArgs.front()->tokenRange.moduleNode,
 							genericArgs.front()->tokenRange.beginIndex,
 							genericArgs.back()->tokenRange.endIndex },
 						CompilationErrorKind::MismatchedGenericArgNumber);

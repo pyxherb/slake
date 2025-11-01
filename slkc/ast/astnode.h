@@ -36,12 +36,15 @@ namespace slkc {
 		Bad
 	};
 
+	class ModuleNode;
+
 	struct TokenRange {
+		ModuleNode *moduleNode = nullptr;
 		size_t beginIndex = SIZE_MAX, endIndex = SIZE_MAX;
 
 		inline TokenRange() = default;
-		inline TokenRange(size_t index) : beginIndex(index), endIndex(index) {}
-		inline TokenRange(size_t beginIndex, size_t endIndex) : beginIndex(beginIndex), endIndex(endIndex) {}
+		inline TokenRange(ModuleNode *moduleNode, size_t index) : moduleNode(moduleNode), beginIndex(index), endIndex(index) {}
+		inline TokenRange(ModuleNode *moduleNode, size_t beginIndex, size_t endIndex) : moduleNode(moduleNode), beginIndex(beginIndex), endIndex(endIndex) {}
 
 		SLAKE_FORCEINLINE operator bool() const {
 			return beginIndex != SIZE_MAX;

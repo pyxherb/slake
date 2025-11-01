@@ -158,7 +158,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseOperatorName(std::string_view &n
 			nextToken();
 			break;
 		default:
-			return SyntaxError(TokenRange{ t->index }, SyntaxErrorKind::ExpectingOperatorName);
+			return SyntaxError(TokenRange{ document->mainModule, t->index }, SyntaxErrorKind::ExpectingOperatorName);
 	}
 	return {};
 }
@@ -175,7 +175,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseIdName(peff::String &nameOut) {
 			nextToken();
 			break;
 		default:
-			return SyntaxError(TokenRange{ t->index }, SyntaxErrorKind::ExpectingId);
+			return SyntaxError(TokenRange{ document->mainModule, t->index }, SyntaxErrorKind::ExpectingId);
 	}
 	return {};
 }
@@ -187,7 +187,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseIdRef(IdRefPtr &idRefOut) {
 		return genOutOfMemoryError();
 	Token *t = peekToken();
 
-	idRefPtr->tokenRange = TokenRange{ t->index };
+	idRefPtr->tokenRange = TokenRange{ document->mainModule, t->index };
 
 	if (t->tokenId == TokenId::ThisKeyword) {
 		nextToken();
@@ -360,7 +360,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseFn(AstNodePtr<FnOverloadingNode>
 			break;
 		}
 		default:
-			return SyntaxError(TokenRange{ fnToken->index }, SyntaxErrorKind::UnexpectedToken);
+			return SyntaxError(TokenRange{ document->mainModule, fnToken->index }, SyntaxErrorKind::UnexpectedToken);
 	}
 
 	if (!(fnNodeOut = makeAstNode<FnOverloadingNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
@@ -382,7 +382,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseFn(AstNodePtr<FnOverloadingNode>
 	curParent = fnNodeOut.template castTo<MemberNode>();
 
 	peff::ScopeGuard setTokenRangeGuard([this, fnToken, fnNodeOut]() noexcept {
-		fnNodeOut->tokenRange = TokenRange{ fnToken->index, parseContext.idxPrevToken };
+		fnNodeOut->tokenRange = TokenRange{ document->mainModule, fnToken->index, parseContext.idxPrevToken };
 	});
 
 	fnNodeOut->name = std::move(name);
@@ -482,7 +482,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseFn(AstNodePtr<FnOverloadingNode>
 		}
 		default:
 			return SyntaxError(
-				TokenRange{ bodyToken->index },
+				TokenRange{ document->mainModule, bodyToken->index },
 				SyntaxErrorKind::UnexpectedToken);
 	}
 
@@ -580,7 +580,7 @@ accessModifierParseEnd:
 
 			{
 				peff::ScopeGuard setTokenRangeGuard([this, token, attributeNode]() noexcept {
-					attributeNode->tokenRange = TokenRange{ token->index, parseContext.idxPrevToken };
+					attributeNode->tokenRange = TokenRange{ document->mainModule, token->index, parseContext.idxPrevToken };
 				});
 
 				AstNodePtr<MemberNode> prevParent;
@@ -726,7 +726,7 @@ accessModifierParseEnd:
 
 			{
 				peff::ScopeGuard setTokenRangeGuard([this, token, classNode]() noexcept {
-					classNode->tokenRange = TokenRange{ token->index, parseContext.idxPrevToken };
+					classNode->tokenRange = TokenRange{ document->mainModule, token->index, parseContext.idxPrevToken };
 				});
 
 				AstNodePtr<MemberNode> prevParent;
@@ -861,7 +861,7 @@ accessModifierParseEnd:
 
 			{
 				peff::ScopeGuard setTokenRangeGuard([this, token, structNode]() noexcept {
-					structNode->tokenRange = TokenRange{ token->index, parseContext.idxPrevToken };
+					structNode->tokenRange = TokenRange{ document->mainModule, token->index, parseContext.idxPrevToken };
 				});
 
 				AstNodePtr<MemberNode> prevParent;
@@ -983,7 +983,7 @@ accessModifierParseEnd:
 
 			{
 				peff::ScopeGuard setTokenRangeGuard([this, token, interfaceNode]() noexcept {
-					interfaceNode->tokenRange = TokenRange{ token->index, parseContext.idxPrevToken };
+					interfaceNode->tokenRange = TokenRange{ document->mainModule, token->index, parseContext.idxPrevToken };
 				});
 
 				AstNodePtr<MemberNode> prevMember;
@@ -1139,7 +1139,7 @@ accessModifierParseEnd:
 			stmt->accessModifier = access;
 
 			peff::ScopeGuard setTokenRangeGuard([this, token, stmt]() noexcept {
-				stmt->tokenRange = TokenRange{ token->index, parseContext.idxPrevToken };
+				stmt->tokenRange = TokenRange{ document->mainModule, token->index, parseContext.idxPrevToken };
 			});
 
 			if ((syntaxError = parseVarDefs(stmt->varDefEntries))) {
@@ -1163,7 +1163,7 @@ accessModifierParseEnd:
 		default:
 			nextToken();
 			return SyntaxError(
-				TokenRange{ token->index },
+				TokenRange{ document->mainModule, token->index },
 				SyntaxErrorKind::ExpectingDecl);
 	}
 

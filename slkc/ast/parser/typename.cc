@@ -14,7 +14,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseTypeName(AstNodePtr<TypeNameNode
 					  resourceAllocator.get(), document)
 						.template castTo<TypeNameNode>()))
 				return genOutOfMemoryError();
-			typeNameOut->tokenRange = TokenRange{ t->index };
+			typeNameOut->tokenRange = TokenRange{ document->mainModule, t->index };
 			nextToken();
 
 			if ((syntaxError = parseTypeName(typeNameOut.template castTo<UnpackingTypeNameNode>()->innerTypeName, true)))
@@ -26,7 +26,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseTypeName(AstNodePtr<TypeNameNode
 					  resourceAllocator.get(), document)
 						.template castTo<TypeNameNode>()))
 				return genOutOfMemoryError();
-			typeNameOut->tokenRange = TokenRange{ t->index };
+			typeNameOut->tokenRange = TokenRange{ document->mainModule, t->index };
 			nextToken();
 			break;
 		case TokenId::I8TypeName:
@@ -35,7 +35,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseTypeName(AstNodePtr<TypeNameNode
 					  resourceAllocator.get(), document)
 						.template castTo<TypeNameNode>()))
 				return genOutOfMemoryError();
-			typeNameOut->tokenRange = TokenRange{ t->index };
+			typeNameOut->tokenRange = TokenRange{ document->mainModule, t->index };
 			nextToken();
 			break;
 		case TokenId::I16TypeName:
@@ -44,7 +44,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseTypeName(AstNodePtr<TypeNameNode
 					  resourceAllocator.get(), document)
 						.template castTo<TypeNameNode>()))
 				return genOutOfMemoryError();
-			typeNameOut->tokenRange = TokenRange{ t->index };
+			typeNameOut->tokenRange = TokenRange{ document->mainModule, t->index };
 			nextToken();
 			break;
 		case TokenId::I32TypeName:
@@ -53,7 +53,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseTypeName(AstNodePtr<TypeNameNode
 					  resourceAllocator.get(), document)
 						.template castTo<TypeNameNode>()))
 				return genOutOfMemoryError();
-			typeNameOut->tokenRange = TokenRange{ t->index };
+			typeNameOut->tokenRange = TokenRange{ document->mainModule, t->index };
 			nextToken();
 			break;
 		case TokenId::I64TypeName:
@@ -62,7 +62,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseTypeName(AstNodePtr<TypeNameNode
 					  resourceAllocator.get(), document)
 						.template castTo<TypeNameNode>()))
 				return genOutOfMemoryError();
-			typeNameOut->tokenRange = TokenRange{ t->index };
+			typeNameOut->tokenRange = TokenRange{ document->mainModule, t->index };
 			nextToken();
 			break;
 		case TokenId::U8TypeName:
@@ -71,7 +71,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseTypeName(AstNodePtr<TypeNameNode
 					  resourceAllocator.get(), document)
 						.template castTo<TypeNameNode>()))
 				return genOutOfMemoryError();
-			typeNameOut->tokenRange = TokenRange{ t->index };
+			typeNameOut->tokenRange = TokenRange{ document->mainModule, t->index };
 			nextToken();
 			break;
 		case TokenId::U16TypeName:
@@ -80,7 +80,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseTypeName(AstNodePtr<TypeNameNode
 					  resourceAllocator.get(), document)
 						.template castTo<TypeNameNode>()))
 				return genOutOfMemoryError();
-			typeNameOut->tokenRange = TokenRange{ t->index };
+			typeNameOut->tokenRange = TokenRange{ document->mainModule, t->index };
 			nextToken();
 			break;
 		case TokenId::U32TypeName:
@@ -89,7 +89,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseTypeName(AstNodePtr<TypeNameNode
 					  resourceAllocator.get(), document)
 						.template castTo<TypeNameNode>()))
 				return genOutOfMemoryError();
-			typeNameOut->tokenRange = TokenRange{ t->index };
+			typeNameOut->tokenRange = TokenRange{ document->mainModule, t->index };
 			nextToken();
 			break;
 		case TokenId::U64TypeName:
@@ -98,7 +98,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseTypeName(AstNodePtr<TypeNameNode
 					  resourceAllocator.get(), document)
 						.template castTo<TypeNameNode>()))
 				return genOutOfMemoryError();
-			typeNameOut->tokenRange = TokenRange{ t->index };
+			typeNameOut->tokenRange = TokenRange{ document->mainModule, t->index };
 			nextToken();
 			break;
 		case TokenId::ISizeTypeName:
@@ -107,7 +107,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseTypeName(AstNodePtr<TypeNameNode
 					  resourceAllocator.get(), document)
 						.template castTo<TypeNameNode>()))
 				return genOutOfMemoryError();
-			typeNameOut->tokenRange = TokenRange{ t->index };
+			typeNameOut->tokenRange = TokenRange{ document->mainModule, t->index };
 			break;
 		case TokenId::USizeTypeName:
 			if (!(typeNameOut = makeAstNode<USizeTypeNameNode>(
@@ -115,7 +115,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseTypeName(AstNodePtr<TypeNameNode
 					  resourceAllocator.get(), document)
 						.template castTo<TypeNameNode>()))
 				return genOutOfMemoryError();
-			typeNameOut->tokenRange = TokenRange{ t->index };
+			typeNameOut->tokenRange = TokenRange{ document->mainModule, t->index };
 			nextToken();
 			break;
 		case TokenId::F32TypeName:
@@ -124,7 +124,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseTypeName(AstNodePtr<TypeNameNode
 					  resourceAllocator.get(), document)
 						.template castTo<TypeNameNode>()))
 				return genOutOfMemoryError();
-			typeNameOut->tokenRange = TokenRange{ t->index };
+			typeNameOut->tokenRange = TokenRange{ document->mainModule, t->index };
 			nextToken();
 			break;
 		case TokenId::F64TypeName:
@@ -133,7 +133,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseTypeName(AstNodePtr<TypeNameNode
 					  resourceAllocator.get(), document)
 						.template castTo<TypeNameNode>()))
 				return genOutOfMemoryError();
-			typeNameOut->tokenRange = TokenRange{ t->index };
+			typeNameOut->tokenRange = TokenRange{ document->mainModule, t->index };
 			nextToken();
 			break;
 		case TokenId::BoolTypeName:
@@ -142,7 +142,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseTypeName(AstNodePtr<TypeNameNode
 					  resourceAllocator.get(), document)
 						.template castTo<TypeNameNode>()))
 				return genOutOfMemoryError();
-			typeNameOut->tokenRange = TokenRange{ t->index };
+			typeNameOut->tokenRange = TokenRange{ document->mainModule, t->index };
 			nextToken();
 			break;
 		case TokenId::StringTypeName:
@@ -151,7 +151,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseTypeName(AstNodePtr<TypeNameNode
 					  resourceAllocator.get(), document)
 						.template castTo<TypeNameNode>()))
 				return genOutOfMemoryError();
-			typeNameOut->tokenRange = TokenRange{ t->index };
+			typeNameOut->tokenRange = TokenRange{ document->mainModule, t->index };
 			nextToken();
 			break;
 		case TokenId::LParenthese: {
@@ -164,7 +164,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseTypeName(AstNodePtr<TypeNameNode
 
 			typeNameOut = tn.template castTo<TypeNameNode>();
 
-			typeNameOut->tokenRange = TokenRange{ t->index };
+			typeNameOut->tokenRange = TokenRange{ document->mainModule, t->index };
 
 			Token *lParentheseToken = nextToken();
 
@@ -198,7 +198,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseTypeName(AstNodePtr<TypeNameNode
 
 			Token *rParentheseToken;
 			if ((syntaxError = expectToken((rParentheseToken = peekToken()), TokenId::RParenthese)))
-				return SyntaxError(TokenRange{ rParentheseToken->index }, ExpectingSingleTokenErrorExData{ TokenId::RParenthese });
+				return SyntaxError(TokenRange{ document->mainModule, rParentheseToken->index }, ExpectingSingleTokenErrorExData{ TokenId::RParenthese });
 
 			nextToken();
 			break;
@@ -210,12 +210,12 @@ SLKC_API peff::Option<SyntaxError> Parser::parseTypeName(AstNodePtr<TypeNameNode
 					  resourceAllocator.get(), document)))
 				return genOutOfMemoryError();
 			typeNameOut = tn.template castTo<TypeNameNode>();
-			tn->tokenRange = TokenRange{ t->index };
+			tn->tokenRange = TokenRange{ document->mainModule, t->index };
 			nextToken();
 
 			Token *lParentheseToken;
 			if ((syntaxError = expectToken((lParentheseToken = peekToken()), TokenId::LParenthese)))
-				return SyntaxError(TokenRange{ lParentheseToken->index }, ExpectingSingleTokenErrorExData{ TokenId::LParenthese });
+				return SyntaxError(TokenRange{ document->mainModule, lParentheseToken->index }, ExpectingSingleTokenErrorExData{ TokenId::LParenthese });
 
 			nextToken();
 
@@ -244,7 +244,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseTypeName(AstNodePtr<TypeNameNode
 
 			Token *rParentheseToken;
 			if ((syntaxError = expectToken((rParentheseToken = peekToken()), TokenId::RParenthese)))
-				return SyntaxError(TokenRange{ rParentheseToken->index }, ExpectingSingleTokenErrorExData{ TokenId::RParenthese });
+				return SyntaxError(TokenRange{ document->mainModule, rParentheseToken->index }, ExpectingSingleTokenErrorExData{ TokenId::RParenthese });
 
 			nextToken();
 
@@ -389,7 +389,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseTypeName(AstNodePtr<TypeNameNode
 			break;
 		}
 		default:
-			return SyntaxError(TokenRange{ t->index }, SyntaxErrorKind::UnexpectedToken);
+			return SyntaxError(TokenRange{ document->mainModule, t->index }, SyntaxErrorKind::UnexpectedToken);
 	}
 
 	if (withCircumfixes) {
@@ -400,7 +400,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseTypeName(AstNodePtr<TypeNameNode
 
 					Token *rBracketToken;
 					if ((syntaxError = expectToken((rBracketToken = peekToken()), TokenId::RBracket)))
-						return SyntaxError(TokenRange{ rBracketToken->index }, ExpectingSingleTokenErrorExData{ TokenId::RBracket });
+						return SyntaxError(TokenRange{ document->mainModule, rBracketToken->index }, ExpectingSingleTokenErrorExData{ TokenId::RBracket });
 
 					nextToken();
 

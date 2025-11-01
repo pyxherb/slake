@@ -20,6 +20,7 @@ namespace slake {
 
 	class Instruction final {
 	public:
+		size_t offSourceLocDesc = SIZE_MAX;
 		Opcode opcode;
 		uint32_t output;
 		uint32_t nOperands;
@@ -162,8 +163,6 @@ namespace slake {
 			peff::Alloc *selfAllocator);
 		SLAKE_API RegularFnOverloadingObject(const RegularFnOverloadingObject &other, peff::Alloc *allocator, bool &succeededOut);
 		SLAKE_API virtual ~RegularFnOverloadingObject();
-
-		SLAKE_API const slxfmt::SourceLocDesc *getSourceLocationDesc(uint32_t offIns) const;
 
 		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
 

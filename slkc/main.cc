@@ -686,7 +686,7 @@ public:
 
 	virtual peff::Option<slkc::CompilationError> write(const char *src, size_t size) override {
 		if (fwrite(src, size, 1, fp) < 1) {
-			return slkc::CompilationError(slkc::TokenRange{ 0 }, slkc::CompilationErrorKind::ErrorWritingCompiledModule);
+			return slkc::CompilationError(slkc::TokenRange{ nullptr, 0 }, slkc::CompilationErrorKind::ErrorWritingCompiledModule);
 		}
 		return {};
 	}
@@ -822,13 +822,21 @@ int main(int argc, char *argv[]) {
 			return ENOMEM;
 		}
 
+		slkc::AstNodePtr<slkc::ModuleNode> mod(peff::makeSharedWithControlBlock<slkc::ModuleNode, slkc::AstNodeControlBlock<slkc::ModuleNode>>(peff::getDefaultAlloc(), peff::getDefaultAlloc(), document));
+		if (!(mod = peff::makeSharedWithControlBlock<slkc::ModuleNode, slkc::AstNodeControlBlock<slkc::ModuleNode>>(peff::getDefaultAlloc(), peff::getDefaultAlloc(), document))) {
+			printError("Error allocating memory for the target module");
+			return ENOMEM;
+		}
+
+		document->mainModule = mod.get();
+
 		peff::Uninitialized<slkc::TokenList> tokenList;
 		{
 			slkc::Lexer lexer(peff::getDefaultAlloc());
 
 			std::string_view sv(buf.get(), fileSize);
 
-			if (auto e = lexer.lex(sv, peff::getDefaultAlloc(), document); e) {
+			if (auto e = lexer.lex(mod.get(), sv, peff::getDefaultAlloc(), document); e) {
 				dumpLexicalError(*e);
 				return -1;
 			}
@@ -858,12 +866,6 @@ int main(int argc, char *argv[]) {
 			document->rootModule = rootMod;
 
 			slkc::IdRefPtr moduleName;
-
-			slkc::AstNodePtr<slkc::ModuleNode> mod(peff::makeSharedWithControlBlock<slkc::ModuleNode, slkc::AstNodeControlBlock<slkc::ModuleNode>>(peff::getDefaultAlloc(), peff::getDefaultAlloc(), document));
-			if (!(mod = peff::makeSharedWithControlBlock<slkc::ModuleNode, slkc::AstNodeControlBlock<slkc::ModuleNode>>(peff::getDefaultAlloc(), peff::getDefaultAlloc(), document))) {
-				printError("Error allocating memory for the target module");
-				return ENOMEM;
-			}
 
 			bool encounteredErrors = false;
 			if (auto e = parser->parseProgram(mod, moduleName); e) {

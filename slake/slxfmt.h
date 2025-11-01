@@ -214,10 +214,32 @@ namespace slake {
 
 		// @brief Source Location Descriptor (SLD)
 		struct SourceLocDesc final {
-			uint32_t offIns;
-			uint32_t nIns;
 			uint32_t line;
 			uint32_t column;
+
+			SLAKE_FORCEINLINE int comparesTo(const SourceLocDesc& rhs) const noexcept {
+				if (line < rhs.line)
+					return -1;
+				if (line > rhs.line)
+					return 1;
+				if (column < rhs.line)
+					return -1;
+				if (column > rhs.column)
+					return 1;
+				return 0;
+			}
+
+			SLAKE_FORCEINLINE bool operator==(const SourceLocDesc &rhs) const noexcept {
+				return (line == rhs.line) && (column == rhs.column);
+			}
+
+			SLAKE_FORCEINLINE bool operator<(const SourceLocDesc &rhs) const noexcept {
+				return comparesTo(rhs) < 0;
+			}
+
+			SLAKE_FORCEINLINE bool operator>(const SourceLocDesc &rhs) const noexcept {
+				return comparesTo(rhs) > 0;
+			}
 		};
 	}
 }

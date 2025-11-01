@@ -79,6 +79,7 @@ namespace slkc {
 	public:
 		peff::RcObjectPtr<peff::Alloc> allocator;
 		AstNodePtr<ModuleNode> rootModule;
+		ModuleNode *mainModule = nullptr;
 		peff::DynArray<peff::SharedPtr<ExternalModuleProvider>> externalModuleProviders;
 		peff::Map<
 			MemberNode *,

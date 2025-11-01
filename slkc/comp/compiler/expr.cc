@@ -133,7 +133,8 @@ static peff::Option<CompilationError> _loadTheRestOfIdRef(CompileEnvironment *co
 					}
 
 					if (part.nEntries) {
-						SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, compilationContext, idRef->entries.data() + curIdx, part.nEntries, nullptr, 0, false, {}, idRefObject));
+						IdRefEntry *entriesPtr = idRef->entries.data() + curIdx;
+						SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, compilationContext, entriesPtr, part.nEntries, nullptr, 0, false, {}, idRefObject));
 
 						if (part.isStatic) {
 							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::LOAD, idxReg, { slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));

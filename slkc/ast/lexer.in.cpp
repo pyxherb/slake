@@ -13,7 +13,7 @@ enum LexCondition {
 	yycLineCommentCondition,
 };
 
-SLKC_API peff::Option<LexicalError> Lexer::lex(const std::string_view &src, peff::Alloc *allocator, const peff::SharedPtr<Document> &document) {
+SLKC_API peff::Option<LexicalError> Lexer::lex(ModuleNode *moduleNode, const std::string_view &src, peff::Alloc *allocator, const peff::SharedPtr<Document> &document) {
 	const char *YYCURSOR = src.data(), *YYMARKER = YYCURSOR, *YYLIMIT = src.data() + src.size();
 	const char *prevYYCURSOR = YYCURSOR;
 
@@ -241,6 +241,7 @@ SLKC_API peff::Option<LexicalError> Lexer::lex(const std::string_view &src, peff
 
 					return LexicalError {
 						SourceLocation {
+						moduleNode,
 						{ (size_t)std::count(strToBegin.begin(), strToBegin.end(), '\n'), prevYYCURSORPos },
 						{ (size_t)std::count(strToEnd.begin(), strToEnd.end(), '\n'), YYCURSORPos }
 					}, LexicalErrorKind::UnrecognizedToken};
@@ -272,6 +273,7 @@ SLKC_API peff::Option<LexicalError> Lexer::lex(const std::string_view &src, peff
 
 					return LexicalError {
 						SourceLocation {
+						moduleNode,
 						{ (size_t)std::count(strToBegin.begin(), strToBegin.end(), '\n'), prevYYCURSORPos },
 						{ (size_t)std::count(strToEnd.begin(), strToEnd.end(), '\n'), YYCURSORPos }
 					}, LexicalErrorKind::UnexpectedEndOfLine};
@@ -294,6 +296,7 @@ SLKC_API peff::Option<LexicalError> Lexer::lex(const std::string_view &src, peff
 
 					return LexicalError {
 						SourceLocation {
+						moduleNode,
 						{ (size_t)std::count(strToBegin.begin(), strToBegin.end(), '\n'), prevYYCURSORPos },
 						{ (size_t)std::count(strToEnd.begin(), strToEnd.end(), '\n'), YYCURSORPos }
 					}, LexicalErrorKind::PrematuredEndOfFile};
@@ -365,6 +368,7 @@ SLKC_API peff::Option<LexicalError> Lexer::lex(const std::string_view &src, peff
 
 					return LexicalError {
 						SourceLocation {
+						moduleNode,
 						{ (size_t)std::count(strToBegin.begin(), strToBegin.end(), '\n'), prevYYCURSORPos },
 						{ (size_t)std::count(strToEnd.begin(), strToEnd.end(), '\n'), YYCURSORPos }
 					}, LexicalErrorKind::PrematuredEndOfFile};
@@ -390,6 +394,7 @@ SLKC_API peff::Option<LexicalError> Lexer::lex(const std::string_view &src, peff
 
 					return LexicalError {
 						SourceLocation {
+						moduleNode,
 						{ (size_t)std::count(strToBegin.begin(), strToBegin.end(), '\n'), prevYYCURSORPos },
 						{ (size_t)std::count(strToEnd.begin(), strToEnd.end(), '\n'), YYCURSORPos }
 					}, LexicalErrorKind::PrematuredEndOfFile};
@@ -410,6 +415,7 @@ SLKC_API peff::Option<LexicalError> Lexer::lex(const std::string_view &src, peff
 		size_t idxLastBeginNewline = src.find_last_of('\n', beginIndex),
 			   idxLastEndNewline = src.find_last_of('\n', endIndex);
 
+		token->sourceLocation.moduleNode = moduleNode;
 		token->sourceLocation.beginPosition = {
 			(size_t)std::count(strToBegin.begin(), strToBegin.end(), '\n'),
 			(idxLastBeginNewline == std::string::npos
@@ -428,7 +434,7 @@ SLKC_API peff::Option<LexicalError> Lexer::lex(const std::string_view &src, peff
 		prevYYCURSOR = YYCURSOR;
 	}
 
-end : {
+end: {
 	SourceLocation endLocation = token->sourceLocation;
 
 	token = OwnedTokenPtr(peff::allocAndConstruct<Token>(allocator, sizeof(std::max_align_t), allocator, document));
@@ -442,5 +448,5 @@ end : {
 	return {};
 
 outOfMemory:
-	return LexicalError{ SourceLocation{ { 0, 0 }, { 0, 0 } }, LexicalErrorKind::OutOfMemory };
+	return LexicalError{ SourceLocation{ moduleNode, { 0, 0 }, { 0, 0 } }, LexicalErrorKind::OutOfMemory };
 }

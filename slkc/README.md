@@ -7,15 +7,9 @@ The compiler has 3 main modules:
 
 ## Issues
 
-### Stack Overflow Risks on Everywhere
-
-Several functions (such as AST node duplication, generic instantiation,
-expression compilation, etc.) has risk of stack overflow, we have planned to
-migrate to C++20 and use coroutine to avoid this problem.
-
 ### SLKC_RETURN_IF_XXX trap
 
-In some case you may see:
+In some cases you may see:
 
 ```cpp
 if(/* condition */)

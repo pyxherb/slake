@@ -1,4 +1,5 @@
 #include "../compiler.h"
+#include <slake/opti/regsimp.h>
 
 using namespace slkc;
 

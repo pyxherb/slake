@@ -7,8 +7,8 @@
 namespace slake {
 	namespace opti {
 		struct RegLifetime {
-			size_t offBeginIns;
-			size_t offEndIns;
+			uint32_t offBeginIns;
+			uint32_t offEndIns;
 		};
 
 		enum class RegStorageType : uint8_t {
@@ -104,6 +104,9 @@ namespace slake {
 				  argPushInsOffs(resourceAllocator) {
 			}
 		};
+
+		bool isInstructionHasSideEffect(Opcode opcode);
+		bool isInstructionSimplifiable(Opcode opcode);
 
 		void markRegAsForOutput(ProgramAnalyzeContext &analyzeContext, uint32_t i);
 		InternalExceptionPointer wrapIntoHeapType(

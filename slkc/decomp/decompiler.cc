@@ -625,7 +625,7 @@ SLKC_API bool slkc::decompileModuleMembers(peff::Alloc *allocator, DumpWriter *w
 								if (sld) {
 									char s[23];
 
-									sprintf(s, "%u, %u: ", sld->line, sld->column);
+									sprintf(s, "(%u, %u): ", sld->line, sld->column);
 
 									SLKC_RETURN_IF_FALSE(writer->write(s));
 								}

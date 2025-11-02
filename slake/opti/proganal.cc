@@ -3,6 +3,48 @@
 using namespace slake;
 using namespace slake::opti;
 
+bool opti::isInstructionHasSideEffect(Opcode opcode) {
+	switch (opcode) {
+		case Opcode::STORE:
+		case Opcode::LVAR:
+		case Opcode::ALLOCA:
+		case Opcode::ENTER:
+		case Opcode::LEAVE:
+		case Opcode::PUSHARG:
+		case Opcode::PUSHAP:
+		case Opcode::CALL:
+		case Opcode::MCALL:
+		case Opcode::CTORCALL:
+		case Opcode::RET:
+		case Opcode::COCALL:
+		case Opcode::COMCALL:
+		case Opcode::YIELD:
+		case Opcode::RESUME:
+		case Opcode::NEW:
+		case Opcode::ARRNEW:
+		case Opcode::THROW:
+		case Opcode::PUSHXH:
+			return true;
+		default:
+			break;
+	}
+	return false;
+}
+
+bool opti::isInstructionSimplifiable(Opcode opcode) {
+	if (!isInstructionHasSideEffect(opcode))
+		return true;
+
+	switch (opcode) {
+		case Opcode::COCALL:
+		case Opcode::COMCALL:
+			return true;
+		default:
+			break;
+	}
+	return false;
+}
+
 void slake::opti::markRegAsForOutput(ProgramAnalyzeContext &analyzeContext, uint32_t i) {
 	switch (auto &regInfo = analyzeContext.analyzedInfoOut.analyzedRegInfo.at(i); regInfo.storageType) {
 		case opti::RegStorageType::None:
@@ -20,10 +62,10 @@ void slake::opti::markRegAsForOutput(ProgramAnalyzeContext &analyzeContext, uint
 }
 
 InternalExceptionPointer slake::opti::wrapIntoHeapType(
-	Runtime* runtime,
+	Runtime *runtime,
 	TypeRef type,
-	HostRefHolder& hostRefHolder,
-	HeapTypeObject*& heapTypeOut) {
+	HostRefHolder &hostRefHolder,
+	HeapTypeObject *&heapTypeOut) {
 	HostObjectRef<HeapTypeObject> heapType = HeapTypeObject::alloc(runtime);
 	if (!heapType)
 		return OutOfMemoryError::alloc();
@@ -313,7 +355,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 
 		SLAKE_RETURN_IF_EXCEPT(wrapIntoArrayType(analyzeContext.runtime, TypeId::Any, analyzeContext.hostRefHolder, varArgTypeRef));
 
-		if(!pseudoMajorFrame->resumable->argStack.pushBack({ Value(), varArgTypeRef }))
+		if (!pseudoMajorFrame->resumable->argStack.pushBack({ Value(), varArgTypeRef }))
 			return OutOfMemoryError::alloc();
 	}
 
@@ -356,12 +398,6 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				analyzedInfoOut.analyzedRegInfo.at(index).lifetime.offEndIns = i;
 			}
 		}
-	}
-
-	for (uint32_t &i = analyzeContext.idxCurIns; i < nIns; ++i) {
-		const Instruction &curIns = fnObject->instructions.at(i);
-
-		uint32_t regIndex = curIns.output;
 
 		switch (curIns.opcode) {
 			case Opcode::LOAD: {

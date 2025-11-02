@@ -66,9 +66,10 @@ SLKC_API peff::Option<CompilationError> NormalCompilationContext::allocReg(uint3
 	return CompilationError({ document->mainModule, 0 }, CompilationErrorKind::RegLimitExceeded);
 }
 
-SLKC_API peff::Option<CompilationError> NormalCompilationContext::emitIns(slake::Opcode opcode, uint32_t outputRegIndex, const std::initializer_list<slake::Value> &operands) {
+SLKC_API peff::Option<CompilationError> NormalCompilationContext::emitIns(uint32_t idxSld, slake::Opcode opcode, uint32_t outputRegIndex, const std::initializer_list<slake::Value> &operands) {
 	slake::Instruction insOut;
 
+	insOut.offSourceLocDesc = idxSld;
 	insOut.opcode = opcode;
 	insOut.output = outputRegIndex;
 	if (!insOut.reserveOperands(allocator.get(), operands.size())) {
@@ -87,9 +88,10 @@ SLKC_API peff::Option<CompilationError> NormalCompilationContext::emitIns(slake:
 	return {};
 }
 
-SLKC_API peff::Option<CompilationError> NormalCompilationContext::emitIns(slake::Opcode opcode, uint32_t outputRegIndex, slake::Value *operands, size_t nOperands) {
+SLKC_API peff::Option<CompilationError> NormalCompilationContext::emitIns(uint32_t idxSld, slake::Opcode opcode, uint32_t outputRegIndex, slake::Value *operands, size_t nOperands) {
 	slake::Instruction insOut;
 
+	insOut.offSourceLocDesc = idxSld;
 	insOut.opcode = opcode;
 	insOut.output = outputRegIndex;
 	if (!insOut.reserveOperands(allocator.get(), nOperands)) {
@@ -195,6 +197,15 @@ SLKC_API uint32_t NormalCompilationContext::getBlockLevel() {
 }
 
 SLKC_API peff::Option<CompilationError> NormalCompilationContext::registerSourceLocDesc(slake::slxfmt::SourceLocDesc sld, uint32_t &indexOut) {
+	if (!sourceLocDescsMap.insert(slake::slxfmt::SourceLocDesc(sld), sourceLocDescs.size()))
+		return genOutOfMemoryCompError();
+	peff::ScopeGuard removeSourceLocDescsMapGuard([this, &sld]() noexcept {
+		sourceLocDescsMap.remove(sld);
+	});
+	if (!sourceLocDescs.pushBack(slake::slxfmt::SourceLocDesc(sld)))
+		return genOutOfMemoryCompError();
+	removeSourceLocDescsMapGuard.release();
+	indexOut = sourceLocDescs.size() - 1;
 	return {};
 }
 

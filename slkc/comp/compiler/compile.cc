@@ -1276,6 +1276,12 @@ SLKC_API peff::Option<CompilationError> slkc::compileModule(
 						}
 						compContext.generatedInstructions.clear();
 
+						if (!fnObject->sourceLocDescs.resize(compContext.sourceLocDescs.size()))
+							return genOutOfMemoryCompError();
+						memcpy(fnObject->sourceLocDescs.data(), compContext.sourceLocDescs.data(), compContext.sourceLocDescs.size() * sizeof(slake::slxfmt::SourceLocDesc));
+						compContext.sourceLocDescs.clear();
+						compContext.sourceLocDescsMap.clear();
+
 						for (auto &j : fnObject->instructions) {
 							for (size_t k = 0; k < j.nOperands; ++k) {
 								if (j.operands[k].valueType == slake::ValueType::Label) {

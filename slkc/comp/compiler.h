@@ -45,8 +45,8 @@ namespace slkc {
 
 		[[nodiscard]] virtual peff::Option<CompilationError> allocReg(uint32_t &regOut) = 0;
 
-		[[nodiscard]] virtual peff::Option<CompilationError> emitIns(slake::Opcode opcode, uint32_t outputRegIndex, const std::initializer_list<slake::Value> &operands) = 0;
-		[[nodiscard]] virtual peff::Option<CompilationError> emitIns(slake::Opcode opcode, uint32_t outputRegIndex, slake::Value *operands, size_t nOperands) = 0;
+		[[nodiscard]] virtual peff::Option<CompilationError> emitIns(uint32_t idxSld, slake::Opcode opcode, uint32_t outputRegIndex, const std::initializer_list<slake::Value> &operands) = 0;
+		[[nodiscard]] virtual peff::Option<CompilationError> emitIns(uint32_t idxSld, slake::Opcode opcode, uint32_t outputRegIndex, slake::Value *operands, size_t nOperands) = 0;
 
 		[[nodiscard]] virtual peff::Option<CompilationError> allocLocalVar(const TokenRange &tokenRange, const std::string_view &name, uint32_t reg, AstNodePtr<TypeNameNode> type, AstNodePtr<VarNode> &localVarOut) = 0;
 		[[nodiscard]] virtual AstNodePtr<VarNode> getLocalVarInCurLevel(const std::string_view &name) const = 0;
@@ -105,7 +105,7 @@ namespace slkc {
 		uint32_t nTotalRegs = 0;
 
 		peff::DynArray<slake::slxfmt::SourceLocDesc> sourceLocDescs;
-		peff::Set<slake::slxfmt::SourceLocDesc &> sourceLocDescsMap;
+		peff::Map<slake::slxfmt::SourceLocDesc, size_t> sourceLocDescsMap;
 
 		peff::DynArray<peff::SharedPtr<Label>> labels;
 		peff::HashMap<std::string_view, size_t> labelNameIndices;
@@ -126,8 +126,8 @@ namespace slkc {
 
 		SLKC_API virtual peff::Option<CompilationError> allocReg(uint32_t &regOut) override;
 
-		SLKC_API virtual peff::Option<CompilationError> emitIns(slake::Opcode opcode, uint32_t outputRegIndex, const std::initializer_list<slake::Value> &operands) override;
-		SLKC_API virtual peff::Option<CompilationError> emitIns(slake::Opcode opcode, uint32_t outputRegIndex, slake::Value *operands, size_t nOperands) override;
+		SLKC_API virtual peff::Option<CompilationError> emitIns(uint32_t idxSld, slake::Opcode opcode, uint32_t outputRegIndex, const std::initializer_list<slake::Value> &operands) override;
+		SLKC_API virtual peff::Option<CompilationError> emitIns(uint32_t idxSld, slake::Opcode opcode, uint32_t outputRegIndex, slake::Value *operands, size_t nOperands) override;
 
 		SLKC_API virtual peff::Option<CompilationError> allocLocalVar(const TokenRange &tokenRange, const std::string_view &name, uint32_t reg, AstNodePtr<TypeNameNode> type, AstNodePtr<VarNode> &localVarOut) override;
 		SLKC_API virtual AstNodePtr<VarNode> getLocalVarInCurLevel(const std::string_view &name) const override;
@@ -281,7 +281,8 @@ namespace slkc {
 		ExprEvalPurpose rhsEvalPurpose,
 		uint32_t resultRegOut,
 		CompileExprResult &resultOut,
-		slake::Opcode opcode);
+		slake::Opcode opcode,
+		uint32_t idxSld);
 	peff::Option<CompilationError> _compileSimpleAssignBinaryExpr(
 		CompileEnvironment *compileEnv,
 		CompilationContext *compilationContext,
@@ -293,7 +294,8 @@ namespace slkc {
 		AstNodePtr<TypeNameNode> desiredRhsType,
 		ExprEvalPurpose rhsEvalPurpose,
 		uint32_t resultRegOut,
-		CompileExprResult &resultOut);
+		CompileExprResult &resultOut,
+		uint32_t idxSld);
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> _compileSimpleLAndBinaryExpr(
 		CompileEnvironment *compileEnv,
 		CompilationContext *compilationContext,
@@ -304,7 +306,8 @@ namespace slkc {
 		AstNodePtr<TypeNameNode> rhsType,
 		uint32_t resultRegOut,
 		CompileExprResult &resultOut,
-		slake::Opcode opcode);
+		slake::Opcode opcode,
+		uint32_t idxSld);
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> _compileSimpleLOrBinaryExpr(
 		CompileEnvironment *compileEnv,
 		CompilationContext *compilationContext,
@@ -315,7 +318,8 @@ namespace slkc {
 		AstNodePtr<TypeNameNode> rhsType,
 		uint32_t resultRegOut,
 		CompileExprResult &resultOut,
-		slake::Opcode opcode);
+		slake::Opcode opcode,
+		uint32_t idxSld);
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> _compileSimpleBinaryAssignOpExpr(
 		CompileEnvironment *compileEnv,
 		CompilationContext *compilationContext,
@@ -327,7 +331,8 @@ namespace slkc {
 		ExprEvalPurpose rhsEvalPurpose,
 		uint32_t resultRegOut,
 		CompileExprResult &resultOut,
-		slake::Opcode opcode);
+		slake::Opcode opcode,
+		uint32_t idxSld);
 
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> resolveStaticMember(
 		CompileEnvironment *compileEnv,
@@ -617,7 +622,7 @@ namespace slkc {
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> visitBaseClass(AstNodePtr<TypeNameNode> cls, AstNodePtr<ClassNode> &classOut, peff::Set<AstNodePtr<MemberNode>> *walkedNodes);
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> visitBaseInterface(AstNodePtr<TypeNameNode> cls, AstNodePtr<InterfaceNode> &classOut, peff::Set<AstNodePtr<MemberNode>> *walkedNodes);
 
-	SLAKE_FORCEINLINE slake::slxfmt::SourceLocDesc tokenRangeToSld(const TokenRange& tokenRange) {
+	SLAKE_FORCEINLINE slake::slxfmt::SourceLocDesc tokenRangeToSld(const TokenRange &tokenRange) {
 		slake::slxfmt::SourceLocDesc sld;
 
 		SourceLocation srcLoc = tokenRange.moduleNode->parser->tokenList.at(tokenRange.beginIndex)->sourceLocation;

@@ -617,10 +617,23 @@ SLKC_API bool slkc::decompileModuleMembers(peff::Alloc *allocator, DumpWriter *w
 									SLKC_RETURN_IF_FALSE(writer->write("\t"));
 								}
 
+								slake::slxfmt::SourceLocDesc *sld = nullptr;
+
+								if (curIns.offSourceLocDesc != UINT32_MAX)
+									sld = &ol->sourceLocDescs.at(curIns.offSourceLocDesc);
+
+								if (sld) {
+									char s[23];
+
+									sprintf(s, "%u, %u: ", sld->line, sld->column);
+
+									SLKC_RETURN_IF_FALSE(writer->write(s));
+								}
+
 								if (curIns.output != UINT32_MAX) {
 									char s[9];
 
-									sprintf(s, "%%%u = ", (int)curIns.output);
+									sprintf(s, "%%%u = ", curIns.output);
 
 									SLKC_RETURN_IF_FALSE(writer->write(s));
 								}

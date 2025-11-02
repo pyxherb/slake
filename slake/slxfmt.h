@@ -222,7 +222,7 @@ namespace slake {
 					return -1;
 				if (line > rhs.line)
 					return 1;
-				if (column < rhs.line)
+				if (column < rhs.column)
 					return -1;
 				if (column > rhs.column)
 					return 1;

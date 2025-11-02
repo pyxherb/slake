@@ -15,7 +15,8 @@ peff::Option<CompilationError> slkc::_compileSimpleBinaryExpr(
 	ExprEvalPurpose rhsEvalPurpose,
 	uint32_t resultRegOut,
 	CompileExprResult &resultOut,
-	slake::Opcode opcode) {
+	slake::Opcode opcode,
+	uint32_t idxSld) {
 	peff::Option<CompilationError> e;
 
 	switch (evalPurpose) {
@@ -49,6 +50,7 @@ peff::Option<CompilationError> slkc::_compileSimpleBinaryExpr(
 			}
 			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileEnv, compilationContext, rhsReg, rhsEvalPurpose, desiredRhsType, expr->rhs, rhsType));
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
+				idxSld,
 				opcode,
 				resultRegOut,
 				{ slake::Value(slake::ValueType::RegIndex, lhsReg), slake::Value(slake::ValueType::RegIndex, rhsReg) }));
@@ -73,7 +75,8 @@ peff::Option<CompilationError> slkc::_compileSimpleAssignBinaryExpr(
 	AstNodePtr<TypeNameNode> desiredRhsType,
 	ExprEvalPurpose rhsEvalPurpose,
 	uint32_t resultRegOut,
-	CompileExprResult &resultOut) {
+	CompileExprResult &resultOut,
+	uint32_t idxSld) {
 	peff::Option<CompilationError> e;
 
 	switch (evalPurpose) {
@@ -99,6 +102,7 @@ peff::Option<CompilationError> slkc::_compileSimpleAssignBinaryExpr(
 			}
 			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileEnv, compilationContext, rhsReg, rhsEvalPurpose, desiredRhsType, expr->rhs, rhsType));
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
+				idxSld,
 				slake::Opcode::STORE,
 				UINT32_MAX,
 				{ slake::Value(slake::ValueType::RegIndex, resultRegOut), slake::Value(slake::ValueType::RegIndex, rhsReg) }));
@@ -131,10 +135,12 @@ peff::Option<CompilationError> slkc::_compileSimpleAssignBinaryExpr(
 			}
 			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileEnv, compilationContext, rhsReg, rhsEvalPurpose, desiredRhsType, expr->rhs, rhsType));
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
+				idxSld,
 				slake::Opcode::STORE,
 				UINT32_MAX,
 				{ slake::Value(slake::ValueType::RegIndex, lhsReg), slake::Value(slake::ValueType::RegIndex, rhsReg) }));
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
+				idxSld,
 				slake::Opcode::MOV,
 				resultRegOut,
 				{ slake::Value(slake::ValueType::RegIndex, rhsReg) }));
@@ -158,7 +164,8 @@ peff::Option<CompilationError> slkc::_compileSimpleLAndBinaryExpr(
 	AstNodePtr<TypeNameNode> rhsType,
 	uint32_t resultRegOut,
 	CompileExprResult &resultOut,
-	slake::Opcode opcode) {
+	slake::Opcode opcode,
+	uint32_t idxSld) {
 	peff::Option<CompilationError> e;
 
 	switch (evalPurpose) {
@@ -196,12 +203,14 @@ peff::Option<CompilationError> slkc::_compileSimpleLAndBinaryExpr(
 			uint32_t phiSrcOff = compilationContext->getCurInsOff();
 
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
+				idxSld,
 				slake::Opcode::JF,
 				UINT32_MAX,
 				{ slake::Value(slake::ValueType::Label, rhsReg), slake::Value(slake::ValueType::RegIndex, lhsReg) }));
 
 			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileEnv, compilationContext, rhsReg, ExprEvalPurpose::RValue, boolType.template castTo<TypeNameNode>(), expr->rhs, rhsType));
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
+				idxSld,
 				slake::Opcode::LAND,
 				tmpResultReg,
 				{ slake::Value(slake::ValueType::RegIndex, lhsReg), slake::Value(slake::ValueType::RegIndex, rhsReg) }));
@@ -209,6 +218,7 @@ peff::Option<CompilationError> slkc::_compileSimpleLAndBinaryExpr(
 			compilationContext->setLabelOffset(cmpEndLabelId, compilationContext->getCurInsOff());
 
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
+				idxSld,
 				slake::Opcode::PHI,
 				tmpResultReg,
 				{ slake::Value((uint32_t)phiSrcOff), slake::Value(slake::ValueType::RegIndex, lhsReg),
@@ -233,7 +243,8 @@ peff::Option<CompilationError> slkc::_compileSimpleLOrBinaryExpr(
 	AstNodePtr<TypeNameNode> rhsType,
 	uint32_t resultRegOut,
 	CompileExprResult &resultOut,
-	slake::Opcode opcode) {
+	slake::Opcode opcode,
+	uint32_t idxSld) {
 	peff::Option<CompilationError> e;
 
 	switch (evalPurpose) {
@@ -271,12 +282,14 @@ peff::Option<CompilationError> slkc::_compileSimpleLOrBinaryExpr(
 			uint32_t phiSrcOff = compilationContext->getCurInsOff();
 
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
+				idxSld,
 				slake::Opcode::JF,
 				UINT32_MAX,
 				{ slake::Value(slake::ValueType::Label, cmpEndLabelId), slake::Value(slake::ValueType::RegIndex, lhsReg) }));
 
 			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileEnv, compilationContext, rhsReg, ExprEvalPurpose::RValue, boolType.template castTo<TypeNameNode>(), expr->rhs, rhsType));
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
+				idxSld,
 				slake::Opcode::LAND,
 				tmpResultReg,
 				{ slake::Value(slake::ValueType::RegIndex, lhsReg), slake::Value(slake::ValueType::RegIndex, rhsReg) }));
@@ -284,6 +297,7 @@ peff::Option<CompilationError> slkc::_compileSimpleLOrBinaryExpr(
 			compilationContext->setLabelOffset(cmpEndLabelId, compilationContext->getCurInsOff());
 
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
+				idxSld,
 				slake::Opcode::PHI,
 				tmpResultReg,
 				{ slake::Value((uint32_t)phiSrcOff), slake::Value(slake::ValueType::RegIndex, lhsReg),
@@ -309,7 +323,8 @@ SLKC_API peff::Option<CompilationError> slkc::_compileSimpleBinaryAssignOpExpr(
 	ExprEvalPurpose rhsEvalPurpose,
 	uint32_t resultRegOut,
 	CompileExprResult &resultOut,
-	slake::Opcode opcode) {
+	slake::Opcode opcode,
+	uint32_t idxSld) {
 	switch (evalPurpose) {
 		case ExprEvalPurpose::EvalType:
 			break;
@@ -328,22 +343,26 @@ SLKC_API peff::Option<CompilationError> slkc::_compileSimpleBinaryAssignOpExpr(
 
 			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileEnv, compilationContext, lhsReg, ExprEvalPurpose::LValue, lhsType, expr->lhs, lhsType));
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
+				idxSld,
 				slake::Opcode::LVALUE,
 				lhsValueReg,
 				{ slake::Value(slake::ValueType::RegIndex, lhsReg) }));
 
 			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileEnv, compilationContext, rhsReg, rhsEvalPurpose, desiredRhsType, expr->rhs, rhsType));
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
+				idxSld,
 				opcode,
 				resultValueReg,
 				{ slake::Value(slake::ValueType::RegIndex, lhsValueReg), slake::Value(slake::ValueType::RegIndex, rhsReg) }));
 
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
+				idxSld,
 				slake::Opcode::STORE,
 				UINT32_MAX,
 				{ slake::Value(slake::ValueType::RegIndex, lhsReg), slake::Value(slake::ValueType::RegIndex, resultValueReg) }));
 
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
+				idxSld,
 				slake::Opcode::MOV,
 				resultRegOut,
 				{ slake::Value(slake::ValueType::RegIndex, lhsReg) }));
@@ -368,21 +387,25 @@ SLKC_API peff::Option<CompilationError> slkc::_compileSimpleBinaryAssignOpExpr(
 
 			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileEnv, compilationContext, lhsReg, ExprEvalPurpose::LValue, lhsType, expr->lhs, lhsType));
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
+				idxSld,
 				slake::Opcode::LVALUE,
 				lhsValueReg,
 				{ slake::Value(slake::ValueType::RegIndex, lhsReg) }));
 
 			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileEnv, compilationContext, rhsReg, rhsEvalPurpose, desiredRhsType, expr->rhs, rhsType));
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
+				idxSld,
 				opcode,
 				resultValueReg,
 				{ slake::Value(slake::ValueType::RegIndex, lhsValueReg), slake::Value(slake::ValueType::RegIndex, rhsReg) }));
 
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
+				idxSld,
 				slake::Opcode::STORE,
 				UINT32_MAX,
 				{ slake::Value(slake::ValueType::RegIndex, lhsReg), slake::Value(slake::ValueType::RegIndex, resultValueReg) }));
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
+				idxSld,
 				slake::Opcode::MOV,
 				resultRegOut,
 				{ slake::Value(slake::ValueType::RegIndex, resultValueReg) }));
@@ -420,6 +443,9 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 		removeRefOfType(lhsType, decayedLhsType));
 	SLKC_RETURN_IF_COMP_ERROR(
 		removeRefOfType(rhsType, decayedRhsType));
+
+	uint32_t sldIndex;
+	SLKC_RETURN_IF_COMP_ERROR(compilationContext->registerSourceLocDesc(tokenRangeToSld(expr->tokenRange), sldIndex));
 
 	if (expr->binaryOp == BinaryOp::Comma) {
 		CompileExprResult result(compileEnv->allocator.get());
@@ -590,7 +616,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 
 					idRefObject->hasVarArgs = true;
 
-					SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::RLOAD, operatorReg, { slake::Value(slake::ValueType::RegIndex, rhsReg), slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));
+					SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::RLOAD, operatorReg, { slake::Value(slake::ValueType::RegIndex, rhsReg), slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));
 				} else {
 					slake::HostObjectRef<slake::IdRefObject> idRefObject;
 
@@ -611,7 +637,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 
 					idRefObject->hasVarArgs = true;
 
-					SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::LOAD, operatorReg, { slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));
+					SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::LOAD, operatorReg, { slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));
 				}
 
 				uint32_t reg;
@@ -625,13 +651,13 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, expr->rhs, b ? ExprEvalPurpose::LValue : ExprEvalPurpose::RValue, matchedOverloading->params.at(0)->type, reg, argResult));
 				}
 
-				SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::PUSHARG, UINT32_MAX, { slake::Value(slake::ValueType::RegIndex, reg) }));
+				SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::PUSHARG, UINT32_MAX, { slake::Value(slake::ValueType::RegIndex, reg) }));
 
 				switch (evalPurpose) {
 					case ExprEvalPurpose::EvalType:
 						break;
 					case ExprEvalPurpose::Stmt:
-						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::MCALL, UINT32_MAX, { slake::Value(slake::ValueType::RegIndex, operatorReg), slake::Value(slake::ValueType::RegIndex, rhsReg) }));
+						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::MCALL, UINT32_MAX, { slake::Value(slake::ValueType::RegIndex, operatorReg), slake::Value(slake::ValueType::RegIndex, rhsReg) }));
 						break;
 					case ExprEvalPurpose::LValue: {
 						bool b = false;
@@ -640,7 +666,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 							return CompilationError(expr->tokenRange, CompilationErrorKind::ExpectingLValueExpr);
 						}
 
-						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::MCALL, resultRegOut, { slake::Value(slake::ValueType::RegIndex, operatorReg), slake::Value(slake::ValueType::RegIndex, rhsReg) }));
+						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::MCALL, resultRegOut, { slake::Value(slake::ValueType::RegIndex, operatorReg), slake::Value(slake::ValueType::RegIndex, rhsReg) }));
 						break;
 					}
 					case ExprEvalPurpose::RValue:
@@ -652,11 +678,11 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 							uint32_t tmpRegIndex;
 							SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(tmpRegIndex));
 
-							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::MCALL, resultRegOut, { slake::Value(slake::ValueType::RegIndex, operatorReg), slake::Value(slake::ValueType::RegIndex, rhsReg) }));
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::MCALL, resultRegOut, { slake::Value(slake::ValueType::RegIndex, operatorReg), slake::Value(slake::ValueType::RegIndex, rhsReg) }));
 
-							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::LVALUE, resultRegOut, { slake::Value(slake::ValueType::RegIndex, tmpRegIndex) }));
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::LVALUE, resultRegOut, { slake::Value(slake::ValueType::RegIndex, tmpRegIndex) }));
 						} else {
-							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::MCALL, resultRegOut, { slake::Value(slake::ValueType::RegIndex, operatorReg), slake::Value(slake::ValueType::RegIndex, rhsReg) }));
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::MCALL, resultRegOut, { slake::Value(slake::ValueType::RegIndex, operatorReg), slake::Value(slake::ValueType::RegIndex, rhsReg) }));
 						}
 
 						break;
@@ -696,7 +722,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::ADD));
+								slake::Opcode::ADD,
+								sldIndex));
 						resultOut.evaluatedType = decayedLhsType;
 						break;
 					case BinaryOp::Sub:
@@ -710,7 +737,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::SUB));
+								slake::Opcode::SUB,
+								sldIndex));
 						resultOut.evaluatedType = decayedLhsType;
 						break;
 					case BinaryOp::Mul:
@@ -724,7 +752,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::MUL));
+								slake::Opcode::MUL,
+								sldIndex));
 						resultOut.evaluatedType = decayedLhsType;
 						break;
 					case BinaryOp::Div:
@@ -738,7 +767,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::DIV));
+								slake::Opcode::DIV,
+								sldIndex));
 						resultOut.evaluatedType = decayedLhsType;
 						break;
 					case BinaryOp::Mod:
@@ -752,7 +782,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::MOD));
+								slake::Opcode::MOD,
+								sldIndex));
 						resultOut.evaluatedType = decayedLhsType;
 						break;
 					case BinaryOp::And:
@@ -766,7 +797,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::AND));
+								slake::Opcode::AND,
+								sldIndex));
 						resultOut.evaluatedType = decayedLhsType;
 						break;
 					case BinaryOp::Or:
@@ -780,7 +812,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::OR));
+								slake::Opcode::OR,
+								sldIndex));
 						resultOut.evaluatedType = decayedLhsType;
 						break;
 					case BinaryOp::Xor:
@@ -794,7 +827,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::XOR));
+								slake::Opcode::XOR,
+								sldIndex));
 						resultOut.evaluatedType = decayedLhsType;
 						break;
 					case BinaryOp::LAnd:
@@ -809,7 +843,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::LAND));
+								slake::Opcode::LAND,
+								sldIndex));
 						resultOut.evaluatedType = boolType.template castTo<TypeNameNode>();
 						break;
 					case BinaryOp::LOr:
@@ -824,7 +859,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::LOR));
+								slake::Opcode::LOR,
+								sldIndex));
 						resultOut.evaluatedType = boolType.template castTo<TypeNameNode>();
 						break;
 					case BinaryOp::Shl:
@@ -840,7 +876,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::LSH));
+								slake::Opcode::LSH,
+								sldIndex));
 						resultOut.evaluatedType = decayedLhsType;
 						break;
 					case BinaryOp::Shr:
@@ -856,7 +893,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::RSH));
+								slake::Opcode::RSH,
+								sldIndex));
 						resultOut.evaluatedType = decayedLhsType;
 						break;
 					case BinaryOp::Assign:
@@ -869,7 +907,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								lhsType, lhsType,
 								decayedRhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								resultRegOut,
-								resultOut));
+								resultOut,
+								sldIndex));
 						resultOut.evaluatedType = lhsType;
 						break;
 					case BinaryOp::AddAssign:
@@ -883,7 +922,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::ADD));
+								slake::Opcode::ADD,
+								sldIndex));
 						resultOut.evaluatedType = lhsType;
 						break;
 					case BinaryOp::SubAssign:
@@ -897,7 +937,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::SUB));
+								slake::Opcode::SUB,
+								sldIndex));
 						resultOut.evaluatedType = lhsType;
 						break;
 					case BinaryOp::MulAssign:
@@ -911,7 +952,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::MUL));
+								slake::Opcode::MUL,
+								sldIndex));
 						resultOut.evaluatedType = lhsType;
 						break;
 					case BinaryOp::DivAssign:
@@ -925,7 +967,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::DIV));
+								slake::Opcode::DIV,
+								sldIndex));
 						resultOut.evaluatedType = lhsType;
 						break;
 					case BinaryOp::ModAssign:
@@ -939,7 +982,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::MOD));
+								slake::Opcode::MOD,
+								sldIndex));
 						resultOut.evaluatedType = lhsType;
 						break;
 					case BinaryOp::AndAssign:
@@ -953,7 +997,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::AND));
+								slake::Opcode::AND,
+								sldIndex));
 						resultOut.evaluatedType = lhsType;
 						break;
 					case BinaryOp::OrAssign:
@@ -967,7 +1012,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::OR));
+								slake::Opcode::OR,
+								sldIndex));
 						resultOut.evaluatedType = lhsType;
 						break;
 					case BinaryOp::XorAssign:
@@ -981,7 +1027,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::XOR));
+								slake::Opcode::XOR,
+								sldIndex));
 						resultOut.evaluatedType = lhsType;
 						break;
 					case BinaryOp::ShlAssign:
@@ -1001,7 +1048,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::LSH));
+								slake::Opcode::LSH,
+								sldIndex));
 						resultOut.evaluatedType = lhsType;
 						break;
 					case BinaryOp::ShrAssign:
@@ -1021,7 +1069,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::RSH));
+								slake::Opcode::RSH,
+								sldIndex));
 						resultOut.evaluatedType = lhsType;
 						break;
 					case BinaryOp::Eq:
@@ -1036,7 +1085,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::EQ));
+								slake::Opcode::EQ,
+								sldIndex));
 						resultOut.evaluatedType = boolType.template castTo<TypeNameNode>();
 						break;
 					case BinaryOp::Neq:
@@ -1051,7 +1101,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::NEQ));
+								slake::Opcode::NEQ,
+								sldIndex));
 						resultOut.evaluatedType = boolType.template castTo<TypeNameNode>();
 						break;
 					case BinaryOp::Lt:
@@ -1065,7 +1116,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::LT));
+								slake::Opcode::LT,
+								sldIndex));
 						resultOut.evaluatedType = boolType.template castTo<TypeNameNode>();
 						break;
 					case BinaryOp::Gt:
@@ -1079,7 +1131,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::GT));
+								slake::Opcode::GT,
+								sldIndex));
 						resultOut.evaluatedType = boolType.template castTo<TypeNameNode>();
 						break;
 					case BinaryOp::LtEq:
@@ -1093,7 +1146,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::LTEQ));
+								slake::Opcode::LTEQ,
+								sldIndex));
 						resultOut.evaluatedType = boolType.template castTo<TypeNameNode>();
 						break;
 					case BinaryOp::GtEq:
@@ -1107,7 +1161,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::GTEQ));
+								slake::Opcode::GTEQ,
+								sldIndex));
 						resultOut.evaluatedType = boolType.template castTo<TypeNameNode>();
 						break;
 					case BinaryOp::Cmp:
@@ -1121,7 +1176,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::CMP));
+								slake::Opcode::CMP,
+								sldIndex));
 						resultOut.evaluatedType = boolType.template castTo<TypeNameNode>();
 						break;
 					default:
@@ -1143,7 +1199,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::ADD));
+								slake::Opcode::ADD,
+								sldIndex));
 						resultOut.evaluatedType = decayedLhsType;
 						break;
 					case BinaryOp::Sub:
@@ -1157,7 +1214,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::SUB));
+								slake::Opcode::SUB,
+								sldIndex));
 						resultOut.evaluatedType = decayedLhsType;
 						break;
 					case BinaryOp::Mul:
@@ -1171,7 +1229,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::MUL));
+								slake::Opcode::MUL,
+								sldIndex));
 						resultOut.evaluatedType = decayedLhsType;
 						break;
 					case BinaryOp::Div:
@@ -1185,7 +1244,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::DIV));
+								slake::Opcode::DIV,
+								sldIndex));
 						resultOut.evaluatedType = decayedLhsType;
 						break;
 					case BinaryOp::Mod:
@@ -1199,7 +1259,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::MOD));
+								slake::Opcode::MOD,
+								sldIndex));
 						resultOut.evaluatedType = decayedLhsType;
 						break;
 					case BinaryOp::LAnd:
@@ -1214,7 +1275,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::LAND));
+								slake::Opcode::LAND,
+								sldIndex));
 						resultOut.evaluatedType = boolType.template castTo<TypeNameNode>();
 						break;
 					case BinaryOp::LOr:
@@ -1229,7 +1291,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::LOR));
+								slake::Opcode::LOR,
+								sldIndex));
 						resultOut.evaluatedType = boolType.template castTo<TypeNameNode>();
 						break;
 					case BinaryOp::Assign:
@@ -1242,7 +1305,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								lhsType, lhsType,
 								decayedRhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								resultRegOut,
-								resultOut));
+								resultOut,
+								sldIndex));
 						resultOut.evaluatedType = lhsType;
 						break;
 					case BinaryOp::AddAssign:
@@ -1256,7 +1320,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::ADD));
+								slake::Opcode::ADD,
+								sldIndex));
 						resultOut.evaluatedType = lhsType;
 						break;
 					case BinaryOp::SubAssign:
@@ -1270,7 +1335,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::SUB));
+								slake::Opcode::SUB,
+								sldIndex));
 						resultOut.evaluatedType = lhsType;
 						break;
 					case BinaryOp::MulAssign:
@@ -1284,7 +1350,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::MUL));
+								slake::Opcode::MUL,
+								sldIndex));
 						resultOut.evaluatedType = lhsType;
 						break;
 					case BinaryOp::DivAssign:
@@ -1298,7 +1365,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::DIV));
+								slake::Opcode::DIV,
+								sldIndex));
 						resultOut.evaluatedType = lhsType;
 						break;
 					case BinaryOp::ModAssign:
@@ -1312,7 +1380,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::MOD));
+								slake::Opcode::MOD,
+								sldIndex));
 						resultOut.evaluatedType = lhsType;
 						break;
 					case BinaryOp::ShlAssign:
@@ -1332,7 +1401,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::LSH));
+								slake::Opcode::LSH,
+								sldIndex));
 						resultOut.evaluatedType = lhsType;
 						break;
 					case BinaryOp::ShrAssign:
@@ -1352,7 +1422,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::RSH));
+								slake::Opcode::RSH,
+								sldIndex));
 						resultOut.evaluatedType = lhsType;
 						break;
 					case BinaryOp::Eq:
@@ -1367,7 +1438,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::EQ));
+								slake::Opcode::EQ,
+								sldIndex));
 						resultOut.evaluatedType = boolType.template castTo<TypeNameNode>();
 						break;
 					case BinaryOp::Neq:
@@ -1382,7 +1454,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::NEQ));
+								slake::Opcode::NEQ,
+								sldIndex));
 						resultOut.evaluatedType = boolType.template castTo<TypeNameNode>();
 						break;
 					case BinaryOp::Lt:
@@ -1396,7 +1469,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::LT));
+								slake::Opcode::LT,
+								sldIndex));
 						resultOut.evaluatedType = boolType.template castTo<TypeNameNode>();
 						break;
 					case BinaryOp::Gt:
@@ -1410,7 +1484,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::GT));
+								slake::Opcode::GT,
+								sldIndex));
 						resultOut.evaluatedType = boolType.template castTo<TypeNameNode>();
 						break;
 					case BinaryOp::LtEq:
@@ -1424,7 +1499,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::LTEQ));
+								slake::Opcode::LTEQ,
+								sldIndex));
 						resultOut.evaluatedType = boolType.template castTo<TypeNameNode>();
 						break;
 					case BinaryOp::GtEq:
@@ -1438,7 +1514,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::GTEQ));
+								slake::Opcode::GTEQ,
+								sldIndex));
 						resultOut.evaluatedType = boolType.template castTo<TypeNameNode>();
 						break;
 					case BinaryOp::Cmp:
@@ -1452,7 +1529,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::CMP));
+								slake::Opcode::CMP,
+								sldIndex));
 						resultOut.evaluatedType = boolType.template castTo<TypeNameNode>();
 						break;
 					default:
@@ -1473,7 +1551,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::AND));
+								slake::Opcode::AND,
+								sldIndex));
 						resultOut.evaluatedType = decayedLhsType;
 						break;
 					case BinaryOp::Or:
@@ -1487,7 +1566,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::OR));
+								slake::Opcode::OR,
+								sldIndex));
 						resultOut.evaluatedType = decayedLhsType;
 						break;
 					case BinaryOp::Xor:
@@ -1501,7 +1581,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::XOR));
+								slake::Opcode::XOR,
+								sldIndex));
 						resultOut.evaluatedType = decayedLhsType;
 						break;
 					case BinaryOp::LAnd:
@@ -1516,7 +1597,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::LAND));
+								slake::Opcode::LAND,
+								sldIndex));
 						resultOut.evaluatedType = boolType.template castTo<TypeNameNode>();
 						break;
 					case BinaryOp::LOr:
@@ -1531,7 +1613,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::LOR));
+								slake::Opcode::LOR,
+								sldIndex));
 						resultOut.evaluatedType = boolType.template castTo<TypeNameNode>();
 						break;
 					case BinaryOp::Assign:
@@ -1544,7 +1627,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								lhsType, lhsType,
 								decayedRhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								resultRegOut,
-								resultOut));
+								resultOut,
+								sldIndex));
 						resultOut.evaluatedType = lhsType;
 						break;
 					case BinaryOp::AndAssign:
@@ -1558,7 +1642,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::AND));
+								slake::Opcode::AND,
+								sldIndex));
 						resultOut.evaluatedType = lhsType;
 						break;
 					case BinaryOp::OrAssign:
@@ -1572,7 +1657,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::OR));
+								slake::Opcode::OR,
+								sldIndex));
 						resultOut.evaluatedType = lhsType;
 						break;
 					case BinaryOp::XorAssign:
@@ -1586,7 +1672,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::XOR));
+								slake::Opcode::XOR,
+								sldIndex));
 						resultOut.evaluatedType = lhsType;
 						break;
 					case BinaryOp::Eq:
@@ -1601,7 +1688,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::EQ));
+								slake::Opcode::EQ,
+								sldIndex));
 						resultOut.evaluatedType = boolType.template castTo<TypeNameNode>();
 						break;
 					case BinaryOp::Neq:
@@ -1616,7 +1704,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::NEQ));
+								slake::Opcode::NEQ,
+								sldIndex));
 						resultOut.evaluatedType = boolType.template castTo<TypeNameNode>();
 						break;
 					default:
@@ -1637,7 +1726,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::EQ));
+								slake::Opcode::EQ,
+								sldIndex));
 						resultOut.evaluatedType = boolType.template castTo<TypeNameNode>();
 						break;
 					case BinaryOp::StrictNeq:
@@ -1651,7 +1741,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::NEQ));
+								slake::Opcode::NEQ,
+								sldIndex));
 						resultOut.evaluatedType = boolType.template castTo<TypeNameNode>();
 						break;
 					default:
@@ -1672,7 +1763,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::EQ));
+								slake::Opcode::EQ,
+								sldIndex));
 						resultOut.evaluatedType = boolType.template castTo<TypeNameNode>();
 						break;
 					case BinaryOp::StrictNeq:
@@ -1686,7 +1778,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								decayedRhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
-								slake::Opcode::NEQ));
+								slake::Opcode::NEQ,
+								sldIndex));
 						resultOut.evaluatedType = boolType.template castTo<TypeNameNode>();
 						break;
 					case BinaryOp::Subscript: {
@@ -1726,6 +1819,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								}
 								SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileEnv, compilationContext, rhsReg, ExprEvalPurpose::RValue, u32Type.template castTo<TypeNameNode>(), expr->rhs, rhsType));
 								SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
+									sldIndex,
 									slake::Opcode::AT,
 									resultRegOut,
 									{ slake::Value(slake::ValueType::RegIndex, lhsReg), slake::Value(slake::ValueType::RegIndex, rhsReg) }));
@@ -1763,11 +1857,13 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(tmpReg));
 
 								SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
+									sldIndex,
 									slake::Opcode::AT,
 									tmpReg,
 									{ slake::Value(slake::ValueType::RegIndex, lhsReg), slake::Value(slake::ValueType::RegIndex, rhsReg) }));
 
 								SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
+									sldIndex,
 									slake::Opcode::LVALUE,
 									resultRegOut,
 									{ slake::Value(slake::ValueType::RegIndex, tmpReg) }));
@@ -1798,7 +1894,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								lhsType, lhsType,
 								decayedRhsType, decayedLhsType, ExprEvalPurpose::RValue,
 								resultRegOut,
-								resultOut));
+								resultOut,
+								sldIndex));
 						resultOut.evaluatedType = lhsType;
 						break;
 					case BinaryOp::Add:
@@ -1917,7 +2014,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, compilationContext, matchedOverloading->params.at(i)->type, idRefObject->paramTypes->at(i)));
 							}
 
-							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::RLOAD, operatorReg, { slake::Value(slake::ValueType::RegIndex, lhsReg), slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::RLOAD, operatorReg, { slake::Value(slake::ValueType::RegIndex, lhsReg), slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));
 						} else {
 							slake::HostObjectRef<slake::IdRefObject> idRefObject;
 
@@ -1940,7 +2037,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, compilationContext, matchedOverloading->params.at(i)->type, idRefObject->paramTypes->at(i)));
 							}
 
-							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::LOAD, operatorReg, { slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::LOAD, operatorReg, { slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));
 						}
 
 						uint32_t reg;
@@ -1954,13 +2051,13 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 							SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, expr->rhs, b ? ExprEvalPurpose::LValue : ExprEvalPurpose::RValue, matchedOverloading->params.at(0)->type, reg, argResult));
 						}
 
-						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::PUSHARG, UINT32_MAX, { slake::Value(slake::ValueType::RegIndex, reg) }));
+						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::PUSHARG, UINT32_MAX, { slake::Value(slake::ValueType::RegIndex, reg) }));
 
 						switch (evalPurpose) {
 							case ExprEvalPurpose::EvalType:
 								break;
 							case ExprEvalPurpose::Stmt:
-								SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::MCALL, UINT32_MAX, { slake::Value(slake::ValueType::RegIndex, operatorReg), slake::Value(slake::ValueType::RegIndex, lhsReg) }));
+								SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::MCALL, UINT32_MAX, { slake::Value(slake::ValueType::RegIndex, operatorReg), slake::Value(slake::ValueType::RegIndex, lhsReg) }));
 								break;
 							case ExprEvalPurpose::LValue: {
 								bool b = false;
@@ -1969,7 +2066,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 									return CompilationError(expr->tokenRange, CompilationErrorKind::ExpectingLValueExpr);
 								}
 
-								SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::MCALL, resultRegOut, { slake::Value(slake::ValueType::RegIndex, operatorReg), slake::Value(slake::ValueType::RegIndex, lhsReg) }));
+								SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::MCALL, resultRegOut, { slake::Value(slake::ValueType::RegIndex, operatorReg), slake::Value(slake::ValueType::RegIndex, lhsReg) }));
 								break;
 							}
 							case ExprEvalPurpose::RValue:
@@ -1981,11 +2078,11 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 									uint32_t tmpRegIndex;
 									SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(tmpRegIndex));
 
-									SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::MCALL, resultRegOut, { slake::Value(slake::ValueType::RegIndex, operatorReg), slake::Value(slake::ValueType::RegIndex, lhsReg) }));
+									SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::MCALL, resultRegOut, { slake::Value(slake::ValueType::RegIndex, operatorReg), slake::Value(slake::ValueType::RegIndex, lhsReg) }));
 
-									SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::LVALUE, resultRegOut, { slake::Value(slake::ValueType::RegIndex, tmpRegIndex) }));
+									SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::LVALUE, resultRegOut, { slake::Value(slake::ValueType::RegIndex, tmpRegIndex) }));
 								} else {
-									SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::MCALL, resultRegOut, { slake::Value(slake::ValueType::RegIndex, operatorReg), slake::Value(slake::ValueType::RegIndex, lhsReg) }));
+									SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::MCALL, resultRegOut, { slake::Value(slake::ValueType::RegIndex, operatorReg), slake::Value(slake::ValueType::RegIndex, lhsReg) }));
 								}
 
 								break;
@@ -2028,6 +2125,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								}
 								SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileEnv, compilationContext, rhsReg, ExprEvalPurpose::RValue, decayedLhsType, expr->rhs, rhsType));
 								SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
+									sldIndex,
 									slake::Opcode::EQ,
 									resultRegOut,
 									{ slake::Value(slake::ValueType::RegIndex, lhsReg), slake::Value(slake::ValueType::RegIndex, rhsReg) }));
@@ -2072,6 +2170,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								}
 								SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileEnv, compilationContext, rhsReg, ExprEvalPurpose::RValue, decayedLhsType, expr->rhs, rhsType));
 								SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
+									sldIndex,
 									slake::Opcode::NEQ,
 									resultRegOut,
 									{ slake::Value(slake::ValueType::RegIndex, lhsReg), slake::Value(slake::ValueType::RegIndex, rhsReg) }));

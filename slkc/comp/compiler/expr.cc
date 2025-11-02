@@ -23,6 +23,7 @@ SLAKE_FORCEINLINE peff::Option<CompilationError> _compileLiteralExpr(
 			if (resultRegOut != UINT32_MAX) {
 				SLKC_RETURN_IF_COMP_ERROR(
 					compilationContext->emitIns(
+						expr->tokenRange,
 						slake::Opcode::MOV,
 						resultRegOut,
 						{ slake::Value((DT)e->data) }));
@@ -78,6 +79,7 @@ SLKC_API peff::Option<CompilationError> slkc::_compileOrCastOperand(
 			return genOutOfMemoryCompError();
 		}
 
+		castExpr->tokenRange = operand->tokenRange;
 		castExpr->targetType = desiredType;
 		castExpr->source = operand;
 
@@ -91,10 +93,10 @@ SLKC_API peff::Option<CompilationError> slkc::_compileOrCastOperand(
 	return CompilationError(operand->tokenRange, std::move(exData));
 }
 
-static peff::Option<CompilationError> _loadTheRestOfIdRef(CompileEnvironment *compileEnv, CompilationContext *compilationContext, ExprEvalPurpose evalPurpose, uint32_t resultRegOut, CompileExprResult &resultOut, IdRef *idRef, ResolvedIdRefPartList &parts, uint32_t initialMemberReg, size_t curIdx, AstNodePtr<FnTypeNameNode> extraFnArgs);
+static peff::Option<CompilationError> _loadTheRestOfIdRef(CompileEnvironment *compileEnv, CompilationContext *compilationContext, ExprEvalPurpose evalPurpose, uint32_t resultRegOut, CompileExprResult &resultOut, IdRef *idRef, ResolvedIdRefPartList &parts, uint32_t initialMemberReg, size_t curIdx, AstNodePtr<FnTypeNameNode> extraFnArgs, uint32_t sldIndex);
 static peff::Option<CompilationError> _determineNodeType(CompileEnvironment *compileEnv, AstNodePtr<MemberNode> node, AstNodePtr<TypeNameNode> &typeNameOut);
 
-static peff::Option<CompilationError> _loadTheRestOfIdRef(CompileEnvironment *compileEnv, CompilationContext *compilationContext, ExprEvalPurpose evalPurpose, uint32_t resultRegOut, CompileExprResult &resultOut, IdRef *idRef, ResolvedIdRefPartList &parts, uint32_t initialMemberReg, size_t curIdx, AstNodePtr<FnTypeNameNode> extraFnArgs) {
+static peff::Option<CompilationError> _loadTheRestOfIdRef(CompileEnvironment *compileEnv, CompilationContext *compilationContext, ExprEvalPurpose evalPurpose, uint32_t resultRegOut, CompileExprResult &resultOut, IdRef *idRef, ResolvedIdRefPartList &parts, uint32_t initialMemberReg, size_t curIdx, AstNodePtr<FnTypeNameNode> extraFnArgs, uint32_t sldIndex) {
 	uint32_t idxReg;
 
 	if (initialMemberReg == UINT32_MAX) {
@@ -133,17 +135,16 @@ static peff::Option<CompilationError> _loadTheRestOfIdRef(CompileEnvironment *co
 					}
 
 					if (part.nEntries) {
-						IdRefEntry *entriesPtr = idRef->entries.data() + curIdx;
-						SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, compilationContext, entriesPtr, part.nEntries, nullptr, 0, false, {}, idRefObject));
+						SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, compilationContext, idRef->entries.data() + curIdx, part.nEntries, nullptr, 0, false, {}, idRefObject));
 
 						if (part.isStatic) {
-							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::LOAD, idxReg, { slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::LOAD, idxReg, { slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));
 						} else {
 							uint32_t idxNewReg;
 
 							SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(idxNewReg));
 
-							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::RLOAD, idxNewReg, { slake::Value(slake::ValueType::RegIndex, idxReg), slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::RLOAD, idxNewReg, { slake::Value(slake::ValueType::RegIndex, idxReg), slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));
 							idxReg = idxNewReg;
 						}
 						curIdx += part.nEntries;
@@ -174,7 +175,7 @@ static peff::Option<CompilationError> _loadTheRestOfIdRef(CompileEnvironment *co
 
 					SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(idxNewReg));
 
-					SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::RLOAD, idxNewReg, { slake::Value(slake::ValueType::RegIndex, idxReg), slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));
+					SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::RLOAD, idxNewReg, { slake::Value(slake::ValueType::RegIndex, idxReg), slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));
 					idxReg = idxNewReg;
 				}
 			} else {
@@ -188,13 +189,13 @@ static peff::Option<CompilationError> _loadTheRestOfIdRef(CompileEnvironment *co
 						SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, compilationContext, idRef->entries.data() + curIdx, part.nEntries, nullptr, 0, false, {}, idRefObject));
 
 						if (part.isStatic) {
-							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::LOAD, idxReg, { slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::LOAD, idxReg, { slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));
 						} else {
 							uint32_t idxNewReg;
 
 							SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(idxNewReg));
 
-							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::RLOAD, idxNewReg, { slake::Value(slake::ValueType::RegIndex, idxReg), slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::RLOAD, idxNewReg, { slake::Value(slake::ValueType::RegIndex, idxReg), slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));
 							idxReg = idxNewReg;
 						}
 						curIdx += part.nEntries;
@@ -226,7 +227,7 @@ static peff::Option<CompilationError> _loadTheRestOfIdRef(CompileEnvironment *co
 						idRefObject->hasVarArgs = true;
 				}
 
-				SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::LOAD, idxReg, { slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));
+				SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::LOAD, idxReg, { slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));
 			}
 		} else {
 			// Is calling a static method.
@@ -250,7 +251,7 @@ static peff::Option<CompilationError> _loadTheRestOfIdRef(CompileEnvironment *co
 					idRefObject->hasVarArgs = true;
 			}
 
-			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::LOAD, idxReg, { slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::LOAD, idxReg, { slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));
 		}
 	} else {
 		slake::HostObjectRef<slake::IdRefObject> idRefObject;
@@ -262,13 +263,13 @@ static peff::Option<CompilationError> _loadTheRestOfIdRef(CompileEnvironment *co
 				SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, compilationContext, idRef->entries.data() + curIdx, part.nEntries, nullptr, 0, false, {}, idRefObject));
 
 				if (part.isStatic) {
-					SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::LOAD, idxReg, { slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));
+					SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::LOAD, idxReg, { slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));
 				} else {
 					uint32_t idxNewReg;
 
 					SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(idxNewReg));
 
-					SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::RLOAD, idxNewReg, { slake::Value(slake::ValueType::RegIndex, idxReg), slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));
+					SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::RLOAD, idxNewReg, { slake::Value(slake::ValueType::RegIndex, idxReg), slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));
 					idxReg = idxNewReg;
 				}
 
@@ -277,7 +278,7 @@ static peff::Option<CompilationError> _loadTheRestOfIdRef(CompileEnvironment *co
 		}
 	}
 
-	SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::MOV, resultRegOut, { slake::Value(slake::ValueType::RegIndex, idxReg) }));
+	SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::MOV, resultRegOut, { slake::Value(slake::ValueType::RegIndex, idxReg) }));
 	return {};
 };
 auto selectSingleMatchingOverloading = [](CompileEnvironment *compileEnv, const TokenRange &tokenRange, AstNodePtr<MemberNode> &finalMember, AstNodePtr<TypeNameNode> desiredType, bool isStatic, CompileExprResult &resultOut) -> peff::Option<CompilationError> {
@@ -392,6 +393,9 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 	AstNodePtr<TypeNameNode> desiredType,
 	uint32_t resultRegOut,
 	CompileExprResult &resultOut) {
+	uint32_t sldIndex;
+	SLKC_RETURN_IF_COMP_ERROR(compilationContext->registerSourceLocDesc(tokenRangeToSld(expr->tokenRange), sldIndex));
+
 	switch (expr->exprKind) {
 		case ExprKind::Unary:
 			SLKC_RETURN_IF_COMP_ERROR(compileUnaryExpr(compileEnv, compilationContext, expr.template castTo<UnaryExprNode>(), evalPurpose, resultRegOut, resultOut));
@@ -504,9 +508,9 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 
 				parts.back().member = finalMember;
 
-				SLKC_RETURN_IF_COMP_ERROR(_loadTheRestOfIdRef(compileEnv, compilationContext, evalPurpose, finalRegister, resultOut, e->idRefPtr.get(), parts, headRegister, 0, fnType));
+				SLKC_RETURN_IF_COMP_ERROR(_loadTheRestOfIdRef(compileEnv, compilationContext, evalPurpose, finalRegister, resultOut, e->idRefPtr.get(), parts, headRegister, 0, fnType, sldIndex));
 			} else {
-				SLKC_RETURN_IF_COMP_ERROR(_loadTheRestOfIdRef(compileEnv, compilationContext, evalPurpose, finalRegister, resultOut, e->idRefPtr.get(), parts, headRegister, 0, {}));
+				SLKC_RETURN_IF_COMP_ERROR(_loadTheRestOfIdRef(compileEnv, compilationContext, evalPurpose, finalRegister, resultOut, e->idRefPtr.get(), parts, headRegister, 0, {}, sldIndex));
 			}
 
 			SLKC_RETURN_IF_COMP_ERROR(_determineNodeType(compileEnv, finalMember, resultOut.evaluatedType));
@@ -530,6 +534,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 
 					SLKC_RETURN_IF_COMP_ERROR(
 						compilationContext->emitIns(
+							sldIndex,
 							slake::Opcode::MOV,
 							resultRegOut,
 							{ slake::Value(slake::ValueType::RegIndex, finalRegister) }));
@@ -541,12 +546,14 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 					if ((b) && (initialMember != finalMember)) {
 						SLKC_RETURN_IF_COMP_ERROR(
 							compilationContext->emitIns(
+								sldIndex,
 								slake::Opcode::LVALUE,
 								resultRegOut,
 								{ slake::Value(slake::ValueType::RegIndex, finalRegister) }));
 					} else {
 						SLKC_RETURN_IF_COMP_ERROR(
 							compilationContext->emitIns(
+								sldIndex,
 								slake::Opcode::MOV,
 								resultRegOut,
 								{ slake::Value(slake::ValueType::RegIndex, finalRegister) }));
@@ -567,12 +574,14 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 					if ((b) && (initialMember != finalMember)) {
 						SLKC_RETURN_IF_COMP_ERROR(
 							compilationContext->emitIns(
+								sldIndex,
 								slake::Opcode::LVALUE,
 								resultRegOut,
 								{ slake::Value(slake::ValueType::RegIndex, finalRegister) }));
 					} else {
 						SLKC_RETURN_IF_COMP_ERROR(
 							compilationContext->emitIns(
+								sldIndex,
 								slake::Opcode::MOV,
 								resultRegOut,
 								{ slake::Value(slake::ValueType::RegIndex, finalRegister) }));
@@ -625,7 +634,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 							return CompilationError(expr->tokenRange, CompilationErrorKind::ExpectingLValueExpr);
 						case ExprEvalPurpose::RValue:
 						case ExprEvalPurpose::Call: {
-							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::LTHIS, initialMemberReg, {}));
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::LTHIS, initialMemberReg, {}));
 							break;
 						}
 						case ExprEvalPurpose::Unpacking:
@@ -653,12 +662,12 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 								CompilationWarning(e->tokenRange, CompilationWarningKind::UnusedExprResult)));
 							break;
 						case ExprEvalPurpose::LValue: {
-							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::MOV, initialMemberReg, { slake::Value(slake::ValueType::RegIndex, it->idxReg) }));
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::MOV, initialMemberReg, { slake::Value(slake::ValueType::RegIndex, it->idxReg) }));
 							break;
 						}
 						case ExprEvalPurpose::RValue:
 						case ExprEvalPurpose::Call: {
-							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::LVALUE, initialMemberReg, { slake::Value(slake::ValueType::RegIndex, it->idxReg) }));
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::LVALUE, initialMemberReg, { slake::Value(slake::ValueType::RegIndex, it->idxReg) }));
 							break;
 						}
 						case ExprEvalPurpose::Unpacking:
@@ -686,7 +695,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 								CompilationWarning(e->tokenRange, CompilationWarningKind::UnusedExprResult)));
 							break;
 						case ExprEvalPurpose::LValue: {
-							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::LARG, initialMemberReg, { slake::Value((uint32_t)it.value()) }));
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::LARG, initialMemberReg, { slake::Value((uint32_t)it.value()) }));
 							break;
 						}
 						case ExprEvalPurpose::RValue:
@@ -695,13 +704,13 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 
 							SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(tmpReg));
 
-							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::LARG, tmpReg, { slake::Value((uint32_t)it.value()) }));
-							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::LVALUE, initialMemberReg, { slake::Value(slake::ValueType::RegIndex, tmpReg) }));
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::LARG, tmpReg, { slake::Value((uint32_t)it.value()) }));
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::LVALUE, initialMemberReg, { slake::Value(slake::ValueType::RegIndex, tmpReg) }));
 
 							break;
 						}
 						case ExprEvalPurpose::Unpacking:
-							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::LAPARG, initialMemberReg, { slake::Value((uint32_t)it.value()) }));
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::LAPARG, initialMemberReg, { slake::Value((uint32_t)it.value()) }));
 
 							break;
 					}
@@ -753,15 +762,16 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 
 						parts.back().member = finalMember;
 
-						SLKC_RETURN_IF_COMP_ERROR(_loadTheRestOfIdRef(compileEnv, compilationContext, evalPurpose, finalRegister, resultOut, e->idRefPtr.get(), parts, initialMemberReg, 1, fnType));
+						SLKC_RETURN_IF_COMP_ERROR(_loadTheRestOfIdRef(compileEnv, compilationContext, evalPurpose, finalRegister, resultOut, e->idRefPtr.get(), parts, initialMemberReg, 1, fnType, sldIndex));
 					} else {
-						SLKC_RETURN_IF_COMP_ERROR(_loadTheRestOfIdRef(compileEnv, compilationContext, evalPurpose, finalRegister, resultOut, e->idRefPtr.get(), parts, initialMemberReg, 1, {}));
+						SLKC_RETURN_IF_COMP_ERROR(_loadTheRestOfIdRef(compileEnv, compilationContext, evalPurpose, finalRegister, resultOut, e->idRefPtr.get(), parts, initialMemberReg, 1, {}, sldIndex));
 					}
 				} else {
 					finalMember = initialMember;
 
 					SLKC_RETURN_IF_COMP_ERROR(
 						compilationContext->emitIns(
+							sldIndex,
 							slake::Opcode::MOV,
 							finalRegister,
 							{ slake::Value(slake::ValueType::RegIndex, initialMemberReg) }));
@@ -796,9 +806,9 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 
 					parts.back().member = finalMember;
 
-					SLKC_RETURN_IF_COMP_ERROR(_loadTheRestOfIdRef(compileEnv, compilationContext, evalPurpose, finalRegister, resultOut, e->idRefPtr.get(), parts, UINT32_MAX, 0, fnType));
+					SLKC_RETURN_IF_COMP_ERROR(_loadTheRestOfIdRef(compileEnv, compilationContext, evalPurpose, finalRegister, resultOut, e->idRefPtr.get(), parts, UINT32_MAX, 0, fnType, sldIndex));
 				} else {
-					SLKC_RETURN_IF_COMP_ERROR(_loadTheRestOfIdRef(compileEnv, compilationContext, evalPurpose, finalRegister, resultOut, e->idRefPtr.get(), parts, UINT32_MAX, 0, {}));
+					SLKC_RETURN_IF_COMP_ERROR(_loadTheRestOfIdRef(compileEnv, compilationContext, evalPurpose, finalRegister, resultOut, e->idRefPtr.get(), parts, UINT32_MAX, 0, {}, sldIndex));
 				}
 			}
 
@@ -823,6 +833,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 
 					SLKC_RETURN_IF_COMP_ERROR(
 						compilationContext->emitIns(
+							sldIndex,
 							slake::Opcode::MOV,
 							resultRegOut,
 							{ slake::Value(slake::ValueType::RegIndex, finalRegister) }));
@@ -834,12 +845,14 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 					if ((b) && (initialMember != finalMember)) {
 						SLKC_RETURN_IF_COMP_ERROR(
 							compilationContext->emitIns(
+								sldIndex,
 								slake::Opcode::LVALUE,
 								resultRegOut,
 								{ slake::Value(slake::ValueType::RegIndex, finalRegister) }));
 					} else {
 						SLKC_RETURN_IF_COMP_ERROR(
 							compilationContext->emitIns(
+								sldIndex,
 								slake::Opcode::MOV,
 								resultRegOut,
 								{ slake::Value(slake::ValueType::RegIndex, finalRegister) }));
@@ -860,12 +873,14 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 					if ((b) && (initialMember != finalMember)) {
 						SLKC_RETURN_IF_COMP_ERROR(
 							compilationContext->emitIns(
+								sldIndex,
 								slake::Opcode::LVALUE,
 								resultRegOut,
 								{ slake::Value(slake::ValueType::RegIndex, finalRegister) }));
 					} else {
 						SLKC_RETURN_IF_COMP_ERROR(
 							compilationContext->emitIns(
+								sldIndex,
 								slake::Opcode::MOV,
 								resultRegOut,
 								{ slake::Value(slake::ValueType::RegIndex, finalRegister) }));
@@ -875,6 +890,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 				case ExprEvalPurpose::Unpacking: {
 					SLKC_RETURN_IF_COMP_ERROR(
 						compilationContext->emitIns(
+							sldIndex,
 							slake::Opcode::MOV,
 							resultRegOut,
 							{ slake::Value(slake::ValueType::RegIndex, finalRegister) }));
@@ -945,6 +961,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 					if (resultRegOut != UINT32_MAX) {
 						SLKC_RETURN_IF_COMP_ERROR(
 							compilationContext->emitIns(
+								sldIndex,
 								slake::Opcode::MOV,
 								resultRegOut,
 								{ slake::Value(slake::Reference::makeObjectRef(sl.get())) }));
@@ -981,6 +998,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 					if (resultRegOut != UINT32_MAX) {
 						SLKC_RETURN_IF_COMP_ERROR(
 							compilationContext->emitIns(
+								sldIndex,
 								slake::Opcode::MOV,
 								resultRegOut,
 								{ slake::Value(slake::Reference::makeObjectRef(nullptr)) }));
@@ -1058,6 +1076,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 						SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, compilationContext, tn, elementType));
 						SLKC_RETURN_IF_COMP_ERROR(
 							compilationContext->emitIns(
+								sldIndex,
 								slake::Opcode::ARRNEW,
 								resultRegOut,
 								{ slake::Value(elementType), slake::Value((uint32_t)e->elements.size()) }));
@@ -1073,6 +1092,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 
 							SLKC_RETURN_IF_COMP_ERROR(
 								compilationContext->emitIns(
+									sldIndex,
 									slake::Opcode::AT,
 									curElementSlotRegIndex,
 									{ slake::Value(slake::ValueType::RegIndex, resultRegOut), slake::Value((uint32_t)i) }));
@@ -1083,6 +1103,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 
 							SLKC_RETURN_IF_COMP_ERROR(
 								compilationContext->emitIns(
+									sldIndex,
 									slake::Opcode::STORE,
 									UINT32_MAX,
 									{ slake::Value(slake::ValueType::RegIndex, curElementSlotRegIndex), slake::Value(slake::ValueType::RegIndex, curElementRegIndex) }));
@@ -1252,6 +1273,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 					case TypeNameKind::UnpackedArgs:
 						SLKC_RETURN_IF_COMP_ERROR(
 							compilationContext->emitIns(
+								sldIndex,
 								slake::Opcode::PUSHAP,
 								UINT32_MAX,
 								{ slake::Value(slake::ValueType::RegIndex, reg) }));
@@ -1259,6 +1281,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 					default:
 						SLKC_RETURN_IF_COMP_ERROR(
 							compilationContext->emitIns(
+								sldIndex,
 								slake::Opcode::PUSHARG,
 								UINT32_MAX,
 								{ slake::Value(slake::ValueType::RegIndex, reg) }));
@@ -1292,9 +1315,9 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 					break;
 				case ExprEvalPurpose::Stmt:
 					if (thisReg != UINT32_MAX) {
-						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::MCALL, UINT32_MAX, { slake::Value(slake::ValueType::RegIndex, targetReg), slake::Value(slake::ValueType::RegIndex, result.idxThisRegOut) }));
+						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::MCALL, UINT32_MAX, { slake::Value(slake::ValueType::RegIndex, targetReg), slake::Value(slake::ValueType::RegIndex, result.idxThisRegOut) }));
 					} else {
-						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::CALL, UINT32_MAX, { slake::Value(slake::ValueType::RegIndex, targetReg) }));
+						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::CALL, UINT32_MAX, { slake::Value(slake::ValueType::RegIndex, targetReg) }));
 					}
 					break;
 				case ExprEvalPurpose::LValue: {
@@ -1305,9 +1328,9 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 					}
 
 					if (thisReg != UINT32_MAX) {
-						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::MCALL, resultRegOut, { slake::Value(slake::ValueType::RegIndex, targetReg), slake::Value(slake::ValueType::RegIndex, result.idxThisRegOut) }));
+						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::MCALL, resultRegOut, { slake::Value(slake::ValueType::RegIndex, targetReg), slake::Value(slake::ValueType::RegIndex, result.idxThisRegOut) }));
 					} else {
-						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::CALL, resultRegOut, { slake::Value(slake::ValueType::RegIndex, targetReg) }));
+						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::CALL, resultRegOut, { slake::Value(slake::ValueType::RegIndex, targetReg) }));
 					}
 					break;
 				}
@@ -1322,17 +1345,17 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 						SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(tmpRegIndex));
 
 						if (result.idxThisRegOut != UINT32_MAX) {
-							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::MCALL, tmpRegIndex, { slake::Value(slake::ValueType::RegIndex, targetReg), slake::Value(slake::ValueType::RegIndex, result.idxThisRegOut) }));
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::MCALL, tmpRegIndex, { slake::Value(slake::ValueType::RegIndex, targetReg), slake::Value(slake::ValueType::RegIndex, result.idxThisRegOut) }));
 						} else {
-							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::CALL, tmpRegIndex, { slake::Value(slake::ValueType::RegIndex, targetReg) }));
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::CALL, tmpRegIndex, { slake::Value(slake::ValueType::RegIndex, targetReg) }));
 						}
 
-						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::LVALUE, resultRegOut, { slake::Value(slake::ValueType::RegIndex, tmpRegIndex) }));
+						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::LVALUE, resultRegOut, { slake::Value(slake::ValueType::RegIndex, tmpRegIndex) }));
 					} else {
 						if (result.idxThisRegOut != UINT32_MAX) {
-							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::MCALL, resultRegOut, { slake::Value(slake::ValueType::RegIndex, targetReg), slake::Value(slake::ValueType::RegIndex, result.idxThisRegOut) }));
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::MCALL, resultRegOut, { slake::Value(slake::ValueType::RegIndex, targetReg), slake::Value(slake::ValueType::RegIndex, result.idxThisRegOut) }));
 						} else {
-							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::CALL, resultRegOut, { slake::Value(slake::ValueType::RegIndex, targetReg) }));
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::CALL, resultRegOut, { slake::Value(slake::ValueType::RegIndex, targetReg) }));
 						}
 					}
 
@@ -1391,7 +1414,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 					std::terminate();
 				}*/
 			}
-			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::NEW, resultRegOut, { slake::Value(type) }));
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::NEW, resultRegOut, { slake::Value(type) }));
 
 			if (auto it = c->memberIndices.find("new"); it != c->memberIndices.end()) {
 				if (c->members.at(it.value())->getAstNodeType() != AstNodeType::FnSlot) {
@@ -1475,7 +1498,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 
 				SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(ctorCallTarget));
 
-				SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::LOAD, ctorCallTarget, { slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));
+				SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::LOAD, ctorCallTarget, { slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));
 
 				for (size_t i = 0; i < e->args.size(); ++i) {
 					CompileExprResult argResult(compileEnv->allocator.get());
@@ -1495,12 +1518,13 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 
 					SLKC_RETURN_IF_COMP_ERROR(
 						compilationContext->emitIns(
+							sldIndex,
 							slake::Opcode::PUSHARG,
 							UINT32_MAX,
 							{ slake::Value(slake::ValueType::RegIndex, reg) }));
 				}
 
-				SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::CTORCALL, UINT32_MAX, { slake::Value(slake::ValueType::RegIndex, ctorCallTarget), slake::Value(slake::ValueType::RegIndex, resultRegOut) }));
+				SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::CTORCALL, UINT32_MAX, { slake::Value(slake::ValueType::RegIndex, ctorCallTarget), slake::Value(slake::ValueType::RegIndex, resultRegOut) }));
 			} else {
 			}
 
@@ -1552,7 +1576,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 				slake::TypeRef type;
 				SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, compilationContext, targetType, type));
 
-				SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::CAST, resultRegOut, { slake::Value(type), slake::Value(slake::ValueType::RegIndex, idxReg) }));
+				SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::CAST, resultRegOut, { slake::Value(type), slake::Value(slake::ValueType::RegIndex, idxReg) }));
 			} else {
 				CompileExprResult result(compileEnv->allocator.get());
 				if (!leftValue) {
@@ -1687,6 +1711,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 							return genOutOfMemoryCompError();
 						}
 
+						cmpExpr->lhs->tokenRange = curCase.first->tokenRange;
 						cmpExpr->rhs = curCase.first;
 
 						AstNodePtr<BoolTypeNameNode> boolTypeName;
@@ -1703,7 +1728,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 							SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, cmpExpr.template castTo<ExprNode>(), ExprEvalPurpose::RValue, boolTypeName.template castTo<TypeNameNode>(), cmpResultReg, cmpExprResult));
 						}
 
-						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::JT, UINT32_MAX, { slake::Value(slake::ValueType::Label, evalValueLabel), slake::Value(slake::ValueType::RegIndex, cmpResultReg) }));
+						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::JT, UINT32_MAX, { slake::Value(slake::ValueType::Label, evalValueLabel), slake::Value(slake::ValueType::RegIndex, cmpResultReg) }));
 					} else {
 						if (isDefaultSet)
 							return CompilationError(curCase.first->tokenRange, CompilationErrorKind::DuplicatedMatchCaseBranch);
@@ -1739,7 +1764,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 
 					phiRegisterValueMap.at(i) = { compilationContext->getCurInsOff(), exprValueRegister };
 
-					SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::JMP, UINT32_MAX, { slake::Value(slake::ValueType::Label, endLabel) }));
+					SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::JMP, UINT32_MAX, { slake::Value(slake::ValueType::Label, endLabel) }));
 				}
 
 				{
@@ -1757,7 +1782,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 
 					phiRegisterValueMap.at(idxDefaultBranchCase) = { UINT32_MAX, exprValueRegister };
 
-					SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::JMP, UINT32_MAX, { slake::Value(slake::ValueType::Label, endLabel) }));
+					SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::JMP, UINT32_MAX, { slake::Value(slake::ValueType::Label, endLabel) }));
 				}
 
 				compilationContext->setLabelOffset(endLabel, compilationContext->getCurInsOff());
@@ -1773,7 +1798,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 					operands.at(j + 1) = slake::Value(slake::ValueType::RegIndex, phiRegisterValueMap.at(i).second);
 				}
 
-				SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::PHI, resultRegOut, operands.data(), operands.size()));
+				SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::PHI, resultRegOut, operands.data(), operands.size()));
 			} else {
 			}
 
@@ -1783,7 +1808,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 		case ExprKind::RegIndex: {
 			auto e = expr.template castTo<RegIndexExprNode>();
 
-			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::MOV, resultRegOut, { slake::Value(slake::ValueType::RegIndex, e->reg) }));
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::MOV, resultRegOut, { slake::Value(slake::ValueType::RegIndex, e->reg) }));
 
 			resultOut.evaluatedType = e->type;
 

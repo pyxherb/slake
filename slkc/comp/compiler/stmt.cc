@@ -6,6 +6,9 @@ SLKC_API peff::Option<CompilationError> slkc::compileStmt(
 	CompileEnvironment *compileEnv,
 	CompilationContext *compilationContext,
 	const AstNodePtr<StmtNode> &stmt) {
+	uint32_t sldIndex;
+	SLKC_RETURN_IF_COMP_ERROR(compilationContext->registerSourceLocDesc(tokenRangeToSld(stmt->tokenRange), sldIndex));
+
 	switch (stmt->stmtKind) {
 		case StmtKind::Expr: {
 			AstNodePtr<ExprStmtNode> s = stmt.template castTo<ExprStmtNode>();
@@ -46,7 +49,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileStmt(
 
 								SLKC_RETURN_IF_COMP_ERROR(
 									compilationContext->emitIns(
-										slake::Opcode::LVAR,
+										sldIndex, slake::Opcode::LVAR,
 										localVarReg,
 										{ slake::Value(type) }));
 							}
@@ -95,7 +98,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileStmt(
 
 								SLKC_RETURN_IF_COMP_ERROR(
 									compilationContext->emitIns(
-										slake::Opcode::LVAR,
+										sldIndex, slake::Opcode::LVAR,
 										localVarReg,
 										{ slake::Value(type) }));
 							}
@@ -112,7 +115,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileStmt(
 
 						SLKC_RETURN_IF_COMP_ERROR(
 							compilationContext->emitIns(
-								slake::Opcode::STORE,
+								sldIndex, slake::Opcode::STORE,
 								UINT32_MAX,
 								{ slake::Value(slake::ValueType::RegIndex, localVarReg), slake::Value(slake::ValueType::RegIndex, initialValueReg) }));
 					} else {
@@ -128,7 +131,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileStmt(
 
 							SLKC_RETURN_IF_COMP_ERROR(
 								compilationContext->emitIns(
-									slake::Opcode::LVAR,
+									sldIndex, slake::Opcode::LVAR,
 									localVarReg,
 									{ slake::Value(type) }));
 						}
@@ -147,13 +150,13 @@ SLKC_API peff::Option<CompilationError> slkc::compileStmt(
 				curLevel > level) {
 				SLKC_RETURN_IF_COMP_ERROR(
 					compilationContext->emitIns(
-						slake::Opcode::LEAVE,
+						sldIndex, slake::Opcode::LEAVE,
 						UINT32_MAX,
 						{ slake::Value(curLevel - level) }));
 			}
 			SLKC_RETURN_IF_COMP_ERROR(
 				compilationContext->emitIns(
-					slake::Opcode::JMP,
+					sldIndex, slake::Opcode::JMP,
 					UINT32_MAX,
 					{ slake::Value(slake::ValueType::Label, breakLabelId) }));
 			break;
@@ -168,13 +171,13 @@ SLKC_API peff::Option<CompilationError> slkc::compileStmt(
 				curLevel > level) {
 				SLKC_RETURN_IF_COMP_ERROR(
 					compilationContext->emitIns(
-						slake::Opcode::LEAVE,
+						sldIndex, slake::Opcode::LEAVE,
 						UINT32_MAX,
 						{ slake::Value(curLevel - level) }));
 			}
 			SLKC_RETURN_IF_COMP_ERROR(
 				compilationContext->emitIns(
-					slake::Opcode::JMP,
+					sldIndex, slake::Opcode::JMP,
 					UINT32_MAX,
 					{ slake::Value(slake::ValueType::Label, breakLabelId) }));
 			break;
@@ -187,7 +190,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileStmt(
 
 			SLKC_RETURN_IF_COMP_ERROR(
 				compilationContext->emitIns(
-					slake::Opcode::ENTER,
+					sldIndex, slake::Opcode::ENTER,
 					UINT32_MAX,
 					{}));
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->enterBlock());
@@ -232,7 +235,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileStmt(
 
 								SLKC_RETURN_IF_COMP_ERROR(
 									compilationContext->emitIns(
-										slake::Opcode::LVAR,
+										sldIndex, slake::Opcode::LVAR,
 										localVarReg,
 										{ slake::Value(type) }));
 							}
@@ -281,7 +284,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileStmt(
 
 								SLKC_RETURN_IF_COMP_ERROR(
 									compilationContext->emitIns(
-										slake::Opcode::LVAR,
+										sldIndex, slake::Opcode::LVAR,
 										localVarReg,
 										{ slake::Value(type) }));
 							}
@@ -298,7 +301,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileStmt(
 
 						SLKC_RETURN_IF_COMP_ERROR(
 							compilationContext->emitIns(
-								slake::Opcode::STORE,
+								sldIndex, slake::Opcode::STORE,
 								UINT32_MAX,
 								{ slake::Value(slake::ValueType::RegIndex, localVarReg), slake::Value(slake::ValueType::RegIndex, initialValueReg) }));
 					} else {
@@ -314,7 +317,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileStmt(
 
 							SLKC_RETURN_IF_COMP_ERROR(
 								compilationContext->emitIns(
-									slake::Opcode::LVAR,
+									sldIndex, slake::Opcode::LVAR,
 									localVarReg,
 									{ slake::Value(type) }));
 						}
@@ -324,7 +327,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileStmt(
 
 			SLKC_RETURN_IF_COMP_ERROR(
 				compilationContext->emitIns(
-					slake::Opcode::JMP,
+					sldIndex, slake::Opcode::JMP,
 					UINT32_MAX,
 					{ slake::Value(slake::ValueType::Label, continueLabel) }));
 
@@ -357,7 +360,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileStmt(
 
 				SLKC_RETURN_IF_COMP_ERROR(
 					compilationContext->emitIns(
-						slake::Opcode::JT,
+						sldIndex, slake::Opcode::JT,
 						UINT32_MAX,
 						{ slake::Value(slake::ValueType::Label, bodyLabel), slake::Value(slake::ValueType::RegIndex, conditionReg) }));
 			} else {
@@ -373,7 +376,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileStmt(
 
 			SLKC_RETURN_IF_COMP_ERROR(
 				compilationContext->emitIns(
-					slake::Opcode::LEAVE,
+					sldIndex, slake::Opcode::LEAVE,
 					UINT32_MAX,
 					{ slake::Value((uint32_t)1) }));
 			break;
@@ -394,7 +397,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileStmt(
 			if (!s->isDoWhile) {
 				SLKC_RETURN_IF_COMP_ERROR(
 					compilationContext->emitIns(
-						slake::Opcode::JMP,
+						sldIndex, slake::Opcode::JMP,
 						UINT32_MAX,
 						{ slake::Value(slake::ValueType::Label, continueLabel) }));
 			}
@@ -427,7 +430,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileStmt(
 
 			SLKC_RETURN_IF_COMP_ERROR(
 				compilationContext->emitIns(
-					slake::Opcode::JT,
+					sldIndex, slake::Opcode::JT,
 					UINT32_MAX,
 					{ slake::Value(slake::ValueType::Label, bodyLabel), slake::Value(slake::ValueType::RegIndex, conditionReg) }));
 
@@ -448,13 +451,13 @@ SLKC_API peff::Option<CompilationError> slkc::compileStmt(
 
 				SLKC_RETURN_IF_COMP_ERROR(
 					compilationContext->emitIns(
-						slake::Opcode::RET,
+						sldIndex, slake::Opcode::RET,
 						UINT32_MAX,
 						{ slake::Value(slake::ValueType::RegIndex, reg) }));
 			} else {
 				SLKC_RETURN_IF_COMP_ERROR(
 					compilationContext->emitIns(
-						slake::Opcode::RET,
+						sldIndex, slake::Opcode::RET,
 						UINT32_MAX,
 						{}));
 			}
@@ -474,15 +477,15 @@ SLKC_API peff::Option<CompilationError> slkc::compileStmt(
 
 				SLKC_RETURN_IF_COMP_ERROR(
 					compilationContext->emitIns(
-						slake::Opcode::YIELD,
+						sldIndex, slake::Opcode::YIELD,
 						UINT32_MAX,
 						{ slake::Value(slake::ValueType::RegIndex, reg) }));
 			} else {
 				SLKC_RETURN_IF_COMP_ERROR(
 					compilationContext->emitIns(
-						slake::Opcode::YIELD,
+						sldIndex, slake::Opcode::YIELD,
 						UINT32_MAX,
-						{ }));
+						{}));
 			}
 			break;
 		}
@@ -516,7 +519,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileStmt(
 
 			SLKC_RETURN_IF_COMP_ERROR(
 				compilationContext->emitIns(
-					slake::Opcode::JF,
+					sldIndex, slake::Opcode::JF,
 					UINT32_MAX,
 					{ slake::Value(slake::ValueType::Label, falseLabel) }));
 
@@ -524,7 +527,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileStmt(
 
 			SLKC_RETURN_IF_COMP_ERROR(
 				compilationContext->emitIns(
-					slake::Opcode::JMP,
+					sldIndex, slake::Opcode::JMP,
 					UINT32_MAX,
 					{ slake::Value(slake::ValueType::Label, endLabel) }));
 
@@ -723,6 +726,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileStmt(
 						if (!(cmpExpr->lhs = makeAstNode<RegIndexExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, conditionReg, conditionType).template castTo<ExprNode>())) {
 							return genOutOfMemoryCompError();
 						}
+						cmpExpr->lhs->tokenRange = curCase->condition->tokenRange;
 
 						cmpExpr->rhs = curCase->condition;
 
@@ -743,14 +747,14 @@ SLKC_API peff::Option<CompilationError> slkc::compileStmt(
 						if (!prevCaseConditions.insert(AstNodePtr<ExprNode>(resultExpr)))
 							return genOutOfMemoryCompError();
 
-						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::JT, UINT32_MAX, { slake::Value(slake::ValueType::Label, evalValueLabel), slake::Value(slake::ValueType::RegIndex, cmpResultReg) }));
+						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::JT, UINT32_MAX, { slake::Value(slake::ValueType::Label, evalValueLabel), slake::Value(slake::ValueType::RegIndex, cmpResultReg) }));
 					}
 
 					matchValueEvalLabels.insert(s->caseOffsets.at(i), +evalValueLabel);
 				}
 
 				if (isDefaultSet) {
-					SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::JMP, UINT32_MAX, { slake::Value(slake::ValueType::Label, defaultLabel) }));
+					SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::JMP, UINT32_MAX, { slake::Value(slake::ValueType::Label, defaultLabel) }));
 				}
 			} else {
 				for (size_t i = 0; i < s->caseOffsets.size(); ++i) {
@@ -795,6 +799,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileStmt(
 						if (!(cmpExpr->lhs = makeAstNode<RegIndexExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, conditionReg, conditionType).template castTo<ExprNode>())) {
 							return genOutOfMemoryCompError();
 						}
+						cmpExpr->lhs->tokenRange = curCase->condition->tokenRange;
 
 						cmpExpr->rhs = curCase->condition;
 
@@ -812,14 +817,14 @@ SLKC_API peff::Option<CompilationError> slkc::compileStmt(
 							SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, cmpExpr.template castTo<ExprNode>(), ExprEvalPurpose::RValue, boolTypeName.template castTo<TypeNameNode>(), cmpResultReg, cmpExprResult));
 						}
 
-						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::JT, UINT32_MAX, { slake::Value(slake::ValueType::Label, evalValueLabel), slake::Value(slake::ValueType::RegIndex, cmpResultReg) }));
+						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::JT, UINT32_MAX, { slake::Value(slake::ValueType::Label, evalValueLabel), slake::Value(slake::ValueType::RegIndex, cmpResultReg) }));
 					}
 
 					matchValueEvalLabels.insert(s->caseOffsets.at(i), +evalValueLabel);
 				}
 
 				if (isDefaultSet) {
-					SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::JMP, UINT32_MAX, { slake::Value(slake::ValueType::Label, defaultLabel) }));
+					SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::JMP, UINT32_MAX, { slake::Value(slake::ValueType::Label, defaultLabel) }));
 				}
 			}
 
@@ -854,7 +859,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileStmt(
 			if (hasFrame)
 				SLKC_RETURN_IF_COMP_ERROR(
 					compilationContext->emitIns(
-						slake::Opcode::ENTER,
+						sldIndex, slake::Opcode::ENTER,
 						UINT32_MAX,
 						{}));
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->enterBlock());
@@ -869,7 +874,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileStmt(
 			if (hasFrame)
 				SLKC_RETURN_IF_COMP_ERROR(
 					compilationContext->emitIns(
-						slake::Opcode::LEAVE,
+						sldIndex, slake::Opcode::LEAVE,
 						UINT32_MAX,
 						{ slake::Value((uint32_t)1) }));
 			break;

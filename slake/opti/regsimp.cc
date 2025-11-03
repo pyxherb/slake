@@ -3,7 +3,23 @@
 using namespace slake;
 using namespace slake::opti;
 
-InternalExceptionPointer opti::simplifyRegularFnOverloading(
+static bool isInstructionSimplifiable(
+	const Instruction &curIns,
+	const ProgramAnalyzedInfo *pAnalyzedInfo) {
+	bool isSimplifiable = false;
+
+	if (curIns.output != UINT32_MAX) {
+		const RegAnalyzedInfo &info = pAnalyzedInfo->analyzedRegInfo.at(curIns.output);
+
+		if (info.lifetime.offBeginIns == info.lifetime.offEndIns)
+			isSimplifiable = true;
+	} else
+		isSimplifiable = true;
+
+	return isSimplifiable;
+}
+
+InternalExceptionPointer opti::simplifyRegularFnOverloadingPass(
 	Runtime *runtime,
 	peff::Alloc *resourceAllocator,
 	RegularFnOverloadingObject *fnObject,
@@ -18,29 +34,13 @@ InternalExceptionPointer opti::simplifyRegularFnOverloading(
 		peff::Map<uint32_t, uint32_t> originalLabelToNewLabelMap(resourceAllocator);
 		peff::Set<uint32_t> insMarkedForRemoval(resourceAllocator);
 
-		for (auto i : pAnalyzedInfo->codeBlockBoundaries) {
-			originalLabelToNewLabelMap.insert(+i, +i);
-		}
-
 		for (uint32_t i = 0; i < fnObject->instructions.size(); ++i) {
 			const Instruction &curIns = fnObject->instructions.at(i);
 
-			bool isSimplifiable = false;
-
-			if (curIns.output != UINT32_MAX) {
-				const RegAnalyzedInfo &info = pAnalyzedInfo->analyzedRegInfo.at(curIns.output);
-
-				if (info.lifetime.offBeginIns == info.lifetime.offEndIns)
-					isSimplifiable = true;
-			} else
-				isSimplifiable = true;
+			bool isSimplifiable = isInstructionSimplifiable(curIns, pAnalyzedInfo);
 
 			if (isSimplifiable) {
-				if (isInstructionSimplifiable(curIns.opcode)) {
-					for (auto it = originalLabelToNewLabelMap.findMaxLteq(i); it != originalLabelToNewLabelMap.end(); ++it) {
-						--it.value();
-					}
-
+				if (isInsSimplifiable(curIns.opcode)) {
 					if (!insMarkedForRemoval.insert(+i))
 						return OutOfMemoryError::alloc();
 				}
@@ -57,6 +57,20 @@ InternalExceptionPointer opti::simplifyRegularFnOverloading(
 						(v.valueType != ValueType::Reference)) {
 						curValue = v;
 					}
+				}
+			}
+		}
+
+		uint32_t deletionCount = 0;
+		for (uint32_t i = 0; i < fnObject->instructions.size(); ++i) {
+			if (insMarkedForRemoval.contains(i)) {
+				if (pAnalyzedInfo->codeBlockBoundaries.contains(i)) {
+					originalLabelToNewLabelMap.insert(+i, i - deletionCount);
+				}
+				++deletionCount;
+			} else {
+				if (pAnalyzedInfo->codeBlockBoundaries.contains(i)) {
+					originalLabelToNewLabelMap.insert(+i, i - deletionCount);
 				}
 			}
 		}
@@ -95,7 +109,7 @@ InternalExceptionPointer opti::simplifyRegularFnOverloading(
 		}
 
 		ProgramAnalyzedInfo newAnalyzedInfo(runtime, resourceAllocator);
-		SLAKE_RETURN_IF_EXCEPT(analyzeProgramInfo(runtime, resourceAllocator, fnObject, newAnalyzedInfo, hostRefHolder));
+		SLAKE_RETURN_IF_EXCEPT(analyzeProgramInfoPass(runtime, resourceAllocator, fnObject, newAnalyzedInfo, hostRefHolder));
 
 		for (auto i : newAnalyzedInfo.analyzedRegInfo) {
 			if (i.second.lifetime.offEndIns == i.second.lifetime.offBeginIns) {

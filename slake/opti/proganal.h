@@ -35,10 +35,9 @@ namespace slake {
 			uint32_t idxArg;
 		};
 
-		using RegIndexerencedPoint = std::pair<uint32_t, uint32_t>;
-
 		struct RegAnalyzedInfo {
 			RegLifetime lifetime;
+			peff::Set<uint32_t> usePoints;
 			TypeRef type;
 			Value expectedValue = Value(ValueType::Undefined);
 			union {
@@ -47,6 +46,8 @@ namespace slake {
 				ArgRefRegStorageInfo asArgRef;
 			} storageInfo;
 			RegStorageType storageType = RegStorageType::None;
+
+			SLAKE_FORCEINLINE RegAnalyzedInfo(peff::Alloc *allocator) : usePoints(allocator) {}
 		};
 
 		struct LocalVarAnalyzedInfo {
@@ -105,8 +106,8 @@ namespace slake {
 			}
 		};
 
-		bool isInstructionHasSideEffect(Opcode opcode);
-		bool isInstructionSimplifiable(Opcode opcode);
+		bool isInsHasSideEffect(Opcode opcode);
+		bool isInsSimplifiable(Opcode opcode);
 
 		void markRegAsForOutput(ProgramAnalyzeContext &analyzeContext, uint32_t i);
 		InternalExceptionPointer wrapIntoHeapType(
@@ -142,7 +143,7 @@ namespace slake {
 		InternalExceptionPointer analyzeCastIns(
 			ProgramAnalyzeContext &analyzeContext,
 			uint32_t regIndex);
-		InternalExceptionPointer analyzeProgramInfo(
+		InternalExceptionPointer analyzeProgramInfoPass(
 			Runtime *runtime,
 			peff::Alloc *resourceAllocator,
 			RegularFnOverloadingObject *fnObject,

@@ -246,7 +246,7 @@ InternalExceptionPointer slake::compileRegularFn(RegularFnOverloadingObject *fn,
 
 	InternalExceptionPointer exceptionPtr;
 
-	SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptionPtr, opti::analyzeProgramInfo(fn->associatedRuntime, resourceAllocator, fn, analyzedInfo, hostRefHolder));
+	SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptionPtr, opti::analyzeProgramInfoPass(fn->associatedRuntime, resourceAllocator, fn, analyzedInfo, hostRefHolder));
 
 	SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovMemToReg64Ins(REG_R11, MemoryLocation{ REG_R9, offsetof(JITExecContext, stackLimit), REG_MAX, 0 })));
 

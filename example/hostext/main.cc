@@ -324,7 +324,7 @@ int main(int argc, char **argv) {
 			overloading = fn->overloadings.at(slake::FnSignature(params, false, 0, slake::TypeId::Void));
 
 			slake::opti::ProgramAnalyzedInfo analyzedInfo(rt.get(), &myAllocator);
-			if (auto e = slake::opti::analyzeProgramInfo(rt.get(), &myAllocator, (slake::RegularFnOverloadingObject *)overloading, analyzedInfo, hostRefHolder);
+			if (auto e = slake::opti::analyzeProgramInfoPass(rt.get(), &myAllocator, (slake::RegularFnOverloadingObject *)overloading, analyzedInfo, hostRefHolder);
 				e) {
 				printf("Internal exception: %s\n", e->what());
 				switch (e->kind) {

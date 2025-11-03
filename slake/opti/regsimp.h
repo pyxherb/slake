@@ -5,7 +5,7 @@
 
 namespace slake {
 	namespace opti {
-		InternalExceptionPointer simplifyRegularFnOverloading(
+		InternalExceptionPointer simplifyRegularFnOverloadingPass(
 			Runtime *runtime,
 			peff::Alloc *resourceAllocator,
 			RegularFnOverloadingObject *fnObject,

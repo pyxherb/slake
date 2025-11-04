@@ -591,7 +591,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 			}
 			for (uint32_t i = 0; i < level; ++i) {
 				size_t stackTop = curMajorFrame->resumable->minorFrames.back().stackBase;
-				if (!curMajorFrame->resumable->minorFrames.popBackAndResizeCapacity())
+				if (!curMajorFrame->resumable->minorFrames.popBack())
 					return OutOfMemoryError::alloc();
 				context->_context.stackTop = curMajorFrame->stackBase + stackTop;
 			}

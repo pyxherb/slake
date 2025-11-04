@@ -1294,13 +1294,6 @@ SLKC_API peff::Option<CompilationError> slkc::compileModule(
 						fnObject->nRegisters = compContext.nTotalRegs;
 					}
 
-					slake::opti::ProgramAnalyzedInfo analyzedInfo(compileEnv->runtime, compileEnv->allocator.get());
-					slake::HostRefHolder hostRefHolder(compileEnv->allocator.get());
-					if (auto e = slake::opti::analyzeProgramInfoPass(compileEnv->runtime, compileEnv->allocator.get(), fnObject.get(), analyzedInfo, hostRefHolder))
-						std::terminate();
-					if (auto e = slake::opti::simplifyRegularFnOverloadingPass(compileEnv->runtime, compileEnv->allocator.get(), fnObject.get(), analyzedInfo, hostRefHolder))
-						std::terminate();
-
 					if (!slotObject->overloadings.insert(slake::FnSignature{ fnObject->paramTypes, fnObject->isWithVarArgs(), fnObject->genericParams.size(), slake::TypeId::Void }, fnObject.get())) {
 						return genOutOfRuntimeMemoryCompError();
 					}

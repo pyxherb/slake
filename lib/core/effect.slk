@@ -1,0 +1,4 @@
+module core.effect;
+
+public class Effect {
+}

@@ -1,59 +1,15 @@
 module plat.parallel.thread;
 
-use {
-	except = std::core::except
+use std.core.effect;
+use std.core.except;
+
+public interface IWork {
+	public operator()();
 }
 
-/// @intro
-/// Class for thread manupulation, each instance represents a single thread.
-/// @end
-public class Thread {
-	/// @brief Current thread.
-	public static native @Thread current;
-
-	/// @intro
-	/// Maximum number of concurrent threads supported by hardware, 0 if
-	/// incomputable.
-	/// @end
-	/// @since 1.0
-	public static const native u32 hardwareConcurrency;
-
-	/// @brief State of the thread.
-	public const native @State state;
-	/// @brief Internal ID of the thread.
-	public const native u32 id;
-
-	/// @brief Yield and switch to another thread immediately.
-	/// @since 1.0
-	public static native void yield();
-
-	/// @brief States of threads.
-	/// @since 1.0
-	enum State : u8 {
-		Ready = 0,
-		Running,
-		Suspended,
-		Stopped,
-		Dead
-	}
-
-	/// @param{proc} A callable object that will be used as the thread routine.
-	/// @param{...} Arguments to the procedure.
-	public native operator new(any proc, ...);
-	public native operator delete();
-
-	/// @brief Kill the thread.
-	public native void kill();
-
-	/// @brief Suspend the thread.
-	public native void suspend();
-
-	/// @brief Resume the thread.
-	public native void resume();
-
-	/// @brief Join the thread to current thread.
-	public native void join();
-
-	/// @brief Run the thread.
-	public native void run();
+class Thread final {
+	public native fn Thread(work: IWork);
+	public native fn Thread(work: IWork, stackSize: usize);
 }
+
+public native fn yield() out ESchedule;

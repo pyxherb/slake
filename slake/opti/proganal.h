@@ -149,10 +149,6 @@ namespace slake {
 			RegularFnOverloadingObject *fnObject,
 			ProgramAnalyzedInfo &analyzedInfoOut,
 			HostRefHolder &hostRefHolder);
-
-		struct ControlFlowGraph {
-
-		};
 	}
 }
 

@@ -1982,14 +1982,15 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 					uint32_t off;
 					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _findAndDispatchExceptHandler(majorFrame->curExcept, minorFrame, off));
 					if (off != UINT32_MAX) {
-						for (size_t j = 0; j < nUnwindedFrames; ++j) {
-							context->_context.leaveMajor();
-						}
-						majorFrame->resumable->minorFrames.resizeUninitialized(j);
+						if(!majorFrame->resumable->minorFrames.resizeUninitialized(j))
+							return OutOfMemoryError::alloc();
 						// Do not increase the current instruction offset,
 						// the offset has been set to offset to first instruction
 						// of the exception handler.
 						majorFrame->resumable->curIns = off;
+						for (size_t j = 0; j < nUnwindedFrames; ++j) {
+							context->_context.leaveMajor();
+						}
 						return {};
 					}
 				}

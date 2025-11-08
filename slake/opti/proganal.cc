@@ -348,7 +348,10 @@ InternalExceptionPointer slake::opti::analyzeProgramInfoPass(
 	if (!(pseudoMajorFrame->resumable = ResumableObject::alloc(runtime)))
 		return OutOfMemoryError::alloc();
 
-	pseudoMajorFrame->resumable->argStack.resizeWith(fnObject->paramTypes.size(), ArgRecord{});
+	if (!pseudoMajorFrame->resumable->argStack.resizeUninitialized(fnObject->paramTypes.size()))
+		return OutOfMemoryError::alloc();
+	for (size_t i = 0; i < pseudoMajorFrame->resumable->argStack.size(); ++i)
+		peff::constructAt<ArgRecord>(&pseudoMajorFrame->resumable->argStack.at(i));
 	for (size_t i = 0; i < fnObject->paramTypes.size(); ++i) {
 		pseudoMajorFrame->resumable->argStack.at(i) = { Value(), fnObject->paramTypes.at(i) };
 	}

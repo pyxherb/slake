@@ -2,6 +2,64 @@
 
 using namespace slake;
 
+SLAKE_API Value::Value(const Value& other) noexcept: valueType(other.valueType) {
+	switch (other.valueType) {
+		case ValueType::I8:
+			data.asI8 = other.data.asI8;
+			break;
+		case ValueType::I16:
+			data.asI16 = other.data.asI16;
+			break;
+		case ValueType::I32:
+			data.asI32 = other.data.asI32;
+			break;
+		case ValueType::I64:
+			data.asI64 = other.data.asI64;
+			break;
+		case ValueType::ISize:
+			data.asISize = other.data.asISize;
+			break;
+		case ValueType::U8:
+			data.asU8 = other.data.asU8;
+			break;
+		case ValueType::U16:
+			data.asU16 = other.data.asU16;
+			break;
+		case ValueType::U32:
+			data.asU32 = other.data.asU32;
+			break;
+		case ValueType::U64:
+			data.asU64 = other.data.asU64;
+			break;
+		case ValueType::USize:
+			data.asUSize = other.data.asUSize;
+			break;
+		case ValueType::F32:
+			data.asF32 = other.data.asF32;
+			break;
+		case ValueType::F64:
+			data.asF64 = other.data.asF64;
+			break;
+		case ValueType::Bool:
+			data.asBool = other.data.asBool;
+			break;
+		case ValueType::Reference:
+			data.asReference = other.data.asReference;
+			break;
+		case ValueType::RegIndex:
+			data.asU32 = other.data.asU32;
+			break;
+		case ValueType::TypeName:
+			data.asType = other.data.asType;
+			break;
+		case ValueType::Label:
+			data.asU32 = other.data.asU32;
+			break;
+		default:
+			break;
+	}
+}
+
 SLAKE_API bool Value::operator==(const Value &rhs) const {
 	if (valueType != rhs.valueType)
 		return false;

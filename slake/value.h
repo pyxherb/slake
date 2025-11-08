@@ -329,26 +329,28 @@ namespace slake {
 		ValueType valueType;
 
 		SLAKE_FORCEINLINE Value() = default;
-		SLAKE_FORCEINLINE constexpr Value(const Value &other) = default;
-		SLAKE_FORCEINLINE constexpr Value(Value &&other) = default;
-		SLAKE_FORCEINLINE constexpr Value(int8_t data) noexcept : valueType(ValueType::I8), data((int8_t)data) {
+		SLAKE_API Value(const Value &other) noexcept;
+		SLAKE_FORCEINLINE Value(Value&& other) noexcept {
+			peff::constructAt<Value>(this, other);
 		}
-		SLAKE_FORCEINLINE constexpr Value(int16_t data) noexcept : valueType(ValueType::I16), data((int16_t)data) {
+		SLAKE_FORCEINLINE constexpr Value(int8_t data) noexcept : valueType(ValueType::I8), data(data) {
 		}
-		SLAKE_FORCEINLINE constexpr Value(int32_t data) noexcept : valueType(ValueType::I32), data((int32_t)data) {
+		SLAKE_FORCEINLINE constexpr Value(int16_t data) noexcept : valueType(ValueType::I16), data(data) {
 		}
-		SLAKE_FORCEINLINE constexpr Value(int64_t data) noexcept : valueType(ValueType::I64), data((int64_t)data) {
+		SLAKE_FORCEINLINE constexpr Value(int32_t data) noexcept : valueType(ValueType::I32), data(data) {
+		}
+		SLAKE_FORCEINLINE constexpr Value(int64_t data) noexcept : valueType(ValueType::I64), data(data) {
 		}
 		SLAKE_FORCEINLINE constexpr Value(SizeTypeMarker marker, ssize_t data) noexcept : valueType(ValueType::ISize), data(data) {
 			SLAKE_REFERENCED_PARAM(marker);
 		}
-		SLAKE_FORCEINLINE constexpr Value(uint8_t data) noexcept : valueType(ValueType::U8), data((uint8_t)data) {
+		SLAKE_FORCEINLINE constexpr Value(uint8_t data) noexcept : valueType(ValueType::U8), data(data) {
 		}
-		SLAKE_FORCEINLINE constexpr Value(uint16_t data) noexcept : valueType(ValueType::U16), data((uint16_t)data) {
+		SLAKE_FORCEINLINE constexpr Value(uint16_t data) noexcept : valueType(ValueType::U16), data(data) {
 		}
-		SLAKE_FORCEINLINE constexpr Value(uint32_t data) noexcept : valueType(ValueType::U32), data((uint32_t)data) {
+		SLAKE_FORCEINLINE constexpr Value(uint32_t data) noexcept : valueType(ValueType::U32), data(data) {
 		}
-		SLAKE_FORCEINLINE constexpr Value(uint64_t data) noexcept : valueType(ValueType::U64), data((uint64_t)data) {
+		SLAKE_FORCEINLINE constexpr Value(uint64_t data) noexcept : valueType(ValueType::U64), data(data) {
 		}
 		SLAKE_FORCEINLINE constexpr Value(SizeTypeMarker marker, size_t data) noexcept : valueType(ValueType::USize), data(data) {
 			SLAKE_REFERENCED_PARAM(marker);
@@ -368,6 +370,72 @@ namespace slake {
 		}
 		SLAKE_FORCEINLINE Value(const TypeRef &type) noexcept : valueType(ValueType::TypeName) {
 			data.asType = type;
+		}
+
+		SLAKE_FORCEINLINE constexpr Value &operator=(int8_t data) noexcept {
+			valueType = ValueType::I8;
+			this->data.asI8 = data;
+			return *this;
+		}
+		SLAKE_FORCEINLINE constexpr Value &operator=(int16_t data) noexcept {
+			valueType = ValueType::I16;
+			this->data.asI16 = data;
+			return *this;
+		}
+		SLAKE_FORCEINLINE constexpr Value &operator=(int32_t data) noexcept  {
+			valueType = ValueType::I32;
+			this->data.asI32 = data;
+			return *this;
+		}
+		SLAKE_FORCEINLINE constexpr Value &operator=(int64_t data) noexcept {
+			valueType = ValueType::I64;
+			this->data.asI64 = data;
+			return *this;
+		}
+		SLAKE_FORCEINLINE constexpr Value &operator=(uint8_t data) noexcept {
+			valueType = ValueType::U8;
+			this->data.asU8 = data;
+			return *this;
+		}
+		SLAKE_FORCEINLINE constexpr Value &operator=(uint16_t data) noexcept {
+			valueType = ValueType::U16;
+			this->data.asU16 = data;
+			return *this;
+		}
+		SLAKE_FORCEINLINE constexpr Value &operator=(uint32_t data) noexcept {
+			valueType = ValueType::U32;
+			this->data.asU32 = data;
+			return *this;
+		}
+		SLAKE_FORCEINLINE constexpr Value &operator=(uint64_t data) noexcept {
+			valueType = ValueType::U64;
+			this->data.asU64 = data;
+			return *this;
+		}
+		SLAKE_FORCEINLINE constexpr Value &operator=(float data) noexcept {
+			valueType = ValueType::F32;
+			this->data.asF32 = data;
+			return *this;
+		}
+		SLAKE_FORCEINLINE constexpr Value &operator=(double data) noexcept {
+			valueType = ValueType::F64;
+			this->data.asF64 = data;
+			return *this;
+		}
+		SLAKE_FORCEINLINE constexpr Value &operator=(bool data) noexcept {
+			valueType = ValueType::Bool;
+			this->data.asBool = data;
+			return *this;
+		}
+		SLAKE_FORCEINLINE Value &operator=(const Reference &entityRef) noexcept {
+			valueType = ValueType::Reference;
+			this->data.asReference = entityRef;
+			return *this;
+		}
+		SLAKE_FORCEINLINE Value &operator=(const TypeRef &type) noexcept {
+			valueType = ValueType::TypeName;
+			data.asType = type;
+			return *this;
 		}
 
 		SLAKE_FORCEINLINE int8_t getI8() const noexcept {

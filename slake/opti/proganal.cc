@@ -26,7 +26,7 @@ bool opti::isInsHasSideEffect(Opcode opcode) {
 		case Opcode::NEW:
 		case Opcode::ARRNEW:
 		case Opcode::THROW:
-		case Opcode::PUSHXH:
+		case Opcode::PUSHEH:
 			return true;
 		default:
 			break;
@@ -1255,7 +1255,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfoPass(
 					break;
 				}
 				case Opcode::THROW:
-				case Opcode::PUSHXH:
+				case Opcode::PUSHEH:
 					if (regIndex != UINT32_MAX) {
 						return allocOutOfMemoryErrorIfAllocFailed(
 							MalformedProgramError::alloc(

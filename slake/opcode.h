@@ -77,7 +77,7 @@ namespace slake {
 		ARRNEW,	 // Array new
 
 		THROW,	  // Throw an exception
-		PUSHXH,	  // Push an exception handler
+		PUSHEH,	  // Push an exception handler
 		LEXCEPT,  // Load current exception
 
 		CAST,  // Cast

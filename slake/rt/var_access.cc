@@ -124,11 +124,6 @@ SLAKE_API TypeRef Runtime::typeofVar(const Reference &entityRef) const noexcept 
 }
 
 SLAKE_API InternalExceptionPointer Runtime::readVar(const Reference &entityRef, Value &valueOut) const noexcept {
-	new (&valueOut) Value(readVarUnsafe(entityRef));
-	return {};
-}
-
-SLAKE_API Value Runtime::readVarUnsafe(const Reference &entityRef) const noexcept {
 	switch (entityRef.kind) {
 		case ReferenceKind::StaticFieldRef: {
 			FieldRecord &fieldRecord = entityRef.asStaticField.moduleObject->fieldRecords.at(entityRef.asStaticField.index);
@@ -137,38 +132,53 @@ SLAKE_API Value Runtime::readVarUnsafe(const Reference &entityRef) const noexcep
 
 			switch (fieldRecord.type.typeId) {
 				case TypeId::I8:
-					return Value(*((int8_t *)rawDataPtr));
+					valueOut = (*((int8_t *)rawDataPtr));
+					break;
 				case TypeId::I16:
-					return Value(*((int16_t *)rawDataPtr));
+					valueOut = (*((int16_t *)rawDataPtr));
+					break;
 				case TypeId::I32:
-					return Value(*((int32_t *)rawDataPtr));
+					valueOut = (*((int32_t *)rawDataPtr));
+					break;
 				case TypeId::I64:
-					return Value(*((int64_t *)rawDataPtr));
+					valueOut = (*((int64_t *)rawDataPtr));
+					break;
 				case TypeId::U8:
-					return Value(*((uint8_t *)rawDataPtr));
+					valueOut = (*((uint8_t *)rawDataPtr));
+					break;
 				case TypeId::U16:
-					return Value(*((uint16_t *)rawDataPtr));
+					valueOut = (*((uint16_t *)rawDataPtr));
+					break;
 				case TypeId::U32:
-					return Value(*((uint32_t *)rawDataPtr));
+					valueOut = (*((uint32_t *)rawDataPtr));
+					break;
 				case TypeId::U64:
-					return Value(*((uint64_t *)rawDataPtr));
+					valueOut = (*((uint64_t *)rawDataPtr));
+					break;
 				case TypeId::F32:
-					return Value(*((float *)rawDataPtr));
+					valueOut = (*((float *)rawDataPtr));
+					break;
 				case TypeId::F64:
-					return Value(*((double *)rawDataPtr));
+					valueOut = (*((double *)rawDataPtr));
+					break;
 				case TypeId::Bool:
-					return Value(*((bool *)rawDataPtr));
+					valueOut = (*((bool *)rawDataPtr));
+					break;
 				case TypeId::String:
 				case TypeId::Instance:
 				case TypeId::Array:
 				case TypeId::Fn:
-					return Value(Reference::makeObjectRef(*((Object **)rawDataPtr)));
+					valueOut = Reference::makeObjectRef(*((Object **)rawDataPtr));
+					break;
 				case TypeId::StructInstance:
-					return entityRef;
+					valueOut = entityRef;
+					break;
 				case TypeId::Ref:
-					return Value(*((Reference *)rawDataPtr));
+					valueOut = (*((Reference *)rawDataPtr));
+					break;
 				case TypeId::Any:
-					return Value(*((Value *)rawDataPtr));
+					valueOut = (*((Value *)rawDataPtr));
+					break;
 				default:
 					// All fields should be checked during the instantiation.
 					std::terminate();
@@ -198,27 +208,38 @@ SLAKE_API Value Runtime::readVarUnsafe(const Reference &entityRef) const noexcep
 
 			switch (t.typeId) {
 				case TypeId::I8:
-					return Value(*((int8_t *)(rawDataPtr)));
+					valueOut = (*((int8_t *)(rawDataPtr)));
+					break;
 				case TypeId::I16:
-					return Value(*((int16_t *)(rawDataPtr)));
+					valueOut = (*((int16_t *)(rawDataPtr)));
+					break;
 				case TypeId::I32:
-					return Value(*((int32_t *)(rawDataPtr)));
+					valueOut = (*((int32_t *)(rawDataPtr)));
+					break;
 				case TypeId::I64:
-					return Value(*((int64_t *)(rawDataPtr)));
+					valueOut = (*((int64_t *)(rawDataPtr)));
+					break;
 				case TypeId::U8:
-					return Value(*((uint8_t *)(rawDataPtr)));
+					valueOut = (*((uint8_t *)(rawDataPtr)));
+					break;
 				case TypeId::U16:
-					return Value(*((uint16_t *)(rawDataPtr)));
+					valueOut = (*((uint16_t *)(rawDataPtr)));
+					break;
 				case TypeId::U32:
-					return Value(*((uint32_t *)(rawDataPtr)));
+					valueOut = (*((uint32_t *)(rawDataPtr)));
+					break;
 				case TypeId::U64:
-					return Value(*((uint64_t *)(rawDataPtr)));
+					valueOut = (*((uint64_t *)(rawDataPtr)));
+					break;
 				case TypeId::F32:
-					return Value(*((float *)(rawDataPtr)));
+					valueOut = (*((float *)(rawDataPtr)));
+					break;
 				case TypeId::F64:
-					return Value(*((double *)(rawDataPtr)));
+					valueOut = (*((double *)(rawDataPtr)));
+					break;
 				case TypeId::Bool:
-					return Value(*((bool *)(rawDataPtr)));
+					valueOut = (*((bool *)(rawDataPtr)));
+					break;
 				case TypeId::String:
 				case TypeId::Instance:
 				case TypeId::Array:
@@ -227,7 +248,8 @@ SLAKE_API Value Runtime::readVarUnsafe(const Reference &entityRef) const noexcep
 						std::terminate();
 					}
 
-					return Value(Reference::makeObjectRef(*((Object **)(rawDataPtr + sizeof(void *)))));
+					valueOut = (Reference::makeObjectRef(*((Object **)(rawDataPtr + sizeof(void *)))));
+					break;
 				case TypeId::StructInstance: {
 					if (!stackTopCheck(rawDataPtr + sizeof(void *), stackTop)) {
 						std::terminate();
@@ -238,12 +260,15 @@ SLAKE_API Value Runtime::readVarUnsafe(const Reference &entityRef) const noexcep
 					sr.structObject = (StructObject *)((CustomTypeDefObject *)*(TypeDefObject **)(rawDataPtr))->typeObject;
 					sr.basePtr = &((TypeDefObject **)rawDataPtr)[1];
 
-					return Value(Reference::makeStructRef(sr));
+					valueOut = (Reference::makeStructRef(sr));
+					break;
 				}
 				case TypeId::Ref:
-					return Value(*((Reference *)(rawDataPtr)));
+					valueOut = (*((Reference *)(rawDataPtr)));
+					break;
 				case TypeId::Any:
-					return Value(*((Value *)(rawDataPtr)));
+					valueOut = (*((Value *)(rawDataPtr)));
+					break;
 				default:
 					// All fields should be checked during the instantiation.
 					std::terminate();
@@ -278,27 +303,38 @@ SLAKE_API Value Runtime::readVarUnsafe(const Reference &entityRef) const noexcep
 
 			switch (t.typeId) {
 				case TypeId::I8:
-					return Value(*((int8_t *)(rawDataPtr)));
+					valueOut = (*((int8_t *)(rawDataPtr)));
+					break;
 				case TypeId::I16:
-					return Value(*((int16_t *)(rawDataPtr)));
+					valueOut = (*((int16_t *)(rawDataPtr)));
+					break;
 				case TypeId::I32:
-					return Value(*((int32_t *)(rawDataPtr)));
+					valueOut = (*((int32_t *)(rawDataPtr)));
+					break;
 				case TypeId::I64:
-					return Value(*((int64_t *)(rawDataPtr)));
+					valueOut = (*((int64_t *)(rawDataPtr)));
+					break;
 				case TypeId::U8:
-					return Value(*((uint8_t *)(rawDataPtr)));
+					valueOut = (*((uint8_t *)(rawDataPtr)));
+					break;
 				case TypeId::U16:
-					return Value(*((uint16_t *)(rawDataPtr)));
+					valueOut = (*((uint16_t *)(rawDataPtr)));
+					break;
 				case TypeId::U32:
-					return Value(*((uint32_t *)(rawDataPtr)));
+					valueOut = (*((uint32_t *)(rawDataPtr)));
+					break;
 				case TypeId::U64:
-					return Value(*((uint64_t *)(rawDataPtr)));
+					valueOut = (*((uint64_t *)(rawDataPtr)));
+					break;
 				case TypeId::F32:
-					return Value(*((float *)(rawDataPtr)));
+					valueOut = (*((float *)(rawDataPtr)));
+					break;
 				case TypeId::F64:
-					return Value(*((double *)(rawDataPtr)));
+					valueOut = (*((double *)(rawDataPtr)));
+					break;
 				case TypeId::Bool:
-					return Value(*((bool *)(rawDataPtr)));
+					valueOut = (*((bool *)(rawDataPtr)));
+					break;
 				case TypeId::String:
 				case TypeId::Instance:
 				case TypeId::Array:
@@ -307,7 +343,8 @@ SLAKE_API Value Runtime::readVarUnsafe(const Reference &entityRef) const noexcep
 						std::terminate();
 					}
 
-					return Value(Reference::makeObjectRef(*((Object **)(rawDataPtr + sizeof(void *)))));
+					valueOut = (Reference::makeObjectRef(*((Object **)(rawDataPtr + sizeof(void *)))));
+					break;
 				case TypeId::StructInstance: {
 					if (!stackTopCheck(rawDataPtr + sizeof(void *), stackTop)) {
 						std::terminate();
@@ -321,12 +358,15 @@ SLAKE_API Value Runtime::readVarUnsafe(const Reference &entityRef) const noexcep
 					sr.structObject = (StructObject *)((CustomTypeDefObject *)td)->typeObject;
 					sr.basePtr = &ptd[1];
 
-					return Value(Reference::makeStructRef(sr));
+					valueOut = (Reference::makeStructRef(sr));
+					break;
 				}
 				case TypeId::Ref:
-					return Value(*((Reference *)(rawDataPtr)));
+					valueOut = (*((Reference *)(rawDataPtr)));
+					break;
 				case TypeId::Any:
-					return Value(*((Value *)(rawDataPtr)));
+					valueOut = (*((Value *)(rawDataPtr)));
+					break;
 				default:
 					// All fields should be checked during the instantiation.
 					std::terminate();
@@ -343,38 +383,53 @@ SLAKE_API Value Runtime::readVarUnsafe(const Reference &entityRef) const noexcep
 
 			switch (fieldRecord.type.typeId) {
 				case TypeId::I8:
-					return Value(*((int8_t *)rawFieldPtr));
+					valueOut = (*((int8_t *)rawFieldPtr));
+					break;
 				case TypeId::I16:
-					return Value(*((int16_t *)rawFieldPtr));
+					valueOut = (*((int16_t *)rawFieldPtr));
+					break;
 				case TypeId::I32:
-					return Value(*((int32_t *)rawFieldPtr));
+					valueOut = (*((int32_t *)rawFieldPtr));
+					break;
 				case TypeId::I64:
-					return Value(*((int64_t *)rawFieldPtr));
+					valueOut = (*((int64_t *)rawFieldPtr));
+					break;
 				case TypeId::U8:
-					return Value(*((uint8_t *)rawFieldPtr));
+					valueOut = (*((uint8_t *)rawFieldPtr));
+					break;
 				case TypeId::U16:
-					return Value(*((uint16_t *)rawFieldPtr));
+					valueOut = (*((uint16_t *)rawFieldPtr));
+					break;
 				case TypeId::U32:
-					return Value(*((uint32_t *)rawFieldPtr));
+					valueOut = (*((uint32_t *)rawFieldPtr));
+					break;
 				case TypeId::U64:
-					return Value(*((uint64_t *)rawFieldPtr));
+					valueOut = (*((uint64_t *)rawFieldPtr));
+					break;
 				case TypeId::F32:
-					return Value(*((float *)rawFieldPtr));
+					valueOut = (*((float *)rawFieldPtr));
+					break;
 				case TypeId::F64:
-					return Value(*((double *)rawFieldPtr));
+					valueOut = (*((double *)rawFieldPtr));
+					break;
 				case TypeId::Bool:
-					return Value(*((bool *)rawFieldPtr));
+					valueOut = (*((bool *)rawFieldPtr));
+					break;
 				case TypeId::String:
 				case TypeId::Instance:
 				case TypeId::Array:
 				case TypeId::Fn:
-					return Value(Reference::makeObjectRef(*((Object **)rawFieldPtr)));
+					valueOut = (Reference::makeObjectRef(*((Object **)rawFieldPtr)));
+					break;
 				case TypeId::StructInstance:
-					return entityRef;
+					valueOut = entityRef;
+					break;
 				case TypeId::Ref:
-					return Value(*((Reference *)rawFieldPtr));
+					valueOut = (*((Reference *)rawFieldPtr));
+					break;
 				case TypeId::Any:
-					return Value(*((Value *)rawFieldPtr));
+					valueOut = (*((Value *)rawFieldPtr));
+					break;
 				default:
 					// All fields should be checked during the instantiation.
 					std::terminate();
@@ -386,38 +441,53 @@ SLAKE_API Value Runtime::readVarUnsafe(const Reference &entityRef) const noexcep
 
 			switch (entityRef.asArrayElement.arrayObject->elementType.typeId) {
 				case TypeId::I8:
-					return Value(((int8_t *)entityRef.asArrayElement.arrayObject->data)[entityRef.asArrayElement.index]);
+					valueOut = (((int8_t *)entityRef.asArrayElement.arrayObject->data)[entityRef.asArrayElement.index]);
+					break;
 				case TypeId::I16:
-					return Value(((int16_t *)entityRef.asArrayElement.arrayObject->data)[entityRef.asArrayElement.index]);
+					valueOut = (((int16_t *)entityRef.asArrayElement.arrayObject->data)[entityRef.asArrayElement.index]);
+					break;
 				case TypeId::I32:
-					return Value(((int32_t *)entityRef.asArrayElement.arrayObject->data)[entityRef.asArrayElement.index]);
+					valueOut = (((int32_t *)entityRef.asArrayElement.arrayObject->data)[entityRef.asArrayElement.index]);
+					break;
 				case TypeId::I64:
-					return Value(((int64_t *)entityRef.asArrayElement.arrayObject->data)[entityRef.asArrayElement.index]);
+					valueOut = (((int64_t *)entityRef.asArrayElement.arrayObject->data)[entityRef.asArrayElement.index]);
+					break;
 				case TypeId::U8:
-					return Value(((uint8_t *)entityRef.asArrayElement.arrayObject->data)[entityRef.asArrayElement.index]);
+					valueOut = (((uint8_t *)entityRef.asArrayElement.arrayObject->data)[entityRef.asArrayElement.index]);
+					break;
 				case TypeId::U16:
-					return Value(((uint16_t *)entityRef.asArrayElement.arrayObject->data)[entityRef.asArrayElement.index]);
+					valueOut = (((uint16_t *)entityRef.asArrayElement.arrayObject->data)[entityRef.asArrayElement.index]);
+					break;
 				case TypeId::U32:
-					return Value(((uint32_t *)entityRef.asArrayElement.arrayObject->data)[entityRef.asArrayElement.index]);
+					valueOut = (((uint32_t *)entityRef.asArrayElement.arrayObject->data)[entityRef.asArrayElement.index]);
+					break;
 				case TypeId::U64:
-					return Value(((uint64_t *)entityRef.asArrayElement.arrayObject->data)[entityRef.asArrayElement.index]);
+					valueOut = (((uint64_t *)entityRef.asArrayElement.arrayObject->data)[entityRef.asArrayElement.index]);
+					break;
 				case TypeId::F32:
-					return Value(((float *)entityRef.asArrayElement.arrayObject->data)[entityRef.asArrayElement.index]);
+					valueOut = (((float *)entityRef.asArrayElement.arrayObject->data)[entityRef.asArrayElement.index]);
+					break;
 				case TypeId::F64:
-					return Value(((double *)entityRef.asArrayElement.arrayObject->data)[entityRef.asArrayElement.index]);
+					valueOut = (((double *)entityRef.asArrayElement.arrayObject->data)[entityRef.asArrayElement.index]);
+					break;
 				case TypeId::Bool:
-					return Value(((bool *)entityRef.asArrayElement.arrayObject->data)[entityRef.asArrayElement.index]);
+					valueOut = (((bool *)entityRef.asArrayElement.arrayObject->data)[entityRef.asArrayElement.index]);
+					break;
 				case TypeId::Instance:
 				case TypeId::String:
 				case TypeId::Array:
 				case TypeId::Fn:
-					return Value(Reference::makeObjectRef(((Object **)entityRef.asArrayElement.arrayObject->data)[entityRef.asArrayElement.index]));
+					valueOut = (Reference::makeObjectRef(((Object **)entityRef.asArrayElement.arrayObject->data)[entityRef.asArrayElement.index]));
+					break;
 				case TypeId::StructInstance:
-					return entityRef;
+					valueOut = entityRef;
+					break;
 				case TypeId::Ref:
-					return Value(((Reference *)entityRef.asArrayElement.arrayObject->data)[entityRef.asArrayElement.index]);
+					valueOut = (((Reference *)entityRef.asArrayElement.arrayObject->data)[entityRef.asArrayElement.index]);
+					break;
 				case TypeId::Any:
-					return Value(((Value *)entityRef.asArrayElement.arrayObject->data)[entityRef.asArrayElement.index]);
+					valueOut = (((Value *)entityRef.asArrayElement.arrayObject->data)[entityRef.asArrayElement.index]);
+					break;
 				default:
 					std::terminate();
 			}
@@ -426,17 +496,18 @@ SLAKE_API Value Runtime::readVarUnsafe(const Reference &entityRef) const noexcep
 		case ReferenceKind::ArgRef: {
 			const ArgRecord &argRecord = entityRef.asArg.majorFrame->resumable->argStack.at(entityRef.asArg.argIndex);
 
-			return argRecord.value;
+			valueOut = argRecord.value;
+			break;
 		}
 		case ReferenceKind::CoroutineArgRef: {
 			if (entityRef.asCoroutineArg.coroutine->curContext) {
 				const ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->resumable->argStack.at(entityRef.asArg.argIndex);
 
-				return argRecord.value;
+				valueOut = argRecord.value;
 			} else {
 				const ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->curMajorFrame->resumable->argStack.at(entityRef.asArg.argIndex);
 
-				return argRecord.value;
+				valueOut = argRecord.value;
 			}
 			break;
 		}
@@ -447,53 +518,69 @@ SLAKE_API Value Runtime::readVarUnsafe(const Reference &entityRef) const noexcep
 
 			switch (fieldRecord.type.typeId) {
 				case TypeId::I8:
-					return Value(*((int8_t *)rawDataPtr));
+					valueOut = (*((int8_t *)rawDataPtr));
+					break;
 				case TypeId::I16:
-					return Value(*((int16_t *)rawDataPtr));
+					valueOut = (*((int16_t *)rawDataPtr));
+					break;
 				case TypeId::I32:
-					return Value(*((int32_t *)rawDataPtr));
+					valueOut = (*((int32_t *)rawDataPtr));
+					break;
 				case TypeId::I64:
-					return Value(*((int64_t *)rawDataPtr));
+					valueOut = (*((int64_t *)rawDataPtr));
+					break;
 				case TypeId::U8:
-					return Value(*((uint8_t *)rawDataPtr));
+					valueOut = (*((uint8_t *)rawDataPtr));
+					break;
 				case TypeId::U16:
-					return Value(*((uint16_t *)rawDataPtr));
+					valueOut = (*((uint16_t *)rawDataPtr));
+					break;
 				case TypeId::U32:
-					return Value(*((uint32_t *)rawDataPtr));
+					valueOut = (*((uint32_t *)rawDataPtr));
+					break;
 				case TypeId::U64:
-					return Value(*((uint64_t *)rawDataPtr));
+					valueOut = (*((uint64_t *)rawDataPtr));
+					break;
 				case TypeId::F32:
-					return Value(*((float *)rawDataPtr));
+					valueOut = (*((float *)rawDataPtr));
+					break;
 				case TypeId::F64:
-					return Value(*((double *)rawDataPtr));
+					valueOut = (*((double *)rawDataPtr));
+					break;
 				case TypeId::Bool:
-					return Value(*((bool *)rawDataPtr));
+					valueOut = (*((bool *)rawDataPtr));
+					break;
 				case TypeId::String:
 				case TypeId::Instance:
 				case TypeId::Array:
 				case TypeId::Fn:
-					return Value(Reference::makeObjectRef(*((Object **)rawDataPtr)));
+					valueOut = (Reference::makeObjectRef(*((Object **)rawDataPtr)));
+					break;
 				case TypeId::StructInstance: {
 					StructRef sr;
 
 					sr.structObject = (StructObject *)(fieldRecord.type.getCustomTypeDef())->typeObject;
 					sr.basePtr = (void *)rawDataPtr;
 
-					return Value(Reference::makeStructRef(sr));
+					valueOut = (Reference::makeStructRef(sr));
+					break;
 				}
 				case TypeId::Ref:
-					return Value(*((Reference *)rawDataPtr));
+					valueOut = (*((Reference *)rawDataPtr));
+					break;
 				case TypeId::Any:
-					return Value(*((Value *)rawDataPtr));
+					valueOut = (*((Value *)rawDataPtr));
+					break;
 				default:
 					// All fields should be checked during the instantiation.
 					std::terminate();
 			}
+			break;
 		}
 		default:
-			break;
+			std::terminate();
 	}
-	std::terminate();
+	return {};
 }
 
 SLAKE_API InternalExceptionPointer Runtime::writeVar(const Reference &entityRef, const Value &value) const noexcept {

@@ -19,17 +19,9 @@
 
 #if SLAKE_BUILD_SHARED
 	#if SLAKE_IS_BUILDING
-
-		#if SLAKE_BUILD_SHARED
-			#define SLAKE_API SLAKE_DLLEXPORT
-		#endif
-
+		#define SLAKE_API SLAKE_DLLEXPORT
 	#else
-
-		#if SLAKE_BUILD_SHARED
-			#define SLAKE_API SLAKE_DLLIMPORT
-		#endif
-
+		#define SLAKE_API SLAKE_DLLIMPORT
 	#endif
 #else
 	#define SLAKE_API

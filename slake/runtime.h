@@ -352,7 +352,7 @@ namespace slake {
 			}
 		};
 
-		[[nodiscard]] SLAKE_API InternalExceptionPointer invalidateGenericCache(MemberObject *i);
+		SLAKE_API void invalidateGenericCache(MemberObject *i);
 
 		/// @brief Instantiate an generic value (e.g. generic class, etc).
 		/// @param v Object to be instantiated.

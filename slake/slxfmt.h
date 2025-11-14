@@ -13,11 +13,6 @@
 
 #include "opcode.h"
 
-#ifdef _MSC_VER
-	#pragma pack(push)
-	#pragma pack(1)
-#endif
-
 namespace slake {
 	namespace slxfmt {
 		constexpr static uint8_t GENERIC_PARAM_MAX = 16;
@@ -243,9 +238,5 @@ namespace slake {
 		};
 	}
 }
-
-#ifdef _MSC_VER
-	#pragma pack(pop)
-#endif
 
 #endif

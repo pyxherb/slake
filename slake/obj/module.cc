@@ -100,14 +100,16 @@ SLAKE_API bool ModuleObject::appendFieldRecord(FieldRecord &&fieldRecord) {
 	}
 	FieldRecord &fr = fieldRecords.back();
 	if (!fieldRecordIndices.insert(fr.name, fieldRecordIndices.size())) {
-		fieldRecords.popBack();
+		if (!fieldRecords.popBack())
+			fieldRecords.popBackWithoutShrink();
 		return false;
 	}
 
 	if (char *p = appendTypedFieldSpace(fr.type); p) {
 		fr.offset = p - localFieldStorage.data();
 	} else {
-		fieldRecords.popBack();
+		if (!fieldRecords.popBack())
+			fieldRecords.popBackWithoutShrink();
 		return false;
 	}
 

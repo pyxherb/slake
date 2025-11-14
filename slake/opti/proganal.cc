@@ -714,7 +714,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfoPass(
 							} else if (index == fnObject->paramTypes.size()) {
 								TypeRef varArgTypeRef;
 
-								wrapIntoArrayType(analyzeContext.runtime, varArgTypeRef, analyzeContext.hostRefHolder, varArgTypeRef);
+								wrapIntoArrayType(analyzeContext.runtime, TypeId::Any, analyzeContext.hostRefHolder, varArgTypeRef);
 								SLAKE_RETURN_IF_EXCEPT(
 									wrapIntoRefType(
 										runtime,

@@ -58,7 +58,7 @@ struct Runtime::GenericInstantiationDispatcher {
 	}
 };
 
-SLAKE_API InternalExceptionPointer Runtime::invalidateGenericCache(MemberObject *i) {
+SLAKE_API void Runtime::invalidateGenericCache(MemberObject *i) {
 	if (_genericCacheLookupTable.contains(i)) {
 		// Remove the value from generic cache if it is unreachable.
 		auto &lookupEntry = _genericCacheLookupTable.at(i);
@@ -71,8 +71,6 @@ SLAKE_API InternalExceptionPointer Runtime::invalidateGenericCache(MemberObject 
 
 		_genericCacheLookupTable.remove(i);
 	}
-
-	return {};
 }
 
 SLAKE_API InternalExceptionPointer Runtime::setGenericCache(MemberObject *object, const GenericArgList &genericArgs, MemberObject *instantiatedObject) {

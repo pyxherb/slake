@@ -347,7 +347,7 @@ int main(int argc, char **argv) {
 			}
 			for (auto it = analyzedInfo.analyzedRegInfo.begin(); it != analyzedInfo.analyzedRegInfo.end(); ++it) {
 				printf("Register #%u\n", it.key());
-				printf("Lifetime: %zu-%zu\n", it.value().lifetime.offBeginIns, it.value().lifetime.offEndIns);
+				printf("Lifetime: %u-%u\n", it.value().lifetime.offBeginIns, it.value().lifetime.offEndIns);
 			}
 
 			{

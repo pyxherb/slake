@@ -1,8 +1,8 @@
 # Slake
 
-<div align="center">
+<div style="text-align: center">
     <img src="./common/logo2.svg" alt="Slake logo"><br/>
-    <big>The object-oriented, type-safe, embeddable programming language</big>
+    <strong>The object-oriented, type-safe, embeddable programming language</strong>
 </div>
 
 ## Introduction

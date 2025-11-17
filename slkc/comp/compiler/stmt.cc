@@ -201,11 +201,12 @@ SLKC_API peff::Option<CompilationError> slkc::compileStmt(
 			uint32_t bodyLabel;
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocLabel(bodyLabel));
 
-			uint32_t breakLabel, continueLabel;
+			uint32_t breakLabel, continueLabel, stepLabel;
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocLabel(breakLabel));
 			compilationContext->setBreakLabel(breakLabel, compilationContext->getBlockLevel());
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocLabel(continueLabel));
 			compilationContext->setContinueLabel(continueLabel, compilationContext->getBlockLevel());
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocLabel(stepLabel));
 
 			for (auto &i : s->varDefEntries) {
 				if (compilationContext->getLocalVarInCurLevel(i->name)) {
@@ -360,17 +361,27 @@ SLKC_API peff::Option<CompilationError> slkc::compileStmt(
 
 				SLKC_RETURN_IF_COMP_ERROR(
 					compilationContext->emitIns(
-						sldIndex, slake::Opcode::JT,
+						sldIndex, slake::Opcode::BR,
 						UINT32_MAX,
-						{ slake::Value(slake::ValueType::Label, bodyLabel), slake::Value(slake::ValueType::RegIndex, conditionReg) }));
+						{ slake::Value(slake::ValueType::RegIndex, conditionReg), slake::Value(slake::ValueType::Label, stepLabel), slake::Value(slake::ValueType::Label, breakLabel) }));
+
+				compilationContext->setLabelOffset(stepLabel, compilationContext->getCurInsOff());
+				SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, s->step, ExprEvalPurpose::Stmt, {}, UINT32_MAX, result));
 			} else {
 				compilationContext->setLabelOffset(continueLabel, compilationContext->getCurInsOff());
+				compilationContext->setLabelOffset(stepLabel, compilationContext->getCurInsOff());
 
 				{
 					CompileExprResult result(compileEnv->allocator.get());
-					SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, s->cond, ExprEvalPurpose::Stmt, {}, UINT32_MAX, result));
+					SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, s->step, ExprEvalPurpose::Stmt, {}, UINT32_MAX, result));
 				}
 			}
+
+			SLKC_RETURN_IF_COMP_ERROR(
+				compilationContext->emitIns(
+					sldIndex, slake::Opcode::JMP,
+					UINT32_MAX,
+					{ slake::Value(slake::ValueType::Label, bodyLabel) }));
 
 			compilationContext->setLabelOffset(breakLabel, compilationContext->getCurInsOff());
 
@@ -430,9 +441,9 @@ SLKC_API peff::Option<CompilationError> slkc::compileStmt(
 
 			SLKC_RETURN_IF_COMP_ERROR(
 				compilationContext->emitIns(
-					sldIndex, slake::Opcode::JT,
+					sldIndex, slake::Opcode::BR,
 					UINT32_MAX,
-					{ slake::Value(slake::ValueType::Label, bodyLabel), slake::Value(slake::ValueType::RegIndex, conditionReg) }));
+					{ slake::Value(slake::ValueType::RegIndex, conditionReg), slake::Value(slake::ValueType::Label, bodyLabel), slake::Value(slake::ValueType::Label, breakLabel) }));
 
 			compilationContext->setLabelOffset(breakLabel, compilationContext->getCurInsOff());
 			break;
@@ -513,15 +524,18 @@ SLKC_API peff::Option<CompilationError> slkc::compileStmt(
 
 			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileEnv, compilationContext, reg, ExprEvalPurpose::RValue, boolType.template castTo<TypeNameNode>(), s->cond, exprType));
 
-			uint32_t endLabel, falseLabel;
+			uint32_t endLabel, trueLabel, falseLabel;
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocLabel(endLabel));
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocLabel(trueLabel));
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocLabel(falseLabel));
 
 			SLKC_RETURN_IF_COMP_ERROR(
 				compilationContext->emitIns(
-					sldIndex, slake::Opcode::JF,
+					sldIndex, slake::Opcode::BR,
 					UINT32_MAX,
-					{ slake::Value(slake::ValueType::Label, falseLabel) }));
+					{ slake::Value(slake::ValueType::RegIndex, reg), slake::Value(slake::ValueType::Label, trueLabel), slake::Value(slake::ValueType::Label, falseLabel) }));
+
+			compilationContext->setLabelOffset(trueLabel, compilationContext->getCurInsOff());
 
 			SLKC_RETURN_IF_COMP_ERROR(compileStmt(compileEnv, compilationContext, s->trueBody));
 
@@ -747,7 +761,12 @@ SLKC_API peff::Option<CompilationError> slkc::compileStmt(
 						if (!prevCaseConditions.insert(AstNodePtr<ExprNode>(resultExpr)))
 							return genOutOfMemoryCompError();
 
-						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::JT, UINT32_MAX, { slake::Value(slake::ValueType::Label, evalValueLabel), slake::Value(slake::ValueType::RegIndex, cmpResultReg) }));
+						uint32_t succeededValueLabel;
+						SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocLabel(succeededValueLabel));
+
+						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::BR, UINT32_MAX, { slake::Value(slake::ValueType::RegIndex, cmpResultReg), slake::Value(slake::ValueType::Label, evalValueLabel), slake::Value(slake::ValueType::Label, succeededValueLabel) }));
+
+						compilationContext->setLabelOffset(succeededValueLabel, compilationContext->getCurInsOff());
 					}
 
 					matchValueEvalLabels.insert(s->caseOffsets.at(i), +evalValueLabel);
@@ -817,7 +836,12 @@ SLKC_API peff::Option<CompilationError> slkc::compileStmt(
 							SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, cmpExpr.template castTo<ExprNode>(), ExprEvalPurpose::RValue, boolTypeName.template castTo<TypeNameNode>(), cmpResultReg, cmpExprResult));
 						}
 
-						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::JT, UINT32_MAX, { slake::Value(slake::ValueType::Label, evalValueLabel), slake::Value(slake::ValueType::RegIndex, cmpResultReg) }));
+						uint32_t succeededValueLabel;
+						SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocLabel(succeededValueLabel));
+
+						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::BR, UINT32_MAX, { slake::Value(slake::ValueType::RegIndex, cmpResultReg), slake::Value(slake::ValueType::Label, evalValueLabel), slake::Value(slake::ValueType::Label, succeededValueLabel) }));
+
+						compilationContext->setLabelOffset(succeededValueLabel, compilationContext->getCurInsOff());
 					}
 
 					matchValueEvalLabels.insert(s->caseOffsets.at(i), +evalValueLabel);

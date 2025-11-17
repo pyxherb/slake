@@ -7,6 +7,7 @@ namespace slake {
 	namespace opti {
 		struct BasicBlock final {
 			peff::DynArray<Instruction> instructions;
+			uint32_t linksToLabel = UINT32_MAX;
 
 			SLAKE_API BasicBlock(peff::Alloc *allocator);
 			SLAKE_API BasicBlock(BasicBlock &&rhs);

@@ -54,8 +54,7 @@ namespace slake {
 		AT,	 // Subscript
 
 		JMP,  // Jump
-		JT,	  // Jump if true
-		JF,	  // Jump if false
+		BR,	  // Branch
 
 		PUSHARG,  // Push an value into the argument stack
 		PUSHAP,	  // Push an argument pack.

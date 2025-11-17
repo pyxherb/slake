@@ -11,8 +11,7 @@ bool opti::isInsHasSideEffect(Opcode opcode) {
 		case Opcode::ENTER:
 		case Opcode::LEAVE:
 		case Opcode::JMP:
-		case Opcode::JT:
-		case Opcode::JF:
+		case Opcode::BR:
 		case Opcode::PUSHARG:
 		case Opcode::PUSHAP:
 		case Opcode::CALL:
@@ -901,34 +900,6 @@ InternalExceptionPointer slake::opti::analyzeProgramInfoPass(
 					break;
 				}
 				case Opcode::JMP:
-					if (regIndex != UINT32_MAX) {
-						return allocOutOfMemoryErrorIfAllocFailed(
-							MalformedProgramError::alloc(
-								runtime->getFixedAlloc(),
-								fnObject,
-								i));
-					}
-
-					if (!analyzeContext.analyzedInfoOut.codeBlockBoundaries.insert(i + 1))
-						return OutOfMemoryError::alloc();
-					if (!analyzeContext.analyzedInfoOut.codeBlockBoundaries.insert(curIns.operands[0].getU32()))
-						return OutOfMemoryError::alloc();
-					break;
-				case Opcode::JT:
-					if (regIndex != UINT32_MAX) {
-						return allocOutOfMemoryErrorIfAllocFailed(
-							MalformedProgramError::alloc(
-								runtime->getFixedAlloc(),
-								fnObject,
-								i));
-					}
-
-					if (!analyzeContext.analyzedInfoOut.codeBlockBoundaries.insert(i + 1))
-						return OutOfMemoryError::alloc();
-					if (!analyzeContext.analyzedInfoOut.codeBlockBoundaries.insert(curIns.operands[0].getU32()))
-						return OutOfMemoryError::alloc();
-					break;
-				case Opcode::JF:
 					if (regIndex != UINT32_MAX) {
 						return allocOutOfMemoryErrorIfAllocFailed(
 							MalformedProgramError::alloc(

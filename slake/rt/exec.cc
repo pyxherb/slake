@@ -1625,37 +1625,20 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 			curMajorFrame->resumable->curIns = ins.operands[0].getU32();
 			return {};
 		}
-		case Opcode::JT: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount(this, ins, false, 2));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType(this, ins.operands[0], ValueType::U32));
+		case Opcode::BR: {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount(this, ins, false, 3));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType(this, ins.operands[1], ValueType::U32));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType(this, ins.operands[2], ValueType::U32));
 			Value condition;
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, ins.operands[1], condition));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, ins.operands[0], condition));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType(this, condition, ValueType::Bool));
 
-			if (condition.getBool()) {
-				curMajorFrame->resumable->lastJumpSrc = curMajorFrame->resumable->curIns;
-				curMajorFrame->resumable->curIns = ins.operands[0].getU32();
-				return {};
-			}
-			curMajorFrame->resumable->lastJumpSrc = UINT32_MAX;
-
-			break;
-		}
-		case Opcode::JF: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount(this, ins, false, 2));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType(this, ins.operands[0], ValueType::U32));
-			Value condition;
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, ins.operands[1], condition));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType(this, condition, ValueType::Bool));
-
-			if (!condition.getBool()) {
-				curMajorFrame->resumable->lastJumpSrc = curMajorFrame->resumable->curIns;
-				curMajorFrame->resumable->curIns = ins.operands[0].getU32();
-				return {};
-			}
-			curMajorFrame->resumable->lastJumpSrc = UINT32_MAX;
-
-			break;
+			curMajorFrame->resumable->lastJumpSrc = curMajorFrame->resumable->curIns;
+			if (condition.getBool())
+				curMajorFrame->resumable->curIns = ins.operands[1].getU32();
+			else
+				curMajorFrame->resumable->curIns = ins.operands[2].getU32();
+			return {};
 		}
 		case Opcode::PUSHARG: {
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount(this, ins, false, 1));

@@ -39,25 +39,18 @@ SLAKE_API InternalExceptionPointer slake::opti::divideInstructionsIntoBasicBlock
 					return OutOfMemoryError::alloc();
 				break;
 			}
-			case Opcode::JT: {
-				if (ins.nOperands != 2)
+			case Opcode::BR: {
+				if (ins.nOperands != 3)
 					return MalformedProgramError::alloc(rt->getFixedAlloc(), fnOverloading, i);
-				if (ins.operands[0].valueType != ValueType::U32)
+				if (ins.operands[1].valueType != ValueType::U32)
 					return MalformedProgramError::alloc(rt->getFixedAlloc(), fnOverloading, i);
-				if (!basicBlockBoundaries.insert(i + 1))
-					return OutOfMemoryError::alloc();
-				if (!basicBlockBoundaries.insert(ins.operands[0].getU32()))
-					return OutOfMemoryError::alloc();
-				break;
-			}
-			case Opcode::JF: {
-				if (ins.nOperands != 2)
-					return MalformedProgramError::alloc(rt->getFixedAlloc(), fnOverloading, i);
-				if (ins.operands[0].valueType != ValueType::U32)
+				if (ins.operands[2].valueType != ValueType::U32)
 					return MalformedProgramError::alloc(rt->getFixedAlloc(), fnOverloading, i);
 				if (!basicBlockBoundaries.insert(i + 1))
 					return OutOfMemoryError::alloc();
-				if (!basicBlockBoundaries.insert(ins.operands[0].getU32()))
+				if (!basicBlockBoundaries.insert(ins.operands[1].getU32()))
+					return OutOfMemoryError::alloc();
+				if (!basicBlockBoundaries.insert(ins.operands[2].getU32()))
 					return OutOfMemoryError::alloc();
 				break;
 			}
@@ -120,11 +113,14 @@ SLAKE_API InternalExceptionPointer slake::opti::divideInstructionsIntoBasicBlock
 				memcpy(newInstruction.operands, originalInstruction.operands, sizeof(Value) * newInstruction.nOperands);
 
 				switch (newInstruction.opcode) {
-					case Opcode::JMP:
-					case Opcode::JT:
-					case Opcode::JF: {
+					case Opcode::JMP: {
 						const uint32_t dest = newInstruction.operands[0].getU32();
 						newInstruction.operands[0] = Value(ValueType::Label, basicBlockMap.at(dest));
+						break;
+					}
+					case Opcode::BR: {
+						newInstruction.operands[1] = Value(ValueType::Label, basicBlockMap.at(newInstruction.operands[1].getU32()));
+						newInstruction.operands[2] = Value(ValueType::Label, basicBlockMap.at(newInstruction.operands[2].getU32()));
 						break;
 					}
 					default:

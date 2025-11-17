@@ -52,7 +52,7 @@ SLAKE_API bool slake::isValueTypeCompatibleTypeId(TypeId typeId) {
 	return false;
 }
 
-SLAKE_API ValueType typeIdToValueType(TypeId typeId) {
+SLAKE_API ValueType slake::typeIdToValueType(TypeId typeId) {
 	switch (typeId) {
 		case TypeId::I8:
 			return ValueType::I8;

@@ -200,13 +200,18 @@ peff::Option<CompilationError> slkc::_compileSimpleLAndBinaryExpr(
 				}
 			}
 
-			uint32_t phiSrcOff = compilationContext->getCurInsOff();
+			uint32_t postBranchLabelId;
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocLabel(postBranchLabelId));
+
+			uint32_t postBranchPhiSrcOff = compilationContext->getCurInsOff();
 
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
 				idxSld,
-				slake::Opcode::JF,
+				slake::Opcode::BR,
 				UINT32_MAX,
-				{ slake::Value(slake::ValueType::Label, rhsReg), slake::Value(slake::ValueType::RegIndex, lhsReg) }));
+				{ slake::Value(slake::ValueType::RegIndex, lhsReg), slake::Value(slake::ValueType::Label, postBranchLabelId), slake::Value(slake::ValueType::Label, cmpEndLabelId) }));
+
+			compilationContext->setLabelOffset(postBranchLabelId, compilationContext->getCurInsOff());
 
 			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileEnv, compilationContext, rhsReg, ExprEvalPurpose::RValue, boolType.template castTo<TypeNameNode>(), expr->rhs, rhsType));
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
@@ -215,14 +220,22 @@ peff::Option<CompilationError> slkc::_compileSimpleLAndBinaryExpr(
 				tmpResultReg,
 				{ slake::Value(slake::ValueType::RegIndex, lhsReg), slake::Value(slake::ValueType::RegIndex, rhsReg) }));
 
+			uint32_t cmpEndPhiSrcOff = compilationContext->getCurInsOff();
+
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
+				idxSld,
+				slake::Opcode::JMP,
+				UINT32_MAX,
+				{ slake::Value(slake::ValueType::Label, cmpEndLabelId) }));
+
 			compilationContext->setLabelOffset(cmpEndLabelId, compilationContext->getCurInsOff());
 
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
 				idxSld,
 				slake::Opcode::PHI,
 				tmpResultReg,
-				{ slake::Value((uint32_t)phiSrcOff), slake::Value(slake::ValueType::RegIndex, lhsReg),
-					slake::Value((uint32_t)UINT32_MAX), slake::Value(slake::ValueType::RegIndex, tmpResultReg) }));
+				{ slake::Value((uint32_t)postBranchPhiSrcOff), slake::Value(slake::ValueType::RegIndex, lhsReg),
+					slake::Value((uint32_t)cmpEndPhiSrcOff), slake::Value(slake::ValueType::RegIndex, tmpResultReg) }));
 
 			break;
 		}
@@ -279,13 +292,18 @@ peff::Option<CompilationError> slkc::_compileSimpleLOrBinaryExpr(
 				}
 			}
 
-			uint32_t phiSrcOff = compilationContext->getCurInsOff();
+			uint32_t postBranchLabelId;
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocLabel(postBranchLabelId));
+
+			uint32_t postBranchPhiSrcOff = compilationContext->getCurInsOff();
 
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
 				idxSld,
-				slake::Opcode::JF,
+				slake::Opcode::BR,
 				UINT32_MAX,
-				{ slake::Value(slake::ValueType::Label, cmpEndLabelId), slake::Value(slake::ValueType::RegIndex, lhsReg) }));
+				{ slake::Value(slake::ValueType::RegIndex, lhsReg), slake::Value(slake::ValueType::Label, cmpEndLabelId), slake::Value(slake::ValueType::Label, postBranchLabelId) }));
+
+			compilationContext->setLabelOffset(postBranchLabelId, compilationContext->getCurInsOff());
 
 			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileEnv, compilationContext, rhsReg, ExprEvalPurpose::RValue, boolType.template castTo<TypeNameNode>(), expr->rhs, rhsType));
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
@@ -294,14 +312,22 @@ peff::Option<CompilationError> slkc::_compileSimpleLOrBinaryExpr(
 				tmpResultReg,
 				{ slake::Value(slake::ValueType::RegIndex, lhsReg), slake::Value(slake::ValueType::RegIndex, rhsReg) }));
 
+			uint32_t cmpEndPhiSrcOff = compilationContext->getCurInsOff();
+
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
+				idxSld,
+				slake::Opcode::JMP,
+				UINT32_MAX,
+				{ slake::Value(slake::ValueType::Label, cmpEndLabelId) }));
+
 			compilationContext->setLabelOffset(cmpEndLabelId, compilationContext->getCurInsOff());
 
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
 				idxSld,
 				slake::Opcode::PHI,
 				tmpResultReg,
-				{ slake::Value((uint32_t)phiSrcOff), slake::Value(slake::ValueType::RegIndex, lhsReg),
-					slake::Value((uint32_t)UINT32_MAX), slake::Value(slake::ValueType::RegIndex, tmpResultReg) }));
+				{ slake::Value((uint32_t)postBranchPhiSrcOff), slake::Value(slake::ValueType::RegIndex, lhsReg),
+					slake::Value((uint32_t)cmpEndPhiSrcOff), slake::Value(slake::ValueType::RegIndex, tmpResultReg) }));
 
 			break;
 		}

@@ -323,7 +323,7 @@ int main(int argc, char **argv) {
 
 			overloading = fn->overloadings.at(slake::FnSignature(params, false, 0, slake::TypeId::Void));
 
-			slake::opti::ProgramAnalyzedInfo analyzedInfo(rt.get(), &myAllocator);
+			/* slake::opti::ProgramAnalyzedInfo analyzedInfo(rt.get(), &myAllocator);
 			if (auto e = slake::opti::analyzeProgramInfoPass(rt.get(), &myAllocator, (slake::RegularFnOverloadingObject *)overloading, analyzedInfo, hostRefHolder);
 				e) {
 				printf("Internal exception: %s\n", e->what());
@@ -348,7 +348,7 @@ int main(int argc, char **argv) {
 			for (auto it = analyzedInfo.analyzedRegInfo.begin(); it != analyzedInfo.analyzedRegInfo.end(); ++it) {
 				printf("Register #%u\n", it.key());
 				printf("Lifetime: %u-%u\n", it.value().lifetime.offBeginIns, it.value().lifetime.offEndIns);
-			}
+			}*/
 
 			{
 				slake::HostObjectRef<slake::CoroutineObject> co;

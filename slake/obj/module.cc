@@ -86,12 +86,8 @@ SLAKE_API bool ModuleObject::addMember(MemberObject *member) {
 	return true;
 }
 
-SLAKE_API void ModuleObject::removeMember(const std::string_view &name) {
-	members.remove(name);
-}
-
-SLAKE_API bool ModuleObject::removeMemberAndTrim(const std::string_view &name) {
-	return members.removeAndResizeBuckets(name);
+SLAKE_API bool ModuleObject::removeMember(const std::string_view &name) {
+	return members.remove(name);
 }
 
 SLAKE_API bool ModuleObject::appendFieldRecord(FieldRecord &&fieldRecord) {

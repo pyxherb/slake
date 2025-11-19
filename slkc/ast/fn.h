@@ -8,7 +8,8 @@
 namespace slkc {
 	using FnFlags = uint32_t;
 
-	constexpr static FnFlags FN_PURE = 0x00000001, FN_VARG = 0x00000002, FN_VIRTUAL = 0x00000004;
+	constexpr static FnFlags FN_VARG = 0x00000001, FN_VIRTUAL = 0x00000002, FN_LVALUE = 0x00000004;
+	constexpr static const char *LVALUE_OPERATOR_NAME_SUFFIX = "_L";
 
 	class FnOverloadingNode;
 
@@ -22,6 +23,13 @@ namespace slkc {
 		SLKC_API FnNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
 		SLKC_API FnNode(const FnNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut);
 		SLKC_API virtual ~FnNode();
+	};
+
+	enum class FnOverloadingKind : uint8_t {
+		Invalid = 0,
+		Regular,
+		Pure,
+		Coroutine
 	};
 
 	class FnOverloadingNode : public MemberNode {
@@ -42,12 +50,14 @@ namespace slkc {
 		peff::DynArray<size_t> idxGenericParamCommaTokens;
 		size_t lAngleBracketIndex = SIZE_MAX;
 		size_t rAngleBracketIndex = SIZE_MAX;
+		size_t lvalueMarkerIndex = SIZE_MAX;
 
 		AstNodePtr<TypeNameNode> returnType;
 
 		AstNodePtr<TypeNameNode> overridenType;
 
 		AstNodePtr<CodeBlockStmtNode> body;
+		FnOverloadingKind overloadingKind;
 		FnFlags fnFlags = 0;
 
 		SLKC_API FnOverloadingNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);

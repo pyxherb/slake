@@ -633,6 +633,46 @@ void dumpCompilationError(peff::SharedPtr<slkc::Parser> parser, const slkc::Comp
 				beginToken->sourceLocation.beginPosition.line + 1,
 				beginToken->sourceLocation.beginPosition.column + 1);
 			break;
+		case slkc::CompilationErrorKind::RequiresInitialValue:
+			printError("Error at %zu, %zu: Requires an initial value\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
+		case slkc::CompilationErrorKind::ErrorDeducingVarType:
+			printError("Error at %zu, %zu: Error deducing the variable type\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
+		case slkc::CompilationErrorKind::TypeIsNotUnpackable:
+			printError("Error at %zu, %zu: Type is not unpackable\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
+		case slkc::CompilationErrorKind::InvalidVarArgHintDuringInstantiation:
+			printError("Error at %zu, %zu: Invalid variable argument hint during generic instantiation\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
+		case slkc::CompilationErrorKind::CannotBeUnpackedInThisContext:
+			printError("Error at %zu, %zu: Cannot be unpacked here\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
+		case slkc::CompilationErrorKind::TypeIsNotSubstitutable:
+			printError("Error at %zu, %zu: Type is not substitutable\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
+		case slkc::CompilationErrorKind::RequiresCompTimeExpr:
+			printError("Error at %zu, %zu: Requires a compile-time expression\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
+		case slkc::CompilationErrorKind::TypeArgTypeMismatched:
+			printError("Error at %zu, %zu: Type of type arguments mismatched\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
 		case slkc::CompilationErrorKind::InterfaceMethodsConflicted:
 			printError("Error at %zu, %zu: Interface methods conflicted\n",
 				beginToken->sourceLocation.beginPosition.line + 1,

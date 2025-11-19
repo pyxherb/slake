@@ -288,6 +288,10 @@ SLAKE_API InternalExceptionPointer slake::isCompatible(peff::Alloc *allocator, c
 				return {};
 			}
 			Object *objectPtr = entityRef.asObject;
+			if (!objectPtr) {
+				resultOut = true;
+				return {};
+			}
 			if (objectPtr->getObjectKind() != ObjectKind::Array) {
 				resultOut = false;
 				return {};

@@ -129,6 +129,7 @@ namespace slkc {
 		ConstKeyword,
 		ContinueKeyword,
 		DeleteKeyword,
+		DefKeyword,
 		DefaultKeyword,
 		DoKeyword,
 		ElseKeyword,

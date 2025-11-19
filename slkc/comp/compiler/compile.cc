@@ -571,6 +571,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileValueExpr(
 			valueOut = slake::Value(entityRef);
 			break;
 		}
+		case ExprKind::InitializerList:
+			return CompilationError(expr->tokenRange, CompilationErrorKind::RequiresCompTimeExpr);
 		default:
 			std::terminate();
 	}

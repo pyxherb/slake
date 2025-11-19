@@ -327,19 +327,30 @@ end:
 SLKC_API peff::Option<SyntaxError> Parser::parseFn(AstNodePtr<FnOverloadingNode> &fnNodeOut) {
 	peff::Option<SyntaxError> syntaxError;
 
-	FnFlags initialFlags = 0;
 	Token *fnToken;
+	Token *lvalueMarkerToken = nullptr;
 
 	peff::String name(resourceAllocator.get());
+
+	if (!(fnNodeOut = makeAstNode<FnOverloadingNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
+		return genOutOfMemoryError();
+	}
 
 	switch ((fnToken = peekToken())->tokenId) {
 		case TokenId::FnKeyword: {
 			nextToken();
 
-			Token *generatorMarkerToken;
-			if ((generatorMarkerToken = peekToken())->tokenId == TokenId::MulOp) {
-				nextToken();
+			fnNodeOut->overloadingKind = FnOverloadingKind::Regular;
+
+			if ((syntaxError = parseIdName(name))) {
+				return syntaxError;
 			}
+			break;
+		}
+		case TokenId::AsyncKeyword: {
+			nextToken();
+
+			fnNodeOut->overloadingKind = FnOverloadingKind::Coroutine;
 
 			if ((syntaxError = parseIdName(name))) {
 				return syntaxError;
@@ -349,6 +360,14 @@ SLKC_API peff::Option<SyntaxError> Parser::parseFn(AstNodePtr<FnOverloadingNode>
 		case TokenId::OperatorKeyword: {
 			nextToken();
 
+			fnNodeOut->overloadingKind = FnOverloadingKind::Regular;
+
+			Token *lvalueMarkerToken;
+			if ((lvalueMarkerToken = peekToken())->tokenId == TokenId::AssignOp) {
+				fnNodeOut->fnFlags |= FN_LVALUE;
+				nextToken();
+			}
+
 			std::string_view operatorName;
 			if ((syntaxError = parseOperatorName(operatorName))) {
 				return syntaxError;
@@ -357,19 +376,30 @@ SLKC_API peff::Option<SyntaxError> Parser::parseFn(AstNodePtr<FnOverloadingNode>
 			if (!name.build(operatorName)) {
 				return genOutOfMemoryError();
 			}
+
+			if (fnNodeOut->fnFlags & FN_LVALUE) {
+				if (!name.append(LVALUE_OPERATOR_NAME_SUFFIX))
+					return genOutOfMemoryError();
+			}
+			break;
+		}
+		case TokenId::DefKeyword: {
+			nextToken();
+
+			fnNodeOut->overloadingKind = FnOverloadingKind::Pure;
+
+			if ((syntaxError = parseIdName(name))) {
+				return syntaxError;
+			}
 			break;
 		}
 		default:
 			return SyntaxError(TokenRange{ document->mainModule, fnToken->index }, SyntaxErrorKind::UnexpectedToken);
 	}
 
-	if (!(fnNodeOut = makeAstNode<FnOverloadingNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
-		return genOutOfMemoryError();
-	}
-
 	switch (curParent->getAstNodeType()) {
 		case AstNodeType::Interface:
-			fnNodeOut->fnFlags |= FN_VIRTUAL;
+			fnNodeOut->fnFlags = FN_VIRTUAL;
 			break;
 		default:
 			break;
@@ -386,8 +416,6 @@ SLKC_API peff::Option<SyntaxError> Parser::parseFn(AstNodePtr<FnOverloadingNode>
 	});
 
 	fnNodeOut->name = std::move(name);
-
-	fnNodeOut->fnFlags = initialFlags;
 
 	if ((syntaxError = parseGenericParams(fnNodeOut->genericParams, fnNodeOut->idxGenericParamCommaTokens, fnNodeOut->lAngleBracketIndex, fnNodeOut->rAngleBracketIndex))) {
 		return syntaxError;
@@ -644,7 +672,9 @@ accessModifierParseEnd:
 			break;
 		}
 		case TokenId::FnKeyword:
-		case TokenId::OperatorKeyword: {
+		case TokenId::AsyncKeyword:
+		case TokenId::OperatorKeyword:
+		case TokenId::DefKeyword: {
 			// Function.
 			AstNodePtr<FnOverloadingNode> fn;
 

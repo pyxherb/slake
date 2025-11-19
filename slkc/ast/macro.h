@@ -1,12 +1,9 @@
-#ifndef _SLKC_AST_FN_H_
-#define _SLKC_AST_FN_H_
+#ifndef _SLKC_AST_MACRO_H_
+#define _SLKC_AST_MACRO_H_
 
-#include "var.h"
-#include "stmt.h"
+#include "fn.h"
 
 namespace slkc {
-	using FnFlags = uint32_t;
-
 	class MacroNode : public MemberNode {
 	protected:
 		SLKC_API virtual AstNodePtr<AstNode> doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const override;

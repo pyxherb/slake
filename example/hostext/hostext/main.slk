@@ -215,7 +215,7 @@ fn t() {
 /*fn t2() -> simd_t<i32, (4 + 8)> {
 }*/
 
-public fn *main() -> i32 {
+public async main() -> i32 {
 	/*a() with 123;*/
 
 	let s: SA;

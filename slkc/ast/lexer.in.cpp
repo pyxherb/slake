@@ -94,6 +94,7 @@ SLKC_API peff::Option<LexicalError> Lexer::lex(ModuleNode *moduleNode, const std
 				<InitialCondition>"continue"	{ token->tokenId = TokenId::ContinueKeyword; break; }
 				<InitialCondition>"const"		{ token->tokenId = TokenId::ConstKeyword; break; }
 				<InitialCondition>"delete"		{ token->tokenId = TokenId::DeleteKeyword; break; }
+				<InitialCondition>"def"			{ token->tokenId = TokenId::DefKeyword; break; }
 				<InitialCondition>"default"		{ token->tokenId = TokenId::DefaultKeyword; break; }
 				<InitialCondition>"do"			{ token->tokenId = TokenId::DoKeyword; break; }
 				<InitialCondition>"else"		{ token->tokenId = TokenId::ElseKeyword; break; }

@@ -339,6 +339,34 @@ SLAKE_API MalformedProgramError *MalformedProgramError::alloc(
 	return peff::allocAndConstruct<MalformedProgramError>(selfAllocator, sizeof(std::max_align_t), selfAllocator, fnOverloading, offIns);
 }
 
+SLAKE_API MalformedCfgError::MalformedCfgError(
+	peff::Alloc *selfAllocator,
+	const opti::ControlFlowGraph *cfg,
+	size_t idxBasicBlock,
+	size_t offIns)
+	: OptimizerError(selfAllocator,
+		  OptimizerErrorCode::MalformedCfg),
+	  cfg(cfg),
+	  idxBasicBlock(idxBasicBlock),
+	  offIns(offIns) {}
+SLAKE_API MalformedCfgError::~MalformedCfgError() {}
+
+SLAKE_API const char *MalformedCfgError::what() const {
+	return "Malformed CFG";
+}
+
+SLAKE_API void MalformedCfgError::dealloc() {
+	peff::destroyAndRelease<MalformedCfgError>(selfAllocator.get(), this, sizeof(std::max_align_t));
+}
+
+SLAKE_API MalformedCfgError *MalformedCfgError::alloc(
+	peff::Alloc *selfAllocator,
+	const opti::ControlFlowGraph *cfg,
+	size_t idxBasicBlock,
+	size_t offIns) {
+	return peff::allocAndConstruct<MalformedCfgError>(selfAllocator, sizeof(std::max_align_t), selfAllocator, cfg, idxBasicBlock, offIns);
+}
+
 SLAKE_API ErrorEvaluatingObjectTypeError::ErrorEvaluatingObjectTypeError(
 	peff::Alloc *selfAllocator,
 	Object *object)

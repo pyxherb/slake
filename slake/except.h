@@ -324,6 +324,7 @@ namespace slake {
 
 	enum class OptimizerErrorCode {
 		MalformedProgram = 0,
+		MalformedCfg,
 		ErrorEvaluatingObjectType
 	};
 
@@ -355,6 +356,33 @@ namespace slake {
 		SLAKE_API static MalformedProgramError *alloc(
 			peff::Alloc *selfAllocator,
 			RegularFnOverloadingObject *fnOverloading,
+			size_t offIns);
+	};
+
+	namespace opti {
+		struct ControlFlowGraph;
+	}
+	class MalformedCfgError : public OptimizerError {
+	public:
+		const opti::ControlFlowGraph *cfg;
+		size_t idxBasicBlock;
+		size_t offIns;
+
+		SLAKE_API MalformedCfgError(
+			peff::Alloc *selfAllocator,
+			const opti::ControlFlowGraph *cfg,
+			size_t idxBasicBlock,
+			size_t offIns);
+		SLAKE_API virtual ~MalformedCfgError();
+
+		SLAKE_API virtual const char *what() const override;
+
+		SLAKE_API virtual void dealloc() override;
+
+		SLAKE_API static MalformedCfgError *alloc(
+			peff::Alloc *selfAllocator,
+			const opti::ControlFlowGraph *cfg,
+			size_t idxBasicBlock,
 			size_t offIns);
 	};
 

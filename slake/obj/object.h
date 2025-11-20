@@ -135,7 +135,7 @@ namespace slake {
 	public:
 		peff::RcObjectPtr<peff::Alloc> selfAllocator;
 		// The object will never be freed if its host reference count is not 0.
-		mutable std::atomic_uint32_t hostRefCount = 0;
+		mutable std::atomic_size_t hostRefCount = 0;
 
 		/// @brief The basic constructor.
 		/// @param rt Runtime that the value belongs to.

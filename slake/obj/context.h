@@ -137,7 +137,7 @@ namespace slake {
 		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;
 	};
 
-	SLAKE_FORCEINLINE char *calcStackAddr(char *data, size_t szStack, size_t offset) {
+	SLAKE_FORCEINLINE constexpr char *calcStackAddr(char *data, size_t szStack, size_t offset) {
 		return data + szStack - offset;
 	}
 

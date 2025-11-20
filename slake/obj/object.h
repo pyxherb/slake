@@ -149,7 +149,6 @@ namespace slake {
 
 		Object *nextWalkable;		   // New reachable objects
 		Object *nextWalked = nullptr;  // Next reached objects
-		Object **sameKindObjectList = NULL;
 		Object *prevSameKindObject = NULL;
 		Object *nextSameKindObject = NULL;
 

@@ -374,8 +374,6 @@ SLAKE_API void Runtime::addSameKindObjectToList(Object **list, Object *object) {
 
 	object->nextSameKindObject = (*list);
 
-	object->sameKindObjectList = list;
-
 	*list = object;
 }
 

@@ -96,8 +96,8 @@ namespace slake {
 		return _;                                            \
 	else                                                     \
 		;
-#define SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(name, expr) \
-	if ((bool)(name = (expr)))                       \
+#define SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(name, ...) \
+	if ((bool)(name = (__VA_ARGS__)))                       \
 		return name;                                 \
 	else                                             \
 		;

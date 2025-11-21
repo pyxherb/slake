@@ -3,11 +3,8 @@ using namespace slake;
 
 SLAKE_API InternalExceptionPointer Runtime::_findAndDispatchExceptHandler(const Value &curExcept, const MinorFrame &minorFrame, uint32_t &offsetOut) const {
 	// Find a proper exception handler.
-	bool result;
-
 	for (const auto &i : minorFrame.exceptHandlers) {
-		SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), i.type, curExcept, result));
-		if (result) {
+		if (isCompatible(i.type, curExcept)) {
 			offsetOut = i.off;
 			return {};
 		}

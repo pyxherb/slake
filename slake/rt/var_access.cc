@@ -595,8 +595,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const Reference &entityRef,
 			const FieldRecord &fieldRecord =
 				entityRef.asStaticField.moduleObject->fieldRecords.at(entityRef.asStaticField.index);
 
-			SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), fieldRecord.type, value, result));
-			if (!result) {
+			if (!isCompatible(fieldRecord.type, value)) {
 				return raiseMismatchedVarTypeError(entityRef.asStaticField.moduleObject->associatedRuntime);
 			}
 
@@ -670,85 +669,73 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const Reference &entityRef,
 
 			switch (t.typeId) {
 				case TypeId::I8:
-					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
-					if (!result) {
+					if (!isCompatible(t, value)) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
 					*((int8_t *)(rawDataPtr)) = value.getI8();
 					break;
 				case TypeId::I16:
-					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
-					if (!result) {
+					if (!isCompatible(t, value)) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
 					*((int16_t *)(rawDataPtr)) = value.getI16();
 					break;
 				case TypeId::I32:
-					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
-					if (!result) {
+					if (!isCompatible(t, value)) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
 					*((int32_t *)(rawDataPtr)) = value.getI32();
 					break;
 				case TypeId::I64:
-					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
-					if (!result) {
+					if (!isCompatible(t, value)) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
 					*((int64_t *)(rawDataPtr)) = value.getI64();
 					break;
 				case TypeId::U8:
-					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
-					if (!result) {
+					if (!isCompatible(t, value)) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
 					*((uint8_t *)(rawDataPtr)) = value.getU8();
 					break;
 				case TypeId::U16:
-					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
-					if (!result) {
+					if (!isCompatible(t, value)) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
 					*((uint16_t *)(rawDataPtr)) = value.getU16();
 					break;
 				case TypeId::U32:
-					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
-					if (!result) {
+					if (!isCompatible(t, value)) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
 					*((uint32_t *)(rawDataPtr)) = value.getU32();
 					break;
 				case TypeId::U64:
-					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
-					if (!result) {
+					if (!isCompatible(t, value)) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
 					*((uint64_t *)(rawDataPtr)) = value.getU64();
 					break;
 				case TypeId::F32:
-					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
-					if (!result) {
+					if (!isCompatible(t, value)) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
 					*((float *)(rawDataPtr)) = value.getF32();
 					break;
 				case TypeId::F64:
-					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
-					if (!result) {
+					if (!isCompatible(t, value)) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
 					*((double *)(rawDataPtr)) = value.getF64();
 					break;
 				case TypeId::Bool:
-					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
-					if (!result) {
+					if (!isCompatible(t, value)) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
 					*((bool *)(rawDataPtr)) = value.getBool();
 					break;
 				case TypeId::String:
-					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
-					if (!result) {
+					if (!isCompatible(t, value)) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
 					*((Object **)(rawDataPtr)) = value.getReference().asObject;
@@ -759,8 +746,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const Reference &entityRef,
 						std::terminate();
 					}
 					t.typeDef = *(TypeDefObject **)rawDataPtr;
-					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
-					if (!result) {
+					if (!isCompatible(t, value)) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
 					*((Object **)(rawDataPtr + sizeof(void *))) = value.getReference().asObject;
@@ -799,85 +785,73 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const Reference &entityRef,
 
 			switch (t.typeId) {
 				case TypeId::I8:
-					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
-					if (!result) {
+					if (!isCompatible(t, value)) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
 					*((int8_t *)(rawDataPtr)) = value.getI8();
 					break;
 				case TypeId::I16:
-					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
-					if (!result) {
+					if (!isCompatible(t, value)) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
 					*((int16_t *)(rawDataPtr)) = value.getI16();
 					break;
 				case TypeId::I32:
-					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
-					if (!result) {
+					if (!isCompatible(t, value)) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
 					*((int32_t *)(rawDataPtr)) = value.getI32();
 					break;
 				case TypeId::I64:
-					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
-					if (!result) {
+					if (!isCompatible(t, value)) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
 					*((int64_t *)(rawDataPtr)) = value.getI64();
 					break;
 				case TypeId::U8:
-					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
-					if (!result) {
+					if (!isCompatible(t, value)) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
 					*((uint8_t *)(rawDataPtr)) = value.getU8();
 					break;
 				case TypeId::U16:
-					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
-					if (!result) {
+					if (!isCompatible(t, value)) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
 					*((uint16_t *)(rawDataPtr)) = value.getU16();
 					break;
 				case TypeId::U32:
-					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
-					if (!result) {
+					if (!isCompatible(t, value)) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
 					*((uint32_t *)(rawDataPtr)) = value.getU32();
 					break;
 				case TypeId::U64:
-					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
-					if (!result) {
+					if (!isCompatible(t, value)) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
 					*((uint64_t *)(rawDataPtr)) = value.getU64();
 					break;
 				case TypeId::F32:
-					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
-					if (!result) {
+					if (!isCompatible(t, value)) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
 					*((float *)(rawDataPtr)) = value.getF32();
 					break;
 				case TypeId::F64:
-					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
-					if (!result) {
+					if (!isCompatible(t, value)) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
 					*((double *)(rawDataPtr)) = value.getF64();
 					break;
 				case TypeId::Bool:
-					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
-					if (!result) {
+					if (!isCompatible(t, value)) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
 					*((bool *)(rawDataPtr)) = value.getBool();
 					break;
 				case TypeId::String:
-					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
-					if (!result) {
+					if (!isCompatible(t, value)) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
 					*((Object **)(rawDataPtr)) = value.getReference().asObject;
@@ -889,8 +863,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const Reference &entityRef,
 					}
 
 					t.typeDef = *(TypeDefObject **)rawDataPtr;
-					SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), t, value, result));
-					if (!result) {
+					if (!isCompatible(t, value)) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
 					*((Object **)(rawDataPtr + sizeof(void *))) = value.getReference().asObject;
@@ -906,8 +879,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const Reference &entityRef,
 				entityRef.asObjectField.instanceObject->_class->cachedObjectLayout->fieldRecords.at(
 					entityRef.asObjectField.fieldIndex);
 
-			SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), fieldRecord.type, value, result));
-			if (!result) {
+			if (!isCompatible(fieldRecord.type, value)) {
 				return raiseMismatchedVarTypeError((Runtime *)this);
 			}
 
@@ -963,8 +935,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const Reference &entityRef,
 				return raiseInvalidArrayIndexError((Runtime *)this, entityRef.asArrayElement.index);
 			}
 
-			SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), entityRef.asArrayElement.arrayObject->elementType, value, result));
-			if (!result) {
+			if (!isCompatible(entityRef.asArrayElement.arrayObject->elementType, value)) {
 				return raiseMismatchedVarTypeError((Runtime *)this);
 			}
 
@@ -1014,8 +985,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const Reference &entityRef,
 		case ReferenceKind::ArgRef: {
 			ArgRecord &argRecord = entityRef.asArg.majorFrame->resumable->argStack.at(entityRef.asArg.argIndex);
 
-			SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), argRecord.type, value, result));
-			if (!result) {
+			if (!isCompatible(argRecord.type, value)) {
 				return raiseMismatchedVarTypeError((Runtime *)this);
 			}
 
@@ -1026,8 +996,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const Reference &entityRef,
 			if (entityRef.asCoroutineArg.coroutine->curContext) {
 				ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->curMajorFrame->resumable->argStack.at(entityRef.asArg.argIndex);
 
-				SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), argRecord.type, value, result));
-				if (!result) {
+				if (!isCompatible(argRecord.type, value)) {
 					return raiseMismatchedVarTypeError((Runtime *)this);
 				}
 
@@ -1035,8 +1004,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const Reference &entityRef,
 			} else {
 				ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->resumable->argStack.at(entityRef.asArg.argIndex);
 
-				SLAKE_RETURN_IF_EXCEPT(isCompatible(getFixedAlloc(), argRecord.type, value, result));
-				if (!result) {
+				if (!isCompatible(argRecord.type, value)) {
 					return raiseMismatchedVarTypeError((Runtime *)this);
 				}
 

@@ -1,13 +1,8 @@
 #ifndef _SLAKE_RUNTIME_H_
 #define _SLAKE_RUNTIME_H_
 
-#include <sstream>
 #include <thread>
-#include <unordered_set>
-#include <set>
-#include <list>
 #include <memory>
-#include <memory_resource>
 
 #include "slxfmt.h"
 #include "except.h"

@@ -183,60 +183,40 @@ SLAKE_API TypeRef TypeRef::duplicate(bool &succeededOut) const {
 	return newType;
 }
 
-SLAKE_API InternalExceptionPointer slake::isCompatible(peff::Alloc *allocator, const TypeRef &type, const Value &value, bool &resultOut) {
+SLAKE_API bool slake::isCompatible(const TypeRef &type, const Value &value) {
 	switch (type.typeId) {
 		case TypeId::Any:
-			resultOut = true;
-			break;
+			return true;
 		case TypeId::I8:
 		case TypeId::I16:
 		case TypeId::I32:
 		case TypeId::I64:
+		case TypeId::ISize:
 		case TypeId::U8:
 		case TypeId::U16:
 		case TypeId::U32:
 		case TypeId::U64:
+		case TypeId::USize:
 		case TypeId::F32:
-		case TypeId::F64: {
-			if (type.typeId != valueTypeToTypeId(value.valueType)) {
-				resultOut = false;
-				return {};
-			}
-			break;
-		}
+		case TypeId::F64:
+		case TypeId::Bool:
+			if (type.typeId != valueTypeToTypeId(value.valueType))
+				return true;
 		case TypeId::String: {
-			if (value.valueType != ValueType::Reference) {
-				resultOut = false;
-				return {};
-			}
+			if (value.valueType != ValueType::Reference) return true;
 			const Reference &entityRef = value.getReference();
-			if (entityRef.kind != ReferenceKind::ObjectRef) {
-				resultOut = false;
-				return {};
-			}
-			if (entityRef.asObject->getObjectKind() != ObjectKind::String) {
-				resultOut = false;
-				return {};
-			}
+			if (entityRef.kind != ReferenceKind::ObjectRef) return true;
+			if (entityRef.asObject->getObjectKind() != ObjectKind::String) return true;
 			break;
 		}
 		case TypeId::Instance: {
-			if (value.valueType != ValueType::Reference) {
-				resultOut = false;
-				return {};
-			}
+			if (value.valueType != ValueType::Reference) return true;
 
 			const Reference &entityRef = value.getReference();
-			if (entityRef.kind != ReferenceKind::ObjectRef) {
-				resultOut = false;
-				return {};
-			}
+			if (entityRef.kind != ReferenceKind::ObjectRef) return true;
 			Object *objectPtr = entityRef.asObject;
 
-			if (!objectPtr) {
-				resultOut = true;
-				return {};
-			}
+			if (!objectPtr) return true;
 
 			Object *typeObject = type.getCustomTypeDef()->typeObject;
 			switch (typeObject->getObjectKind()) {
@@ -246,15 +226,9 @@ SLAKE_API InternalExceptionPointer slake::isCompatible(peff::Alloc *allocator, c
 					ClassObject *valueClass = ((InstanceObject *)objectPtr)->_class;
 
 					if (type.isFinal()) {
-						if (thisClass != valueClass) {
-							resultOut = false;
-							return {};
-						}
+						if (thisClass != valueClass) return false;
 					} else {
-						if (!thisClass->isBaseOf(valueClass)) {
-							resultOut = false;
-							return {};
-						}
+						if (!thisClass->isBaseOf(valueClass)) return false;
 					}
 					break;
 				}
@@ -264,10 +238,7 @@ SLAKE_API InternalExceptionPointer slake::isCompatible(peff::Alloc *allocator, c
 					ClassObject *valueClass = ((InstanceObject *)objectPtr)->_class;
 
 					assert(!type.isFinal());
-					if (!valueClass->hasImplemented(thisInterface)) {
-						resultOut = false;
-						return {};
-					}
+					if (!valueClass->hasImplemented(thisInterface)) return false;
 					break;
 				}
 				default:
@@ -276,40 +247,36 @@ SLAKE_API InternalExceptionPointer slake::isCompatible(peff::Alloc *allocator, c
 
 			break;
 		}
+		case TypeId::StructInstance:
+			// stub
+			return false;
+		case TypeId::GenericArg:
+			return false;
 		case TypeId::Array: {
 			if (value.valueType != ValueType::Reference) {
-				resultOut = false;
-				return {};
+				return true;
 			}
 
 			const Reference &entityRef = value.getReference();
 			if (entityRef.kind != ReferenceKind::ObjectRef) {
-				resultOut = false;
-				return {};
+				return true;
 			}
 			Object *objectPtr = entityRef.asObject;
-			if (!objectPtr) {
-				resultOut = true;
-				return {};
-			}
+			if (!objectPtr) return true;
 			if (objectPtr->getObjectKind() != ObjectKind::Array) {
-				resultOut = false;
-				return {};
+				return true;
 			}
 
 			auto arrayObjectPtr = ((ArrayObject *)objectPtr);
 
 			if (arrayObjectPtr->elementType != (type.getArrayTypeDef()->elementType->typeRef)) {
-				resultOut = false;
-				return {};
+				return true;
 			}
 			break;
 		}
 			/*
 		case TypeId::Ref: {
-			if (value.valueType != ValueType::Reference) {
-				resultOut = false;
-				return {};
+			if (value.valueType != ValueType::Reference) {return true;
 			}
 
 			const Reference &entityRef = value.getReference();
@@ -342,19 +309,14 @@ SLAKE_API InternalExceptionPointer slake::isCompatible(peff::Alloc *allocator, c
 				return e;
 			}
 
-			if (type != type.getRefTypeDef()->referencedType->typeRef) {
-				resultOut = false;
-				return {};
+			if (type != type.getRefTypeDef()->referencedType->typeRef) {return true;
 			}
 			break;
 		}*/
 		default:
-			resultOut = false;
-			return {};
+			return false;
 	}
-
-	resultOut = true;
-	return {};
+	return true;
 }
 
 int TypeRefComparator::operator()(const TypeRef &lhs, const TypeRef &rhs) const noexcept {

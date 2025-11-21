@@ -138,7 +138,11 @@ namespace slake {
 	};
 
 	SLAKE_FORCEINLINE constexpr char *calcStackAddr(char *data, size_t szStack, size_t offset) {
-		return data + szStack - offset;
+		return data + (szStack - offset);
+	}
+
+	SLAKE_FORCEINLINE constexpr const char *calcStackAddr(const char *data, size_t szStack, size_t offset) {
+		return data + (szStack - offset);
 	}
 
 	class ExecutionRunnable : public Runnable {

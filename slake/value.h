@@ -19,18 +19,20 @@ namespace slake {
 
 	enum class ReferenceKind : uint8_t {
 		Invalid = 0,
+
 		StaticFieldRef,
-		ArrayElementRef,
-		ObjectRef,
-		InstanceFieldRef,
 		LocalVarRef,
 		CoroutineLocalVarRef,
+		InstanceFieldRef,
+		ArrayElementRef,
 		ArgRef,
-		ArgPackRef,
 		CoroutineArgRef,
+		StructFieldRef,
+
+		ObjectRef,
+		ArgPackRef,
 		AotPtrRef,
 		StructRef,
-		StructFieldRef,
 	};
 
 	class StructObject;
@@ -543,7 +545,7 @@ namespace slake {
 		SLAKE_API bool operator<(const Value &rhs) const;
 	};
 
-	SLAKE_API InternalExceptionPointer isCompatible(peff::Alloc *allocator, const TypeRef &type, const Value &value, bool &resultOut);
+	SLAKE_API bool isCompatible(const TypeRef &type, const Value &value);
 }
 
 #endif

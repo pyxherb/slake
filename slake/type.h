@@ -39,6 +39,8 @@ namespace slake {
 
 		Void,  // Void
 
+		Any,	  // Any
+
 		I8,		// Signed 8-bit integer
 		I16,	// Signed 16-bit integer
 		I32,	// Signed 32-bit integer
@@ -68,7 +70,6 @@ namespace slake {
 		ParamTypeList,	// Parameter type list
 		Unpacking,		// Unpacking
 
-		Any,	  // Any
 		Unknown,  // Unknown
 	};
 

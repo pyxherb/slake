@@ -26,7 +26,7 @@ namespace slkc {
 
 	struct Label {
 		peff::String name;
-		uint32_t offset = UINT32_MAX;
+		uint32_t offset = 0;
 
 		SLAKE_FORCEINLINE Label(peff::String &&name) : name(std::move(name)) {}
 	};

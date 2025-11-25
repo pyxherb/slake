@@ -62,7 +62,7 @@ To build Slake, you will always need:
 
 * CMake (version > 3.23)
 * A C++ compiler with C++17 support
-* A C++17 STL
+* A C++17 standard library, which at least has freestanding environment support.
 * The PEFF library
 
 ### Runtime

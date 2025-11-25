@@ -207,7 +207,8 @@ InternalExceptionPointer Runtime::_mapGenericParams(const Object *v, GenericInst
 
 				TypeRef copiedType = instantiationContext->genericArgs->at(i);
 
-				instantiationContext->mappedGenericArgs.insert(std::move(copiedName), std::move(copiedType));
+				if (!instantiationContext->mappedGenericArgs.insert(std::move(copiedName), std::move(copiedType)))
+					return OutOfMemoryError::alloc();
 			}
 			break;
 		}
@@ -225,7 +226,8 @@ InternalExceptionPointer Runtime::_mapGenericParams(const Object *v, GenericInst
 				if (!copiedName.build(value->genericParams.at(i).name))
 					return OutOfMemoryError::alloc();
 				TypeRef copiedType = instantiationContext->genericArgs->at(i);
-				instantiationContext->mappedGenericArgs.insert(std::move(copiedName), std::move(copiedType));
+				if (!instantiationContext->mappedGenericArgs.insert(std::move(copiedName), std::move(copiedType)))
+					return OutOfMemoryError::alloc();
 			}
 			break;
 		}
@@ -250,7 +252,8 @@ SLAKE_API InternalExceptionPointer Runtime::_mapGenericParams(const FnOverloadin
 
 		TypeRef copiedType = instantiationContext->genericArgs->at(i);
 
-		instantiationContext->mappedGenericArgs.insert(std::move(copiedName), std::move(copiedType));
+		if (!instantiationContext->mappedGenericArgs.insert(std::move(copiedName), std::move(copiedType)))
+			return OutOfMemoryError::alloc();
 	}
 	return {};
 }
@@ -469,7 +472,8 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(MemberObjec
 								peff::String copiedName(getFixedAlloc());
 								if (!copiedName.build(value->genericParams.at(i).name))
 									return OutOfMemoryError::alloc();
-								newInstantiationContext->mappedGenericArgs.insert(std::move(copiedName), TypeId::Invalid);
+								if (!newInstantiationContext->mappedGenericArgs.insert(std::move(copiedName), TypeId::Invalid))
+									return OutOfMemoryError::alloc();
 							}
 
 							SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(dispatcher, value->baseType, newInstantiationContext.get()));
@@ -544,7 +548,8 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(MemberObjec
 								peff::String copiedName(getFixedAlloc());
 								if (!copiedName.build(value->genericParams.at(i).name))
 									return OutOfMemoryError::alloc();
-								newInstantiationContext->mappedGenericArgs.insert(std::move(copiedName), TypeId::Invalid);
+								if (!newInstantiationContext->mappedGenericArgs.insert(std::move(copiedName), TypeId::Invalid))
+									return OutOfMemoryError::alloc();
 							}
 
 							for (auto it = value->implTypes.begin(); it != value->implTypes.end(); ++it) {
@@ -653,7 +658,8 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(MemberObjec
 										peff::String copiedName(getFixedAlloc());
 										if (!copiedName.build(j.second->genericParams.at(i).name))
 											return OutOfMemoryError::alloc();
-										newInstantiationContext->mappedGenericArgs.insert(std::move(copiedName), TypeId::Invalid);
+										if (!newInstantiationContext->mappedGenericArgs.insert(std::move(copiedName), TypeId::Invalid))
+											return OutOfMemoryError::alloc();
 									}
 
 									SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(dispatcher, j.second, newInstantiationContext.get()));
@@ -769,7 +775,8 @@ SLAKE_API InternalExceptionPointer Runtime::_instantiateGenericObject(GenericIns
 			peff::String copiedName(getFixedAlloc());
 			if (!copiedName.build(ol->genericParams.at(i).name))
 				return OutOfMemoryError::alloc();
-			newInstantiationContext.mappedGenericArgs.insert(std::move(copiedName), TypeId::Invalid);
+			if (!newInstantiationContext.mappedGenericArgs.insert(std::move(copiedName), TypeId::Invalid))
+				return OutOfMemoryError::alloc();
 		}
 
 		newInstantiationContext.mappedObject = ol->fnObject;

@@ -6,6 +6,8 @@ using namespace slkc;
 SLKC_API peff::Option<CompilationError> slkc::removeRefOfType(
 	AstNodePtr<TypeNameNode> src,
 	AstNodePtr<TypeNameNode> &typeNameOut) {
+	SLKC_RETURN_IF_COMP_ERROR(unwrapFacadeTypeName(src, src));
+
 	switch (src->typeNameKind) {
 		case TypeNameKind::Ref:
 			typeNameOut = src.template castTo<RefTypeNameNode>()->referencedType;
@@ -20,6 +22,8 @@ SLKC_API peff::Option<CompilationError> slkc::removeRefOfType(
 SLKC_API peff::Option<CompilationError> slkc::isLValueType(
 	AstNodePtr<TypeNameNode> src,
 	bool &whetherOut) {
+	SLKC_RETURN_IF_COMP_ERROR(unwrapFacadeTypeName(src, src));
+
 	if (!src) {
 		whetherOut = false;
 		return {};
@@ -38,12 +42,15 @@ SLKC_API peff::Option<CompilationError> slkc::isLValueType(
 }
 
 SLKC_API peff::Option<CompilationError> slkc::isSameType(
-	const AstNodePtr<TypeNameNode> &lhs,
-	const AstNodePtr<TypeNameNode> &rhs,
+	AstNodePtr<TypeNameNode> lhs,
+	AstNodePtr<TypeNameNode> rhs,
 	bool &whetherOut) {
 	peff::SharedPtr<Document> document = lhs->document->sharedFromThis();
 	if (document != rhs->document->sharedFromThis())
 		std::terminate();
+
+	SLKC_RETURN_IF_COMP_ERROR(unwrapFacadeTypeName(lhs, lhs));
+	SLKC_RETURN_IF_COMP_ERROR(unwrapFacadeTypeName(rhs, rhs));
 
 	if (lhs->typeNameKind != rhs->typeNameKind) {
 		whetherOut = false;
@@ -93,8 +100,10 @@ SLKC_API peff::Option<CompilationError> slkc::isSameType(
 }
 
 SLKC_API peff::Option<CompilationError> slkc::getTypePromotionLevel(
-	const AstNodePtr<TypeNameNode> &typeName,
+	AstNodePtr<TypeNameNode> typeName,
 	int &levelOut) {
+	SLKC_RETURN_IF_COMP_ERROR(unwrapFacadeTypeName(typeName, typeName));
+
 	switch (typeName->typeNameKind) {
 		case TypeNameKind::Bool:
 			levelOut = 1;
@@ -156,6 +165,9 @@ SLKC_API peff::Option<CompilationError> slkc::determinePromotionalType(
 		return {};
 	}
 
+	SLKC_RETURN_IF_COMP_ERROR(unwrapFacadeTypeName(lhs, lhs));
+	SLKC_RETURN_IF_COMP_ERROR(unwrapFacadeTypeName(rhs, rhs));
+
 	SLKC_RETURN_IF_COMP_ERROR(getTypePromotionLevel(lhs, lhsWeight));
 	SLKC_RETURN_IF_COMP_ERROR(getTypePromotionLevel(rhs, rhsWeight));
 
@@ -214,12 +226,15 @@ SLKC_API peff::Option<CompilationError> slkc::determinePromotionalType(
 }
 
 SLKC_API peff::Option<CompilationError> slkc::isSameTypeInSignature(
-	const AstNodePtr<TypeNameNode> &lhs,
-	const AstNodePtr<TypeNameNode> &rhs,
+	AstNodePtr<TypeNameNode> lhs,
+	AstNodePtr<TypeNameNode> rhs,
 	bool &whetherOut) {
 	peff::SharedPtr<Document> document = lhs->document->sharedFromThis();
 	if (document != rhs->document->sharedFromThis())
 		std::terminate();
+
+	SLKC_RETURN_IF_COMP_ERROR(unwrapFacadeTypeName(lhs, lhs));
+	SLKC_RETURN_IF_COMP_ERROR(unwrapFacadeTypeName(rhs, rhs));
 
 	if (lhs->typeNameKind != rhs->typeNameKind) {
 		whetherOut = false;
@@ -335,13 +350,16 @@ SLKC_API peff::Option<CompilationError> slkc::isSameTypeInSignature(
 }
 
 SLKC_API peff::Option<CompilationError> slkc::isTypeConvertible(
-	const AstNodePtr<TypeNameNode> &src,
-	const AstNodePtr<TypeNameNode> &dest,
+	AstNodePtr<TypeNameNode> src,
+	AstNodePtr<TypeNameNode> dest,
 	bool isSealed,
 	bool &whetherOut) {
 	peff::SharedPtr<Document> document = src->document->sharedFromThis();
 	if (document != dest->document->sharedFromThis())
 		std::terminate();
+
+	SLKC_RETURN_IF_COMP_ERROR(unwrapFacadeTypeName(src, src));
+	SLKC_RETURN_IF_COMP_ERROR(unwrapFacadeTypeName(dest, dest));
 
 	if (dest->isFinal)
 		isSealed = true;
@@ -600,6 +618,8 @@ SLKC_API peff::Option<CompilationError> slkc::_isTypeNameParamListTypeNameTree(
 		return {};
 	}
 
+	SLKC_RETURN_IF_COMP_ERROR(unwrapFacadeTypeName(type, type));
+
 	switch (type->typeNameKind) {
 		case TypeNameKind::Unpacking: {
 			whetherOut = true;
@@ -664,6 +684,8 @@ SLKC_API peff::Option<CompilationError> slkc::_doExpandParamListTypeNameTree(
 		return {};
 	}
 
+	SLKC_RETURN_IF_COMP_ERROR(unwrapFacadeTypeName(type, type));
+
 	switch (type->typeNameKind) {
 		case TypeNameKind::Unpacking: {
 			SLKC_RETURN_IF_COMP_ERROR(getUnpackedTypeOf(type, type));
@@ -710,7 +732,7 @@ SLKC_API peff::Option<CompilationError> slkc::_doExpandParamListTypeNameTree(
 	return {};
 }
 
-SLKC_API peff::Option<CompilationError> slkc::simplifyParamListTypeNameTree(
+SLKC_API peff::Option<CompilationError> slkc::unwrapParamListTypeNameTree(
 	AstNodePtr<TypeNameNode> type,
 	peff::Alloc *allocator,
 	AstNodePtr<TypeNameNode> &typeNameOut) {
@@ -736,14 +758,13 @@ SLKC_API peff::Option<CompilationError> slkc::simplifyParamListTypeNameTree(
 	return {};
 }
 
-SLKC_API peff::Option<CompilationError> slkc::_isTypeNameGenericParamFacade(
+[[nodiscard]] SLKC_API peff::Option<CompilationError> slkc::unwrapFacadeTypeName(
 	AstNodePtr<TypeNameNode> type,
-	bool &whetherOut) {
+	AstNodePtr<TypeNameNode>& typeNameOut) {
 	if (!type) {
-		whetherOut = false;
+		typeNameOut = type;
 		return {};
 	}
-
 	switch (type->typeNameKind) {
 		case TypeNameKind::Custom: {
 			AstNodePtr<TypeNameNode> t;
@@ -751,145 +772,16 @@ SLKC_API peff::Option<CompilationError> slkc::_isTypeNameGenericParamFacade(
 			SLKC_RETURN_IF_COMP_ERROR(resolveBaseOverridenCustomTypeName(type->document->sharedFromThis(), type.template castTo<CustomTypeNameNode>(), t));
 
 			if (t) {
-				whetherOut = true;
+				typeNameOut = t;
 				return {};
 			}
-			break;
-		}
-		case TypeNameKind::Array: {
-			auto t = type.template castTo<ArrayTypeNameNode>();
-
-			SLKC_RETURN_IF_COMP_ERROR(_isTypeNameGenericParamFacade(t->elementType, whetherOut));
-			if (whetherOut)
-				return {};
-
-			break;
-		}
-		case TypeNameKind::Ref: {
-			auto t = type.template castTo<RefTypeNameNode>();
-
-			SLKC_RETURN_IF_COMP_ERROR(_isTypeNameGenericParamFacade(t->referencedType, whetherOut));
-			if (whetherOut)
-				return {};
-
-			break;
-		}
-		case TypeNameKind::TempRef: {
-			auto t = type.template castTo<TempRefTypeNameNode>();
-
-			SLKC_RETURN_IF_COMP_ERROR(_isTypeNameGenericParamFacade(t->referencedType, whetherOut));
-			if (whetherOut)
-				return {};
-
-			break;
-		}
-		case TypeNameKind::Fn: {
-			auto t = type.template castTo<FnTypeNameNode>();
-
-			SLKC_RETURN_IF_COMP_ERROR(_isTypeNameGenericParamFacade(t->returnType, whetherOut));
-			if (whetherOut)
-				return {};
-
-			for (auto &i : t->paramTypes) {
-				SLKC_RETURN_IF_COMP_ERROR(_isTypeNameGenericParamFacade(i, whetherOut));
-				if (whetherOut)
-					return {};
-			}
-
-			SLKC_RETURN_IF_COMP_ERROR(_isTypeNameGenericParamFacade(t->thisType, whetherOut));
-			if (whetherOut)
-				return {};
-
 			break;
 		}
 		default:
 			break;
 	}
 
-	whetherOut = false;
-	return {};
-}
-
-SLKC_API peff::Option<CompilationError> slkc::_doExpandGenericParamFacadeTypeNameTree(
-	AstNodePtr<TypeNameNode> &type) {
-	if (!type) {
-		return {};
-	}
-
-	switch (type->typeNameKind) {
-		case TypeNameKind::Custom: {
-			AstNodePtr<TypeNameNode> t;
-
-			SLKC_RETURN_IF_COMP_ERROR(resolveBaseOverridenCustomTypeName(type->document->sharedFromThis(), type.template castTo<CustomTypeNameNode>(), t));
-
-			if (t)
-				type = t;
-			break;
-		}
-		case TypeNameKind::Array: {
-			auto t = type.template castTo<ArrayTypeNameNode>();
-
-			SLKC_RETURN_IF_COMP_ERROR(_doExpandGenericParamFacadeTypeNameTree(t->elementType));
-
-			break;
-		}
-		case TypeNameKind::Ref: {
-			auto t = type.template castTo<RefTypeNameNode>();
-
-			SLKC_RETURN_IF_COMP_ERROR(_doExpandGenericParamFacadeTypeNameTree(t->referencedType));
-
-			break;
-		}
-		case TypeNameKind::TempRef: {
-			auto t = type.template castTo<TempRefTypeNameNode>();
-
-			SLKC_RETURN_IF_COMP_ERROR(_doExpandGenericParamFacadeTypeNameTree(t->referencedType));
-
-			break;
-		}
-		case TypeNameKind::Fn: {
-			auto t = type.template castTo<FnTypeNameNode>();
-
-			SLKC_RETURN_IF_COMP_ERROR(_doExpandGenericParamFacadeTypeNameTree(t->returnType));
-
-			for (auto &i : t->paramTypes) {
-				SLKC_RETURN_IF_COMP_ERROR(_doExpandGenericParamFacadeTypeNameTree(i));
-			}
-
-			SLKC_RETURN_IF_COMP_ERROR(_doExpandGenericParamFacadeTypeNameTree(t->thisType));
-
-			break;
-		}
-		default:
-			break;
-	}
-
-	return {};
-}
-
-[[nodiscard]] SLKC_API peff::Option<CompilationError> slkc::simplifyGenericParamFacadeTypeNameTree(
-	AstNodePtr<TypeNameNode> type,
-	peff::Alloc *allocator,
-	AstNodePtr<TypeNameNode> &typeNameOut) {
-	bool b;
-
-	SLKC_RETURN_IF_COMP_ERROR(_isTypeNameGenericParamFacade(type, b));
-
-	if (!b) {
-		typeNameOut = type;
-		return {};
-	}
-
-	AstNodePtr<TypeNameNode> duplicatedType = type->duplicate<TypeNameNode>(allocator);
-
-	if (!duplicatedType) {
-		return genOutOfMemoryCompError();
-	}
-
-	SLKC_RETURN_IF_COMP_ERROR(_doExpandGenericParamFacadeTypeNameTree(duplicatedType));
-
-	typeNameOut = duplicatedType;
-
+	typeNameOut = type;
 	return {};
 }
 
@@ -898,6 +790,7 @@ SLKC_API peff::Option<CompilationError> slkc::getUnpackedTypeOf(
 	AstNodePtr<TypeNameNode> &typeNameOut) {
 	peff::SharedPtr<Document> document = type->document->sharedFromThis();
 
+	SLKC_RETURN_IF_COMP_ERROR(unwrapFacadeTypeName(type, type));
 	switch (type->typeNameKind) {
 		case TypeNameKind::Custom: {
 			AstNodePtr<MemberNode> m;
@@ -1016,7 +909,7 @@ SLKC_API peff::Option<CompilationError> slkc::fnToTypeName(
 	}
 
 	for (size_t i = 0; i < tn->paramTypes.size(); ++i) {
-		SLKC_RETURN_IF_COMP_ERROR(simplifyGenericParamFacadeTypeNameTree(fn->params.at(i)->type, compileEnv->allocator.get(), tn->paramTypes.at(i)));
+		tn->paramTypes.at(i) = fn->params.at(i)->type;
 	}
 
 	if (fn->fnFlags & FN_VARG) {

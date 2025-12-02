@@ -778,6 +778,8 @@ resolved:
 		}
 	}
 
+	typeNameOut = typeName.castTo<TypeNameNode>();
+
 	return {};
 }
 

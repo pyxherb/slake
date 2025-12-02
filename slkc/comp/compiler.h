@@ -441,23 +441,23 @@ namespace slkc {
 		AstNodePtr<TypeNameNode> src,
 		bool &whetherOut);
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> isSameType(
-		const AstNodePtr<TypeNameNode> &lhs,
-		const AstNodePtr<TypeNameNode> &rhs,
+		AstNodePtr<TypeNameNode> lhs,
+		AstNodePtr<TypeNameNode> rhs,
 		bool &whetherOut);
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> getTypePromotionLevel(
-		const AstNodePtr<TypeNameNode> &typeName,
+		AstNodePtr<TypeNameNode> typeName,
 		int &levelOut);
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> determinePromotionalType(
 		AstNodePtr<TypeNameNode> lhs,
 		AstNodePtr<TypeNameNode> rhs,
 		AstNodePtr<TypeNameNode> &typeNameOut);
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> isSameTypeInSignature(
-		const AstNodePtr<TypeNameNode> &lhs,
-		const AstNodePtr<TypeNameNode> &rhs,
+		AstNodePtr<TypeNameNode> lhs,
+		AstNodePtr<TypeNameNode> rhs,
 		bool &whetherOut);
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> isTypeConvertible(
-		const AstNodePtr<TypeNameNode> &src,
-		const AstNodePtr<TypeNameNode> &dest,
+		AstNodePtr<TypeNameNode> src,
+		AstNodePtr<TypeNameNode> dest,
 		bool isSealed,
 		bool &whetherOut);
 
@@ -466,19 +466,13 @@ namespace slkc {
 		bool &whetherOut);
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> _doExpandParamListTypeNameTree(
 		AstNodePtr<TypeNameNode> &type);
-	[[nodiscard]] SLKC_API peff::Option<CompilationError> simplifyParamListTypeNameTree(
+	[[nodiscard]] SLKC_API peff::Option<CompilationError> unwrapParamListTypeNameTree(
 		AstNodePtr<TypeNameNode> type,
 		peff::Alloc *allocator,
 		AstNodePtr<TypeNameNode> &typeNameOut);
 
-	[[nodiscard]] SLKC_API peff::Option<CompilationError> _isTypeNameGenericParamFacade(
+	[[nodiscard]] SLKC_API peff::Option<CompilationError> unwrapFacadeTypeName(
 		AstNodePtr<TypeNameNode> type,
-		bool &whetherOut);
-	[[nodiscard]] SLKC_API peff::Option<CompilationError> _doExpandGenericParamFacadeTypeNameTree(
-		AstNodePtr<TypeNameNode> &type);
-	[[nodiscard]] SLKC_API peff::Option<CompilationError> simplifyGenericParamFacadeTypeNameTree(
-		AstNodePtr<TypeNameNode> type,
-		peff::Alloc *allocator,
 		AstNodePtr<TypeNameNode> &typeNameOut);
 
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> getUnpackedTypeOf(

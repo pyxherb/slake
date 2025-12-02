@@ -380,7 +380,7 @@ static peff::Option<CompilationError> _determineNodeType(CompileEnvironment *com
 			std::terminate();
 	}
 
-	SLKC_RETURN_IF_COMP_ERROR(simplifyParamListTypeNameTree(typeNameOut, compileEnv->allocator.get(), typeNameOut));
+	SLKC_RETURN_IF_COMP_ERROR(unwrapParamListTypeNameTree(typeNameOut, compileEnv->allocator.get(), typeNameOut));
 
 	return {};
 };
@@ -1534,9 +1534,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 		case ExprKind::Cast: {
 			AstNodePtr<CastExprNode> e = expr.template castTo<CastExprNode>();
 
-			AstNodePtr<TypeNameNode> exprType, targetType;
-
-			SLKC_RETURN_IF_COMP_ERROR(simplifyGenericParamFacadeTypeNameTree(e->targetType, compileEnv->allocator.get(), targetType));
+			AstNodePtr<TypeNameNode> exprType, targetType = e->targetType;
 
 			SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileEnv, compilationContext, e->source, exprType, targetType));
 
@@ -1592,9 +1590,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 		case ExprKind::Match: {
 			AstNodePtr<MatchExprNode> e = expr.template castTo<MatchExprNode>();
 
-			AstNodePtr<TypeNameNode> returnType;
-
-			SLKC_RETURN_IF_COMP_ERROR(simplifyGenericParamFacadeTypeNameTree(e->returnType, compileEnv->allocator.get(), returnType));
+			AstNodePtr<TypeNameNode> returnType = e->returnType;
 
 			if (!returnType) {
 				if (desiredType)
@@ -1824,8 +1820,6 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 		default:
 			std::terminate();
 	}
-
-	SLKC_RETURN_IF_COMP_ERROR(simplifyGenericParamFacadeTypeNameTree(resultOut.evaluatedType, compileEnv->allocator.get(), resultOut.evaluatedType));
 
 	return {};
 }

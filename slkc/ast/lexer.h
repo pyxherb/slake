@@ -1,7 +1,7 @@
 #ifndef _SLKC_AST_LEXER_H_
 #define _SLKC_AST_LEXER_H_
 
-#include "basedefs.h"
+#include <slkc/basedefs.h>
 #include <slake/runtime.h>
 #include <peff/base/deallocable.h>
 #include <peff/containers/dynarray.h>

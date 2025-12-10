@@ -5,6 +5,10 @@
 #include <cstdlib>
 #include <algorithm>
 
+#if SLKC_WITH_LANGUAGE_SERVER
+	#include "server/server.h"
+#endif
+
 struct OptionMatchContext {
 	const int argc;
 	char **const argv;
@@ -749,6 +753,12 @@ public:
 int main(int argc, char *argv[]) {
 #ifdef _MSC_VER
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+#endif
+
+#if SLKC_WITH_LANGUAGE_SERVER
+	atexit([]() {
+		google::protobuf::ShutdownProtobufLibrary();
+	});
 #endif
 
 	peff::DynArray<peff::String> includeDirs(peff::getDefaultAlloc());

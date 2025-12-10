@@ -10,7 +10,7 @@ message Location {
 	Position column = 2;
 }
 
-enum CompletionItemType : u8 {
+enum CompletionItemType {
 	Var = 0;
 	LocalVar = 1;
 	Param = 2;

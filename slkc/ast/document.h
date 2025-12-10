@@ -1,7 +1,7 @@
 #ifndef _SLKC_DOCUMENT_H_
 #define _SLKC_DOCUMENT_H_
 
-#include "basedefs.h"
+#include <slkc/basedefs.h>
 #include <peff/containers/dynarray.h>
 #include <peff/containers/map.h>
 #include <peff/advutils/shared_ptr.h>

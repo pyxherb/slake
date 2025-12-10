@@ -15,23 +15,23 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 file(GLOB SRC *.h *.hh *.c *.cc)
 add_compile_definitions(_CRT_SECURE_NO_WARNINGS SLKC_IS_BUILDING=1)
-add_executable(slkc ${SRC} "proto/sls.proto")
+add_executable(slkc ${SRC})
 
-target_link_libraries(slkc PRIVATE slake peff_advutils_static protobuf::libprotobuf)
+target_link_libraries(slkc PRIVATE slake peff_advutils_static absl::log protobuf::libprotobuf)
 set_property(TARGET slkc PROPERTY CXX_STANDARD 17)
 
 set(SLKC_WITH_LANGUAGE_SERVER TRUE CACHE BOOL "Build SLKC with language server support")
 
 configure_file("config.h.in" ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 
-protobuf_generate(
-    TARGET slkc
-)
-
 add_subdirectory("ast")
 add_subdirectory("comp")
 add_subdirectory("decomp")
 
 if(SLKC_WITH_LANGUAGE_SERVER)
+    target_sources(slkc PRIVATE "proto/sls.proto")
+    protobuf_generate(
+        TARGET slkc
+    )
     add_subdirectory("server")
 endif()

@@ -1,16 +1,6 @@
 find_package(peff REQUIRED)
 find_package(re2c REQUIRED)
 
-if(WIN32)
-    find_package(protobuf CONFIG)
-    set(utf8_range_DIR "${protobuf_DIR}/../utf8_range")
-    #message(FATAL_ERROR "${protobuf_DIR}/../utf8_range")
-    find_package(utf8_range CONFIG REQUIRED)
-    find_package(protobuf CONFIG REQUIRED)
-else()
-    find_package(Protobuf REQUIRED)
-endif()
-
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 file(GLOB SRC *.h *.hh *.c *.cc)
@@ -18,11 +8,6 @@ add_compile_definitions(_CRT_SECURE_NO_WARNINGS SLKC_IS_BUILDING=1)
 add_executable(slkc ${SRC})
 
 target_link_libraries(slkc PRIVATE slake peff_advutils_static)
-if(WIN32)
-    target_link_libraries(slkc PRIVATE absl::log protobuf::libprotobuf)
-else()
-    target_link_libraries(slkc PRIVATE protobuf::libprotobuf)
-endif()
 set_property(TARGET slkc PROPERTY CXX_STANDARD 17)
 
 set(SLKC_WITH_LANGUAGE_SERVER TRUE CACHE BOOL "Build SLKC with language server support")
@@ -34,9 +19,5 @@ add_subdirectory("comp")
 add_subdirectory("decomp")
 
 if(SLKC_WITH_LANGUAGE_SERVER)
-    target_sources(slkc PRIVATE "proto/sls.proto")
-    protobuf_generate(
-        TARGET slkc
-    )
     add_subdirectory("server")
 endif()

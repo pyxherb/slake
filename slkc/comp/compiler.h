@@ -500,6 +500,36 @@ namespace slkc {
 		AstNodePtr<TypeNameNode> desiredType,
 		uint32_t resultRegOut,
 		CompileExprResult &resultOut);
+	[[nodiscard]] SLKC_API peff::Option<CompilationError> compileVarDefStmt(
+		CompileEnvironment *compileEnv,
+		CompilationContext *compilationContext,
+		AstNodePtr<VarDefStmtNode> s,
+		uint32_t sldIndex);
+	[[nodiscard]] SLKC_API peff::Option<CompilationError> compileForStmt(
+		CompileEnvironment *compileEnv,
+		CompilationContext *compilationContext,
+		AstNodePtr<ForStmtNode> s,
+		uint32_t sldIndex);
+	[[nodiscard]] SLKC_API peff::Option<CompilationError> compileWhileStmt(
+		CompileEnvironment *compileEnv,
+		CompilationContext *compilationContext,
+		AstNodePtr<WhileStmtNode> s,
+		uint32_t sldIndex);
+	[[nodiscard]] SLKC_API peff::Option<CompilationError> compileIfStmt(
+		CompileEnvironment *compileEnv,
+		CompilationContext *compilationContext,
+		AstNodePtr<IfStmtNode> s,
+		uint32_t sldIndex);
+	[[nodiscard]] SLKC_API peff::Option<CompilationError> compileWithStmt(
+		CompileEnvironment *compileEnv,
+		CompilationContext *compilationContext,
+		AstNodePtr<WithStmtNode> s,
+		uint32_t sldIndex);
+	[[nodiscard]] SLKC_API peff::Option<CompilationError> compileSwitchStmt(
+		CompileEnvironment *compileEnv,
+		CompilationContext *compilationContext,
+		AstNodePtr<SwitchStmtNode> s,
+		uint32_t sldIndex);
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> compileStmt(
 		CompileEnvironment *compileEnv,
 		CompilationContext *compilationContext,

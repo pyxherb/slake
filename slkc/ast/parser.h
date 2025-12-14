@@ -171,7 +171,16 @@ namespace slkc {
 		[[nodiscard]] SLKC_API peff::Option<SyntaxError> parseWhileStmt(AstNodePtr<StmtNode> &stmtOut);
 		[[nodiscard]] SLKC_API peff::Option<SyntaxError> parseDoWhileStmt(AstNodePtr<StmtNode> &stmtOut);
 		[[nodiscard]] SLKC_API peff::Option<SyntaxError> parseLetStmt(AstNodePtr<StmtNode> &stmtOut);
+		[[nodiscard]] SLKC_API peff::Option<SyntaxError> parseBreakStmt(AstNodePtr<StmtNode> &stmtOut);
+		[[nodiscard]] SLKC_API peff::Option<SyntaxError> parseContinueStmt(AstNodePtr<StmtNode> &stmtOut);
+		[[nodiscard]] SLKC_API peff::Option<SyntaxError> parseReturnStmt(AstNodePtr<StmtNode> &stmtOut);
+		[[nodiscard]] SLKC_API peff::Option<SyntaxError> parseYieldStmt(AstNodePtr<StmtNode> &stmtOut);
+		[[nodiscard]] SLKC_API peff::Option<SyntaxError> parseLabelStmt(AstNodePtr<StmtNode> &stmtOut);
+		[[nodiscard]] SLKC_API peff::Option<SyntaxError> parseCaseStmt(AstNodePtr<StmtNode> &stmtOut);
+		[[nodiscard]] SLKC_API peff::Option<SyntaxError> parseDefaultStmt(AstNodePtr<StmtNode> &stmtOut);
+		[[nodiscard]] SLKC_API peff::Option<SyntaxError> parseBlockStmt(AstNodePtr<StmtNode> &stmtOut);
 		[[nodiscard]] SLKC_API peff::Option<SyntaxError> parseSwitchStmt(AstNodePtr<StmtNode> &stmtOut);
+		[[nodiscard]] SLKC_API peff::Option<SyntaxError> parseExprStmt(AstNodePtr<StmtNode> &stmtOut);
 		[[nodiscard]] SLKC_API peff::Option<SyntaxError> parseStmt(AstNodePtr<StmtNode> &stmtOut);
 
 		[[nodiscard]] SLKC_API peff::Option<SyntaxError> parseTypeName(AstNodePtr<TypeNameNode> &typeNameOut, bool withCircumfixes = true);

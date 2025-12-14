@@ -780,6 +780,132 @@ SLKC_API peff::Option<CompilationError> slkc::compileSwitchStmt(
 	return {};
 }
 
+SLKC_API peff::Option<CompilationError> slkc::compileExprStmt(
+	CompileEnvironment* compileEnv,
+	CompilationContext* compilationContext,
+	AstNodePtr<ExprStmtNode> s,
+	uint32_t sldIndex) {
+	CompileExprResult result(compileEnv->allocator.get());
+
+	SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, s->expr, ExprEvalPurpose::Stmt, {}, UINT32_MAX, result));
+
+	return {};
+}
+
+SLKC_API peff::Option<CompilationError> slkc::compileBreakStmt(
+	CompileEnvironment *compileEnv,
+	CompilationContext *compilationContext,
+	AstNodePtr<BreakStmtNode> s,
+	uint32_t sldIndex) {
+	uint32_t breakLabelId = compilationContext->getBreakLabel();
+	if (compilationContext->getBreakLabel() == UINT32_MAX) {
+		return CompilationError(s->tokenRange, CompilationErrorKind::InvalidBreakUsage);
+	}
+	uint32_t level = compilationContext->getBreakLabelBlockLevel();
+	if (uint32_t curLevel = compilationContext->getBlockLevel();
+		curLevel > level) {
+		SLKC_RETURN_IF_COMP_ERROR(
+			compilationContext->emitIns(
+				sldIndex, slake::Opcode::LEAVE,
+				UINT32_MAX,
+				{ slake::Value(curLevel - level) }));
+	}
+	SLKC_RETURN_IF_COMP_ERROR(
+		compilationContext->emitIns(
+			sldIndex, slake::Opcode::JMP,
+			UINT32_MAX,
+			{ slake::Value(slake::ValueType::Label, breakLabelId) }));
+
+	return {};
+}
+
+SLKC_API peff::Option<CompilationError> slkc::compileContinueStmt(
+	CompileEnvironment *compileEnv,
+	CompilationContext *compilationContext,
+	AstNodePtr<ContinueStmtNode> s,
+	uint32_t sldIndex) {
+	uint32_t breakLabelId = compilationContext->getContinueLabel();
+	if (compilationContext->getContinueLabel() == UINT32_MAX) {
+		return CompilationError(s->tokenRange, CompilationErrorKind::InvalidBreakUsage);
+	}
+	uint32_t level = compilationContext->getContinueLabelBlockLevel();
+	if (uint32_t curLevel = compilationContext->getBlockLevel();
+		curLevel > level) {
+		SLKC_RETURN_IF_COMP_ERROR(
+			compilationContext->emitIns(
+				sldIndex, slake::Opcode::LEAVE,
+				UINT32_MAX,
+				{ slake::Value(curLevel - level) }));
+	}
+	SLKC_RETURN_IF_COMP_ERROR(
+		compilationContext->emitIns(
+			sldIndex, slake::Opcode::JMP,
+			UINT32_MAX,
+			{ slake::Value(slake::ValueType::Label, breakLabelId) }));
+
+	return {};
+}
+
+SLKC_API peff::Option<CompilationError> slkc::compileReturnStmt(
+	CompileEnvironment* compileEnv,
+	CompilationContext* compilationContext,
+	AstNodePtr<ReturnStmtNode> s,
+	uint32_t sldIndex) {
+	uint32_t reg;
+
+	SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(reg));
+
+	if (s->value) {
+		CompileExprResult result(compileEnv->allocator.get());
+
+		SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, s->value, ExprEvalPurpose::RValue, compileEnv->curOverloading->returnType, reg, result));
+
+		SLKC_RETURN_IF_COMP_ERROR(
+			compilationContext->emitIns(
+				sldIndex, slake::Opcode::RET,
+				UINT32_MAX,
+				{ slake::Value(slake::ValueType::RegIndex, reg) }));
+	} else {
+		SLKC_RETURN_IF_COMP_ERROR(
+			compilationContext->emitIns(
+				sldIndex, slake::Opcode::RET,
+				UINT32_MAX,
+				{}));
+	}
+
+	return {};
+}
+
+SLKC_API peff::Option<CompilationError> slkc::compileYieldStmt(
+	CompileEnvironment* compileEnv,
+	CompilationContext* compilationContext,
+	AstNodePtr<YieldStmtNode> s,
+	uint32_t sldIndex) {
+	uint32_t reg;
+
+	SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(reg));
+
+	if (s->value) {
+		CompileExprResult result(compileEnv->allocator.get());
+
+		SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, s->value, ExprEvalPurpose::RValue, compileEnv->curOverloading->returnType, reg, result));
+
+		SLKC_RETURN_IF_COMP_ERROR(
+			compilationContext->emitIns(
+				sldIndex, slake::Opcode::YIELD,
+				UINT32_MAX,
+				{ slake::Value(slake::ValueType::RegIndex, reg) }));
+	} else {
+		SLKC_RETURN_IF_COMP_ERROR(
+			compilationContext->emitIns(
+				sldIndex, slake::Opcode::YIELD,
+				UINT32_MAX,
+				{}));
+	}
+
+	return {};
+}
+
 SLKC_API peff::Option<CompilationError> slkc::compileStmt(
 	CompileEnvironment *compileEnv,
 	CompilationContext *compilationContext,
@@ -789,11 +915,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileStmt(
 
 	switch (stmt->stmtKind) {
 		case StmtKind::Expr: {
-			AstNodePtr<ExprStmtNode> s = stmt.template castTo<ExprStmtNode>();
-
-			CompileExprResult result(compileEnv->allocator.get());
-
-			SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, s->expr, ExprEvalPurpose::Stmt, {}, UINT32_MAX, result));
+			SLKC_RETURN_IF_COMP_ERROR(compileExprStmt(compileEnv, compilationContext, stmt.castTo<ExprStmtNode>(), sldIndex));
 			break;
 		}
 		case StmtKind::VarDef: {
@@ -801,45 +923,11 @@ SLKC_API peff::Option<CompilationError> slkc::compileStmt(
 			break;
 		}
 		case StmtKind::Break: {
-			uint32_t breakLabelId = compilationContext->getBreakLabel();
-			if (compilationContext->getBreakLabel() == UINT32_MAX) {
-				return CompilationError(stmt->tokenRange, CompilationErrorKind::InvalidBreakUsage);
-			}
-			uint32_t level = compilationContext->getBreakLabelBlockLevel();
-			if (uint32_t curLevel = compilationContext->getBlockLevel();
-				curLevel > level) {
-				SLKC_RETURN_IF_COMP_ERROR(
-					compilationContext->emitIns(
-						sldIndex, slake::Opcode::LEAVE,
-						UINT32_MAX,
-						{ slake::Value(curLevel - level) }));
-			}
-			SLKC_RETURN_IF_COMP_ERROR(
-				compilationContext->emitIns(
-					sldIndex, slake::Opcode::JMP,
-					UINT32_MAX,
-					{ slake::Value(slake::ValueType::Label, breakLabelId) }));
+			SLKC_RETURN_IF_COMP_ERROR(compileBreakStmt(compileEnv, compilationContext, stmt.castTo<BreakStmtNode>(), sldIndex));
 			break;
 		}
 		case StmtKind::Continue: {
-			uint32_t breakLabelId = compilationContext->getContinueLabel();
-			if (compilationContext->getContinueLabel() == UINT32_MAX) {
-				return CompilationError(stmt->tokenRange, CompilationErrorKind::InvalidBreakUsage);
-			}
-			uint32_t level = compilationContext->getContinueLabelBlockLevel();
-			if (uint32_t curLevel = compilationContext->getBlockLevel();
-				curLevel > level) {
-				SLKC_RETURN_IF_COMP_ERROR(
-					compilationContext->emitIns(
-						sldIndex, slake::Opcode::LEAVE,
-						UINT32_MAX,
-						{ slake::Value(curLevel - level) }));
-			}
-			SLKC_RETURN_IF_COMP_ERROR(
-				compilationContext->emitIns(
-					sldIndex, slake::Opcode::JMP,
-					UINT32_MAX,
-					{ slake::Value(slake::ValueType::Label, breakLabelId) }));
+			SLKC_RETURN_IF_COMP_ERROR(compileContinueStmt(compileEnv, compilationContext, stmt.castTo<ContinueStmtNode>(), sldIndex));
 			break;
 		}
 		case StmtKind::For: {
@@ -851,55 +939,11 @@ SLKC_API peff::Option<CompilationError> slkc::compileStmt(
 			break;
 		}
 		case StmtKind::Return: {
-			AstNodePtr<ReturnStmtNode> s = stmt.template castTo<ReturnStmtNode>();
-
-			uint32_t reg;
-
-			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(reg));
-
-			if (s->value) {
-				CompileExprResult result(compileEnv->allocator.get());
-
-				SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, s->value, ExprEvalPurpose::RValue, compileEnv->curOverloading->returnType, reg, result));
-
-				SLKC_RETURN_IF_COMP_ERROR(
-					compilationContext->emitIns(
-						sldIndex, slake::Opcode::RET,
-						UINT32_MAX,
-						{ slake::Value(slake::ValueType::RegIndex, reg) }));
-			} else {
-				SLKC_RETURN_IF_COMP_ERROR(
-					compilationContext->emitIns(
-						sldIndex, slake::Opcode::RET,
-						UINT32_MAX,
-						{}));
-			}
+			SLKC_RETURN_IF_COMP_ERROR(compileReturnStmt(compileEnv, compilationContext, stmt.castTo<ReturnStmtNode>(), sldIndex));
 			break;
 		}
 		case StmtKind::Yield: {
-			AstNodePtr<YieldStmtNode> s = stmt.template castTo<YieldStmtNode>();
-
-			uint32_t reg;
-
-			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(reg));
-
-			if (s->value) {
-				CompileExprResult result(compileEnv->allocator.get());
-
-				SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, s->value, ExprEvalPurpose::RValue, compileEnv->curOverloading->returnType, reg, result));
-
-				SLKC_RETURN_IF_COMP_ERROR(
-					compilationContext->emitIns(
-						sldIndex, slake::Opcode::YIELD,
-						UINT32_MAX,
-						{ slake::Value(slake::ValueType::RegIndex, reg) }));
-			} else {
-				SLKC_RETURN_IF_COMP_ERROR(
-					compilationContext->emitIns(
-						sldIndex, slake::Opcode::YIELD,
-						UINT32_MAX,
-						{}));
-			}
+			SLKC_RETURN_IF_COMP_ERROR(compileYieldStmt(compileEnv, compilationContext, stmt.castTo<YieldStmtNode>(), sldIndex));
 			break;
 		}
 		case StmtKind::If:

@@ -188,7 +188,8 @@ SLKC_API bool ModuleNode::removeMember(const std::string_view &name) noexcept {
 	if (!members.eraseRange(index, index + 1)) {
 		return false;
 	}
-	memberIndices.remove(name);
+	if (!memberIndices.remove(name))
+		return false;
 	for (auto i : memberIndices) {
 		if (i.second > index) {
 			--i.second;

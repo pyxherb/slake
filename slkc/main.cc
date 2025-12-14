@@ -358,12 +358,16 @@ void dumpSyntaxError(slkc::Parser *parser, const slkc::SyntaxError &syntaxError,
 
 			const slkc::ExpectingTokensErrorExData &exData = std::get<slkc::ExpectingTokensErrorExData>(syntaxError.exData);
 
-			auto it = exData.expectingTokenIds.begin();
+			if (exData.expectingTokenIds.size()) {
+				auto it = exData.expectingTokenIds.begin();
 
-			fprintf(stderr, "%s", slkc::getTokenName(*it));
+				fprintf(stderr, "%s", slkc::getTokenName(*it));
 
-			while (++it != exData.expectingTokenIds.end()) {
-				fprintf(stderr, " or %s", slkc::getTokenName(*it));
+				while (++it != exData.expectingTokenIds.end()) {
+					fprintf(stderr, " or %s", slkc::getTokenName(*it));
+				}
+			} else {
+				fprintf(stderr, " token");
 			}
 
 			fprintf(stderr, "\n");

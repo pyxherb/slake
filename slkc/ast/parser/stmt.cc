@@ -416,11 +416,224 @@ SLKC_API peff::Option<SyntaxError> Parser::parseLetStmt(AstNodePtr<StmtNode> &st
 	return {};
 }
 
+SLKC_API peff::Option<SyntaxError> Parser::parseBreakStmt(AstNodePtr<StmtNode> &stmtOut) {
+	peff::Option<SyntaxError> syntaxError;
+
+	nextToken();
+
+	AstNodePtr<BreakStmtNode> stmt;
+
+	if (!(stmt = makeAstNode<BreakStmtNode>(
+			  resourceAllocator.get(),
+			  resourceAllocator.get(),
+			  document))) {
+		return genOutOfMemoryError();
+	}
+
+	stmtOut = stmt.template castTo<StmtNode>();
+
+	Token *semicolonToken;
+
+	if ((syntaxError = expectToken((semicolonToken = peekToken()), TokenId::Semicolon)))
+		return syntaxError;
+
+	nextToken();
+
+	return {};
+}
+
+SLKC_API peff::Option<SyntaxError> Parser::parseContinueStmt(AstNodePtr<StmtNode> &stmtOut) {
+	peff::Option<SyntaxError> syntaxError;
+
+	nextToken();
+
+	AstNodePtr<ContinueStmtNode> stmt;
+
+	if (!(stmt = makeAstNode<ContinueStmtNode>(
+			  resourceAllocator.get(),
+			  resourceAllocator.get(),
+			  document))) {
+		return genOutOfMemoryError();
+	}
+
+	stmtOut = stmt.template castTo<StmtNode>();
+
+	Token *semicolonToken;
+
+	if ((syntaxError = expectToken((semicolonToken = peekToken()), TokenId::Semicolon)))
+		return syntaxError;
+
+	nextToken();
+
+	return {};
+}
+
+SLKC_API peff::Option<SyntaxError> Parser::parseReturnStmt(AstNodePtr<StmtNode> &stmtOut) {
+	peff::Option<SyntaxError> syntaxError;
+
+	nextToken();
+
+	nextToken();
+
+	AstNodePtr<ReturnStmtNode> stmt;
+
+	if (!(stmt = makeAstNode<ReturnStmtNode>(
+			  resourceAllocator.get(),
+			  resourceAllocator.get(),
+			  document,
+			  AstNodePtr<ExprNode>()))) {
+		return genOutOfMemoryError();
+	}
+
+	stmtOut = stmt.template castTo<StmtNode>();
+
+	static TokenId skippingTerminativeToken[] = {
+		TokenId::RParenthese,
+		TokenId::Semicolon,
+		TokenId::RBrace
+	};
+
+	switch (peekToken()->tokenId) {
+		case TokenId::Semicolon:
+			nextToken();
+			break;
+		default:
+			if ((syntaxError = parseExpr(0, stmt->value))) {
+				if ((syntaxError = lookaheadUntil(std::size(skippingTerminativeToken), skippingTerminativeToken)))
+					return syntaxError;
+				return syntaxError;
+			}
+
+			if ((syntaxError = expectToken(peekToken(), TokenId::Semicolon)))
+				return syntaxError;
+
+			nextToken();
+			break;
+	}
+
+	return {};
+}
+
+SLKC_API peff::Option<SyntaxError> Parser::parseYieldStmt(AstNodePtr<StmtNode> &stmtOut) {
+	peff::Option<SyntaxError> syntaxError;
+
+	nextToken();
+
+	AstNodePtr<YieldStmtNode> stmt;
+
+	if (!(stmt = makeAstNode<YieldStmtNode>(
+			  resourceAllocator.get(),
+			  resourceAllocator.get(),
+			  document,
+			  AstNodePtr<ExprNode>()))) {
+		return genOutOfMemoryError();
+	}
+
+	stmtOut = stmt.template castTo<StmtNode>();
+
+	static TokenId skippingTerminativeToken[] = {
+		TokenId::RParenthese,
+		TokenId::Semicolon,
+		TokenId::RBrace
+	};
+
+	switch (peekToken()->tokenId) {
+		case TokenId::Semicolon:
+			nextToken();
+			break;
+		default:
+			if ((syntaxError = parseExpr(0, stmt->value))) {
+				if ((syntaxError = lookaheadUntil(std::size(skippingTerminativeToken), skippingTerminativeToken)))
+					return syntaxError;
+				return syntaxError;
+			}
+
+			if ((syntaxError = expectToken(peekToken(), TokenId::Semicolon)))
+				return syntaxError;
+
+			nextToken();
+			break;
+	}
+
+	return {};
+}
+
+SLKC_API peff::Option<SyntaxError> Parser::parseLabelStmt(AstNodePtr<StmtNode> &stmtOut) {
+	peff::Option<SyntaxError> syntaxError;
+
+	nextToken();
+
+	AstNodePtr<LabelStmtNode> stmt;
+
+	if (!(stmt = makeAstNode<LabelStmtNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
+		return genOutOfMemoryError();
+	}
+
+	stmtOut = stmt.template castTo<StmtNode>();
+
+	if ((syntaxError = expectToken(peekToken(), TokenId::Id))) {
+		return syntaxError;
+	}
+
+	Token *nameToken = nextToken();
+
+	if (!stmt->name.build(nameToken->sourceText)) {
+		return genOutOfMemoryError();
+	}
+
+	return {};
+}
+
+SLKC_API peff::Option<SyntaxError> Parser::parseBlockStmt(AstNodePtr<StmtNode> &stmtOut) {
+	peff::Option<SyntaxError> syntaxError;
+
+	nextToken();
+
+	AstNodePtr<CodeBlockStmtNode> stmt;
+	AstNodePtr<StmtNode> curStmt;
+
+	if (!(stmt = makeAstNode<CodeBlockStmtNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
+		return genOutOfMemoryError();
+	}
+
+	stmtOut = stmt.template castTo<StmtNode>();
+
+	while (true) {
+		if ((syntaxError = expectToken(peekToken()))) {
+			return syntaxError;
+		}
+
+		if (peekToken()->tokenId == TokenId::RBrace) {
+			break;
+		}
+
+		if ((syntaxError = parseStmt(curStmt))) {
+			if (!syntaxErrors.pushBack(std::move(syntaxError.value())))
+				return genOutOfMemoryError();
+		}
+
+		if (curStmt) {
+			if (!stmt->body.pushBack(std::move(curStmt))) {
+				return genOutOfMemoryError();
+			}
+		}
+	}
+
+	Token *rBraceToken;
+
+	if ((syntaxError = expectToken((rBraceToken = peekToken()), TokenId::RBrace))) {
+		return syntaxError;
+	}
+
+	nextToken();
+
+	return {};
+}
+
 SLKC_API peff::Option<SyntaxError> Parser::parseSwitchStmt(AstNodePtr<StmtNode> &stmtOut) {
 	peff::Option<SyntaxError> syntaxError;
 
-	
-				nextToken();
+	nextToken();
 
 	AstNodePtr<SwitchStmtNode> stmt;
 
@@ -499,6 +712,80 @@ SLKC_API peff::Option<SyntaxError> Parser::parseSwitchStmt(AstNodePtr<StmtNode> 
 	return {};
 }
 
+SLKC_API peff::Option<SyntaxError> Parser::parseCaseStmt(AstNodePtr<StmtNode> &stmtOut) {
+	peff::Option<SyntaxError> syntaxError;
+
+	nextToken();
+
+	AstNodePtr<CaseLabelStmtNode> stmt;
+
+	if (!(stmt = makeAstNode<CaseLabelStmtNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
+		return genOutOfMemoryError();
+	}
+
+	stmtOut = stmt.template castTo<StmtNode>();
+
+	if ((syntaxError = parseExpr(0, stmt->condition))) {
+		return syntaxError;
+	}
+
+	if ((syntaxError = expectToken(peekToken(), TokenId::Colon))) {
+		return syntaxError;
+	}
+
+	nextToken();
+
+	return {};
+}
+
+SLKC_API peff::Option<SyntaxError> Parser::parseDefaultStmt(AstNodePtr<StmtNode> &stmtOut) {
+	peff::Option<SyntaxError> syntaxError;
+
+	nextToken();
+
+	AstNodePtr<CaseLabelStmtNode> stmt;
+
+	if (!(stmt = makeAstNode<CaseLabelStmtNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
+		return genOutOfMemoryError();
+	}
+
+	stmtOut = stmt.template castTo<StmtNode>();
+
+	if ((syntaxError = expectToken(peekToken(), TokenId::Colon))) {
+		return syntaxError;
+	}
+
+	nextToken();
+
+	return {};
+}
+
+SLKC_API peff::Option<SyntaxError> Parser::parseExprStmt(AstNodePtr<StmtNode> &stmtOut) {
+	peff::Option<SyntaxError> syntaxError;
+
+	AstNodePtr<ExprNode> curExpr;
+
+	AstNodePtr<ExprStmtNode> stmt;
+
+	if (!(stmt = makeAstNode<ExprStmtNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
+		return genOutOfMemoryError();
+	}
+
+	stmtOut = stmt.template castTo<StmtNode>();
+
+	if ((syntaxError = parseExpr(-10, stmt->expr))) {
+		if (!syntaxErrors.pushBack(std::move(syntaxError.value())))
+			return genOutOfMemoryError();
+	}
+
+	if ((syntaxError = expectToken(peekToken(), TokenId::Semicolon)))
+		return syntaxError;
+
+	nextToken();
+
+	return {};
+}
+
 SLKC_API peff::Option<SyntaxError> Parser::parseStmt(AstNodePtr<StmtNode> &stmtOut) {
 	Token *prefixToken;
 
@@ -537,279 +824,46 @@ SLKC_API peff::Option<SyntaxError> Parser::parseStmt(AstNodePtr<StmtNode> &stmtO
 				if (syntaxError = parseLetStmt(stmtOut))
 					goto genBadStmt;
 				break;
-			case TokenId::BreakKeyword: {
-				nextToken();
-
-				AstNodePtr<BreakStmtNode> stmt;
-
-				if (!(stmt = makeAstNode<BreakStmtNode>(
-						  resourceAllocator.get(),
-						  resourceAllocator.get(),
-						  document))) {
-					return genOutOfMemoryError();
-				}
-
-				stmtOut = stmt.template castTo<StmtNode>();
-
-				Token *semicolonToken;
-
-				if ((syntaxError = expectToken((semicolonToken = peekToken()), TokenId::Semicolon))) {
+			case TokenId::BreakKeyword:
+				if (syntaxError = parseBreakStmt(stmtOut))
 					goto genBadStmt;
-				}
-
-				nextToken();
-
 				break;
-			}
-			case TokenId::ContinueKeyword: {
-				nextToken();
-
-				AstNodePtr<ContinueStmtNode> stmt;
-
-				if (!(stmt = makeAstNode<ContinueStmtNode>(
-						  resourceAllocator.get(),
-						  resourceAllocator.get(),
-						  document))) {
-					return genOutOfMemoryError();
-				}
-
-				stmtOut = stmt.template castTo<StmtNode>();
-
-				Token *semicolonToken;
-
-				if ((syntaxError = expectToken((semicolonToken = peekToken()), TokenId::Semicolon))) {
+			case TokenId::ContinueKeyword:
+				if (syntaxError = parseContinueStmt(stmtOut))
 					goto genBadStmt;
-				}
-
-				nextToken();
-
 				break;
-			}
-			case TokenId::ReturnKeyword: {
-				nextToken();
-
-				AstNodePtr<ReturnStmtNode> stmt;
-
-				if (!(stmt = makeAstNode<ReturnStmtNode>(
-						  resourceAllocator.get(),
-						  resourceAllocator.get(),
-						  document,
-						  AstNodePtr<ExprNode>()))) {
-					return genOutOfMemoryError();
-				}
-
-				stmtOut = stmt.template castTo<StmtNode>();
-
-				static TokenId skippingTerminativeToken[] = {
-					TokenId::RParenthese,
-					TokenId::Semicolon,
-					TokenId::RBrace
-				};
-
-				switch (peekToken()->tokenId) {
-					case TokenId::Semicolon:
-						nextToken();
-						break;
-					default:
-						if ((syntaxError = parseExpr(0, stmt->value))) {
-							if ((syntaxError = lookaheadUntil(std::size(skippingTerminativeToken), skippingTerminativeToken))) {
-								goto genBadStmt;
-							}
-							goto genBadStmt;
-						}
-
-						if ((syntaxError = expectToken(peekToken(), TokenId::Semicolon))) {
-							goto genBadStmt;
-						}
-
-						nextToken();
-						break;
-				}
-
+			case TokenId::ReturnKeyword:
+				if (syntaxError = parseReturnStmt(stmtOut))
+					goto genBadStmt;
 				break;
-			}
-			case TokenId::YieldKeyword: {
-				nextToken();
-
-				AstNodePtr<YieldStmtNode> stmt;
-
-				if (!(stmt = makeAstNode<YieldStmtNode>(
-						  resourceAllocator.get(),
-						  resourceAllocator.get(),
-						  document,
-						  AstNodePtr<ExprNode>()))) {
-					return genOutOfMemoryError();
-				}
-
-				stmtOut = stmt.template castTo<StmtNode>();
-
-				static TokenId skippingTerminativeToken[] = {
-					TokenId::RParenthese,
-					TokenId::Semicolon,
-					TokenId::RBrace
-				};
-
-				switch (peekToken()->tokenId) {
-					case TokenId::Semicolon:
-						nextToken();
-						break;
-					default:
-						if ((syntaxError = parseExpr(0, stmt->value))) {
-							if ((syntaxError = lookaheadUntil(std::size(skippingTerminativeToken), skippingTerminativeToken))) {
-								goto genBadStmt;
-							}
-							goto genBadStmt;
-						}
-
-						if ((syntaxError = expectToken(peekToken(), TokenId::Semicolon))) {
-							goto genBadStmt;
-						}
-
-						nextToken();
-						break;
-				}
-
+			case TokenId::YieldKeyword:
+				if (syntaxError = parseYieldStmt(stmtOut))
+					goto genBadStmt;
 				break;
-			}
-			case TokenId::Colon: {
-				nextToken();
-
-				AstNodePtr<LabelStmtNode> stmt;
-
-				if (!(stmt = makeAstNode<LabelStmtNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
-					return genOutOfMemoryError();
-				}
-
-				stmtOut = stmt.template castTo<StmtNode>();
-
-				if ((syntaxError = expectToken(peekToken(), TokenId::Id))) {
-					return syntaxError;
-				}
-
-				Token *nameToken = nextToken();
-
-				if (!stmt->name.build(nameToken->sourceText)) {
-					return genOutOfMemoryError();
-				}
-
+			case TokenId::Colon:
+				if (syntaxError = parseLabelStmt(stmtOut))
+					goto genBadStmt;
 				break;
-			}
-			case TokenId::CaseKeyword: {
-				nextToken();
-
-				AstNodePtr<CaseLabelStmtNode> stmt;
-
-				if (!(stmt = makeAstNode<CaseLabelStmtNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
-					return genOutOfMemoryError();
-				}
-
-				stmtOut = stmt.template castTo<StmtNode>();
-
-				if ((syntaxError = parseExpr(0, stmt->condition))) {
-					return syntaxError;
-				}
-
-				if ((syntaxError = expectToken(peekToken(), TokenId::Colon))) {
-					return syntaxError;
-				}
-
-				nextToken();
-
+			case TokenId::CaseKeyword:
+				if (syntaxError = parseCaseStmt(stmtOut))
+					goto genBadStmt;
 				break;
-			}
-			case TokenId::DefaultKeyword: {
-				nextToken();
-
-				AstNodePtr<CaseLabelStmtNode> stmt;
-
-				if (!(stmt = makeAstNode<CaseLabelStmtNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
-					return genOutOfMemoryError();
-				}
-
-				stmtOut = stmt.template castTo<StmtNode>();
-
-				if ((syntaxError = expectToken(peekToken(), TokenId::Colon))) {
-					return syntaxError;
-				}
-
-				nextToken();
-
+			case TokenId::DefaultKeyword:
+				if (syntaxError = parseDefaultStmt(stmtOut))
+					goto genBadStmt;
 				break;
-			}
-			case TokenId::SwitchKeyword: {
+			case TokenId::SwitchKeyword:
 				if (syntaxError = parseSwitchStmt(stmtOut))
 					goto genBadStmt;
 				break;
-			}
-			case TokenId::LBrace: {
-				nextToken();
-
-				AstNodePtr<CodeBlockStmtNode> stmt;
-				AstNodePtr<StmtNode> curStmt;
-
-				if (!(stmt = makeAstNode<CodeBlockStmtNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
-					return genOutOfMemoryError();
-				}
-
-				stmtOut = stmt.template castTo<StmtNode>();
-
-				while (true) {
-					if ((syntaxError = expectToken(peekToken()))) {
-						return syntaxError;
-					}
-
-					if (peekToken()->tokenId == TokenId::RBrace) {
-						break;
-					}
-
-					if ((syntaxError = parseStmt(curStmt))) {
-						if (!syntaxErrors.pushBack(std::move(syntaxError.value())))
-							return genOutOfMemoryError();
-					}
-
-					if (curStmt) {
-						if (!stmt->body.pushBack(std::move(curStmt))) {
-							return genOutOfMemoryError();
-						}
-					}
-				}
-
-				Token *rBraceToken;
-
-				if ((syntaxError = expectToken((rBraceToken = peekToken()), TokenId::RBrace))) {
-					return syntaxError;
-				}
-
-				nextToken();
-
-				break;
-			}
-			default: {
-				AstNodePtr<ExprNode> curExpr;
-
-				AstNodePtr<ExprStmtNode> stmt;
-
-				if (!(stmt = makeAstNode<ExprStmtNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
-					return genOutOfMemoryError();
-				}
-
-				stmtOut = stmt.template castTo<StmtNode>();
-
-				if ((syntaxError = parseExpr(-10, stmt->expr))) {
-					if (!syntaxErrors.pushBack(std::move(syntaxError.value())))
-						return genOutOfMemoryError();
-					syntaxError.reset();
+			case TokenId::LBrace:
+				if (syntaxError = parseBlockStmt(stmtOut))
 					goto genBadStmt;
-				}
-
-				if ((syntaxError = expectToken(peekToken(), TokenId::Semicolon))) {
-					goto genBadStmt;
-				}
-
-				nextToken();
-
 				break;
-			}
+			default:
+				if (syntaxError = parseExprStmt(stmtOut))
+					goto genBadStmt;
+				break;
 		}
 	}
 

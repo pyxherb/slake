@@ -500,10 +500,26 @@ namespace slkc {
 		AstNodePtr<TypeNameNode> desiredType,
 		uint32_t resultRegOut,
 		CompileExprResult &resultOut);
+
+	[[nodiscard]] SLKC_API peff::Option<CompilationError> compileExprStmt(
+		CompileEnvironment *compileEnv,
+		CompilationContext *compilationContext,
+		AstNodePtr<ExprStmtNode> s,
+		uint32_t sldIndex);
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> compileVarDefStmt(
 		CompileEnvironment *compileEnv,
 		CompilationContext *compilationContext,
 		AstNodePtr<VarDefStmtNode> s,
+		uint32_t sldIndex);
+	[[nodiscard]] SLKC_API peff::Option<CompilationError> compileBreakStmt(
+		CompileEnvironment *compileEnv,
+		CompilationContext *compilationContext,
+		AstNodePtr<BreakStmtNode> s,
+		uint32_t sldIndex);
+	[[nodiscard]] SLKC_API peff::Option<CompilationError> compileContinueStmt(
+		CompileEnvironment *compileEnv,
+		CompilationContext *compilationContext,
+		AstNodePtr<ContinueStmtNode> s,
 		uint32_t sldIndex);
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> compileForStmt(
 		CompileEnvironment *compileEnv,
@@ -529,6 +545,16 @@ namespace slkc {
 		CompileEnvironment *compileEnv,
 		CompilationContext *compilationContext,
 		AstNodePtr<SwitchStmtNode> s,
+		uint32_t sldIndex);
+	[[nodiscard]] SLKC_API peff::Option<CompilationError> compileReturnStmt(
+		CompileEnvironment *compileEnv,
+		CompilationContext *compilationContext,
+		AstNodePtr<ReturnStmtNode> s,
+		uint32_t sldIndex);
+	[[nodiscard]] SLKC_API peff::Option<CompilationError> compileYieldStmt(
+		CompileEnvironment *compileEnv,
+		CompilationContext *compilationContext,
+		AstNodePtr<YieldStmtNode> s,
 		uint32_t sldIndex);
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> compileStmt(
 		CompileEnvironment *compileEnv,

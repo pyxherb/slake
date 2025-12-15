@@ -672,6 +672,8 @@ namespace slkc {
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> visitBaseClass(AstNodePtr<TypeNameNode> cls, AstNodePtr<ClassNode> &classOut, peff::Set<AstNodePtr<MemberNode>> *walkedNodes);
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> visitBaseInterface(AstNodePtr<TypeNameNode> cls, AstNodePtr<InterfaceNode> &classOut, peff::Set<AstNodePtr<MemberNode>> *walkedNodes);
 
+	[[nodiscard]] SLKC_API peff::Option<CompilationError> checkStackBounds(size_t reservedSize);
+
 	SLAKE_FORCEINLINE slake::slxfmt::SourceLocDesc tokenRangeToSld(const TokenRange &tokenRange) {
 		slake::slxfmt::SourceLocDesc sld;
 

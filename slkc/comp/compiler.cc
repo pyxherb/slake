@@ -282,7 +282,7 @@ SLKC_API peff::Option<CompilationError> slkc::completeParentModules(
 			if (!compileEnv->document->rootModule->addMember(modules.at(i).template castTo<MemberNode>())) {
 				return genOutOfMemoryCompError();
 			}
-			modules.at(i)->setParent(compileEnv->document->rootModule);
+			modules.at(i)->setParent(compileEnv->document->rootModule.get());
 		}
 	}
 
@@ -315,6 +315,19 @@ SLKC_API peff::Option<CompilationError> slkc::cleanupUnusedModuleTree(
 
 		cur = parent;
 	}
+
+	return {};
+}
+
+SLKC_API peff::Option<CompilationError> slkc::checkStackBounds(size_t reservedSize) {
+	void *base;
+	size_t size;
+	slake::getCurrentThreadStackBounds(base, size);
+
+	void *ptr = slake::estimateCurrentStackPointer();
+
+	if (((char *)ptr - (char *)base) < reservedSize)
+		return genStackOverflow();
 
 	return {};
 }

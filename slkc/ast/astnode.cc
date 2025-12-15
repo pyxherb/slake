@@ -7,7 +7,7 @@ SLAKE_API BaseAstNodeDuplicationTask::~BaseAstNodeDuplicationTask() {
 
 }
 
-SLKC_API AstNode::AstNode(AstNodeType astNodeType, peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : _astNodeType(astNodeType), selfAllocator(selfAllocator), document(document) {
+SLKC_API AstNode::AstNode(AstNodeType astNodeType, peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : _astNodeType(astNodeType), selfAllocator(selfAllocator), document(document.get()) {
 	assert(document);
 	document->clearDeferredDestructibleAstNodes();
 }

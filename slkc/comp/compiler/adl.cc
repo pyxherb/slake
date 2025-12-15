@@ -2,14 +2,16 @@
 
 using namespace slkc;
 
-SLKC_API peff::Option<CompilationError> slkc::determineFnOverloading(
-	CompileEnvironment *compileEnv,
+static peff::Option<CompilationError> _determineWithCurrentOverloading(
+	CompileEnvironment* compileEnv,
 	AstNodePtr<FnNode> fnSlot,
-	const AstNodePtr<TypeNameNode> *argTypes,
+	const AstNodePtr<TypeNameNode>* argTypes,
 	size_t nArgTypes,
 	bool isStatic,
-	peff::DynArray<AstNodePtr<FnOverloadingNode>> &matchedOverloadings,
+	peff::DynArray<AstNodePtr<FnOverloadingNode>>& matchedOverloadings,
 	peff::Set<AstNodePtr<MemberNode>> *walkedParents) {
+	SLKC_RETURN_IF_COMP_ERROR(checkStackBounds(1024 * 8));
+
 	for (size_t i = 0; i < fnSlot->overloadings.size(); ++i) {
 		bool exactlyMatched = true;
 		AstNodePtr<FnOverloadingNode> currentOverloading = fnSlot->overloadings.at(i);
@@ -55,17 +57,81 @@ SLKC_API peff::Option<CompilationError> slkc::determineFnOverloading(
 			}
 		}
 
-		mismatched:;
+	mismatched:;
+	}
+	return {};
+}
+
+static peff::Option<CompilationError> _determineWithParentModule(
+	CompileEnvironment *compileEnv,
+	AstNodePtr<FnNode> fnSlot,
+	const AstNodePtr<TypeNameNode> *argTypes,
+	size_t nArgTypes,
+	bool isStatic,
+	peff::DynArray<AstNodePtr<FnOverloadingNode>> &matchedOverloadings,
+	peff::Set<AstNodePtr<MemberNode>> *walkedParents) {
+	SLKC_RETURN_IF_COMP_ERROR(checkStackBounds(1024 * 8));
+
+	if (fnSlot->parent->parent) {
+		AstNodePtr<ModuleNode> baseType = fnSlot->parent->parent->sharedFromThis().template castTo<ModuleNode>();
+
+		if (auto it = baseType->memberIndices.find(fnSlot->name); it != baseType->memberIndices.end()) {
+			if (baseType->members.at(it.value())->getAstNodeType() != AstNodeType::FnSlot) {
+				goto baseModuleMalformed;
+			}
+
+			if (!walkedParents) {
+				peff::Set<AstNodePtr<MemberNode>> walkedParentsSet(compileEnv->allocator.get());
+				SLKC_RETURN_IF_COMP_ERROR(determineFnOverloading(compileEnv, baseType->members.at(it.value()).template castTo<FnNode>(), argTypes, nArgTypes, isStatic, matchedOverloadings, walkedParents));
+			} else {
+				SLKC_RETURN_IF_COMP_ERROR(determineFnOverloading(compileEnv, baseType->members.at(it.value()).template castTo<FnNode>(), argTypes, nArgTypes, isStatic, matchedOverloadings));
+			}
+		}
 	}
 
-	switch (fnSlot->parent->getAstNodeType()) {
-		case AstNodeType::Module: {
-			if (fnSlot->parent->parent) {
-				AstNodePtr<ModuleNode> baseType = fnSlot->parent->parent->sharedFromThis().template castTo<ModuleNode>();
+baseModuleMalformed:
+	return {};
+}
 
+static peff::Option<CompilationError> _determineWithParentClass(
+	CompileEnvironment *compileEnv,
+	AstNodePtr<FnNode> fnSlot,
+	const AstNodePtr<TypeNameNode> *argTypes,
+	size_t nArgTypes,
+	bool isStatic,
+	peff::DynArray<AstNodePtr<FnOverloadingNode>> &matchedOverloadings,
+	peff::Set<AstNodePtr<MemberNode>> *walkedParents) {
+	SLKC_RETURN_IF_COMP_ERROR(checkStackBounds(1024 * 8));
+
+	AstNodePtr<ClassNode> m = fnSlot->parent->sharedFromThis().template castTo<ClassNode>();
+	{
+		AstNodePtr<ClassNode> baseType;
+		SLKC_RETURN_IF_COMP_ERROR(visitBaseClass(m->baseType, baseType, nullptr));
+		if (baseType) {
+			if (auto it = baseType->memberIndices.find(fnSlot->name); it != baseType->memberIndices.end()) {
+				if (baseType->members.at(it.value())->getAstNodeType() != AstNodeType::FnSlot) {
+					goto classBaseClassMalformed;
+				}
+
+				if (!walkedParents) {
+					peff::Set<AstNodePtr<MemberNode>> walkedParentsSet(compileEnv->allocator.get());
+					SLKC_RETURN_IF_COMP_ERROR(determineFnOverloading(compileEnv, baseType->members.at(it.value()).template castTo<FnNode>(), argTypes, nArgTypes, isStatic, matchedOverloadings, walkedParents));
+				} else {
+					SLKC_RETURN_IF_COMP_ERROR(determineFnOverloading(compileEnv, baseType->members.at(it.value()).template castTo<FnNode>(), argTypes, nArgTypes, isStatic, matchedOverloadings));
+				}
+			}
+		}
+	}
+
+classBaseClassMalformed:
+	for (auto &i : m->implTypes) {
+		{
+			AstNodePtr<InterfaceNode> baseType;
+			SLKC_RETURN_IF_COMP_ERROR(visitBaseInterface(i, baseType, nullptr));
+			if (baseType) {
 				if (auto it = baseType->memberIndices.find(fnSlot->name); it != baseType->memberIndices.end()) {
 					if (baseType->members.at(it.value())->getAstNodeType() != AstNodeType::FnSlot) {
-						goto baseModuleMalformed;
+						continue;
 					}
 
 					if (!walkedParents) {
@@ -76,78 +142,65 @@ SLKC_API peff::Option<CompilationError> slkc::determineFnOverloading(
 					}
 				}
 			}
-
-		baseModuleMalformed:
-			break;
 		}
-		case AstNodeType::Class: {
-			AstNodePtr<ClassNode> m = fnSlot->parent->sharedFromThis().template castTo<ClassNode>();
-			{
-				AstNodePtr<ClassNode> baseType;
-				SLKC_RETURN_IF_COMP_ERROR(visitBaseClass(m->baseType, baseType, nullptr));
-				if (baseType) {
-					if (auto it = baseType->memberIndices.find(fnSlot->name); it != baseType->memberIndices.end()) {
-						if (baseType->members.at(it.value())->getAstNodeType() != AstNodeType::FnSlot) {
-							goto classBaseClassMalformed;
-						}
+	}
+	return {};
+}
 
-						if (!walkedParents) {
-							peff::Set<AstNodePtr<MemberNode>> walkedParentsSet(compileEnv->allocator.get());
-							SLKC_RETURN_IF_COMP_ERROR(determineFnOverloading(compileEnv, baseType->members.at(it.value()).template castTo<FnNode>(), argTypes, nArgTypes, isStatic, matchedOverloadings, walkedParents));
-						} else {
-							SLKC_RETURN_IF_COMP_ERROR(determineFnOverloading(compileEnv, baseType->members.at(it.value()).template castTo<FnNode>(), argTypes, nArgTypes, isStatic, matchedOverloadings));
-						}
+static peff::Option<CompilationError> _determineWithParentInterface(
+	CompileEnvironment *compileEnv,
+	AstNodePtr<FnNode> fnSlot,
+	const AstNodePtr<TypeNameNode> *argTypes,
+	size_t nArgTypes,
+	bool isStatic,
+	peff::DynArray<AstNodePtr<FnOverloadingNode>> &matchedOverloadings,
+	peff::Set<AstNodePtr<MemberNode>> *walkedParents) {
+	AstNodePtr<InterfaceNode> m = fnSlot->parent->sharedFromThis().template castTo<InterfaceNode>();
+	for (auto &i : m->implTypes) {
+		{
+			AstNodePtr<InterfaceNode> baseType;
+			SLKC_RETURN_IF_COMP_ERROR(visitBaseInterface(i, baseType, nullptr));
+			if (baseType) {
+				if (auto it = baseType->memberIndices.find(fnSlot->name); it != baseType->memberIndices.end()) {
+					if (baseType->members.at(it.value())->getAstNodeType() != AstNodeType::FnSlot) {
+						continue;
+					}
+
+					if (!walkedParents) {
+						peff::Set<AstNodePtr<MemberNode>> walkedParentsSet(compileEnv->allocator.get());
+						SLKC_RETURN_IF_COMP_ERROR(determineFnOverloading(compileEnv, baseType->members.at(it.value()).template castTo<FnNode>(), argTypes, nArgTypes, isStatic, matchedOverloadings, walkedParents));
+					} else {
+						SLKC_RETURN_IF_COMP_ERROR(determineFnOverloading(compileEnv, baseType->members.at(it.value()).template castTo<FnNode>(), argTypes, nArgTypes, isStatic, matchedOverloadings));
 					}
 				}
 			}
-
-		classBaseClassMalformed:
-			for (auto &i : m->implTypes) {
-				{
-					AstNodePtr<InterfaceNode> baseType;
-					SLKC_RETURN_IF_COMP_ERROR(visitBaseInterface(i, baseType, nullptr));
-					if (baseType) {
-						if (auto it = baseType->memberIndices.find(fnSlot->name); it != baseType->memberIndices.end()) {
-							if (baseType->members.at(it.value())->getAstNodeType() != AstNodeType::FnSlot) {
-								continue;
-							}
-
-							if (!walkedParents) {
-								peff::Set<AstNodePtr<MemberNode>> walkedParentsSet(compileEnv->allocator.get());
-								SLKC_RETURN_IF_COMP_ERROR(determineFnOverloading(compileEnv, baseType->members.at(it.value()).template castTo<FnNode>(), argTypes, nArgTypes, isStatic, matchedOverloadings, walkedParents));
-							} else {
-								SLKC_RETURN_IF_COMP_ERROR(determineFnOverloading(compileEnv, baseType->members.at(it.value()).template castTo<FnNode>(), argTypes, nArgTypes, isStatic, matchedOverloadings));
-							}
-						}
-					}
-				}
-			}
-			break;
 		}
-		case AstNodeType::Interface: {
-			AstNodePtr<InterfaceNode> m = fnSlot->parent->sharedFromThis().template castTo<InterfaceNode>();
-			for (auto &i : m->implTypes) {
-				{
-					AstNodePtr<InterfaceNode> baseType;
-					SLKC_RETURN_IF_COMP_ERROR(visitBaseInterface(i, baseType, nullptr));
-					if (baseType) {
-						if (auto it = baseType->memberIndices.find(fnSlot->name); it != baseType->memberIndices.end()) {
-							if (baseType->members.at(it.value())->getAstNodeType() != AstNodeType::FnSlot) {
-								continue;
-							}
+	}
+	return {};
+}
 
-							if (!walkedParents) {
-								peff::Set<AstNodePtr<MemberNode>> walkedParentsSet(compileEnv->allocator.get());
-								SLKC_RETURN_IF_COMP_ERROR(determineFnOverloading(compileEnv, baseType->members.at(it.value()).template castTo<FnNode>(), argTypes, nArgTypes, isStatic, matchedOverloadings, walkedParents));
-							} else {
-								SLKC_RETURN_IF_COMP_ERROR(determineFnOverloading(compileEnv, baseType->members.at(it.value()).template castTo<FnNode>(), argTypes, nArgTypes, isStatic, matchedOverloadings));
-							}
-						}
-					}
-				}
-			}
+SLKC_API peff::Option<CompilationError> slkc::determineFnOverloading(
+	CompileEnvironment *compileEnv,
+	AstNodePtr<FnNode> fnSlot,
+	const AstNodePtr<TypeNameNode> *argTypes,
+	size_t nArgTypes,
+	bool isStatic,
+	peff::DynArray<AstNodePtr<FnOverloadingNode>> &matchedOverloadings,
+	peff::Set<AstNodePtr<MemberNode>> *walkedParents) {
+	SLKC_RETURN_IF_COMP_ERROR(checkStackBounds(1024 * 1));
+
+	SLKC_RETURN_IF_COMP_ERROR(_determineWithCurrentOverloading(compileEnv, fnSlot, argTypes, nArgTypes, isStatic, matchedOverloadings, walkedParents));
+
+	switch (fnSlot->parent->getAstNodeType()) {
+		case AstNodeType::Module:
+			SLKC_RETURN_IF_COMP_ERROR(_determineWithParentModule(compileEnv, fnSlot, argTypes, nArgTypes, isStatic, matchedOverloadings, walkedParents));
 			break;
-		}
+		case AstNodeType::Class:
+			SLKC_RETURN_IF_COMP_ERROR(_determineWithParentClass(compileEnv, fnSlot, argTypes, nArgTypes, isStatic, matchedOverloadings, walkedParents));
+			break;
+		case AstNodeType::Interface:
+			SLKC_RETURN_IF_COMP_ERROR(_determineWithParentInterface(compileEnv, fnSlot, argTypes, nArgTypes, isStatic, matchedOverloadings, walkedParents));
+			break;
 	}
 
 	return {};

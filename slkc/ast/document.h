@@ -26,6 +26,10 @@ namespace slkc {
 		return CompilationError(TokenRange{ 0, 0 }, CompilationErrorKind::OutOfMemory);
 	}
 
+	SLAKE_FORCEINLINE CompilationError genStackOverflow() {
+		return CompilationError(TokenRange{ 0, 0 }, CompilationErrorKind::StackOverflow);
+	}
+
 	SLAKE_FORCEINLINE CompilationError genOutOfRuntimeMemoryCompError() {
 		return CompilationError(TokenRange{ 0, 0 }, CompilationErrorKind::OutOfRuntimeMemory);
 	}

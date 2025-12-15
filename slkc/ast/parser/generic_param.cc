@@ -122,7 +122,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseGenericParams(
 				return genOutOfMemoryError();
 			}
 
-			genericParamNode->parent = curParent;
+			genericParamNode->parent = curParent.get();
 
 			if (Token *lParentheseToken = peekToken(); lParentheseToken->tokenId == TokenId::VarArg) {
 				nextToken();

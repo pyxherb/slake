@@ -701,7 +701,7 @@ void dumpCompilationError(peff::SharedPtr<slkc::Parser> parser, const slkc::Comp
 				dumpLexicalError(*exData.lexicalError, indentLevel + 1);
 			} else {
 				for (auto &i : exData.mod->parser->syntaxErrors) {
-					dumpSyntaxError(exData.mod->parser, i, indentLevel + 1);
+					dumpSyntaxError(exData.mod->parser.get(), i, indentLevel + 1);
 				}
 			}
 			break;
@@ -918,12 +918,12 @@ int main(int argc, char *argv[]) {
 			bool encounteredErrors = false;
 			if (auto e = parser->parseProgram(mod, moduleName); e) {
 				encounteredErrors = true;
-				dumpSyntaxError(parser, *e);
+				dumpSyntaxError(parser.get(), *e);
 			}
 
 			for (auto &i : parser->syntaxErrors) {
 				encounteredErrors = true;
-				dumpSyntaxError(parser, i);
+				dumpSyntaxError(parser.get(), i);
 			}
 
 			if (auto e = completeParentModules(&compileEnv, moduleName.get(), mod); e) {

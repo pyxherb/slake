@@ -5,7 +5,7 @@ using namespace slkc;
 SLKC_API peff::Option<CompilationError> Document::lookupGenericCacheTable(
 	AstNodePtr<MemberNode> originalObject,
 	GenericCacheTable *&tableOut) {
-	if (auto it = genericCacheDir.find(originalObject); it != genericCacheDir.end()) {
+	if (auto it = genericCacheDir.find(originalObject.get()); it != genericCacheDir.end()) {
 		tableOut = &it.value();
 		return {};
 	}
@@ -396,21 +396,21 @@ SLKC_API peff::Option<CompilationError> Document::instantiateGenericObject(
 
 	{
 		peff::ScopeGuard removeCacheDirEntryGuard([this, originalObject]() noexcept {
-			genericCacheDir.remove(originalObject);
+			genericCacheDir.remove(originalObject.get());
 		});
 
-		if (auto it = genericCacheDir.find(originalObject);
+		if (auto it = genericCacheDir.find(originalObject.get());
 			it != genericCacheDir.end()) {
 			cacheTable = &it.value();
 			removeCacheDirEntryGuard.release();
 		} else {
 			if (!genericCacheDir.insert(
-					AstNodePtr<MemberNode>(originalObject),
+					originalObject.get(),
 					GenericCacheTable(allocator.get(),
 						TypeNameListCmp(this)))) {
 				return genOutOfMemoryCompError();
 			}
-			cacheTable = &genericCacheDir.at(originalObject);
+			cacheTable = &genericCacheDir.at(originalObject.get());
 		}
 
 		if (!cacheTable->insert(std::move(duplicatedGenericArgs), AstNodePtr<MemberNode>(duplicatedObject))) {

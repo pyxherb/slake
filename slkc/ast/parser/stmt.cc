@@ -473,8 +473,6 @@ SLKC_API peff::Option<SyntaxError> Parser::parseReturnStmt(AstNodePtr<StmtNode> 
 
 	nextToken();
 
-	nextToken();
-
 	AstNodePtr<ReturnStmtNode> stmt;
 
 	if (!(stmt = makeAstNode<ReturnStmtNode>(

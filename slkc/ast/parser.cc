@@ -696,7 +696,7 @@ accessModifierParseEnd:
 
 					return SyntaxError(fn->tokenRange, std::move(exData));
 				}
-				FnNode *fnSlot = (FnNode *)p->members.at(it.value());
+				FnNode *fnSlot = (FnNode *)p->members.at(it.value()).get();
 				fn->setParent(fnSlot);
 				if (!fnSlot->overloadings.pushBack(std::move(fn))) {
 					return genOutOfMemoryError();
@@ -716,7 +716,7 @@ accessModifierParseEnd:
 					return genOutOfMemoryError();
 				}
 
-				fn->setParent(fnSlot);
+				fn->setParent(fnSlot.get());
 
 				if (!fnSlot->overloadings.pushBack(std::move(fn))) {
 					return genOutOfMemoryError();

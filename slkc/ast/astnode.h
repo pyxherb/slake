@@ -187,6 +187,7 @@ namespace slkc {
 
 	enum class CompilationErrorKind : int {
 		OutOfMemory = 0,
+		StackOverflow,
 		OutOfRuntimeMemory,
 		ExpectingLValueExpr,
 		ExpectingRValueExpr,

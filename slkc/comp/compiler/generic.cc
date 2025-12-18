@@ -180,7 +180,7 @@ static peff::Option<CompilationError> _walkNodeForGenericInstantiation(
 									return genOutOfMemoryCompError();
 								}
 
-								if (!i->params.reserveSlots(j, innerTypeName->paramTypes.size())) {
+								if (!i->params.insertRangeInitialized(j, innerTypeName->paramTypes.size())) {
 									return genOutOfMemoryCompError();
 								}
 

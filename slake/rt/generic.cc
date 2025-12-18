@@ -713,7 +713,7 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(MemberObjec
 						if (paramTypeList->getTypeDefKind() != TypeDefKind::ParamTypeListTypeDef)
 							std::terminate();
 
-						if (!j.second->paramTypes.reserveSlots(k, paramTypeList->paramTypes.size() - 1))
+						if (!j.second->paramTypes.insertRangeUninitialized(k, paramTypeList->paramTypes.size() - 1))
 							return OutOfMemoryError::alloc();
 
 						for (size_t l = 0; l < paramTypeList->paramTypes.size(); ++l) {

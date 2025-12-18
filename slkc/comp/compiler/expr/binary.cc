@@ -2051,7 +2051,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 							IdRefPtr fullName;
 							SLKC_RETURN_IF_COMP_ERROR(getFullIdRef(compileEnv->allocator.get(), operatorSlot, fullName));
 
-							compileIdRef(compileEnv, compilationContext, fullName->entries.data(), fullName->entries.size(), nullptr, 0, matchedOverloading->fnFlags & FN_VARG, {}, idRefObject);
+							SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, compilationContext, fullName->entries.data(), fullName->entries.size(), nullptr, 0, matchedOverloading->fnFlags & FN_VARG, {}, idRefObject));
 
 							idRefObject->paramTypes = peff::DynArray<slake::TypeRef>(compileEnv->runtime->getCurGenAlloc());
 

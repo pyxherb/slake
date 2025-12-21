@@ -176,10 +176,6 @@ SLAKE_API void FnOverloadingObject::replaceAllocator(peff::Alloc *allocator) noe
 	mappedGenericParams.replaceAllocator(allocator);
 	mappedGenericArgs.replaceAllocator(allocator);
 
-	for (auto i : mappedGenericArgs) {
-		i.first.replaceAllocator(allocator);
-	}
-
 	paramTypes.replaceAllocator(allocator);
 }
 

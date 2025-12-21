@@ -67,7 +67,7 @@ namespace slake {
 
 	public:
 		ParamTypeList genericArgs;
-		peff::HashMap<peff::String, TypeRef> mappedGenericArgs;
+		peff::HashMap<std::string_view, TypeRef> mappedGenericArgs;
 
 		GenericParamList genericParams;
 		peff::HashMap<std::string_view, size_t> mappedGenericParams;
@@ -110,7 +110,7 @@ namespace slake {
 
 	public:
 		ParamTypeList genericArgs;
-		peff::HashMap<peff::String, TypeRef> mappedGenericArgs;
+		peff::HashMap<std::string_view, TypeRef> mappedGenericArgs;
 
 		GenericParamList genericParams;
 		peff::HashMap<std::string_view, size_t> mappedGenericParams;
@@ -152,7 +152,7 @@ namespace slake {
 
 	public:
 		ParamTypeList genericArgs;
-		peff::HashMap<peff::String, TypeRef> mappedGenericArgs;
+		peff::HashMap<std::string_view, TypeRef> mappedGenericArgs;
 
 		GenericParamList genericParams;
 		peff::HashMap<std::string_view, size_t> mappedGenericParams;

@@ -283,10 +283,6 @@ SLAKE_API void ClassObject::replaceAllocator(peff::Alloc *allocator) noexcept {
 	mappedGenericParams.replaceAllocator(allocator);
 	mappedGenericArgs.replaceAllocator(allocator);
 
-	for (auto i : mappedGenericArgs) {
-		i.first.replaceAllocator(allocator);
-	}
-
 	genericParams.replaceAllocator(allocator);
 
 	for (auto &i : genericParams) {
@@ -474,10 +470,6 @@ SLAKE_API void InterfaceObject::replaceAllocator(peff::Alloc *allocator) noexcep
 
 	mappedGenericParams.replaceAllocator(allocator);
 	mappedGenericArgs.replaceAllocator(allocator);
-
-	for (auto i : mappedGenericArgs) {
-		i.first.replaceAllocator(allocator);
-	}
 
 	genericParams.replaceAllocator(allocator);
 
@@ -667,10 +659,6 @@ SLAKE_API void StructObject::replaceAllocator(peff::Alloc *allocator) noexcept {
 
 	mappedGenericParams.replaceAllocator(allocator);
 	mappedGenericArgs.replaceAllocator(allocator);
-
-	for (auto i : mappedGenericArgs) {
-		i.first.replaceAllocator(allocator);
-	}
 
 	genericParams.replaceAllocator(allocator);
 

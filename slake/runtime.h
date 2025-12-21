@@ -313,14 +313,14 @@ namespace slake {
 			peff::RcObjectPtr<peff::Alloc> selfAllocator;
 			const Object *mappedObject;
 			const ParamTypeList *genericArgs;
-			peff::HashMap<peff::String, TypeRef> mappedGenericArgs;
+			peff::HashMap<std::string_view, TypeRef> mappedGenericArgs;
 
 			SLAKE_FORCEINLINE GenericInstantiationContext(peff::Alloc *selfAllocator, peff::Alloc *resourceAllocator) : selfAllocator(selfAllocator), mappedGenericArgs(resourceAllocator) {}
 			SLAKE_FORCEINLINE GenericInstantiationContext(
 				peff::Alloc *selfAllocator,
 				const Object *mappedObject,
 				const ParamTypeList *genericArgs,
-				peff::HashMap<peff::String, TypeRef> &&mappedGenericArgs)
+				peff::HashMap<std::string_view, TypeRef> &&mappedGenericArgs)
 				: selfAllocator(selfAllocator),
 				  mappedObject(mappedObject),
 				  genericArgs(genericArgs),

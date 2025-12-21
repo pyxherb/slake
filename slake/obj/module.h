@@ -36,16 +36,8 @@ namespace slake {
 
 	class ModuleObject;
 
-	enum class ModuleLoadStatus {
-		ImplicitlyLoaded = 0,
-		Loading,
-		ManuallyLoaded
-	};
-
 	class ModuleObject : public MemberObject {
 	public:
-		ModuleLoadStatus loadStatus = ModuleLoadStatus::ImplicitlyLoaded;
-
 		peff::HashMap<std::string_view, MemberObject *> members;
 
 		peff::DynArray<char> localFieldStorage;

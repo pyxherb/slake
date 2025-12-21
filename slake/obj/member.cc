@@ -21,7 +21,7 @@ SLAKE_API MemberObject::~MemberObject() {
 	associatedRuntime->invalidateGenericCache(this);
 }
 
-SLAKE_API const GenericArgList *MemberObject::getGenericArgs() const {
+SLAKE_API const ParamTypeList *MemberObject::getGenericArgs() const {
 	return nullptr;
 }
 

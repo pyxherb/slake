@@ -8,17 +8,19 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 	Object *scopeObject) {
 	assert(ref);
 
-	if ((!scopeObject))
-		if (!(scopeObject = _rootObject))
+	Object *curObject = scopeObject;
+
+	if ((!curObject))
+		if (!(curObject = _rootObject))
 			std::terminate();
 
 	for (size_t i = 0; i < ref->entries.size(); ++i) {
 		auto &curName = ref->entries.at(i);
 
-		if (!scopeObject)
+		if (!curObject)
 			goto fail;
 
-		objectRefOut = scopeObject->getMember(curName.name);
+		objectRefOut = curObject->getMember(curName.name);
 
 		if (!objectRefOut) {
 			goto fail;
@@ -26,23 +28,21 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 
 		if (objectRefOut.kind == ReferenceKind::ObjectRef) {
 			// TODO: Check if the instance object is a member object.
-			scopeObject = (MemberObject *)objectRefOut.asObject;
+			curObject = (MemberObject *)objectRefOut.asObject;
 
-			switch (scopeObject->getObjectKind()) {
+			switch (curObject->getObjectKind()) {
 				case ObjectKind::Class:
 				case ObjectKind::Interface:
 				case ObjectKind::Fn:
-					if (curName.name == "myTest")
-						puts("");
 					if (curName.genericArgs.size()) {
 						peff::NullAlloc nullAlloc;
 						GenericInstantiationContext genericInstantiationContext(&nullAlloc, getFixedAlloc());
 
 						genericInstantiationContext.genericArgs = &curName.genericArgs;
 						MemberObject *m;
-						SLAKE_RETURN_IF_EXCEPT(instantiateGenericObject((MemberObject *)scopeObject, m, &genericInstantiationContext));
-						scopeObject = m;
-						objectRefOut = Reference::makeObjectRef(scopeObject);
+						SLAKE_RETURN_IF_EXCEPT(instantiateGenericObject((MemberObject *)curObject, m, &genericInstantiationContext));
+						curObject = m;
+						objectRefOut = Reference::makeObjectRef(curObject);
 					}
 					break;
 			}
@@ -53,18 +53,18 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 	}
 
 	if (ref->paramTypes.hasValue() || ref->hasVarArgs) {
-		switch (scopeObject->getObjectKind()) {
+		switch (curObject->getObjectKind()) {
 			case ObjectKind::Fn: {
-				FnObject *fnObject = ((FnObject *)scopeObject);
+				FnObject *fnObject = ((FnObject *)curObject);
 
-				const GenericArgList &paramTypes = *ref->paramTypes;
+				const ParamTypeList &paramTypes = *ref->paramTypes;
 
-				auto it = fnObject->overloadings.find(FnSignature{ paramTypes, ref->hasVarArgs, 0, ref->overridenType });
+				auto it = fnObject->overloadings.find(FnSignature{ paramTypes, ref->hasVarArgs, ref->entries.back().genericArgs.size(), ref->overridenType });
 
 				if (it != fnObject->overloadings.end())
 					objectRefOut = Reference::makeObjectRef(it.value());
 				else {
-					it = fnObject->overloadings.find(FnSignature{ paramTypes, ref->hasVarArgs, 0, TypeId::Void });
+					it = fnObject->overloadings.find(FnSignature{ paramTypes, ref->hasVarArgs, ref->entries.back().genericArgs.size(), TypeId::Void });
 
 					if (it == fnObject->overloadings.end())
 						return allocOutOfMemoryErrorIfAllocFailed(ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(this)->getFixedAlloc(), ref));
@@ -112,7 +112,7 @@ SLAKE_API bool Runtime::getFullRef(peff::Alloc *allocator, const MemberObject *v
 		if (!copiedName.build(name)) {
 			return false;
 		}
-		GenericArgList copiedGenericArgs(allocator);
+		ParamTypeList copiedGenericArgs(allocator);
 		if (auto p = v->getGenericArgs(); p) {
 			if (!copiedGenericArgs.resize(p->size()))
 				return false;

@@ -53,7 +53,6 @@ SLAKE_API InternalExceptionPointer Runtime::initMethodTableForClass(ClassObject 
 						if (auto m = parentMt->getMethod(fn->name); m) {
 							if (m->overloadings.size()) {
 								// Link the method with method inherited from the parent.
-
 								for (auto k : m->overloadings) {
 									// If we found a non-duplicated overloading from the parent, add it.
 									if (auto it = fnSlot->overloadings.find(k.first); it == fnSlot->overloadings.end()) {

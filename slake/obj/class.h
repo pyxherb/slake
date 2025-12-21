@@ -66,10 +66,11 @@ namespace slake {
 		friend class Runtime;
 
 	public:
-		GenericArgList genericArgs;
+		ParamTypeList genericArgs;
 		peff::HashMap<peff::String, TypeRef> mappedGenericArgs;
 
 		GenericParamList genericParams;
+		peff::HashMap<std::string_view, size_t> mappedGenericParams;
 
 		TypeRef baseType;
 		peff::DynArray<TypeRef> implTypes;	// Implemented interfaces
@@ -83,7 +84,7 @@ namespace slake {
 
 		SLAKE_API virtual Reference getMember(const std::string_view &name) const override;
 
-		SLAKE_API virtual const GenericArgList *getGenericArgs() const override;
+		SLAKE_API virtual const ParamTypeList *getGenericArgs() const override;
 
 		/// @brief Check if the class has implemented the interface.
 		///
@@ -108,10 +109,11 @@ namespace slake {
 		friend class ClassObject;
 
 	public:
-		GenericArgList genericArgs;
+		ParamTypeList genericArgs;
 		peff::HashMap<peff::String, TypeRef> mappedGenericArgs;
 
 		GenericParamList genericParams;
+		peff::HashMap<std::string_view, size_t> mappedGenericParams;
 
 		peff::DynArray<TypeRef> implTypes;
 
@@ -123,7 +125,7 @@ namespace slake {
 
 		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
 
-		SLAKE_API virtual const GenericArgList *getGenericArgs() const override;
+		SLAKE_API virtual const ParamTypeList *getGenericArgs() const override;
 
 		SLAKE_API static HostObjectRef<InterfaceObject> alloc(Runtime *rt);
 		SLAKE_API static HostObjectRef<InterfaceObject> alloc(Duplicator *duplicator, const InterfaceObject *other);
@@ -149,10 +151,11 @@ namespace slake {
 		friend class Runtime;
 
 	public:
-		GenericArgList genericArgs;
+		ParamTypeList genericArgs;
 		peff::HashMap<peff::String, TypeRef> mappedGenericArgs;
 
 		GenericParamList genericParams;
+		peff::HashMap<std::string_view, size_t> mappedGenericParams;
 
 		peff::DynArray<TypeRef> implTypes;	// Implemented interfaces
 
@@ -162,7 +165,7 @@ namespace slake {
 		SLAKE_API StructObject(Duplicator *duplicator, const StructObject &x, peff::Alloc *allocator, bool &succeededOut);
 		SLAKE_API virtual ~StructObject();
 
-		SLAKE_API virtual const GenericArgList *getGenericArgs() const override;
+		SLAKE_API virtual const ParamTypeList *getGenericArgs() const override;
 
 		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
 

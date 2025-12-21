@@ -149,23 +149,7 @@ namespace slake {
 
 		TypeRef &operator=(const TypeRef &) = default;
 
-		SLAKE_FORCEINLINE int comparesTo(const TypeRef &rhs) const noexcept {
-			if (typeId < rhs.typeId)
-				return -1;
-			if (typeId > rhs.typeId)
-				return 1;
-			if (typeModifier < rhs.typeModifier)
-				return -1;
-			if (typeModifier > rhs.typeModifier)
-				return 1;
-			if (isFundamentalType(typeId))
-				return 0;
-			if (typeDef < rhs.typeDef)
-				return -1;
-			if (typeDef > rhs.typeDef)
-				return 1;
-			return 0;
-		}
+		SLAKE_API int comparesTo(const TypeRef &rhs) const noexcept;
 
 		SLAKE_FORCEINLINE bool operator==(const TypeRef &rhs) const {
 			return comparesTo(rhs) == 0;

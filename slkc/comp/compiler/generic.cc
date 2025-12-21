@@ -129,102 +129,109 @@ static peff::Option<CompilationError> _walkNodeForGenericInstantiation(
 	}
 
 	switch (astNode->getAstNodeType()) {
+		case AstNodeType::Fn: {
+			AstNodePtr<FnOverloadingNode> fnSlot = astNode.template castTo<FnOverloadingNode>();
+
+			for (auto i : fnSlot->genericParams) {
+				SLKC_RETURN_IF_COMP_ERROR(_walkNodeForGenericInstantiation(i.template castTo<MemberNode>(), context));
+			}
+
+			if ((context.mappedNode != astNode) && (fnSlot->genericParams.size())) {
+				GenericInstantiationContext innerContext(context.allocator.get(), context.genericArgs);
+
+				for (auto [k, v] : context.mappedGenericArgs) {
+					if (auto it = fnSlot->genericParamIndices.find(k);
+						it == fnSlot->genericParamIndices.end()) {
+						if (!innerContext.mappedGenericArgs.insert(std::string_view(k), AstNodePtr<TypeNameNode>(v))) {
+							return genOutOfMemoryCompError();
+						}
+					}
+				}
+
+				for (auto &i : fnSlot->params) {
+					SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(i->type, innerContext));
+				}
+
+				SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(fnSlot->returnType, innerContext));
+
+				// No need to substitute the function body, we just care about the declaration.
+			} else {
+				for (auto &i : fnSlot->params) {
+					SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(i->type, context));
+				}
+
+				SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(fnSlot->returnType, context));
+			}
+
+		rescanParams:
+			for (size_t i = 0; i < fnSlot->params.size(); ++i) {
+				auto curParam = fnSlot->params.at(i);
+				AstNodePtr<TypeNameNode> curParamType = fnSlot->params.at(i)->type;
+
+				if (curParamType) {
+					if (curParamType->typeNameKind == TypeNameKind::Unpacking) {
+						AstNodePtr<UnpackingTypeNameNode> unpackingType = curParamType.template castTo<UnpackingTypeNameNode>();
+
+						if (unpackingType->innerTypeName->typeNameKind == TypeNameKind::ParamTypeList) {
+							AstNodePtr<ParamTypeListTypeNameNode> innerTypeName = unpackingType->innerTypeName.template castTo<ParamTypeListTypeNameNode>();
+
+							if (!fnSlot->params.eraseRange(i, i + 1)) {
+								return genOutOfMemoryCompError();
+							}
+
+							if (!fnSlot->params.insertRangeInitialized(i, innerTypeName->paramTypes.size())) {
+								return genOutOfMemoryCompError();
+							}
+
+							for (size_t k = 0; k < innerTypeName->paramTypes.size(); ++k) {
+								bool succeeded;
+
+								DuplicationContext dc(context.allocator.get());
+
+								AstNodePtr<VarNode> p = makeAstNode<VarNode>(context.allocator.get(), *curParam.get(), context.allocator.get(), dc, succeeded);
+
+								if ((!p) || (!succeeded)) {
+									return genOutOfMemoryCompError();
+								}
+
+								constexpr static size_t lenName = sizeof("arg_") + (sizeof(size_t) << 1) + 1;
+								char nameBuf[lenName] = { 0 };
+
+								sprintf(nameBuf, "arg_%.02zx", i + k);
+
+								if (!p->name.build(nameBuf)) {
+									return genOutOfMemoryCompError();
+								}
+
+								p->type = innerTypeName->paramTypes.at(k);
+
+								fnSlot->params.at(i + k) = p;
+							}
+
+							// Note that we use nullptr for we assuming that errors that require a compile context will never happen.
+							SLKC_RETURN_IF_COMP_ERROR(reindexFnParams(nullptr, fnSlot));
+
+							if (innerTypeName->hasVarArgs) {
+								if (i + 1 != fnSlot->params.size()) {
+									return CompilationError(innerTypeName->tokenRange, CompilationErrorKind::InvalidVarArgHintDuringInstantiation);
+								}
+
+								fnSlot->fnFlags |= FN_VARG;
+							}
+						}
+
+						goto rescanParams;
+					}
+				}
+			}
+			break;
+		}
 		case AstNodeType::FnSlot: {
 			AstNodePtr<FnNode> fnSlot = astNode.template castTo<FnNode>();
 
 			for (auto i : fnSlot->overloadings) {
-				for (auto j : i->genericParams) {
-					SLKC_RETURN_IF_COMP_ERROR(_walkNodeForGenericInstantiation(j.template castTo<MemberNode>(), context));
-				}
-
-				if ((context.mappedNode != astNode) && (i->genericParams.size())) {
-					GenericInstantiationContext innerContext(context.allocator.get(), context.genericArgs);
-
-					for (auto [k, v] : context.mappedGenericArgs) {
-						if (auto it = i->genericParamIndices.find(k);
-							it == i->genericParamIndices.end()) {
-							if (!innerContext.mappedGenericArgs.insert(std::string_view(k), AstNodePtr<TypeNameNode>(v))) {
-								return genOutOfMemoryCompError();
-							}
-						}
-					}
-
-					for (auto &j : i->params) {
-						SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(j->type, innerContext));
-					}
-
-					SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(i->returnType, innerContext));
-
-					// No need to substitute the function body, we just care about the declaration.
-				} else {
-					for (auto &j : i->params) {
-						SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(j->type, context));
-					}
-
-					SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(i->returnType, context));
-				}
-
-			rescanParams:
-				for (size_t j = 0; j < i->params.size(); ++j) {
-					auto curParam = i->params.at(j);
-					AstNodePtr<TypeNameNode> curParamType = i->params.at(j)->type;
-
-					if (curParamType) {
-						if (curParamType->typeNameKind == TypeNameKind::Unpacking) {
-							AstNodePtr<UnpackingTypeNameNode> unpackingType = curParamType.template castTo<UnpackingTypeNameNode>();
-
-							if (unpackingType->innerTypeName->typeNameKind == TypeNameKind::ParamTypeList) {
-								AstNodePtr<ParamTypeListTypeNameNode> innerTypeName = unpackingType->innerTypeName.template castTo<ParamTypeListTypeNameNode>();
-
-								if (!i->params.eraseRange(j, j + 1)) {
-									return genOutOfMemoryCompError();
-								}
-
-								if (!i->params.insertRangeInitialized(j, innerTypeName->paramTypes.size())) {
-									return genOutOfMemoryCompError();
-								}
-
-								for (size_t k = 0; k < innerTypeName->paramTypes.size(); ++k) {
-									bool succeeded;
-
-									DuplicationContext dc(context.allocator.get());
-
-									AstNodePtr<VarNode> p = makeAstNode<VarNode>(context.allocator.get(), *curParam.get(), context.allocator.get(), dc, succeeded);
-
-									if ((!p) || (!succeeded)) {
-										return genOutOfMemoryCompError();
-									}
-
-									constexpr static size_t lenName = sizeof("arg_") + (sizeof(size_t) << 1) + 1;
-									char nameBuf[lenName] = { 0 };
-
-									sprintf(nameBuf, "arg_%.02zx", j + k);
-
-									if (!p->name.build(nameBuf)) {
-										return genOutOfMemoryCompError();
-									}
-
-									p->type = innerTypeName->paramTypes.at(k);
-
-									i->params.at(j + k) = p;
-								}
-
-								// Note that we use nullptr for we assuming that errors that require a compile context will never happen.
-								SLKC_RETURN_IF_COMP_ERROR(reindexFnParams(nullptr, i));
-
-								if (innerTypeName->hasVarArgs) {
-									if (j + 1 != i->params.size()) {
-										return CompilationError(innerTypeName->tokenRange, CompilationErrorKind::InvalidVarArgHintDuringInstantiation);
-									}
-
-									i->fnFlags |= FN_VARG;
-								}
-							}
-
-							goto rescanParams;
-						}
-					}
-				}
+				AstNodePtr<MemberNode> a = i.castTo<MemberNode>();
+				SLKC_RETURN_IF_COMP_ERROR(_walkNodeForGenericInstantiation(a, context));
 			}
 			break;
 		}
@@ -389,9 +396,6 @@ SLKC_API peff::Option<CompilationError> Document::instantiateGenericObject(
 
 	duplicatedObject->setParent(originalObject->parent);
 
-	GenericInstantiationContext instantiationContext(allocator.get(), &genericArgs);
-	instantiationContext.mappedNode = duplicatedObject;
-
 	GenericCacheTable *cacheTable;
 
 	{
@@ -424,31 +428,47 @@ SLKC_API peff::Option<CompilationError> Document::instantiateGenericObject(
 
 			// Map generic arguments.
 			switch (originalObject->getAstNodeType()) {
-				case AstNodeType::Fn: {
-					AstNodePtr<FnOverloadingNode> obj = duplicatedObject.template castTo<FnOverloadingNode>();
+				case AstNodeType::FnSlot: {
+					AstNodePtr<FnNode> obj = duplicatedObject.template castTo<FnNode>();
 
-					if (genericArgs.size() != obj->genericParams.size()) {
-						return CompilationError(
-							TokenRange{
-								genericArgs.front()->tokenRange.moduleNode,
-								genericArgs.front()->tokenRange.beginIndex,
-								genericArgs.back()->tokenRange.endIndex },
-							CompilationErrorKind::MismatchedGenericArgNumber);
-					}
+					peff::DynArray<AstNodePtr<FnOverloadingNode>> overloadings(allocator.get());
 
-					for (auto [k, v] : obj->genericParamIndices) {
-						if (!instantiationContext.mappedGenericArgs.insert(
-								std::string_view(k),
-								AstNodePtr<TypeNameNode>(genericArgs.at(v)))) {
+					for (auto i : obj->overloadings) {
+						GenericInstantiationContext instantiationContext(allocator.get(), &genericArgs);
+						instantiationContext.mappedNode = i.castTo<MemberNode>();
+
+						if (genericArgs.size() != i->genericParams.size())
+							continue;
+
+						for (auto [k, v] : i->genericParamIndices) {
+							if (!instantiationContext.mappedGenericArgs.insert(
+									std::string_view(k),
+									AstNodePtr<TypeNameNode>(genericArgs.at(v)))) {
+								return genOutOfMemoryCompError();
+							}
+						}
+
+						SLKC_RETURN_IF_COMP_ERROR(_walkNodeForGenericInstantiation(i.castTo<MemberNode>(), instantiationContext));
+
+						if (!overloadings.pushBack(AstNodePtr<FnOverloadingNode>(i))) {
 							return genOutOfMemoryCompError();
 						}
 					}
+
+					if (!overloadings.shrinkToFit()) {
+						return genOutOfMemoryCompError();
+					}
+
+					obj->overloadings = std::move(overloadings);
 
 					break;
 				}
 				case AstNodeType::Class: {
 					AstNodePtr<ClassNode> obj = duplicatedObject.template castTo<ClassNode>();
 
+					GenericInstantiationContext instantiationContext(allocator.get(), &genericArgs);
+					instantiationContext.mappedNode = obj.castTo<MemberNode>();
+
 					if (genericArgs.size() != obj->genericParams.size()) {
 						return CompilationError(
 							TokenRange{
@@ -465,11 +485,16 @@ SLKC_API peff::Option<CompilationError> Document::instantiateGenericObject(
 							return genOutOfMemoryCompError();
 						}
 					}
+
+					SLKC_RETURN_IF_COMP_ERROR(_walkNodeForGenericInstantiation(duplicatedObject, instantiationContext));
 					break;
 				}
 				case AstNodeType::Interface: {
 					AstNodePtr<InterfaceNode> obj = duplicatedObject.template castTo<InterfaceNode>();
 
+					GenericInstantiationContext instantiationContext(allocator.get(), &genericArgs);
+					instantiationContext.mappedNode = obj.castTo<MemberNode>();
+
 					if (genericArgs.size() != obj->genericParams.size()) {
 						return CompilationError(
 							TokenRange{
@@ -486,6 +511,8 @@ SLKC_API peff::Option<CompilationError> Document::instantiateGenericObject(
 							return genOutOfMemoryCompError();
 						}
 					}
+
+					SLKC_RETURN_IF_COMP_ERROR(_walkNodeForGenericInstantiation(duplicatedObject, instantiationContext));
 					break;
 				}
 				default:
@@ -496,8 +523,6 @@ SLKC_API peff::Option<CompilationError> Document::instantiateGenericObject(
 							genericArgs.back()->tokenRange.endIndex },
 						CompilationErrorKind::MismatchedGenericArgNumber);
 			}
-
-			SLKC_RETURN_IF_COMP_ERROR(_walkNodeForGenericInstantiation(duplicatedObject, instantiationContext));
 
 			removeCacheTableEntryGuard.release();
 		}

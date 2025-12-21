@@ -163,6 +163,24 @@ SLAKE_API bool Reference::operator<(const Reference &rhs) const {
 	std::terminate();
 }
 
+SLAKE_API int TypeRef::comparesTo(const TypeRef &rhs) const noexcept {
+	if (typeId < rhs.typeId)
+		return -1;
+	if (typeId > rhs.typeId)
+		return 1;
+	if (typeModifier < rhs.typeModifier)
+		return -1;
+	if (typeModifier > rhs.typeModifier)
+		return 1;
+	if (isFundamentalType(typeId))
+		return 0;
+	if (typeDef < rhs.typeDef)
+		return -1;
+	if (typeDef > rhs.typeDef)
+		return 1;
+	return 0;
+}
+
 SLAKE_API TypeRef TypeRef::duplicate(bool &succeededOut) const {
 	TypeRef newType(*this);
 

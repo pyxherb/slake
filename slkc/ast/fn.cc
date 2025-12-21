@@ -75,7 +75,10 @@ SLKC_API FnOverloadingNode::FnOverloadingNode(const FnOverloadingNode &rhs, peff
 	  idxParamCommaTokens(allocator),
 	  idxGenericParamCommaTokens(allocator),
 	  lAngleBracketIndex(rhs.lAngleBracketIndex),
-	  rAngleBracketIndex(rhs.rAngleBracketIndex) {
+	  rAngleBracketIndex(rhs.rAngleBracketIndex),
+	  lvalueMarkerIndex(rhs.lvalueMarkerIndex),
+	  overloadingKind(rhs.overloadingKind),
+	  fnFlags(rhs.fnFlags) {
 	/* if (rhs.body && !(body = rhs.body->duplicate<CodeBlockStmtNode>(allocator))) {
 		succeededOut = false;
 		return;

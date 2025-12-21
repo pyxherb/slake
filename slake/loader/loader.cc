@@ -495,10 +495,6 @@ SLAKE_API InternalExceptionPointer loader::loadIdRef(LoaderContext &context, Run
 
 	SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->readU32(nParamTypes)));
 
-	if (idRefOut->entries.back().name == "getX") {
-		puts("");
-	}
-
 	if (nParamTypes != UINT32_MAX) {
 		peff::DynArray<TypeRef> paramTypes(idRefOut->selfAllocator.get());
 
@@ -562,9 +558,10 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(LoaderContext &cont
 
 				SLAKE_RETURN_IF_EXCEPT(loadGenericParam(context, runtime, reader, moduleObject, gp));
 
-				if (!clsObject->genericParams.pushBack(std::move(gp))) {
+				if (!clsObject->genericParams.pushBack(std::move(gp)))
 					return OutOfMemoryError::alloc();
-				}
+				if (!clsObject->mappedGenericParams.insert(clsObject->genericParams.back().name, +j))
+					return OutOfMemoryError::alloc();
 			}
 
 			if (desc.flags & slxfmt::CTD_DERIVED) {
@@ -626,6 +623,8 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(LoaderContext &cont
 				if (!interfaceObject->genericParams.pushBack(std::move(gp))) {
 					return OutOfMemoryError::alloc();
 				}
+				if (!interfaceObject->mappedGenericParams.insert(interfaceObject->genericParams.back().name, +j))
+					return OutOfMemoryError::alloc();
 			}
 
 			if (!interfaceObject->implTypes.resize(desc.nParents)) {
@@ -683,6 +682,8 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(LoaderContext &cont
 				if (!structObject->genericParams.pushBack(std::move(gp))) {
 					return OutOfMemoryError::alloc();
 				}
+				if (!structObject->mappedGenericParams.insert(structObject->genericParams.back().name, +j))
+					return OutOfMemoryError::alloc();
 			}
 
 			SLAKE_RETURN_IF_EXCEPT(loadModuleMembers(context, runtime, reader, structObject.get()));
@@ -764,6 +765,8 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(LoaderContext &cont
 					if (!fnOverloadingObject->genericParams.pushBack(std::move(gp))) {
 						return OutOfMemoryError::alloc();
 					}
+					if (!fnOverloadingObject->mappedGenericParams.insert(fnOverloadingObject->genericParams.back().name, +j))
+						return OutOfMemoryError::alloc();
 				}
 
 				if (!fnOverloadingObject->paramTypes.resize(fnd.nParams)) {

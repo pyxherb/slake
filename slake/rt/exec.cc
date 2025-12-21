@@ -596,9 +596,6 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 			TypeRef type = ins.operands[0].getTypeName();
 
 			Reference entityRef;
-			if (ins.output == 0) {
-				puts("");
-			}
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _addLocalVar(&context->_context, curMajorFrame, type, entityRef));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, stackSize, curMajorFrame, ins.output, entityRef));
 			break;

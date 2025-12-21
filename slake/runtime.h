@@ -160,15 +160,15 @@ namespace slake {
 
 		struct GenericLookupEntry {
 			MemberObject *originalObject;
-			GenericArgList genericArgs;
+			ParamTypeList genericArgs;
 		};
 		mutable peff::Map<const MemberObject *, GenericLookupEntry> _genericCacheLookupTable;
 
 		using GenericCacheTable =
 			peff::Map<
-				GenericArgList,	 // Generic arguments.
+				ParamTypeList,	 // Generic arguments.
 				MemberObject *,	 // Cached instantiated value.
-				GenericArgListComparator,
+				ParamListComparator,
 				true>;
 
 		using GenericCacheDirectory = peff::Map<
@@ -312,14 +312,14 @@ namespace slake {
 			std::atomic_size_t refCount = 0;
 			peff::RcObjectPtr<peff::Alloc> selfAllocator;
 			const Object *mappedObject;
-			const GenericArgList *genericArgs;
+			const ParamTypeList *genericArgs;
 			peff::HashMap<peff::String, TypeRef> mappedGenericArgs;
 
 			SLAKE_FORCEINLINE GenericInstantiationContext(peff::Alloc *selfAllocator, peff::Alloc *resourceAllocator) : selfAllocator(selfAllocator), mappedGenericArgs(resourceAllocator) {}
 			SLAKE_FORCEINLINE GenericInstantiationContext(
 				peff::Alloc *selfAllocator,
 				const Object *mappedObject,
-				const GenericArgList *genericArgs,
+				const ParamTypeList *genericArgs,
 				peff::HashMap<peff::String, TypeRef> &&mappedGenericArgs)
 				: selfAllocator(selfAllocator),
 				  mappedObject(mappedObject),
@@ -355,7 +355,7 @@ namespace slake {
 		/// @return Instantiated value.
 		[[nodiscard]] SLAKE_API InternalExceptionPointer instantiateGenericObject(MemberObject *object, MemberObject *&objectOut, GenericInstantiationContext *instantiationContext);
 
-		SLAKE_API InternalExceptionPointer setGenericCache(MemberObject *object, const GenericArgList &genericArgs, MemberObject *instantiatedObject);
+		SLAKE_API InternalExceptionPointer setGenericCache(MemberObject *object, const ParamTypeList &genericArgs, MemberObject *instantiatedObject);
 
 		/// @brief Resolve a reference and get the referenced value.
 		/// @param ref Reference to be resolved.

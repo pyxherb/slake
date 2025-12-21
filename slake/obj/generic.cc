@@ -13,16 +13,91 @@ SLAKE_API void GenericParam::replaceAllocator(peff::Alloc *allocator) noexcept {
 	interfaces.replaceAllocator(allocator);
 }
 
-SLAKE_API int GenericArgListComparator::operator()(const GenericArgList &lhs, const GenericArgList &rhs) const noexcept {
+SLAKE_API int ParamListComparator::operator()(const ParamTypeList &lhs, const ParamTypeList &rhs) const noexcept {
 	if (lhs.size() < rhs.size())
 		return -1;
 	if (lhs.size() > rhs.size())
 		return 1;
 
 	for (size_t j = 0; j < lhs.size(); ++j) {
-		if (lhs.at(j) < rhs.at(j))
+		TypeRef l = lhs.at(j), r = rhs.at(j);
+
+		if (l.typeId == TypeId::GenericArg && r.typeId == TypeId::GenericArg) {
+			GenericArgTypeDefObject *ltd = (GenericArgTypeDefObject *)l.typeDef,
+									*rtd = (GenericArgTypeDefObject *)r.typeDef;
+
+			auto findDefObject = [](Object *member, std::string_view name) -> std::pair<Object *, size_t> {
+				for (Object *i = member; i;) {
+					switch (i->getObjectKind()) {
+						case ObjectKind::Class: {
+							ClassObject *j = (ClassObject *)i;
+
+							if (auto it = j->mappedGenericParams.find(name); it != j->mappedGenericParams.end()) {
+								return { j, it.value() };
+							}
+							i = j->parent;
+							break;
+						}
+						case ObjectKind::Interface: {
+							InterfaceObject *j = (InterfaceObject *)i;
+
+							if (auto it = j->mappedGenericParams.find(name); it != j->mappedGenericParams.end()) {
+								return { j, it.value() };
+							}
+							i = j->parent;
+							break;
+						}
+						case ObjectKind::Struct: {
+							StructObject *j = (StructObject *)i;
+
+							if (auto it = j->mappedGenericParams.find(name); it != j->mappedGenericParams.end()) {
+								return { j, it.value() };
+							}
+							i = j->parent;
+							break;
+						}
+						case ObjectKind::FnOverloading: {
+							FnOverloadingObject *j = (FnOverloadingObject *)i;
+
+							if (auto it = j->mappedGenericParams.find(name); it != j->mappedGenericParams.end()) {
+								return { j, it.value() };
+							}
+							i = j->fnObject;
+							break;
+						}
+						default:
+							return { nullptr, SIZE_MAX };
+					}
+				}
+				return { nullptr, SIZE_MAX };
+			};
+
+			auto ld = findDefObject(ltd->ownerObject, ltd->nameObject->data),
+				 rd = findDefObject(rtd->ownerObject, rtd->nameObject->data);
+
+			if (ld.first && rd.first) {
+				if (ld.first->getObjectKind() < ld.first->getObjectKind())
+					return -1;
+				if (rd.first->getObjectKind() > rd.first->getObjectKind())
+					return 1;
+
+				switch (ld.first->getObjectKind()) {
+					case ObjectKind::FnOverloading: {
+						if (ld.second < rd.second)
+							return -1;
+						if (ld.second > rd.second)
+							return 1;
+						return 0;
+					}
+					default:
+						break;
+				}
+			}
+		}
+
+		if (l < r)
 			return -1;
-		if (lhs.at(j) > rhs.at(j))
+		if (l > r)
 			return 1;
 	}
 

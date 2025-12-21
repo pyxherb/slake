@@ -24,7 +24,7 @@ namespace slake {
 		SLAKE_FORCEINLINE void setParent(Object *parent) noexcept {
 			this->parent = parent;
 		}
-		SLAKE_API virtual const GenericArgList *getGenericArgs() const;
+		SLAKE_API virtual const ParamTypeList *getGenericArgs() const;
 
 		SLAKE_FORCEINLINE bool setName(const std::string_view &name) noexcept {
 			if (!this->name.build(name)) {

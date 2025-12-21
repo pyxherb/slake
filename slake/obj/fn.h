@@ -80,6 +80,7 @@ namespace slake {
 		AccessModifier access = 0;
 
 		GenericParamList genericParams;
+		peff::HashMap<std::string_view, size_t> mappedGenericParams;
 		peff::HashMap<peff::String, TypeRef> mappedGenericArgs;
 
 		peff::DynArray<TypeRef> paramTypes;
@@ -247,7 +248,7 @@ namespace slake {
 	};
 
 	struct FnSignatureComparator {
-		GenericArgListComparator innerComparator;
+		ParamListComparator innerComparator;
 
 		SLAKE_API int operator()(const FnSignature &lhs, const FnSignature &rhs) const noexcept;
 	};

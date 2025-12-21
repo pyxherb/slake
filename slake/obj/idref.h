@@ -8,11 +8,11 @@
 namespace slake {
 	struct IdRefEntry final {
 		peff::String name;
-		GenericArgList genericArgs;
+		ParamTypeList genericArgs;
 
 		SLAKE_API IdRefEntry(peff::Alloc *selfAllocator);
 		SLAKE_API IdRefEntry(peff::String &&name,
-			GenericArgList &&genericArgs);
+			ParamTypeList &&genericArgs);
 		SLAKE_FORCEINLINE IdRefEntry(IdRefEntry &&rhs)
 			: name(std::move(rhs.name)), genericArgs(std::move(rhs.genericArgs)) {
 		}

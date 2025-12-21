@@ -73,16 +73,16 @@ SLAKE_API void Runtime::invalidateGenericCache(MemberObject *i) {
 	}
 }
 
-SLAKE_API InternalExceptionPointer Runtime::setGenericCache(MemberObject *object, const GenericArgList &genericArgs, MemberObject *instantiatedObject) {
+SLAKE_API InternalExceptionPointer Runtime::setGenericCache(MemberObject *object, const ParamTypeList &genericArgs, MemberObject *instantiatedObject) {
 	if (!_genericCacheDir.contains(object)) {
-		if (!_genericCacheDir.insert(+object, GenericCacheTable(getFixedAlloc(), GenericArgListComparator())))
+		if (!_genericCacheDir.insert(+object, GenericCacheTable(getFixedAlloc(), ParamListComparator())))
 			return OutOfMemoryError::alloc();
 	}
 	// Store the instance into the cache.
 	auto &cacheTable = _genericCacheDir.at(object);
 
 	if (!cacheTable.contains(genericArgs)) {
-		GenericArgList copiedGenericArgs(getFixedAlloc());
+		ParamTypeList copiedGenericArgs(getFixedAlloc());
 		if (!copiedGenericArgs.resizeUninitialized(genericArgs.size())) {
 			return OutOfMemoryError::alloc();
 		}
@@ -94,7 +94,7 @@ SLAKE_API InternalExceptionPointer Runtime::setGenericCache(MemberObject *object
 	}
 
 	{
-		GenericArgList copiedGenericArgList(getFixedAlloc());
+		ParamTypeList copiedGenericArgList(getFixedAlloc());
 		if (!copiedGenericArgList.resizeUninitialized(genericArgs.size())) {
 			return OutOfMemoryError::alloc();
 		}
@@ -231,7 +231,13 @@ InternalExceptionPointer Runtime::_mapGenericParams(const Object *v, GenericInst
 			}
 			break;
 		}
-		default:;
+		case ObjectKind::FnOverloading:
+			SLAKE_RETURN_IF_EXCEPT(_mapGenericParams(static_cast<const FnOverloadingObject *>(v), instantiationContext));
+			break;
+		case ObjectKind::Fn:
+			break;
+		default:
+			std::terminate();
 	}
 	return {};
 }
@@ -244,16 +250,21 @@ SLAKE_API InternalExceptionPointer Runtime::_mapGenericParams(const FnOverloadin
 	}
 
 	for (size_t i = 0; i < ol->genericParams.size(); ++i) {
-		peff::String copiedName(const_cast<Runtime *>(this)->getFixedAlloc());
-
-		if (!copiedName.build(ol->genericParams.at(i).name)) {
-			return OutOfMemoryError::alloc();
-		}
-
 		TypeRef copiedType = instantiationContext->genericArgs->at(i);
 
-		if (!instantiationContext->mappedGenericArgs.insert(std::move(copiedName), std::move(copiedType)))
-			return OutOfMemoryError::alloc();
+		if (auto it = instantiationContext->mappedGenericArgs.find(ol->genericParams.at(i).name);
+			it != instantiationContext->mappedGenericArgs.end()) {
+			it.value() = copiedType;
+		} else {
+			peff::String copiedName(const_cast<Runtime *>(this)->getFixedAlloc());
+
+			if (!copiedName.build(ol->genericParams.at(i).name)) {
+				return OutOfMemoryError::alloc();
+			}
+
+			if (!instantiationContext->mappedGenericArgs.insert(std::move(copiedName), std::move(copiedType)))
+				return OutOfMemoryError::alloc();
+		}
 	}
 	return {};
 }
@@ -604,27 +615,47 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(MemberObjec
 							// We expect there's only one overloading can be instantiated.
 							// Uninstantiatable overloadings will be discarded.
 							//
-							FnOverloadingObject *matchedOverloading = nullptr;
+							peff::Map<FnSignature, FnOverloadingObject *, FnSignatureComparator, true> overloadings(value->overloadings.allocator());
 
-							for (auto i : value->overloadings) {
-								if (i.second->genericParams.size() == instantiationContext->genericArgs->size()) {
-									matchedOverloading = i.second;
-									break;
+							for (auto [signature, overloading] : value->overloadings) {
+								if (overloading->genericParams.size() == instantiationContext->genericArgs->size()) {
+									peff::HashMap<peff::String, TypeRef> copiedMappedGenericArgs(getFixedAlloc());
+
+									for (auto [k, v] : i.context->mappedGenericArgs) {
+										peff::String name(getFixedAlloc());
+
+										if (!name.build(k))
+											return OutOfMemoryError::alloc();
+
+										if (!(copiedMappedGenericArgs.insert(std::move(name), TypeRef(v))))
+											return OutOfMemoryError::alloc();
+									}
+
+									peff::RcObjectPtr<GenericInstantiationContext> newInstantiationContext;
+
+									if (!(newInstantiationContext = peff::allocAndConstruct<GenericInstantiationContext>(
+											  getFixedAlloc(), alignof(GenericInstantiationContext),
+											  getFixedAlloc(),
+											  i.context->mappedObject,
+											  i.context->genericArgs,
+											  std::move(copiedMappedGenericArgs)))) {
+										return OutOfMemoryError::alloc();
+									}
+
+									SLAKE_RETURN_IF_EXCEPT(_mapGenericParams(overloading, newInstantiationContext.get()));
+
+									SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(dispatcher, overloading, newInstantiationContext.get()));
+									if (!overloadings.insert(
+											{ overloading->paramTypes,
+												overloading->isWithVarArgs(),
+												overloading->genericParams.size(),
+												overloading->overridenType },
+											+overloading))
+										return OutOfMemoryError::alloc();
 								}
 							}
 
-							value->overloadings.clear();
-
-							if (matchedOverloading) {
-								SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(dispatcher, matchedOverloading, instantiationContext));
-								if (!value->overloadings.insert(
-										{ matchedOverloading->paramTypes,
-											matchedOverloading->isWithVarArgs(),
-											matchedOverloading->genericParams.size(),
-											matchedOverloading->overridenType },
-										+matchedOverloading))
-									return OutOfMemoryError::alloc();
-							}
+							value->overloadings = std::move(overloadings);
 						} else {
 							for (auto j : value->overloadings) {
 								size_t originalTypeSlotSize = dispatcher.nextWalkTypeSlots.size();

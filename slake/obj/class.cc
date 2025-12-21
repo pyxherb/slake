@@ -129,18 +129,20 @@ SLAKE_API slake::ClassObject::ClassObject(Runtime *rt, peff::Alloc *selfAllocato
 	  genericArgs(selfAllocator),
 	  mappedGenericArgs(selfAllocator),
 	  genericParams(selfAllocator),
+	  mappedGenericParams(selfAllocator),
 	  implTypes(selfAllocator) {
 }
 
-SLAKE_API const GenericArgList *ClassObject::getGenericArgs() const {
+SLAKE_API const ParamTypeList *ClassObject::getGenericArgs() const {
 	return &genericArgs;
 }
 
 SLAKE_API ClassObject::ClassObject(Duplicator *duplicator, const ClassObject &x, peff::Alloc *allocator, bool &succeededOut)
 	: ModuleObject(duplicator, x, allocator, succeededOut),
 	  genericArgs(allocator),
-	  mappedGenericArgs(allocator),
+	  mappedGenericArgs(allocator), // No need to copy
 	  genericParams(allocator),
+	  mappedGenericParams(allocator), // No need to copy
 	  implTypes(allocator) {
 	if (succeededOut) {
 		_flags = x._flags;
@@ -278,6 +280,7 @@ SLAKE_API void ClassObject::replaceAllocator(peff::Alloc *allocator) noexcept {
 
 	genericArgs.replaceAllocator(allocator);
 
+	mappedGenericParams.replaceAllocator(allocator);
 	mappedGenericArgs.replaceAllocator(allocator);
 
 	for (auto i : mappedGenericArgs) {
@@ -304,6 +307,7 @@ SLAKE_API InterfaceObject::InterfaceObject(Runtime *rt, peff::Alloc *selfAllocat
 	  genericArgs(selfAllocator),
 	  mappedGenericArgs(selfAllocator),
 	  genericParams(selfAllocator),
+	  mappedGenericParams(selfAllocator),
 	  implTypes(selfAllocator),
 	  implInterfaceIndices(selfAllocator) {
 }
@@ -311,8 +315,9 @@ SLAKE_API InterfaceObject::InterfaceObject(Runtime *rt, peff::Alloc *selfAllocat
 SLAKE_API InterfaceObject::InterfaceObject(Duplicator *duplicator, const InterfaceObject &x, peff::Alloc *allocator, bool &succeededOut)
 	: ModuleObject(duplicator, x, allocator, succeededOut),
 	  genericArgs(allocator),
-	  mappedGenericArgs(allocator),
+	  mappedGenericArgs(allocator), // No need to copy
 	  genericParams(allocator),
+	  mappedGenericParams(allocator), // No need to copy
 	  implTypes(allocator),
 	  implInterfaceIndices(allocator) {
 	if (succeededOut) {
@@ -407,7 +412,7 @@ SLAKE_API bool InterfaceObject::isDerivedFrom(InterfaceObject *pInterface) const
 	return implInterfaceIndices.contains(pInterface);
 }
 
-SLAKE_API const GenericArgList *InterfaceObject::getGenericArgs() const {
+SLAKE_API const ParamTypeList *InterfaceObject::getGenericArgs() const {
 	return &genericArgs;
 }
 
@@ -467,6 +472,7 @@ SLAKE_API void InterfaceObject::replaceAllocator(peff::Alloc *allocator) noexcep
 
 	genericArgs.replaceAllocator(allocator);
 
+	mappedGenericParams.replaceAllocator(allocator);
 	mappedGenericArgs.replaceAllocator(allocator);
 
 	for (auto i : mappedGenericArgs) {
@@ -548,18 +554,20 @@ SLAKE_API slake::StructObject::StructObject(Runtime *rt, peff::Alloc *selfAlloca
 	  genericArgs(selfAllocator),
 	  mappedGenericArgs(selfAllocator),
 	  genericParams(selfAllocator),
+	  mappedGenericParams(selfAllocator),
 	  implTypes(selfAllocator) {
 }
 
-SLAKE_API const GenericArgList *StructObject::getGenericArgs() const {
+SLAKE_API const ParamTypeList *StructObject::getGenericArgs() const {
 	return &genericArgs;
 }
 
 SLAKE_API StructObject::StructObject(Duplicator *duplicator, const StructObject &x, peff::Alloc *allocator, bool &succeededOut)
 	: ModuleObject(duplicator, x, allocator, succeededOut),
 	  genericArgs(allocator),
-	  mappedGenericArgs(allocator),
+	  mappedGenericArgs(allocator), // No need to copy
 	  genericParams(allocator),
+	  mappedGenericParams(allocator), // No need to copy
 	  implTypes(allocator) {
 	if (succeededOut) {
 		_flags = x._flags;
@@ -657,6 +665,7 @@ SLAKE_API void StructObject::replaceAllocator(peff::Alloc *allocator) noexcept {
 
 	genericArgs.replaceAllocator(allocator);
 
+	mappedGenericParams.replaceAllocator(allocator);
 	mappedGenericArgs.replaceAllocator(allocator);
 
 	for (auto i : mappedGenericArgs) {

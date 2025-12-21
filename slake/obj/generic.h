@@ -33,29 +33,29 @@ namespace slake {
 		SLAKE_API void replaceAllocator(peff::Alloc *allocator) noexcept;
 	};
 
-	using GenericArgList = peff::DynArray<TypeRef>;
+	using ParamTypeList = peff::DynArray<TypeRef>;
 	using GenericParamList = peff::DynArray<GenericParam>;
 
 	/// @brief Three-way comparator for containers.
-	struct GenericArgListComparator {
-		SLAKE_API int operator()(const GenericArgList &lhs, const GenericArgList &rhs) const noexcept;
+	struct ParamListComparator {
+		SLAKE_API int operator()(const ParamTypeList &lhs, const ParamTypeList &rhs) const noexcept;
 	};
 
 	/// @brief Less than ("<") comparator for containers.
 	struct GenericArgListLtComparator {
-		GenericArgListComparator innerComparator;
+		ParamListComparator innerComparator;
 
-		SLAKE_FORCEINLINE bool operator()(const GenericArgList& lhs, const GenericArgList& rhs) const noexcept {
+		SLAKE_FORCEINLINE bool operator()(const ParamTypeList& lhs, const ParamTypeList& rhs) const noexcept {
 			return innerComparator(lhs, rhs) < 0;
 		}
 	};
 
 	/// @brief Equality ("==") comparator for containers.
 	struct GenericArgListEqComparator {
-		GenericArgListComparator innerComparator;
+		ParamListComparator innerComparator;
 
 		SLAKE_FORCEINLINE GenericArgListEqComparator(peff::Alloc *allocator) {}
-		SLAKE_API bool operator()(const GenericArgList& lhs, const GenericArgList& rhs) const noexcept {
+		SLAKE_API bool operator()(const ParamTypeList& lhs, const ParamTypeList& rhs) const noexcept {
 			return innerComparator(lhs, rhs) == 0;
 		}
 	};

@@ -895,32 +895,34 @@ SLAKE_API InternalExceptionPointer loader::loadModule(LoaderContext &context, Ru
 		return OutOfMemoryError::alloc();
 	}
 
-	peff::DynArray<IdRefEntry> moduleFullName(runtime->getCurGenAlloc());
-	SLAKE_RETURN_IF_EXCEPT(loadIdRefEntries(context, runtime, reader, moduleObjectOut.get(), moduleFullName));
+	{
+		peff::DynArray<IdRefEntry> moduleFullName(runtime->getCurGenAlloc());
+		SLAKE_RETURN_IF_EXCEPT(loadIdRefEntries(context, runtime, reader, moduleObjectOut.get(), moduleFullName));
 
-	for (size_t i = 0; i < imh.nImports; ++i) {
-		HostObjectRef<IdRefObject> path;
+		for (size_t i = 0; i < imh.nImports; ++i) {
+			HostObjectRef<IdRefObject> path;
 
-		SLAKE_RETURN_IF_EXCEPT(loadIdRef(context, runtime, reader, moduleObjectOut.get(), path));
+			SLAKE_RETURN_IF_EXCEPT(loadIdRef(context, runtime, reader, moduleObjectOut.get(), path));
 
-		if (path->paramTypes.hasValue()) {
-			std::terminate();
-		}
-
-		for (size_t i = 0; i < path->entries.size(); ++i) {
-			if (path->entries.at(i).genericArgs.size()) {
+			if (path->paramTypes.hasValue()) {
 				std::terminate();
+			}
+
+			for (size_t i = 0; i < path->entries.size(); ++i) {
+				if (path->entries.at(i).genericArgs.size()) {
+					std::terminate();
+				}
+			}
+
+			if (!moduleObjectOut->unnamedImports.pushBack(path.get())) {
+				return OutOfMemoryError::alloc();
 			}
 		}
 
-		if (!moduleObjectOut->unnamedImports.pushBack(path.get())) {
-			return OutOfMemoryError::alloc();
-		}
+		SLAKE_RETURN_IF_EXCEPT(loadModuleMembers(context, runtime, reader, moduleObjectOut.get()));
+
+		SLAKE_RETURN_IF_EXCEPT(completeParentNamespaces(context, runtime, moduleObjectOut.get(), moduleFullName));
 	}
-
-	SLAKE_RETURN_IF_EXCEPT(loadModuleMembers(context, runtime, reader, moduleObjectOut.get()));
-
-	SLAKE_RETURN_IF_EXCEPT(completeParentNamespaces(context, runtime, moduleObjectOut.get(), moduleFullName));
 
 	for (auto i : context.loadedCustomTypeDefs) {
 		runtime->unregisterTypeDef(i);
@@ -949,6 +951,8 @@ SLAKE_API InternalExceptionPointer loader::loadModule(LoaderContext &context, Ru
 	for (auto i : context.loadedFns) {
 		SLAKE_RETURN_IF_EXCEPT(i->resortOverloadings());
 	}
+
+	runtime->gc();
 
 	return {};
 }

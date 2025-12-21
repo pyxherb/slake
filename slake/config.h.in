@@ -3,6 +3,8 @@
 
 #include <cstdint>
 
+#cmakedefine01 SLAKE_DEBUG_ALLOCATOR
+
 #cmakedefine01 SLAKE_WITH_STDLIB
 
 #cmakedefine01 SLAKE_WITH_SLKAOT

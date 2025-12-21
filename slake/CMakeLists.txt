@@ -43,6 +43,7 @@ add_subdirectory("opti")
 add_subdirectory("loader")
 add_subdirectory("aot")
 
+set(SLAKE_DEBUG_ALLOCATOR FALSE CACHE BOOL "Debug the allocator")
 set(SLAKE_STACK_MAX 1048576 CACHE STRING "Maximum stack size for Slake runtime")
 set(SLAKE_NATIVE_STACK_MAX 1048576 CACHE STRING "Maximum native stack size for Slake runtime")
 set(SLAKE_WITH_STDLIB TRUE CACHE BOOL "With Slake standard library")

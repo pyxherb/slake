@@ -74,10 +74,15 @@ SLAKE_API bool CountablePoolAlloc::isReplaceable(const peff::Alloc *rhs) const n
 
 SLAKE_API size_t GenerationalPoolAlloc::incRef(size_t globalRc) noexcept {
 	++refCount;
+
+	/*if (globalRc == 62)
+		puts("");*/
 #ifndef _NDEBUG
+	#if SLAKE_DEBUG_ALLOCATOR
 	if (!recordedRefPoints.insert(+globalRc)) {
 		puts("Error: error adding reference point!");
 	}
+	#endif
 #endif
 	return refCount;
 }
@@ -85,11 +90,13 @@ SLAKE_API size_t GenerationalPoolAlloc::incRef(size_t globalRc) noexcept {
 SLAKE_API size_t GenerationalPoolAlloc::decRef(size_t globalRc) noexcept {
 	--refCount;
 #ifndef _NDEBUG
+	#if SLAKE_DEBUG_ALLOCATOR
 	if (auto it = recordedRefPoints.find(+globalRc); it != recordedRefPoints.end()) {
 		recordedRefPoints.remove(+globalRc);
 	} else {
 		std::terminate();
 	}
+	#endif
 #endif
 	if (!refCount) {
 		onRefZero();

@@ -602,7 +602,6 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 		}
 		case Opcode::ALLOCA:
 			return InvalidOpcodeError::alloc(getFixedAlloc(), ins.opcode);
-
 		case Opcode::LVALUE: {
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 1>(this, ins));
 

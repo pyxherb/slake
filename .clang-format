@@ -36,7 +36,7 @@ SpaceBeforeParens: ControlStatements
 SpaceInEmptyParentheses: false
 SpacesInCStyleCastParentheses: false
 SpacesInParentheses: false
-Standard: c++11
+Standard: c++20
 SpacesInSquareBrackets: false
 TabWidth: 4
 UseTab: true

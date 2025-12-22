@@ -94,12 +94,10 @@ namespace slake {
 #define SLAKE_RETURN_IF_EXCEPT(expr)                         \
 	if (slake::InternalExceptionPointer _ = (expr); (bool)_) \
 		return _;                                            \
-	else                                                     \
-		;
+	else
 #define SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(name, ...) \
-	if ((bool)(name = (__VA_ARGS__)))                       \
-		return name;                                 \
-	else                                             \
-		;
+	if ((bool)(name = (__VA_ARGS__)))               \
+		return name;                                \
+	else
 
 #endif

@@ -297,25 +297,25 @@ SLKC_API bool Decompiler::decompileTypeName(peff::Alloc *allocator, DumpWriter *
 SLKC_API bool Decompiler::decompileValue(peff::Alloc *allocator, DumpWriter *writer, const slake::Value &value) {
 	switch (value.valueType) {
 		case slake::ValueType::I8: {
-			char s[4];
+			char s[8];
 			sprintf(s, "%hd", (int16_t)value.getI8());
 			SLKC_RETURN_IF_FALSE(writer->write(s));
 			break;
 		}
 		case slake::ValueType::I16: {
-			char s[8];
+			char s[16];
 			sprintf(s, "%hd", (int16_t)value.getI16());
 			SLKC_RETURN_IF_FALSE(writer->write(s));
 			break;
 		}
 		case slake::ValueType::I32: {
-			char s[16];
+			char s[32];
 			sprintf(s, "%d", value.getI32());
 			SLKC_RETURN_IF_FALSE(writer->write(s));
 			break;
 		}
 		case slake::ValueType::I64: {
-			char s[32];
+			char s[48];
 			sprintf(s, "%lld", value.getI64());
 			SLKC_RETURN_IF_FALSE(writer->write(s));
 			break;

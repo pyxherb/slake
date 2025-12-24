@@ -23,7 +23,6 @@ namespace slkc {
 		Object,
 		Any,
 		Custom,
-		Coroutine,
 		Unpacking,
 
 		Fn,

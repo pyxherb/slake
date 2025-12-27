@@ -866,277 +866,45 @@ SLAKE_API void Runtime::_gcParallelHeapless(Object *&objectList, Object *&endObj
 rescan:
 	size_t nRecordedObjects = nObjects;
 
-	for (auto &i : parallelGcThreads) {
-		ParallelGcThreadRunnable *curRunnable = (ParallelGcThreadRunnable *)i->runnable;
+	parallelGcThreadRunnable->context.reset();
+	parallelGcThreadRunnable->isActive = true;
+	parallelGcThreadRunnable->activeCond.notifyAll();
 
-		curRunnable->context.reset();
+	
+
+	while (!parallelGcThreadRunnable->isDone) {
+		yieldCurrentThread();
+		parallelGcThreadRunnable->doneCond.wait();
 	}
-
-	{
-		Object *curObjIt = objectList, *cur = nullptr;
-
-		size_t stepRemainder = nRecordedObjects % nMaxGcThreads;
-		size_t step = nRecordedObjects / nMaxGcThreads + (stepRemainder > 0);
-		for (size_t idx = 0, j = 0; j < nRecordedObjects; j += step, ++idx) {
-			GCWalkContext &context = parallelGcThreadRunnables.at(idx)->context;
-
-			Object *hostRefList = nullptr;
-
-			{
-				size_t nObj = nRecordedObjects - j;
-
-				if (nObj > step) {
-					nObj = step;
-				}
-
-				for (size_t i = 0; i < nObj; ++i) {
-					cur = curObjIt;
-					curObjIt = curObjIt->nextSameGenObject;
-
-					cur->gcStatus = ObjectGCStatus::Unwalked;
-					cur->gcWalkContext = &context;
-
-					cur->nextWalkable = nullptr;
-
-					cur->nextHostRef = nullptr;
-
-					cur->nextUnwalked = nullptr;
-					cur->prevUnwalked = nullptr;
-
-					cur->objectGeneration = newGeneration;
-
-					// Check if the object is referenced by the host, if so, exclude them into a separated list.
-					if (cur->hostRefCount) {
-						cur->nextHostRef = hostRefList;
-						hostRefList = cur;
-					}
-
-					switch (cur->getObjectKind()) {
-						case ObjectKind::Instance: {
-							InstanceObject *value = (InstanceObject *)cur;
-
-							if (!(value->_flags & VF_DESTRUCTED)) {
-								context.pushDestructible(value);
-							}
-							break;
-						}
-						default:
-							break;
-					}
-
-					context.pushUnwalked(cur);
-				}
-			}
-
-			for (Object *i = hostRefList, *next; i; i = next) {
-				next = i->nextHostRef;
-				GCWalkContext::pushObject(&context, i);
-				i->nextHostRef = nullptr;
-			}
-		}
-
-		endObjectOut = cur;
-	}
-
-	for (auto &t : parallelGcThreads) {
-		ParallelGcThreadRunnable *curRunnable = (ParallelGcThreadRunnable *)t->runnable;
-		GCWalkContext &context = curRunnable->context;
-
-		for (auto i = _genericCacheDir.begin(); i != _genericCacheDir.end(); ++i) {
-			for (auto j = i.value().begin(); j != i.value().end(); ++j) {
-				GCWalkContext::pushObject(&context, j.value());
-			}
-		}
-
-		for (auto i : managedThreadRunnables) {
-			GCWalkContext::pushObject(&context, i.second->context.get());
-		}
-
-		if (!(_flags & _RT_DEINITING)) {
-			// Walk the root node.
-			GCWalkContext::pushObject(&context, _rootObject);
-
-			// Walk contexts for each thread.
-			for (auto &i : activeContexts)
-				GCWalkContext::pushObject(&context, i.second);
-		}
-	}
-
-rescanLeftovers:
-	for (auto &i : parallelGcThreads) {
-		ParallelGcThreadRunnable *curRunnable = (ParallelGcThreadRunnable *)i->runnable;
-
-		curRunnable->isActive = true;
-
-		curRunnable->activeCond.notifyAll();
-	}
-
-	for (auto &i : parallelGcThreads) {
-		ParallelGcThreadRunnable *curRunnable = (ParallelGcThreadRunnable *)i->runnable;
-
-		while (!curRunnable->isDone) {
-			yieldCurrentThread();
-			curRunnable->doneCond.wait();
-		}
-		curRunnable->isDone = false;
-	}
-
-	for (auto &i : parallelGcThreads) {
-		ParallelGcThreadRunnable *curRunnable = (ParallelGcThreadRunnable *)i->runnable;
-
-		if (!curRunnable->context.isWalkableListEmpty()) {
-			goto rescanLeftovers;
-		}
-	}
-
-	bool isRescanNeeded = false;
-
-	for (size_t i = 0; i < parallelGcThreads.size(); ++i) {
-		ParallelGcThreadRunnable *curRunnable = (ParallelGcThreadRunnable *)parallelGcThreads.at(i)->runnable;
-		GCWalkContext &context = curRunnable->context;
-
-		if (InstanceObject *p = context.getDestructibleList(); p) {
-			_destructDestructibleObjects(p);
-			isRescanNeeded = true;
-		}
-	}
-
-	size_t nDeletedObjects = 0;
-
-	GCTarget curGcTarget = GCTarget::TypeDef;
-	bool clearUnwalkedList = false;
-rescanDeletables:
-	for (size_t i = 0; i < parallelGcThreads.size(); ++i) {
-		ParallelGcThreadRunnable *curRunnable = (ParallelGcThreadRunnable *)parallelGcThreads.at(i)->runnable;
-		GCWalkContext &context = curRunnable->context;
-
-		// Delete unreachable objects.
-		Object *j = context.getUnwalkedList(clearUnwalkedList);
-		bool updateUnwalkedList;
-		switch (curGcTarget) {
-			case GCTarget::TypeDef: {
-				if (!isTypeDefObject(j))
-					updateUnwalkedList = true;
-				else
-					updateUnwalkedList = false;
-				break;
-			}
-			case GCTarget::All:
-				updateUnwalkedList = false;
-				break;
-			default:
-				std::terminate();
-		}
-		for (Object *next; j; j = next) {
-			next = j->nextUnwalked;
-
-			switch (curGcTarget) {
-				case GCTarget::TypeDef:
-					if (!isTypeDefObject(j))
-						continue;
-					unregisterTypeDef((TypeDefObject *)j);
-					break;
-				case GCTarget::All:
-					break;
-				default:
-					std::terminate();
-			}
-
-			if (j == objectList) {
-				assert(!j->prevSameGenObject);
-				objectList = j->nextSameGenObject;
-			}
-
-			if (j->prevSameGenObject) {
-				j->prevSameGenObject->nextSameGenObject = j->nextSameGenObject;
-			}
-
-			if (j->nextSameGenObject) {
-				j->nextSameGenObject->prevSameGenObject = j->prevSameGenObject;
-			}
-
-			context.updateUnwalkedList(j);
-
-			if (updateUnwalkedList)
-				context.updateUnwalkedList(j);
-
-			j->dealloc();
-
-			++nDeletedObjects;
-		}
-	}
-
-	switch (curGcTarget) {
-		case GCTarget::TypeDef:
-			curGcTarget = GCTarget::All;
-			clearUnwalkedList = true;
-			goto rescanDeletables;
-		case GCTarget::All:
-			break;
-		default:
-			std::terminate();
-	}
-
-	nObjects -= nDeletedObjects;
-
-	if (isRescanNeeded) {
-		goto rescan;
-	}
-
-	if (!nObjects) {
-		assert(!objectList);
-	}
-
-	for (Object *i = objectList; i; i = i->nextSameGenObject) {
-		i->gcStatus = ObjectGCStatus::Unwalked;
-	}
+	parallelGcThreadRunnable->isDone = false;
 }
 
 SLAKE_API Runtime::ParallelGcThreadRunnable::ParallelGcThreadRunnable(Runtime *runtime) : runtime(runtime) {
 }
 
 SLAKE_API bool Runtime::_allocParallelGcResources() {
-	if (!parallelGcThreadRunnables.resize(nMaxGcThreads)) {
+	if (!(parallelGcThreadRunnable = std::unique_ptr<ParallelGcThreadRunnable, peff::DeallocableDeleter<ParallelGcThreadRunnable>>(peff::allocAndConstruct<ParallelGcThreadRunnable>(getFixedAlloc(), alignof(ParallelGcThreadRunnable), this)))) {
 		return false;
 	}
 
-	for (size_t i = 0; i < nMaxGcThreads; ++i) {
-		auto &p = parallelGcThreadRunnables.at(i);
-
-		if (!(p = std::unique_ptr<ParallelGcThreadRunnable, peff::DeallocableDeleter<ParallelGcThreadRunnable>>(peff::allocAndConstruct<ParallelGcThreadRunnable>(getFixedAlloc(), alignof(ParallelGcThreadRunnable), this)))) {
-			return false;
-		}
-	}
-
-	if (!parallelGcThreads.resize(nMaxGcThreads)) {
+	if (!(parallelGcThread = std::unique_ptr<Thread, peff::DeallocableDeleter<Thread>>(Thread::alloc(getFixedAlloc(), parallelGcThreadRunnable.get(), 4096)))) {
 		return false;
 	}
 
-	for (size_t i = 0; i < nMaxGcThreads; ++i) {
-		if (!(parallelGcThreads.at(i) = std::unique_ptr<Thread, peff::DeallocableDeleter<Thread>>(Thread::alloc(getFixedAlloc(), parallelGcThreadRunnables.at(i).get(), 4096)))) {
-			return false;
-		}
-	}
-
-	for (size_t i = 0; i < nMaxGcThreads; ++i) {
-		parallelGcThreads.at(i)->start();
-	}
+	parallelGcThread->start();
 
 	return true;
 }
 
 SLAKE_API void Runtime::_releaseParallelGcResources() {
-	for (auto &i : parallelGcThreadRunnables) {
-		i->threadState = ParallelGcThreadState::NotifyTermination;
+	parallelGcThreadRunnable->threadState = ParallelGcThreadState::NotifyTermination;
 
-		i->isActive = true;
+	parallelGcThreadRunnable->isActive = true;
 
-		i->activeCond.notifyAll();
+	parallelGcThreadRunnable->activeCond.notifyAll();
 
-		while (i->threadState == ParallelGcThreadState::NotifyTermination)
-			yieldCurrentThread();
-	}
+	while (parallelGcThreadRunnable->threadState == ParallelGcThreadState::NotifyTermination)
+		yieldCurrentThread();
 
-	parallelGcThreads.clear();
-	parallelGcThreadRunnables.clear();
+	parallelGcThread.reset();
 }

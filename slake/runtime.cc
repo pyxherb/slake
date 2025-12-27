@@ -320,8 +320,6 @@ SLAKE_API Runtime::Runtime(peff::Alloc *selfAllocator, peff::Alloc *upstream, Ru
 	  _genericCacheLookupTable(&fixedAlloc),
 	  _genericCacheDir(&fixedAlloc),
 	  managedThreadRunnables(&fixedAlloc),
-	  parallelGcThreads(&fixedAlloc),
-	  parallelGcThreadRunnables(&fixedAlloc),
 	  youngAlloc(this, &fixedAlloc),
 	  persistentAlloc(this, &fixedAlloc),
 	  typeDefs(&fixedAlloc) {

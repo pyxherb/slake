@@ -219,8 +219,7 @@ namespace slake {
 		SLAKE_API void _gcWalk(GCWalkContext *context, Context &i);
 		SLAKE_API void _gcSerial(Object *&objectList, Object *&endObjectOut, size_t &nObjects, ObjectGeneration newGeneration);
 
-		size_t nMaxGcThreads = 8;
-		peff::DynArray<std::unique_ptr<Thread, peff::DeallocableDeleter<Thread>>> parallelGcThreads;
+		std::unique_ptr<Thread, peff::DeallocableDeleter<Thread>> parallelGcThread;
 
 		enum class ParallelGcThreadState : uint8_t {
 			Alive = 0,
@@ -242,7 +241,7 @@ namespace slake {
 			SLAKE_API void dealloc();
 		};
 
-		peff::DynArray<std::unique_ptr<ParallelGcThreadRunnable, peff::DeallocableDeleter<ParallelGcThreadRunnable>>> parallelGcThreadRunnables;
+		std::unique_ptr<ParallelGcThreadRunnable, peff::DeallocableDeleter<ParallelGcThreadRunnable>> parallelGcThreadRunnable;
 
 		SLAKE_API bool _allocParallelGcResources();
 		SLAKE_API void _releaseParallelGcResources();

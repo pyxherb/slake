@@ -2,13 +2,12 @@
 
 <div style="text-align: center">
     <img src="./common/logo2.svg" alt="Slake logo"><br/>
-    <strong>The object-oriented, type-safe, embeddable programming language</strong>
 </div>
 
 ## Introduction
 
-Slake is an object-oriented, type-safe and embeddable programming language for
-scripting.
+Slake is a type-safe and embeddable programming language for extensible
+applications.
 
 ## Development Progress
 

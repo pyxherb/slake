@@ -688,3 +688,220 @@ malformed:
 	whetherOut = false;
 	return {};
 }
+
+SLKC_API AstNodePtr<AstNode> ConstEnumNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
+	bool succeeded = false;
+	AstNodePtr<ConstEnumNode> duplicatedNode(makeAstNode<ConstEnumNode>(newAllocator, *this, newAllocator, context, succeeded));
+	if ((!duplicatedNode) || (!succeeded)) {
+		return {};
+	}
+
+	return duplicatedNode.template castTo<AstNode>();
+}
+
+SLKC_API EnumItemNode::EnumItemNode(
+	peff::Alloc *selfAllocator,
+	const peff::SharedPtr<Document> &document)
+	: MemberNode(AstNodeType::EnumItem, selfAllocator, document) {
+}
+
+SLKC_API EnumItemNode::EnumItemNode(const EnumItemNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut) : MemberNode(rhs, allocator, context, succeededOut) {
+	if (!succeededOut) {
+		return;
+	}
+
+	if (!context.pushTask([this, &rhs, allocator, &context]() -> bool {
+			if (rhs.enumValue && !(enumValue = rhs.enumValue->duplicate<ExprNode>(allocator))) {
+				return false;
+			}
+			return true;
+		})) {
+		succeededOut = false;
+		return;
+	}
+
+	succeededOut = true;
+}
+
+SLKC_API EnumItemNode::~EnumItemNode() {
+}
+
+SLKC_API ConstEnumNode::ConstEnumNode(
+	peff::Alloc *selfAllocator,
+	const peff::SharedPtr<Document> &document)
+	: ModuleNode(selfAllocator, document, AstNodeType::ConstEnum) {
+}
+
+SLKC_API ConstEnumNode::ConstEnumNode(const ConstEnumNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut) : ModuleNode(rhs, allocator, context, succeededOut) {
+	if (!succeededOut) {
+		return;
+	}
+
+	if (!context.pushTask([this, &rhs, allocator, &context]() -> bool {
+			if (rhs.baseType && !(baseType = rhs.baseType->duplicate<TypeNameNode>(allocator))) {
+				return false;
+			}
+			return true;
+		})) {
+		succeededOut = false;
+		return;
+	}
+
+	succeededOut = true;
+}
+
+SLKC_API ConstEnumNode::~ConstEnumNode() {
+}
+
+SLKC_API AstNodePtr<AstNode> ClassEnumNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
+	bool succeeded = false;
+	AstNodePtr<ClassEnumNode> duplicatedNode(makeAstNode<ClassEnumNode>(newAllocator, *this, newAllocator, context, succeeded));
+	if ((!duplicatedNode) || (!succeeded)) {
+		return {};
+	}
+
+	return duplicatedNode.template castTo<AstNode>();
+}
+
+SLKC_API ClassEnumNode::ClassEnumNode(
+	peff::Alloc *selfAllocator,
+	const peff::SharedPtr<Document> &document)
+	: ModuleNode(selfAllocator, document, AstNodeType::ClassEnum) {
+}
+
+SLKC_API ClassEnumNode::ClassEnumNode(const ClassEnumNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut) : ModuleNode(rhs, allocator, context, succeededOut) {
+	if (!succeededOut) {
+		return;
+	}
+
+	if (!context.pushTask([this, &rhs, allocator, &context]() -> bool {
+			if (rhs.baseType && !(baseType = rhs.baseType->duplicate<TypeNameNode>(allocator))) {
+				return false;
+			}
+			return true;
+		})) {
+		succeededOut = false;
+		return;
+	}
+
+	succeededOut = true;
+}
+
+SLKC_API ClassEnumNode::~ClassEnumNode() {
+}
+
+SLKC_API UnionEnumItemNode::UnionEnumItemNode(
+	peff::Alloc *selfAllocator,
+	const peff::SharedPtr<Document> &document)
+	: MemberNode(AstNodeType::UnionEnumItem, selfAllocator, document),
+	  elementTypes(selfAllocator) {
+}
+
+SLKC_API UnionEnumItemNode::UnionEnumItemNode(const UnionEnumItemNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut) : MemberNode(rhs, allocator, context, succeededOut), elementTypes(allocator) {
+	if (!succeededOut) {
+		return;
+	}
+
+	if (!elementTypes.resize(rhs.elementTypes.size())) {
+		succeededOut = false;
+		return;
+	}
+
+	for (size_t i = 0; i < elementTypes.size(); ++i) {
+		if (!context.pushTask([this, i, &rhs, allocator, &context]() -> bool {
+				if (!(elementTypes.at(i) = rhs.elementTypes.at(i)->duplicate<TypeNameNode>(allocator)))
+					return false;
+				return true;
+			})) {
+			succeededOut = false;
+			return;
+		}
+	}
+
+	succeededOut = true;
+}
+
+SLKC_API UnionEnumItemNode::~UnionEnumItemNode() {
+}
+
+SLKC_API AstNodePtr<AstNode> UnionEnumNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
+	bool succeeded = false;
+	AstNodePtr<UnionEnumNode> duplicatedNode(makeAstNode<UnionEnumNode>(newAllocator, *this, newAllocator, context, succeeded));
+	if ((!duplicatedNode) || (!succeeded)) {
+		return {};
+	}
+
+	return duplicatedNode.template castTo<AstNode>();
+}
+
+SLKC_API UnionEnumNode::UnionEnumNode(
+	peff::Alloc *selfAllocator,
+	const peff::SharedPtr<Document> &document)
+	: ModuleNode(selfAllocator, document, AstNodeType::UnionEnum),
+	  genericParams(selfAllocator),
+	  genericParamIndices(selfAllocator),
+	  idxGenericParamCommaTokens(selfAllocator) {
+}
+
+SLKC_API UnionEnumNode::UnionEnumNode(const UnionEnumNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut) : ModuleNode(rhs, allocator, context, succeededOut), genericParams(allocator), genericParamIndices(allocator), idxGenericParamCommaTokens(allocator) {
+	if (!succeededOut) {
+		return;
+	}
+
+	if (!context.pushTask([this, &rhs, allocator, &context]() -> bool {
+			if (rhs.baseType && !(baseType = rhs.baseType->duplicate<TypeNameNode>(allocator))) {
+				return false;
+			}
+			return true;
+		})) {
+		succeededOut = false;
+		return;
+	}
+
+	if (!genericParams.resize(rhs.genericParams.size())) {
+		succeededOut = false;
+		return;
+	}
+
+	for (size_t i = 0; i < genericParams.size(); ++i) {
+		if (!context.pushTask([this, i, &rhs, allocator, &context]() -> bool {
+				if (!(genericParams.at(i) = rhs.genericParams.at(i)->duplicate<GenericParamNode>(allocator)))
+					return false;
+
+				genericParams.at(i)->setParent(this);
+				return true;
+			})) {
+			succeededOut = false;
+			return;
+		}
+	}
+
+	for (const auto &[k, v] : rhs.genericParamIndices) {
+		if (!context.pushTask([this, v, &rhs, allocator, &context]() -> bool {
+				if (!genericParamIndices.insert(genericParams.at(v)->name, +v)) {
+					return false;
+				}
+				return true;
+			})) {
+			succeededOut = false;
+			return;
+		}
+	}
+
+	if (!idxGenericParamCommaTokens.resize(rhs.idxGenericParamCommaTokens.size())) {
+		succeededOut = false;
+		return;
+	}
+
+	memcpy(idxGenericParamCommaTokens.data(), rhs.idxGenericParamCommaTokens.data(), sizeof(size_t) * idxGenericParamCommaTokens.size());
+
+	idxLAngleBracketToken = rhs.idxLAngleBracketToken;
+	idxRAngleBracketToken = rhs.idxRAngleBracketToken;
+
+	isGenericParamsIndexed = rhs.isGenericParamsIndexed;
+
+	succeededOut = true;
+}
+
+SLKC_API UnionEnumNode::~UnionEnumNode() {
+}

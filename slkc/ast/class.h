@@ -45,7 +45,7 @@ namespace slkc {
 		bool isCyclicInheritanceChecked = false;
 		/// @brief Indicates if the interface has cyclic inheritance.
 		bool isCyclicInheritedFlag = false;
-		/// @brief Error indicates which one type name caused the inheritance error.
+		/// @brief Error indicates which type name caused the inheritance error.
 		peff::Option<CompilationError> cyclicInheritanceError;
 
 		peff::DynArray<AstNodePtr<TypeNameNode>> implTypes;
@@ -97,6 +97,71 @@ namespace slkc {
 			isRecursedTypeChecked = false;
 			isRecursedTypeFlag = false;
 		}
+	};
+
+	class EnumItemNode : public MemberNode {
+	protected:
+		SLKC_API virtual AstNodePtr<AstNode> doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const override;
+
+	public:
+		AstNodePtr<ExprNode> enumValue;
+
+		SLKC_API EnumItemNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
+		SLKC_API EnumItemNode(const EnumItemNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut);
+		SLKC_API virtual ~EnumItemNode();
+	};
+
+	class ConstEnumNode : public ModuleNode {
+	protected:
+		SLKC_API virtual AstNodePtr<AstNode> doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const override;
+
+	public:
+		AstNodePtr<TypeNameNode> baseType;
+
+		SLKC_API ConstEnumNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
+		SLKC_API ConstEnumNode(const ConstEnumNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut);
+		SLKC_API virtual ~ConstEnumNode();
+	};
+
+	class ClassEnumNode : public ModuleNode {
+	protected:
+		SLKC_API virtual AstNodePtr<AstNode> doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const override;
+
+	public:
+		AstNodePtr<TypeNameNode> baseType;
+
+		SLKC_API ClassEnumNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
+		SLKC_API ClassEnumNode(const ClassEnumNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut);
+		SLKC_API virtual ~ClassEnumNode();
+	};
+
+	class UnionEnumItemNode : public MemberNode {
+	protected:
+		SLKC_API virtual AstNodePtr<AstNode> doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const override;
+
+	public:
+		peff::DynArray<AstNodePtr<TypeNameNode>> elementTypes;
+
+		SLKC_API UnionEnumItemNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
+		SLKC_API UnionEnumItemNode(const UnionEnumItemNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut);
+		SLKC_API virtual ~UnionEnumItemNode();
+	};
+
+	class UnionEnumNode : public ModuleNode {
+	protected:
+		SLKC_API virtual AstNodePtr<AstNode> doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const override;
+
+	public:
+		AstNodePtr<TypeNameNode> baseType;
+		peff::DynArray<AstNodePtr<GenericParamNode>> genericParams;
+		peff::HashMap<std::string_view, size_t> genericParamIndices;
+		peff::DynArray<size_t> idxGenericParamCommaTokens;
+		size_t idxLAngleBracketToken = SIZE_MAX, idxRAngleBracketToken = SIZE_MAX;
+		bool isGenericParamsIndexed = false;
+
+		SLKC_API UnionEnumNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
+		SLKC_API UnionEnumNode(const UnionEnumNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut);
+		SLKC_API virtual ~UnionEnumNode();
 	};
 
 	class ThisNode : public MemberNode {

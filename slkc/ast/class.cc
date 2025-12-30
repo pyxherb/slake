@@ -516,6 +516,7 @@ static peff::Option<CompilationError> _isStructRecursed(
 						return genOutOfMemoryCompError();
 				}
 				if (exData.index >= curStruct->members.size()) {
+					walkedStructs.remove(curStruct.castTo<AstNode>());
 					context.frames.popBack();
 					continue;
 				}
@@ -563,6 +564,7 @@ static peff::Option<CompilationError> _isStructRecursed(
 					}
 				}
 				if (exData.memberIndex >= curStruct->members.size()) {
+					walkedStructs.remove(curStruct.castTo<AstNode>());
 					context.frames.popBack();
 					continue;
 				}

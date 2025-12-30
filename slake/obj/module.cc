@@ -2,7 +2,7 @@
 
 using namespace slake;
 
-SLAKE_API void FieldRecord::replaceAllocator(peff::Alloc* allocator) noexcept {
+SLAKE_API void FieldRecord::replaceAllocator(peff::Alloc *allocator) noexcept {
 	name.replaceAllocator(allocator);
 }
 
@@ -91,6 +91,8 @@ SLAKE_API bool ModuleObject::removeMember(const std::string_view &name) {
 }
 
 SLAKE_API bool ModuleObject::appendFieldRecord(FieldRecord &&fieldRecord) {
+	_checkFieldsValidity();
+
 	if (!fieldRecords.pushBack(std::move(fieldRecord))) {
 		return false;
 	}
@@ -110,6 +112,21 @@ SLAKE_API bool ModuleObject::appendFieldRecord(FieldRecord &&fieldRecord) {
 	}
 
 	associatedRuntime->writeVarUnsafe(Reference::makeStaticFieldRef(this, fieldRecords.size() - 1), associatedRuntime->defaultValueOf(fr.type));
+	return true;
+}
+
+SLAKE_API bool ModuleObject::appendFieldRecordWithoutAlloc(FieldRecord &&fieldRecord) {
+	if (!fieldRecords.pushBack(std::move(fieldRecord))) {
+		return false;
+	}
+	FieldRecord &fr = fieldRecords.back();
+	if (!fieldRecordIndices.insert(fr.name, fieldRecordIndices.size())) {
+		if (!fieldRecords.popBack())
+			fieldRecords.popBackWithoutShrink();
+		return false;
+	}
+
+	this->moduleFlags |= _MOD_FIELDS_VALID;
 	return true;
 }
 
@@ -136,6 +153,20 @@ SLAKE_API char *ModuleObject::appendFieldSpace(size_t size, size_t alignment) {
 
 SLAKE_API char *ModuleObject::appendTypedFieldSpace(const TypeRef &type) {
 	return appendFieldSpace(associatedRuntime->sizeofType(type), associatedRuntime->alignofType(type));
+}
+
+SLAKE_API bool ModuleObject::reallocFieldSpaces() noexcept {
+	localFieldStorage.clear();
+	for (auto& i : fieldRecords) {
+		if (char *p = appendTypedFieldSpace(i.type); p) {
+			i.offset = p - localFieldStorage.data();
+		} else {
+			localFieldStorage.clear();
+			return false;
+		}
+	}
+	moduleFlags &= ~_MOD_FIELDS_VALID;
+	return true;
 }
 
 SLAKE_API HostObjectRef<ModuleObject> slake::ModuleObject::alloc(Runtime *rt) {
@@ -170,7 +201,7 @@ SLAKE_API void ModuleObject::replaceAllocator(peff::Alloc *allocator) noexcept {
 
 	fieldRecords.replaceAllocator(allocator);
 
-	for (auto& i : fieldRecords) {
+	for (auto &i : fieldRecords) {
 		i.replaceAllocator(allocator);
 	}
 

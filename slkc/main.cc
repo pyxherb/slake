@@ -486,8 +486,8 @@ void dumpCompilationError(peff::SharedPtr<slkc::Parser> parser, const slkc::Comp
 				beginToken->sourceLocation.beginPosition.line + 1,
 				beginToken->sourceLocation.beginPosition.column + 1);
 			break;
-		case slkc::CompilationErrorKind::RecursedStruct:
-			printError("Error at %zu, %zu: Recursed structure type detected\n",
+		case slkc::CompilationErrorKind::RecursedValueType:
+			printError("Error at %zu, %zu: Recursed value type detected\n",
 				beginToken->sourceLocation.beginPosition.line + 1,
 				beginToken->sourceLocation.beginPosition.column + 1);
 			break;
@@ -683,6 +683,11 @@ void dumpCompilationError(peff::SharedPtr<slkc::Parser> parser, const slkc::Comp
 			break;
 		case slkc::CompilationErrorKind::InterfaceMethodsConflicted:
 			printError("Error at %zu, %zu: Interface methods conflicted\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
+		case slkc::CompilationErrorKind::TypeIsNotInitializable:
+			printError("Error at %zu, %zu: The type is not initializable\n",
 				beginToken->sourceLocation.beginPosition.line + 1,
 				beginToken->sourceLocation.beginPosition.column + 1);
 			break;

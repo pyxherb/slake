@@ -372,7 +372,6 @@ static peff::Option<CompilationError> _determineNodeType(CompileEnvironment *com
 		case AstNodeType::Module:
 		case AstNodeType::Class:
 		case AstNodeType::Struct:
-		case AstNodeType::Enum:
 		case AstNodeType::Interface:
 			typeNameOut = {};
 			break;

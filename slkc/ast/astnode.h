@@ -9,8 +9,9 @@ namespace slkc {
 	enum class AstNodeType : uint8_t {
 		Struct = 0,
 		ConstEnum,
-		ClassEnum,
-		UnionEnum,
+		ScopedEnum,
+		ClassUnionEnum,
+		StructUnionEnum,
 		EnumItem,
 		UnionEnumItem,
 		AttributeDef,
@@ -208,7 +209,7 @@ namespace slkc {
 		AbstractMethodNotImplemented,
 		CyclicInheritedClass,
 		CyclicInheritedInterface,
-		RecursedStruct,
+		RecursedValueType,
 		ExpectingId,
 		IdNotFound,
 		ParamAlreadyDefined,
@@ -249,6 +250,7 @@ namespace slkc {
 		RequiresCompTimeExpr,
 		TypeArgTypeMismatched,
 		InterfaceMethodsConflicted,
+		TypeIsNotInitializable,
 
 		ImportLimitExceeded,
 		MalformedModuleName,

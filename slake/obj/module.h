@@ -36,8 +36,14 @@ namespace slake {
 
 	class ModuleObject;
 
+	using ModuleFlags = uint32_t;
+	constexpr ModuleFlags
+		_MOD_FIELDS_VALID = 0x80000000;
+
 	class ModuleObject : public MemberObject {
 	public:
+		ModuleFlags moduleFlags = 0;
+
 		peff::HashMap<std::string_view, MemberObject *> members;
 
 		peff::DynArray<char> localFieldStorage;
@@ -59,12 +65,23 @@ namespace slake {
 		SLAKE_API bool appendFieldRecord(FieldRecord &&fieldRecord);
 		SLAKE_API char *appendFieldSpace(size_t size, size_t alignment);
 		SLAKE_API char *appendTypedFieldSpace(const TypeRef &type);
+		SLAKE_API bool appendFieldRecordWithoutAlloc(FieldRecord &&fieldRecord);
+
+		SLAKE_API bool reallocFieldSpaces() noexcept;
 
 		SLAKE_API static HostObjectRef<ModuleObject> alloc(Runtime *rt);
 		SLAKE_API static HostObjectRef<ModuleObject> alloc(Duplicator *duplicator, const ModuleObject *other);
 		SLAKE_API virtual void dealloc() override;
 
 		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;
+
+	private:
+		SLAKE_FORCEINLINE void _checkFieldsValidity() const noexcept {
+			if (moduleFlags & _MOD_FIELDS_VALID)
+				// Cannot use appendFieldRecord again until the field records are resorted.
+				// The user should use `appendFieldRecordWithoutAlloc` instead.
+				std::terminate();
+		}
 	};
 }
 

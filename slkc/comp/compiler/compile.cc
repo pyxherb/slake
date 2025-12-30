@@ -704,18 +704,58 @@ SLKC_API peff::Option<CompilationError> slkc::compileModule(
 
 				fr.type = type;
 
-				if (!modOut->appendFieldRecord(std::move(fr))) {
-					return genOutOfRuntimeMemoryCompError();
+				switch (type.typeId) {
+					case slake::TypeId::Any:
+					case slake::TypeId::I8:
+					case slake::TypeId::I16:
+					case slake::TypeId::I32:
+					case slake::TypeId::I64:
+					case slake::TypeId::ISize:
+					case slake::TypeId::U8:
+					case slake::TypeId::U16:
+					case slake::TypeId::U32:
+					case slake::TypeId::U64:
+					case slake::TypeId::USize:
+					case slake::TypeId::F32:
+					case slake::TypeId::F64:
+					case slake::TypeId::Bool:
+					case slake::TypeId::String:
+					case slake::TypeId::Instance:
+					case slake::TypeId::Array:
+					case slake::TypeId::Tuple:
+					case slake::TypeId::SIMD:
+					case slake::TypeId::Fn: {
+						slake::Value defaultValue;
+						if (varNode->initialValue)
+							SLKC_RETURN_IF_COMP_ERROR(compileValueExpr(compileEnv, &compilationContext, varNode->initialValue, defaultValue));
+						else
+							defaultValue = modOut->associatedRuntime->defaultValueOf(type);
+						if (!modOut->appendFieldRecord(std::move(fr))) {
+							return genOutOfRuntimeMemoryCompError();
+						}
+						modOut->associatedRuntime->writeVar(slake::Reference::makeStaticFieldRef(modOut, modOut->fieldRecords.size() - 1), defaultValue).unwrap();
+						break;
+					}
+					case slake::TypeId::StructInstance:
+						if (!modOut->appendFieldRecordWithoutAlloc(std::move(fr))) {
+							return genOutOfRuntimeMemoryCompError();
+						}
+						break;
+					case slake::TypeId::GenericArg:
+					case slake::TypeId::Ref:
+					case slake::TypeId::TempRef:
+						if (varNode->initialValue)
+							return CompilationError(varNode->initialValue->tokenRange, CompilationErrorKind::TypeIsNotInitializable);
+						if (!modOut->appendFieldRecord(std::move(fr))) {
+							return genOutOfRuntimeMemoryCompError();
+						}
+						break;
+					case slake::TypeId::ParamTypeList:
+					case slake::TypeId::Unpacking:
+					case slake::TypeId::Unknown:
+					default:
+						std::terminate();
 				}
-
-				slake::Value defaultValue;
-
-				if (varNode->initialValue) {
-					SLKC_RETURN_IF_COMP_ERROR(compileValueExpr(compileEnv, &compilationContext, varNode->initialValue, defaultValue));
-				} else {
-					defaultValue = modOut->associatedRuntime->defaultValueOf(type);
-				}
-				modOut->associatedRuntime->writeVar(slake::Reference::makeStaticFieldRef(modOut, modOut->fieldRecords.size() - 1), defaultValue).unwrap();
 
 				break;
 			}
@@ -764,6 +804,14 @@ SLKC_API peff::Option<CompilationError> slkc::compileModule(
 						SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(CompilationError(clsNode->baseType->tokenRange, CompilationErrorKind::ExpectingClassName)));
 					}
 
+					bool isCyclicInherited = false;
+					SLKC_RETURN_IF_COMP_ERROR(clsNode->isCyclicInherited(isCyclicInherited));
+
+					if (isCyclicInherited) {
+						SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(CompilationError(clsNode->tokenRange, CompilationErrorKind::CyclicInheritedClass)));
+						continue;
+					}
+
 					SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, &compilationContext, clsNode->baseType, cls->baseType));
 				}
 
@@ -781,14 +829,6 @@ SLKC_API peff::Option<CompilationError> slkc::compileModule(
 									if (auto e = collectInvolvedInterfaces(compileEnv->document, implementedTypeNode.template castTo<InterfaceNode>(), involvedInterfaces, true); e) {
 										if (e->errorKind != CompilationErrorKind::CyclicInheritedInterface)
 											return e;
-									}
-
-									bool isCyclicInherited = false;
-									SLKC_RETURN_IF_COMP_ERROR(clsNode->isCyclicInherited(isCyclicInherited));
-
-									if (isCyclicInherited) {
-										SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(CompilationError(clsNode->tokenRange, CompilationErrorKind::CyclicInheritedClass)));
-										continue;
 									}
 								}
 							} else {
@@ -1074,6 +1114,14 @@ SLKC_API peff::Option<CompilationError> slkc::compileModule(
 
 				SLKC_RETURN_IF_COMP_ERROR(compileGenericParams(compileEnv, &compilationContext, mod, clsNode->genericParams.data(), clsNode->genericParams.size(), cls->genericParams));
 
+				bool isCyclicInherited = false;
+				SLKC_RETURN_IF_COMP_ERROR(clsNode->isRecursedType(isCyclicInherited));
+
+				if (isCyclicInherited) {
+					SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(CompilationError(clsNode->tokenRange, CompilationErrorKind::RecursedValueType)));
+					continue;
+				}
+
 				peff::Set<AstNodePtr<InterfaceNode>> involvedInterfaces(compileEnv->allocator.get());
 
 				for (auto &i : clsNode->implTypes) {
@@ -1090,13 +1138,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileModule(
 											return e;
 									}
 
-									bool isCyclicInherited = false;
-									SLKC_RETURN_IF_COMP_ERROR(clsNode->isRecursedType(isCyclicInherited));
 
-									if (isCyclicInherited) {
-										SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(CompilationError(clsNode->tokenRange, CompilationErrorKind::RecursedStruct)));
-										continue;
-									}
 								}
 							} else {
 								SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(CompilationError(i->tokenRange, CompilationErrorKind::ExpectingInterfaceName)));

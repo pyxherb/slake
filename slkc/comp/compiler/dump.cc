@@ -501,7 +501,7 @@ SLKC_API peff::Option<CompilationError> slkc::dumpModuleMembers(
 
 	SLKC_RETURN_IF_COMP_ERROR(writer->writeU32(mod->fieldRecords.size()));
 	for (size_t i = 0; i < mod->fieldRecords.size(); ++i) {
-		auto &curRecord = mod->fieldRecords.at(i);
+		const slake::FieldRecord &curRecord = mod->fieldRecords.at(i);
 
 		slake::slxfmt::VarDesc vad = {};
 
@@ -527,7 +527,41 @@ SLKC_API peff::Option<CompilationError> slkc::dumpModuleMembers(
 		SLKC_RETURN_IF_COMP_ERROR(writer->write(curRecord.name.data(), curRecord.name.size()));
 
 		SLKC_RETURN_IF_COMP_ERROR(dumpTypeName(allocator, writer, curRecord.type));
-		SLKC_RETURN_IF_COMP_ERROR(dumpValue(allocator, writer, mod->associatedRuntime->readVarUnsafe(slake::Reference::makeStaticFieldRef(mod, i))));
+		switch (curRecord.type.typeId) {
+			case slake::TypeId::Any:
+			case slake::TypeId::I8:
+			case slake::TypeId::I16:
+			case slake::TypeId::I32:
+			case slake::TypeId::I64:
+			case slake::TypeId::ISize:
+			case slake::TypeId::U8:
+			case slake::TypeId::U16:
+			case slake::TypeId::U32:
+			case slake::TypeId::U64:
+			case slake::TypeId::USize:
+			case slake::TypeId::F32:
+			case slake::TypeId::F64:
+			case slake::TypeId::Bool:
+			case slake::TypeId::String:
+			case slake::TypeId::Instance:
+			case slake::TypeId::Array:
+			case slake::TypeId::Tuple:
+			case slake::TypeId::SIMD:
+			case slake::TypeId::Fn:
+				SLKC_RETURN_IF_COMP_ERROR(dumpValue(allocator, writer, mod->associatedRuntime->readVarUnsafe(slake::Reference::makeStaticFieldRef(mod, i))));
+				break;
+			case slake::TypeId::StructInstance:
+				break;
+			case slake::TypeId::Ref:
+			case slake::TypeId::TempRef:
+			case slake::TypeId::GenericArg:
+				break;
+			case slake::TypeId::ParamTypeList:
+			case slake::TypeId::Unpacking:
+			case slake::TypeId::Unknown:
+			default:
+				std::terminate();
+		}
 	}
 	return {};
 }

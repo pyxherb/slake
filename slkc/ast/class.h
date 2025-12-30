@@ -123,16 +123,16 @@ namespace slkc {
 		SLKC_API virtual ~ConstEnumNode();
 	};
 
-	class ClassEnumNode : public ModuleNode {
+	class ScopedEnumNode : public ModuleNode {
 	protected:
 		SLKC_API virtual AstNodePtr<AstNode> doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const override;
 
 	public:
 		AstNodePtr<TypeNameNode> baseType;
 
-		SLKC_API ClassEnumNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
-		SLKC_API ClassEnumNode(const ClassEnumNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut);
-		SLKC_API virtual ~ClassEnumNode();
+		SLKC_API ScopedEnumNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
+		SLKC_API ScopedEnumNode(const ScopedEnumNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut);
+		SLKC_API virtual ~ScopedEnumNode();
 	};
 
 	class UnionEnumItemNode : public MemberNode {
@@ -147,7 +147,7 @@ namespace slkc {
 		SLKC_API virtual ~UnionEnumItemNode();
 	};
 
-	class UnionEnumNode : public ModuleNode {
+	class ClassUnionEnumNode : public ModuleNode {
 	protected:
 		SLKC_API virtual AstNodePtr<AstNode> doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const override;
 
@@ -159,9 +159,38 @@ namespace slkc {
 		size_t idxLAngleBracketToken = SIZE_MAX, idxRAngleBracketToken = SIZE_MAX;
 		bool isGenericParamsIndexed = false;
 
-		SLKC_API UnionEnumNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
-		SLKC_API UnionEnumNode(const UnionEnumNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut);
-		SLKC_API virtual ~UnionEnumNode();
+		SLKC_API ClassUnionEnumNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
+		SLKC_API ClassUnionEnumNode(const ClassUnionEnumNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut);
+		SLKC_API virtual ~ClassUnionEnumNode();
+	};
+
+	class StructUnionEnumNode : public ModuleNode {
+	protected:
+		SLKC_API virtual AstNodePtr<AstNode> doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const override;
+
+	public:
+		/// @brief Indicates if the cyclic inheritance is already checked.
+		bool isRecursedTypeChecked = false;
+		/// @brief Indicates if the class has cyclic inheritance.
+		bool isRecursedTypeFlag = false;
+
+		AstNodePtr<TypeNameNode> baseType;
+		peff::DynArray<AstNodePtr<GenericParamNode>> genericParams;
+		peff::HashMap<std::string_view, size_t> genericParamIndices;
+		peff::DynArray<size_t> idxGenericParamCommaTokens;
+		size_t idxLAngleBracketToken = SIZE_MAX, idxRAngleBracketToken = SIZE_MAX;
+		bool isGenericParamsIndexed = false;
+
+		SLKC_API StructUnionEnumNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
+		SLKC_API StructUnionEnumNode(const StructUnionEnumNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut);
+		SLKC_API virtual ~StructUnionEnumNode();
+
+		SLKC_API peff::Option<CompilationError> isRecursedType(bool &whetherOut);
+		SLKC_API peff::Option<CompilationError> updateRecursedTypeStatus();
+		SLAKE_FORCEINLINE void resetRecursedTypeFlag() {
+			isRecursedTypeChecked = false;
+			isRecursedTypeFlag = false;
+		}
 	};
 
 	class ThisNode : public MemberNode {

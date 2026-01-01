@@ -51,10 +51,7 @@ SLAKE_API IdRefObject::IdRefObject(const IdRefObject &x, peff::Alloc *allocator,
 		}
 
 		for (size_t i = 0; i < x.paramTypes->size(); ++i) {
-			if (!peff::copy(copiedParamTypes.at(i), x.paramTypes->at(i))) {
-				succeededOut = false;
-				return;
-			}
+			copiedParamTypes.at(i) = x.paramTypes->at(i);
 		}
 
 		paramTypes = std::move(copiedParamTypes);

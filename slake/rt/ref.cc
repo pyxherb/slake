@@ -117,8 +117,7 @@ SLAKE_API bool Runtime::getFullRef(peff::Alloc *allocator, const MemberObject *v
 			if (!copiedGenericArgs.resize(p->size()))
 				return false;
 			for (size_t i = 0; i < copiedGenericArgs.size(); ++i) {
-				if (!peff::copyAssign(copiedGenericArgs.at(i), p->at(i)))
-					return false;
+				copiedGenericArgs.at(i) = p->at(i);
 			}
 		}
 

@@ -1,6 +1,8 @@
 #ifndef _SLAKE_BASEDEFS_H_
 #define _SLAKE_BASEDEFS_H_
 
+#include <peff/base/basedefs.h>
+
 #ifdef _MSC_VER
 
 	#define SLAKE_DLLEXPORT __declspec(dllexport)

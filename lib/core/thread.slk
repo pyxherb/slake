@@ -1,0 +1,14 @@
+module core.thread;
+
+use std.core.traits;
+use std.core.except;
+
+class Thread final {
+	public native fn Thread(work: traits.ICallable<(), void>);
+	public native fn Thread(work: traits.ICallable<(), void>, stackSize: usize);
+
+	public native fn setDestructorWorker();
+	public native fn clearDestructorWorker();
+}
+
+public native fn yield();

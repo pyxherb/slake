@@ -479,7 +479,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 				}
 
 				peff::Set<AstNodePtr<MemberNode>> walkedMemberNodes(compileEnv->document->allocator.get());
-				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, 
+				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
 					resolveIdRefWithScopeNode(
 						compileEnv,
 						compileEnv->document,
@@ -523,7 +523,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 					break;
 				case ExprEvalPurpose::Stmt:
 					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileEnv->pushWarning(
-						CompilationWarning(e->tokenRange, CompilationWarningKind::UnusedExprResult)));
+																			  CompilationWarning(e->tokenRange, CompilationWarningKind::UnusedExprResult)));
 					break;
 				case ExprEvalPurpose::LValue: {
 					bool b = false;
@@ -532,7 +532,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 						return CompilationError(e->idRefPtr->tokenRange, CompilationErrorKind::ExpectingLValueExpr);
 					}
 
-					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, 
+					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
 						compilationContext->emitIns(
 							sldIndex,
 							slake::Opcode::MOV,
@@ -544,14 +544,14 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 					bool b = false;
 					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, isLValueType(resultOut.evaluatedType, b));
 					if ((b) && (initialMember != finalMember)) {
-						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, 
+						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
 							compilationContext->emitIns(
 								sldIndex,
 								slake::Opcode::LVALUE,
 								resultRegOut,
 								{ slake::Value(slake::ValueType::RegIndex, finalRegister) }));
 					} else {
-						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, 
+						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
 							compilationContext->emitIns(
 								sldIndex,
 								slake::Opcode::MOV,
@@ -572,14 +572,14 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 					bool b = false;
 					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, isLValueType(resultOut.evaluatedType, b));
 					if ((b) && (initialMember != finalMember)) {
-						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, 
+						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
 							compilationContext->emitIns(
 								sldIndex,
 								slake::Opcode::LVALUE,
 								resultRegOut,
 								{ slake::Value(slake::ValueType::RegIndex, finalRegister) }));
 					} else {
-						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, 
+						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
 							compilationContext->emitIns(
 								sldIndex,
 								slake::Opcode::MOV,
@@ -628,7 +628,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 							break;
 						case ExprEvalPurpose::Stmt:
 							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileEnv->pushWarning(
-								CompilationWarning(e->tokenRange, CompilationWarningKind::UnusedExprResult)));
+																					  CompilationWarning(e->tokenRange, CompilationWarningKind::UnusedExprResult)));
 							break;
 						case ExprEvalPurpose::LValue:
 							return CompilationError(expr->tokenRange, CompilationErrorKind::ExpectingLValueExpr);
@@ -659,7 +659,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 							break;
 						case ExprEvalPurpose::Stmt:
 							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileEnv->pushWarning(
-								CompilationWarning(e->tokenRange, CompilationWarningKind::UnusedExprResult)));
+																					  CompilationWarning(e->tokenRange, CompilationWarningKind::UnusedExprResult)));
 							break;
 						case ExprEvalPurpose::LValue: {
 							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->emitIns(sldIndex, slake::Opcode::MOV, initialMemberReg, { slake::Value(slake::ValueType::RegIndex, it->idxReg) }));
@@ -692,7 +692,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 							break;
 						case ExprEvalPurpose::Stmt:
 							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileEnv->pushWarning(
-								CompilationWarning(e->tokenRange, CompilationWarningKind::UnusedExprResult)));
+																					  CompilationWarning(e->tokenRange, CompilationWarningKind::UnusedExprResult)));
 							break;
 						case ExprEvalPurpose::LValue: {
 							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->emitIns(sldIndex, slake::Opcode::LARG, initialMemberReg, { slake::Value((uint32_t)it.value()) }));
@@ -737,7 +737,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 						}
 
 						peff::Set<AstNodePtr<MemberNode>> walkedMemberNodes(compileEnv->document->allocator.get());
-						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, 
+						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
 							resolveIdRefWithScopeNode(
 								compileEnv,
 								compileEnv->document,
@@ -769,7 +769,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 				} else {
 					finalMember = initialMember;
 
-					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, 
+					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
 						compilationContext->emitIns(
 							sldIndex,
 							slake::Opcode::MOV,
@@ -782,7 +782,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 				ResolvedIdRefPartList parts(compileEnv->document->allocator.get());
 				{
 					peff::Set<AstNodePtr<MemberNode>> walkedMemberNodes(compileEnv->document->allocator.get());
-					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, 
+					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
 						resolveIdRefWithScopeNode(
 							compileEnv,
 							compileEnv->document,
@@ -822,7 +822,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 					break;
 				case ExprEvalPurpose::Stmt:
 					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileEnv->pushWarning(
-						CompilationWarning(e->tokenRange, CompilationWarningKind::UnusedExprResult)));
+																			  CompilationWarning(e->tokenRange, CompilationWarningKind::UnusedExprResult)));
 					break;
 				case ExprEvalPurpose::LValue: {
 					bool b = false;
@@ -831,7 +831,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 						return CompilationError(e->idRefPtr->tokenRange, CompilationErrorKind::ExpectingLValueExpr);
 					}
 
-					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, 
+					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
 						compilationContext->emitIns(
 							sldIndex,
 							slake::Opcode::MOV,
@@ -843,14 +843,14 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 					bool b = false;
 					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, isLValueType(resultOut.evaluatedType, b));
 					if ((b) && (initialMember != finalMember)) {
-						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, 
+						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
 							compilationContext->emitIns(
 								sldIndex,
 								slake::Opcode::LVALUE,
 								resultRegOut,
 								{ slake::Value(slake::ValueType::RegIndex, finalRegister) }));
 					} else {
-						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, 
+						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
 							compilationContext->emitIns(
 								sldIndex,
 								slake::Opcode::MOV,
@@ -871,14 +871,14 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 					bool b = false;
 					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, isLValueType(resultOut.evaluatedType, b));
 					if ((b) && (initialMember != finalMember)) {
-						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, 
+						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
 							compilationContext->emitIns(
 								sldIndex,
 								slake::Opcode::LVALUE,
 								resultRegOut,
 								{ slake::Value(slake::ValueType::RegIndex, finalRegister) }));
 					} else {
-						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, 
+						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
 							compilationContext->emitIns(
 								sldIndex,
 								slake::Opcode::MOV,
@@ -888,7 +888,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 					break;
 				}
 				case ExprEvalPurpose::Unpacking: {
-					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, 
+					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
 						compilationContext->emitIns(
 							sldIndex,
 							slake::Opcode::MOV,
@@ -943,7 +943,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 					break;
 				case ExprEvalPurpose::Stmt:
 					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileEnv->pushWarning(
-						CompilationWarning(e->tokenRange, CompilationWarningKind::UnusedExprResult)));
+																			  CompilationWarning(e->tokenRange, CompilationWarningKind::UnusedExprResult)));
 					break;
 				case ExprEvalPurpose::RValue: {
 					slake::HostObjectRef<slake::StringObject> sl;
@@ -959,7 +959,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 					}
 
 					if (resultRegOut != UINT32_MAX) {
-						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, 
+						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
 							compilationContext->emitIns(
 								sldIndex,
 								slake::Opcode::MOV,
@@ -992,11 +992,11 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 			switch (evalPurpose) {
 				case ExprEvalPurpose::Stmt:
 					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileEnv->pushWarning(
-						CompilationWarning(e->tokenRange, CompilationWarningKind::UnusedExprResult)));
+																			  CompilationWarning(e->tokenRange, CompilationWarningKind::UnusedExprResult)));
 					break;
 				case ExprEvalPurpose::RValue:
 					if (resultRegOut != UINT32_MAX) {
-						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, 
+						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
 							compilationContext->emitIns(
 								sldIndex,
 								slake::Opcode::MOV,
@@ -1034,7 +1034,9 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 
 					if (t) {
 						if (tn) {
-							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, determinePromotionalType(t, tn, tn));
+							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, deduceCommonType(t, tn, tn));
+							if (!tn)
+								break;
 						} else {
 							tn = t;
 						}
@@ -1067,14 +1069,14 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 					break;
 				case ExprEvalPurpose::Stmt:
 					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileEnv->pushWarning(
-						CompilationWarning(e->tokenRange, CompilationWarningKind::UnusedExprResult)));
+																			  CompilationWarning(e->tokenRange, CompilationWarningKind::UnusedExprResult)));
 					break;
 				case ExprEvalPurpose::RValue: {
 					if (resultRegOut != UINT32_MAX) {
 						slake::TypeRef elementType;
 
 						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileTypeName(compileEnv, compilationContext, tn, elementType));
-						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, 
+						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
 							compilationContext->emitIns(
 								sldIndex,
 								slake::Opcode::ARRNEW,
@@ -1090,7 +1092,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 
 							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->allocReg(curElementRegIndex));
 
-							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, 
+							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
 								compilationContext->emitIns(
 									sldIndex,
 									slake::Opcode::AT,
@@ -1101,7 +1103,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 
 							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, e->elements.at(i), ExprEvalPurpose::RValue, tn.template castTo<TypeNameNode>(), curElementRegIndex, result));
 
-							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, 
+							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
 								compilationContext->emitIns(
 									sldIndex,
 									slake::Opcode::STORE,
@@ -1237,11 +1239,11 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 				peff::DynArray<AstNodePtr<FnOverloadingNode>> matchedOverloadingIndices(compileEnv->allocator.get());
 				auto matchedOverloading = result.callTargetMatchedOverloadings.back();
 				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, determineFnOverloading(compileEnv,
-					result.callTargetFnSlot,
-					argTypes.data(),
-					argTypes.size(),
-					matchedOverloading->accessModifier & slake::ACCESS_STATIC,
-					matchedOverloadingIndices));
+																		  result.callTargetFnSlot,
+																		  argTypes.data(),
+																		  argTypes.size(),
+																		  matchedOverloading->accessModifier & slake::ACCESS_STATIC,
+																		  matchedOverloadingIndices));
 				if (!matchedOverloadingIndices.size()) {
 					return CompilationError(e->tokenRange, CompilationErrorKind::ArgsMismatched);
 				}
@@ -1271,7 +1273,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 
 				switch (argType->typeNameKind) {
 					case TypeNameKind::UnpackedArgs:
-						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, 
+						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
 							compilationContext->emitIns(
 								sldIndex,
 								slake::Opcode::PUSHAP,
@@ -1279,7 +1281,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 								{ slake::Value(slake::ValueType::RegIndex, reg) }));
 						break;
 					default:
-						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, 
+						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
 							compilationContext->emitIns(
 								sldIndex,
 								slake::Opcode::PUSHARG,
@@ -1442,11 +1444,11 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 
 					peff::DynArray<AstNodePtr<FnOverloadingNode>> matchedOverloadingIndices(compileEnv->allocator.get());
 					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, determineFnOverloading(compileEnv,
-						constructor,
-						argTypes.data(),
-						argTypes.size(),
-						false,
-						matchedOverloadingIndices));
+																			  constructor,
+																			  argTypes.data(),
+																			  argTypes.size(),
+																			  false,
+																			  matchedOverloadingIndices));
 					if (!matchedOverloadingIndices.size()) {
 						return CompilationError(e->tokenRange, CompilationErrorKind::ArgsMismatched);
 					}
@@ -1457,11 +1459,11 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 
 					peff::DynArray<AstNodePtr<FnOverloadingNode>> matchedOverloadingIndices(compileEnv->allocator.get());
 					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, determineFnOverloading(compileEnv,
-						constructor,
-						argTypes.data(),
-						argTypes.size(),
-						false,
-						matchedOverloadingIndices));
+																			  constructor,
+																			  argTypes.data(),
+																			  argTypes.size(),
+																			  false,
+																			  matchedOverloadingIndices));
 					switch (matchedOverloadingIndices.size()) {
 						case 0:
 							return CompilationError(e->tokenRange, CompilationErrorKind::NoMatchingFnOverloading);
@@ -1516,7 +1518,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, e->args.at(i), ExprEvalPurpose::RValue, {}, reg, argResult));
 					}
 
-					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, 
+					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
 						compilationContext->emitIns(
 							sldIndex,
 							slake::Opcode::PUSHARG,
@@ -1596,22 +1598,25 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 				if (desiredType)
 					returnType = desiredType;
 				else {
-					AstNodePtr<TypeNameNode> mostPromotionalType, t;
+					AstNodePtr<TypeNameNode> commonType, t;
 
 					for (auto &i : e->cases) {
 						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, evalExprType(compileEnv, compilationContext, i.second, t));
 
 						if (t) {
-							if (mostPromotionalType) {
-								SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, determinePromotionalType(t, mostPromotionalType, mostPromotionalType));
+							if (commonType) {
+								SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, deduceCommonType(t, commonType, commonType));
+								if (!commonType)
+									break;
 							} else {
-								mostPromotionalType = t;
+								commonType = t;
 							}
 						}
 					}
 
-					if (!mostPromotionalType)
+					if (!commonType)
 						return CompilationError(expr->tokenRange, CompilationErrorKind::ErrorDeducingMatchResultType);
+					returnType = commonType;
 				}
 			}
 

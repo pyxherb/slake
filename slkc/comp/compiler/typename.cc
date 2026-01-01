@@ -225,6 +225,607 @@ SLKC_API peff::Option<CompilationError> slkc::determinePromotionalType(
 	return {};
 }
 
+SLKC_API peff::Option<CompilationError> slkc::isSubtypeOf(
+	AstNodePtr<TypeNameNode> subtype,
+	AstNodePtr<TypeNameNode> type,
+	bool &resultOut) {
+	switch (subtype->typeNameKind) {
+		case TypeNameKind::Void:
+			resultOut = false;
+			break;
+		case TypeNameKind::I8:
+			switch (type->typeNameKind) {
+				case TypeNameKind::I8:
+					resultOut = false;
+					break;
+				case TypeNameKind::I16:
+				case TypeNameKind::I32:
+				case TypeNameKind::I64:
+				case TypeNameKind::ISize:
+					resultOut = true;
+					break;
+				default:
+					resultOut = false;
+					break;
+			}
+			break;
+		case TypeNameKind::I16:
+			switch (type->typeNameKind) {
+				case TypeNameKind::I8:
+				case TypeNameKind::I16:
+					resultOut = false;
+					break;
+				case TypeNameKind::I32:
+				case TypeNameKind::I64:
+				case TypeNameKind::ISize:
+					resultOut = true;
+					break;
+				default:
+					resultOut = false;
+					break;
+			}
+			break;
+		case TypeNameKind::I32:
+			switch (type->typeNameKind) {
+				case TypeNameKind::I8:
+				case TypeNameKind::I16:
+				case TypeNameKind::I32:
+				case TypeNameKind::ISize:
+					resultOut = false;
+					break;
+				case TypeNameKind::I64:
+					resultOut = true;
+					break;
+				default:
+					resultOut = false;
+					break;
+			}
+			break;
+		case TypeNameKind::I64:
+			switch (type->typeNameKind) {
+				case TypeNameKind::I8:
+				case TypeNameKind::I16:
+				case TypeNameKind::I32:
+				case TypeNameKind::I64:
+				case TypeNameKind::ISize:
+					resultOut = false;
+					break;
+				default:
+					resultOut = false;
+					break;
+			}
+			break;
+		case TypeNameKind::ISize:
+			switch (type->typeNameKind) {
+				case TypeNameKind::I8:
+				case TypeNameKind::I16:
+				case TypeNameKind::I32:
+				case TypeNameKind::ISize:
+					resultOut = false;
+					break;
+				case TypeNameKind::I64:
+					resultOut = true;
+					break;
+				default:
+					resultOut = false;
+					break;
+			}
+			break;
+		case TypeNameKind::U8:
+			switch (type->typeNameKind) {
+				case TypeNameKind::U8:
+				case TypeNameKind::U16:
+				case TypeNameKind::U32:
+				case TypeNameKind::U64:
+				case TypeNameKind::USize:
+					resultOut = true;
+					break;
+				default:
+					resultOut = false;
+					break;
+			}
+			break;
+		case TypeNameKind::U16:
+			switch (type->typeNameKind) {
+				case TypeNameKind::U8:
+				case TypeNameKind::U16:
+					resultOut = false;
+					break;
+				case TypeNameKind::U32:
+				case TypeNameKind::U64:
+				case TypeNameKind::USize:
+					resultOut = true;
+					break;
+				default:
+					resultOut = false;
+					break;
+			}
+			break;
+		case TypeNameKind::U32:
+			switch (type->typeNameKind) {
+				case TypeNameKind::U8:
+				case TypeNameKind::U16:
+				case TypeNameKind::U32:
+				case TypeNameKind::USize:
+					resultOut = false;
+					break;
+				case TypeNameKind::U64:
+					resultOut = true;
+					break;
+				default:
+					resultOut = false;
+					break;
+			}
+			break;
+		case TypeNameKind::U64:
+			switch (type->typeNameKind) {
+				case TypeNameKind::U8:
+				case TypeNameKind::U16:
+				case TypeNameKind::U32:
+				case TypeNameKind::U64:
+				case TypeNameKind::USize:
+					resultOut = false;
+					break;
+				default:
+					resultOut = false;
+					break;
+			}
+			break;
+		case TypeNameKind::USize:
+			switch (type->typeNameKind) {
+				case TypeNameKind::U8:
+				case TypeNameKind::U16:
+				case TypeNameKind::U32:
+				case TypeNameKind::USize:
+					resultOut = false;
+					break;
+				case TypeNameKind::U64:
+					resultOut = true;
+					break;
+				default:
+					resultOut = false;
+					break;
+			}
+			break;
+		case TypeNameKind::F32:
+			switch (type->typeNameKind) {
+				case TypeNameKind::F32:
+					resultOut = false;
+					break;
+				case TypeNameKind::F64:
+					resultOut = true;
+					break;
+				default:
+					resultOut = false;
+					break;
+			}
+			break;
+		case TypeNameKind::F64:
+			switch (type->typeNameKind) {
+				case TypeNameKind::F32:
+				case TypeNameKind::F64:
+					resultOut = false;
+					break;
+				default:
+					resultOut = false;
+					break;
+			}
+			break;
+		case TypeNameKind::String:
+			switch (type->typeNameKind) {
+				case TypeNameKind::Object:
+					resultOut = true;
+					break;
+				case TypeNameKind::String:
+					resultOut = false;
+					break;
+				default:
+					resultOut = false;
+					break;
+			}
+			break;
+		case TypeNameKind::Bool:
+			switch (type->typeNameKind) {
+				case TypeNameKind::I8:
+				case TypeNameKind::I16:
+				case TypeNameKind::I32:
+				case TypeNameKind::I64:
+				case TypeNameKind::ISize:
+				case TypeNameKind::U8:
+				case TypeNameKind::U16:
+				case TypeNameKind::U32:
+				case TypeNameKind::U64:
+				case TypeNameKind::USize:
+					resultOut = true;
+					break;
+				default:
+					resultOut = false;
+					break;
+			}
+			break;
+		case TypeNameKind::Object:
+		case TypeNameKind::Any:
+			resultOut = false;
+			break;
+		case TypeNameKind::Custom:
+			switch (type->typeNameKind) {
+				case TypeNameKind::Object: {
+					AstNodePtr<MemberNode> stm;
+
+					SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(type->document->sharedFromThis(), type.castTo<CustomTypeNameNode>(), stm));
+
+					if (stm->getAstNodeType() == AstNodeType::Class)
+						resultOut = true;
+					else
+						resultOut = false;
+					break;
+				}
+				case TypeNameKind::Custom: {
+					AstNodePtr<MemberNode> stm, tm;
+
+					SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(type->document->sharedFromThis(), type.castTo<CustomTypeNameNode>(), tm));
+					SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(subtype->document->sharedFromThis(), subtype.castTo<CustomTypeNameNode>(), stm));
+
+					switch (tm->getAstNodeType()) {
+						case AstNodeType::Class:
+							switch (stm->getAstNodeType()) {
+								case AstNodeType::Class:
+									SLKC_RETURN_IF_COMP_ERROR(isBaseOf(type->document->sharedFromThis(), tm.castTo<ClassNode>(), stm.castTo<ClassNode>(), resultOut));
+									break;
+								default:
+									resultOut = false;
+									break;
+							}
+							break;
+						case AstNodeType::Interface:
+							switch (stm->getAstNodeType()) {
+								case AstNodeType::Class:
+									SLKC_RETURN_IF_COMP_ERROR(isImplementedByClass(type->document->sharedFromThis(), tm.castTo<InterfaceNode>(), stm.castTo<ClassNode>(), resultOut));
+									break;
+								case AstNodeType::Interface:
+									SLKC_RETURN_IF_COMP_ERROR(isImplementedByInterface(type->document->sharedFromThis(), tm.castTo<InterfaceNode>(), stm.castTo<InterfaceNode>(), resultOut));
+									break;
+								case AstNodeType::Struct:
+									// TODO: Process struct here...
+									resultOut = false;
+									break;
+							}
+							break;
+						default:
+							resultOut = false;
+							break;
+					}
+					break;
+				}
+				default:
+					resultOut = false;
+					break;
+			}
+			break;
+		default:
+			resultOut = false;
+			break;
+	}
+	return {};
+}
+
+SLKC_API peff::Option<CompilationError> slkc::isUnsigned(
+	AstNodePtr<TypeNameNode> type,
+	bool &resultOut) {
+	switch (type->typeNameKind) {
+		case TypeNameKind::U8:
+		case TypeNameKind::U16:
+		case TypeNameKind::U32:
+		case TypeNameKind::U64:
+		case TypeNameKind::USize:
+			resultOut = true;
+			break;
+		default:
+			resultOut = false;
+	}
+	return {};
+}
+
+[[nodiscard]] SLKC_API peff::Option<CompilationError> slkc::toSigned(
+	AstNodePtr<TypeNameNode> type,
+	AstNodePtr<TypeNameNode> &typeNameOut) {
+	switch (type->typeNameKind) {
+		case TypeNameKind::U8:
+			if (!(typeNameOut = makeAstNode<I8TypeNameNode>(
+					  type->selfAllocator.get(),
+					  type->selfAllocator.get(),
+					  type->document->sharedFromThis())
+						.castTo<TypeNameNode>()))
+				return genOutOfMemoryCompError();
+			break;
+		case TypeNameKind::U16:
+			if (!(typeNameOut = makeAstNode<I16TypeNameNode>(
+					  type->selfAllocator.get(),
+					  type->selfAllocator.get(),
+					  type->document->sharedFromThis())
+						.castTo<TypeNameNode>()))
+				return genOutOfMemoryCompError();
+			break;
+		case TypeNameKind::U32:
+			if (!(typeNameOut = makeAstNode<I32TypeNameNode>(
+					  type->selfAllocator.get(),
+					  type->selfAllocator.get(),
+					  type->document->sharedFromThis())
+						.castTo<TypeNameNode>()))
+				return genOutOfMemoryCompError();
+			break;
+		case TypeNameKind::U64:
+			if (!(typeNameOut = makeAstNode<I64TypeNameNode>(
+					  type->selfAllocator.get(),
+					  type->selfAllocator.get(),
+					  type->document->sharedFromThis())
+						.castTo<TypeNameNode>()))
+				return genOutOfMemoryCompError();
+			break;
+		case TypeNameKind::USize:
+			if (!(typeNameOut = makeAstNode<ISizeTypeNameNode>(
+					  type->selfAllocator.get(),
+					  type->selfAllocator.get(),
+					  type->document->sharedFromThis())
+						.castTo<TypeNameNode>()))
+				return genOutOfMemoryCompError();
+			break;
+		default:
+			typeNameOut = {};
+			break;
+	}
+
+	return {};
+}
+
+[[nodiscard]] SLKC_API peff::Option<CompilationError> slkc::toUnsigned(
+	AstNodePtr<TypeNameNode> type,
+	AstNodePtr<TypeNameNode> &typeNameOut) {
+	switch (type->typeNameKind) {
+		case TypeNameKind::I8:
+			if (!(typeNameOut = makeAstNode<U8TypeNameNode>(
+					  type->selfAllocator.get(),
+					  type->selfAllocator.get(),
+					  type->document->sharedFromThis())
+						.castTo<TypeNameNode>()))
+				return genOutOfMemoryCompError();
+			break;
+		case TypeNameKind::I16:
+			if (!(typeNameOut = makeAstNode<U16TypeNameNode>(
+					  type->selfAllocator.get(),
+					  type->selfAllocator.get(),
+					  type->document->sharedFromThis())
+						.castTo<TypeNameNode>()))
+				return genOutOfMemoryCompError();
+			break;
+		case TypeNameKind::I32:
+			if (!(typeNameOut = makeAstNode<U32TypeNameNode>(
+					  type->selfAllocator.get(),
+					  type->selfAllocator.get(),
+					  type->document->sharedFromThis())
+						.castTo<TypeNameNode>()))
+				return genOutOfMemoryCompError();
+			break;
+		case TypeNameKind::I64:
+			if (!(typeNameOut = makeAstNode<U64TypeNameNode>(
+					  type->selfAllocator.get(),
+					  type->selfAllocator.get(),
+					  type->document->sharedFromThis())
+						.castTo<TypeNameNode>()))
+				return genOutOfMemoryCompError();
+			break;
+		case TypeNameKind::ISize:
+			if (!(typeNameOut = makeAstNode<USizeTypeNameNode>(
+					  type->selfAllocator.get(),
+					  type->selfAllocator.get(),
+					  type->document->sharedFromThis())
+						.castTo<TypeNameNode>()))
+				return genOutOfMemoryCompError();
+			break;
+		default:
+			typeNameOut = {};
+			break;
+	}
+
+	return {};
+}
+
+SLKC_API peff::Option<CompilationError> slkc::isFloatingPoint(
+	AstNodePtr<TypeNameNode> type,
+	bool &resultOut) {
+	switch (type->typeNameKind) {
+		case TypeNameKind::F32:
+		case TypeNameKind::F64:
+			resultOut = true;
+			break;
+		default:
+			resultOut = false;
+	}
+	return {};
+}
+
+SLKC_API peff::Option<CompilationError> slkc::isSigned(
+	AstNodePtr<TypeNameNode> type,
+	bool &resultOut) {
+	switch (type->typeNameKind) {
+		case TypeNameKind::I8:
+		case TypeNameKind::I16:
+		case TypeNameKind::I32:
+		case TypeNameKind::I64:
+		case TypeNameKind::ISize:
+			resultOut = true;
+			break;
+		default:
+			resultOut = false;
+	}
+	return {};
+}
+
+SLKC_API peff::Option<CompilationError> slkc::isIntegral(
+	AstNodePtr<TypeNameNode> type,
+	bool &resultOut) {
+	switch (type->typeNameKind) {
+		case TypeNameKind::I8:
+		case TypeNameKind::I16:
+		case TypeNameKind::I32:
+		case TypeNameKind::I64:
+		case TypeNameKind::ISize:
+		case TypeNameKind::U8:
+		case TypeNameKind::U16:
+		case TypeNameKind::U32:
+		case TypeNameKind::U64:
+		case TypeNameKind::USize:
+			resultOut = true;
+			break;
+		default:
+			resultOut = false;
+	}
+	return {};
+}
+
+SLKC_API peff::Option<CompilationError> slkc::isBasicType(
+	AstNodePtr<TypeNameNode> lhs,
+	bool &resultOut) {
+	switch (lhs->typeNameKind) {
+		case TypeNameKind::Void:
+		case TypeNameKind::I8:
+		case TypeNameKind::I16:
+		case TypeNameKind::I32:
+		case TypeNameKind::I64:
+		case TypeNameKind::ISize:
+		case TypeNameKind::U8:
+		case TypeNameKind::U16:
+		case TypeNameKind::U32:
+		case TypeNameKind::U64:
+		case TypeNameKind::USize:
+		case TypeNameKind::F32:
+		case TypeNameKind::F64:
+		case TypeNameKind::String:
+		case TypeNameKind::Bool:
+		case TypeNameKind::Object:
+		case TypeNameKind::Any:
+			resultOut = true;
+			break;
+		default:
+			resultOut = false;
+	}
+	return {};
+}
+
+SLKC_API peff::Option<CompilationError> slkc::deduceCommonType(
+	AstNodePtr<TypeNameNode> lhs,
+	AstNodePtr<TypeNameNode> rhs,
+	AstNodePtr<TypeNameNode> &typeNameOut) {
+	{
+		bool isSame;
+		SLKC_RETURN_IF_COMP_ERROR(isSameType(lhs, rhs, isSame));
+		if (isSame) {
+			typeNameOut = lhs;
+			return {};
+		}
+	}
+
+	AstNodePtr<TypeNameNode> l = lhs, r = rhs;
+reconvert:
+	bool whether;
+	SLKC_RETURN_IF_COMP_ERROR(isSubtypeOf(l, r, whether));
+	if (whether) {
+		typeNameOut = r;
+		return {};
+	}
+	SLKC_RETURN_IF_COMP_ERROR(isSubtypeOf(r, l, whether));
+	if (whether) {
+		typeNameOut = l;
+		return {};
+	}
+
+	SLKC_RETURN_IF_COMP_ERROR(isSigned(l, whether));
+	if (whether) {
+		SLKC_RETURN_IF_COMP_ERROR(isUnsigned(r, whether));
+		if (whether) {
+			// l = signed, r = unsigned
+			SLKC_RETURN_IF_COMP_ERROR(toSigned(r, r));
+			goto reconvert;
+		}
+		// l = signed, r = ??? where r is not unsigned nor signed.
+	} else {
+		SLKC_RETURN_IF_COMP_ERROR(isSigned(r, whether));
+		if (whether) {
+			// l = unsigned, r = signed
+			SLKC_RETURN_IF_COMP_ERROR(toSigned(l, l));
+			goto reconvert;
+		}
+		// l = ???, r = signed where r is not unsigned nor signed.
+	}
+
+	SLKC_RETURN_IF_COMP_ERROR(isFloatingPoint(l, whether));
+	if (whether) {
+		SLKC_RETURN_IF_COMP_ERROR(isFloatingPoint(r, whether));
+		if (whether) {
+			// l = FP, r = non-FP
+			switch (r->typeNameKind) {
+				case TypeNameKind::I8:
+				case TypeNameKind::I16:
+				case TypeNameKind::I32:
+				case TypeNameKind::U8:
+				case TypeNameKind::U16:
+				case TypeNameKind::U32:
+					if (!(r = makeAstNode<F32TypeNameNode>(
+							  r->selfAllocator.get(),
+							  r->selfAllocator.get(),
+							  r->document->sharedFromThis())
+								.castTo<TypeNameNode>()))
+						return genOutOfMemoryCompError();
+					goto reconvert;
+				case TypeNameKind::I64:
+				case TypeNameKind::U64:
+					if (!(r = makeAstNode<F64TypeNameNode>(
+							  r->selfAllocator.get(),
+							  r->selfAllocator.get(),
+							  r->document->sharedFromThis())
+								.castTo<TypeNameNode>()))
+						return genOutOfMemoryCompError();
+					goto reconvert;
+			}
+		}
+		// l = FP, r = ??? where r is not unsigned nor signed.
+	} else {
+		SLKC_RETURN_IF_COMP_ERROR(isFloatingPoint(r, whether));
+		if (whether) {
+			// l = FP, r = non-FP
+			switch (l->typeNameKind) {
+				case TypeNameKind::I8:
+				case TypeNameKind::I16:
+				case TypeNameKind::I32:
+				case TypeNameKind::U8:
+				case TypeNameKind::U16:
+				case TypeNameKind::U32:
+					if (!(l = makeAstNode<F32TypeNameNode>(
+							  l->selfAllocator.get(),
+							  l->selfAllocator.get(),
+							  l->document->sharedFromThis())
+								.castTo<TypeNameNode>()))
+						return genOutOfMemoryCompError();
+					goto reconvert;
+				case TypeNameKind::I64:
+				case TypeNameKind::U64:
+					if (!(l = makeAstNode<F64TypeNameNode>(
+							  l->selfAllocator.get(),
+							  l->selfAllocator.get(),
+							  l->document->sharedFromThis())
+								.castTo<TypeNameNode>()))
+						return genOutOfMemoryCompError();
+					goto reconvert;
+			}
+		}
+		// l = ???, r = FP where r is not unsigned nor signed.
+	}
+
+	// Failed - I give up.
+	typeNameOut = {};
+	return {};
+}
+
 SLKC_API peff::Option<CompilationError> slkc::isSameTypeInSignature(
 	AstNodePtr<TypeNameNode> lhs,
 	AstNodePtr<TypeNameNode> rhs,
@@ -760,7 +1361,7 @@ SLKC_API peff::Option<CompilationError> slkc::unwrapParamListTypeNameTree(
 
 [[nodiscard]] SLKC_API peff::Option<CompilationError> slkc::unwrapFacadeTypeName(
 	AstNodePtr<TypeNameNode> type,
-	AstNodePtr<TypeNameNode>& typeNameOut) {
+	AstNodePtr<TypeNameNode> &typeNameOut) {
 	if (!type) {
 		typeNameOut = type;
 		return {};

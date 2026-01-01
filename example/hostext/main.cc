@@ -5,14 +5,14 @@
 
 #include <iostream>
 
-slake::Value print(slake::Context *context, slake::MajorFrame *curMajorFrame) {
-	using namespace slake;
+using namespace slake;
 
+Value print(Context *context, MajorFrame *curMajorFrame) {
 	if (curMajorFrame->resumable->argStack.size() < 1)
 		putchar('\n');
 	else {
 		Value varArgsValue;
-		varArgsValue = curMajorFrame->curFn->associatedRuntime->readVarUnsafe(slake::Reference::makeArgRef(curMajorFrame, 0));
+		varArgsValue = curMajorFrame->curFn->associatedRuntime->readVarUnsafe(Reference::makeArgRef(curMajorFrame, 0));
 		ArrayObject *varArgs = (ArrayObject *)varArgsValue.getReference().asObject;
 
 		for (uint8_t i = 0; i < varArgs->length; ++i) {
@@ -64,7 +64,7 @@ slake::Value print(slake::Context *context, slake::MajorFrame *curMajorFrame) {
 					else {
 						switch (objectPtr->getObjectKind()) {
 							case ObjectKind::String:
-								std::cout << ((slake::StringObject *)objectPtr)->data.data();
+								std::cout << ((StringObject *)objectPtr)->data.data();
 								break;
 							default:
 								std::cout << "<object at " << std::hex << objectPtr << ">";
@@ -82,7 +82,7 @@ slake::Value print(slake::Context *context, slake::MajorFrame *curMajorFrame) {
 	return {};
 }
 
-void printTraceback(slake::Runtime *rt, slake::ContextObject *context) {
+void printTraceback(Runtime *rt, ContextObject *context) {
 	printf("Traceback:\n");
 	for (auto &i : context->_context.majorFrames) {
 		if (!i->curFn) {
@@ -90,7 +90,7 @@ void printTraceback(slake::Runtime *rt, slake::ContextObject *context) {
 			continue;
 		}
 
-		peff::DynArray<slake::IdRefEntry> fullRef(peff::getDefaultAlloc());
+		peff::DynArray<IdRefEntry> fullRef(peff::getDefaultAlloc());
 
 		if (!rt->getFullRef(peff::getDefaultAlloc(), i->curFn->fnObject, fullRef)) {
 			throw std::bad_alloc();
@@ -103,7 +103,7 @@ void printTraceback(slake::Runtime *rt, slake::ContextObject *context) {
 				name += '.';
 			}
 
-			slake::IdRefEntry &id = fullRef.at(i);
+			IdRefEntry &id = fullRef.at(i);
 
 			name += id.name;
 
@@ -125,7 +125,7 @@ void printTraceback(slake::Runtime *rt, slake::ContextObject *context) {
 	}
 }
 
-class MyReader : public slake::loader::Reader {
+class MyReader : public loader::Reader {
 public:
 	peff::RcObjectPtr<peff::Alloc> selfAllocator;
 
@@ -139,11 +139,11 @@ public:
 		return feof(fp);
 	}
 
-	virtual slake::loader::ReadResult read(char *buffer, size_t size) noexcept {
+	virtual loader::ReadResult read(char *buffer, size_t size) noexcept {
 		if (fread(buffer, size, 1, fp) < 1) {
-			return slake::loader::ReadResult::ReadError;
+			return loader::ReadResult::ReadError;
 		}
-		return slake::loader::ReadResult::Succeeded;
+		return loader::ReadResult::Succeeded;
 	}
 
 	virtual void dealloc() noexcept override {
@@ -203,14 +203,14 @@ public:
 	}
 };
 
-class LoaderContext : public slake::loader::LoaderContext {
+class LoaderContext : public loader::LoaderContext {
 public:
-	LoaderContext(peff::Alloc *allocator) : slake::loader::LoaderContext(allocator) {
+	LoaderContext(peff::Alloc *allocator) : loader::LoaderContext(allocator) {
 	}
 	~LoaderContext() {
 	}
 
-	virtual slake::InternalExceptionPointer locateModule(slake::Runtime *rt, const peff::DynArray<slake::IdRefEntry> &ref, slake::loader::Reader *&readerOut) {
+	virtual InternalExceptionPointer locateModule(Runtime *rt, const peff::DynArray<IdRefEntry> &ref, loader::Reader *&readerOut) {
 		std::string path;
 		for (size_t i = 0; i < ref.size(); ++i) {
 			path += ref.at(i).name;
@@ -223,7 +223,7 @@ public:
 
 		if (!(fp = fopen(path.c_str(), "rb"))) {
 			puts("Error opening the main module");
-			return slake::BadMagicError::alloc(rt->getFixedAlloc());
+			return BadMagicError::alloc(rt->getFixedAlloc());
 		}
 
 		peff::ScopeGuard closeFpGuard([fp]() noexcept {
@@ -233,7 +233,7 @@ public:
 		std::unique_ptr<MyReader, peff::DeallocableDeleter<MyReader>> reader(peff::allocAndConstruct<MyReader>(allocator.get(), alignof(MyReader), allocator.get(), fp));
 
 		if (!reader)
-			return slake::OutOfMemoryError::alloc();
+			return OutOfMemoryError::alloc();
 
 		readerOut = reader.release();
 
@@ -242,18 +242,18 @@ public:
 };
 
 int main(int argc, char **argv) {
-	slake::util::setupMemoryLeakDetector();
+	util::setupMemoryLeakDetector();
 
 	MyAllocator myAllocator;
 
 	{
-		std::unique_ptr<slake::Runtime, peff::DeallocableDeleter<slake::Runtime>> rt = std::unique_ptr<slake::Runtime, peff::DeallocableDeleter<slake::Runtime>>(
-			slake::Runtime::alloc(
+		std::unique_ptr<Runtime, peff::DeallocableDeleter<Runtime>> rt = std::unique_ptr<Runtime, peff::DeallocableDeleter<Runtime>>(
+			Runtime::alloc(
 				&myAllocator,
 				&myAllocator,
-				slake::RT_DEBUG | slake::RT_GCDBG));
+				RT_DEBUG | RT_GCDBG));
 
-		slake::HostObjectRef<slake::ModuleObject> mod;
+		HostObjectRef<ModuleObject> mod;
 		{
 			FILE *fp;
 
@@ -269,14 +269,14 @@ int main(int argc, char **argv) {
 			LoaderContext loaderContext(peff::getDefaultAlloc());
 			MyReader reader(&peff::g_nullAlloc, fp);
 
-			slake::loader::loadModule(loaderContext, rt.get(), &reader, mod);
+			loader::loadModule(loaderContext, rt.get(), &reader, mod);
 		}
 
 		{
-			slake::HostRefHolder hostRefHolder(rt->getFixedAlloc());
+			HostRefHolder hostRefHolder(rt->getFixedAlloc());
 
-			slake::HostObjectRef<slake::ModuleObject> modObjectHostext = mod;
-			slake::HostObjectRef<slake::ModuleObject> modObjectExtfns = slake::ModuleObject::alloc(rt.get());
+			HostObjectRef<ModuleObject> modObjectHostext = mod;
+			HostObjectRef<ModuleObject> modObjectExtfns = ModuleObject::alloc(rt.get());
 
 			/*
 			if (!modObjectHostext->setName("hostext")) {
@@ -293,47 +293,47 @@ int main(int argc, char **argv) {
 				std::terminate();
 			}
 
-			slake::HostObjectRef<slake::FnObject> fnObject = slake::FnObject::alloc(rt.get());
+			HostObjectRef<FnObject> fnObject = FnObject::alloc(rt.get());
 
-			auto printFn = slake::NativeFnOverloadingObject::alloc(
+			auto printFn = NativeFnOverloadingObject::alloc(
 				fnObject.get(),
 				print);
-			printFn->setAccess(slake::ACCESS_PUBLIC);
-			printFn->returnType = slake::TypeId::Void;
+			printFn->setAccess(ACCESS_PUBLIC);
+			printFn->returnType = TypeId::Void;
 			printFn->setVarArgs();
-			printFn->overridenType = slake::TypeId::Void;
+			printFn->overridenType = TypeId::Void;
 			if (!fnObject->overloadings.insert({ printFn->paramTypes, printFn->isWithVarArgs(), printFn->genericParams.size(), printFn->overridenType }, printFn.get()))
 				throw std::bad_alloc();
 			fnObject->name.build("print");
 
-			((slake::ModuleObject *)((slake::ModuleObject *)rt->getRootObject()->getMember("hostext").asObject)
+			((ModuleObject *)((ModuleObject *)rt->getRootObject()->getMember("hostext").asObject)
 					->getMember("extfns")
 					.asObject)
 				->removeMember("print");
-			if (!((slake::ModuleObject *)((slake::ModuleObject *)rt->getRootObject()->getMember("hostext").asObject)
+			if (!((ModuleObject *)((ModuleObject *)rt->getRootObject()->getMember("hostext").asObject)
 						->getMember("extfns")
 						.asObject)
 					->addMember(fnObject.get()))
 				throw std::bad_alloc();
 
-			auto fn = (slake::FnObject *)mod->getMember("main").asObject;
-			slake::FnOverloadingObject *overloading;
+			auto fn = (FnObject *)mod->getMember("main").asObject;
+			FnOverloadingObject *overloading;
 
-			peff::DynArray<slake::TypeRef> params(&myAllocator);
+			peff::DynArray<TypeRef> params(&myAllocator);
 
-			overloading = fn->overloadings.at(slake::FnSignature(params, false, 0, slake::TypeId::Void));
+			overloading = fn->overloadings.at(FnSignature(params, false, 0, TypeId::Void));
 
-			/* slake::opti::ProgramAnalyzedInfo analyzedInfo(rt.get(), &myAllocator);
-			if (auto e = slake::opti::analyzeProgramInfoPass(rt.get(), &myAllocator, (slake::RegularFnOverloadingObject *)overloading, analyzedInfo, hostRefHolder);
+			/* opti::ProgramAnalyzedInfo analyzedInfo(rt.get(), &myAllocator);
+			if (auto e = opti::analyzeProgramInfoPass(rt.get(), &myAllocator, (RegularFnOverloadingObject *)overloading, analyzedInfo, hostRefHolder);
 				e) {
 				printf("Internal exception: %s\n", e->what());
 				switch (e->kind) {
-					case slake::ErrorKind::OptimizerError: {
-						slake::OptimizerError *err = (slake::OptimizerError *)e.get();
+					case ErrorKind::OptimizerError: {
+						OptimizerError *err = (OptimizerError *)e.get();
 
 						switch (err->optimizerErrorCode) {
-							case slake::OptimizerErrorCode::MalformedProgram: {
-								slake::MalformedProgramError *err = (slake::MalformedProgramError *)e.get();
+							case OptimizerErrorCode::MalformedProgram: {
+								MalformedProgramError *err = (MalformedProgramError *)e.get();
 
 								printf("Malformed program error at instruction #%zu\n", err->offIns);
 							}
@@ -351,21 +351,21 @@ int main(int argc, char **argv) {
 			}*/
 
 			{
-				slake::HostObjectRef<slake::CoroutineObject> co;
+				HostObjectRef<CoroutineObject> co;
 				if (auto e = rt->createCoroutineInstance(overloading, nullptr, nullptr, 0, co); e) {
 					printf("Internal exception: %s\n", e->what());
 					e.reset();
 					goto end;
 				}
 
-				slake::HostObjectRef<slake::ContextObject> context;
+				HostObjectRef<ContextObject> context;
 
-				if (!(context = slake::ContextObject::alloc(rt.get(), 114514))) {
+				if (!(context = ContextObject::alloc(rt.get(), 114514))) {
 					puts("Out of memory");
 					goto end;
 				}
 
-				slake::Value result;
+				Value result;
 				while (!co->isDone()) {
 					if (auto e = rt->resumeCoroutine(context.get(), co.get(), result);
 						e) {

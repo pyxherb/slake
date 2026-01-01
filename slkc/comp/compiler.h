@@ -456,6 +456,35 @@ namespace slkc {
 		AstNodePtr<TypeNameNode> lhs,
 		AstNodePtr<TypeNameNode> rhs,
 		AstNodePtr<TypeNameNode> &typeNameOut);
+	[[nodiscard]] SLKC_API peff::Option<CompilationError> isFloatingPoint(
+		AstNodePtr<TypeNameNode> type,
+		bool &resultOut);
+	[[nodiscard]] SLKC_API peff::Option<CompilationError> isSigned(
+		AstNodePtr<TypeNameNode> type,
+		bool &resultOut);
+	[[nodiscard]] SLKC_API peff::Option<CompilationError> isUnsigned(
+		AstNodePtr<TypeNameNode> type,
+		bool &resultOut);
+	[[nodiscard]] SLKC_API peff::Option<CompilationError> toSigned(
+		AstNodePtr<TypeNameNode> type,
+		AstNodePtr<TypeNameNode> &typeNameOut);
+	[[nodiscard]] SLKC_API peff::Option<CompilationError> toUnsigned(
+		AstNodePtr<TypeNameNode> type,
+		AstNodePtr<TypeNameNode> &typeNameOut);
+	[[nodiscard]] SLKC_API peff::Option<CompilationError> isIntegral(
+		AstNodePtr<TypeNameNode> type,
+		bool &resultOut);
+	[[nodiscard]] SLKC_API peff::Option<CompilationError> isSubtypeOf(
+		AstNodePtr<TypeNameNode> subtype,
+		AstNodePtr<TypeNameNode> type,
+		bool &resultOut);
+	[[nodiscard]] SLKC_API peff::Option<CompilationError> isBasicType(
+		AstNodePtr<TypeNameNode> lhs,
+		bool &resultOut);
+	[[nodiscard]] SLKC_API peff::Option<CompilationError> deduceCommonType(
+		AstNodePtr<TypeNameNode> lhs,
+		AstNodePtr<TypeNameNode> rhs,
+		AstNodePtr<TypeNameNode> &typeNameOut);
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> isSameTypeInSignature(
 		AstNodePtr<TypeNameNode> lhs,
 		AstNodePtr<TypeNameNode> rhs,

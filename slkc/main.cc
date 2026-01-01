@@ -606,6 +606,11 @@ void dumpCompilationError(peff::SharedPtr<slkc::Parser> parser, const slkc::Comp
 				beginToken->sourceLocation.beginPosition.line + 1,
 				beginToken->sourceLocation.beginPosition.column + 1);
 			break;
+		case slkc::CompilationErrorKind::MissingDefaultMatchCaseBranch:
+			printError("Error at %zu, %zu: Missing default match case\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
 		case slkc::CompilationErrorKind::LocalVarAlreadyExists:
 			printError("Error at %zu, %zu: Local variable already exists\n",
 				beginToken->sourceLocation.beginPosition.line + 1,

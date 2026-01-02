@@ -270,9 +270,9 @@ SLKC_API peff::Option<CompilationError> slkc::isSubtypeOf(
 				case TypeNameKind::I8:
 				case TypeNameKind::I16:
 				case TypeNameKind::I32:
-				case TypeNameKind::ISize:
 					resultOut = false;
 					break;
+				case TypeNameKind::ISize:
 				case TypeNameKind::I64:
 					resultOut = true;
 					break;
@@ -287,8 +287,10 @@ SLKC_API peff::Option<CompilationError> slkc::isSubtypeOf(
 				case TypeNameKind::I16:
 				case TypeNameKind::I32:
 				case TypeNameKind::I64:
-				case TypeNameKind::ISize:
 					resultOut = false;
+					break;
+				case TypeNameKind::ISize:
+					resultOut = true;
 					break;
 				default:
 					resultOut = false;
@@ -300,11 +302,9 @@ SLKC_API peff::Option<CompilationError> slkc::isSubtypeOf(
 				case TypeNameKind::I8:
 				case TypeNameKind::I16:
 				case TypeNameKind::I32:
+				case TypeNameKind::I64:
 				case TypeNameKind::ISize:
 					resultOut = false;
-					break;
-				case TypeNameKind::I64:
-					resultOut = true;
 					break;
 				default:
 					resultOut = false;
@@ -346,10 +346,10 @@ SLKC_API peff::Option<CompilationError> slkc::isSubtypeOf(
 				case TypeNameKind::U8:
 				case TypeNameKind::U16:
 				case TypeNameKind::U32:
-				case TypeNameKind::USize:
 					resultOut = false;
 					break;
 				case TypeNameKind::U64:
+				case TypeNameKind::USize:
 					resultOut = true;
 					break;
 				default:
@@ -363,8 +363,10 @@ SLKC_API peff::Option<CompilationError> slkc::isSubtypeOf(
 				case TypeNameKind::U16:
 				case TypeNameKind::U32:
 				case TypeNameKind::U64:
-				case TypeNameKind::USize:
 					resultOut = false;
+					break;
+				case TypeNameKind::USize:
+					resultOut = true;
 					break;
 				default:
 					resultOut = false;
@@ -377,10 +379,8 @@ SLKC_API peff::Option<CompilationError> slkc::isSubtypeOf(
 				case TypeNameKind::U16:
 				case TypeNameKind::U32:
 				case TypeNameKind::USize:
-					resultOut = false;
-					break;
 				case TypeNameKind::U64:
-					resultOut = true;
+					resultOut = false;
 					break;
 				default:
 					resultOut = false;
@@ -684,9 +684,9 @@ SLKC_API peff::Option<CompilationError> slkc::isIntegral(
 }
 
 SLKC_API peff::Option<CompilationError> slkc::isBasicType(
-	AstNodePtr<TypeNameNode> lhs,
+	AstNodePtr<TypeNameNode> type,
 	bool &resultOut) {
-	switch (lhs->typeNameKind) {
+	switch (type->typeNameKind) {
 		case TypeNameKind::Void:
 		case TypeNameKind::I8:
 		case TypeNameKind::I16:

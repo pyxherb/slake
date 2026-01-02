@@ -716,73 +716,72 @@ SLKC_API peff::Option<CompilationError> slkc::deduceCommonType(
 	AstNodePtr<TypeNameNode> lhs,
 	AstNodePtr<TypeNameNode> rhs,
 	AstNodePtr<TypeNameNode> &typeNameOut) {
-	{
-		bool isSame;
-		SLKC_RETURN_IF_COMP_ERROR(isSameType(lhs, rhs, isSame));
-		if (isSame) {
-			typeNameOut = lhs;
-			return {};
-		}
+reconvert: {
+	bool isSame;
+	SLKC_RETURN_IF_COMP_ERROR(isSameType(lhs, rhs, isSame));
+	if (isSame) {
+		typeNameOut = lhs;
+		return {};
 	}
+}
 
-	AstNodePtr<TypeNameNode> l = lhs, r = rhs;
-reconvert:
 	bool whether;
-	SLKC_RETURN_IF_COMP_ERROR(isSubtypeOf(l, r, whether));
+	SLKC_RETURN_IF_COMP_ERROR(isSubtypeOf(lhs, rhs, whether));
 	if (whether) {
-		typeNameOut = r;
+		typeNameOut = rhs;
 		return {};
 	}
-	SLKC_RETURN_IF_COMP_ERROR(isSubtypeOf(r, l, whether));
+	SLKC_RETURN_IF_COMP_ERROR(isSubtypeOf(rhs, lhs, whether));
 	if (whether) {
-		typeNameOut = l;
+		typeNameOut = lhs;
 		return {};
 	}
 
-	SLKC_RETURN_IF_COMP_ERROR(isSigned(l, whether));
+	SLKC_RETURN_IF_COMP_ERROR(isUnsigned(lhs, whether));
 	if (whether) {
-		SLKC_RETURN_IF_COMP_ERROR(isUnsigned(r, whether));
+		SLKC_RETURN_IF_COMP_ERROR(isSigned(rhs, whether));
 		if (whether) {
-			// l = signed, r = unsigned
-			SLKC_RETURN_IF_COMP_ERROR(toSigned(r, r));
+			// l = unsigned , r = signed
+			SLKC_RETURN_IF_COMP_ERROR(toUnsigned(rhs, rhs));
 			goto reconvert;
 		}
-		// l = signed, r = ??? where r is not unsigned nor signed.
 	} else {
-		SLKC_RETURN_IF_COMP_ERROR(isSigned(r, whether));
+		SLKC_RETURN_IF_COMP_ERROR(isUnsigned(rhs, whether));
 		if (whether) {
-			// l = unsigned, r = signed
-			SLKC_RETURN_IF_COMP_ERROR(toSigned(l, l));
-			goto reconvert;
+			AstNodePtr<TypeNameNode> tmp;
+			SLKC_RETURN_IF_COMP_ERROR(toUnsigned(lhs, lhs));
+			if (tmp) {
+				rhs = tmp;
+				goto reconvert;
+			}
 		}
-		// l = ???, r = signed where r is not unsigned nor signed.
 	}
 
-	SLKC_RETURN_IF_COMP_ERROR(isFloatingPoint(l, whether));
+	SLKC_RETURN_IF_COMP_ERROR(isFloatingPoint(lhs, whether));
 	if (whether) {
-		SLKC_RETURN_IF_COMP_ERROR(isFloatingPoint(r, whether));
-		if (whether) {
+		SLKC_RETURN_IF_COMP_ERROR(isFloatingPoint(rhs, whether));
+		if (!whether) {
 			// l = FP, r = non-FP
-			switch (r->typeNameKind) {
+			switch (rhs->typeNameKind) {
 				case TypeNameKind::I8:
 				case TypeNameKind::I16:
 				case TypeNameKind::I32:
 				case TypeNameKind::U8:
 				case TypeNameKind::U16:
 				case TypeNameKind::U32:
-					if (!(r = makeAstNode<F32TypeNameNode>(
-							  r->selfAllocator.get(),
-							  r->selfAllocator.get(),
-							  r->document->sharedFromThis())
+					if (!(rhs = makeAstNode<F32TypeNameNode>(
+							  rhs->selfAllocator.get(),
+							  rhs->selfAllocator.get(),
+							  rhs->document->sharedFromThis())
 								.castTo<TypeNameNode>()))
 						return genOutOfMemoryCompError();
 					goto reconvert;
 				case TypeNameKind::I64:
 				case TypeNameKind::U64:
-					if (!(r = makeAstNode<F64TypeNameNode>(
-							  r->selfAllocator.get(),
-							  r->selfAllocator.get(),
-							  r->document->sharedFromThis())
+					if (!(rhs = makeAstNode<F64TypeNameNode>(
+							  rhs->selfAllocator.get(),
+							  rhs->selfAllocator.get(),
+							  rhs->document->sharedFromThis())
 								.castTo<TypeNameNode>()))
 						return genOutOfMemoryCompError();
 					goto reconvert;
@@ -790,29 +789,29 @@ reconvert:
 		}
 		// l = FP, r = ??? where r is not unsigned nor signed.
 	} else {
-		SLKC_RETURN_IF_COMP_ERROR(isFloatingPoint(r, whether));
+		SLKC_RETURN_IF_COMP_ERROR(isFloatingPoint(rhs, whether));
 		if (whether) {
 			// l = FP, r = non-FP
-			switch (l->typeNameKind) {
+			switch (lhs->typeNameKind) {
 				case TypeNameKind::I8:
 				case TypeNameKind::I16:
 				case TypeNameKind::I32:
 				case TypeNameKind::U8:
 				case TypeNameKind::U16:
 				case TypeNameKind::U32:
-					if (!(l = makeAstNode<F32TypeNameNode>(
-							  l->selfAllocator.get(),
-							  l->selfAllocator.get(),
-							  l->document->sharedFromThis())
+					if (!(lhs = makeAstNode<F32TypeNameNode>(
+							  lhs->selfAllocator.get(),
+							  lhs->selfAllocator.get(),
+							  lhs->document->sharedFromThis())
 								.castTo<TypeNameNode>()))
 						return genOutOfMemoryCompError();
 					goto reconvert;
 				case TypeNameKind::I64:
 				case TypeNameKind::U64:
-					if (!(l = makeAstNode<F64TypeNameNode>(
-							  l->selfAllocator.get(),
-							  l->selfAllocator.get(),
-							  l->document->sharedFromThis())
+					if (!(lhs = makeAstNode<F64TypeNameNode>(
+							  lhs->selfAllocator.get(),
+							  lhs->selfAllocator.get(),
+							  lhs->document->sharedFromThis())
 								.castTo<TypeNameNode>()))
 						return genOutOfMemoryCompError();
 					goto reconvert;

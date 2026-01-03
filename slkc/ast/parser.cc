@@ -784,7 +784,7 @@ accessModifierParseEnd:
 					nextToken();
 				}
 
-				if (Token *colonToken = peekToken(); colonToken->tokenId == TokenId::Colon) {
+				if (Token *colonToken = peekToken(); colonToken->tokenId == TokenId::SubtypeOp) {
 					nextToken();
 
 					while (true) {
@@ -905,7 +905,7 @@ accessModifierParseEnd:
 					return syntaxError;
 				}
 
-				if (Token *colonToken = peekToken(); colonToken->tokenId == TokenId::Colon) {
+				if (Token *colonToken = peekToken(); colonToken->tokenId == TokenId::SubtypeOp) {
 					nextToken();
 
 					while (true) {
@@ -1027,7 +1027,7 @@ accessModifierParseEnd:
 					return syntaxError;
 				}
 
-				if (Token *colonToken = peekToken(); colonToken->tokenId == TokenId::Colon) {
+				if (Token *colonToken = peekToken(); colonToken->tokenId == TokenId::SubtypeOp) {
 					nextToken();
 
 					while (true) {

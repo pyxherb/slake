@@ -114,6 +114,7 @@ namespace slkc {
 		GtOp,
 		CmpOp,
 		DollarOp,
+		SubtypeOp,
 
 		AbstractKeyword,
 		AllocaKeyword,

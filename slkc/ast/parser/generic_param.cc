@@ -25,7 +25,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseGenericConstraint(GenericConstra
 		nextToken();
 	}
 
-	if (Token *colonToken = peekToken(); colonToken->tokenId == TokenId::Colon) {
+	if (Token *colonToken = peekToken(); colonToken->tokenId == TokenId::SubtypeOp) {
 		nextToken();
 
 		while (true) {
@@ -173,8 +173,15 @@ SLKC_API peff::Option<SyntaxError> Parser::parseGenericParams(
 						}
 					});
 
-					if ((syntaxError = parseGenericConstraint(genericParamNode->genericConstraint))) {
-						return syntaxError;
+					if (peekToken()->tokenId == TokenId::Colon) {
+						nextToken();
+						if ((syntaxError = parseTypeName(genericParamNode->inputType))) {
+							return syntaxError;
+						}
+					} else {
+						if ((syntaxError = parseGenericConstraint(genericParamNode->genericConstraint))) {
+							return syntaxError;
+						}
 					}
 
 					if (!genericParamsOut.pushBack(std::move(genericParamNode)))

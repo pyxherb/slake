@@ -41,8 +41,8 @@ namespace slkc {
 		SLKC_API virtual AstNodePtr<AstNode> doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const override;
 
 	public:
+		AstNodePtr<TypeNameNode> inputType;
 		GenericConstraintPtr genericConstraint;
-
 		ParamTypeListGenericConstraintPtr paramTypeListGenericConstraint;
 
 		bool isParamTypeList = false;

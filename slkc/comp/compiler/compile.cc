@@ -609,7 +609,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileGenericParams(
 
 		if (gpNode->isParamTypeList) {
 			// TODO: Implement it.
-		} else {
+		} else if (gpNode->genericConstraint) {
 			if (gpNode->genericConstraint->baseType) {
 				if ((e = compileTypeName(compileEnv, compilationContext, gpNode->genericConstraint->baseType, gp.baseType))) {
 					if (e->errorKind == CompilationErrorKind::OutOfMemory)
@@ -897,7 +897,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileModule(
 
 						for (auto &lhsMember : lhsParent->members) {
 							if (lhsMember->getAstNodeType() == AstNodeType::FnSlot) {
-								AstNodePtr<FnNode> lhs = lhsMember.template castTo<FnNode>();
+								AstNodePtr<FnNode> lhs = lhsMember.castTo<FnNode>();
 
 								if (auto rhsMember = rhsParent->memberIndices.find(lhsMember->name); rhsMember != rhsParent->memberIndices.end()) {
 									AstNodePtr<MemberNode> correspondingMember = rhsParent->members.at(rhsMember.value());
@@ -905,80 +905,67 @@ SLKC_API peff::Option<CompilationError> slkc::compileModule(
 									if (correspondingMember->getAstNodeType() != AstNodeType::FnSlot) {
 										// Corresponding member should not be not a function.
 										std::terminate();
-									} else {
-										AstNodePtr<FnNode> rhs = correspondingMember.template castTo<FnNode>();
+									}
+									AstNodePtr<FnNode> rhs = correspondingMember.castTo<FnNode>();
 
-										for (auto &curLhsOverloading : lhs->overloadings) {
-											bool b = false;
+									for (auto &curLhsOverloading : lhs->overloadings) {
+										bool b = false;
 
-											for (auto &curRhsOverloading : rhs->overloadings) {
-												if (curLhsOverloading->params.size() != curRhsOverloading->params.size()) {
-													continue;
-												}
+										for (auto &curRhsOverloading : rhs->overloadings) {
+											if (curLhsOverloading->params.size() != curRhsOverloading->params.size()) {
+												continue;
+											}
 
-												SLKC_RETURN_IF_COMP_ERROR(isFnSignatureSame(curLhsOverloading->params.data(), curRhsOverloading->params.data(), curLhsOverloading->params.size(), {}, {}, b));
+											SLKC_RETURN_IF_COMP_ERROR(isFnSignatureSame(curLhsOverloading->params.data(), curRhsOverloading->params.data(), curLhsOverloading->params.size(), {}, {}, b));
 
-												// No conflict, continue.
-												if (!b)
-													continue;
+											// No conflict, continue.
+											if (!b)
+												continue;
 
-												if (auto overridenIt = clsNode->memberIndices.find(lhsMember->name); overridenIt != clsNode->memberIndices.end()) {
-													AstNodePtr<MemberNode> correspondingOverridenMember = clsNode->members.at(overridenIt.value());
+											if (auto overridenIt = clsNode->memberIndices.find(lhsMember->name); overridenIt != clsNode->memberIndices.end()) {
+												AstNodePtr<MemberNode> correspondingOverridenMember = clsNode->members.at(overridenIt.value());
 
-													if (correspondingOverridenMember->getAstNodeType() == AstNodeType::FnSlot) {
-														AstNodePtr<FnNode> correspondingOverridenMethod = correspondingOverridenMember.castTo<FnNode>();
+												if (correspondingOverridenMember->getAstNodeType() == AstNodeType::FnSlot) {
+													AstNodePtr<FnNode> correspondingOverridenMethod = correspondingOverridenMember.castTo<FnNode>();
 
-														bool overridenWhether;
+													bool overridenWhether;
 
-														for (auto &curOverridenOverloading : correspondingOverridenMethod->overloadings) {
-															SLKC_RETURN_IF_COMP_ERROR(isFnSignatureSame(
+													for (auto &curOverridenOverloading : correspondingOverridenMethod->overloadings) {
+														SLKC_RETURN_IF_COMP_ERROR(isFnSignatureSame(
+															curLhsOverloading->params.data(),
+															curOverridenOverloading->params.data(),
+															curLhsOverloading->params.size(),
+															curOverridenOverloading->overridenType,
+															{},
+															overridenWhether));
+														// Unspecialized overriden, continue.
+														if (overridenWhether) {
+															b = false;
+															goto checkInterfaceMethodsConflicted;
+														}
+
+														SLKC_RETURN_IF_COMP_ERROR(
+															isFnSignatureSame(
 																curLhsOverloading->params.data(),
 																curOverridenOverloading->params.data(),
 																curLhsOverloading->params.size(),
+																*rhsIt,
 																curOverridenOverloading->overridenType,
-																{},
 																overridenWhether));
-															// Unspecialized overriden, continue.
-															if (overridenWhether) {
-																b = false;
-																goto checkInterfaceMethodsConflicted;
-															}
-
-															/*
-															{
-																AstNodePtr<CustomTypeNameNode> customOverridenType;
-
-																if (!(customOverridenType = makeAstNode<CustomTypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document)))
-																	return genOutOfMemoryCompError();
-
-																SLKC_RETURN_IF_COMP_ERROR(getFullIdRef(compileEnv->allocator.get(), lhsIt->castTo<MemberNode>(), customOverridenType->idRefPtr));
-
-																customOverridenType->contextNode = lhsIt->castTo<MemberNode>();
-
-																SLKC_RETURN_IF_COMP_ERROR(
-																	isFnSignatureSame(
-																		curLhsOverloading->params.data(),
-																		curOverridenOverloading->params.data(),
-																		curLhsOverloading->params.size(),
-																		customOverridenType.castTo<TypeNameNode>(),
-																		curLhsOverloading->overridenType,
-																		overridenWhether));
-																// Specialized overriden, continue.
-																if (overridenWhether) {
-																	b = false;
-																	goto checkInterfaceMethodsConflicted;
-																}
-															}*/
+														// Specialized overriden, continue.
+														if (overridenWhether) {
+															b = false;
+															goto checkInterfaceMethodsConflicted;
 														}
 													}
 												}
+											}
 
-											checkInterfaceMethodsConflicted:
-												if (b) {
-													conflictedInterfacesDetected = true;
-													SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(CompilationError((*lhsIt)->tokenRange, CompilationErrorKind::InterfaceMethodsConflicted)));
-													continue;
-												}
+										checkInterfaceMethodsConflicted:
+											if (b) {
+												conflictedInterfacesDetected = true;
+												SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(CompilationError((*lhsIt)->tokenRange, CompilationErrorKind::InterfaceMethodsConflicted)));
+												continue;
 											}
 										}
 									}
@@ -1147,8 +1134,6 @@ SLKC_API peff::Option<CompilationError> slkc::compileModule(
 										if (e->errorKind != CompilationErrorKind::CyclicInheritedInterface)
 											return e;
 									}
-
-
 								}
 							} else {
 								SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(CompilationError(i->tokenRange, CompilationErrorKind::ExpectingInterfaceName)));

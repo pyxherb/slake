@@ -81,13 +81,23 @@ SLKC_API GenericParamNode::GenericParamNode(const GenericParamNode &rhs, peff::A
 		return;
 	}
 
+	if (!context.pushTask([this, &rhs, allocator, &context]() -> bool {
+			if (rhs.inputType && !(inputType = rhs.inputType->duplicate<TypeNameNode>(allocator))) {
+				return false;
+			}
+			return true;
+		})) {
+		succeededOut = false;
+		return;
+	}
+
 	if (rhs.genericConstraint && !(genericConstraint = duplicateGenericConstraint(allocator, rhs.genericConstraint.get()))) {
-		succeededOut = true;
+		succeededOut = false;
 		return;
 	}
 
 	if (rhs.paramTypeListGenericConstraint && !(paramTypeListGenericConstraint = duplicateParamTypeListGenericConstraint(allocator, rhs.paramTypeListGenericConstraint.get()))) {
-		succeededOut = true;
+		succeededOut = false;
 		return;
 	}
 

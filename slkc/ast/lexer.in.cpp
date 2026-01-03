@@ -40,6 +40,7 @@ SLKC_API peff::Option<LexicalError> Lexer::lex(ModuleNode *moduleNode, const std
 				<InitialCondition>"//"		{ YYSETCONDITION(LineCommentCondition); token->tokenId = TokenId::LineComment; continue; }
 				<InitialCondition>"/*"		{ YYSETCONDITION(CommentCondition); token->tokenId = TokenId::BlockComment; continue; }
 
+				<InitialCondition>"<:"		{ token->tokenId = TokenId::SubtypeOp; break; }
 				<InitialCondition>"->"		{ token->tokenId = TokenId::ReturnTypeOp; break; }
 				<InitialCondition>"::"		{ token->tokenId = TokenId::ScopeOp; break; }
 				<InitialCondition>"=>"		{ token->tokenId = TokenId::MatchOp; break; }

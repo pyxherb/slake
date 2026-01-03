@@ -304,24 +304,21 @@ void dumpLexicalError(const slkc::LexicalError &lexicalError, int indentLevel = 
 		putc('\t', stderr);
 	}
 
+	printError("Syntax error at %zu, %zu: ",
+		lexicalError.location.beginPosition.line + 1,
+		lexicalError.location.beginPosition.column + 1);
 	switch (lexicalError.kind) {
 		case slkc::LexicalErrorKind::UnrecognizedToken:
-			printError("Syntax error at %zu, %zu: Unrecognized token\n",
-				lexicalError.location.beginPosition.line + 1,
-				lexicalError.location.beginPosition.column + 1);
+			printf("Unrecognized token\n");
 			break;
 		case slkc::LexicalErrorKind::UnexpectedEndOfLine:
-			printError("Syntax error at %zu, %zu: Unexpected end of line\n",
-				lexicalError.location.beginPosition.line + 1,
-				lexicalError.location.beginPosition.column + 1);
+			printf("Unexpected end of line\n");
 			break;
 		case slkc::LexicalErrorKind::PrematuredEndOfFile:
-			printError("Syntax error at %zu, %zu: Prematured end of file\n",
-				lexicalError.location.beginPosition.line + 1,
-				lexicalError.location.beginPosition.column + 1);
+			printf("Prematured end of file\n");
 			break;
 		case slkc::LexicalErrorKind::OutOfMemory:
-			printError("Out of memory during lexical analysis\n");
+			printf("Out of memory during lexical analysis\n");
 			break;
 	}
 }
@@ -334,27 +331,24 @@ void dumpSyntaxError(slkc::Parser *parser, const slkc::SyntaxError &syntaxError,
 		putc('\t', stderr);
 	}
 
+	size_t line = beginToken->sourceLocation.beginPosition.line + 1;
+	size_t column = beginToken->sourceLocation.beginPosition.column + 1;
+
+	printError("Syntax error at %zu, %zu: ", line, column);
+
 	switch (syntaxError.errorKind) {
 		case slkc::SyntaxErrorKind::OutOfMemory:
-			printError("Syntax error at %zu, %zu: Out of memory\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Out of memory\n");
 			break;
 		case slkc::SyntaxErrorKind::UnexpectedToken:
-			printError("Syntax error at %zu, %zu: Unexpected token\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Unexpected token\n");
 			break;
 		case slkc::SyntaxErrorKind::ExpectingSingleToken:
-			printError("Syntax error at %zu, %zu: Expecting %s\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1,
+			printf("Expecting %s\n",
 				slkc::getTokenName(std::get<slkc::ExpectingSingleTokenErrorExData>(syntaxError.exData).expectingTokenId));
 			break;
 		case slkc::SyntaxErrorKind::ExpectingTokens: {
-			printError("Syntax error at %zu, %zu: Expecting ",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Expecting ");
 
 			const slkc::ExpectingTokensErrorExData &exData = std::get<slkc::ExpectingTokensErrorExData>(syntaxError.exData);
 
@@ -374,34 +368,22 @@ void dumpSyntaxError(slkc::Parser *parser, const slkc::SyntaxError &syntaxError,
 			break;
 		}
 		case slkc::SyntaxErrorKind::ExpectingId:
-			printError("Syntax error at %zu, %zu: Expecting an identifier\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Expecting an identifier\n");
 			break;
 		case slkc::SyntaxErrorKind::ExpectingExpr:
-			printError("Syntax error at %zu, %zu: Expecting an expression\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Expecting an expression\n");
 			break;
 		case slkc::SyntaxErrorKind::ExpectingStmt:
-			printError("Syntax error at %zu, %zu: Expecting a statement\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Expecting a statement\n");
 			break;
 		case slkc::SyntaxErrorKind::ExpectingDecl:
-			printError("Syntax error at %zu, %zu: Expecting a declaration\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Expecting a declaration\n");
 			break;
 		case slkc::SyntaxErrorKind::NoMatchingTokensFound:
-			printError("Syntax error at %zu, %zu: Matching token not found\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Matching token not found\n");
 			break;
 		case slkc::SyntaxErrorKind::ConflictingDefinitions: {
-			printError("Syntax error at %zu, %zu: Definition of `",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Definition of `");
 
 			const slkc::ConflictingDefinitionsErrorExData &exData = std::get<slkc::ConflictingDefinitionsErrorExData>(syntaxError.exData);
 
@@ -409,10 +391,7 @@ void dumpSyntaxError(slkc::Parser *parser, const slkc::SyntaxError &syntaxError,
 			break;
 		}
 		default:
-			printError("Syntax error at %zu, %zu: Unknown error (%d)\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1,
-				(int)syntaxError.errorKind);
+			printf("Unknown error (%d)\n", (int)syntaxError.errorKind);
 			break;
 	}
 }
@@ -425,288 +404,179 @@ void dumpCompilationError(peff::SharedPtr<slkc::Parser> parser, const slkc::Comp
 		putc('\t', stderr);
 	}
 
+	printError("Error at %zu, %zu to %zu, %zu: ",
+		beginToken->sourceLocation.beginPosition.line + 1, beginToken->sourceLocation.beginPosition.column + 1,
+		beginToken->sourceLocation.endPosition.line + 1, beginToken->sourceLocation.endPosition.column + 1);
 	switch (error.errorKind) {
 		case slkc::CompilationErrorKind::OutOfMemory:
-			printError("Error at %zu, %zu: Out of memory\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Out of memory\n");
 			break;
 		case slkc::CompilationErrorKind::OutOfRuntimeMemory:
-			printError("Error at %zu, %zu: Slake runtime memory allocation limit exceeded\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Slake runtime memory allocation limit exceeded\n");
 			break;
 		case slkc::CompilationErrorKind::ExpectingLValueExpr:
-			printError("Error at %zu, %zu: Expecting a lvalue expression\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Expecting a lvalue expression\n");
 			break;
 		case slkc::CompilationErrorKind::TargetIsNotCallable:
-			printError("Error at %zu, %zu: Expression is not callable\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Expression is not callable\n");
 			break;
 		case slkc::CompilationErrorKind::OperatorNotFound:
-			printError("Error at %zu, %zu: No matching operator found\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("No matching operator found\n");
 			break;
 		case slkc::CompilationErrorKind::MismatchedGenericArgNumber:
-			printError("Error at %zu, %zu: Mismatched generic argument number\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Mismatched generic argument number\n");
 			break;
 		case slkc::CompilationErrorKind::DoesNotReferToATypeName:
-			printError("Error at %zu, %zu: Expecting a type name\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Expecting a type name\n");
 			break;
 		case slkc::CompilationErrorKind::ExpectingClassName:
-			printError("Error at %zu, %zu: Expecting a class name\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Expecting a class name\n");
 			break;
 		case slkc::CompilationErrorKind::ExpectingInterfaceName:
-			printError("Error at %zu, %zu: Expecting an interface name\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Expecting an interface name\n");
 			break;
 		case slkc::CompilationErrorKind::AbstractMethodNotImplemented:
-			printError("Error at %zu, %zu: Abstract method is not implemented\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Abstract method is not implemented\n");
 			break;
 		case slkc::CompilationErrorKind::CyclicInheritedClass:
-			printError("Error at %zu, %zu: Cyclic inherited class detected\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Cyclic inherited class detected\n");
 			break;
 		case slkc::CompilationErrorKind::CyclicInheritedInterface:
-			printError("Error at %zu, %zu: Cyclic inherited interface detected\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Cyclic inherited interface detected\n");
 			break;
 		case slkc::CompilationErrorKind::RecursedValueType:
-			printError("Error at %zu, %zu: Recursed value type detected\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Recursed value type detected\n");
 			break;
 		case slkc::CompilationErrorKind::ExpectingId:
-			printError("Error at %zu, %zu: Expecting an identifier\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Expecting an identifier\n");
 			break;
 		case slkc::CompilationErrorKind::IdNotFound:
-			printError("Error at %zu, %zu: Identifier not found\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Identifier not found\n");
 			break;
 		case slkc::CompilationErrorKind::InvalidThisUsage:
-			printError("Error at %zu, %zu: Cannot use this keyword in this context\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Cannot use this keyword in this context\n");
 			break;
 		case slkc::CompilationErrorKind::NoMatchingFnOverloading:
-			printError("Error at %zu, %zu: No matching function overloading\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("No matching function overloading\n");
 			break;
 		case slkc::CompilationErrorKind::UnableToDetermineOverloading:
-			printError("Error at %zu, %zu: Unable to determine the overloading\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Unable to determine the overloading\n");
 			break;
 		case slkc::CompilationErrorKind::ArgsMismatched:
-			printError("Error at %zu, %zu: Mismatched argument types\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Mismatched argument types\n");
 			break;
 		case slkc::CompilationErrorKind::MemberAlreadyDefined:
-			printError("Error at %zu, %zu: Member is already defined\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Member is already defined\n");
 			break;
 		case slkc::CompilationErrorKind::MissingBindingObject:
-			printError("Error at %zu, %zu: Missing binding target\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Missing binding target\n");
 			break;
 		case slkc::CompilationErrorKind::RedundantWithObject:
-			printError("Error at %zu, %zu: Redundant binding target\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Redundant binding target\n");
 			break;
 		case slkc::CompilationErrorKind::ParamAlreadyDefined:
-			printError("Error at %zu, %zu: Parameter is already defined\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Parameter is already defined\n");
 			break;
 		case slkc::CompilationErrorKind::GenericParamAlreadyDefined:
-			printError("Error at %zu, %zu: Generic parameter is already defined\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Generic parameter is already defined\n");
 			break;
 		case slkc::CompilationErrorKind::InvalidInitializerListUsage:
-			printError("Error at %zu, %zu: Cannot use initializer list in this context\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Cannot use initializer list in this context\n");
 			break;
 		case slkc::CompilationErrorKind::ErrorDeducingInitializerListType:
-			printError("Error at %zu, %zu: Error deducing type of the initializer list\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Error deducing type of the initializer list\n");
 			break;
 		case slkc::CompilationErrorKind::ErrorDeducingSwitchConditionType:
-			printError("Error at %zu, %zu: Error deducing type of the switch condition\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Error deducing type of the switch condition\n");
 			break;
 		case slkc::CompilationErrorKind::ErrorDeducingArgType:
-			printError("Error at %zu, %zu: Error deducing type of the argument\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Error deducing type of the argument\n");
 			break;
 		case slkc::CompilationErrorKind::ErrorEvaluatingConstSwitchCaseCondition:
-			printError("Error at %zu, %zu: The switch condition is required to be a comptime evaluatable expression\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("The switch condition is required to be a comptime evaluatable expression\n");
 			break;
 		case slkc::CompilationErrorKind::MismatchedSwitchCaseConditionType:
-			printError("Error at %zu, %zu: Mismatched switch condition type\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Mismatched switch condition type\n");
 			break;
 		case slkc::CompilationErrorKind::DuplicatedSwitchCaseBranch:
-			printError("Error at %zu, %zu: Duplicated switch case\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Duplicated switch case\n");
 			break;
 		case slkc::CompilationErrorKind::ErrorDeducingMatchConditionType:
-			printError("Error at %zu, %zu: Error deducing type of the match condition\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Error deducing type of the match condition\n");
 			break;
 		case slkc::CompilationErrorKind::ErrorDeducingMatchResultType:
-			printError("Error at %zu, %zu: Error deducing return type of the match expression\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Error deducing return type of the match expression\n");
 			break;
 		case slkc::CompilationErrorKind::ErrorEvaluatingConstMatchCaseCondition:
-			printError("Error at %zu, %zu: The match condition is required to be a comptime evaluatable expression\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("The match condition is required to be a comptime evaluatable expression\n");
 			break;
 		case slkc::CompilationErrorKind::MismatchedMatchCaseConditionType:
-			printError("Error at %zu, %zu: Mismatched case condition type\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Mismatched case condition type\n");
 			break;
 		case slkc::CompilationErrorKind::DuplicatedMatchCaseBranch:
-			printError("Error at %zu, %zu: Duplicated match case\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Duplicated match case\n");
 			break;
 		case slkc::CompilationErrorKind::MissingDefaultMatchCaseBranch:
-			printError("Error at %zu, %zu: Missing default match case\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Missing default match case\n");
 			break;
 		case slkc::CompilationErrorKind::LocalVarAlreadyExists:
-			printError("Error at %zu, %zu: Local variable already exists\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Local variable already exists\n");
 			break;
 		case slkc::CompilationErrorKind::InvalidBreakUsage:
-			printError("Error at %zu, %zu: Cannot use break in this context\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Cannot use break in this context\n");
 			break;
 		case slkc::CompilationErrorKind::InvalidContinueUsage:
-			printError("Error at %zu, %zu: Cannot use continue in this context\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Cannot use continue in this context\n");
 			break;
 		case slkc::CompilationErrorKind::InvalidCaseLabelUsage:
-			printError("Error at %zu, %zu: Cannot use case label in this context\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Cannot use case label in this context\n");
 			break;
 		case slkc::CompilationErrorKind::TypeIsNotConstructible:
-			printError("Error at %zu, %zu: Type is not constructible\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Type is not constructible\n");
 			break;
 		case slkc::CompilationErrorKind::InvalidCast:
-			printError("Error at %zu, %zu: Invalid type cast\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Invalid type cast\n");
 			break;
 		case slkc::CompilationErrorKind::FunctionOverloadingDuplicated:
-			printError("Error at %zu, %zu: Duplicated function overloading\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Duplicated function overloading\n");
 			break;
 		case slkc::CompilationErrorKind::RequiresInitialValue:
-			printError("Error at %zu, %zu: Requires an initial value\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Requires an initial value\n");
 			break;
 		case slkc::CompilationErrorKind::ErrorDeducingVarType:
-			printError("Error at %zu, %zu: Error deducing the variable type\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Error deducing the variable type\n");
 			break;
 		case slkc::CompilationErrorKind::TypeIsNotUnpackable:
-			printError("Error at %zu, %zu: Type is not unpackable\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Type is not unpackable\n");
 			break;
 		case slkc::CompilationErrorKind::InvalidVarArgHintDuringInstantiation:
-			printError("Error at %zu, %zu: Invalid variable argument hint during generic instantiation\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Invalid variable argument hint during generic instantiation\n");
 			break;
 		case slkc::CompilationErrorKind::CannotBeUnpackedInThisContext:
-			printError("Error at %zu, %zu: Cannot be unpacked here\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Cannot be unpacked here\n");
 			break;
 		case slkc::CompilationErrorKind::TypeIsNotSubstitutable:
-			printError("Error at %zu, %zu: Type is not substitutable\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Type is not substitutable\n");
 			break;
 		case slkc::CompilationErrorKind::RequiresCompTimeExpr:
-			printError("Error at %zu, %zu: Requires a compile-time expression\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Requires a compile-time expression\n");
 			break;
 		case slkc::CompilationErrorKind::TypeArgTypeMismatched:
-			printError("Error at %zu, %zu: Type of type arguments mismatched\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Type of type arguments mismatched\n");
 			break;
 		case slkc::CompilationErrorKind::InterfaceMethodsConflicted:
-			printError("Error at %zu, %zu: Interface methods conflicted\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Interface methods conflicted\n");
 			break;
 		case slkc::CompilationErrorKind::TypeIsNotInitializable:
-			printError("Error at %zu, %zu: The type is not initializable\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("The type is not initializable\n");
 			break;
 		case slkc::CompilationErrorKind::ImportLimitExceeded:
-			printError("Error at %zu, %zu: Import item number exceeded\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Import item number exceeded\n");
 			break;
 		case slkc::CompilationErrorKind::ErrorParsingImportedModule: {
 			const slkc::ErrorParsingImportedModuleErrorExData &exData = std::get<slkc::ErrorParsingImportedModuleErrorExData>(error.exData);
 
-			printError("Error at %zu, %zu: Error parsing imported module:\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Error parsing imported module:\n");
 			if (exData.lexicalError) {
 				dumpLexicalError(*exData.lexicalError, indentLevel + 1);
 			} else {
@@ -717,15 +587,10 @@ void dumpCompilationError(peff::SharedPtr<slkc::Parser> parser, const slkc::Comp
 			break;
 		}
 		case slkc::CompilationErrorKind::ModuleNotFound:
-			printError("Error at %zu, %zu: Module not found\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1);
+			printf("Module not found\n");
 			break;
 		default:
-			printError("Error at %zu, %zu: Unknown error (%d)\n",
-				beginToken->sourceLocation.beginPosition.line + 1,
-				beginToken->sourceLocation.beginPosition.column + 1,
-				(int)error.errorKind);
+			printf("Unknown error (%d)\n", (int)error.errorKind);
 			break;
 	}
 }

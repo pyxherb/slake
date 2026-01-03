@@ -6,7 +6,7 @@ attribute TestAttribute {
 	let test: i32;
 }
 
-/*interface ICA {
+interface ICA {
 	fn a() virtual;
 }
 
@@ -18,22 +18,30 @@ interface ICC {
 	fn a() virtual;
 }
 
-class C: ICA + ICB + ICC {
-}*/
+class C <: ICA + ICB + ICC {
+	fn a() virtual override ICA {
+	}
 
-/*interface IF: IE {
+	fn a() virtual override ICB {
+	}
+
+	fn a() virtual override ICC {
+	}
+}
+
+/*interface IF <: IE {
 }
 
 interface IG {
 }
 
-interface IC: IG + IF {
+interface IC <: IG + IF {
 }
 
 interface ID: IF {
 }
 
-interface IE: IC + ID {
+interface IE <: IC + ID {
 }*/
 
 struct SA {
@@ -50,7 +58,7 @@ interface IB {
 	fn testIB() virtual;
 }
 
-class ImplTest: IA + IB {
+class ImplTest <: IA + IB {
 	fn testIA() virtual {
 		extfns.print("Called testIA");
 	}
@@ -60,7 +68,7 @@ class ImplTest: IA + IB {
 	}
 }
 
-class InterfaceTest<T: IA + IB> {
+class InterfaceTest<T <: IA + IB> {
 	fn test(instance: T) {
 		(instance as IA).testIA();
 		(instance as IB).testIB();
@@ -203,6 +211,9 @@ fn t() {
 	let test: OperatorTest;
 
 	123456 + test;
+}
+
+fn valueGenericParamTest<T: i32>() {
 }
 
 /*class CallableTest<...T> {

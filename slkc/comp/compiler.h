@@ -181,10 +181,10 @@ namespace slkc {
 		SLKC_API virtual ~CompileEnvironment();
 
 		SLKC_API virtual void onRefZero() noexcept;
-		SLAKE_FORCEINLINE size_t incRef() noexcept {
+		SLAKE_FORCEINLINE size_t incRef(size_t ignored) noexcept {
 			return ++refCount;
 		}
-		SLAKE_FORCEINLINE size_t decRef() noexcept {
+		SLAKE_FORCEINLINE size_t decRef(size_t ignored) noexcept {
 			if (!--refCount) {
 				onRefZero();
 				return 0;

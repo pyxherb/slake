@@ -183,6 +183,7 @@ namespace slkc {
 		[[nodiscard]] SLKC_API peff::Option<SyntaxError> parseExprStmt(AstNodePtr<StmtNode> &stmtOut);
 		[[nodiscard]] SLKC_API peff::Option<SyntaxError> parseStmt(AstNodePtr<StmtNode> &stmtOut);
 
+		[[nodiscard]] SLKC_API peff::Option<SyntaxError> parseGenericArg(AstNodePtr<AstNode> &argOut);
 		[[nodiscard]] SLKC_API peff::Option<SyntaxError> parseTypeName(AstNodePtr<TypeNameNode> &typeNameOut, bool withCircumfixes = true);
 
 		[[nodiscard]] SLKC_API peff::Option<SyntaxError> parseAttribute(AstNodePtr<AttributeNode> &attributeOut);

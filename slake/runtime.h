@@ -160,15 +160,15 @@ namespace slake {
 
 		struct GenericLookupEntry {
 			MemberObject *originalObject;
-			ParamTypeList genericArgs;
+			peff::DynArray<Value> genericArgs;
 		};
 		mutable peff::Map<const MemberObject *, GenericLookupEntry> _genericCacheLookupTable;
 
 		using GenericCacheTable =
 			peff::Map<
-				ParamTypeList,	 // Generic arguments.
+				peff::DynArray<Value>,	// Generic arguments.
 				MemberObject *,	 // Cached instantiated value.
-				ParamListComparator,
+				GenericArgListComparator,
 				true>;
 
 		using GenericCacheDirectory = peff::Map<
@@ -311,15 +311,15 @@ namespace slake {
 			std::atomic_size_t refCount = 0;
 			peff::RcObjectPtr<peff::Alloc> selfAllocator;
 			const Object *mappedObject;
-			const ParamTypeList *genericArgs;
-			peff::HashMap<std::string_view, TypeRef> mappedGenericArgs;
+			const peff::DynArray<Value> *genericArgs;
+			peff::HashMap<std::string_view, Value> mappedGenericArgs;
 
 			SLAKE_FORCEINLINE GenericInstantiationContext(peff::Alloc *selfAllocator, peff::Alloc *resourceAllocator) : selfAllocator(selfAllocator), mappedGenericArgs(resourceAllocator) {}
 			SLAKE_FORCEINLINE GenericInstantiationContext(
 				peff::Alloc *selfAllocator,
 				const Object *mappedObject,
-				const ParamTypeList *genericArgs,
-				peff::HashMap<std::string_view, TypeRef> &&mappedGenericArgs)
+				const peff::DynArray<Value> *genericArgs,
+				peff::HashMap<std::string_view, Value> &&mappedGenericArgs)
 				: selfAllocator(selfAllocator),
 				  mappedObject(mappedObject),
 				  genericArgs(genericArgs),
@@ -354,7 +354,7 @@ namespace slake {
 		/// @return Instantiated value.
 		[[nodiscard]] SLAKE_API InternalExceptionPointer instantiateGenericObject(MemberObject *object, MemberObject *&objectOut, GenericInstantiationContext *instantiationContext);
 
-		SLAKE_API InternalExceptionPointer setGenericCache(MemberObject *object, const ParamTypeList &genericArgs, MemberObject *instantiatedObject);
+		SLAKE_API InternalExceptionPointer setGenericCache(MemberObject *object, const peff::DynArray<Value> &genericArgs, MemberObject *instantiatedObject);
 
 		/// @brief Resolve a reference and get the referenced value.
 		/// @param ref Reference to be resolved.

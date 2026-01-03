@@ -15,7 +15,7 @@ SLKC_API peff::Option<CompilationError> Document::lookupGenericCacheTable(
 
 SLKC_API peff::Option<CompilationError> Document::lookupGenericCache(
 	AstNodePtr<MemberNode> originalObject,
-	const peff::DynArray<AstNodePtr<TypeNameNode>> &genericArgs,
+	const peff::DynArray<AstNodePtr<AstNode>> &genericArgs,
 	AstNodePtr<MemberNode> &memberOut) const {
 	const GenericCacheTable *tab;
 
@@ -29,6 +29,93 @@ SLKC_API peff::Option<CompilationError> Document::lookupGenericCache(
 	}
 
 	memberOut = {};
+	return {};
+}
+
+static peff::Option<CompilationError> _walkTypeNameForGenericInstantiation(
+	AstNodePtr<TypeNameNode> &typeName,
+	const GenericInstantiationContext &context);
+static peff::Option<CompilationError> _walkTypeNameForGenericInstantiation(
+	AstNodePtr<AstNode> &astNode,
+	const GenericInstantiationContext &context);
+
+static peff::Option<CompilationError> _walkTypeNameForGenericInstantiation(
+	AstNodePtr<AstNode>& astNode,
+	const GenericInstantiationContext& context) {
+	if (!astNode)
+		return {};
+
+	switch (astNode->getAstNodeType()) {
+		case AstNodeType::TypeName: {
+			const AstNodePtr<TypeNameNode> typeName = astNode.castTo<TypeNameNode>();
+			switch (typeName->typeNameKind) {
+				case TypeNameKind::Array: {
+					AstNodePtr<ArrayTypeNameNode> tn = typeName.template castTo<ArrayTypeNameNode>();
+
+					SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(tn->elementType, context));
+					break;
+				}
+				case TypeNameKind::Ref: {
+					AstNodePtr<RefTypeNameNode> tn = typeName.template castTo<RefTypeNameNode>();
+
+					SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(tn->referencedType, context));
+					break;
+				}
+				case TypeNameKind::TempRef: {
+					AstNodePtr<TempRefTypeNameNode> tn = typeName.template castTo<TempRefTypeNameNode>();
+
+					SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(tn->referencedType, context));
+					break;
+				}
+				case TypeNameKind::Fn: {
+					AstNodePtr<FnTypeNameNode> tn = typeName.template castTo<FnTypeNameNode>();
+
+					for (size_t i = 0; i < tn->paramTypes.size(); ++i) {
+						SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(tn->paramTypes.at(i), context));
+					}
+					SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(tn->returnType, context));
+					break;
+				}
+				case TypeNameKind::Custom: {
+					AstNodePtr<CustomTypeNameNode> tn = typeName.template castTo<CustomTypeNameNode>();
+
+					if (tn->idRefPtr->entries.size() == 1) {
+						IdRefEntry &entry = tn->idRefPtr->entries.at(0);
+
+						if (!entry.genericArgs.size()) {
+							if (auto it = context.mappedGenericArgs.find(entry.name);
+								it != context.mappedGenericArgs.end()) {
+								astNode = it.value();
+								return {};
+							}
+						}
+					}
+
+					for (size_t i = 0; i < tn->idRefPtr->entries.size(); ++i) {
+						auto &genericArgs = tn->idRefPtr->entries.at(i).genericArgs;
+						for (size_t j = 0; j < genericArgs.size(); ++j) {
+							SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(genericArgs.at(j), context));
+						}
+					}
+					break;
+				}
+				case TypeNameKind::Unpacking: {
+					AstNodePtr<UnpackingTypeNameNode> tn = typeName.template castTo<UnpackingTypeNameNode>();
+
+					SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(tn->innerTypeName, context));
+					break;
+				}
+				case TypeNameKind::ParamTypeList: {
+					AstNodePtr<ParamTypeListTypeNameNode> tn = typeName.template castTo<ParamTypeListTypeNameNode>();
+
+					for (size_t i = 0; i < tn->paramTypes.size(); ++i) {
+						SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(tn->paramTypes.at(i), context));
+					}
+					break;
+				}
+			}
+		}
+	}
 	return {};
 }
 
@@ -76,7 +163,10 @@ static peff::Option<CompilationError> _walkTypeNameForGenericInstantiation(
 				if (!entry.genericArgs.size()) {
 					if (auto it = context.mappedGenericArgs.find(entry.name);
 						it != context.mappedGenericArgs.end()) {
-						typeName = it.value();
+						if (it.value()->getAstNodeType() != AstNodeType::TypeName)
+							return CompilationError(it.value()->tokenRange, CompilationErrorKind::ExpectingTypeName);
+						typeName = it.value().castTo<TypeNameNode>();
+						return {};
 					}
 				}
 			}
@@ -142,7 +232,7 @@ static peff::Option<CompilationError> _walkNodeForGenericInstantiation(
 				for (auto [k, v] : context.mappedGenericArgs) {
 					if (auto it = fnSlot->genericParamIndices.find(k);
 						it == fnSlot->genericParamIndices.end()) {
-						if (!innerContext.mappedGenericArgs.insert(std::string_view(k), AstNodePtr<TypeNameNode>(v))) {
+						if (!innerContext.mappedGenericArgs.insert(std::string_view(k), AstNodePtr<AstNode>(v))) {
 							return genOutOfMemoryCompError();
 						}
 					}
@@ -254,7 +344,7 @@ static peff::Option<CompilationError> _walkNodeForGenericInstantiation(
 				for (auto [k, v] : context.mappedGenericArgs) {
 					if (auto it = cls->genericParamIndices.find(k);
 						it == cls->genericParamIndices.end()) {
-						if (!innerContext.mappedGenericArgs.insert(std::string_view(k), AstNodePtr<TypeNameNode>(v))) {
+						if (!innerContext.mappedGenericArgs.insert(std::string_view(k), AstNodePtr<AstNode>(v))) {
 							return genOutOfMemoryCompError();
 						}
 					}
@@ -295,7 +385,7 @@ static peff::Option<CompilationError> _walkNodeForGenericInstantiation(
 				for (auto [k, v] : context.mappedGenericArgs) {
 					if (auto it = cls->genericParamIndices.find(k);
 						it == cls->genericParamIndices.end()) {
-						if (!innerContext.mappedGenericArgs.insert(std::string_view(k), AstNodePtr<TypeNameNode>(v))) {
+						if (!innerContext.mappedGenericArgs.insert(std::string_view(k), AstNodePtr<AstNode>(v))) {
 							return genOutOfMemoryCompError();
 						}
 					}
@@ -323,7 +413,7 @@ static peff::Option<CompilationError> _walkNodeForGenericInstantiation(
 				for (auto [k, v] : context.mappedGenericArgs) {
 					if (auto it = cls->genericParamIndices.find(k);
 						it == cls->genericParamIndices.end()) {
-						if (!innerContext.mappedGenericArgs.insert(std::string_view(k), AstNodePtr<TypeNameNode>(v))) {
+						if (!innerContext.mappedGenericArgs.insert(std::string_view(k), AstNodePtr<AstNode>(v))) {
 							return genOutOfMemoryCompError();
 						}
 					}
@@ -367,7 +457,7 @@ static peff::Option<CompilationError> _walkNodeForGenericInstantiation(
 
 SLKC_API peff::Option<CompilationError> Document::instantiateGenericObject(
 	AstNodePtr<MemberNode> originalObject,
-	const peff::DynArray<AstNodePtr<TypeNameNode>> &genericArgs,
+	const peff::DynArray<AstNodePtr<AstNode>> &genericArgs,
 	AstNodePtr<MemberNode> &memberOut) {
 	AstNodePtr<MemberNode> duplicatedObject;
 	SLKC_RETURN_IF_COMP_ERROR(lookupGenericCache(originalObject, genericArgs, duplicatedObject));
@@ -376,14 +466,14 @@ SLKC_API peff::Option<CompilationError> Document::instantiateGenericObject(
 		return {};
 	}
 
-	peff::DynArray<AstNodePtr<TypeNameNode>> duplicatedGenericArgs(allocator.get());
+	peff::DynArray<AstNodePtr<AstNode>> duplicatedGenericArgs(allocator.get());
 
 	if (!duplicatedGenericArgs.resize(genericArgs.size())) {
 		return genOutOfMemoryCompError();
 	}
 
 	for (size_t i = 0; i < duplicatedGenericArgs.size(); ++i) {
-		if (!(duplicatedGenericArgs.at(i) = genericArgs.at(i)->duplicate<TypeNameNode>(allocator.get()))) {
+		if (!(duplicatedGenericArgs.at(i) = genericArgs.at(i)->duplicate<AstNode>(allocator.get()))) {
 			return genOutOfMemoryCompError();
 		}
 	}
@@ -408,10 +498,14 @@ SLKC_API peff::Option<CompilationError> Document::instantiateGenericObject(
 			cacheTable = &it.value();
 			removeCacheDirEntryGuard.release();
 		} else {
+			peff::RcObjectPtr<CompileEnvironment> compileEnv;
+
+			if (!(compileEnv = peff::allocAndConstruct<CompileEnvironment>(allocator.get(), alignof(CompileEnvironment), nullptr, sharedFromThis(), allocator.get(), allocator.get())))
+				return genOutOfMemoryCompError();
 			if (!genericCacheDir.insert(
 					originalObject.get(),
 					GenericCacheTable(allocator.get(),
-						TypeNameListCmp(this)))) {
+						GenericArgListCmp(this, compileEnv.get())))) {
 				return genOutOfMemoryCompError();
 			}
 			cacheTable = &genericCacheDir.at(originalObject.get());
@@ -443,7 +537,7 @@ SLKC_API peff::Option<CompilationError> Document::instantiateGenericObject(
 						for (auto [k, v] : i->genericParamIndices) {
 							if (!instantiationContext.mappedGenericArgs.insert(
 									std::string_view(k),
-									AstNodePtr<TypeNameNode>(genericArgs.at(v)))) {
+									AstNodePtr<AstNode>(genericArgs.at(v)))) {
 								return genOutOfMemoryCompError();
 							}
 						}
@@ -481,7 +575,7 @@ SLKC_API peff::Option<CompilationError> Document::instantiateGenericObject(
 					for (auto [k, v] : obj->genericParamIndices) {
 						if (!instantiationContext.mappedGenericArgs.insert(
 								std::string_view(k),
-								AstNodePtr<TypeNameNode>(genericArgs.at(v)))) {
+								AstNodePtr<AstNode>(genericArgs.at(v)))) {
 							return genOutOfMemoryCompError();
 						}
 					}
@@ -507,7 +601,7 @@ SLKC_API peff::Option<CompilationError> Document::instantiateGenericObject(
 					for (auto [k, v] : obj->genericParamIndices) {
 						if (!instantiationContext.mappedGenericArgs.insert(
 								std::string_view(k),
-								AstNodePtr<TypeNameNode>(genericArgs.at(v)))) {
+								AstNodePtr<AstNode>(genericArgs.at(v)))) {
 							return genOutOfMemoryCompError();
 						}
 					}

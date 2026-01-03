@@ -280,6 +280,27 @@ SLAKE_API GenericParameterNotFoundError *GenericParameterNotFoundError::alloc(
 	return peff::allocAndConstruct<GenericParameterNotFoundError>(selfAllocator, sizeof(std::max_align_t), selfAllocator, std::move(name));
 }
 
+SLAKE_API GenericArgTypeError::GenericArgTypeError(
+	peff::Alloc *selfAllocator,
+	peff::String &&name)
+	: RuntimeExecError(selfAllocator, RuntimeExecErrorCode::InvalidArgumentIndex),
+	  name(std::move(name)) {}
+SLAKE_API GenericArgTypeError::~GenericArgTypeError() {}
+
+SLAKE_API const char *GenericArgTypeError::what() const {
+	return "Generic argument type mismatched";
+}
+
+SLAKE_API void GenericArgTypeError::dealloc() {
+	peff::destroyAndRelease<GenericArgTypeError>(selfAllocator.get(), this, sizeof(std::max_align_t));
+}
+
+SLAKE_API GenericArgTypeError *GenericArgTypeError::alloc(
+	peff::Alloc *selfAllocator,
+	peff::String &&name) {
+	return peff::allocAndConstruct<GenericArgTypeError>(selfAllocator, sizeof(std::max_align_t), selfAllocator, std::move(name));
+}
+
 SLAKE_API GenericFieldInitError::GenericFieldInitError(
 	peff::Alloc *selfAllocator,
 	ModuleObject *object,

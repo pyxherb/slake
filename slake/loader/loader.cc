@@ -444,8 +444,13 @@ SLAKE_API InternalExceptionPointer loader::loadValue(LoaderContext &context, Run
 			}
 
 			SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read((char *)a->data, a->elementSize * nElements)));
+
+			valueOut = a.get();
 			break;
 		}
+		default:
+			// TODO: Use InvalidValueTypeError.
+			return ReadError::alloc(runtime->getFixedAlloc());
 	}
 
 	return {};
@@ -473,7 +478,7 @@ SLAKE_API InternalExceptionPointer loader::loadIdRefEntries(LoaderContext &conte
 			return OutOfMemoryError::alloc();
 		}
 		for (size_t j = 0; j < nGenericArgs; ++j) {
-			SLAKE_RETURN_IF_EXCEPT(loadType(context, runtime, reader, member, curEntry.genericArgs.at(j)));
+			SLAKE_RETURN_IF_EXCEPT(loadValue(context, runtime, reader, member, curEntry.genericArgs.at(j)));
 		}
 
 		if (!entriesOut.pushBack(std::move(curEntry))) {

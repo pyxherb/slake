@@ -41,6 +41,10 @@ namespace slake {
 		SLAKE_API int operator()(const ParamTypeList &lhs, const ParamTypeList &rhs) const noexcept;
 	};
 
+	struct GenericArgListComparator {
+		SLAKE_API int operator()(const peff::DynArray<Value> &lhs, const peff::DynArray<Value> &rhs) const noexcept;
+	};
+
 	/// @brief Less than ("<") comparator for containers.
 	struct GenericArgListLtComparator {
 		ParamListComparator innerComparator;

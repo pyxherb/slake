@@ -250,6 +250,7 @@ namespace slake {
 
 		SLAKE_API bool operator==(const Reference &rhs) const;
 		SLAKE_API bool operator<(const Reference &rhs) const;
+		SLAKE_API bool operator>(const Reference &rhs) const;
 	};
 
 #ifndef ssize_t
@@ -331,10 +332,8 @@ namespace slake {
 		ValueType valueType;
 
 		SLAKE_FORCEINLINE Value() = default;
-		SLAKE_API Value(const Value &other) noexcept;
-		SLAKE_FORCEINLINE Value(Value&& other) noexcept {
-			peff::constructAt<Value>(this, other);
-		}
+		SLAKE_API Value(const Value &other) noexcept = default;
+		SLAKE_FORCEINLINE Value(Value&& other) noexcept = default;
 		SLAKE_FORCEINLINE constexpr Value(int8_t data) noexcept : valueType(ValueType::I8), data(data) {
 		}
 		SLAKE_FORCEINLINE constexpr Value(int16_t data) noexcept : valueType(ValueType::I16), data(data) {
@@ -543,6 +542,7 @@ namespace slake {
 		}
 
 		SLAKE_API bool operator<(const Value &rhs) const;
+		SLAKE_API bool operator>(const Value &rhs) const;
 	};
 
 	SLAKE_API bool isCompatible(const TypeRef &type, const Value &value);

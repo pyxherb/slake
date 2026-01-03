@@ -259,6 +259,7 @@ namespace slake {
 	enum class GenericInstantiationErrorCode : uint8_t {
 		MismatchedGenericArgumentNumber = 0,
 		GenericParameterNotFound,
+		GenericArgTypeError
 	};
 
 	class GenericInstantiationError : public RuntimeExecError {
@@ -297,6 +298,24 @@ namespace slake {
 		SLAKE_API virtual void dealloc() override;
 
 		SLAKE_API static GenericParameterNotFoundError *alloc(
+			peff::Alloc *selfAllocator,
+			peff::String &&name);
+	};
+
+	class GenericArgTypeError : public RuntimeExecError {
+	public:
+		peff::String name;
+
+		SLAKE_API GenericArgTypeError(
+			peff::Alloc *selfAllocator,
+			peff::String &&name);
+		SLAKE_API virtual ~GenericArgTypeError();
+
+		SLAKE_API virtual const char *what() const override;
+
+		SLAKE_API virtual void dealloc() override;
+
+		SLAKE_API static GenericArgTypeError *alloc(
 			peff::Alloc *selfAllocator,
 			peff::String &&name);
 	};

@@ -35,7 +35,7 @@ SLKC_API peff::Option<CompilationError> slkc::dumpIdRefEntries(
 		SLKC_RETURN_IF_COMP_ERROR(writer->write(i.name.data(), i.name.size()));
 		SLKC_RETURN_IF_COMP_ERROR(writer->writeU8(i.genericArgs.size()));
 		for (auto &j : i.genericArgs) {
-			SLKC_RETURN_IF_COMP_ERROR(dumpTypeName(allocator, writer, j));
+			SLKC_RETURN_IF_COMP_ERROR(dumpValue(allocator, writer, j));
 		}
 	}
 	return {};

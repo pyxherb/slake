@@ -163,6 +163,54 @@ SLAKE_API bool Reference::operator<(const Reference &rhs) const {
 	std::terminate();
 }
 
+SLAKE_API bool Reference::operator>(const Reference &rhs) const {
+	if (kind > rhs.kind)
+		return true;
+	if (kind < rhs.kind)
+		return false;
+	switch (kind) {
+		case ReferenceKind::Invalid:
+			break;
+		case ReferenceKind::StaticFieldRef:
+			if (asStaticField.moduleObject > rhs.asStaticField.moduleObject)
+				return true;
+			if (asStaticField.moduleObject < rhs.asStaticField.moduleObject)
+				return false;
+			return asStaticField.index > rhs.asStaticField.index;
+		case ReferenceKind::ArrayElementRef:
+			if (asArrayElement.arrayObject > rhs.asArrayElement.arrayObject)
+				return true;
+			if (asArrayElement.arrayObject < rhs.asArrayElement.arrayObject)
+				return false;
+			return asStaticField.index > rhs.asStaticField.index;
+		case ReferenceKind::ObjectRef:
+			return asObject > rhs.asObject;
+		case ReferenceKind::InstanceFieldRef:
+			if (asObjectField.instanceObject > rhs.asObjectField.instanceObject)
+				return true;
+			if (asObjectField.instanceObject < rhs.asObjectField.instanceObject)
+				return false;
+			return asObjectField.fieldIndex > rhs.asObjectField.fieldIndex;
+		case ReferenceKind::LocalVarRef:
+			if (asLocalVar.context > rhs.asLocalVar.context)
+				return true;
+			if (asLocalVar.context < rhs.asLocalVar.context)
+				return false;
+			return asLocalVar.stackOff > rhs.asLocalVar.stackOff;
+		case ReferenceKind::ArgRef:
+			if (asArg.majorFrame > rhs.asArg.majorFrame)
+				return true;
+			if (asArg.majorFrame < rhs.asArg.majorFrame)
+				return false;
+			return asArg.argIndex > rhs.asArg.argIndex;
+		case ReferenceKind::AotPtrRef:
+			return asAotPtr.ptr > rhs.asAotPtr.ptr;
+		default:
+			break;
+	}
+	std::terminate();
+}
+
 SLAKE_API int TypeRef::comparesTo(const TypeRef &rhs) const noexcept {
 	if (typeId < rhs.typeId)
 		return -1;

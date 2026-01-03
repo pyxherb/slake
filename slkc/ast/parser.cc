@@ -248,8 +248,8 @@ SLKC_API peff::Option<SyntaxError> Parser::parseIdRef(IdRefPtr &idRefOut) {
 			nextToken();
 
 			for (;;) {
-				AstNodePtr<TypeNameNode> genericArg;
-				if ((syntaxError = parseTypeName(genericArg)))
+				AstNodePtr<AstNode> genericArg;
+				if ((syntaxError = parseGenericArg(genericArg)))
 					goto genericArgParseFail;
 
 				if (!entry.genericArgs.pushBack(std::move(genericArg))) {

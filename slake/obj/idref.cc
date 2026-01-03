@@ -8,7 +8,7 @@ SLAKE_API IdRefEntry::IdRefEntry(peff::Alloc *selfAllocator)
 }
 
 SLAKE_API IdRefEntry::IdRefEntry(peff::String &&name,
-	ParamTypeList &&genericArgs)
+	peff::DynArray<Value> &&genericArgs)
 	: name(std::move(name)),
 	  genericArgs(std::move(genericArgs)) {}
 

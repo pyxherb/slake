@@ -104,6 +104,22 @@ SLAKE_API int ParamListComparator::operator()(const ParamTypeList &lhs, const Pa
 	return 0;
 }
 
+SLAKE_API int GenericArgListComparator::operator()(const peff::DynArray<Value>& lhs, const peff::DynArray<Value>& rhs) const noexcept {
+	if (lhs.size() < rhs.size())
+		return -1;
+	if (lhs.size() > rhs.size())
+		return 1;
+
+	for (size_t i = 0; i < lhs.size(); ++i) {
+		if (lhs.at(i) < rhs.at(i))
+			return -1;
+		if (lhs.at(i) > rhs.at(i))
+			return 1;
+	}
+
+	return 0;
+}
+
 SLAKE_API size_t slake::getGenericParamIndex(const GenericParamList &genericParamList, const std::string_view &name) {
 	for (size_t i = 0; i < genericParamList.size(); ++i) {
 		if (genericParamList.at(i).name == name)

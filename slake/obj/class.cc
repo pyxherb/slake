@@ -133,7 +133,7 @@ SLAKE_API slake::ClassObject::ClassObject(Runtime *rt, peff::Alloc *selfAllocato
 	  implTypes(selfAllocator) {
 }
 
-SLAKE_API const ParamTypeList *ClassObject::getGenericArgs() const {
+SLAKE_API const peff::DynArray<Value> *ClassObject::getGenericArgs() const {
 	return &genericArgs;
 }
 
@@ -151,7 +151,7 @@ SLAKE_API ClassObject::ClassObject(Duplicator *duplicator, const ClassObject &x,
 			succeededOut = false;
 			return;
 		}
-		memcpy(genericArgs.data(), x.genericArgs.data(), genericArgs.size() * sizeof(TypeRef));
+		memcpy(genericArgs.data(), x.genericArgs.data(), genericArgs.size() * sizeof(Value));
 		for (auto [k, v] : x.mappedGenericArgs) {
 			peff::String name(allocator);
 
@@ -160,7 +160,7 @@ SLAKE_API ClassObject::ClassObject(Duplicator *duplicator, const ClassObject &x,
 				return;
 			}
 
-			if (!(mappedGenericArgs.insert(std::move(name), TypeRef(v)))) {
+			if (!(mappedGenericArgs.insert(std::move(name), Value(v)))) {
 				succeededOut = false;
 				return;
 			}
@@ -408,7 +408,7 @@ SLAKE_API bool InterfaceObject::isDerivedFrom(InterfaceObject *pInterface) const
 	return implInterfaceIndices.contains(pInterface);
 }
 
-SLAKE_API const ParamTypeList *InterfaceObject::getGenericArgs() const {
+SLAKE_API const peff::DynArray<Value> *InterfaceObject::getGenericArgs() const {
 	return &genericArgs;
 }
 
@@ -550,7 +550,7 @@ SLAKE_API slake::StructObject::StructObject(Runtime *rt, peff::Alloc *selfAlloca
 	  implTypes(selfAllocator) {
 }
 
-SLAKE_API const ParamTypeList *StructObject::getGenericArgs() const {
+SLAKE_API const peff::DynArray<Value> *StructObject::getGenericArgs() const {
 	return &genericArgs;
 }
 
@@ -568,7 +568,7 @@ SLAKE_API StructObject::StructObject(Duplicator *duplicator, const StructObject 
 			succeededOut = false;
 			return;
 		}
-		memcpy(genericArgs.data(), x.genericArgs.data(), genericArgs.size() * sizeof(TypeRef));
+		memcpy(genericArgs.data(), x.genericArgs.data(), genericArgs.size() * sizeof(Value));
 		for (auto [k, v] : x.mappedGenericArgs) {
 			peff::String name(allocator);
 

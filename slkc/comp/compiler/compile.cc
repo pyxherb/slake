@@ -416,7 +416,17 @@ SLKC_API peff::Option<CompilationError> slkc::compileIdRef(
 		}
 
 		for (size_t i = 0; i < ce.genericArgs.size(); ++i) {
-			SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, compilationContext, ce.genericArgs.at(i), e.genericArgs.at(i)));
+			slake::Value value;
+			if (ce.genericArgs.at(i)->getAstNodeType() == AstNodeType::Expr) {
+				SLKC_RETURN_IF_COMP_ERROR(compileValueExpr(compileEnv, compilationContext, ce.genericArgs.at(i).castTo<ExprNode>(), value));
+			} else {
+				slake::TypeRef typeRef;
+				SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, compilationContext, ce.genericArgs.at(i).castTo<TypeNameNode>(), typeRef));
+				assert(typeRef.typeId != slake::TypeId::Invalid);
+				value = typeRef;
+			}
+			assert(value != slake::ValueType::Invalid);
+			e.genericArgs.at(i) = value;
 		}
 	}
 

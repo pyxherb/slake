@@ -508,7 +508,7 @@ SLKC_API bool Decompiler::decompileIdRefEntries(peff::Alloc *allocator, DumpWrit
 				if (j) {
 					SLKC_RETURN_IF_FALSE(writer->write(","));
 				}
-				SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, curEntry.genericArgs.at(j)));
+				SLKC_RETURN_IF_FALSE(decompileValue(allocator, writer, curEntry.genericArgs.at(j)));
 			}
 			SLKC_RETURN_IF_FALSE(writer->write(">"));
 		}

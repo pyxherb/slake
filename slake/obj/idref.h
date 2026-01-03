@@ -8,12 +8,12 @@
 namespace slake {
 	struct IdRefEntry final {
 		peff::String name;
-		ParamTypeList genericArgs;
+		peff::DynArray<Value> genericArgs;
 
 		SLAKE_API IdRefEntry(peff::Alloc *selfAllocator);
 		SLAKE_API IdRefEntry(peff::String &&name,
-			ParamTypeList &&genericArgs);
-		SLAKE_FORCEINLINE IdRefEntry(IdRefEntry &&rhs)
+			peff::DynArray<Value> &&genericArgs);
+		SLAKE_FORCEINLINE IdRefEntry(IdRefEntry &&rhs) noexcept
 			: name(std::move(rhs.name)), genericArgs(std::move(rhs.genericArgs)) {
 		}
 
@@ -24,10 +24,9 @@ namespace slake {
 				return false;
 			}
 
-			if (!dest.genericArgs.resizeUninitialized(genericArgs.size())) {
+			if (!dest.genericArgs.build(genericArgs)) {
 				return false;
 			}
-			memcpy(dest.genericArgs.data(), genericArgs.data(), genericArgs.size() * sizeof(TypeRef));
 
 			return true;
 		}
@@ -68,7 +67,7 @@ namespace slake {
 	struct IdRefLtComparator {
 		IdRefComparator innerComparator;
 
-		SLAKE_FORCEINLINE bool operator()(const IdRefObject* lhs, const IdRefObject* rhs) const noexcept {
+		SLAKE_FORCEINLINE bool operator()(const IdRefObject *lhs, const IdRefObject *rhs) const noexcept {
 			return innerComparator(lhs, rhs) < 0;
 		}
 	};

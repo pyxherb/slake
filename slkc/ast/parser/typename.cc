@@ -3,6 +3,43 @@
 
 using namespace slkc;
 
+SLKC_API peff::Option<SyntaxError> Parser::parseGenericArg(AstNodePtr<AstNode>& argOut) {
+	peff::Option<SyntaxError> syntaxError;
+	Token *t = peekToken();
+
+	switch (t->tokenId) {
+		case TokenId::IntLiteral:
+		case TokenId::LongLiteral:
+		case TokenId::UIntLiteral:
+		case TokenId::ULongLiteral:
+		case TokenId::F32Literal:
+		case TokenId::F64Literal:
+		case TokenId::StringLiteral: {
+			AstNodePtr<ExprNode> e;
+			if((syntaxError = parseExpr(INT_MAX, e)))
+				return syntaxError;
+			argOut = e.castTo<AstNode>();
+			break;
+		}
+		case TokenId::LParenthese: {
+			AstNodePtr<ExprNode> e;
+			if ((syntaxError = parseExpr(0, e)))
+				return syntaxError;
+			argOut = e.castTo<AstNode>();
+			break;
+		}
+		default: {
+			AstNodePtr<TypeNameNode> t;
+			if ((syntaxError = parseTypeName(t)))
+				return syntaxError;
+			argOut = t.castTo<AstNode>();
+			break;
+		}
+	}
+
+	return {};
+}
+
 SLKC_API peff::Option<SyntaxError> Parser::parseTypeName(AstNodePtr<TypeNameNode> &typeNameOut, bool withCircumfixes) {
 	peff::Option<SyntaxError> syntaxError;
 	Token *t = peekToken();

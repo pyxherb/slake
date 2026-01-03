@@ -21,7 +21,7 @@ SLKC_API peff::Option<CompilationError> slkc::getFullIdRef(peff::Alloc *allocato
 		}
 
 		for (size_t i = 0; i < entry.genericArgs.size(); ++i) {
-			if (!(entry.genericArgs.at(i) = m->genericArgs.at(i)->duplicate<TypeNameNode>(allocator))) {
+			if (!(entry.genericArgs.at(i) = m->genericArgs.at(i)->duplicate<AstNode>(allocator))) {
 				return genOutOfMemoryCompError();
 			}
 		}

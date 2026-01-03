@@ -66,8 +66,8 @@ namespace slake {
 		friend class Runtime;
 
 	public:
-		ParamTypeList genericArgs;
-		peff::HashMap<std::string_view, TypeRef> mappedGenericArgs;
+		peff::DynArray<Value> genericArgs;
+		peff::HashMap<std::string_view, Value> mappedGenericArgs;
 
 		GenericParamList genericParams;
 		peff::HashMap<std::string_view, size_t> mappedGenericParams;
@@ -84,7 +84,7 @@ namespace slake {
 
 		SLAKE_API virtual Reference getMember(const std::string_view &name) const override;
 
-		SLAKE_API virtual const ParamTypeList *getGenericArgs() const override;
+		SLAKE_API virtual const peff::DynArray<Value> *getGenericArgs() const override;
 
 		/// @brief Check if the class has implemented the interface.
 		///
@@ -109,8 +109,8 @@ namespace slake {
 		friend class ClassObject;
 
 	public:
-		ParamTypeList genericArgs;
-		peff::HashMap<std::string_view, TypeRef> mappedGenericArgs;
+		peff::DynArray<Value> genericArgs;
+		peff::HashMap<std::string_view, Value> mappedGenericArgs;
 
 		GenericParamList genericParams;
 		peff::HashMap<std::string_view, size_t> mappedGenericParams;
@@ -125,7 +125,7 @@ namespace slake {
 
 		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
 
-		SLAKE_API virtual const ParamTypeList *getGenericArgs() const override;
+		SLAKE_API virtual const peff::DynArray<Value> *getGenericArgs() const override;
 
 		SLAKE_API static HostObjectRef<InterfaceObject> alloc(Runtime *rt);
 		SLAKE_API static HostObjectRef<InterfaceObject> alloc(Duplicator *duplicator, const InterfaceObject *other);
@@ -151,7 +151,7 @@ namespace slake {
 		friend class Runtime;
 
 	public:
-		ParamTypeList genericArgs;
+		peff::DynArray<Value> genericArgs;
 		peff::HashMap<std::string_view, TypeRef> mappedGenericArgs;
 
 		GenericParamList genericParams;
@@ -165,7 +165,7 @@ namespace slake {
 		SLAKE_API StructObject(Duplicator *duplicator, const StructObject &x, peff::Alloc *allocator, bool &succeededOut);
 		SLAKE_API virtual ~StructObject();
 
-		SLAKE_API virtual const ParamTypeList *getGenericArgs() const override;
+		SLAKE_API virtual const peff::DynArray<Value> *getGenericArgs() const override;
 
 		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
 

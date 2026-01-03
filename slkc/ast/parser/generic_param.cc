@@ -25,7 +25,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseGenericConstraint(GenericConstra
 		nextToken();
 	}
 
-	if (Token *colonToken = peekToken(); colonToken->tokenId == TokenId::SubtypeOp) {
+	if (Token *colonToken = peekToken(); colonToken->tokenId == TokenId::Colon) {
 		nextToken();
 
 		while (true) {
@@ -173,7 +173,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseGenericParams(
 						}
 					});
 
-					if (peekToken()->tokenId == TokenId::Colon) {
+					if (peekToken()->tokenId == TokenId::AsKeyword) {
 						nextToken();
 						if ((syntaxError = parseTypeName(genericParamNode->inputType))) {
 							return syntaxError;

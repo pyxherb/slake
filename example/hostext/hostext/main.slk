@@ -18,7 +18,7 @@ interface ICC {
 	fn a() virtual;
 }
 
-class C <: ICA + ICB + ICC {
+class C: ICA + ICB + ICC {
 	fn a() virtual override ICA {
 	}
 
@@ -29,19 +29,19 @@ class C <: ICA + ICB + ICC {
 	}
 }
 
-/*interface IF <: IE {
+/*interface IF: IE {
 }
 
 interface IG {
 }
 
-interface IC <: IG + IF {
+interface IC: IG + IF {
 }
 
 interface ID: IF {
 }
 
-interface IE <: IC + ID {
+interface IE: IC + ID {
 }*/
 
 struct SA {
@@ -58,7 +58,7 @@ interface IB {
 	fn testIB() virtual;
 }
 
-class ImplTest <: IA + IB {
+class ImplTest: IA + IB {
 	fn testIA() virtual {
 		extfns.print("Called testIA");
 	}
@@ -68,7 +68,7 @@ class ImplTest <: IA + IB {
 	}
 }
 
-class InterfaceTest<T <: IA + IB> {
+class InterfaceTest<T: IA + IB> {
 	fn test(instance: T) {
 		(instance as IA).testIA();
 		(instance as IB).testIB();
@@ -213,7 +213,7 @@ fn t() {
 	123456 + test;
 }
 
-fn valueGenericParamTest<T: i32>() {
+fn valueGenericParamTest<T as i32>() {
 }
 
 /*class CallableTest<...T> {
@@ -256,7 +256,7 @@ public async main() -> i32 {
 
 	extfns.print(test + 123);
 
-	let v : u32 = 1919810 + 0;
+	let v: u32 = 1919810 + 0;
 
 	let array: i32[] = { 12, 34, 56, 78, 114, 514, 1919, 810 };
 	v = array[2] as u32;

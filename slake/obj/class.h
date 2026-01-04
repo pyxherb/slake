@@ -6,9 +6,6 @@
 #include "var.h"
 
 namespace slake {
-	/// @brief Type for storing class flags.
-	using ClassFlags = uint16_t;
-
 	class InterfaceObject;
 	class InstanceObject;
 
@@ -59,12 +56,9 @@ namespace slake {
 		SLAKE_API void replaceAllocator(peff::Alloc *allocator) noexcept;
 	};
 
+	using ClassFlags = uint16_t;
+
 	class ClassObject : public ModuleObject {
-	private:
-		mutable ClassFlags _flags = 0;
-
-		friend class Runtime;
-
 	public:
 		peff::DynArray<Value> genericArgs;
 		peff::HashMap<std::string_view, Value> mappedGenericArgs;
@@ -77,6 +71,8 @@ namespace slake {
 
 		MethodTable *cachedInstantiatedMethodTable = nullptr;
 		ObjectLayout *cachedObjectLayout = nullptr;
+
+		mutable ClassFlags classFlags = 0;
 
 		SLAKE_API ClassObject(Runtime *rt, peff::Alloc *selfAllocator);
 		SLAKE_API ClassObject(Duplicator *duplicator, const ClassObject &x, peff::Alloc *allocator, bool &succeededOut);
@@ -143,13 +139,10 @@ namespace slake {
 
 		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;
 	};
+	
+	using StructFlags = uint16_t;
 
 	class StructObject : public ModuleObject {
-	private:
-		mutable ClassFlags _flags = 0;
-
-		friend class Runtime;
-
 	public:
 		peff::DynArray<Value> genericArgs;
 		peff::HashMap<std::string_view, TypeRef> mappedGenericArgs;
@@ -160,6 +153,8 @@ namespace slake {
 		peff::DynArray<TypeRef> implTypes;	// Implemented interfaces
 
 		ObjectLayout *cachedObjectLayout = nullptr;
+
+		mutable StructFlags structFlags = 0;
 
 		SLAKE_API StructObject(Runtime *rt, peff::Alloc *selfAllocator);
 		SLAKE_API StructObject(Duplicator *duplicator, const StructObject &x, peff::Alloc *allocator, bool &succeededOut);

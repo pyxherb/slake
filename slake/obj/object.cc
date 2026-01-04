@@ -86,7 +86,7 @@ SLAKE_API Object::Object(const Object &x, peff::Alloc *allocator) {
 	associatedRuntime = x.associatedRuntime;
 	selfAllocator = allocator;
 	_objectKind = x._objectKind;
-	_flags = x._flags & ~VF_WALKED;
+	objectFlags = x.objectFlags & ~VF_WALKED;
 }
 
 SLAKE_API Object::~Object() {

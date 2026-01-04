@@ -323,14 +323,14 @@ SLAKE_API InternalExceptionPointer Runtime::loadDeferredCustomTypeDef(CustomType
 SLAKE_API Runtime::Runtime(peff::Alloc *selfAllocator, peff::Alloc *upstream, RuntimeFlags flags)
 	: selfAllocator(selfAllocator),
 	  fixedAlloc(this, upstream),
-	  _flags(flags | _RT_INITING),
+	  runtimeFlags(flags | _RT_INITING),
 	  _genericCacheLookupTable(&fixedAlloc),
 	  _genericCacheDir(&fixedAlloc),
 	  managedThreadRunnables(&fixedAlloc),
 	  youngAlloc(this, &fixedAlloc),
 	  persistentAlloc(this, &fixedAlloc),
 	  typeDefs(&fixedAlloc) {
-	_flags &= ~_RT_INITING;
+	runtimeFlags &= ~_RT_INITING;
 }
 
 SLAKE_API Runtime::~Runtime() {
@@ -340,7 +340,7 @@ SLAKE_API Runtime::~Runtime() {
 	activeContexts.clear();
 	managedThreadRunnables.clear();
 
-	_flags |= _RT_DEINITING;
+	runtimeFlags |= _RT_DEINITING;
 
 	_rootObject = nullptr;
 

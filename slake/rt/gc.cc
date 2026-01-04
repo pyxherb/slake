@@ -10,7 +10,7 @@ SLAKE_API void Runtime::_destructDestructibleObjects(InstanceObject *destructibl
 
 		destructibleList = next;
 
-		i->_flags |= VF_DESTRUCTED;
+		i->objectFlags |= VF_DESTRUCTED;
 
 		Value resultOut;
 		for (auto j : i->_class->cachedInstantiatedMethodTable->destructors) {
@@ -25,7 +25,7 @@ SLAKE_API void Runtime::_destructDestructibleObjects(InstanceObject *destructibl
 }
 
 SLAKE_API void Runtime::gc() {
-	_flags |= _RT_INGC;
+	runtimeFlags |= _RT_INGC;
 
 	for (Object *i = contextObjectList; i; i = i->nextSameKindObject) {
 		// Replace the major frames in the context objects.
@@ -85,5 +85,5 @@ SLAKE_API void Runtime::gc() {
 	_szMemUsedAfterLastGc = fixedAlloc.szAllocated;
 	_szComputedGcLimit = _szMemUsedAfterLastGc + (_szMemUsedAfterLastGc >> 1);
 
-	_flags &= ~_RT_INGC;
+	runtimeFlags &= ~_RT_INGC;
 }

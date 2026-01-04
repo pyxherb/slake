@@ -145,7 +145,7 @@ SLAKE_API ClassObject::ClassObject(Duplicator *duplicator, const ClassObject &x,
 	  mappedGenericParams(allocator), // No need to copy
 	  implTypes(allocator) {
 	if (succeededOut) {
-		_flags = x._flags;
+		classFlags = x.classFlags;
 
 		if (!genericArgs.resize(x.genericArgs.size())) {
 			succeededOut = false;
@@ -562,7 +562,7 @@ SLAKE_API StructObject::StructObject(Duplicator *duplicator, const StructObject 
 	  mappedGenericParams(allocator), // No need to copy
 	  implTypes(allocator) {
 	if (succeededOut) {
-		_flags = x._flags;
+		structFlags = x.structFlags;
 
 		if (!genericArgs.resize(x.genericArgs.size())) {
 			succeededOut = false;

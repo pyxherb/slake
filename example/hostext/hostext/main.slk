@@ -268,7 +268,7 @@ public async main() -> i32 {
 		yield test.getX();
 	}
 
-	1 <=> 1;
+	/*1 <=> 1;*/
 
 	extfns.print("Match result:", match const (123) -> i32 {
 		123: 0xffff,

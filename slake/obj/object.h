@@ -123,15 +123,6 @@ namespace slake {
 	};
 
 	class Object {
-	private:
-		ObjectKind _objectKind;
-
-	public:
-		ObjectFlags _flags = 0;
-		ObjectGeneration objectGeneration = ObjectGeneration::Young;
-		Spinlock gcSpinlock;
-		ObjectGCStatus gcStatus;
-
 	public:
 		peff::RcObjectPtr<peff::Alloc> selfAllocator;
 		// The object will never be freed if its host reference count is not 0.
@@ -145,20 +136,24 @@ namespace slake {
 
 		Object *nextSameGenObject = nullptr;
 		Object *prevSameGenObject = nullptr;
-		GCWalkContext *gcWalkContext = nullptr;
 
-		Object *nextWalkable;		   // New reachable objects
-		Object *nextWalked = nullptr;  // Next reached objects
 		Object *prevSameKindObject = NULL;
 		Object *nextSameKindObject = NULL;
 
-		Object *nextHostRef;
-
-		Object *nextUnwalked;
-		Object *prevUnwalked;
+		Object *prevSameGCSet;
+		Object *nextSameGCSet;
 
 		Runtime *associatedRuntime;
 
+		ObjectFlags objectFlags = 0;
+		ObjectGeneration objectGeneration = ObjectGeneration::Young;
+		Spinlock gcSpinlock;
+		ObjectGCStatus gcStatus;
+
+	private:
+		ObjectKind _objectKind;
+
+	public:
 		/// @brief Dulplicate the value if supported.
 		/// @return Duplicate of the value.
 		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const;

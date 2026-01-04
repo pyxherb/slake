@@ -123,9 +123,11 @@ namespace slake {
 		Object *walkedList = nullptr;
 
 	public:
-		static SLAKE_API void pushObject(GCWalkContext *context, Object *object);
-		static SLAKE_API void removeFromUnwalkedList(Object *v);
-		static SLAKE_API void removeFromDestructibleList(Object *v);
+		SLAKE_API void removeFromCurGCSet(Object *object);
+		SLAKE_API void pushObject(Object *object);
+		SLAKE_API void removeFromUnwalkedList(Object *v);
+		SLAKE_API void removeFromWalkableList(Object *v);
+		SLAKE_API void removeFromDestructibleList(Object *v);
 
 		SLAKE_API bool isWalkableListEmpty();
 		SLAKE_API Object *getWalkableList();
@@ -136,6 +138,7 @@ namespace slake {
 		SLAKE_API void updateUnwalkedList(Object *deletedObject);
 
 		SLAKE_API Object *getWalkedList();
+		SLAKE_API void pushWalked(Object *walkedObject);
 
 		SLAKE_API InstanceObject *getDestructibleList();
 		SLAKE_API void pushDestructible(InstanceObject *v);
@@ -290,7 +293,7 @@ namespace slake {
 			uint32_t returnValueOut) noexcept;
 
 		/// @brief Runtime flags.
-		RuntimeFlags _flags = 0;
+		RuntimeFlags runtimeFlags = 0;
 
 		/// @brief Active contexts of threads.
 		std::map<std::thread::id, ContextObject *> activeContexts;

@@ -99,8 +99,6 @@ SLAKE_API void GCWalkContext::removeFromWalkableList(Object *v) {
 
 SLAKE_API void GCWalkContext::removeFromDestructibleList(Object *v) {
 	MutexGuard accessMutexGuard(accessMutex);
-
-	Runtime::removeSameKindObjectToList((Object **)&destructibleList, v);
 }
 
 SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
@@ -590,8 +588,6 @@ SLAKE_API InstanceObject *GCWalkContext::getDestructibleList() {
 
 SLAKE_API void GCWalkContext::pushDestructible(InstanceObject *v) {
 	MutexGuard accessMutexGuard(accessMutex);
-
-	Runtime::addSameKindObjectToList((Object **)&destructibleList, v);
 }
 
 SLAKE_API void GCWalkContext::reset() {

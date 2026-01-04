@@ -365,8 +365,6 @@ namespace slake {
 		/// @return Resolved value which is referred by the reference.
 		SLAKE_API InternalExceptionPointer resolveIdRef(IdRefObject *ref, Reference &objectRefOut, Object *scopeObject = nullptr);
 
-		SLAKE_API static void addSameKindObjectToList(Object **list, Object *object);
-		SLAKE_API static void removeSameKindObjectToList(Object **list, Object *object);
 		[[nodiscard]] SLAKE_API bool addObject(Object *object);
 		SLAKE_FORCEINLINE peff::Alloc *getFixedAlloc() const {
 			return &fixedAlloc;

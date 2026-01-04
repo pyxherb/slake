@@ -248,8 +248,6 @@ SLAKE_API HostObjectRef<ClassObject> slake::ClassObject::alloc(Duplicator *dupli
 	if (!other->associatedRuntime->addObject(ptr.get()))
 		return nullptr;
 
-	Runtime::addSameKindObjectToList(&other->associatedRuntime->classObjectList, ptr.get());
-
 	return ptr.release();
 }
 
@@ -265,13 +263,10 @@ SLAKE_API HostObjectRef<ClassObject> slake::ClassObject::alloc(Runtime *rt) {
 	if (!rt->addObject(ptr.get()))
 		return nullptr;
 
-	Runtime::addSameKindObjectToList(&rt->classObjectList, ptr.get());
-
 	return ptr.release();
 }
 
 SLAKE_API void slake::ClassObject::dealloc() {
-	Runtime::removeSameKindObjectToList(&associatedRuntime->classObjectList, this);
 	peff::destroyAndRelease<ClassObject>(selfAllocator.get(), this, sizeof(std::max_align_t));
 }
 
@@ -625,8 +620,6 @@ SLAKE_API HostObjectRef<StructObject> slake::StructObject::alloc(Duplicator *dup
 	if (!other->associatedRuntime->addObject(ptr.get()))
 		return nullptr;
 
-	Runtime::addSameKindObjectToList(&other->associatedRuntime->classObjectList, ptr.get());
-
 	return ptr.release();
 }
 
@@ -642,13 +635,10 @@ SLAKE_API HostObjectRef<StructObject> slake::StructObject::alloc(Runtime *rt) {
 	if (!rt->addObject(ptr.get()))
 		return nullptr;
 
-	Runtime::addSameKindObjectToList(&rt->classObjectList, ptr.get());
-
 	return ptr.release();
 }
 
 SLAKE_API void slake::StructObject::dealloc() {
-	Runtime::removeSameKindObjectToList(&associatedRuntime->classObjectList, this);
 	peff::destroyAndRelease<StructObject>(selfAllocator.get(), this, sizeof(std::max_align_t));
 }
 

@@ -4,7 +4,7 @@ using namespace slake;
 
 SLAKE_API void Runtime::_destructDestructibleObjects(InstanceObject *destructibleList) {
 	InternalExceptionPointer exception;
-
+	/*
 	for (InstanceObject *i = destructibleList, *next; i; i = next) {
 		next = (InstanceObject *)i->nextSameKindObject;
 
@@ -21,16 +21,11 @@ SLAKE_API void Runtime::_destructDestructibleObjects(InstanceObject *destructibl
 				_uncaughtExceptionHandler(std::move(exception));
 			}
 		}
-	}
+	}*/
 }
 
 SLAKE_API void Runtime::gc() {
 	runtimeFlags |= _RT_INGC;
-
-	for (Object *i = contextObjectList; i; i = i->nextSameKindObject) {
-		// Replace the major frames in the context objects.
-		i->gcStatus = ObjectGCStatus::Unwalked;
-	}
 
 	// TODO: This is a stupid way to make sure that all the destructible objects are destructed.
 	// Can we create a separate GC thread in advance and let it to execute them?
@@ -43,16 +38,6 @@ SLAKE_API void Runtime::gc() {
 
 	Object *persistentObjectsEnd;
 	_gcSerial(persistentObjectList, persistentObjectsEnd, nPersistentObjects, ObjectGeneration::Persistent);
-
-	for (Object *i = contextObjectList; i; i = i->nextSameKindObject) {
-		// Replace the major frames in the context objects.
-		i->replaceAllocator(&persistentAlloc);
-	}
-
-	for (Object *i = classObjectList; i; i = i->nextSameKindObject) {
-		// Replace the major frames in the context objects.
-		i->replaceAllocator(&persistentAlloc);
-	}
 
 #ifndef _NDEBUG
 	if (youngAlloc.refCount) {

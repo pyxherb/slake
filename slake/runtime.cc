@@ -378,35 +378,6 @@ SLAKE_API InternalExceptionPointer Runtime::registerTypeDef(TypeDefObject *typeD
 	return {};
 }
 
-SLAKE_API void Runtime::addSameKindObjectToList(Object **list, Object *object) {
-	if (*list) {
-		assert(!(*list)->prevSameKindObject);
-		(*list)->prevSameKindObject = object;
-	}
-
-	object->nextSameKindObject = (*list);
-
-	*list = object;
-}
-
-SLAKE_API void Runtime::removeSameKindObjectToList(Object **list, Object *object) {
-	if (object->nextSameKindObject) {
-		object->nextSameKindObject->prevSameKindObject = object->prevSameKindObject;
-	}
-
-	if (object->prevSameKindObject) {
-		object->prevSameKindObject->nextSameKindObject = object->nextSameKindObject;
-	} else {
-		assert(object == *list);
-
-		*list = object->nextSameKindObject;
-	}
-
-	object->nextSameKindObject = nullptr;
-
-	object->prevSameKindObject = nullptr;
-}
-
 SLAKE_API bool Runtime::addObject(Object *object) {
 	if (youngObjectList) {
 		assert(!youngObjectList->prevSameGenObject);

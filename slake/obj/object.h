@@ -137,9 +137,6 @@ namespace slake {
 		Object *nextSameGenObject = nullptr;
 		Object *prevSameGenObject = nullptr;
 
-		Object *prevSameKindObject = NULL;
-		Object *nextSameKindObject = NULL;
-
 		Object *prevSameGCSet;
 		Object *nextSameGCSet;
 

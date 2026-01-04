@@ -129,7 +129,7 @@ SLAKE_API InternalExceptionPointer Runtime::initObjectLayoutForClass(ClassObject
 	std::unique_ptr<ObjectLayout, peff::DeallocableDeleter<ObjectLayout>> objectLayout;
 
 	if (parentClass && parentClass->cachedObjectLayout) {
-		objectLayout = decltype(objectLayout)(parentClass->cachedObjectLayout->duplicate(getCurGenAlloc()));
+		objectLayout = decltype(objectLayout)(parentClass->cachedObjectLayout->duplicate(cls->selfAllocator.get()));
 	} else {
 		objectLayout = decltype(objectLayout)(ObjectLayout::alloc(cls->selfAllocator.get()));
 	}

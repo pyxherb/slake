@@ -14,12 +14,9 @@ namespace slake {
 
 	class InstanceObject final : public Object {
 	public:
-		InstanceObject *memoryObject;
 		ClassObject *_class = nullptr;
 		char *rawFieldData = nullptr;
 		size_t szRawFieldData = 0;
-
-		InstanceFlags instanceFlags = 0;
 
 		SLAKE_API InstanceObject(Runtime *rt, peff::Alloc *selfAllocator);
 		SLAKE_API InstanceObject(const InstanceObject &x, peff::Alloc *allocator);

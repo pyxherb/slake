@@ -917,7 +917,7 @@ SLKC_API peff::Option<CompilationError> slkc::isSameTypeInSignature(
 							}
 							break;
 						}
-						case AstNodeType::Fn: {
+						case AstNodeType::FnOverloading: {
 							auto lit = ((FnOverloadingNode *)lp)->genericParamIndices.find(l->name),
 								 rit = ((FnOverloadingNode *)rp)->genericParamIndices.find(r->name);
 

@@ -40,8 +40,8 @@ static peff::Option<CompilationError> _walkTypeNameForGenericInstantiation(
 	const GenericInstantiationContext &context);
 
 static peff::Option<CompilationError> _walkTypeNameForGenericInstantiation(
-	AstNodePtr<AstNode>& astNode,
-	const GenericInstantiationContext& context) {
+	AstNodePtr<AstNode> &astNode,
+	const GenericInstantiationContext &context) {
 	if (!astNode)
 		return {};
 
@@ -219,7 +219,7 @@ static peff::Option<CompilationError> _walkNodeForGenericInstantiation(
 	}
 
 	switch (astNode->getAstNodeType()) {
-		case AstNodeType::Fn: {
+		case AstNodeType::FnOverloading: {
 			AstNodePtr<FnOverloadingNode> fnSlot = astNode.template castTo<FnOverloadingNode>();
 
 			for (auto i : fnSlot->genericParams) {
@@ -511,15 +511,24 @@ SLKC_API peff::Option<CompilationError> Document::instantiateGenericObject(
 			cacheTable = &genericCacheDir.at(originalObject.get());
 		}
 
-		if (!cacheTable->insert(std::move(duplicatedGenericArgs), AstNodePtr<MemberNode>(duplicatedObject))) {
-			return genOutOfMemoryCompError();
+		auto compileEnv = cacheTable->comparator().compileEnv.get();
+		NormalCompilationContext compilationContext(compileEnv, nullptr);
+		for (size_t i = 0; i < genericArgs.size(); ++i) {
+			AstNodePtr<AstNode> curArg = genericArgs.at(i);
+
+			if (curArg->getAstNodeType() == AstNodeType::Expr) {
+				AstNodePtr<ExprNode> evaluatedArg;
+				SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, &compilationContext, curArg.castTo<ExprNode>(), evaluatedArg));
+				if (!evaluatedArg)
+					return CompilationError(
+						curArg->tokenRange,
+						CompilationErrorKind::RequiresCompTimeExpr);
+
+				evaluatedArg->tokenRange = curArg->tokenRange;
+				duplicatedGenericArgs.at(i) = evaluatedArg.castTo<AstNode>();
+			}
 		}
-
 		{
-			peff::ScopeGuard removeCacheTableEntryGuard([this, &genericArgs, cacheTable]() noexcept {
-				cacheTable->remove(genericArgs);
-			});
-
 			// Map generic arguments.
 			switch (originalObject->getAstNodeType()) {
 				case AstNodeType::FnSlot: {
@@ -528,16 +537,39 @@ SLKC_API peff::Option<CompilationError> Document::instantiateGenericObject(
 					peff::DynArray<AstNodePtr<FnOverloadingNode>> overloadings(allocator.get());
 
 					for (auto i : obj->overloadings) {
-						GenericInstantiationContext instantiationContext(allocator.get(), &genericArgs);
+						GenericInstantiationContext instantiationContext(allocator.get(), &duplicatedGenericArgs);
 						instantiationContext.mappedNode = i.castTo<MemberNode>();
 
-						if (genericArgs.size() != i->genericParams.size())
+						if (duplicatedGenericArgs.size() != i->genericParams.size())
 							continue;
+
+						for (size_t j = 0; j < duplicatedGenericArgs.size(); ++j) {
+							AstNodePtr<AstNode> curArg = duplicatedGenericArgs.at(j);
+
+							if (i->genericParams.at(j)->inputType) {
+								if (curArg->getAstNodeType() != AstNodeType::Expr)
+									return CompilationError(
+										curArg->tokenRange,
+										CompilationErrorKind::RequiresCompTimeExpr);
+
+								AstNodePtr<TypeNameNode> argType;
+								SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileEnv, &compilationContext, curArg.castTo<ExprNode>(), argType));
+
+								bool same = false;
+								SLKC_RETURN_IF_COMP_ERROR(isSameType(argType, i->genericParams.at(j)->inputType, same));
+
+								if (!same)
+									goto fnOverloadingMismatched;
+							} else {
+								if (curArg->getAstNodeType() != AstNodeType::TypeName)
+									goto fnOverloadingMismatched;
+							}
+						}
 
 						for (auto [k, v] : i->genericParamIndices) {
 							if (!instantiationContext.mappedGenericArgs.insert(
 									std::string_view(k),
-									AstNodePtr<AstNode>(genericArgs.at(v)))) {
+									AstNodePtr<AstNode>(duplicatedGenericArgs.at(v)))) {
 								return genOutOfMemoryCompError();
 							}
 						}
@@ -547,6 +579,7 @@ SLKC_API peff::Option<CompilationError> Document::instantiateGenericObject(
 						if (!overloadings.pushBack(AstNodePtr<FnOverloadingNode>(i))) {
 							return genOutOfMemoryCompError();
 						}
+					fnOverloadingMismatched:;
 					}
 
 					if (!overloadings.shrinkToFit()) {
@@ -560,22 +593,49 @@ SLKC_API peff::Option<CompilationError> Document::instantiateGenericObject(
 				case AstNodeType::Class: {
 					AstNodePtr<ClassNode> obj = duplicatedObject.template castTo<ClassNode>();
 
-					GenericInstantiationContext instantiationContext(allocator.get(), &genericArgs);
+					GenericInstantiationContext instantiationContext(allocator.get(), &duplicatedGenericArgs);
 					instantiationContext.mappedNode = obj.castTo<MemberNode>();
 
-					if (genericArgs.size() != obj->genericParams.size()) {
+					if (duplicatedGenericArgs.size() != obj->genericParams.size()) {
 						return CompilationError(
 							TokenRange{
-								genericArgs.front()->tokenRange.moduleNode,
-								genericArgs.front()->tokenRange.beginIndex,
-								genericArgs.back()->tokenRange.endIndex },
+								duplicatedGenericArgs.front()->tokenRange.moduleNode,
+								duplicatedGenericArgs.front()->tokenRange.beginIndex,
+								duplicatedGenericArgs.back()->tokenRange.endIndex },
 							CompilationErrorKind::MismatchedGenericArgNumber);
+					}
+
+					for (size_t i = 0; i < duplicatedGenericArgs.size(); ++i) {
+						AstNodePtr<AstNode> curArg = duplicatedGenericArgs.at(i);
+
+						if (obj->genericParams.at(i)->inputType) {
+							if (curArg->getAstNodeType() != AstNodeType::Expr)
+								return CompilationError(
+									curArg->tokenRange,
+									CompilationErrorKind::RequiresCompTimeExpr);
+
+							AstNodePtr<TypeNameNode> argType;
+							SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileEnv, &compilationContext, curArg.castTo<ExprNode>(), argType));
+
+							bool same = false;
+							SLKC_RETURN_IF_COMP_ERROR(isSameType(argType, obj->genericParams.at(i)->inputType, same));
+
+							if (!same)
+								return CompilationError(
+									curArg->tokenRange,
+									CompilationErrorKind::TypeArgTypeMismatched);
+						} else {
+							if (curArg->getAstNodeType() != AstNodeType::TypeName)
+								return CompilationError(
+									curArg->tokenRange,
+									CompilationErrorKind::ExpectingTypeName);
+						}
 					}
 
 					for (auto [k, v] : obj->genericParamIndices) {
 						if (!instantiationContext.mappedGenericArgs.insert(
 								std::string_view(k),
-								AstNodePtr<AstNode>(genericArgs.at(v)))) {
+								AstNodePtr<AstNode>(duplicatedGenericArgs.at(v)))) {
 							return genOutOfMemoryCompError();
 						}
 					}
@@ -586,22 +646,49 @@ SLKC_API peff::Option<CompilationError> Document::instantiateGenericObject(
 				case AstNodeType::Interface: {
 					AstNodePtr<InterfaceNode> obj = duplicatedObject.template castTo<InterfaceNode>();
 
-					GenericInstantiationContext instantiationContext(allocator.get(), &genericArgs);
+					GenericInstantiationContext instantiationContext(allocator.get(), &duplicatedGenericArgs);
 					instantiationContext.mappedNode = obj.castTo<MemberNode>();
 
-					if (genericArgs.size() != obj->genericParams.size()) {
+					if (duplicatedGenericArgs.size() != obj->genericParams.size()) {
 						return CompilationError(
 							TokenRange{
-								genericArgs.front()->tokenRange.moduleNode,
-								genericArgs.front()->tokenRange.beginIndex,
-								genericArgs.back()->tokenRange.endIndex },
+								duplicatedGenericArgs.front()->tokenRange.moduleNode,
+								duplicatedGenericArgs.front()->tokenRange.beginIndex,
+								duplicatedGenericArgs.back()->tokenRange.endIndex },
 							CompilationErrorKind::MismatchedGenericArgNumber);
+					}
+
+					for (size_t i = 0; i < duplicatedGenericArgs.size(); ++i) {
+						AstNodePtr<AstNode> curArg = duplicatedGenericArgs.at(i);
+
+						if (obj->genericParams.at(i)->inputType) {
+							if (curArg->getAstNodeType() != AstNodeType::Expr)
+								return CompilationError(
+									curArg->tokenRange,
+									CompilationErrorKind::RequiresCompTimeExpr);
+
+							AstNodePtr<TypeNameNode> argType;
+							SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileEnv, &compilationContext, curArg.castTo<ExprNode>(), argType));
+
+							bool same = false;
+							SLKC_RETURN_IF_COMP_ERROR(isSameType(argType, obj->genericParams.at(i)->inputType, same));
+
+							if (!same)
+								return CompilationError(
+									curArg->tokenRange,
+									CompilationErrorKind::TypeArgTypeMismatched);
+						} else {
+							if (curArg->getAstNodeType() != AstNodeType::TypeName)
+								return CompilationError(
+									curArg->tokenRange,
+									CompilationErrorKind::ExpectingTypeName);
+						}
 					}
 
 					for (auto [k, v] : obj->genericParamIndices) {
 						if (!instantiationContext.mappedGenericArgs.insert(
 								std::string_view(k),
-								AstNodePtr<AstNode>(genericArgs.at(v)))) {
+								AstNodePtr<AstNode>(duplicatedGenericArgs.at(v)))) {
 							return genOutOfMemoryCompError();
 						}
 					}
@@ -612,13 +699,15 @@ SLKC_API peff::Option<CompilationError> Document::instantiateGenericObject(
 				default:
 					return CompilationError(
 						TokenRange{
-							genericArgs.front()->tokenRange.moduleNode,
-							genericArgs.front()->tokenRange.beginIndex,
-							genericArgs.back()->tokenRange.endIndex },
+							duplicatedGenericArgs.front()->tokenRange.moduleNode,
+							duplicatedGenericArgs.front()->tokenRange.beginIndex,
+							duplicatedGenericArgs.back()->tokenRange.endIndex },
 						CompilationErrorKind::MismatchedGenericArgNumber);
 			}
 
-			removeCacheTableEntryGuard.release();
+			if (!cacheTable->insert(std::move(duplicatedGenericArgs), AstNodePtr<MemberNode>(duplicatedObject))) {
+				return genOutOfMemoryCompError();
+			}
 		}
 
 		removeCacheDirEntryGuard.release();

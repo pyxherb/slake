@@ -23,7 +23,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseGenericArg(AstNodePtr<AstNode>& 
 		}
 		case TokenId::LParenthese: {
 			AstNodePtr<ExprNode> e;
-			if ((syntaxError = parseExpr(0, e)))
+			if ((syntaxError = parseExpr(INT_MAX, e)))
 				return syntaxError;
 			argOut = e.castTo<AstNode>();
 			break;

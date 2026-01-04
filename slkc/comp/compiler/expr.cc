@@ -105,7 +105,7 @@ static peff::Option<CompilationError> _loadTheRestOfIdRef(CompileEnvironment *co
 		idxReg = initialMemberReg;
 	}
 
-	if (parts.back().member->getAstNodeType() == AstNodeType::Fn) {
+	if (parts.back().member->getAstNodeType() == AstNodeType::FnOverloading) {
 		AstNodePtr<FnOverloadingNode> fn = parts.back().member.template castTo<FnOverloadingNode>();
 
 		if (parts.size() > 1) {
@@ -360,7 +360,7 @@ static peff::Option<CompilationError> _determineNodeType(CompileEnvironment *com
 			}
 			break;
 		}
-		case AstNodeType::Fn: {
+		case AstNodeType::FnOverloading: {
 			AstNodePtr<FnTypeNameNode> tn;
 			SLKC_RETURN_IF_COMP_ERROR(fnToTypeName(compileEnv, node.template castTo<FnOverloadingNode>(), tn));
 			typeNameOut = tn.template castTo<TypeNameNode>();

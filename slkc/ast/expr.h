@@ -561,7 +561,7 @@ namespace slkc {
 	public:
 		AstNodePtr<ExprNode> target;
 
-		SLKC_API WrapperExprNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document, const AstNodePtr<ExprNode> &target);
+		SLKC_API WrapperExprNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
 		SLKC_API WrapperExprNode(const WrapperExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut);
 		SLKC_API virtual ~WrapperExprNode();
 	};

@@ -406,7 +406,7 @@ void dumpCompilationError(peff::SharedPtr<slkc::Parser> parser, const slkc::Comp
 
 	printError("Error at %zu, %zu to %zu, %zu: ",
 		beginToken->sourceLocation.beginPosition.line + 1, beginToken->sourceLocation.beginPosition.column + 1,
-		beginToken->sourceLocation.endPosition.line + 1, beginToken->sourceLocation.endPosition.column + 1);
+		endToken->sourceLocation.endPosition.line + 1, endToken->sourceLocation.endPosition.column + 1);
 	switch (error.errorKind) {
 		case slkc::CompilationErrorKind::OutOfMemory:
 			printf("Out of memory\n");

@@ -31,7 +31,7 @@ SLKC_API peff::Option<CompilationError> slkc::getFullIdRef(peff::Alloc *allocato
 		}
 
 		switch (m->getAstNodeType()) {
-			case AstNodeType::Fn:
+			case AstNodeType::FnOverloading:
 				if (!m->parent->parent)
 					goto end;
 				m = m->parent->parent->sharedFromThis().template castTo<MemberNode>();
@@ -473,7 +473,7 @@ SLKC_API peff::Option<CompilationError> slkc::resolveIdRefWithScopeNode(
 					}
 					break;
 				}
-				case AstNodeType::Fn: {
+				case AstNodeType::FnOverloading: {
 					AstNodePtr<FnOverloadingNode> m = curScope.template castTo<FnOverloadingNode>();
 
 					if (auto it = m->genericParamIndices.find(initialEntry.name); it != m->genericParamIndices.end()) {
@@ -642,7 +642,7 @@ SLKC_API peff::Option<CompilationError> slkc::resolveIdRefWithScopeNode(
 				}
 				break;
 			}
-			case AstNodeType::Fn: {
+			case AstNodeType::FnOverloading: {
 				AstNodePtr<FnOverloadingNode> m = resolveScope.template castTo<FnOverloadingNode>();
 
 				if (!walkedNodes.insert(m.template castTo<MemberNode>())) {

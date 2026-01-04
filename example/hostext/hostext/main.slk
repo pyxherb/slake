@@ -226,6 +226,9 @@ fn valueGenericParamTest<T as i32>() {
 /*fn t2() -> simd_t<i32, (4 + 8)> {
 }*/
 
+class ArgTest<T as i32> {
+}
+
 public async main() -> i32 {
 	/*a() with 123;*/
 

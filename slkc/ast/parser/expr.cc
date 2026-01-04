@@ -33,7 +33,15 @@ SLKC_API peff::Option<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr<
 				case TokenId::LParenthese: {
 					nextToken();
 
-					if ((syntaxError = parseExpr(0, lhs)))
+					AstNodePtr<WrapperExprNode> expr;
+
+					if (!(expr = makeAstNode<WrapperExprNode>(
+							  resourceAllocator.get(), resourceAllocator.get(), document)))
+						return genOutOfMemoryError();
+
+					lhs = expr.castTo<ExprNode>();
+
+					if ((syntaxError = parseExpr(0, expr->target)))
 						goto genBadExpr;
 
 					Token *rParentheseToken;

@@ -2,7 +2,7 @@
 
 using namespace slkc;
 
-SLKC_API ExprNode::ExprNode(ExprKind exprKind, peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : AstNode(AstNodeType::TypeName, selfAllocator, document), exprKind(exprKind) {
+SLKC_API ExprNode::ExprNode(ExprKind exprKind, peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : AstNode(AstNodeType::Expr, selfAllocator, document), exprKind(exprKind) {
 }
 
 SLKC_API ExprNode::ExprNode(const ExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context) : AstNode(rhs, allocator, context), exprKind(rhs.exprKind) {
@@ -877,9 +877,8 @@ SLKC_API AstNodePtr<AstNode> WrapperExprNode::doDuplicate(peff::Alloc *newAlloca
 	return duplicatedNode.template castTo<AstNode>();
 }
 SLKC_API WrapperExprNode::WrapperExprNode(
-	peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document, const AstNodePtr<ExprNode> &target)
-	: ExprNode(ExprKind::Wrapper, selfAllocator, document),
-	  target(target) {
+	peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document)
+	: ExprNode(ExprKind::Wrapper, selfAllocator, document) {
 }
 SLKC_API WrapperExprNode::WrapperExprNode(const WrapperExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut)
 	: ExprNode(rhs, allocator, context) {

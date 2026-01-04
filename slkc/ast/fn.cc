@@ -57,7 +57,7 @@ SLKC_API AstNodePtr<AstNode> FnOverloadingNode::doDuplicate(peff::Alloc *newAllo
 SLKC_API FnOverloadingNode::FnOverloadingNode(
 	peff::Alloc *selfAllocator,
 	const peff::SharedPtr<Document> &document)
-	: MemberNode(AstNodeType::Fn, selfAllocator, document),
+	: MemberNode(AstNodeType::FnOverloading, selfAllocator, document),
 	  params(selfAllocator),
 	  paramIndices(selfAllocator),
 	  genericParams(selfAllocator),

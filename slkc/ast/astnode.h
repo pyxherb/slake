@@ -17,7 +17,7 @@ namespace slkc {
 		AttributeDef,
 		Attribute,
 		MacroAttribute,
-		FnSlot,
+		Fn,
 		FnOverloading,
 		AttributeMacroDef,
 		MemberLevelMacro,
@@ -249,6 +249,7 @@ namespace slkc {
 		TypeArgTypeMismatched,
 		InterfaceMethodsConflicted,
 		TypeIsNotInitializable,
+		MemberIsNotAccessible,
 
 		ImportLimitExceeded,
 		MalformedModuleName,

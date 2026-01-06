@@ -214,12 +214,16 @@ SLKC_API const char *slkc::getTokenName(TokenId tokenId) {
 			return "for";
 		case TokenId::FinalKeyword:
 			return "final";
+		case TokenId::FriendKeyword:
+			return "friend";
 		case TokenId::IfKeyword:
 			return "if";
 		case TokenId::ImportKeyword:
 			return "import";
 		case TokenId::InKeyword:
 			return "in";
+		case TokenId::InterfaceKeyword:
+			return "interface";
 		case TokenId::LetKeyword:
 			return "let";
 		case TokenId::MacroKeyword:
@@ -256,8 +260,6 @@ SLKC_API const char *slkc::getTokenName(TokenId tokenId) {
 			return "throw";
 		case TokenId::TypeofKeyword:
 			return "typeof";
-		case TokenId::InterfaceKeyword:
-			return "interface";
 		case TokenId::TrueKeyword:
 			return "true";
 		case TokenId::TryKeyword:
@@ -326,5 +328,5 @@ SLKC_API const char *slkc::getTokenName(TokenId tokenId) {
 			return "identifier";
 	}
 
-	return "<unknown tokenId>";
+	std::terminate();
 }

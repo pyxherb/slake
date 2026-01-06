@@ -60,7 +60,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileTypeName(
 			peff::SharedPtr<Document> doc = t->document->sharedFromThis();
 			AstNodePtr<MemberNode> m;
 
-			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(doc, t, m));
+			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(compileEnv, doc, t, m));
 
 			if (!m) {
 				return CompilationError(typeName->tokenRange, CompilationErrorKind::DoesNotReferToATypeName);
@@ -649,6 +649,19 @@ SLKC_API peff::Option<CompilationError> slkc::compileModule(
 	CompileEnvironment *compileEnv,
 	AstNodePtr<ModuleNode> mod,
 	slake::ModuleObject *modOut) {
+	peff::OneshotScopeGuard restoreCurParentAccessNodeGuard([compileEnv, oldNode = compileEnv->curParentAccessNode]() noexcept {
+		compileEnv->curParentAccessNode = oldNode;
+	});
+	compileEnv->curParentAccessNode = mod;
+
+	peff::ScopeGuard restoreCurModuleGuard([compileEnv, oldModule = compileEnv->curModule]() noexcept {
+		compileEnv->curModule = oldModule;
+	});
+	if (mod->getAstNodeType() == AstNodeType::Module)
+		compileEnv->curModule = mod;
+	else
+		restoreCurModuleGuard.release();
+
 	peff::Option<CompilationError> compilationError;
 	for (auto i : mod->anonymousImports) {
 		NormalCompilationContext compilationContext(compileEnv, nullptr);
@@ -790,7 +803,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileModule(
 					AstNodePtr<MemberNode> baseTypeNode;
 
 					if (clsNode->baseType->typeNameKind == TypeNameKind::Custom) {
-						if (!(compilationError = resolveCustomTypeName(clsNode->document->sharedFromThis(), clsNode->baseType.template castTo<CustomTypeNameNode>(), baseTypeNode))) {
+						if (!(compilationError = resolveCustomTypeName(compileEnv, clsNode->document->sharedFromThis(), clsNode->baseType.template castTo<CustomTypeNameNode>(), baseTypeNode))) {
 							if (baseTypeNode) {
 								if (baseTypeNode->getAstNodeType() != AstNodeType::Class) {
 									SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(CompilationError(clsNode->baseType->tokenRange, CompilationErrorKind::ExpectingClassName)));
@@ -831,7 +844,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileModule(
 					AstNodePtr<MemberNode> implementedTypeNode;
 
 					if (i->typeNameKind == TypeNameKind::Custom) {
-						if (!(compilationError = resolveCustomTypeName(clsNode->document->sharedFromThis(), i.template castTo<CustomTypeNameNode>(), implementedTypeNode))) {
+						if (!(compilationError = resolveCustomTypeName(compileEnv, clsNode->document->sharedFromThis(), i.template castTo<CustomTypeNameNode>(), implementedTypeNode))) {
 							if (implementedTypeNode) {
 								if (implementedTypeNode->getAstNodeType() != AstNodeType::Interface) {
 									SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(CompilationError(i->tokenRange, CompilationErrorKind::ExpectingInterfaceName)));
@@ -896,13 +909,13 @@ SLKC_API peff::Option<CompilationError> slkc::compileModule(
 							return genOutOfMemoryCompError();
 
 						for (auto &lhsMember : lhsParent->members) {
-							if (lhsMember->getAstNodeType() == AstNodeType::FnSlot) {
+							if (lhsMember->getAstNodeType() == AstNodeType::Fn) {
 								AstNodePtr<FnNode> lhs = lhsMember.castTo<FnNode>();
 
 								if (auto rhsMember = rhsParent->memberIndices.find(lhsMember->name); rhsMember != rhsParent->memberIndices.end()) {
 									AstNodePtr<MemberNode> correspondingMember = rhsParent->members.at(rhsMember.value());
 
-									if (correspondingMember->getAstNodeType() != AstNodeType::FnSlot) {
+									if (correspondingMember->getAstNodeType() != AstNodeType::Fn) {
 										// Corresponding member should not be not a function.
 										std::terminate();
 									}
@@ -925,7 +938,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileModule(
 											if (auto overridenIt = clsNode->memberIndices.find(lhsMember->name); overridenIt != clsNode->memberIndices.end()) {
 												AstNodePtr<MemberNode> correspondingOverridenMember = clsNode->members.at(overridenIt.value());
 
-												if (correspondingOverridenMember->getAstNodeType() == AstNodeType::FnSlot) {
+												if (correspondingOverridenMember->getAstNodeType() == AstNodeType::Fn) {
 													AstNodePtr<FnNode> correspondingOverridenMethod = correspondingOverridenMember.castTo<FnNode>();
 
 													bool overridenWhether;
@@ -978,13 +991,13 @@ SLKC_API peff::Option<CompilationError> slkc::compileModule(
 				if (!conflictedInterfacesDetected) {
 					for (auto &i : involvedInterfaces) {
 						for (auto &j : i->members) {
-							if (j->getAstNodeType() == AstNodeType::FnSlot) {
+							if (j->getAstNodeType() == AstNodeType::Fn) {
 								AstNodePtr<FnNode> method = j.template castTo<FnNode>();
 
 								if (auto it = clsNode->memberIndices.find(j->name); it != clsNode->memberIndices.end()) {
 									AstNodePtr<MemberNode> correspondingMember = clsNode->members.at(it.value());
 
-									if (correspondingMember->getAstNodeType() != AstNodeType::FnSlot) {
+									if (correspondingMember->getAstNodeType() != AstNodeType::Fn) {
 										for (auto &k : method->overloadings) {
 											SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(CompilationError(clsNode->tokenRange, AbstractMethodNotImplementedErrorExData{ k })));
 										}
@@ -1050,7 +1063,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileModule(
 					AstNodePtr<MemberNode> implementedTypeNode;
 
 					if (i->typeNameKind == TypeNameKind::Custom) {
-						if (!(compilationError = resolveCustomTypeName(clsNode->document->sharedFromThis(), i.template castTo<CustomTypeNameNode>(), implementedTypeNode))) {
+						if (!(compilationError = resolveCustomTypeName(compileEnv, clsNode->document->sharedFromThis(), i.template castTo<CustomTypeNameNode>(), implementedTypeNode))) {
 							if (implementedTypeNode) {
 								if (implementedTypeNode->getAstNodeType() != AstNodeType::Interface) {
 									SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(CompilationError(i->tokenRange, CompilationErrorKind::ExpectingInterfaceName)));
@@ -1125,7 +1138,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileModule(
 					AstNodePtr<MemberNode> implementedTypeNode;
 
 					if (i->typeNameKind == TypeNameKind::Custom) {
-						if (!(compilationError = resolveCustomTypeName(clsNode->document->sharedFromThis(), i.template castTo<CustomTypeNameNode>(), implementedTypeNode))) {
+						if (!(compilationError = resolveCustomTypeName(compileEnv, clsNode->document->sharedFromThis(), i.template castTo<CustomTypeNameNode>(), implementedTypeNode))) {
 							if (implementedTypeNode) {
 								if (implementedTypeNode->getAstNodeType() != AstNodeType::Interface) {
 									SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(CompilationError(i->tokenRange, CompilationErrorKind::ExpectingInterfaceName)));
@@ -1157,13 +1170,13 @@ SLKC_API peff::Option<CompilationError> slkc::compileModule(
 
 				for (auto &i : involvedInterfaces) {
 					for (auto &j : i->members) {
-						if (j->getAstNodeType() == AstNodeType::FnSlot) {
+						if (j->getAstNodeType() == AstNodeType::Fn) {
 							AstNodePtr<FnNode> method = j.template castTo<FnNode>();
 
 							if (auto it = clsNode->memberIndices.find(j->name); it != clsNode->memberIndices.end()) {
 								AstNodePtr<MemberNode> correspondingMember = clsNode->members.at(it.value());
 
-								if (correspondingMember->getAstNodeType() != AstNodeType::FnSlot) {
+								if (correspondingMember->getAstNodeType() != AstNodeType::Fn) {
 									for (auto &k : method->overloadings) {
 										SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(CompilationError(clsNode->tokenRange, AbstractMethodNotImplementedErrorExData{ k })));
 									}
@@ -1207,7 +1220,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileModule(
 
 				break;
 			}
-			case AstNodeType::FnSlot: {
+			case AstNodeType::Fn: {
 				AstNodePtr<FnNode> slotNode = m.template castTo<FnNode>();
 				slake::HostObjectRef<slake::FnObject> slotObject;
 
@@ -1240,7 +1253,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileModule(
 							if (!(i->accessModifier & slake::ACCESS_STATIC)) {
 								if (!(compileEnv->thisNode = makeAstNode<ThisNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document)))
 									return genOutOfMemoryCompError();
-								compileEnv->thisNode->thisType = i->parent->parent->sharedFromThis().template castTo<MemberNode>();
+								compileEnv->thisNode->thisType = mod->sharedFromThis().template castTo<MemberNode>();
 							}
 							break;
 						default:

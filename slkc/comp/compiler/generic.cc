@@ -316,7 +316,7 @@ static peff::Option<CompilationError> _walkNodeForGenericInstantiation(
 			}
 			break;
 		}
-		case AstNodeType::FnSlot: {
+		case AstNodeType::Fn: {
 			AstNodePtr<FnNode> fnSlot = astNode.template castTo<FnNode>();
 
 			for (auto i : fnSlot->overloadings) {
@@ -531,7 +531,7 @@ SLKC_API peff::Option<CompilationError> Document::instantiateGenericObject(
 		{
 			// Map generic arguments.
 			switch (originalObject->getAstNodeType()) {
-				case AstNodeType::FnSlot: {
+				case AstNodeType::Fn: {
 					AstNodePtr<FnNode> obj = duplicatedObject.template castTo<FnNode>();
 
 					peff::DynArray<AstNodePtr<FnOverloadingNode>> overloadings(allocator.get());

@@ -161,6 +161,8 @@ namespace slkc {
 		peff::DynArray<CompilationError> errors;
 		peff::DynArray<CompilationWarning> warnings;
 		AstNodePtr<FnOverloadingNode> curOverloading;
+		AstNodePtr<ModuleNode> curParentAccessNode;
+		AstNodePtr<ModuleNode> curModule;
 		AstNodePtr<ThisNode> thisNode;
 		uint32_t flags;
 
@@ -350,6 +352,23 @@ namespace slkc {
 			AstNodePtr<MemberNode> &memberOut);
 	[[nodiscard]] SLKC_API
 		peff::Option<CompilationError>
+		isMemberAccessible(
+			CompileEnvironment *compileEnv,
+			AstNodePtr<MemberNode> parent,
+			AstNodePtr<MemberNode> member,
+			bool &resultOut);
+	/// @brief Resolve an identifier reference.
+	/// @param compileEnv The compile context. Leave this parameter empty bypasses the access check.
+	/// @param document Document for resolution.
+	/// @param resolveRoot Root object for resolution.
+	/// @param idRef Identifier entries for resolution.
+	/// @param nEntries Number of the identifier entries.
+	/// @param memberOut Will be used to store the output member, `nullptr` if not found.
+	/// @param resolvedPartListOut Will be used to store the resolved part information. 
+	/// @param isStatic Whether the initial resolution is static.
+	/// @return The fatal error encountered during the resolution.
+	[[nodiscard]] SLKC_API
+		peff::Option<CompilationError>
 		resolveIdRef(
 			CompileEnvironment *compileEnv,
 			peff::SharedPtr<Document> document,
@@ -360,12 +379,13 @@ namespace slkc {
 			ResolvedIdRefPartList *resolvedPartListOut,
 			bool isStatic = true);
 	/// @brief Resolve an identifier reference with a scope object and its parents.
+	/// @param compileEnv The compile context. Leave this parameter empty bypasses the access check.
 	/// @param document Document for resolution.
 	/// @param walkedNodes Reference to the container to store the walked nodes, should be empty on the top level.
 	/// @param resolveScope Scope object for resolution.
 	/// @param idRef Identifier entry array for resolution.
 	/// @param nEntries Number of identifier entries.
-	/// @param memberOut Where will be used for output member storage, `nullptr` if not found.
+	/// @param memberOut Will be used for output member storage, `nullptr` if not found.
 	/// @param isStatic Controls if the initial resolution is static or instance.
 	/// @param isSealed Controls if not go into the parent of the current scope object.
 	/// @return The fatal error encountered during the resolution.
@@ -383,14 +403,15 @@ namespace slkc {
 			bool isStatic = true,
 			bool isSealed = false);
 	/// @brief Resolve a custom type name.
-	/// @param compileEnv The compile context.
-	/// @param resolveContext Previous resolve context.
+	/// @param compileEnv The compile context. Leave this parameter empty bypasses the access check.
 	/// @param typeName Type name to be resolved.
 	/// @param memberNodeOut Where the resolved member node will be stored.
+	/// @param walkedNodes Reserved for internal use, stores the nodes walked to void cyclic walking.
 	/// @return Critical error encountered that forced the resolution to interrupt.
 	[[nodiscard]] SLKC_API
 		peff::Option<CompilationError>
 		resolveCustomTypeName(
+			CompileEnvironment *compileEnv,
 			peff::SharedPtr<Document> document,
 			const AstNodePtr<CustomTypeNameNode> &typeName,
 			AstNodePtr<MemberNode> &memberNodeOut,

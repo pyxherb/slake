@@ -496,7 +496,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileWithStmt(
 
 		tn->contextNode = compileEnv->thisNode->thisType;
 
-		SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(compileEnv->document, tn, m));
+		SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(compileEnv, compileEnv->document, tn, m));
 
 		if (!m)
 			return CompilationError(tn->tokenRange, CompilationErrorKind::ExpectingTypeName);

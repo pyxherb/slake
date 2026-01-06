@@ -427,7 +427,7 @@ static peff::Option<CompilationError> _collectInvolvedInterfaces(
 		AstNodePtr<TypeNameNode> t = curInterface->implTypes.at(curFrame.index);
 
 		AstNodePtr<MemberNode> m;
-		SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, t.castTo<CustomTypeNameNode>(), m));
+		SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(nullptr, document, t.castTo<CustomTypeNameNode>(), m));
 
 		if (!m) {
 			goto malformed;
@@ -529,7 +529,7 @@ static peff::Option<CompilationError> _isStructRecursed(
 					AstNodePtr<MemberNode> m;
 
 					if (auto t = varMember->type; t->typeNameKind == TypeNameKind::Custom) {
-						SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, t.castTo<CustomTypeNameNode>(), m));
+						SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(nullptr, document, t.castTo<CustomTypeNameNode>(), m));
 
 						switch (m->getAstNodeType()) {
 							case AstNodeType::Struct:
@@ -577,7 +577,7 @@ static peff::Option<CompilationError> _isStructRecursed(
 					AstNodePtr<MemberNode> m;
 
 					if (auto t = varMember->elementTypes.at(exData.elementIndex); t->typeNameKind == TypeNameKind::Custom) {
-						SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, t.castTo<CustomTypeNameNode>(), m));
+						SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(nullptr, document, t.castTo<CustomTypeNameNode>(), m));
 
 						switch (m->getAstNodeType()) {
 							case AstNodeType::Struct:
@@ -672,7 +672,7 @@ SLKC_API peff::Option<CompilationError> slkc::isImplementedByClass(
 		}
 
 		AstNodePtr<MemberNode> m;
-		SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, currentType.template castTo<CustomTypeNameNode>(), m));
+		SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(nullptr, document, currentType.template castTo<CustomTypeNameNode>(), m));
 
 		if (m->getAstNodeType() != AstNodeType::Class) {
 			goto malformed;
@@ -690,7 +690,7 @@ SLKC_API peff::Option<CompilationError> slkc::isImplementedByClass(
 			AstNodePtr<TypeNameNode> t = derived->implTypes.at(i);
 
 			AstNodePtr<MemberNode> m;
-			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, t.template castTo<CustomTypeNameNode>(), m));
+			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(nullptr, document, t.template castTo<CustomTypeNameNode>(), m));
 
 			if (!m) {
 				goto malformed;
@@ -748,7 +748,7 @@ SLKC_API peff::Option<CompilationError> slkc::isBaseOf(
 		}
 
 		AstNodePtr<MemberNode> m;
-		SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, currentType.template castTo<CustomTypeNameNode>(), m));
+		SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(nullptr, document, currentType.template castTo<CustomTypeNameNode>(), m));
 
 		if (!m) {
 			goto malformed;

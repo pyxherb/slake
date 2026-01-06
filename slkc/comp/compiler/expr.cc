@@ -291,6 +291,12 @@ peff::Option<CompilationError> selectSingleMatchingOverloading(CompileEnvironmen
 		if (!resultOut.callTargetMatchedOverloadings.pushBack(AstNodePtr<FnOverloadingNode>(m->overloadings.back()))) {
 			return genOutOfMemoryCompError();
 		}
+		bool accessible;
+		SLKC_RETURN_IF_COMP_ERROR(isMemberAccessible(compileEnv, {}, finalMember.castTo<MemberNode>(), accessible));
+		if (!accessible)
+			return CompilationError(
+				tokenRange,
+				CompilationErrorKind::MemberIsNotAccessible);
 	} else {
 		if (desiredType && (desiredType->typeNameKind == TypeNameKind::Fn)) {
 			AstNodePtr<FnTypeNameNode> tn = desiredType.template castTo<FnTypeNameNode>();
@@ -309,6 +315,13 @@ peff::Option<CompilationError> selectSingleMatchingOverloading(CompileEnvironmen
 			}
 
 			finalMember = matchedOverloadings.back().template castTo<MemberNode>();
+
+			bool accessible;
+			SLKC_RETURN_IF_COMP_ERROR(isMemberAccessible(compileEnv, {}, finalMember.castTo<MemberNode>(), accessible));
+			if (!accessible)
+				return CompilationError(
+					tokenRange,
+					CompilationErrorKind::MemberIsNotAccessible);
 
 			resultOut.callTargetMatchedOverloadings = std::move(matchedOverloadings);
 		} else {
@@ -366,7 +379,7 @@ static peff::Option<CompilationError> _determineNodeType(CompileEnvironment *com
 			typeNameOut = tn.template castTo<TypeNameNode>();
 			break;
 		}
-		case AstNodeType::FnSlot:
+		case AstNodeType::Fn:
 			typeNameOut = {};
 			break;
 		case AstNodeType::Module:
@@ -438,7 +451,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 				case TypeNameKind::Object:
 					return CompilationError(e->idRefPtr->tokenRange, CompilationErrorKind::IdNotFound);
 				case TypeNameKind::Custom:
-					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, resolveCustomTypeName(tn->document->sharedFromThis(), tn.template castTo<CustomTypeNameNode>(), initialMember));
+					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, resolveCustomTypeName(compileEnv, tn->document->sharedFromThis(), tn.template castTo<CustomTypeNameNode>(), initialMember));
 					break;
 				case TypeNameKind::Fn:
 				case TypeNameKind::Array:
@@ -500,7 +513,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 				return CompilationError(e->idRefPtr->tokenRange, CompilationErrorKind::IdNotFound);
 			}
 
-			if (finalMember->getAstNodeType() == AstNodeType::FnSlot) {
+			if (finalMember->getAstNodeType() == AstNodeType::Fn) {
 				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, selectSingleMatchingOverloading(compileEnv, e->idRefPtr->tokenRange, finalMember, desiredType, false, resultOut));
 
 				AstNodePtr<FnTypeNameNode> fnType;
@@ -512,6 +525,13 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 			} else {
 				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, _loadTheRestOfIdRef(compileEnv, compilationContext, evalPurpose, finalRegister, resultOut, e->idRefPtr.get(), parts, headRegister, 0, {}, sldIndex));
 			}
+
+			bool accessible;
+			SLKC_RETURN_IF_COMP_ERROR(isMemberAccessible(compileEnv, {}, finalMember, accessible));
+			if (!accessible)
+				return CompilationError(
+					TokenRange{ compileEnv->document->mainModule, e->idRefPtr->entries.back().nameTokenIndex },
+					CompilationErrorKind::MemberIsNotAccessible);
 
 			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, _determineNodeType(compileEnv, finalMember, resultOut.evaluatedType));
 
@@ -754,7 +774,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 						}
 					}
 
-					if (finalMember->getAstNodeType() == AstNodeType::FnSlot) {
+					if (finalMember->getAstNodeType() == AstNodeType::Fn) {
 						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, selectSingleMatchingOverloading(compileEnv, e->idRefPtr->tokenRange, finalMember, desiredType, false, resultOut));
 
 						AstNodePtr<FnTypeNameNode> fnType;
@@ -798,7 +818,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 					return CompilationError(e->idRefPtr->tokenRange, CompilationErrorKind::IdNotFound);
 				}
 
-				if (finalMember->getAstNodeType() == AstNodeType::FnSlot) {
+				if (finalMember->getAstNodeType() == AstNodeType::Fn) {
 					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, selectSingleMatchingOverloading(compileEnv, e->idRefPtr->tokenRange, finalMember, desiredType, false, resultOut));
 
 					AstNodePtr<FnTypeNameNode> fnType;
@@ -1387,7 +1407,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 
 			AstNodePtr<MemberNode> m;
 
-			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, resolveCustomTypeName(compileEnv->document, e->targetType.template castTo<CustomTypeNameNode>(), m));
+			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, resolveCustomTypeName(compileEnv, compileEnv->document, e->targetType.template castTo<CustomTypeNameNode>(), m));
 
 			if (m->getAstNodeType() != AstNodeType::Class) {
 				return CompilationError(e->targetType->tokenRange, CompilationErrorKind::TypeIsNotConstructible);
@@ -1419,7 +1439,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->emitIns(sldIndex, slake::Opcode::NEW, resultRegOut, { slake::Value(type) }));
 
 			if (auto it = c->memberIndices.find("new"); it != c->memberIndices.end()) {
-				if (c->members.at(it.value())->getAstNodeType() != AstNodeType::FnSlot) {
+				if (c->members.at(it.value())->getAstNodeType() != AstNodeType::Fn) {
 					return CompilationError(e->targetType->tokenRange, CompilationErrorKind::TypeIsNotConstructible);
 				}
 				AstNodePtr<FnNode> constructor = c->members.at(it.value()).template castTo<FnNode>();
@@ -1474,6 +1494,13 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 					}
 
 					overloading = matchedOverloadingIndices.back();
+
+					bool accessible;
+					SLKC_RETURN_IF_COMP_ERROR(isMemberAccessible(compileEnv, {}, overloading.castTo<MemberNode>(), accessible));
+					if (!accessible)
+						return CompilationError(
+							TokenRange{ compileEnv->document->mainModule, e->targetType->tokenRange },
+							CompilationErrorKind::MemberIsNotAccessible);
 				}
 
 				slake::HostObjectRef<slake::IdRefObject> idRefObject;

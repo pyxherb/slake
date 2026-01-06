@@ -264,7 +264,7 @@ SLKC_API peff::Option<CompilationError> slkc::indexModuleMembers(
 				SLKC_RETURN_IF_COMP_ERROR(indexModuleMembers(compileEnv, m.template castTo<ModuleNode>()));
 				break;
 			}
-			case AstNodeType::FnSlot: {
+			case AstNodeType::Fn: {
 				AstNodePtr<FnNode> m = i.template castTo<FnNode>();
 
 				for (auto j : m->overloadings) {

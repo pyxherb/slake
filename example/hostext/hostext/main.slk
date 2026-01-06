@@ -45,17 +45,17 @@ interface IE: IC + ID {
 }*/
 
 struct SA {
-	let a: i32;
-	let b: u32;
-	let c: f32;
+	public let a: i32;
+	public let b: u32;
+	public let c: f32;
 }
 
 interface IA {
-	fn testIA() virtual;
+	public fn testIA() virtual;
 }
 
 interface IB {
-	fn testIB() virtual;
+	public fn testIB() virtual;
 }
 
 class ImplTest: IA + IB {
@@ -76,7 +76,7 @@ class InterfaceTest<T: IA + IB> {
 }
 
 class TestParent<T> {
-	fn myTest(a: T, b: T) {
+	public fn myTest(a: T, b: T) {
 		with T(i32) {
 			a + b;
 			extfns.print("T = i32\n");
@@ -136,7 +136,7 @@ class Test {
 		return;
 	}
 
-	public fn testFunc(x: i32, y: i32) {
+	fn testFunc(x: i32, y: i32) {
 		extfns.print("Called testFunc from Test");
 		return;
 	}
@@ -202,7 +202,7 @@ fn test(...) {
 // let a: fn (i32, u32, f32) with hostext.VirtualBase -> bool;
 
 class OperatorTest {
-	operator +(lhs: i32, ...) -> i32 {
+	public operator +(lhs: i32, ...) -> i32 {
 		return lhs + 114514;
 	}
 }

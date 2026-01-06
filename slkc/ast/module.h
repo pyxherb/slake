@@ -21,12 +21,33 @@ namespace slkc {
 		SLAKE_FORCEINLINE void setParent(MemberNode *parent) noexcept {
 			this->parent = parent;
 		}
+
+		SLAKE_FORCEINLINE bool isPublic() const noexcept {
+			return accessModifier & slake::ACCESS_PUBLIC;
+		}
+
+		SLAKE_FORCEINLINE bool isStatic() const noexcept {
+			return accessModifier & slake::ACCESS_STATIC;
+		}
+
+		SLAKE_FORCEINLINE bool isNative() const noexcept {
+			return accessModifier & slake::ACCESS_NATIVE;
+		}
+
+		SLAKE_FORCEINLINE bool isFinal() const noexcept {
+			return accessModifier & slake::ACCESS_FINAL;
+		}
 	};
 
 	class ImportNode;
 	class VarDefStmtNode;
 
 	class Parser;
+
+	class FriendDeclNode : public AstNode {
+	public:
+
+	};
 
 	class ModuleNode : public MemberNode {
 	protected:

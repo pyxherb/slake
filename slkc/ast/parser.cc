@@ -685,7 +685,7 @@ accessModifierParseEnd:
 			fn->accessModifier = access;
 
 			if (auto it = p->memberIndices.find(fn->name); it != p->memberIndices.end()) {
-				if (p->members.at(it.value())->getAstNodeType() != AstNodeType::FnSlot) {
+				if (p->members.at(it.value())->getAstNodeType() != AstNodeType::Fn) {
 					peff::String s(resourceAllocator.get());
 
 					if (!s.build(fn->name)) {

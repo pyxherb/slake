@@ -76,7 +76,7 @@ static peff::Option<CompilationError> _determineWithParentModule(
 		AstNodePtr<ModuleNode> baseType = fnSlot->parent->parent->sharedFromThis().template castTo<ModuleNode>();
 
 		if (auto it = baseType->memberIndices.find(fnSlot->name); it != baseType->memberIndices.end()) {
-			if (baseType->members.at(it.value())->getAstNodeType() != AstNodeType::FnSlot) {
+			if (baseType->members.at(it.value())->getAstNodeType() != AstNodeType::Fn) {
 				goto baseModuleMalformed;
 			}
 
@@ -109,7 +109,7 @@ static peff::Option<CompilationError> _determineWithParentClass(
 		SLKC_RETURN_IF_COMP_ERROR(visitBaseClass(m->baseType, baseType, nullptr));
 		if (baseType) {
 			if (auto it = baseType->memberIndices.find(fnSlot->name); it != baseType->memberIndices.end()) {
-				if (baseType->members.at(it.value())->getAstNodeType() != AstNodeType::FnSlot) {
+				if (baseType->members.at(it.value())->getAstNodeType() != AstNodeType::Fn) {
 					goto classBaseClassMalformed;
 				}
 
@@ -130,7 +130,7 @@ classBaseClassMalformed:
 			SLKC_RETURN_IF_COMP_ERROR(visitBaseInterface(i, baseType, nullptr));
 			if (baseType) {
 				if (auto it = baseType->memberIndices.find(fnSlot->name); it != baseType->memberIndices.end()) {
-					if (baseType->members.at(it.value())->getAstNodeType() != AstNodeType::FnSlot) {
+					if (baseType->members.at(it.value())->getAstNodeType() != AstNodeType::Fn) {
 						continue;
 					}
 
@@ -162,7 +162,7 @@ static peff::Option<CompilationError> _determineWithParentInterface(
 			SLKC_RETURN_IF_COMP_ERROR(visitBaseInterface(i, baseType, nullptr));
 			if (baseType) {
 				if (auto it = baseType->memberIndices.find(fnSlot->name); it != baseType->memberIndices.end()) {
-					if (baseType->members.at(it.value())->getAstNodeType() != AstNodeType::FnSlot) {
+					if (baseType->members.at(it.value())->getAstNodeType() != AstNodeType::Fn) {
 						continue;
 					}
 

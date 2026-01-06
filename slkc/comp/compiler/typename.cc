@@ -70,8 +70,8 @@ SLKC_API peff::Option<CompilationError> slkc::isSameType(
 
 			AstNodePtr<MemberNode> lhsMember, rhsMember;
 
-			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, convertedLhs, lhsMember));
-			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, convertedRhs, rhsMember));
+			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(nullptr, document, convertedLhs, lhsMember));
+			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(nullptr, document, convertedRhs, rhsMember));
 
 			whetherOut = lhsMember == rhsMember;
 			break;
@@ -452,7 +452,7 @@ SLKC_API peff::Option<CompilationError> slkc::isSubtypeOf(
 				case TypeNameKind::Object: {
 					AstNodePtr<MemberNode> stm;
 
-					SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(type->document->sharedFromThis(), type.castTo<CustomTypeNameNode>(), stm));
+					SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(nullptr, type->document->sharedFromThis(), type.castTo<CustomTypeNameNode>(), stm));
 
 					if (stm->getAstNodeType() == AstNodeType::Class)
 						resultOut = true;
@@ -463,8 +463,8 @@ SLKC_API peff::Option<CompilationError> slkc::isSubtypeOf(
 				case TypeNameKind::Custom: {
 					AstNodePtr<MemberNode> stm, tm;
 
-					SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(type->document->sharedFromThis(), type.castTo<CustomTypeNameNode>(), tm));
-					SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(subtype->document->sharedFromThis(), subtype.castTo<CustomTypeNameNode>(), stm));
+					SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(nullptr, type->document->sharedFromThis(), type.castTo<CustomTypeNameNode>(), tm));
+					SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(nullptr, subtype->document->sharedFromThis(), subtype.castTo<CustomTypeNameNode>(), stm));
 
 					switch (tm->getAstNodeType()) {
 						case AstNodeType::Class:
@@ -849,8 +849,8 @@ SLKC_API peff::Option<CompilationError> slkc::isSameTypeInSignature(
 
 			AstNodePtr<MemberNode> lhsMember, rhsMember;
 
-			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, convertedLhs, lhsMember));
-			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, convertedRhs, rhsMember));
+			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(nullptr, document, convertedLhs, lhsMember));
+			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(nullptr, document, convertedRhs, rhsMember));
 
 			if ((!lhsMember) || (!rhsMember)) {
 				if ((!lhsMember) != (!rhsMember)) {
@@ -1072,8 +1072,8 @@ SLKC_API peff::Option<CompilationError> slkc::isTypeConvertible(
 
 					AstNodePtr<MemberNode> stm, dtm;
 
-					SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, st, stm));
-					SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, dt, dtm));
+					SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(nullptr, document, st, stm));
+					SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(nullptr, document, dt, dtm));
 
 					switch (stm->getAstNodeType()) {
 						case AstNodeType::Class:
@@ -1395,7 +1395,7 @@ SLKC_API peff::Option<CompilationError> slkc::getUnpackedTypeOf(
 		case TypeNameKind::Custom: {
 			AstNodePtr<MemberNode> m;
 
-			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, type.castTo<CustomTypeNameNode>(), m));
+			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(nullptr, document, type.castTo<CustomTypeNameNode>(), m));
 
 			if (!m) {
 				return CompilationError(type->tokenRange, CompilationErrorKind::IdNotFound);
@@ -1574,8 +1574,8 @@ SLKC_API peff::Option<slkc::CompilationError> slkc::typeNameCmp(AstNodePtr<TypeN
 				lm,
 				rm;
 
-			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(doc, l, lm));
-			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(doc, r, rm));
+			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(nullptr, doc, l, lm));
+			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(nullptr, doc, r, rm));
 
 			if (!lm) {
 				if (rm) {

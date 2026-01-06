@@ -545,7 +545,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 			case BinaryOp::Cmp: {
 				AstNodePtr<MemberNode> clsNode, operatorSlot;
 
-				SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(decayedRhsType->document->sharedFromThis(), decayedRhsType.template castTo<CustomTypeNameNode>(), clsNode));
+				SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(compileEnv, decayedRhsType->document->sharedFromThis(), decayedRhsType.template castTo<CustomTypeNameNode>(), clsNode));
 
 				IdRefEntry e(compileEnv->allocator.get());
 
@@ -562,7 +562,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 						expr->tokenRange,
 						CompilationErrorKind::OperatorNotFound);
 
-				if (operatorSlot->getAstNodeType() != AstNodeType::FnSlot)
+				if (operatorSlot->getAstNodeType() != AstNodeType::Fn)
 					std::terminate();
 
 				peff::DynArray<AstNodePtr<FnOverloadingNode>> matchedOverloadingIndices(compileEnv->allocator.get());
@@ -601,6 +601,13 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 				}
 
 				auto matchedOverloading = matchedOverloadingIndices.back();
+
+				bool accessible;
+				SLKC_RETURN_IF_COMP_ERROR(isMemberAccessible(compileEnv, {}, matchedOverloading.castTo<MemberNode>(), accessible));
+				if (!accessible)
+					return CompilationError(
+						expr->tokenRange,
+						CompilationErrorKind::MemberIsNotAccessible);
 
 				uint32_t rhsReg;
 				SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(rhsReg));
@@ -1955,7 +1962,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 					case BinaryOp::Cmp: {
 						AstNodePtr<MemberNode> clsNode, operatorSlot;
 
-						SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(decayedLhsType->document->sharedFromThis(), decayedLhsType.template castTo<CustomTypeNameNode>(), clsNode));
+						SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(compileEnv, decayedLhsType->document->sharedFromThis(), decayedLhsType.template castTo<CustomTypeNameNode>(), clsNode));
 
 						IdRefEntry e(compileEnv->allocator.get());
 
@@ -1975,7 +1982,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								expr->tokenRange,
 								CompilationErrorKind::OperatorNotFound);
 
-						if (operatorSlot->getAstNodeType() != AstNodeType::FnSlot)
+						if (operatorSlot->getAstNodeType() != AstNodeType::Fn)
 							std::terminate();
 
 						peff::DynArray<AstNodePtr<FnOverloadingNode>> matchedOverloadingIndices(compileEnv->allocator.get());
@@ -2001,6 +2008,13 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 						}
 
 						auto matchedOverloading = matchedOverloadingIndices.back();
+
+						bool accessible;
+						SLKC_RETURN_IF_COMP_ERROR(isMemberAccessible(compileEnv, {}, matchedOverloading.castTo<MemberNode>(), accessible));
+						if (!accessible)
+							return CompilationError(
+								expr->tokenRange,
+								CompilationErrorKind::MemberIsNotAccessible);
 
 						uint32_t lhsReg;
 						SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(lhsReg));

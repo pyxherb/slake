@@ -570,6 +570,9 @@ void dumpCompilationError(peff::SharedPtr<slkc::Parser> parser, const slkc::Comp
 		case slkc::CompilationErrorKind::TypeIsNotInitializable:
 			printf("The type is not initializable\n");
 			break;
+		case slkc::CompilationErrorKind::MemberIsNotAccessible:
+			printf("The member is not accessible\n");
+			break;
 		case slkc::CompilationErrorKind::ImportLimitExceeded:
 			printf("Import item number exceeded\n");
 			break;

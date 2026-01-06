@@ -114,7 +114,7 @@ SLKC_API peff::Option<CompilationError> slkc::resolveStaticMember(
 				}
 				break;
 			}
-			case AstNodeType::FnSlot: {
+			case AstNodeType::Fn: {
 				AstNodePtr<FnNode> m = result.template castTo<FnNode>();
 
 				// Check if the slot contains any static method.
@@ -277,7 +277,7 @@ SLKC_API peff::Option<CompilationError> slkc::resolveInstanceMember(
 			SLKC_RETURN_IF_COMP_ERROR(removeRefOfType(m->type, type));
 
 			AstNodePtr<MemberNode> tm;
-			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, type.template castTo<CustomTypeNameNode>(), tm));
+			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(compileEnv, document, type.template castTo<CustomTypeNameNode>(), tm));
 
 			if (!tm) {
 				result = {};
@@ -307,7 +307,7 @@ SLKC_API peff::Option<CompilationError> slkc::resolveInstanceMember(
 				}
 				break;
 			}
-			case AstNodeType::FnSlot: {
+			case AstNodeType::Fn: {
 				AstNodePtr<FnNode> m = result.template castTo<FnNode>();
 
 				// Check if the slot contains any instance method.
@@ -329,6 +329,84 @@ SLKC_API peff::Option<CompilationError> slkc::resolveInstanceMember(
 	}
 
 	memberOut = {};
+	return {};
+}
+
+SLKC_API peff::Option<CompilationError> slkc::isMemberAccessible(
+	CompileEnvironment *compileEnv,
+	AstNodePtr<MemberNode> parent,
+	AstNodePtr<MemberNode> member,
+	bool &resultOut) {
+	if (member->isPublic())
+		goto accessCheckPassed;
+	if (compileEnv->curParentAccessNode) {
+		auto p = member->parent->sharedFromThis().castTo<MemberNode>();
+
+		if (p->getAstNodeType() == AstNodeType::Fn)
+			p = p->parent->sharedFromThis().castTo<MemberNode>();
+
+		auto accessNode = compileEnv->curParentAccessNode.castTo<MemberNode>();
+
+		switch (p->getAstNodeType()) {
+			case AstNodeType::Class:
+				if (accessNode->getAstNodeType() == AstNodeType::Class) {
+					bool result;
+
+					SLKC_RETURN_IF_COMP_ERROR(isBaseOf(compileEnv->document, accessNode.castTo<ClassNode>(), p->sharedFromThis().castTo<ClassNode>(), result));
+
+					if (result) {
+						// Child classes can always access parent's members.
+						goto accessCheckPassed;
+					}
+				}
+				for (AstNodePtr<MemberNode> j = p; j; j = j->parent ? j->parent->sharedFromThis().castTo<MemberNode>() : AstNodePtr<MemberNode>{}) {
+					if (accessNode->getAstNodeType() == AstNodeType::Module) {
+						switch (j->getAstNodeType()) {
+							case AstNodeType::Class:
+							case AstNodeType::Interface:
+							case AstNodeType::Struct:
+								break;
+							default:
+								goto notInternal;
+						}
+					}
+					if (j == accessNode)
+						// Outer class is always accessible to internal classes' members.
+						goto accessCheckPassed;
+				}
+				break;
+			case AstNodeType::Module:
+				// Members in the same module can access each other.
+				if (p == compileEnv->curParentAccessNode)
+					goto accessCheckPassed;
+				break;
+		}
+
+	notInternal:
+		switch (compileEnv->curParentAccessNode->getAstNodeType()) {
+			case AstNodeType::Class:
+				if (member->parent && member->parent->getAstNodeType() == AstNodeType::Class) {
+					AstNodePtr<ClassNode> curModule = compileEnv->curParentAccessNode.castTo<ClassNode>();
+
+					bool result;
+
+					SLKC_RETURN_IF_COMP_ERROR(isBaseOf(compileEnv->document, curModule, member->parent->sharedFromThis().castTo<ClassNode>(), result));
+
+					if (result) {
+						// Child classes can always access parent's members.
+						goto accessCheckPassed;
+					}
+				}
+				break;
+			default:
+				break;
+		}
+	}
+	// TODO: Check if this is a friend.
+	resultOut = false;
+	return {};
+accessCheckPassed:
+	resultOut = true;
 	return {};
 }
 
@@ -359,10 +437,12 @@ SLKC_API peff::Option<CompilationError> slkc::resolveIdRef(
 
 	for (size_t i = 0; i < nEntries; ++i) {
 		const IdRefEntry &curEntry = idRef[i];
+
+		AstNodePtr<MemberNode> parent = curMember;
 		if (isStatic) {
-			SLKC_RETURN_IF_COMP_ERROR(resolveStaticMember(compileEnv, document, curMember, curEntry, curMember));
+			SLKC_RETURN_IF_COMP_ERROR(resolveStaticMember(compileEnv, document, parent, curEntry, curMember));
 		} else {
-			SLKC_RETURN_IF_COMP_ERROR(resolveInstanceMember(compileEnv, document, curMember, curEntry, curMember));
+			SLKC_RETURN_IF_COMP_ERROR(resolveInstanceMember(compileEnv, document, parent, curEntry, curMember));
 		}
 
 		if (!curMember) {
@@ -373,6 +453,19 @@ SLKC_API peff::Option<CompilationError> slkc::resolveIdRef(
 			return {};
 		}
 
+		if (compileEnv) {
+			if (curMember->getAstNodeType() == AstNodeType::Module)
+				goto accessCheckPassed;
+			if (curMember->getAstNodeType() == AstNodeType::Fn)
+				goto accessCheckPassed;
+			bool accessible;
+			SLKC_RETURN_IF_COMP_ERROR(isMemberAccessible(compileEnv, parent, curMember, accessible));
+			if (!accessible)
+				return CompilationError(
+					TokenRange{ document->mainModule, curEntry.nameTokenIndex },
+					CompilationErrorKind::MemberIsNotAccessible);
+		}
+	accessCheckPassed:
 		updateStaticStatus();
 
 		// We assume that all parts after the static parts are in instance.
@@ -656,7 +749,7 @@ SLKC_API peff::Option<CompilationError> slkc::resolveIdRefWithScopeNode(
 				{
 					AstNodePtr<MemberNode> p = m->parent->sharedFromThis().template castTo<MemberNode>();
 
-					if (p->getAstNodeType() != AstNodeType::FnSlot)
+					if (p->getAstNodeType() != AstNodeType::Fn)
 						std::terminate();
 					slot = p.template castTo<FnNode>();
 				}
@@ -682,6 +775,7 @@ SLKC_API peff::Option<CompilationError> slkc::resolveIdRefWithScopeNode(
 }
 
 SLKC_API peff::Option<CompilationError> slkc::resolveCustomTypeName(
+	CompileEnvironment *compileEnv,
 	peff::SharedPtr<Document> document,
 	const AstNodePtr<CustomTypeNameNode> &typeName,
 	AstNodePtr<MemberNode> &memberNodeOut,
@@ -730,11 +824,11 @@ resolved:
 	peff::Option<CompilationError>
 	slkc::resolveBaseOverridenCustomTypeName(
 		peff::SharedPtr<Document> document,
-		const AstNodePtr<CustomTypeNameNode>& typeName,
-		AstNodePtr<TypeNameNode>& typeNameOut) {
+		const AstNodePtr<CustomTypeNameNode> &typeName,
+		AstNodePtr<TypeNameNode> &typeNameOut) {
 	AstNodePtr<MemberNode> member;
 
-	SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, typeName, member, nullptr));
+	SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(nullptr, document, typeName, member, nullptr));
 
 	if (!member) {
 		typeNameOut = {};
@@ -787,7 +881,7 @@ SLKC_API peff::Option<CompilationError> slkc::visitBaseClass(AstNodePtr<TypeName
 	if (cls && (cls->typeNameKind == TypeNameKind::Custom)) {
 		AstNodePtr<MemberNode> baseType;
 
-		SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(cls->document->sharedFromThis(), cls.template castTo<CustomTypeNameNode>(), baseType, walkedNodes));
+		SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(nullptr, cls->document->sharedFromThis(), cls.template castTo<CustomTypeNameNode>(), baseType, walkedNodes));
 
 		if (baseType && (baseType->getAstNodeType() == AstNodeType::Class)) {
 			AstNodePtr<ClassNode> b = baseType.template castTo<ClassNode>();
@@ -808,7 +902,7 @@ SLKC_API peff::Option<CompilationError> slkc::visitBaseInterface(AstNodePtr<Type
 	if (cls && (cls->typeNameKind == TypeNameKind::Custom)) {
 		AstNodePtr<MemberNode> baseType;
 
-		SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(cls->document->sharedFromThis(), cls.template castTo<CustomTypeNameNode>(), baseType, walkedNodes));
+		SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(nullptr, cls->document->sharedFromThis(), cls.template castTo<CustomTypeNameNode>(), baseType, walkedNodes));
 
 		if (baseType && (baseType->getAstNodeType() == AstNodeType::Interface)) {
 			AstNodePtr<InterfaceNode> b = baseType.template castTo<InterfaceNode>();

@@ -377,30 +377,12 @@ SLKC_API peff::Option<CompilationError> slkc::isMemberAccessible(
 				break;
 			case AstNodeType::Module:
 				// Members in the same module can access each other.
-				if (p == compileEnv->curParentAccessNode)
+				if (p == compileEnv->curParentAccessNode.castTo<MemberNode>())
 					goto accessCheckPassed;
 				break;
 		}
 
-	notInternal:
-		switch (compileEnv->curParentAccessNode->getAstNodeType()) {
-			case AstNodeType::Class:
-				if (member->parent && member->parent->getAstNodeType() == AstNodeType::Class) {
-					AstNodePtr<ClassNode> curModule = compileEnv->curParentAccessNode.castTo<ClassNode>();
-
-					bool result;
-
-					SLKC_RETURN_IF_COMP_ERROR(isBaseOf(compileEnv->document, curModule, member->parent->sharedFromThis().castTo<ClassNode>(), result));
-
-					if (result) {
-						// Child classes can always access parent's members.
-						goto accessCheckPassed;
-					}
-				}
-				break;
-			default:
-				break;
-		}
+	notInternal:;
 	}
 	// TODO: Check if this is a friend.
 	resultOut = false;

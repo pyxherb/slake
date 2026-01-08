@@ -12,14 +12,22 @@ SLKC_API peff::Option<CompilationError> slkc::dumpGenericParam(
 	SLKC_RETURN_IF_COMP_ERROR(writer->writeU32(genericParam.name.size()));
 	SLKC_RETURN_IF_COMP_ERROR(writer->write(genericParam.name.data(), genericParam.name.size()));
 
-	bool hasBaseType = genericParam.baseType != slake::TypeId::Any;
-	SLKC_RETURN_IF_COMP_ERROR(writer->writeBool(hasBaseType));
-	if (hasBaseType)
-		SLKC_RETURN_IF_COMP_ERROR(dumpTypeName(allocator, writer, genericParam.baseType));
+	if (genericParam.inputType != slake::TypeId::Invalid) {
+		SLKC_RETURN_IF_COMP_ERROR(writer->writeBool(true));
 
-	SLKC_RETURN_IF_COMP_ERROR(writer->writeU32(genericParam.interfaces.size()));
-	for (auto &k : genericParam.interfaces) {
-		SLKC_RETURN_IF_COMP_ERROR(dumpTypeName(allocator, writer, k));
+		SLKC_RETURN_IF_COMP_ERROR(dumpTypeName(allocator, writer, genericParam.inputType));
+	} else {
+		SLKC_RETURN_IF_COMP_ERROR(writer->writeBool(false));
+
+		bool hasBaseType = genericParam.baseType != slake::TypeId::Invalid;
+		SLKC_RETURN_IF_COMP_ERROR(writer->writeBool(hasBaseType));
+		if (hasBaseType)
+			SLKC_RETURN_IF_COMP_ERROR(dumpTypeName(allocator, writer, genericParam.baseType));
+
+		SLKC_RETURN_IF_COMP_ERROR(writer->writeU32(genericParam.interfaces.size()));
+		for (auto &k : genericParam.interfaces) {
+			SLKC_RETURN_IF_COMP_ERROR(dumpTypeName(allocator, writer, k));
+		}
 	}
 
 	return {};

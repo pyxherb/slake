@@ -190,6 +190,7 @@ namespace slkc {
 		ObjectTypeName,
 		AnyTypeName,
 		SIMDTypeName,
+		NoReturnTypeName,
 
 		IntLiteral,
 		LongLiteral,

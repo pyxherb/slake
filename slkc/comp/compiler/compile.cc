@@ -607,32 +607,44 @@ SLKC_API peff::Option<CompilationError> slkc::compileGenericParams(
 			return genOutOfMemoryCompError();
 		}
 
-		if (gpNode->isParamTypeList) {
-			// TODO: Implement it.
-		} else if (gpNode->genericConstraint) {
-			if (gpNode->genericConstraint->baseType) {
-				if ((e = compileTypeName(compileEnv, compilationContext, gpNode->genericConstraint->baseType, gp.baseType))) {
-					if (e->errorKind == CompilationErrorKind::OutOfMemory)
-						return e;
-					if (!compileEnv->errors.pushBack(std::move(*e))) {
-						return genOutOfMemoryCompError();
-					}
-					e.reset();
+		if (gpNode->inputType) {
+			// TODO: Detect if the input type is compatible with the compile-time expressions.
+			if ((e = compileTypeName(compileEnv, compilationContext, gpNode->inputType, gp.inputType))) {
+				if (e->errorKind == CompilationErrorKind::OutOfMemory)
+					return e;
+				if (!compileEnv->errors.pushBack(std::move(*e))) {
+					return genOutOfMemoryCompError();
 				}
+				e.reset();
 			}
-
-			if (!gp.interfaces.resize(gpNode->genericConstraint->implTypes.size())) {
-				return genOutOfRuntimeMemoryCompError();
-			}
-
-			for (size_t k = 0; k < gpNode->genericConstraint->implTypes.size(); ++k) {
-				if ((e = compileTypeName(compileEnv, compilationContext, gpNode->genericConstraint->implTypes.at(k), gp.interfaces.at(k)))) {
-					if (e->errorKind == CompilationErrorKind::OutOfMemory)
-						return e;
-					if (!compileEnv->errors.pushBack(std::move(*e))) {
-						return genOutOfMemoryCompError();
+		} else {
+			if (gpNode->isParamTypeList) {
+				// TODO: Implement it.
+			} else if (gpNode->genericConstraint) {
+				if (gpNode->genericConstraint->baseType) {
+					if ((e = compileTypeName(compileEnv, compilationContext, gpNode->genericConstraint->baseType, gp.baseType))) {
+						if (e->errorKind == CompilationErrorKind::OutOfMemory)
+							return e;
+						if (!compileEnv->errors.pushBack(std::move(*e))) {
+							return genOutOfMemoryCompError();
+						}
+						e.reset();
 					}
-					e.reset();
+				}
+
+				if (!gp.interfaces.resize(gpNode->genericConstraint->implTypes.size())) {
+					return genOutOfRuntimeMemoryCompError();
+				}
+
+				for (size_t k = 0; k < gpNode->genericConstraint->implTypes.size(); ++k) {
+					if ((e = compileTypeName(compileEnv, compilationContext, gpNode->genericConstraint->implTypes.at(k), gp.interfaces.at(k)))) {
+						if (e->errorKind == CompilationErrorKind::OutOfMemory)
+							return e;
+						if (!compileEnv->errors.pushBack(std::move(*e))) {
+							return genOutOfMemoryCompError();
+						}
+						e.reset();
+					}
 				}
 			}
 		}

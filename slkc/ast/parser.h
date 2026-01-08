@@ -128,7 +128,7 @@ namespace slkc {
 		SLKC_API Parser(peff::SharedPtr<Document> document, TokenList &&tokenList, peff::Alloc *resourceAllocator);
 		SLKC_API ~Parser();
 
-		SLKC_API SyntaxError genOutOfMemoryError() {
+		SLKC_API SyntaxError genOutOfMemorySyntaxError() {
 			return SyntaxError(TokenRange{ document->mainModule, 0 }, SyntaxErrorKind::OutOfMemory);
 		}
 
@@ -198,6 +198,9 @@ namespace slkc {
 		[[nodiscard]] SLKC_API peff::Option<SyntaxError> parseFn(AstNodePtr<FnOverloadingNode> &fnNodeOut);
 		[[nodiscard]] SLKC_API peff::Option<SyntaxError> parseOperatorName(std::string_view &nameOut);
 		[[nodiscard]] SLKC_API peff::Option<SyntaxError> parseIdName(peff::String &nameOut);
+
+		[[nodiscard]] SLKC_API peff::Option<SyntaxError> parseUnionEnumItem(AstNodePtr<ModuleNode> enumOut);
+		[[nodiscard]] SLKC_API peff::Option<SyntaxError> parseEnumItem(AstNodePtr<ModuleNode> enumOut);
 
 		[[nodiscard]] SLKC_API peff::Option<SyntaxError> parseClassStmts();
 

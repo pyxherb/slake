@@ -293,18 +293,23 @@ SLAKE_API InternalExceptionPointer loader::loadGenericParam(LoaderContext &conte
 	SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->readBool(b)));
 
 	if (b) {
-		SLAKE_RETURN_IF_EXCEPT(loadType(context, runtime, reader, member, genericParamOut.baseType));
-	}
+		SLAKE_RETURN_IF_EXCEPT(loadType(context, runtime, reader, member, genericParamOut.inputType));
+	} else {
+		SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->readBool(b)));
+		if (b) {
+			SLAKE_RETURN_IF_EXCEPT(loadType(context, runtime, reader, member, genericParamOut.baseType));
+		}
 
-	uint32_t nImplInterfaces;
+		uint32_t nImplInterfaces;
 
-	SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->readU32(nImplInterfaces)));
+		SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->readU32(nImplInterfaces)));
 
-	if (!genericParamOut.interfaces.resize(nImplInterfaces)) {
-		return OutOfMemoryError::alloc();
-	}
-	for (size_t i = 0; i < nImplInterfaces; ++i) {
-		SLAKE_RETURN_IF_EXCEPT(loadType(context, runtime, reader, member, genericParamOut.interfaces.at(i)));
+		if (!genericParamOut.interfaces.resize(nImplInterfaces)) {
+			return OutOfMemoryError::alloc();
+		}
+		for (size_t i = 0; i < nImplInterfaces; ++i) {
+			SLAKE_RETURN_IF_EXCEPT(loadType(context, runtime, reader, member, genericParamOut.interfaces.at(i)));
+		}
 	}
 
 	return {};

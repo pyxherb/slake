@@ -229,6 +229,44 @@ fn valueGenericParamTest<T as i32>() {
 class ArgTest<T as i32> {
 }
 
+enum struct StructEnum {
+	A(i32, u32, f32),
+	B { a: i32, b: fu32, c: f32 }
+}
+
+enum class ClassEnum {
+	A(i32, u32, f32),
+	B { a: i32, b: fu32, c: f32 }
+}
+
+enum const ConstEnum {
+	a = 123,
+	b = 456,
+	c = 789,
+	d
+}
+
+enum const ConstTypedEnum(i32) {
+	x = 0xabc,
+	b = 0xdef,
+	c = 0x123,
+	d
+}
+
+enum ScopedEnum {
+	a = 123,
+	b = 456,
+	c = 789,
+	d
+}
+
+enum ScopedTypedEnum(i32) {
+	x = 0xabc,
+	b = 0xdef,
+	c = 0x123,
+	d
+}
+
 public async main() -> i32 {
 	/*a() with 123;*/
 

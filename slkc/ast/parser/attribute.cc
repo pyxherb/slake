@@ -8,7 +8,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseAttribute(AstNodePtr<AttributeNo
 	AstNodePtr<AttributeNode> attribute;
 
 	if (!(attribute = makeAstNode<AttributeNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
-		return genOutOfMemoryError();
+		return genOutOfMemorySyntaxError();
 	}
 
 	attributeOut = attribute;
@@ -44,7 +44,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseAttribute(AstNodePtr<AttributeNo
 					return e;
 
 				/*if (!argsOut.pushBack(std::move(arg)))
-					return genOutOfMemoryError();*/
+					return genOutOfMemorySyntaxError();*/
 
 				if (peekToken()->tokenId != TokenId::Comma) {
 					break;
@@ -52,7 +52,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseAttribute(AstNodePtr<AttributeNo
 
 				Token *commaToken = nextToken();
 				/*if (!idxCommaTokensOut.pushBack(+commaToken->index))
-					return genOutOfMemoryError();*/
+					return genOutOfMemorySyntaxError();*/
 			}
 
 			Token *rParentheseToken;
@@ -97,7 +97,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseAttributes(peff::DynArray<AstNod
 			return syntaxError;
 
 		if (!attributesOut.pushBack(std::move(attribute)))
-			return genOutOfMemoryError();
+			return genOutOfMemorySyntaxError();
 	}
 
 	return {};

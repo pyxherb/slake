@@ -155,6 +155,7 @@ SLKC_API peff::Option<LexicalError> Lexer::lex(ModuleNode *moduleNode, const std
 				<InitialCondition>"object"		{ token->tokenId = TokenId::ObjectTypeName; break; }
 				<InitialCondition>"any"			{ token->tokenId = TokenId::AnyTypeName; break; }
 				<InitialCondition>"simd_t"		{ token->tokenId = TokenId::SIMDTypeName; break; }
+				<InitialCondition>"no_return"	{ token->tokenId = TokenId::NoReturnTypeName; break; }
 
 				<InitialCondition>","		{ token->tokenId = TokenId::Comma; break; }
 				<InitialCondition>"?"		{ token->tokenId = TokenId::Question; break; }

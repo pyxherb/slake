@@ -21,7 +21,7 @@ SLKC_API peff::Option<SyntaxError> Parser::lookaheadUntil(size_t nTokenIds, cons
 	for (size_t i = 0; i < nTokenIds; ++i) {
 		TokenId copiedTokenId = tokenIds[i];
 		if (!exData.expectingTokenIds.insert(std::move(copiedTokenId)))
-			return genOutOfMemoryError();
+			return genOutOfMemorySyntaxError();
 	}
 
 	return SyntaxError({ token->sourceLocation.moduleNode, token->index }, std::move(exData));
@@ -113,7 +113,7 @@ SLKC_API peff::Option<SyntaxError> Parser::splitRshOpToken() {
 
 			OwnedTokenPtr extraClosingToken;
 			if (!(extraClosingToken = OwnedTokenPtr(peff::allocAndConstruct<Token>(token->allocator.get(), ASTNODE_ALIGNMENT, token->allocator.get(), peff::WeakPtr<Document>(document))))) {
-				return genOutOfMemoryError();
+				return genOutOfMemorySyntaxError();
 			}
 
 			extraClosingToken->tokenId = TokenId::GtOp;
@@ -126,7 +126,7 @@ SLKC_API peff::Option<SyntaxError> Parser::splitRshOpToken() {
 			extraClosingToken->sourceText = token->sourceText.substr(1);
 
 			if (!tokenList.insert(parseContext.idxCurrentToken + 1, std::move(extraClosingToken))) {
-				return genOutOfMemoryError();
+				return genOutOfMemorySyntaxError();
 			}
 
 			break;
@@ -146,7 +146,7 @@ SLKC_API peff::Option<SyntaxError> Parser::splitRDBracketsToken() {
 
 			OwnedTokenPtr extraClosingToken;
 			if (!(extraClosingToken = OwnedTokenPtr(peff::allocAndConstruct<Token>(token->allocator.get(), ASTNODE_ALIGNMENT, token->allocator.get(), peff::WeakPtr<Document>(document))))) {
-				return genOutOfMemoryError();
+				return genOutOfMemorySyntaxError();
 			}
 
 			extraClosingToken->tokenId = TokenId::RBracket;
@@ -159,7 +159,7 @@ SLKC_API peff::Option<SyntaxError> Parser::splitRDBracketsToken() {
 			extraClosingToken->sourceText = token->sourceText.substr(1);
 
 			if (!tokenList.insert(parseContext.idxCurrentToken + 1, std::move(extraClosingToken))) {
-				return genOutOfMemoryError();
+				return genOutOfMemorySyntaxError();
 			}
 
 			break;

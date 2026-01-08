@@ -28,7 +28,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseParams(
 		AstNodePtr<VarNode> paramNode;
 
 		if (!(paramNode = makeAstNode<VarNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
-			return genOutOfMemoryError();
+			return genOutOfMemorySyntaxError();
 		}
 
 		Token *nameToken;
@@ -38,7 +38,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseParams(
 		}
 
 		if (!paramNode->name.build(nameToken->sourceText))
-			return genOutOfMemoryError();
+			return genOutOfMemorySyntaxError();
 
 		nextToken();
 
@@ -51,7 +51,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseParams(
 		}
 
 		if (!paramsOut.pushBack(std::move(paramNode)))
-			return genOutOfMemoryError();
+			return genOutOfMemorySyntaxError();
 
 		if (peekToken()->tokenId != TokenId::Comma) {
 			break;
@@ -60,7 +60,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseParams(
 		Token *commaToken = nextToken();
 
 		if (!idxCommaTokensOut.pushBack(+commaToken->index))
-			return genOutOfMemoryError();
+			return genOutOfMemorySyntaxError();
 	}
 
 	Token *varArgToken;

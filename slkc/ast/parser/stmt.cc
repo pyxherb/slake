@@ -15,10 +15,10 @@ SLKC_API peff::Option<SyntaxError> Parser::parseVarDefs(peff::DynArray<VarDefEnt
 
 		if ((syntaxError = expectToken((currentToken = nextToken()), TokenId::Id))) {
 			if (!syntaxErrors.pushBack(std::move(syntaxError.value())))
-				return genOutOfMemoryError();
+				return genOutOfMemorySyntaxError();
 			syntaxError.reset();
 			if (!syntaxErrors.pushBack(SyntaxError({ document->mainModule, currentToken->index }, SyntaxErrorKind::ExpectingId)))
-				return genOutOfMemoryError();
+				return genOutOfMemorySyntaxError();
 		}
 
 		VarDefEntryPtr entryPtr(
@@ -27,17 +27,17 @@ SLKC_API peff::Option<SyntaxError> Parser::parseVarDefs(peff::DynArray<VarDefEnt
 				ASTNODE_ALIGNMENT,
 				resourceAllocator.get()));
 		if (!entryPtr) {
-			return genOutOfMemoryError();
+			return genOutOfMemorySyntaxError();
 		}
 
 		VarDefEntry *entry = entryPtr.get();
 
 		if (!varDefEntries.pushBack(std::move(entryPtr))) {
-			return genOutOfMemoryError();
+			return genOutOfMemorySyntaxError();
 		}
 
 		if (!entry->name.build(currentToken->sourceText)) {
-			return genOutOfMemoryError();
+			return genOutOfMemorySyntaxError();
 		}
 
 		if ((currentToken = peekToken())->tokenId == TokenId::Colon) {
@@ -45,7 +45,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseVarDefs(peff::DynArray<VarDefEnt
 
 			if ((syntaxError = parseTypeName(entry->type))) {
 				if (!syntaxErrors.pushBack(std::move(syntaxError.value())))
-					return genOutOfMemoryError();
+					return genOutOfMemorySyntaxError();
 				syntaxError.reset();
 			}
 		}
@@ -55,7 +55,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseVarDefs(peff::DynArray<VarDefEnt
 
 			if ((syntaxError = parseExpr(0, entry->initialValue))) {
 				if (!syntaxErrors.pushBack(std::move(syntaxError.value())))
-					return genOutOfMemoryError();
+					return genOutOfMemorySyntaxError();
 				syntaxError.reset();
 			}
 		}
@@ -80,7 +80,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseIfStmt(AstNodePtr<StmtNode> &stm
 	AstNodePtr<IfStmtNode> ifStmt;
 
 	if (!(ifStmt = makeAstNode<IfStmtNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
-		return genOutOfMemoryError();
+		return genOutOfMemorySyntaxError();
 	}
 
 	stmtOut = ifStmt.template castTo<StmtNode>();
@@ -139,7 +139,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseWithStmt(AstNodePtr<StmtNode> &s
 			  resourceAllocator.get(),
 			  resourceAllocator.get(),
 			  document))) {
-		return genOutOfMemoryError();
+		return genOutOfMemorySyntaxError();
 	}
 
 	stmtOut = withStmt.template castTo<StmtNode>();
@@ -148,7 +148,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseWithStmt(AstNodePtr<StmtNode> &s
 
 	while (true) {
 		if (!(entry = WithConstraintEntryPtr(peff::allocAndConstruct<WithConstraintEntry>(resourceAllocator.get(), alignof(WithConstraintEntry), resourceAllocator.get())))) {
-			return genOutOfMemoryError();
+			return genOutOfMemorySyntaxError();
 		}
 
 		Token *nameToken;
@@ -158,7 +158,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseWithStmt(AstNodePtr<StmtNode> &s
 		}
 
 		if (!entry->genericParamName.build(nameToken->sourceText))
-			return genOutOfMemoryError();
+			return genOutOfMemorySyntaxError();
 
 		nextToken();
 
@@ -167,7 +167,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseWithStmt(AstNodePtr<StmtNode> &s
 		}
 
 		if (!withStmt->constraints.pushBack(std::move(entry)))
-			return genOutOfMemoryError();
+			return genOutOfMemorySyntaxError();
 
 		if (peekToken()->tokenId != TokenId::Comma) {
 			break;
@@ -177,7 +177,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseWithStmt(AstNodePtr<StmtNode> &s
 
 		/*
 		if (!idxCommaTokensOut.pushBack(+commaToken->index))
-			return genOutOfMemoryError();*/
+			return genOutOfMemorySyntaxError();*/
 	}
 
 	if ((syntaxError = parseStmt(withStmt->trueBody)))
@@ -206,7 +206,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseForStmt(AstNodePtr<StmtNode> &st
 			  resourceAllocator.get(),
 			  resourceAllocator.get(),
 			  document))) {
-		return genOutOfMemoryError();
+		return genOutOfMemorySyntaxError();
 	}
 
 	stmtOut = forStmt.template castTo<StmtNode>();
@@ -229,11 +229,6 @@ SLKC_API peff::Option<SyntaxError> Parser::parseForStmt(AstNodePtr<StmtNode> &st
 		};
 
 		if ((varDefSeparatorToken = peekToken())->tokenId != TokenId::Semicolon) {
-			Token *letToken;
-			if ((syntaxError = expectToken((letToken = peekToken()), TokenId::LetKeyword)))
-				return syntaxError;
-			nextToken();
-
 			if ((syntaxError = parseVarDefs(forStmt->varDefEntries)))
 				return syntaxError;
 
@@ -289,7 +284,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseWhileStmt(AstNodePtr<StmtNode> &
 			  resourceAllocator.get(),
 			  resourceAllocator.get(),
 			  document))) {
-		return genOutOfMemoryError();
+		return genOutOfMemorySyntaxError();
 	}
 
 	stmtOut = whileStmt.template castTo<StmtNode>();
@@ -339,7 +334,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseDoWhileStmt(AstNodePtr<StmtNode>
 			  resourceAllocator.get(),
 			  resourceAllocator.get(),
 			  document))) {
-		return genOutOfMemoryError();
+		return genOutOfMemorySyntaxError();
 	}
 
 	stmtOut = whileStmt.template castTo<StmtNode>();
@@ -398,7 +393,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseLetStmt(AstNodePtr<StmtNode> &st
 			  resourceAllocator.get(),
 			  document,
 			  peff::DynArray<VarDefEntryPtr>(resourceAllocator.get())))) {
-		return genOutOfMemoryError();
+		return genOutOfMemorySyntaxError();
 	}
 
 	stmtOut = stmt.template castTo<StmtNode>();
@@ -427,7 +422,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseBreakStmt(AstNodePtr<StmtNode> &
 			  resourceAllocator.get(),
 			  resourceAllocator.get(),
 			  document))) {
-		return genOutOfMemoryError();
+		return genOutOfMemorySyntaxError();
 	}
 
 	stmtOut = stmt.template castTo<StmtNode>();
@@ -453,7 +448,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseContinueStmt(AstNodePtr<StmtNode
 			  resourceAllocator.get(),
 			  resourceAllocator.get(),
 			  document))) {
-		return genOutOfMemoryError();
+		return genOutOfMemorySyntaxError();
 	}
 
 	stmtOut = stmt.template castTo<StmtNode>();
@@ -480,7 +475,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseReturnStmt(AstNodePtr<StmtNode> 
 			  resourceAllocator.get(),
 			  document,
 			  AstNodePtr<ExprNode>()))) {
-		return genOutOfMemoryError();
+		return genOutOfMemorySyntaxError();
 	}
 
 	stmtOut = stmt.template castTo<StmtNode>();
@@ -524,7 +519,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseYieldStmt(AstNodePtr<StmtNode> &
 			  resourceAllocator.get(),
 			  document,
 			  AstNodePtr<ExprNode>()))) {
-		return genOutOfMemoryError();
+		return genOutOfMemorySyntaxError();
 	}
 
 	stmtOut = stmt.template castTo<StmtNode>();
@@ -564,7 +559,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseLabelStmt(AstNodePtr<StmtNode> &
 	AstNodePtr<LabelStmtNode> stmt;
 
 	if (!(stmt = makeAstNode<LabelStmtNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
-		return genOutOfMemoryError();
+		return genOutOfMemorySyntaxError();
 	}
 
 	stmtOut = stmt.template castTo<StmtNode>();
@@ -576,7 +571,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseLabelStmt(AstNodePtr<StmtNode> &
 	Token *nameToken = nextToken();
 
 	if (!stmt->name.build(nameToken->sourceText)) {
-		return genOutOfMemoryError();
+		return genOutOfMemorySyntaxError();
 	}
 
 	return {};
@@ -591,7 +586,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseBlockStmt(AstNodePtr<StmtNode> &
 	AstNodePtr<StmtNode> curStmt;
 
 	if (!(stmt = makeAstNode<CodeBlockStmtNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
-		return genOutOfMemoryError();
+		return genOutOfMemorySyntaxError();
 	}
 
 	stmtOut = stmt.template castTo<StmtNode>();
@@ -607,12 +602,12 @@ SLKC_API peff::Option<SyntaxError> Parser::parseBlockStmt(AstNodePtr<StmtNode> &
 
 		if ((syntaxError = parseStmt(curStmt))) {
 			if (!syntaxErrors.pushBack(std::move(syntaxError.value())))
-				return genOutOfMemoryError();
+				return genOutOfMemorySyntaxError();
 		}
 
 		if (curStmt) {
 			if (!stmt->body.pushBack(std::move(curStmt))) {
-				return genOutOfMemoryError();
+				return genOutOfMemorySyntaxError();
 			}
 		}
 	}
@@ -636,7 +631,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseSwitchStmt(AstNodePtr<StmtNode> 
 	AstNodePtr<SwitchStmtNode> stmt;
 
 	if (!(stmt = makeAstNode<SwitchStmtNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
-		return genOutOfMemoryError();
+		return genOutOfMemorySyntaxError();
 	}
 
 	stmtOut = stmt.template castTo<StmtNode>();
@@ -683,18 +678,18 @@ SLKC_API peff::Option<SyntaxError> Parser::parseSwitchStmt(AstNodePtr<StmtNode> 
 
 		if ((syntaxError = parseStmt(curStmt))) {
 			if (!syntaxErrors.pushBack(std::move(syntaxError.value())))
-				return genOutOfMemoryError();
+				return genOutOfMemorySyntaxError();
 		}
 
 		if (curStmt) {
 			// We detect and push case labels in advance to deal with them easier.
 			if (curStmt->stmtKind == StmtKind::CaseLabel) {
 				if (!stmt->caseOffsets.pushBack(stmt->body.size()))
-					return genOutOfMemoryError();
+					return genOutOfMemorySyntaxError();
 			}
 
 			if (!stmt->body.pushBack(std::move(curStmt))) {
-				return genOutOfMemoryError();
+				return genOutOfMemorySyntaxError();
 			}
 		}
 	}
@@ -718,7 +713,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseCaseStmt(AstNodePtr<StmtNode> &s
 	AstNodePtr<CaseLabelStmtNode> stmt;
 
 	if (!(stmt = makeAstNode<CaseLabelStmtNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
-		return genOutOfMemoryError();
+		return genOutOfMemorySyntaxError();
 	}
 
 	stmtOut = stmt.template castTo<StmtNode>();
@@ -744,7 +739,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseDefaultStmt(AstNodePtr<StmtNode>
 	AstNodePtr<CaseLabelStmtNode> stmt;
 
 	if (!(stmt = makeAstNode<CaseLabelStmtNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
-		return genOutOfMemoryError();
+		return genOutOfMemorySyntaxError();
 	}
 
 	stmtOut = stmt.template castTo<StmtNode>();
@@ -766,14 +761,14 @@ SLKC_API peff::Option<SyntaxError> Parser::parseExprStmt(AstNodePtr<StmtNode> &s
 	AstNodePtr<ExprStmtNode> stmt;
 
 	if (!(stmt = makeAstNode<ExprStmtNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
-		return genOutOfMemoryError();
+		return genOutOfMemorySyntaxError();
 	}
 
 	stmtOut = stmt.template castTo<StmtNode>();
 
 	if ((syntaxError = parseExpr(-10, stmt->expr))) {
 		if (!syntaxErrors.pushBack(std::move(syntaxError.value())))
-			return genOutOfMemoryError();
+			return genOutOfMemorySyntaxError();
 	}
 
 	if ((syntaxError = expectToken(peekToken(), TokenId::Semicolon)))
@@ -869,7 +864,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseStmt(AstNodePtr<StmtNode> &stmtO
 
 genBadStmt:
 	if (!(stmtOut = makeAstNode<BadStmtNode>(resourceAllocator.get(), resourceAllocator.get(), document, stmtOut).template castTo<StmtNode>()))
-		return genOutOfMemoryError();
+		return genOutOfMemorySyntaxError();
 	stmtOut->tokenRange = { document->mainModule, prefixToken->index, parseContext.idxCurrentToken };
 	return syntaxError;
 }

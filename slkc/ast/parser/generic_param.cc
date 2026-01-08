@@ -6,7 +6,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseGenericConstraint(GenericConstra
 	GenericConstraintPtr constraint(peff::allocAndConstruct<GenericConstraint>(resourceAllocator.get(), alignof(GenericConstraint), resourceAllocator.get()));
 
 	if (!constraint) {
-		return genOutOfMemoryError();
+		return genOutOfMemorySyntaxError();
 	}
 
 	peff::Option<SyntaxError> syntaxError;
@@ -36,7 +36,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseGenericConstraint(GenericConstra
 			}
 
 			if (!constraint->implTypes.pushBack(std::move(tn))) {
-				return genOutOfMemoryError();
+				return genOutOfMemorySyntaxError();
 			}
 
 			if (peekToken()->tokenId != TokenId::AddOp) {
@@ -56,7 +56,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseParamTypeListGenericConstraint(P
 	ParamTypeListGenericConstraintPtr constraint(peff::allocAndConstruct<ParamTypeListGenericConstraint>(resourceAllocator.get(), alignof(ParamTypeListGenericConstraint), resourceAllocator.get()));
 
 	if (!constraint) {
-		return genOutOfMemoryError();
+		return genOutOfMemorySyntaxError();
 	}
 
 	peff::Option<SyntaxError> syntaxError;
@@ -80,7 +80,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseParamTypeListGenericConstraint(P
 			}
 
 			if (!constraint->argTypes.pushBack(std::move(tn))) {
-				return genOutOfMemoryError();
+				return genOutOfMemorySyntaxError();
 			}
 
 			if (peekToken()->tokenId != TokenId::Comma) {
@@ -119,7 +119,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseGenericParams(
 			AstNodePtr<GenericParamNode> genericParamNode;
 
 			if (!(genericParamNode = makeAstNode<GenericParamNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
-				return genOutOfMemoryError();
+				return genOutOfMemorySyntaxError();
 			}
 
 			genericParamNode->parent = curParent.get();
@@ -136,7 +136,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseGenericParams(
 				};
 
 				if (!genericParamNode->name.build(nameToken->sourceText))
-					return genOutOfMemoryError();
+					return genOutOfMemorySyntaxError();
 
 				nextToken();
 
@@ -152,7 +152,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseGenericParams(
 					}
 
 					if (!genericParamsOut.pushBack(std::move(genericParamNode)))
-						return genOutOfMemoryError();
+						return genOutOfMemorySyntaxError();
 				}
 			} else {
 				Token *nameToken;
@@ -162,7 +162,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseGenericParams(
 				};
 
 				if (!genericParamNode->name.build(nameToken->sourceText))
-					return genOutOfMemoryError();
+					return genOutOfMemorySyntaxError();
 
 				nextToken();
 
@@ -185,7 +185,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseGenericParams(
 					}
 
 					if (!genericParamsOut.pushBack(std::move(genericParamNode)))
-						return genOutOfMemoryError();
+						return genOutOfMemorySyntaxError();
 				}
 			}
 
@@ -196,7 +196,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseGenericParams(
 			Token *commaToken = nextToken();
 
 			if (!idxCommaTokensOut.pushBack(+commaToken->index))
-				return genOutOfMemoryError();
+				return genOutOfMemorySyntaxError();
 		}
 
 		Token *rAngleBracketToken;

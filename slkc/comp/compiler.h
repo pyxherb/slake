@@ -452,7 +452,7 @@ namespace slkc {
 		bool &whetherOut);
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> isStructUnionEnumRecursed(
 		peff::SharedPtr<Document> document,
-		const AstNodePtr<StructUnionEnumNode> &derived,
+		const AstNodePtr<StructEnumNode> &derived,
 		bool &whetherOut);
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> isBaseOf(
 		peff::SharedPtr<Document> document,

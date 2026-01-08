@@ -5,7 +5,7 @@ using namespace slake;
 SLAKE_API GenericParam::GenericParam(peff::Alloc *selfAllocator) : name(selfAllocator), interfaces(selfAllocator) {
 }
 
-SLAKE_API GenericParam::GenericParam(GenericParam &&rhs) : name(std::move(rhs.name)), baseType(std::move(rhs.baseType)), interfaces(std::move(rhs.interfaces)) {
+SLAKE_API GenericParam::GenericParam(GenericParam &&rhs) : name(std::move(rhs.name)), inputType(std::move(rhs.inputType)), baseType(std::move(rhs.baseType)), interfaces(std::move(rhs.interfaces)) {
 }
 
 SLAKE_API void GenericParam::replaceAllocator(peff::Alloc *allocator) noexcept {

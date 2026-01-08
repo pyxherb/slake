@@ -88,17 +88,24 @@ SLKC_API Decompiler::~Decompiler() {
 
 SLKC_API bool Decompiler::decompileGenericParam(peff::Alloc *allocator, DumpWriter *writer, const slake::GenericParam &genericParam) {
 	SLKC_RETURN_IF_FALSE(writer->write(genericParam.name));
-	if (genericParam.baseType != slake::TypeId::Any) {
-		SLKC_RETURN_IF_FALSE(writer->write("("));
-		SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, genericParam.baseType));
-		SLKC_RETURN_IF_FALSE(writer->write(")"));
-	}
-	if (genericParam.interfaces.size()) {
-		SLKC_RETURN_IF_FALSE(writer->write(": "));
-		for (size_t i = 0; i < genericParam.interfaces.size(); ++i) {
-			if (i)
-				SLKC_RETURN_IF_FALSE(writer->write(" + "));
+	if (genericParam.inputType != slake::TypeId::Invalid) {
+		SLKC_RETURN_IF_FALSE(writer->write(" as "));
+		SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, genericParam.inputType));
+		if ((genericParam.baseType != slake::TypeId::Invalid) || (genericParam.interfaces.size()))
+			SLKC_RETURN_IF_FALSE(writer->write("/* With extraneous constraints */"));
+	} else {
+		if (genericParam.baseType != slake::TypeId::Invalid) {
+			SLKC_RETURN_IF_FALSE(writer->write("("));
 			SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, genericParam.baseType));
+			SLKC_RETURN_IF_FALSE(writer->write(")"));
+		}
+		if (genericParam.interfaces.size()) {
+			SLKC_RETURN_IF_FALSE(writer->write(": "));
+			for (size_t i = 0; i < genericParam.interfaces.size(); ++i) {
+				if (i)
+					SLKC_RETURN_IF_FALSE(writer->write(" + "));
+				SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, genericParam.interfaces.at(i)));
+			}
 		}
 	}
 

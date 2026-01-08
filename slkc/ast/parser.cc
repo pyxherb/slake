@@ -170,7 +170,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseIdName(peff::String &nameOut) {
 	switch (t->tokenId) {
 		case TokenId::Id:
 			if (!nameOut.build(t->sourceText)) {
-				return genOutOfMemoryError();
+				return genOutOfMemorySyntaxError();
 			}
 			nextToken();
 			break;
@@ -184,7 +184,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseIdRef(IdRefPtr &idRefOut) {
 	peff::Option<SyntaxError> syntaxError;
 	IdRefPtr idRefPtr(peff::allocAndConstruct<IdRef>(resourceAllocator.get(), ASTNODE_ALIGNMENT, resourceAllocator.get()));
 	if (!idRefPtr)
-		return genOutOfMemoryError();
+		return genOutOfMemorySyntaxError();
 	Token *t = peekToken();
 
 	idRefPtr->tokenRange = TokenRange{ document->mainModule, t->index };
@@ -195,14 +195,14 @@ SLKC_API peff::Option<SyntaxError> Parser::parseIdRef(IdRefPtr &idRefOut) {
 		IdRefEntry entry(resourceAllocator.get());
 		peff::String idText(resourceAllocator.get());
 		if (!idText.build("this")) {
-			return genOutOfMemoryError();
+			return genOutOfMemorySyntaxError();
 		}
 
 		entry.name = std::move(idText);
 		entry.nameTokenIndex = t->index;
 
 		if (!idRefPtr->entries.pushBack(std::move(entry)))
-			return genOutOfMemoryError();
+			return genOutOfMemorySyntaxError();
 
 		if ((t = peekToken())->tokenId != TokenId::Dot) {
 			goto end;
@@ -223,7 +223,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseIdRef(IdRefPtr &idRefOut) {
 		entry.accessOpTokenIndex = t->index;
 
 		if (!idRefPtr->entries.pushBack(std::move(entry)))
-			return genOutOfMemoryError();
+			return genOutOfMemorySyntaxError();
 	}
 
 	for (;;) {
@@ -235,7 +235,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseIdRef(IdRefPtr &idRefOut) {
 		IdRefEntry entry(resourceAllocator.get());
 		peff::String idText(resourceAllocator.get());
 		if (!idText.build(t->sourceText)) {
-			return genOutOfMemoryError();
+			return genOutOfMemorySyntaxError();
 		}
 
 		entry.name = std::move(idText);
@@ -253,7 +253,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseIdRef(IdRefPtr &idRefOut) {
 					goto genericArgParseFail;
 
 				if (!entry.genericArgs.pushBack(std::move(genericArg))) {
-					return genOutOfMemoryError();
+					return genOutOfMemorySyntaxError();
 				}
 
 				if ((t = peekToken())->tokenId != TokenId::Comma) {
@@ -280,7 +280,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseIdRef(IdRefPtr &idRefOut) {
 
 	succeeded:
 		if (!idRefPtr->entries.pushBack(std::move(entry)))
-			return genOutOfMemoryError();
+			return genOutOfMemorySyntaxError();
 
 		if ((t = peekToken())->tokenId != TokenId::Dot) {
 			break;
@@ -310,7 +310,7 @@ end:
 			return e;
 
 		if (!argsOut.pushBack(std::move(arg)))
-			return genOutOfMemoryError();
+			return genOutOfMemorySyntaxError();
 
 		if (peekToken()->tokenId != TokenId::Comma) {
 			break;
@@ -318,7 +318,7 @@ end:
 
 		Token *commaToken = nextToken();
 		if (!idxCommaTokensOut.pushBack(+commaToken->index))
-			return genOutOfMemoryError();
+			return genOutOfMemorySyntaxError();
 	}
 
 	return {};
@@ -333,7 +333,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseFn(AstNodePtr<FnOverloadingNode>
 	peff::String name(resourceAllocator.get());
 
 	if (!(fnNodeOut = makeAstNode<FnOverloadingNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
-		return genOutOfMemoryError();
+		return genOutOfMemorySyntaxError();
 	}
 
 	switch ((fnToken = peekToken())->tokenId) {
@@ -374,12 +374,12 @@ SLKC_API peff::Option<SyntaxError> Parser::parseFn(AstNodePtr<FnOverloadingNode>
 			}
 
 			if (!name.build(operatorName)) {
-				return genOutOfMemoryError();
+				return genOutOfMemorySyntaxError();
 			}
 
 			if (fnNodeOut->fnFlags & FN_LVALUE) {
 				if (!name.append(LVALUE_OPERATOR_NAME_SUFFIX))
-					return genOutOfMemoryError();
+					return genOutOfMemorySyntaxError();
 			}
 			break;
 		}
@@ -409,7 +409,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseFn(AstNodePtr<FnOverloadingNode>
 	peff::ScopeGuard restoreParentGuard([this, prevParent]() noexcept {
 		curParent = prevParent;
 	});
-	curParent = fnNodeOut.template castTo<MemberNode>();
+	curParent = fnNodeOut.castTo<MemberNode>();
 
 	peff::ScopeGuard setTokenRangeGuard([this, fnToken, fnNodeOut]() noexcept {
 		fnNodeOut->tokenRange = TokenRange{ document->mainModule, fnToken->index, parseContext.idxPrevToken };
@@ -475,7 +475,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseFn(AstNodePtr<FnOverloadingNode>
 			AstNodePtr<StmtNode> curStmt;
 
 			if (!(fnNodeOut->body = makeAstNode<CodeBlockStmtNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
-				return genOutOfMemoryError();
+				return genOutOfMemorySyntaxError();
 			}
 
 			while (true) {
@@ -489,12 +489,12 @@ SLKC_API peff::Option<SyntaxError> Parser::parseFn(AstNodePtr<FnOverloadingNode>
 
 				if ((syntaxError = parseStmt(curStmt))) {
 					if (!syntaxErrors.pushBack(std::move(syntaxError.value())))
-						return genOutOfMemoryError();
+						return genOutOfMemorySyntaxError();
 				}
 
 				if (curStmt) {
 					if (!fnNodeOut->body->body.pushBack(std::move(curStmt))) {
-						return genOutOfMemoryError();
+						return genOutOfMemorySyntaxError();
 					}
 				}
 			}
@@ -517,6 +517,223 @@ SLKC_API peff::Option<SyntaxError> Parser::parseFn(AstNodePtr<FnOverloadingNode>
 	return {};
 }
 
+SLKC_API peff::Option<SyntaxError> Parser::parseUnionEnumItem(AstNodePtr<ModuleNode> enumOut) {
+	peff::Option<SyntaxError> syntaxError;
+
+	Token *nameToken;
+	if ((syntaxError = expectToken((nameToken = peekToken()), TokenId::Id))) {
+		return syntaxError;
+	}
+	nextToken();
+
+	switch (Token *token = peekToken(); token->tokenId) {
+		case TokenId::LParenthese: {
+			AstNodePtr<UnionEnumItemNode> enumItem;
+			if (!(enumItem = makeAstNode<UnionEnumItemNode>(resourceAllocator.get(), resourceAllocator.get(), document)))
+				return genOutOfMemorySyntaxError();
+			nextToken();
+
+			if (!enumItem->name.build(nameToken->sourceText))
+				return genOutOfMemorySyntaxError();
+
+			size_t idxMember;
+			{
+				peff::ScopeGuard setTokenRangeGuard([this, token, enumItem]() noexcept {
+					enumItem->tokenRange = TokenRange{ document->mainModule, token->index, parseContext.idxPrevToken };
+				});
+
+				if ((idxMember = enumOut->pushMember(enumItem.castTo<MemberNode>())) == SIZE_MAX) {
+					return genOutOfMemorySyntaxError();
+				}
+
+				while (true) {
+					AstNodePtr<TypeNameNode> type;
+					if ((syntaxError = parseTypeName(type)))
+						return syntaxError;
+					if (!enumItem->elementTypes.pushBack(std::move(type)))
+						return genOutOfMemorySyntaxError();
+					if (peekToken()->tokenId != TokenId::Comma)
+						break;
+					Token *commaToken = nextToken();
+				}
+			}
+			Token *rParentheseToken;
+			if ((syntaxError = expectToken((rParentheseToken = peekToken()), TokenId::RParenthese)))
+				return syntaxError;
+			nextToken();
+
+			if (auto it = enumOut->memberIndices.find(enumItem->name); it != enumOut->memberIndices.end()) {
+				peff::String s(resourceAllocator.get());
+
+				if (!s.build(enumItem->name)) {
+					return genOutOfMemorySyntaxError();
+				}
+
+				ConflictingDefinitionsErrorExData exData(std::move(s));
+
+				return SyntaxError(enumItem->tokenRange, std::move(exData));
+			} else {
+				if (!(enumOut->indexMember(idxMember))) {
+					return genOutOfMemorySyntaxError();
+				}
+			}
+			break;
+		}
+		case TokenId::LBrace: {
+			AstNodePtr<RecordUnionEnumItemNode> enumItem;
+			if (!(enumItem = makeAstNode<RecordUnionEnumItemNode>(resourceAllocator.get(), resourceAllocator.get(), document)))
+				return genOutOfMemorySyntaxError();
+			nextToken();
+
+			if (!enumItem->name.build(nameToken->sourceText))
+				return genOutOfMemorySyntaxError();
+
+			size_t idxMember;
+			{
+				peff::ScopeGuard setTokenRangeGuard([this, token, enumItem]() noexcept {
+					enumItem->tokenRange = TokenRange{ document->mainModule, token->index, parseContext.idxPrevToken };
+				});
+
+				if ((idxMember = enumOut->pushMember(enumItem.castTo<MemberNode>())) == SIZE_MAX)
+					return genOutOfMemorySyntaxError();
+
+				while (true) {
+					AstNodePtr<VarNode> enumItemEntry;
+
+					if (!(enumItemEntry = makeAstNode<VarNode>(resourceAllocator.get(), resourceAllocator.get(), document)))
+						return genOutOfMemorySyntaxError();
+
+					size_t idxEntryMember;
+					{
+						peff::ScopeGuard setEnumItemTokenRangeGuard([this, token, enumItem]() noexcept {
+							enumItem->tokenRange = TokenRange{ document->mainModule, token->index, parseContext.idxPrevToken };
+						});
+						if ((idxEntryMember = enumItem->pushMember(enumItemEntry.castTo<MemberNode>())) == SIZE_MAX) {
+							return genOutOfMemorySyntaxError();
+						}
+
+						Token *entryNameToken;
+						if ((syntaxError = expectToken((entryNameToken = peekToken()), TokenId::Id))) {
+							return syntaxError;
+						}
+						nextToken();
+
+						if (!enumItemEntry->name.build(entryNameToken->sourceText))
+							return genOutOfMemorySyntaxError();
+
+						Token *colonToken;
+						if ((syntaxError = expectToken((colonToken = peekToken()), TokenId::Colon))) {
+							return syntaxError;
+						}
+						nextToken();
+
+						AstNodePtr<TypeNameNode> type;
+						if ((syntaxError = parseTypeName(type)))
+							return syntaxError;
+					}
+
+					if (auto it = enumItem->memberIndices.find(enumItemEntry->name); it != enumItem->memberIndices.end()) {
+						peff::String s(resourceAllocator.get());
+
+						if (!s.build(enumItemEntry->name)) {
+							return genOutOfMemorySyntaxError();
+						}
+
+						ConflictingDefinitionsErrorExData exData(std::move(s));
+
+						return SyntaxError(enumItem->tokenRange, std::move(exData));
+					} else {
+						if (!(enumItem->indexMember(idxEntryMember))) {
+							return genOutOfMemorySyntaxError();
+						}
+					}
+
+					if (peekToken()->tokenId != TokenId::Comma)
+						break;
+					Token *commaToken = nextToken();
+				}
+			}
+			Token *rBraceToken;
+			if ((syntaxError = expectToken((rBraceToken = peekToken()), TokenId::RBrace)))
+				return syntaxError;
+			nextToken();
+
+			if (auto it = enumOut->memberIndices.find(enumItem->name); it != enumOut->memberIndices.end()) {
+				peff::String s(resourceAllocator.get());
+
+				if (!s.build(enumItem->name)) {
+					return genOutOfMemorySyntaxError();
+				}
+
+				ConflictingDefinitionsErrorExData exData(std::move(s));
+
+				return SyntaxError(enumItem->tokenRange, std::move(exData));
+			} else {
+				if (!(enumOut->indexMember(idxMember))) {
+					return genOutOfMemorySyntaxError();
+				}
+			}
+			break;
+		}
+		default:
+			return SyntaxError(TokenRange{ document->mainModule, token->index }, SyntaxErrorKind::UnexpectedToken);
+	}
+
+	return {};
+}
+
+SLKC_API peff::Option<SyntaxError> Parser::parseEnumItem(AstNodePtr<ModuleNode> enumOut) {
+	peff::Option<SyntaxError> syntaxError;
+
+	AstNodePtr<EnumItemNode> enumItem;
+	if (!(enumItem = makeAstNode<EnumItemNode>(resourceAllocator.get(), resourceAllocator.get(), document)))
+		return genOutOfMemorySyntaxError();
+
+	size_t idxMember;
+	{
+		peff::ScopeGuard setTokenRangeGuard([this, token = peekToken(), enumItem]() noexcept {
+			enumItem->tokenRange = TokenRange{ document->mainModule, token->index, parseContext.idxPrevToken };
+		});
+
+		if ((idxMember = enumOut->pushMember(enumItem.castTo<MemberNode>())) == SIZE_MAX) {
+			return genOutOfMemorySyntaxError();
+		}
+
+		Token *nameToken;
+		if ((syntaxError = expectToken((nameToken = peekToken()), TokenId::Id))) {
+			return syntaxError;
+		}
+		nextToken();
+
+		if (!enumItem->name.build(nameToken->sourceText))
+			return genOutOfMemorySyntaxError();
+
+		if (Token *token = peekToken(); token->tokenId == TokenId::AssignOp) {
+			nextToken();
+			if ((syntaxError = parseExpr(0, enumItem->enumValue)))
+				return syntaxError;
+		}
+	}
+
+	if (auto it = enumOut->memberIndices.find(enumItem->name); it != enumOut->memberIndices.end()) {
+		peff::String s(resourceAllocator.get());
+
+		if (!s.build(enumItem->name)) {
+			return genOutOfMemorySyntaxError();
+		}
+
+		ConflictingDefinitionsErrorExData exData(std::move(s));
+
+		return SyntaxError(enumItem->tokenRange, std::move(exData));
+	} else {
+		if (!(enumOut->indexMember(idxMember))) {
+			return genOutOfMemorySyntaxError();
+		}
+	}
+
+	return {};
+}
+
 SLKC_API peff::Option<SyntaxError> Parser::parseClassStmts() {
 	peff::Option<SyntaxError> syntaxError;
 
@@ -527,7 +744,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseClassStmts() {
 			// Parse the rest to make sure that we have gained all of the information,
 			// instead of ignoring them.
 			if (!syntaxErrors.pushBack(std::move(syntaxError.value())))
-				return genOutOfMemoryError();
+				return genOutOfMemorySyntaxError();
 			syntaxError.reset();
 		}
 	}
@@ -569,13 +786,328 @@ SLKC_API peff::Option<SyntaxError> Parser::parseProgramStmt() {
 accessModifierParseEnd:
 	Token *token = peekToken();
 
-	AstNodePtr<ModuleNode> p = curParent.template castTo<ModuleNode>();
+	AstNodePtr<ModuleNode> p = curParent.castTo<ModuleNode>();
 
 	if (p->getAstNodeType() == AstNodeType::Module) {
 		access |= slake::ACCESS_STATIC;
 	}
 
 	switch (token->tokenId) {
+		case TokenId::EnumKeyword: {
+			nextToken();
+			switch (peekToken()->tokenId) {
+				case TokenId::StructKeyword: {
+					nextToken();
+					AstNodePtr<StructEnumNode> enumNode;
+
+					if (!(enumNode = makeAstNode<StructEnumNode>(resourceAllocator.get(), resourceAllocator.get(), document)))
+						return genOutOfMemorySyntaxError();
+
+					peff::ScopeGuard setTokenRangeGuard([this, token, enumNode]() noexcept {
+						enumNode->tokenRange = TokenRange{ document->mainModule, token->index, parseContext.idxPrevToken };
+					});
+
+					Token *nameToken;
+					if ((syntaxError = expectToken((nameToken = peekToken()), TokenId::Id))) {
+						return syntaxError;
+					}
+					nextToken();
+
+					size_t idxMember;
+					if ((idxMember = p->pushMember(enumNode.castTo<MemberNode>())) == SIZE_MAX) {
+						return genOutOfMemorySyntaxError();
+					}
+
+					if (!enumNode->name.build(nameToken->sourceText)) {
+						return genOutOfMemorySyntaxError();
+					}
+
+					Token *lBraceToken;
+					if ((syntaxError = expectToken((lBraceToken = peekToken()), TokenId::LBrace))) {
+						return syntaxError;
+					}
+					nextToken();
+
+					while (true) {
+						if (peekToken()->tokenId == TokenId::RBrace)
+							break;
+
+						if ((syntaxError = parseUnionEnumItem(enumNode.castTo<ModuleNode>()))) {
+							if (syntaxError->errorKind == SyntaxErrorKind::OutOfMemory)
+								return syntaxError;
+							if (!syntaxErrors.pushBack(syntaxError.move()))
+								return genOutOfMemorySyntaxError();
+						}
+
+						if (peekToken()->tokenId != TokenId::Comma)
+							break;
+						Token *commaToken = nextToken();
+					}
+
+					Token *rBraceToken;
+					if ((syntaxError = expectToken((rBraceToken = peekToken()), TokenId::RBrace))) {
+						return syntaxError;
+					}
+					nextToken();
+
+					if (auto it = p->memberIndices.find(enumNode->name); it != p->memberIndices.end()) {
+						peff::String s(resourceAllocator.get());
+
+						if (!s.build(enumNode->name)) {
+							return genOutOfMemorySyntaxError();
+						}
+
+						ConflictingDefinitionsErrorExData exData(std::move(s));
+
+						return SyntaxError(enumNode->tokenRange, std::move(exData));
+					} else {
+						if (!(p->indexMember(idxMember))) {
+							return genOutOfMemorySyntaxError();
+						}
+					}
+					break;
+				}
+				case TokenId::ClassKeyword: {
+					nextToken();
+					AstNodePtr<ClassEnumNode> enumNode;
+
+					if (!(enumNode = makeAstNode<ClassEnumNode>(resourceAllocator.get(), resourceAllocator.get(), document)))
+						return genOutOfMemorySyntaxError();
+
+					peff::ScopeGuard setTokenRangeGuard([this, token, enumNode]() noexcept {
+						enumNode->tokenRange = TokenRange{ document->mainModule, token->index, parseContext.idxPrevToken };
+					});
+
+					Token *nameToken;
+					if ((syntaxError = expectToken((nameToken = peekToken()), TokenId::Id))) {
+						return syntaxError;
+					}
+					nextToken();
+
+					size_t idxMember;
+					if ((idxMember = p->pushMember(enumNode.castTo<MemberNode>())) == SIZE_MAX) {
+						return genOutOfMemorySyntaxError();
+					}
+
+					if (!enumNode->name.build(nameToken->sourceText)) {
+						return genOutOfMemorySyntaxError();
+					}
+
+					Token *lBraceToken;
+					if ((syntaxError = expectToken((lBraceToken = peekToken()), TokenId::LBrace))) {
+						return syntaxError;
+					}
+					nextToken();
+
+					while (true) {
+						if (peekToken()->tokenId == TokenId::RBrace)
+							break;
+
+						if ((syntaxError = parseUnionEnumItem(enumNode.castTo<ModuleNode>()))) {
+							if (syntaxError->errorKind == SyntaxErrorKind::OutOfMemory)
+								return syntaxError;
+							if (!syntaxErrors.pushBack(syntaxError.move()))
+								return genOutOfMemorySyntaxError();
+						}
+
+						if (peekToken()->tokenId != TokenId::Comma)
+							break;
+						Token *commaToken = nextToken();
+					}
+
+					Token *rBraceToken;
+					if ((syntaxError = expectToken((rBraceToken = peekToken()), TokenId::RBrace))) {
+						return syntaxError;
+					}
+					nextToken();
+
+					if (auto it = p->memberIndices.find(enumNode->name); it != p->memberIndices.end()) {
+						peff::String s(resourceAllocator.get());
+
+						if (!s.build(enumNode->name)) {
+							return genOutOfMemorySyntaxError();
+						}
+
+						ConflictingDefinitionsErrorExData exData(std::move(s));
+
+						return SyntaxError(enumNode->tokenRange, std::move(exData));
+					} else {
+						if (!(p->indexMember(idxMember))) {
+							return genOutOfMemorySyntaxError();
+						}
+					}
+					break;
+				}
+				case TokenId::ConstKeyword: {
+					nextToken();
+					AstNodePtr<ConstEnumNode> enumNode;
+
+					if (!(enumNode = makeAstNode<ConstEnumNode>(resourceAllocator.get(), resourceAllocator.get(), document)))
+						return genOutOfMemorySyntaxError();
+
+					peff::ScopeGuard setTokenRangeGuard([this, token, enumNode]() noexcept {
+						enumNode->tokenRange = TokenRange{ document->mainModule, token->index, parseContext.idxPrevToken };
+					});
+
+					Token *nameToken;
+					if ((syntaxError = expectToken((nameToken = peekToken()), TokenId::Id))) {
+						return syntaxError;
+					}
+					nextToken();
+
+					size_t idxMember;
+					if ((idxMember = p->pushMember(enumNode.castTo<MemberNode>())) == SIZE_MAX) {
+						return genOutOfMemorySyntaxError();
+					}
+
+					if (!enumNode->name.build(nameToken->sourceText)) {
+						return genOutOfMemorySyntaxError();
+					}
+
+					if (Token *lParentheseToken = peekToken(); lParentheseToken->tokenId == TokenId::LParenthese) {
+						nextToken();
+
+						if ((syntaxError = parseTypeName(enumNode->baseType))) {
+							return syntaxError;
+						}
+
+						Token *rParentheseToken;
+						if ((syntaxError = expectToken((rParentheseToken = peekToken()), TokenId::RParenthese))) {
+							return syntaxError;
+						}
+						nextToken();
+					}
+
+					Token *lBraceToken;
+					if ((syntaxError = expectToken((lBraceToken = peekToken()), TokenId::LBrace))) {
+						return syntaxError;
+					}
+					nextToken();
+
+					while (true) {
+						if (peekToken()->tokenId == TokenId::RBrace)
+							break;
+
+						if ((syntaxError = parseEnumItem(enumNode.castTo<ModuleNode>()))) {
+							if (syntaxError->errorKind == SyntaxErrorKind::OutOfMemory)
+								return syntaxError;
+							if (!syntaxErrors.pushBack(syntaxError.move()))
+								return genOutOfMemorySyntaxError();
+						}
+
+						if (peekToken()->tokenId != TokenId::Comma)
+							break;
+						Token *commaToken = nextToken();
+					}
+
+					Token *rBraceToken;
+					if ((syntaxError = expectToken((rBraceToken = peekToken()), TokenId::RBrace))) {
+						return syntaxError;
+					}
+					nextToken();
+
+					if (auto it = p->memberIndices.find(enumNode->name); it != p->memberIndices.end()) {
+						peff::String s(resourceAllocator.get());
+
+						if (!s.build(enumNode->name)) {
+							return genOutOfMemorySyntaxError();
+						}
+
+						ConflictingDefinitionsErrorExData exData(std::move(s));
+
+						return SyntaxError(enumNode->tokenRange, std::move(exData));
+					} else {
+						if (!(p->indexMember(idxMember))) {
+							return genOutOfMemorySyntaxError();
+						}
+					}
+					break;
+				}
+				case TokenId::Id: {
+					Token *nameToken = nextToken();
+					AstNodePtr<ScopedEnumNode> enumNode;
+
+					if (!(enumNode = makeAstNode<ScopedEnumNode>(resourceAllocator.get(), resourceAllocator.get(), document)))
+						return genOutOfMemorySyntaxError();
+
+					size_t idxMember;
+					{
+						peff::ScopeGuard setTokenRangeGuard([this, token, enumNode]() noexcept {
+							enumNode->tokenRange = TokenRange{ document->mainModule, token->index, parseContext.idxPrevToken };
+						});
+						if ((idxMember = p->pushMember(enumNode.castTo<MemberNode>())) == SIZE_MAX) {
+							return genOutOfMemorySyntaxError();
+						}
+
+						if (!enumNode->name.build(nameToken->sourceText)) {
+							return genOutOfMemorySyntaxError();
+						}
+
+						if (Token *lParentheseToken = peekToken(); lParentheseToken->tokenId == TokenId::LParenthese) {
+							nextToken();
+
+							if ((syntaxError = parseTypeName(enumNode->baseType))) {
+								return syntaxError;
+							}
+
+							Token *rParentheseToken;
+							if ((syntaxError = expectToken((rParentheseToken = peekToken()), TokenId::RParenthese))) {
+								return syntaxError;
+							}
+							nextToken();
+						}
+					}
+
+					Token *lBraceToken;
+					if ((syntaxError = expectToken((lBraceToken = peekToken()), TokenId::LBrace))) {
+						return syntaxError;
+					}
+					nextToken();
+
+					while (true) {
+						if (peekToken()->tokenId == TokenId::RBrace)
+							break;
+
+						if ((syntaxError = parseEnumItem(enumNode.castTo<ModuleNode>()))) {
+							if (syntaxError->errorKind == SyntaxErrorKind::OutOfMemory)
+								return syntaxError;
+							if (!syntaxErrors.pushBack(syntaxError.move()))
+								return genOutOfMemorySyntaxError();
+						}
+
+						if (peekToken()->tokenId != TokenId::Comma)
+							break;
+						Token *commaToken = nextToken();
+					}
+
+					Token *rBraceToken;
+					if ((syntaxError = expectToken((rBraceToken = peekToken()), TokenId::RBrace))) {
+						return syntaxError;
+					}
+					nextToken();
+
+					if (auto it = p->memberIndices.find(enumNode->name); it != p->memberIndices.end()) {
+						peff::String s(resourceAllocator.get());
+
+						if (!s.build(enumNode->name)) {
+							return genOutOfMemorySyntaxError();
+						}
+
+						ConflictingDefinitionsErrorExData exData(std::move(s));
+
+						return SyntaxError(enumNode->tokenRange, std::move(exData));
+					} else {
+						if (!(p->indexMember(idxMember))) {
+							return genOutOfMemorySyntaxError();
+						}
+					}
+					break;
+				}
+				default:
+					return SyntaxError(TokenRange{ document->mainModule, token->index }, SyntaxErrorKind::UnexpectedToken);
+			}
+			break;
+		}
 		case TokenId::AttributeKeyword: {
 			// Attribute definition.
 			nextToken();
@@ -583,7 +1115,7 @@ accessModifierParseEnd:
 			AstNodePtr<AttributeDefNode> attributeNode;
 
 			if (!(attributeNode = makeAstNode<AttributeDefNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
-				return genOutOfMemoryError();
+				return genOutOfMemorySyntaxError();
 			}
 
 			attributeNode->accessModifier = access;
@@ -593,17 +1125,15 @@ accessModifierParseEnd:
 			if ((syntaxError = expectToken((nameToken = peekToken()), TokenId::Id))) {
 				return syntaxError;
 			}
-
-			size_t idxMember;
-
-			if ((idxMember = p->pushMember(attributeNode.template castTo<MemberNode>())) == SIZE_MAX) {
-				return genOutOfMemoryError();
-			}
-
 			nextToken();
 
+			size_t idxMember;
+			if ((idxMember = p->pushMember(attributeNode.castTo<MemberNode>())) == SIZE_MAX) {
+				return genOutOfMemorySyntaxError();
+			}
+
 			if (!attributeNode->name.build(nameToken->sourceText)) {
-				return genOutOfMemoryError();
+				return genOutOfMemorySyntaxError();
 			}
 
 			{
@@ -616,7 +1146,7 @@ accessModifierParseEnd:
 				peff::ScopeGuard restorePrevModGuard([this, prevParent]() noexcept {
 					curParent = prevParent;
 				});
-				curParent = attributeNode.template castTo<MemberNode>();
+				curParent = attributeNode.castTo<MemberNode>();
 
 				Token *lBraceToken;
 
@@ -639,7 +1169,7 @@ accessModifierParseEnd:
 						// Parse the rest to make sure that we have gained all of the information,
 						// instead of ignoring them.
 						if (!syntaxErrors.pushBack(std::move(syntaxError.value())))
-							return genOutOfMemoryError();
+							return genOutOfMemorySyntaxError();
 						syntaxError.reset();
 					}
 				}
@@ -657,7 +1187,7 @@ accessModifierParseEnd:
 				peff::String s(resourceAllocator.get());
 
 				if (!s.build(attributeNode->name)) {
-					return genOutOfMemoryError();
+					return genOutOfMemorySyntaxError();
 				}
 
 				ConflictingDefinitionsErrorExData exData(std::move(s));
@@ -665,7 +1195,7 @@ accessModifierParseEnd:
 				return SyntaxError(attributeNode->tokenRange, std::move(exData));
 			} else {
 				if (!(p->indexMember(idxMember))) {
-					return genOutOfMemoryError();
+					return genOutOfMemorySyntaxError();
 				}
 			}
 
@@ -689,7 +1219,7 @@ accessModifierParseEnd:
 					peff::String s(resourceAllocator.get());
 
 					if (!s.build(fn->name)) {
-						return genOutOfMemoryError();
+						return genOutOfMemorySyntaxError();
 					}
 
 					ConflictingDefinitionsErrorExData exData(std::move(s));
@@ -699,27 +1229,27 @@ accessModifierParseEnd:
 				FnNode *fnSlot = (FnNode *)p->members.at(it.value()).get();
 				fn->setParent(fnSlot);
 				if (!fnSlot->overloadings.pushBack(std::move(fn))) {
-					return genOutOfMemoryError();
+					return genOutOfMemorySyntaxError();
 				}
 			} else {
 				AstNodePtr<FnNode> fnSlot;
 
 				if (!(fnSlot = makeAstNode<FnNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
-					return genOutOfMemoryError();
+					return genOutOfMemorySyntaxError();
 				}
 
 				if (!fnSlot->name.build(fn->name)) {
-					return genOutOfMemoryError();
+					return genOutOfMemorySyntaxError();
 				}
 
-				if (!(p->addMember(fnSlot.template castTo<MemberNode>()))) {
-					return genOutOfMemoryError();
+				if (!(p->addMember(fnSlot.castTo<MemberNode>()))) {
+					return genOutOfMemorySyntaxError();
 				}
 
 				fn->setParent(fnSlot.get());
 
 				if (!fnSlot->overloadings.pushBack(std::move(fn))) {
-					return genOutOfMemoryError();
+					return genOutOfMemorySyntaxError();
 				}
 			}
 			break;
@@ -731,7 +1261,7 @@ accessModifierParseEnd:
 			AstNodePtr<ClassNode> classNode;
 
 			if (!(classNode = makeAstNode<ClassNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
-				return genOutOfMemoryError();
+				return genOutOfMemorySyntaxError();
 			}
 
 			classNode->accessModifier = access;
@@ -741,17 +1271,15 @@ accessModifierParseEnd:
 			if ((syntaxError = expectToken((nameToken = peekToken()), TokenId::Id))) {
 				return syntaxError;
 			}
-
 			nextToken();
 
 			if (!classNode->name.build(nameToken->sourceText)) {
-				return genOutOfMemoryError();
+				return genOutOfMemorySyntaxError();
 			}
 
 			size_t idxMember;
-
-			if ((idxMember = p->pushMember(classNode.template castTo<MemberNode>())) == SIZE_MAX) {
-				return genOutOfMemoryError();
+			if ((idxMember = p->pushMember(classNode.castTo<MemberNode>())) == SIZE_MAX) {
+				return genOutOfMemorySyntaxError();
 			}
 
 			{
@@ -764,7 +1292,7 @@ accessModifierParseEnd:
 				peff::ScopeGuard restorePrevModGuard([this, prevParent]() noexcept {
 					curParent = prevParent;
 				});
-				curParent = classNode.template castTo<MemberNode>();
+				curParent = classNode.castTo<MemberNode>();
 
 				if ((syntaxError = parseGenericParams(classNode->genericParams, classNode->idxGenericParamCommaTokens, classNode->idxLAngleBracketToken, classNode->idxRAngleBracketToken))) {
 					return syntaxError;
@@ -795,7 +1323,7 @@ accessModifierParseEnd:
 						}
 
 						if (!classNode->implTypes.pushBack(std::move(tn))) {
-							return genOutOfMemoryError();
+							return genOutOfMemorySyntaxError();
 						}
 
 						if (peekToken()->tokenId != TokenId::AddOp) {
@@ -827,7 +1355,7 @@ accessModifierParseEnd:
 						// Parse the rest to make sure that we have gained all of the information,
 						// instead of ignoring them.
 						if (!syntaxErrors.pushBack(std::move(syntaxError.value())))
-							return genOutOfMemoryError();
+							return genOutOfMemorySyntaxError();
 						syntaxError.reset();
 					}
 				}
@@ -845,7 +1373,7 @@ accessModifierParseEnd:
 				peff::String s(resourceAllocator.get());
 
 				if (!s.build(classNode->name)) {
-					return genOutOfMemoryError();
+					return genOutOfMemorySyntaxError();
 				}
 
 				ConflictingDefinitionsErrorExData exData(std::move(s));
@@ -853,7 +1381,7 @@ accessModifierParseEnd:
 				return SyntaxError(classNode->tokenRange, std::move(exData));
 			} else {
 				if (!(p->indexMember(idxMember))) {
-					return genOutOfMemoryError();
+					return genOutOfMemorySyntaxError();
 				}
 			}
 
@@ -866,7 +1394,7 @@ accessModifierParseEnd:
 			AstNodePtr<StructNode> structNode;
 
 			if (!(structNode = makeAstNode<StructNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
-				return genOutOfMemoryError();
+				return genOutOfMemorySyntaxError();
 			}
 
 			structNode->accessModifier = access;
@@ -876,17 +1404,15 @@ accessModifierParseEnd:
 			if ((syntaxError = expectToken((nameToken = peekToken()), TokenId::Id))) {
 				return syntaxError;
 			}
-
 			nextToken();
 
 			if (!structNode->name.build(nameToken->sourceText)) {
-				return genOutOfMemoryError();
+				return genOutOfMemorySyntaxError();
 			}
 
 			size_t idxMember;
-
-			if ((idxMember = p->pushMember(structNode.template castTo<MemberNode>())) == SIZE_MAX) {
-				return genOutOfMemoryError();
+			if ((idxMember = p->pushMember(structNode.castTo<MemberNode>())) == SIZE_MAX) {
+				return genOutOfMemorySyntaxError();
 			}
 
 			{
@@ -899,7 +1425,7 @@ accessModifierParseEnd:
 				peff::ScopeGuard restorePrevModGuard([this, prevParent]() noexcept {
 					curParent = prevParent;
 				});
-				curParent = structNode.template castTo<MemberNode>();
+				curParent = structNode.castTo<MemberNode>();
 
 				if ((syntaxError = parseGenericParams(structNode->genericParams, structNode->idxGenericParamCommaTokens, structNode->idxLAngleBracketToken, structNode->idxRAngleBracketToken))) {
 					return syntaxError;
@@ -916,7 +1442,7 @@ accessModifierParseEnd:
 						}
 
 						if (!structNode->implTypes.pushBack(std::move(tn))) {
-							return genOutOfMemoryError();
+							return genOutOfMemorySyntaxError();
 						}
 
 						if (peekToken()->tokenId != TokenId::AddOp) {
@@ -948,7 +1474,7 @@ accessModifierParseEnd:
 						// Parse the rest to make sure that we have gained all of the information,
 						// instead of ignoring them.
 						if (!syntaxErrors.pushBack(std::move(syntaxError.value())))
-							return genOutOfMemoryError();
+							return genOutOfMemorySyntaxError();
 						syntaxError.reset();
 					}
 				}
@@ -966,7 +1492,7 @@ accessModifierParseEnd:
 				peff::String s(resourceAllocator.get());
 
 				if (!s.build(structNode->name)) {
-					return genOutOfMemoryError();
+					return genOutOfMemorySyntaxError();
 				}
 
 				ConflictingDefinitionsErrorExData exData(std::move(s));
@@ -974,7 +1500,7 @@ accessModifierParseEnd:
 				return SyntaxError(structNode->tokenRange, std::move(exData));
 			} else {
 				if (!(p->indexMember(idxMember))) {
-					return genOutOfMemoryError();
+					return genOutOfMemorySyntaxError();
 				}
 			}
 
@@ -987,7 +1513,7 @@ accessModifierParseEnd:
 			AstNodePtr<InterfaceNode> interfaceNode;
 
 			if (!(interfaceNode = makeAstNode<InterfaceNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
-				return genOutOfMemoryError();
+				return genOutOfMemorySyntaxError();
 			}
 
 			interfaceNode->accessModifier = access;
@@ -997,17 +1523,16 @@ accessModifierParseEnd:
 			if ((syntaxError = expectToken((nameToken = peekToken()), TokenId::Id))) {
 				return syntaxError;
 			}
+			nextToken();
 
 			if (!interfaceNode->name.build(nameToken->sourceText)) {
-				return genOutOfMemoryError();
+				return genOutOfMemorySyntaxError();
 			}
 
 			size_t idxMember;
-			if ((idxMember = p->pushMember(interfaceNode.template castTo<MemberNode>())) == SIZE_MAX) {
-				return genOutOfMemoryError();
+			if ((idxMember = p->pushMember(interfaceNode.castTo<MemberNode>())) == SIZE_MAX) {
+				return genOutOfMemorySyntaxError();
 			}
-
-			nextToken();
 
 			Token *t;
 
@@ -1021,7 +1546,7 @@ accessModifierParseEnd:
 				peff::ScopeGuard restorePrevModGuard([this, prevMember]() noexcept {
 					curParent = prevMember;
 				});
-				curParent = interfaceNode.template castTo<MemberNode>();
+				curParent = interfaceNode.castTo<MemberNode>();
 
 				if ((syntaxError = parseGenericParams(interfaceNode->genericParams, interfaceNode->idxGenericParamCommaTokens, interfaceNode->idxLAngleBracketToken, interfaceNode->idxRAngleBracketToken))) {
 					return syntaxError;
@@ -1038,7 +1563,7 @@ accessModifierParseEnd:
 						}
 
 						if (!interfaceNode->implTypes.pushBack(std::move(tn))) {
-							return genOutOfMemoryError();
+							return genOutOfMemorySyntaxError();
 						}
 
 						if (peekToken()->tokenId != TokenId::AddOp) {
@@ -1070,7 +1595,7 @@ accessModifierParseEnd:
 						// Parse the rest to make sure that we have gained all of the information,
 						// instead of ignoring them.
 						if (!syntaxErrors.pushBack(std::move(syntaxError.value())))
-							return genOutOfMemoryError();
+							return genOutOfMemorySyntaxError();
 						syntaxError.reset();
 					}
 				}
@@ -1088,7 +1613,7 @@ accessModifierParseEnd:
 				peff::String s(resourceAllocator.get());
 
 				if (!s.build(interfaceNode->name)) {
-					return genOutOfMemoryError();
+					return genOutOfMemorySyntaxError();
 				}
 
 				ConflictingDefinitionsErrorExData exData(std::move(s));
@@ -1096,7 +1621,7 @@ accessModifierParseEnd:
 				return SyntaxError(interfaceNode->tokenRange, std::move(exData));
 			} else {
 				if (!(p->indexMember(idxMember))) {
-					return genOutOfMemoryError();
+					return genOutOfMemorySyntaxError();
 				}
 			}
 
@@ -1109,15 +1634,15 @@ accessModifierParseEnd:
 			AstNodePtr<ImportNode> importNode;
 
 			if (!(importNode = makeAstNode<ImportNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
-				return genOutOfMemoryError();
+				return genOutOfMemorySyntaxError();
 			}
 
 			if ((syntaxError = parseIdRef(importNode->idRef)))
 				return syntaxError;
 
 			size_t idxMember;
-			if ((idxMember = p->pushMember(importNode.template castTo<MemberNode>())) == SIZE_MAX) {
-				return genOutOfMemoryError();
+			if ((idxMember = p->pushMember(importNode.castTo<MemberNode>())) == SIZE_MAX) {
+				return genOutOfMemorySyntaxError();
 			}
 
 			if (Token *asToken = peekToken(); asToken->tokenId == TokenId::AsKeyword) {
@@ -1130,15 +1655,15 @@ accessModifierParseEnd:
 				}
 
 				if (!importNode->name.build(nameToken->sourceText)) {
-					return genOutOfMemoryError();
+					return genOutOfMemorySyntaxError();
 				}
 
 				if (!p->indexMember(idxMember)) {
-					return genOutOfMemoryError();
+					return genOutOfMemorySyntaxError();
 				}
 			} else {
 				if (!p->anonymousImports.pushBack(AstNodePtr<ImportNode>(importNode))) {
-					return genOutOfMemoryError();
+					return genOutOfMemorySyntaxError();
 				}
 			}
 
@@ -1163,7 +1688,7 @@ accessModifierParseEnd:
 					  resourceAllocator.get(),
 					  document,
 					  peff::DynArray<VarDefEntryPtr>(resourceAllocator.get())))) {
-				return genOutOfMemoryError();
+				return genOutOfMemorySyntaxError();
 			}
 
 			stmt->accessModifier = access;
@@ -1177,7 +1702,7 @@ accessModifierParseEnd:
 			}
 
 			if (!p->varDefStmts.pushBack(std::move(stmt))) {
-				return genOutOfMemoryError();
+				return genOutOfMemorySyntaxError();
 			}
 
 			Token *semicolonToken;
@@ -1205,7 +1730,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseProgram(const AstNodePtr<ModuleN
 
 	Token *t;
 
-	curParent = initialMod.template castTo<MemberNode>();
+	curParent = initialMod.castTo<MemberNode>();
 
 	moduleNameOut = {};
 	if ((t = peekToken())->tokenId == TokenId::ModuleKeyword) {
@@ -1215,7 +1740,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseProgram(const AstNodePtr<ModuleN
 
 		if ((syntaxError = parseIdRef(moduleName))) {
 			if (!syntaxErrors.pushBack(std::move(syntaxError.value())))
-				return genOutOfMemoryError();
+				return genOutOfMemorySyntaxError();
 			syntaxError.reset();
 		}
 
@@ -1233,7 +1758,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseProgram(const AstNodePtr<ModuleN
 			// Parse the rest to make sure that we have gained all of the information,
 			// instead of ignoring them.
 			if (!syntaxErrors.pushBack(std::move(syntaxError.value())))
-				return genOutOfMemoryError();
+				return genOutOfMemorySyntaxError();
 			syntaxError.reset();
 		}
 	}

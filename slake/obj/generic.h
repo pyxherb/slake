@@ -9,7 +9,8 @@
 namespace slake {
 	struct GenericParam final {
 		peff::String name;
-		TypeRef baseType = TypeId::Any;
+		TypeRef inputType = slake::TypeId::Invalid;
+		TypeRef baseType = TypeId::Invalid;
 		peff::DynArray<TypeRef> interfaces;
 
 		SLAKE_API GenericParam(peff::Alloc *selfAllocator);

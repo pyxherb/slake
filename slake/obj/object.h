@@ -29,10 +29,15 @@ namespace slake {
 		Array,			// Array
 		Ref,			// Reference
 
-		Class,		// Class
-		Interface,	// Interface
-		Struct,		// Structure
-		Instance,	// Object instance
+		Class,		 // Class
+		Interface,	 // Interface
+		Struct,		 // Structure
+		ScopedEnum,	 // Scoped enumeration
+		UnionEnumItem, // Union enumeration item
+		ClassEnum,	 // Class enumeration
+		StructEnum,	 // Structure enumeration
+
+		Instance,  // Object instance
 
 		Any,  // Any
 
@@ -87,7 +92,7 @@ namespace slake {
 	class ModuleObject;
 
 	struct ModuleMemberDuplicationTask {
-		ModuleObject *mod;
+		BasicModuleObject *mod;
 		MemberObject *src;
 	};
 
@@ -106,7 +111,7 @@ namespace slake {
 		DuplicationTaskType taskType;
 
 		SLAKE_API static DuplicationTask makeNormal(Object **dest, Object *src);
-		SLAKE_API static DuplicationTask makeModuleMember(ModuleObject *mod, MemberObject *src);
+		SLAKE_API static DuplicationTask makeModuleMember(BasicModuleObject *mod, MemberObject *src);
 		SLAKE_API static DuplicationTask makeType(TypeRef *type, const TypeRef &src);
 	};
 

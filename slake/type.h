@@ -108,7 +108,7 @@ namespace slake {
 	class Object;
 	class IdRefObject;
 	class StringObject;
-	class ModuleObject;
+	class BasicModuleObject;
 	class ArrayObject;
 	class InstanceObject;
 	class TypeDefObject;
@@ -168,7 +168,7 @@ namespace slake {
 		}
 
 		SLAKE_FORCEINLINE explicit operator bool() const {
-			return typeId != TypeId::Void;
+			return typeId != TypeId::Invalid;
 		}
 
 		SLAKE_API TypeRef duplicate(bool &succeededOut) const;

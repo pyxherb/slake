@@ -211,7 +211,7 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 						_gcWalk(context, readVarUnsafe(Reference::makeStaticFieldRef((ModuleObject *)v, i)));
 					}
 
-					context->pushObject(((ModuleObject *)v)->parent);
+					context->pushObject(((ModuleObject *)v)->getParent());
 
 					for (auto i : ((ModuleObject *)v)->unnamedImports)
 						context->pushObject(i);
@@ -222,7 +222,7 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 					for (auto i = ((ClassObject *)v)->members.begin(); i != ((ClassObject *)v)->members.end(); ++i) {
 						context->pushObject(i.value());
 					}
-					context->pushObject(((ClassObject *)v)->parent);
+					context->pushObject(((ClassObject *)v)->getParent());
 
 					ClassObject *value = (ClassObject *)v;
 
@@ -263,7 +263,7 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 					for (auto i = ((StructObject *)v)->members.begin(); i != ((StructObject *)v)->members.end(); ++i) {
 						context->pushObject(i.value());
 					}
-					context->pushObject(((StructObject *)v)->parent);
+					context->pushObject(((StructObject *)v)->getParent());
 
 					StructObject *value = (StructObject *)v;
 
@@ -294,7 +294,7 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 					for (auto i = ((InterfaceObject *)v)->members.begin(); i != ((InterfaceObject *)v)->members.end(); ++i) {
 						context->pushObject(i.value());
 					}
-					context->pushObject(((InterfaceObject *)v)->parent);
+					context->pushObject(((InterfaceObject *)v)->getParent());
 
 					InterfaceObject *value = (InterfaceObject *)v;
 
@@ -325,7 +325,7 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 				case ObjectKind::Fn: {
 					auto fn = (FnObject *)v;
 
-					context->pushObject(fn->parent);
+					context->pushObject(fn->getParent());
 
 					for (auto i : fn->overloadings) {
 						context->pushObject(i.second);

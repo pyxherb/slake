@@ -322,12 +322,12 @@ namespace slake {
 
 	class GenericFieldInitError : public RuntimeExecError {
 	public:
-		HostObjectRef<ModuleObject> object;
+		HostObjectRef<BasicModuleObject> object;
 		size_t idxRecord;
 
 		SLAKE_API GenericFieldInitError(
 			peff::Alloc *selfAllocator,
-			ModuleObject *object,
+			BasicModuleObject *object,
 			size_t idxRecord);
 		SLAKE_API virtual ~GenericFieldInitError();
 
@@ -337,7 +337,7 @@ namespace slake {
 
 		SLAKE_API static GenericFieldInitError *alloc(
 			peff::Alloc *selfAllocator,
-			ModuleObject *object,
+			BasicModuleObject *object,
 			size_t idxRecord);
 	};
 

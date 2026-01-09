@@ -533,7 +533,7 @@ SLAKE_API InternalExceptionPointer loader::loadIdRef(LoaderContext &context, Run
 	return {};
 }
 
-SLAKE_API InternalExceptionPointer loader::loadModuleMembers(LoaderContext &context, Runtime *runtime, Reader *reader, ModuleObject *moduleObject) noexcept {
+SLAKE_API InternalExceptionPointer loader::loadModuleMembers(LoaderContext &context, Runtime *runtime, Reader *reader, BasicModuleObject *moduleObject) noexcept {
 	{
 		uint32_t nClasses;
 
@@ -558,10 +558,10 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(LoaderContext &cont
 				access |= ACCESS_FINAL;
 			}
 
-			if (!clsObject->name.resize(desc.lenName)) {
+			if (!clsObject->resizeName(desc.lenName)) {
 				return OutOfMemoryError::alloc();
 			}
-			SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read(clsObject->name.data(), desc.lenName)));
+			SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read(clsObject->getNameRawPtr(), desc.lenName)));
 
 			for (size_t j = 0; j < desc.nGenericParams; ++j) {
 				GenericParam gp(clsObject->selfAllocator.get());
@@ -620,10 +620,10 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(LoaderContext &cont
 				access |= ACCESS_PUBLIC;
 			}
 
-			if (!interfaceObject->name.resize(desc.lenName)) {
+			if (!interfaceObject->resizeName(desc.lenName)) {
 				return OutOfMemoryError::alloc();
 			}
-			SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read(interfaceObject->name.data(), desc.lenName)));
+			SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read(interfaceObject->getNameRawPtr(), desc.lenName)));
 
 			for (size_t j = 0; j < desc.nGenericParams; ++j) {
 				GenericParam gp(interfaceObject->selfAllocator.get());
@@ -679,10 +679,10 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(LoaderContext &cont
 				access |= ACCESS_PUBLIC;
 			}
 
-			if (!structObject->name.resize(desc.lenName)) {
+			if (!structObject->resizeName(desc.lenName)) {
 				return OutOfMemoryError::alloc();
 			}
-			SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read(structObject->name.data(), desc.lenName)));
+			SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read(structObject->getNameRawPtr(), desc.lenName)));
 
 			for (size_t j = 0; j < desc.nGenericParams; ++j) {
 				GenericParam gp(structObject->selfAllocator.get());
@@ -723,10 +723,10 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(LoaderContext &cont
 
 			uint32_t lenName;
 			SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->readU32(lenName)));
-			if (!fnObject->name.resize(lenName)) {
+			if (!fnObject->resizeName(lenName)) {
 				return OutOfMemoryError::alloc();
 			}
-			SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read(fnObject->name.data(), lenName)));
+			SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read(fnObject->getNameRawPtr(), lenName)));
 
 			uint32_t nOverloadings;
 
@@ -967,7 +967,7 @@ SLAKE_API InternalExceptionPointer loader::loadModule(LoaderContext &context, Ru
 	return {};
 }
 
-SLAKE_API InternalExceptionPointer slake::loader::completeParentNamespaces(LoaderContext &context, Runtime *runtime, ModuleObject *moduleObject, const peff::DynArray<IdRefEntry> &ref) noexcept {
+SLAKE_API InternalExceptionPointer slake::loader::completeParentNamespaces(LoaderContext &context, Runtime *runtime, BasicModuleObject *moduleObject, const peff::DynArray<IdRefEntry> &ref) noexcept {
 	HostObjectRef<ModuleObject> mod = runtime->getRootObject();
 
 	for (size_t i = 0; i < ref.size() - 1; ++i) {
@@ -983,7 +983,7 @@ SLAKE_API InternalExceptionPointer slake::loader::completeParentNamespaces(Loade
 			if (!(newMod = ModuleObject::alloc(runtime)))
 				return OutOfMemoryError::alloc();
 
-			if (!newMod->name.build(name))
+			if (!newMod->setName(name))
 				return OutOfMemoryError::alloc();
 
 			if (!mod->addMember(newMod.get()))
@@ -993,7 +993,7 @@ SLAKE_API InternalExceptionPointer slake::loader::completeParentNamespaces(Loade
 		}
 	}
 
-	if (!moduleObject->name.build(ref.at(ref.size() - 1).name))
+	if (!moduleObject->setName(ref.at(ref.size() - 1).name))
 		return OutOfMemoryError::alloc();
 	if (!mod->addMember(moduleObject))
 		return OutOfMemoryError::alloc();

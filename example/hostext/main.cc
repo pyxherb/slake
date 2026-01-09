@@ -269,7 +269,11 @@ int main(int argc, char **argv) {
 			LoaderContext loaderContext(peff::getDefaultAlloc());
 			MyReader reader(&peff::g_nullAlloc, fp);
 
-			loader::loadModule(loaderContext, rt.get(), &reader, mod);
+			if (auto e = loader::loadModule(loaderContext, rt.get(), &reader, mod); e) {
+				printf("Error loading main module: %s\n", e->what());
+				e.reset();
+				return -1;
+			}
 		}
 
 		{
@@ -304,7 +308,7 @@ int main(int argc, char **argv) {
 			printFn->overridenType = TypeId::Void;
 			if (!fnObject->overloadings.insert({ printFn->paramTypes, printFn->isWithVarArgs(), printFn->genericParams.size(), printFn->overridenType }, printFn.get()))
 				throw std::bad_alloc();
-			fnObject->name.build("print");
+			fnObject->setName("print");
 
 			((ModuleObject *)((ModuleObject *)rt->getRootObject()->getMember("hostext").asObject)
 					->getMember("extfns")

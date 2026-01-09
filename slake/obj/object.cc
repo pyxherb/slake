@@ -13,7 +13,7 @@ SLAKE_API DuplicationTask DuplicationTask::makeNormal(Object **dest, Object *src
 	return task;
 }
 
-SLAKE_API DuplicationTask DuplicationTask::makeModuleMember(ModuleObject *mod, MemberObject *src) {
+SLAKE_API DuplicationTask DuplicationTask::makeModuleMember(BasicModuleObject *mod, MemberObject *src) {
 	DuplicationTask task;
 
 	task.taskType = DuplicationTaskType::ModuleMember;
@@ -59,7 +59,7 @@ SLAKE_API bool Duplicator::exec() {
 				if (!object) {
 					return false;
 				}
-				if (!(i.asModuleMember.mod->members.insert(object->name, +object))) {
+				if (!(i.asModuleMember.mod->members.insert(object->getName(), +object))) {
 					return false;
 				}
 				break;

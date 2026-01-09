@@ -303,7 +303,7 @@ SLAKE_API GenericArgTypeError *GenericArgTypeError::alloc(
 
 SLAKE_API GenericFieldInitError::GenericFieldInitError(
 	peff::Alloc *selfAllocator,
-	ModuleObject *object,
+	BasicModuleObject *object,
 	size_t idxRecord)
 	: RuntimeExecError(selfAllocator, RuntimeExecErrorCode::InvalidArgumentIndex),
 	  object(object),
@@ -320,7 +320,7 @@ SLAKE_API void GenericFieldInitError::dealloc() {
 
 SLAKE_API GenericFieldInitError *GenericFieldInitError::alloc(
 	peff::Alloc *selfAllocator,
-	ModuleObject *object,
+	BasicModuleObject *object,
 	size_t idxRecord) {
 	return peff::allocAndConstruct<GenericFieldInitError>(selfAllocator, sizeof(std::max_align_t), selfAllocator, object, idxRecord);
 }

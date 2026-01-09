@@ -567,7 +567,7 @@ SLKC_API bool Decompiler::decompileIdRef(peff::Alloc *allocator, DumpWriter *wri
 	return true;
 }
 
-SLKC_API bool Decompiler::decompileModuleMembers(peff::Alloc *allocator, DumpWriter *writer, slake::ModuleObject *moduleObject, size_t indentLevel) {
+SLKC_API bool Decompiler::decompileModuleMembers(peff::Alloc *allocator, DumpWriter *writer, slake::BasicModuleObject *moduleObject, size_t indentLevel) {
 	for (auto &i : moduleObject->fieldRecords) {
 		for (size_t j = 0; j < indentLevel; ++j) {
 			SLKC_RETURN_IF_FALSE(writer->write("\t"));
@@ -594,7 +594,7 @@ SLKC_API bool Decompiler::decompileModuleMembers(peff::Alloc *allocator, DumpWri
 
 					SLKC_RETURN_IF_FALSE(writer->write(" "));
 
-					SLKC_RETURN_IF_FALSE(writer->write(obj->name));
+					SLKC_RETURN_IF_FALSE(writer->write(obj->getName()));
 
 					if (i.second->genericParams.size()) {
 						SLKC_RETURN_IF_FALSE(writer->write("<"));
@@ -609,7 +609,7 @@ SLKC_API bool Decompiler::decompileModuleMembers(peff::Alloc *allocator, DumpWri
 						SLKC_RETURN_IF_FALSE(writer->write(">"));
 					}
 
-					SLKC_RETURN_IF_FALSE(writer->write(" "));
+					SLKC_RETURN_IF_FALSE(writer->write("("));
 
 					for (size_t j = 0; j < i.second->paramTypes.size(); ++j) {
 						if (j) {
@@ -617,6 +617,8 @@ SLKC_API bool Decompiler::decompileModuleMembers(peff::Alloc *allocator, DumpWri
 						}
 						SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, i.second->paramTypes.at(j)));
 					}
+
+					SLKC_RETURN_IF_FALSE(writer->write(")"));
 
 					switch (i.second->overloadingKind) {
 						case slake::FnOverloadingKind::Regular: {
@@ -787,7 +789,7 @@ SLKC_API bool Decompiler::decompileModuleMembers(peff::Alloc *allocator, DumpWri
 
 				SLKC_RETURN_IF_FALSE(writer->write("class "));
 
-				SLKC_RETURN_IF_FALSE(writer->write(obj->name));
+				SLKC_RETURN_IF_FALSE(writer->write(obj->getName()));
 
 				if (obj->genericParams.size()) {
 					SLKC_RETURN_IF_FALSE(writer->write("<"));
@@ -804,7 +806,8 @@ SLKC_API bool Decompiler::decompileModuleMembers(peff::Alloc *allocator, DumpWri
 
 				SLKC_RETURN_IF_FALSE(writer->write(" "));
 
-				SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, obj->baseType));
+				if (obj->baseType)
+					SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, obj->baseType));
 
 				if (obj->implTypes.size()) {
 					SLKC_RETURN_IF_FALSE(writer->write(": "));
@@ -837,7 +840,7 @@ SLKC_API bool Decompiler::decompileModuleMembers(peff::Alloc *allocator, DumpWri
 
 				SLKC_RETURN_IF_FALSE(writer->write("interface "));
 
-				SLKC_RETURN_IF_FALSE(writer->write(obj->name));
+				SLKC_RETURN_IF_FALSE(writer->write(obj->getName()));
 
 				if (obj->genericParams.size()) {
 					SLKC_RETURN_IF_FALSE(writer->write("<"));
@@ -885,7 +888,7 @@ SLKC_API bool Decompiler::decompileModuleMembers(peff::Alloc *allocator, DumpWri
 
 				SLKC_RETURN_IF_FALSE(writer->write("struct "));
 
-				SLKC_RETURN_IF_FALSE(writer->write(obj->name));
+				SLKC_RETURN_IF_FALSE(writer->write(obj->getName()));
 
 				if (obj->genericParams.size()) {
 					SLKC_RETURN_IF_FALSE(writer->write("<"));

@@ -660,7 +660,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileGenericParams(
 SLKC_API peff::Option<CompilationError> slkc::compileModule(
 	CompileEnvironment *compileEnv,
 	AstNodePtr<ModuleNode> mod,
-	slake::ModuleObject *modOut) {
+	slake::BasicModuleObject *modOut) {
 	peff::OneshotScopeGuard restoreCurParentAccessNodeGuard([compileEnv, oldNode = compileEnv->curParentAccessNode]() noexcept {
 		compileEnv->curParentAccessNode = oldNode;
 	});
@@ -686,8 +686,9 @@ SLKC_API peff::Option<CompilationError> slkc::compileModule(
 
 		SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, &compilationContext, i->idRef->entries.data(), i->idRef->entries.size(), nullptr, 0, false, {}, id));
 
-		if (!modOut->unnamedImports.pushBack(id.get())) {
-			return genOutOfRuntimeMemoryCompError();
+		if (modOut->getObjectKind() == slake::ObjectKind::Module) {
+			if (!((slake::ModuleObject*)modOut)->unnamedImports.pushBack(id.get()))
+				return genOutOfRuntimeMemoryCompError();
 		}
 	}
 
@@ -707,8 +708,9 @@ SLKC_API peff::Option<CompilationError> slkc::compileModule(
 
 			SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, &compilationContext, importNode->idRef->entries.data(), importNode->idRef->entries.size(), nullptr, 0, false, {}, id));
 
-			if (!modOut->unnamedImports.pushBack(id.get())) {
-				return genOutOfMemoryCompError();
+			if (modOut->getObjectKind() == slake::ObjectKind::Module) {
+				if (!((slake::ModuleObject *)modOut)->unnamedImports.pushBack(id.get()))
+					return genOutOfMemoryCompError();
 			}
 		}
 	}
@@ -805,7 +807,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileModule(
 
 				cls->setAccess(mod->accessModifier);
 
-				if (!cls->name.build(m->name)) {
+				if (!cls->setName(m->name)) {
 					return genOutOfRuntimeMemoryCompError();
 				}
 
@@ -1046,7 +1048,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileModule(
 					}
 				}
 
-				SLKC_RETURN_IF_COMP_ERROR(compileModule(compileEnv, clsNode.template castTo<ModuleNode>(), cls.get()));
+				SLKC_RETURN_IF_COMP_ERROR(compileModule(compileEnv, clsNode.castTo<ModuleNode>(), cls.get()));
 
 				if (!modOut->addMember(cls.get())) {
 					return genOutOfRuntimeMemoryCompError();
@@ -1065,7 +1067,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileModule(
 
 				cls->setAccess(mod->accessModifier);
 
-				if (!cls->name.build(m->name)) {
+				if (!cls->setName(m->name)) {
 					return genOutOfRuntimeMemoryCompError();
 				}
 
@@ -1130,7 +1132,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileModule(
 
 				cls->setAccess(mod->accessModifier);
 
-				if (!cls->name.build(m->name)) {
+				if (!cls->setName(m->name)) {
 					return genOutOfRuntimeMemoryCompError();
 				}
 
@@ -1240,7 +1242,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileModule(
 					return genOutOfRuntimeMemoryCompError();
 				}
 
-				if (!slotObject->name.build(slotNode->name)) {
+				if (!slotObject->setName(slotNode->name)) {
 					return genOutOfRuntimeMemoryCompError();
 				}
 

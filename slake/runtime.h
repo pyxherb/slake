@@ -253,7 +253,7 @@ namespace slake {
 
 		SLAKE_API void _destructDestructibleObjects(InstanceObject *destructibleList);
 
-		[[nodiscard]] SLAKE_API InternalExceptionPointer _instantiateModuleFields(GenericInstantiationDispatcher &dispatcher, ModuleObject *mod, GenericInstantiationContext *instantiationContext);
+		[[nodiscard]] SLAKE_API InternalExceptionPointer _instantiateModuleFields(GenericInstantiationDispatcher &dispatcher, BasicModuleObject *mod, GenericInstantiationContext *instantiationContext);
 
 		[[nodiscard]] SLAKE_API InternalExceptionPointer _mapGenericParams(const Object *v, GenericInstantiationContext *instantiationContext) const;
 		[[nodiscard]] SLAKE_API InternalExceptionPointer _mapGenericParams(const FnOverloadingObject *ol, GenericInstantiationContext *instantiationContext) const;
@@ -381,7 +381,7 @@ namespace slake {
 		SLAKE_API void gc();
 
 		[[nodiscard]] SLAKE_API InternalExceptionPointer initMethodTableForClass(ClassObject *cls, ClassObject *parentClass);
-		[[nodiscard]] SLAKE_API InternalExceptionPointer initObjectLayoutForModule(ModuleObject *mod, ObjectLayout *objectLayout);
+		[[nodiscard]] SLAKE_API InternalExceptionPointer initObjectLayoutForModule(BasicModuleObject *mod, ObjectLayout *objectLayout);
 		[[nodiscard]] SLAKE_API InternalExceptionPointer initObjectLayoutForClass(ClassObject *cls, ClassObject *parentClass);
 		[[nodiscard]] SLAKE_API InternalExceptionPointer initObjectLayoutForStruct(StructObject *s);
 		[[nodiscard]] SLAKE_API InternalExceptionPointer prepareClassForInstantiation(ClassObject *cls);

@@ -422,8 +422,6 @@ SLAKE_API FnObject::FnObject(const FnObject &x, peff::Alloc *allocator, bool &su
 				return;
 			}
 		}
-
-		parent = x.parent;
 	}
 }
 

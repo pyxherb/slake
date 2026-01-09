@@ -32,7 +32,7 @@ namespace slkc {
 		[[nodiscard]] SLKC_API bool decompileValue(peff::Alloc *allocator, DumpWriter *writer, const slake::Value &value);
 		[[nodiscard]] SLKC_API bool decompileIdRefEntries(peff::Alloc *allocator, DumpWriter *writer, const peff::DynArray<slake::IdRefEntry> &idRefIn);
 		[[nodiscard]] SLKC_API bool decompileIdRef(peff::Alloc *allocator, DumpWriter *writer, slake::IdRefObject *idRefIn);
-		[[nodiscard]] SLKC_API bool decompileModuleMembers(peff::Alloc *allocator, DumpWriter *writer, slake::ModuleObject *moduleObject, size_t indentLevel = 0);
+		[[nodiscard]] SLKC_API bool decompileModuleMembers(peff::Alloc *allocator, DumpWriter *writer, slake::BasicModuleObject *moduleObject, size_t indentLevel = 0);
 		[[nodiscard]] SLKC_API bool decompileModule(peff::Alloc *allocator, DumpWriter *writer, slake::ModuleObject *moduleObject);
 	};
 }

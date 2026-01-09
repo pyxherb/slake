@@ -24,7 +24,7 @@ namespace slake {
 		peff::RcObjectPtr<peff::Alloc> selfAllocator;
 		size_t totalSize = 0;
 		size_t alignment = 1;
-		peff::DynArray<std::pair<ModuleObject *, size_t>> fieldRecordInitModuleFieldsNumber;
+		peff::DynArray<std::pair<BasicModuleObject *, size_t>> fieldRecordInitModuleFieldsNumber;
 		peff::DynArray<ObjectFieldRecord> fieldRecords;
 		peff::HashMap<std::string_view, size_t> fieldNameMap;
 
@@ -58,7 +58,7 @@ namespace slake {
 
 	using ClassFlags = uint16_t;
 
-	class ClassObject : public ModuleObject {
+	class ClassObject : public BasicModuleObject {
 	public:
 		peff::DynArray<Value> genericArgs;
 		peff::HashMap<std::string_view, Value> mappedGenericArgs;
@@ -66,7 +66,7 @@ namespace slake {
 		GenericParamList genericParams;
 		peff::HashMap<std::string_view, size_t> mappedGenericParams;
 
-		TypeRef baseType;
+		TypeRef baseType = TypeId::Invalid;
 		peff::DynArray<TypeRef> implTypes;	// Implemented interfaces
 
 		MethodTable *cachedInstantiatedMethodTable = nullptr;
@@ -77,8 +77,6 @@ namespace slake {
 		SLAKE_API ClassObject(Runtime *rt, peff::Alloc *selfAllocator);
 		SLAKE_API ClassObject(Duplicator *duplicator, const ClassObject &x, peff::Alloc *allocator, bool &succeededOut);
 		SLAKE_API virtual ~ClassObject();
-
-		SLAKE_API virtual Reference getMember(const std::string_view &name) const override;
 
 		SLAKE_API virtual const peff::DynArray<Value> *getGenericArgs() const override;
 
@@ -99,7 +97,7 @@ namespace slake {
 		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;
 	};
 
-	class InterfaceObject : public ModuleObject {
+	class InterfaceObject : public BasicModuleObject {
 	private:
 		friend class Runtime;
 		friend class ClassObject;
@@ -139,10 +137,10 @@ namespace slake {
 
 		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;
 	};
-	
+
 	using StructFlags = uint16_t;
 
-	class StructObject : public ModuleObject {
+	class StructObject : public BasicModuleObject {
 	public:
 		peff::DynArray<Value> genericArgs;
 		peff::HashMap<std::string_view, TypeRef> mappedGenericArgs;
@@ -168,6 +166,95 @@ namespace slake {
 
 		SLAKE_API static HostObjectRef<StructObject> alloc(Runtime *rt);
 		SLAKE_API static HostObjectRef<StructObject> alloc(Duplicator *duplicator, const StructObject *other);
+		SLAKE_API virtual void dealloc() override;
+
+		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;
+	};
+
+	class EnumModuleObject : public MemberObject {
+	public:
+		peff::HashMap<std::string_view, MemberObject *> members;
+
+		SLAKE_API EnumModuleObject(Runtime *rt, peff::Alloc *selfAllocator, ObjectKind objectKind);
+		SLAKE_API EnumModuleObject(Duplicator *duplicator, const EnumModuleObject &x, peff::Alloc *allocator, bool &succeededOut);
+		SLAKE_API virtual ~EnumModuleObject();
+
+		SLAKE_API virtual Reference getMember(const std::string_view &name) const override;
+		[[nodiscard]] SLAKE_API virtual bool addMember(MemberObject *member);
+		[[nodiscard]] SLAKE_API virtual bool removeMember(const std::string_view &name);
+
+		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;
+	};
+
+	class ScopedEnumObject : public EnumModuleObject {
+	public:
+		TypeRef baseType = TypeId::Invalid;
+
+		SLAKE_API ScopedEnumObject(Runtime *rt, peff::Alloc *selfAllocator);
+		SLAKE_API ScopedEnumObject(Duplicator *duplicator, const ScopedEnumObject &x, peff::Alloc *allocator, bool &succeededOut);
+		SLAKE_API virtual ~ScopedEnumObject();
+
+		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
+
+		SLAKE_API virtual Reference getMember(const std::string_view &name) const override;
+		[[nodiscard]] SLAKE_API virtual bool addMember(MemberObject *member);
+		[[nodiscard]] SLAKE_API virtual bool removeMember(const std::string_view &name);
+
+		SLAKE_API static HostObjectRef<ScopedEnumObject> alloc(Runtime *rt);
+		SLAKE_API static HostObjectRef<ScopedEnumObject> alloc(Duplicator *duplicator, const ScopedEnumObject *other);
+		SLAKE_API virtual void dealloc() override;
+
+		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;
+	};
+
+	class UnionEnumItemObject : public BasicModuleObject {
+	public:
+		SLAKE_API UnionEnumItemObject(Runtime *rt, peff::Alloc *selfAllocator);
+		SLAKE_API UnionEnumItemObject(Duplicator *duplicator, const UnionEnumItemObject &x, peff::Alloc *allocator, bool &succeededOut);
+		SLAKE_API virtual ~UnionEnumItemObject();
+
+		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
+
+		SLAKE_API static HostObjectRef<UnionEnumItemObject> alloc(Runtime *rt);
+		SLAKE_API static HostObjectRef<UnionEnumItemObject> alloc(Duplicator *duplicator, const UnionEnumItemObject *other);
+		SLAKE_API virtual void dealloc() override;
+
+		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;
+	};
+
+	class ClassEnumObject : public EnumModuleObject {
+	public:
+		SLAKE_API ClassEnumObject(Runtime *rt, peff::Alloc *selfAllocator);
+		SLAKE_API ClassEnumObject(Duplicator *duplicator, const ClassEnumObject &x, peff::Alloc *allocator, bool &succeededOut);
+		SLAKE_API virtual ~ClassEnumObject();
+
+		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
+
+		SLAKE_API virtual Reference getMember(const std::string_view &name) const override;
+		[[nodiscard]] SLAKE_API virtual bool addMember(MemberObject *member);
+		[[nodiscard]] SLAKE_API virtual bool removeMember(const std::string_view &name);
+
+		SLAKE_API static HostObjectRef<ClassEnumObject> alloc(Runtime *rt);
+		SLAKE_API static HostObjectRef<ClassEnumObject> alloc(Duplicator *duplicator, const ClassEnumObject *other);
+		SLAKE_API virtual void dealloc() override;
+
+		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;
+	};
+
+	class StructEnumObject : public EnumModuleObject {
+	public:
+		SLAKE_API StructEnumObject(Runtime *rt, peff::Alloc *selfAllocator);
+		SLAKE_API StructEnumObject(Duplicator *duplicator, const StructEnumObject &x, peff::Alloc *allocator, bool &succeededOut);
+		SLAKE_API virtual ~StructEnumObject();
+
+		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
+
+		SLAKE_API virtual Reference getMember(const std::string_view &name) const override;
+		[[nodiscard]] SLAKE_API virtual bool addMember(MemberObject *member);
+		[[nodiscard]] SLAKE_API virtual bool removeMember(const std::string_view &name);
+
+		SLAKE_API static HostObjectRef<StructEnumObject> alloc(Runtime *rt);
+		SLAKE_API static HostObjectRef<StructEnumObject> alloc(Duplicator *duplicator, const StructEnumObject *other);
 		SLAKE_API virtual void dealloc() override;
 
 		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;

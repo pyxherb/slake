@@ -119,7 +119,7 @@ SLAKE_API InternalExceptionPointer Runtime::setGenericCache(MemberObject *object
 	return {};
 }
 
-SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateModuleFields(GenericInstantiationDispatcher &dispatcher, ModuleObject *mod, GenericInstantiationContext *instantiationContext) {
+SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateModuleFields(GenericInstantiationDispatcher &dispatcher, BasicModuleObject *mod, GenericInstantiationContext *instantiationContext) {
 	size_t szRelocatedLocalFieldStorage = 0;
 
 	HostObjectRef<ModuleObject> tmpMod;

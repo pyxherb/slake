@@ -320,7 +320,7 @@ SLKC_API peff::Option<CompilationError> slkc::dumpTypeName(
 SLKC_API peff::Option<CompilationError> slkc::dumpModuleMembers(
 	peff::Alloc *allocator,
 	Writer *writer,
-	slake::ModuleObject *mod) {
+	slake::BasicModuleObject *mod) {
 	peff::DynArray<slake::ClassObject *> collectedClasses(allocator);
 	peff::DynArray<slake::InterfaceObject *> collectedInterfaces(allocator);
 	peff::DynArray<slake::FnObject *> collectedFns(allocator);
@@ -361,22 +361,23 @@ SLKC_API peff::Option<CompilationError> slkc::dumpModuleMembers(
 	for (auto i : collectedClasses) {
 		slake::slxfmt::ClassTypeDesc desc = {};
 
-		if (i->accessModifier & slake::ACCESS_PUBLIC) {
+		slake::AccessModifier access = i->getAccess();
+		if (access & slake::ACCESS_PUBLIC) {
 			desc.flags |= slake::slxfmt::CTD_PUB;
 		}
-		if (i->accessModifier & slake::ACCESS_FINAL) {
+		if (access & slake::ACCESS_FINAL) {
 			desc.flags |= slake::slxfmt::CTD_FINAL;
 		}
 		if (i->baseType) {
 			desc.flags |= slake::slxfmt::CTD_DERIVED;
 		}
 		desc.nGenericParams = i->genericParams.size();
-		desc.lenName = i->name.size();
+		desc.lenName = i->getName().size();
 		desc.nImpls = i->implTypes.size();
 
 		SLKC_RETURN_IF_COMP_ERROR(writer->write((char *)&desc, sizeof(desc)));
 
-		SLKC_RETURN_IF_COMP_ERROR(writer->write(i->name.data(), i->name.size()));
+		SLKC_RETURN_IF_COMP_ERROR(writer->write(i->getName().data(), i->getName().size()));
 
 		for (auto &j : i->genericParams) {
 			SLKC_RETURN_IF_COMP_ERROR(dumpGenericParam(allocator, writer, j));
@@ -396,16 +397,17 @@ SLKC_API peff::Option<CompilationError> slkc::dumpModuleMembers(
 	for (auto i : collectedInterfaces) {
 		slake::slxfmt::InterfaceTypeDesc desc = {};
 
-		if (i->accessModifier & slake::ACCESS_PUBLIC) {
+		slake::AccessModifier accessModifier = i->getAccess();
+		if (accessModifier & slake::ACCESS_PUBLIC) {
 			desc.flags |= slake::slxfmt::ITD_PUB;
 		}
 		desc.nGenericParams = i->genericParams.size();
-		desc.lenName = i->name.size();
+		desc.lenName = i->getName().size();
 		desc.nParents = i->implTypes.size();
 
 		SLKC_RETURN_IF_COMP_ERROR(writer->write((char *)&desc, sizeof(desc)));
 
-		SLKC_RETURN_IF_COMP_ERROR(writer->write(i->name.data(), i->name.size()));
+		SLKC_RETURN_IF_COMP_ERROR(writer->write(i->getName().data(), i->getName().size()));
 
 		for (auto &j : i->genericParams) {
 			SLKC_RETURN_IF_COMP_ERROR(dumpGenericParam(allocator, writer, j));
@@ -422,16 +424,17 @@ SLKC_API peff::Option<CompilationError> slkc::dumpModuleMembers(
 	for (auto i : collectedStructs) {
 		slake::slxfmt::StructTypeDesc desc = {};
 
-		if (i->accessModifier & slake::ACCESS_PUBLIC) {
+		slake::AccessModifier accessModifier = i->getAccess();
+		if (accessModifier & slake::ACCESS_PUBLIC) {
 			desc.flags |= slake::slxfmt::STD_PUB;
 		}
 		desc.nGenericParams = i->genericParams.size();
-		desc.lenName = i->name.size();
+		desc.lenName = i->getName().size();
 		desc.nImpls = i->implTypes.size();
 
 		SLKC_RETURN_IF_COMP_ERROR(writer->write((char *)&desc, sizeof(desc)));
 
-		SLKC_RETURN_IF_COMP_ERROR(writer->write(i->name.data(), i->name.size()));
+		SLKC_RETURN_IF_COMP_ERROR(writer->write(i->getName().data(), i->getName().size()));
 
 		for (auto &j : i->genericParams) {
 			SLKC_RETURN_IF_COMP_ERROR(dumpGenericParam(allocator, writer, j));
@@ -446,8 +449,8 @@ SLKC_API peff::Option<CompilationError> slkc::dumpModuleMembers(
 
 	SLKC_RETURN_IF_COMP_ERROR(writer->writeU32(collectedFns.size()));
 	for (auto i : collectedFns) {
-		SLKC_RETURN_IF_COMP_ERROR(writer->writeU32(i->name.size()));
-		SLKC_RETURN_IF_COMP_ERROR(writer->write(i->name.data(), i->name.size()));
+		SLKC_RETURN_IF_COMP_ERROR(writer->writeU32(i->getName().size()));
+		SLKC_RETURN_IF_COMP_ERROR(writer->write(i->getName().data(), i->getName().size()));
 
 		SLKC_RETURN_IF_COMP_ERROR(writer->writeU32(i->overloadings.size()));
 		for (auto j : i->overloadings) {

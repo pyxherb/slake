@@ -35,7 +35,7 @@ SLAKE_API int ParamListComparator::operator()(const ParamTypeList &lhs, const Pa
 							if (auto it = j->mappedGenericParams.find(name); it != j->mappedGenericParams.end()) {
 								return { j, it.value() };
 							}
-							i = j->parent;
+							i = j->getParent();
 							break;
 						}
 						case ObjectKind::Interface: {
@@ -44,7 +44,7 @@ SLAKE_API int ParamListComparator::operator()(const ParamTypeList &lhs, const Pa
 							if (auto it = j->mappedGenericParams.find(name); it != j->mappedGenericParams.end()) {
 								return { j, it.value() };
 							}
-							i = j->parent;
+							i = j->getParent();
 							break;
 						}
 						case ObjectKind::Struct: {
@@ -53,7 +53,7 @@ SLAKE_API int ParamListComparator::operator()(const ParamTypeList &lhs, const Pa
 							if (auto it = j->mappedGenericParams.find(name); it != j->mappedGenericParams.end()) {
 								return { j, it.value() };
 							}
-							i = j->parent;
+							i = j->getParent();
 							break;
 						}
 						case ObjectKind::FnOverloading: {
@@ -143,10 +143,10 @@ SLAKE_API GenericParam *slake::getGenericParam(Object *object, const std::string
 					return &classObject->genericParams.at(idxGenericParam);
 				}
 
-				if (!classObject->parent)
+				if (!classObject->getParent())
 					return nullptr;
 
-				object = classObject->parent;
+				object = classObject->getParent();
 
 				break;
 			}
@@ -159,10 +159,10 @@ SLAKE_API GenericParam *slake::getGenericParam(Object *object, const std::string
 					return &interfaceObject->genericParams.at(idxGenericParam);
 				}
 
-				if (!interfaceObject->parent)
+				if (!interfaceObject->getParent())
 					return nullptr;
 
-				object = interfaceObject->parent;
+				object = interfaceObject->getParent();
 
 				break;
 			}
@@ -175,10 +175,10 @@ SLAKE_API GenericParam *slake::getGenericParam(Object *object, const std::string
 					return &fnOverloadingObject->genericParams.at(idxGenericParam);
 				}
 
-				if (!fnOverloadingObject->fnObject->parent)
+				if (!fnOverloadingObject->fnObject->getParent())
 					return nullptr;
 
-				object = fnOverloadingObject->fnObject->parent;
+				object = fnOverloadingObject->fnObject->getParent();
 
 				break;
 			}

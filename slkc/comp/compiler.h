@@ -660,7 +660,7 @@ namespace slkc {
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> compileModule(
 		CompileEnvironment *compileEnv,
 		AstNodePtr<ModuleNode> mod,
-		slake::ModuleObject *modOut);
+		slake::BasicModuleObject *modOut);
 
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> reindexFnParams(
 		CompileEnvironment *compileEnv,
@@ -814,7 +814,7 @@ namespace slkc {
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> dumpModuleMembers(
 		peff::Alloc *allocator,
 		Writer *writer,
-		slake::ModuleObject *mod);
+		slake::BasicModuleObject *mod);
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> dumpModule(
 		peff::Alloc *allocator,
 		Writer *writer,

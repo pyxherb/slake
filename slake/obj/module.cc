@@ -6,11 +6,20 @@ SLAKE_API void FieldRecord::replaceAllocator(peff::Alloc *allocator) noexcept {
 	name.replaceAllocator(allocator);
 }
 
-SLAKE_API ModuleObject::ModuleObject(Runtime *rt, peff::Alloc *selfAllocator, ObjectKind objectKind)
-	: MemberObject(rt, selfAllocator, objectKind), members(selfAllocator), localFieldStorage(selfAllocator), fieldRecords(selfAllocator), fieldRecordIndices(selfAllocator), unnamedImports(selfAllocator) {
+SLAKE_API BasicModuleObject::BasicModuleObject(Runtime *rt, peff::Alloc *selfAllocator, ObjectKind objectKind)
+	: MemberObject(rt, selfAllocator, objectKind),
+	  members(selfAllocator),
+	  localFieldStorage(selfAllocator),
+	  fieldRecords(selfAllocator),
+	  fieldRecordIndices(selfAllocator) {
 }
 
-SLAKE_API ModuleObject::ModuleObject(Duplicator *duplicator, const ModuleObject &x, peff::Alloc *allocator, bool &succeededOut) : MemberObject(x, allocator, succeededOut), members(allocator), fieldRecords(allocator), localFieldStorage(allocator), fieldRecordIndices(allocator), unnamedImports(allocator) {
+SLAKE_API BasicModuleObject::BasicModuleObject(Duplicator *duplicator, const BasicModuleObject &x, peff::Alloc *allocator, bool &succeededOut)
+	: MemberObject(x, allocator, succeededOut),
+	  members(allocator),
+	  fieldRecords(allocator),
+	  localFieldStorage(allocator),
+	  fieldRecordIndices(allocator) {
 	if (succeededOut) {
 		if (!fieldRecords.resizeUninitialized(x.fieldRecords.size())) {
 			succeededOut = false;
@@ -42,17 +51,6 @@ SLAKE_API ModuleObject::ModuleObject(Duplicator *duplicator, const ModuleObject 
 			return;
 		}
 		memcpy(localFieldStorage.data(), x.localFieldStorage.data(), localFieldStorage.size());
-
-		if (!unnamedImports.resize(x.unnamedImports.size())) {
-			succeededOut = false;
-			return;
-		}
-		memcpy(unnamedImports.data(), x.unnamedImports.data(), unnamedImports.size() * sizeof(void *));
-		if (!name.build(x.name)) {
-			succeededOut = false;
-			return;
-		}
-		parent = x.parent;
 		for (auto i = x.members.begin(); i != x.members.end(); ++i) {
 			if (!duplicator->insertTask(DuplicationTask::makeModuleMember(this, i.value()))) {
 				succeededOut = false;
@@ -62,16 +60,12 @@ SLAKE_API ModuleObject::ModuleObject(Duplicator *duplicator, const ModuleObject 
 	}
 }
 
-SLAKE_API ModuleObject::~ModuleObject() {
+SLAKE_API BasicModuleObject::~BasicModuleObject() {
 }
 
-SLAKE_API Object *ModuleObject::duplicate(Duplicator *duplicator) const {
-	return (Object *)alloc(duplicator, this).get();
-}
-
-SLAKE_API Reference ModuleObject::getMember(const std::string_view &name) const {
+SLAKE_API Reference BasicModuleObject::getMember(const std::string_view &name) const {
 	if (auto it = fieldRecordIndices.find(name); it != fieldRecordIndices.endConst()) {
-		return Reference::makeStaticFieldRef((ModuleObject *)this, it.value());
+		return Reference::makeStaticFieldRef((BasicModuleObject *)this, it.value());
 	}
 	if (auto it = members.find(name); it != members.end()) {
 		return Reference::makeObjectRef(it.value());
@@ -79,18 +73,18 @@ SLAKE_API Reference ModuleObject::getMember(const std::string_view &name) const 
 	return Reference::makeInvalidRef();
 }
 
-SLAKE_API bool ModuleObject::addMember(MemberObject *member) {
-	if (!members.insert(member->name, +member))
+SLAKE_API bool BasicModuleObject::addMember(MemberObject *member) {
+	if (!members.insert(member->getName(), +member))
 		return false;
 	member->setParent(this);
 	return true;
 }
 
-SLAKE_API bool ModuleObject::removeMember(const std::string_view &name) {
+SLAKE_API bool BasicModuleObject::removeMember(const std::string_view &name) {
 	return members.remove(name);
 }
 
-SLAKE_API bool ModuleObject::appendFieldRecord(FieldRecord &&fieldRecord) {
+SLAKE_API bool BasicModuleObject::appendFieldRecord(FieldRecord &&fieldRecord) {
 	_checkFieldsValidity();
 
 	if (!fieldRecords.pushBack(std::move(fieldRecord))) {
@@ -115,7 +109,7 @@ SLAKE_API bool ModuleObject::appendFieldRecord(FieldRecord &&fieldRecord) {
 	return true;
 }
 
-SLAKE_API bool ModuleObject::appendFieldRecordWithoutAlloc(FieldRecord &&fieldRecord) {
+SLAKE_API bool BasicModuleObject::appendFieldRecordWithoutAlloc(FieldRecord &&fieldRecord) {
 	if (!fieldRecords.pushBack(std::move(fieldRecord))) {
 		return false;
 	}
@@ -130,7 +124,7 @@ SLAKE_API bool ModuleObject::appendFieldRecordWithoutAlloc(FieldRecord &&fieldRe
 	return true;
 }
 
-SLAKE_API char *ModuleObject::appendFieldSpace(size_t size, size_t alignment) {
+SLAKE_API char *BasicModuleObject::appendFieldSpace(size_t size, size_t alignment) {
 	size_t originalSize = localFieldStorage.size();
 	size_t beginOff, sizeIncrement = 0;
 
@@ -151,13 +145,13 @@ SLAKE_API char *ModuleObject::appendFieldSpace(size_t size, size_t alignment) {
 	return localFieldStorage.data() + beginOff;
 }
 
-SLAKE_API char *ModuleObject::appendTypedFieldSpace(const TypeRef &type) {
+SLAKE_API char *BasicModuleObject::appendTypedFieldSpace(const TypeRef &type) {
 	return appendFieldSpace(associatedRuntime->sizeofType(type), associatedRuntime->alignofType(type));
 }
 
-SLAKE_API bool ModuleObject::reallocFieldSpaces() noexcept {
+SLAKE_API bool BasicModuleObject::reallocFieldSpaces() noexcept {
 	localFieldStorage.clear();
-	for (auto& i : fieldRecords) {
+	for (auto &i : fieldRecords) {
 		if (char *p = appendTypedFieldSpace(i.type); p) {
 			i.offset = p - localFieldStorage.data();
 		} else {
@@ -167,6 +161,50 @@ SLAKE_API bool ModuleObject::reallocFieldSpaces() noexcept {
 	}
 	moduleFlags &= ~_MOD_FIELDS_VALID;
 	return true;
+}
+
+SLAKE_API void BasicModuleObject::replaceAllocator(peff::Alloc *allocator) noexcept {
+	this->MemberObject::replaceAllocator(allocator);
+
+	members.replaceAllocator(allocator);
+
+	localFieldStorage.replaceAllocator(allocator);
+
+	fieldRecords.replaceAllocator(allocator);
+
+	for (auto &i : fieldRecords) {
+		i.replaceAllocator(allocator);
+	}
+
+	fieldRecordIndices.replaceAllocator(allocator);
+}
+
+SLAKE_API ModuleObject::ModuleObject(Runtime *rt, peff::Alloc *selfAllocator)
+	: BasicModuleObject(rt, selfAllocator, ObjectKind::Module), unnamedImports(selfAllocator) {
+}
+
+SLAKE_API ModuleObject::ModuleObject(Duplicator *duplicator, const ModuleObject &x, peff::Alloc *allocator, bool &succeededOut)
+	: BasicModuleObject(duplicator, x, allocator, succeededOut), unnamedImports(allocator) {
+	if (succeededOut) {
+		if (!unnamedImports.resize(x.unnamedImports.size())) {
+			succeededOut = false;
+			return;
+		}
+		memcpy(unnamedImports.data(), x.unnamedImports.data(), unnamedImports.size() * sizeof(void *));
+		for (auto i = x.members.begin(); i != x.members.end(); ++i) {
+			if (!duplicator->insertTask(DuplicationTask::makeModuleMember(this, i.value()))) {
+				succeededOut = false;
+				return;
+			}
+		}
+	}
+}
+
+SLAKE_API ModuleObject::~ModuleObject() {
+}
+
+SLAKE_API Object *ModuleObject::duplicate(Duplicator *duplicator) const {
+	return (Object *)alloc(duplicator, this).get();
 }
 
 SLAKE_API HostObjectRef<ModuleObject> slake::ModuleObject::alloc(Runtime *rt) {
@@ -193,19 +231,7 @@ SLAKE_API void slake::ModuleObject::dealloc() {
 }
 
 SLAKE_API void ModuleObject::replaceAllocator(peff::Alloc *allocator) noexcept {
-	this->MemberObject::replaceAllocator(allocator);
-
-	members.replaceAllocator(allocator);
-
-	localFieldStorage.replaceAllocator(allocator);
-
-	fieldRecords.replaceAllocator(allocator);
-
-	for (auto &i : fieldRecords) {
-		i.replaceAllocator(allocator);
-	}
-
-	fieldRecordIndices.replaceAllocator(allocator);
+	this->BasicModuleObject::replaceAllocator(allocator);
 
 	unnamedImports.replaceAllocator(allocator);
 

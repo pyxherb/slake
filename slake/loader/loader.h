@@ -27,10 +27,10 @@ namespace slake {
 		SLAKE_API InternalExceptionPointer loadValue(LoaderContext &context, Runtime *runtime, Reader *reader, Object *member, Value &valueOut) noexcept;
 		SLAKE_API InternalExceptionPointer loadIdRefEntries(LoaderContext &context, Runtime *runtime, Reader *reader, Object *member, peff::DynArray<IdRefEntry> &entriesOut) noexcept;
 		SLAKE_API InternalExceptionPointer loadIdRef(LoaderContext &context, Runtime *runtime, Reader *reader, Object *member, HostObjectRef<IdRefObject> &idRefOut) noexcept;
-		SLAKE_API InternalExceptionPointer loadModuleMembers(LoaderContext &context, Runtime *runtime, Reader *reader, ModuleObject *moduleObject) noexcept;
+		SLAKE_API InternalExceptionPointer loadModuleMembers(LoaderContext &context, Runtime *runtime, Reader *reader, BasicModuleObject *moduleObject) noexcept;
 		SLAKE_API InternalExceptionPointer loadModule(LoaderContext &context, Runtime *runtime, Reader *reader, HostObjectRef<ModuleObject> &moduleObjectOut) noexcept;
 
-		SLAKE_API InternalExceptionPointer completeParentNamespaces(LoaderContext &context, Runtime *runtime, ModuleObject *moduleObject, const peff::DynArray<IdRefEntry> &ref) noexcept;
+		SLAKE_API InternalExceptionPointer completeParentNamespaces(LoaderContext &context, Runtime *runtime, BasicModuleObject *moduleObject, const peff::DynArray<IdRefEntry> &ref) noexcept;
 	}
 }
 

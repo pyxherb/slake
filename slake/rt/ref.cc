@@ -107,7 +107,7 @@ SLAKE_API bool Runtime::getFullRef(peff::Alloc *allocator, const MemberObject *v
 				break;
 		}
 
-		std::string_view name = v->name;
+		std::string_view name = v->getName();
 		peff::String copiedName(allocator);
 		if (!copiedName.build(name)) {
 			return false;
@@ -125,7 +125,7 @@ SLAKE_API bool Runtime::getFullRef(peff::Alloc *allocator, const MemberObject *v
 			return false;
 		}
 
-		v = (MemberObject *)v->parent;
+		v = (MemberObject *)v->getParent();
 	};
 	return true;
 }

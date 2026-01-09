@@ -26,7 +26,7 @@ SLAKE_API InternalExceptionPointer Runtime::initMethodTableForClass(ClassObject 
 				if (!fnSlot) {
 					return OutOfMemoryError::alloc();
 				}
-				if (!fnSlot->name.build(((FnObject *)it.value())->name)) {
+				if (!fnSlot->setName(((FnObject *)it.value())->getName())) {
 					return OutOfMemoryError::alloc();
 				}
 
@@ -50,7 +50,7 @@ SLAKE_API InternalExceptionPointer Runtime::initMethodTableForClass(ClassObject 
 					}
 
 					if (parentMt) {
-						if (auto m = parentMt->getMethod(fn->name); m) {
+						if (auto m = parentMt->getMethod(fn->getName()); m) {
 							if (m->overloadings.size()) {
 								// Link the method with method inherited from the parent.
 								for (auto k : m->overloadings) {
@@ -66,7 +66,7 @@ SLAKE_API InternalExceptionPointer Runtime::initMethodTableForClass(ClassObject 
 				}
 
 				if (fnSlot->overloadings.size()) {
-					if (!methodTable->methods.insert(fnSlot->name, fnSlot.get()))
+					if (!methodTable->methods.insert(fnSlot->getName(), fnSlot.get()))
 						return OutOfMemoryError::alloc();
 				}
 
@@ -80,7 +80,7 @@ SLAKE_API InternalExceptionPointer Runtime::initMethodTableForClass(ClassObject 
 	return {};
 }
 
-SLAKE_API InternalExceptionPointer Runtime::initObjectLayoutForModule(ModuleObject *mod, ObjectLayout *objectLayout) {
+SLAKE_API InternalExceptionPointer Runtime::initObjectLayoutForModule(BasicModuleObject *mod, ObjectLayout *objectLayout) {
 	size_t cnt = 0;
 	for (size_t i = 0; i < mod->fieldRecords.size(); ++i) {
 		FieldRecord &clsFieldRecord = mod->fieldRecords.at(i);
@@ -276,7 +276,7 @@ SLAKE_API HostObjectRef<InstanceObject> slake::Runtime::newClassInstance(ClassOb
 	// Initialize the fields.
 	//
 	size_t index = 0, cnt = 0;
-	std::pair<ModuleObject *, size_t> p = cls->cachedObjectLayout->fieldRecordInitModuleFieldsNumber.at(0);
+	std::pair<BasicModuleObject *, size_t> p = cls->cachedObjectLayout->fieldRecordInitModuleFieldsNumber.at(0);
 
 	for (size_t i = 0; i < cls->fieldRecords.size(); ++i) {
 		const ObjectFieldRecord &fieldRecord = cls->cachedObjectLayout->fieldRecords.at(i);

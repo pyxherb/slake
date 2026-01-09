@@ -40,7 +40,7 @@ namespace slake {
 	constexpr ModuleFlags
 		_MOD_FIELDS_VALID = 0x80000000;
 
-	class ModuleObject : public MemberObject {
+	class BasicModuleObject : public MemberObject {
 	public:
 		ModuleFlags moduleFlags = 0;
 
@@ -50,13 +50,9 @@ namespace slake {
 		peff::DynArray<FieldRecord> fieldRecords;
 		peff::HashMap<std::string_view, size_t> fieldRecordIndices;
 
-		peff::DynArray<IdRefObject *> unnamedImports;
-
-		SLAKE_API ModuleObject(Runtime *rt, peff::Alloc *selfAllocator, ObjectKind objectKind = ObjectKind::Module);
-		SLAKE_API ModuleObject(Duplicator *duplicator, const ModuleObject &x, peff::Alloc *allocator, bool &succeededOut);
-		SLAKE_API virtual ~ModuleObject();
-
-		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
+		SLAKE_API BasicModuleObject(Runtime *rt, peff::Alloc *selfAllocator, ObjectKind objectKind);
+		SLAKE_API BasicModuleObject(Duplicator *duplicator, const BasicModuleObject &x, peff::Alloc *allocator, bool &succeededOut);
+		SLAKE_API virtual ~BasicModuleObject();
 
 		SLAKE_API virtual Reference getMember(const std::string_view &name) const override;
 		[[nodiscard]] SLAKE_API virtual bool addMember(MemberObject *member);
@@ -69,10 +65,6 @@ namespace slake {
 
 		SLAKE_API bool reallocFieldSpaces() noexcept;
 
-		SLAKE_API static HostObjectRef<ModuleObject> alloc(Runtime *rt);
-		SLAKE_API static HostObjectRef<ModuleObject> alloc(Duplicator *duplicator, const ModuleObject *other);
-		SLAKE_API virtual void dealloc() override;
-
 		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;
 
 	private:
@@ -82,6 +74,23 @@ namespace slake {
 				// The user should use `appendFieldRecordWithoutAlloc` instead.
 				std::terminate();
 		}
+	};
+
+	class ModuleObject : public BasicModuleObject {
+	public:
+		peff::DynArray<IdRefObject *> unnamedImports;
+
+		SLAKE_API ModuleObject(Runtime *rt, peff::Alloc *selfAllocator);
+		SLAKE_API ModuleObject(Duplicator *duplicator, const ModuleObject &x, peff::Alloc *allocator, bool &succeededOut);
+		SLAKE_API virtual ~ModuleObject();
+
+		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
+
+		SLAKE_API static HostObjectRef<ModuleObject> alloc(Runtime *rt);
+		SLAKE_API static HostObjectRef<ModuleObject> alloc(Duplicator *duplicator, const ModuleObject *other);
+		SLAKE_API virtual void dealloc() override;
+
+		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;
 	};
 }
 

@@ -38,7 +38,7 @@ namespace slake {
 	class StructObject;
 
 	struct StaticFieldRef {
-		ModuleObject *moduleObject;
+		BasicModuleObject *moduleObject;
 		uint32_t index;
 	};
 
@@ -126,7 +126,7 @@ namespace slake {
 			return ref;
 		}
 
-		static SLAKE_FORCEINLINE Reference makeStaticFieldRef(ModuleObject *moduleObject, size_t index) {
+		static SLAKE_FORCEINLINE Reference makeStaticFieldRef(BasicModuleObject *moduleObject, size_t index) {
 			Reference ref = {};
 
 			ref.asStaticField.moduleObject = moduleObject;

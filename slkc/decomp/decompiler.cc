@@ -206,6 +206,84 @@ SLKC_API bool Decompiler::decompileTypeName(peff::Alloc *allocator, DumpWriter *
 			}
 			break;
 		}
+		case slake::TypeId::ScopedEnum: {
+			auto obj = type.getCustomTypeDef();
+
+			slake::Runtime *runtime = obj->associatedRuntime;
+
+			switch (obj->typeObject->getObjectKind()) {
+				case slake::ObjectKind::Struct: {
+					SLKC_RETURN_IF_FALSE(writer->write("enum "));
+
+					peff::DynArray<slake::IdRefEntry> moduleFullName(allocator);
+
+					if (!runtime->getFullRef(allocator, (slake::MemberObject *)obj->typeObject, moduleFullName))
+						return false;
+
+					break;
+				}
+				case slake::ObjectKind::IdRef: {
+					SLKC_RETURN_IF_FALSE(writer->write("enum "));
+					SLKC_RETURN_IF_FALSE(decompileIdRef(allocator, writer, (slake::IdRefObject *)obj->typeObject));
+					break;
+				}
+				default:
+					std::terminate();
+			}
+			break;
+		}
+		case slake::TypeId::UnionEnum: {
+			auto obj = type.getCustomTypeDef();
+
+			slake::Runtime *runtime = obj->associatedRuntime;
+
+			switch (obj->typeObject->getObjectKind()) {
+				case slake::ObjectKind::Struct: {
+					SLKC_RETURN_IF_FALSE(writer->write("enum union "));
+
+					peff::DynArray<slake::IdRefEntry> moduleFullName(allocator);
+
+					if (!runtime->getFullRef(allocator, (slake::MemberObject *)obj->typeObject, moduleFullName))
+						return false;
+
+					break;
+				}
+				case slake::ObjectKind::IdRef: {
+					SLKC_RETURN_IF_FALSE(writer->write("enum union "));
+					SLKC_RETURN_IF_FALSE(decompileIdRef(allocator, writer, (slake::IdRefObject *)obj->typeObject));
+					break;
+				}
+				default:
+					std::terminate();
+			}
+			break;
+		}
+		case slake::TypeId::UnionEnumItem: {
+			auto obj = type.getCustomTypeDef();
+
+			slake::Runtime *runtime = obj->associatedRuntime;
+
+			switch (obj->typeObject->getObjectKind()) {
+				case slake::ObjectKind::Struct: {
+					SLKC_RETURN_IF_FALSE(writer->write("enum struct "));
+
+					peff::DynArray<slake::IdRefEntry> moduleFullName(allocator);
+
+					if (!runtime->getFullRef(allocator, (slake::MemberObject *)obj->typeObject, moduleFullName))
+						return false;
+
+					break;
+				}
+				case slake::ObjectKind::IdRef: {
+					SLKC_RETURN_IF_FALSE(writer->write("enum struct "));
+					SLKC_RETURN_IF_FALSE(decompileIdRef(allocator, writer, (slake::IdRefObject *)obj->typeObject));
+					break;
+				}
+				default:
+					std::terminate();
+			}
+			break;
+		}
 		case slake::TypeId::GenericArg: {
 			auto obj = type.getGenericArgTypeDef();
 

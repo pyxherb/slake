@@ -130,6 +130,7 @@ SLKC_API peff::Option<LexicalError> Lexer::lex(ModuleNode *moduleNode, const std
 				<InitialCondition>"true"		{ token->tokenId = TokenId::TrueKeyword; break; }
 				<InitialCondition>"try"			{ token->tokenId = TokenId::TryKeyword; break; }
 				<InitialCondition>"using"		{ token->tokenId = TokenId::UsingKeyword; break; }
+				<InitialCondition>"union"		{ token->tokenId = TokenId::UnionKeyword; break; }
 				<InitialCondition>"var"			{ token->tokenId = TokenId::VarKeyword; break; }
 				<InitialCondition>"virtual"		{ token->tokenId = TokenId::VirtualKeyword; break; }
 				<InitialCondition>"with"		{ token->tokenId = TokenId::WithKeyword; break; }

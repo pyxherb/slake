@@ -270,6 +270,69 @@ SLKC_API peff::Option<CompilationError> slkc::dumpTypeName(
 			}
 			break;
 		}
+		case slake::TypeId::ScopedEnum: {
+			SLKC_RETURN_IF_COMP_ERROR(writer->writeU8((uint8_t)slake::slxfmt::TypeId::ScopedEnum));
+			slake::Object *dest = type.getCustomTypeDef()->typeObject;
+			switch (dest->getObjectKind()) {
+				case slake::ObjectKind::IdRef: {
+					SLKC_RETURN_IF_COMP_ERROR(dumpIdRef(allocator, writer, (slake::IdRefObject *)dest));
+					break;
+				}
+				case slake::ObjectKind::Struct: {
+					peff::DynArray<slake::IdRefEntry> entries(allocator);
+					if (!dest->associatedRuntime->getFullRef(allocator, (slake::MemberObject *)dest, entries)) {
+						return genOutOfMemoryCompError();
+					}
+					SLKC_RETURN_IF_COMP_ERROR(dumpIdRefEntries(allocator, writer, entries));
+					break;
+				}
+				default:
+					std::terminate();
+			}
+			break;
+		}
+		case slake::TypeId::UnionEnum: {
+			SLKC_RETURN_IF_COMP_ERROR(writer->writeU8((uint8_t)slake::slxfmt::TypeId::UnionEnum));
+			slake::Object *dest = type.getCustomTypeDef()->typeObject;
+			switch (dest->getObjectKind()) {
+				case slake::ObjectKind::IdRef: {
+					SLKC_RETURN_IF_COMP_ERROR(dumpIdRef(allocator, writer, (slake::IdRefObject *)dest));
+					break;
+				}
+				case slake::ObjectKind::Struct: {
+					peff::DynArray<slake::IdRefEntry> entries(allocator);
+					if (!dest->associatedRuntime->getFullRef(allocator, (slake::MemberObject *)dest, entries)) {
+						return genOutOfMemoryCompError();
+					}
+					SLKC_RETURN_IF_COMP_ERROR(dumpIdRefEntries(allocator, writer, entries));
+					break;
+				}
+				default:
+					std::terminate();
+			}
+			break;
+		}
+		case slake::TypeId::UnionEnumItem: {
+			SLKC_RETURN_IF_COMP_ERROR(writer->writeU8((uint8_t)slake::slxfmt::TypeId::UnionEnumItem));
+			slake::Object *dest = type.getCustomTypeDef()->typeObject;
+			switch (dest->getObjectKind()) {
+				case slake::ObjectKind::IdRef: {
+					SLKC_RETURN_IF_COMP_ERROR(dumpIdRef(allocator, writer, (slake::IdRefObject *)dest));
+					break;
+				}
+				case slake::ObjectKind::Struct: {
+					peff::DynArray<slake::IdRefEntry> entries(allocator);
+					if (!dest->associatedRuntime->getFullRef(allocator, (slake::MemberObject *)dest, entries)) {
+						return genOutOfMemoryCompError();
+					}
+					SLKC_RETURN_IF_COMP_ERROR(dumpIdRefEntries(allocator, writer, entries));
+					break;
+				}
+				default:
+					std::terminate();
+			}
+			break;
+		}
 		case slake::TypeId::GenericArg: {
 			SLKC_RETURN_IF_COMP_ERROR(writer->writeU8((uint8_t)slake::slxfmt::TypeId::GenericArg));
 			slake::StringObject *dest = type.getGenericArgTypeDef()->nameObject;

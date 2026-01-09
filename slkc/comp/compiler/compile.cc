@@ -116,6 +116,79 @@ SLKC_API peff::Option<CompilationError> slkc::compileTypeName(
 					typeOut = slake::TypeRef(slake::TypeId::StructInstance, typeDef.get());
 					break;
 				}
+				case AstNodeType::ScopedEnum: {
+					slake::HostObjectRef<slake::CustomTypeDefObject> typeDef;
+
+					if (!(typeDef = slake::CustomTypeDefObject::alloc(compileEnv->runtime))) {
+						return genOutOfRuntimeMemoryCompError();
+					}
+
+					IdRefPtr fullName;
+
+					SLKC_RETURN_IF_COMP_ERROR(getFullIdRef(doc->allocator.get(), m, fullName));
+
+					slake::HostObjectRef<slake::IdRefObject> obj;
+
+					SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, compilationContext, fullName->entries.data(), fullName->entries.size(), nullptr, 0, false, {}, obj));
+
+					if (!(compileEnv->hostRefHolder.addObject(obj.get()))) {
+						return genOutOfMemoryCompError();
+					}
+
+					typeDef->typeObject = obj.get();
+
+					typeOut = slake::TypeRef(slake::TypeId::ScopedEnum, typeDef.get());
+					break;
+				}
+				case AstNodeType::UnionEnum: {
+					slake::HostObjectRef<slake::CustomTypeDefObject> typeDef;
+
+					if (!(typeDef = slake::CustomTypeDefObject::alloc(compileEnv->runtime))) {
+						return genOutOfRuntimeMemoryCompError();
+					}
+
+					IdRefPtr fullName;
+
+					SLKC_RETURN_IF_COMP_ERROR(getFullIdRef(doc->allocator.get(), m, fullName));
+
+					slake::HostObjectRef<slake::IdRefObject> obj;
+
+					SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, compilationContext, fullName->entries.data(), fullName->entries.size(), nullptr, 0, false, {}, obj));
+
+					if (!(compileEnv->hostRefHolder.addObject(obj.get()))) {
+						return genOutOfMemoryCompError();
+					}
+
+					typeDef->typeObject = obj.get();
+
+					typeOut = slake::TypeRef(slake::TypeId::UnionEnum, typeDef.get());
+					break;
+				}
+				case AstNodeType::UnionEnumItem:
+				case AstNodeType::RecordUnionEnumItem: {
+					slake::HostObjectRef<slake::CustomTypeDefObject> typeDef;
+
+					if (!(typeDef = slake::CustomTypeDefObject::alloc(compileEnv->runtime))) {
+						return genOutOfRuntimeMemoryCompError();
+					}
+
+					IdRefPtr fullName;
+
+					SLKC_RETURN_IF_COMP_ERROR(getFullIdRef(doc->allocator.get(), m, fullName));
+
+					slake::HostObjectRef<slake::IdRefObject> obj;
+
+					SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, compilationContext, fullName->entries.data(), fullName->entries.size(), nullptr, 0, false, {}, obj));
+
+					if (!(compileEnv->hostRefHolder.addObject(obj.get()))) {
+						return genOutOfMemoryCompError();
+					}
+
+					typeDef->typeObject = obj.get();
+
+					typeOut = slake::TypeRef(slake::TypeId::UnionEnumItem, typeDef.get());
+					break;
+				}
 				case AstNodeType::GenericParam: {
 					slake::HostObjectRef<slake::GenericArgTypeDefObject> typeDef;
 

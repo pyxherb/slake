@@ -799,46 +799,46 @@ SLAKE_API void UnionEnumItemObject::replaceAllocator(peff::Alloc *allocator) noe
 	this->BasicModuleObject::replaceAllocator(allocator);
 }
 
-SLAKE_API ClassEnumObject::ClassEnumObject(Runtime *rt, peff::Alloc *selfAllocator)
-	: EnumModuleObject(rt, selfAllocator, ObjectKind::ClassEnum) {
+SLAKE_API UnionEnumObject::UnionEnumObject(Runtime *rt, peff::Alloc *selfAllocator)
+	: EnumModuleObject(rt, selfAllocator, ObjectKind::UnionEnum) {
 }
 
-SLAKE_API ClassEnumObject::ClassEnumObject(Duplicator *duplicator, const ClassEnumObject &x, peff::Alloc *allocator, bool &succeededOut)
+SLAKE_API UnionEnumObject::UnionEnumObject(Duplicator *duplicator, const UnionEnumObject &x, peff::Alloc *allocator, bool &succeededOut)
 	: EnumModuleObject(duplicator, x, allocator, succeededOut) {
 	if (succeededOut) {
 	}
 }
 
-SLAKE_API ClassEnumObject::~ClassEnumObject() {
+SLAKE_API UnionEnumObject::~UnionEnumObject() {
 }
 
-SLAKE_API Object *ClassEnumObject::duplicate(Duplicator *duplicator) const {
+SLAKE_API Object *UnionEnumObject::duplicate(Duplicator *duplicator) const {
 	return (Object *)alloc(duplicator, this).get();
 }
 
-SLAKE_API Reference ClassEnumObject::getMember(const std::string_view &name) const {
+SLAKE_API Reference UnionEnumObject::getMember(const std::string_view &name) const {
 	if (auto it = members.find(name); it != members.end()) {
 		return Reference::makeObjectRef(it.value());
 	}
 	return Reference::makeInvalidRef();
 }
 
-SLAKE_API bool ClassEnumObject::addMember(MemberObject *member) {
+SLAKE_API bool UnionEnumObject::addMember(MemberObject *member) {
 	if (!members.insert(member->getName(), +member))
 		return false;
 	member->setParent(this);
 	return true;
 }
 
-SLAKE_API bool ClassEnumObject::removeMember(const std::string_view &name) {
+SLAKE_API bool UnionEnumObject::removeMember(const std::string_view &name) {
 	return members.remove(name);
 }
 
-SLAKE_API HostObjectRef<ClassEnumObject> ClassEnumObject::alloc(Runtime *rt) {
+SLAKE_API HostObjectRef<UnionEnumObject> UnionEnumObject::alloc(Runtime *rt) {
 	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();
 
-	std::unique_ptr<ClassEnumObject, peff::DeallocableDeleter<ClassEnumObject>> ptr(
-		peff::allocAndConstruct<ClassEnumObject>(curGenerationAllocator.get(), sizeof(std::max_align_t), rt, curGenerationAllocator.get()));
+	std::unique_ptr<UnionEnumObject, peff::DeallocableDeleter<UnionEnumObject>> ptr(
+		peff::allocAndConstruct<UnionEnumObject>(curGenerationAllocator.get(), sizeof(std::max_align_t), rt, curGenerationAllocator.get()));
 
 	if (!ptr)
 		return nullptr;
@@ -849,79 +849,15 @@ SLAKE_API HostObjectRef<ClassEnumObject> ClassEnumObject::alloc(Runtime *rt) {
 	return ptr.release();
 }
 
-SLAKE_API HostObjectRef<ClassEnumObject> ClassEnumObject::alloc(Duplicator *duplicator, const ClassEnumObject *other) {
-	return (ClassEnumObject *)other->duplicate(duplicator);
+SLAKE_API HostObjectRef<UnionEnumObject> UnionEnumObject::alloc(Duplicator *duplicator, const UnionEnumObject *other) {
+	return (UnionEnumObject *)other->duplicate(duplicator);
 }
 
-SLAKE_API void ClassEnumObject::dealloc() {
-	peff::destroyAndRelease<ClassEnumObject>(selfAllocator.get(), this, sizeof(std::max_align_t));
+SLAKE_API void UnionEnumObject::dealloc() {
+	peff::destroyAndRelease<UnionEnumObject>(selfAllocator.get(), this, sizeof(std::max_align_t));
 }
 
-SLAKE_API void ClassEnumObject::replaceAllocator(peff::Alloc *allocator) noexcept {
-	this->MemberObject::replaceAllocator(allocator);
-
-	members.replaceAllocator(allocator);
-}
-
-SLAKE_API StructEnumObject::StructEnumObject(Runtime *rt, peff::Alloc *selfAllocator)
-	: EnumModuleObject(rt, selfAllocator, ObjectKind::StructEnum) {
-}
-
-SLAKE_API StructEnumObject::StructEnumObject(Duplicator *duplicator, const StructEnumObject &x, peff::Alloc *allocator, bool &succeededOut)
-	: EnumModuleObject(duplicator, x, allocator, succeededOut) {
-	if (succeededOut) {
-	}
-}
-
-SLAKE_API StructEnumObject::~StructEnumObject() {
-}
-
-SLAKE_API Object *StructEnumObject::duplicate(Duplicator *duplicator) const {
-	return (Object *)alloc(duplicator, this).get();
-}
-
-SLAKE_API Reference StructEnumObject::getMember(const std::string_view &name) const {
-	if (auto it = members.find(name); it != members.end()) {
-		return Reference::makeObjectRef(it.value());
-	}
-	return Reference::makeInvalidRef();
-}
-
-SLAKE_API bool StructEnumObject::addMember(MemberObject *member) {
-	if (!members.insert(member->getName(), +member))
-		return false;
-	member->setParent(this);
-	return true;
-}
-
-SLAKE_API bool StructEnumObject::removeMember(const std::string_view &name) {
-	return members.remove(name);
-}
-
-SLAKE_API HostObjectRef<StructEnumObject> StructEnumObject::alloc(Runtime *rt) {
-	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();
-
-	std::unique_ptr<StructEnumObject, peff::DeallocableDeleter<StructEnumObject>> ptr(
-		peff::allocAndConstruct<StructEnumObject>(curGenerationAllocator.get(), sizeof(std::max_align_t), rt, curGenerationAllocator.get()));
-
-	if (!ptr)
-		return nullptr;
-
-	if (!rt->addObject(ptr.get()))
-		return nullptr;
-
-	return ptr.release();
-}
-
-SLAKE_API HostObjectRef<StructEnumObject> StructEnumObject::alloc(Duplicator *duplicator, const StructEnumObject *other) {
-	return (StructEnumObject *)other->duplicate(duplicator);
-}
-
-SLAKE_API void StructEnumObject::dealloc() {
-	peff::destroyAndRelease<StructEnumObject>(selfAllocator.get(), this, sizeof(std::max_align_t));
-}
-
-SLAKE_API void StructEnumObject::replaceAllocator(peff::Alloc *allocator) noexcept {
+SLAKE_API void UnionEnumObject::replaceAllocator(peff::Alloc *allocator) noexcept {
 	this->MemberObject::replaceAllocator(allocator);
 
 	members.replaceAllocator(allocator);

@@ -222,11 +222,11 @@ namespace slake {
 		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;
 	};
 
-	class ClassEnumObject : public EnumModuleObject {
+	class UnionEnumObject : public EnumModuleObject {
 	public:
-		SLAKE_API ClassEnumObject(Runtime *rt, peff::Alloc *selfAllocator);
-		SLAKE_API ClassEnumObject(Duplicator *duplicator, const ClassEnumObject &x, peff::Alloc *allocator, bool &succeededOut);
-		SLAKE_API virtual ~ClassEnumObject();
+		SLAKE_API UnionEnumObject(Runtime *rt, peff::Alloc *selfAllocator);
+		SLAKE_API UnionEnumObject(Duplicator *duplicator, const UnionEnumObject &x, peff::Alloc *allocator, bool &succeededOut);
+		SLAKE_API virtual ~UnionEnumObject();
 
 		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
 
@@ -234,27 +234,8 @@ namespace slake {
 		[[nodiscard]] SLAKE_API virtual bool addMember(MemberObject *member);
 		[[nodiscard]] SLAKE_API virtual bool removeMember(const std::string_view &name);
 
-		SLAKE_API static HostObjectRef<ClassEnumObject> alloc(Runtime *rt);
-		SLAKE_API static HostObjectRef<ClassEnumObject> alloc(Duplicator *duplicator, const ClassEnumObject *other);
-		SLAKE_API virtual void dealloc() override;
-
-		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;
-	};
-
-	class StructEnumObject : public EnumModuleObject {
-	public:
-		SLAKE_API StructEnumObject(Runtime *rt, peff::Alloc *selfAllocator);
-		SLAKE_API StructEnumObject(Duplicator *duplicator, const StructEnumObject &x, peff::Alloc *allocator, bool &succeededOut);
-		SLAKE_API virtual ~StructEnumObject();
-
-		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
-
-		SLAKE_API virtual Reference getMember(const std::string_view &name) const override;
-		[[nodiscard]] SLAKE_API virtual bool addMember(MemberObject *member);
-		[[nodiscard]] SLAKE_API virtual bool removeMember(const std::string_view &name);
-
-		SLAKE_API static HostObjectRef<StructEnumObject> alloc(Runtime *rt);
-		SLAKE_API static HostObjectRef<StructEnumObject> alloc(Duplicator *duplicator, const StructEnumObject *other);
+		SLAKE_API static HostObjectRef<UnionEnumObject> alloc(Runtime *rt);
+		SLAKE_API static HostObjectRef<UnionEnumObject> alloc(Duplicator *duplicator, const UnionEnumObject *other);
 		SLAKE_API virtual void dealloc() override;
 
 		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;

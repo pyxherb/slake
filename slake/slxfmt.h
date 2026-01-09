@@ -63,6 +63,9 @@ namespace slake {
 			Array,			// Array
 			Object,			// Object
 			Struct,			// Structure
+			ScopedEnum,		// Scoped enumeration
+			UnionEnum,		// Union enumeration
+			UnionEnumItem,	// Enumeration item
 			GenericArg,		// Generic argument
 			Ref,			// Reference
 			ParamTypeList,	// Parameter type list
@@ -212,7 +215,7 @@ namespace slake {
 			uint32_t line;
 			uint32_t column;
 
-			SLAKE_FORCEINLINE int comparesTo(const SourceLocDesc& rhs) const noexcept {
+			SLAKE_FORCEINLINE int comparesTo(const SourceLocDesc &rhs) const noexcept {
 				if (line < rhs.line)
 					return -1;
 				if (line > rhs.line)

@@ -364,7 +364,7 @@ namespace slkc {
 	/// @param idRef Identifier entries for resolution.
 	/// @param nEntries Number of the identifier entries.
 	/// @param memberOut Will be used to store the output member, `nullptr` if not found.
-	/// @param resolvedPartListOut Will be used to store the resolved part information. 
+	/// @param resolvedPartListOut Will be used to store the resolved part information.
 	/// @param isStatic Whether the initial resolution is static.
 	/// @return The fatal error encountered during the resolution.
 	[[nodiscard]] SLKC_API
@@ -452,7 +452,7 @@ namespace slkc {
 		bool &whetherOut);
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> isStructUnionEnumRecursed(
 		peff::SharedPtr<Document> document,
-		const AstNodePtr<StructEnumNode> &derived,
+		const AstNodePtr<UnionEnumNode> &derived,
 		bool &whetherOut);
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> isBaseOf(
 		peff::SharedPtr<Document> document,

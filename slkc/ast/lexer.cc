@@ -266,6 +266,8 @@ SLKC_API const char *slkc::getTokenName(TokenId tokenId) {
 			return "try";
 		case TokenId::UsingKeyword:
 			return "using";
+		case TokenId::UnionKeyword:
+			return "union";
 		case TokenId::VarKeyword:
 			return "var";
 		case TokenId::WhileKeyword:

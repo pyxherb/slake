@@ -1,7 +1,7 @@
 #ifndef _SLKC_AST_TYPENAME_BASE_H_
 #define _SLKC_AST_TYPENAME_BASE_H_
 
-#include "astnode.h"
+#include "document.h"
 
 namespace slkc {
 	enum class TypeNameKind : uint8_t {

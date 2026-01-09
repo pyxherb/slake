@@ -536,7 +536,7 @@ static peff::Option<CompilationError> _isStructRecursed(
 								if (!context.frames.pushBack(StructRecursionCheckFrame{ m.castTo<AstNode>(), StructStructRecursionCheckFrameExData{ 0 } }))
 									return genOutOfMemoryCompError();
 								break;
-							case AstNodeType::StructEnum:
+							case AstNodeType::UnionEnum:
 								if (!context.frames.pushBack(StructRecursionCheckFrame{ m.castTo<AstNode>(), StructUnionEnumStructRecursionCheckFrameExData{ 0, 0 } }))
 									return genOutOfMemoryCompError();
 								break;
@@ -550,8 +550,8 @@ static peff::Option<CompilationError> _isStructRecursed(
 				++exData.index;
 				break;
 			}
-			case AstNodeType::StructEnum: {
-				const AstNodePtr<StructEnumNode> &curStruct = curFrame.structNode.castTo<StructEnumNode>();
+			case AstNodeType::UnionEnum: {
+				const AstNodePtr<UnionEnumNode> &curStruct = curFrame.structNode.castTo<UnionEnumNode>();
 				StructUnionEnumStructRecursionCheckFrameExData &exData = std::get<StructUnionEnumStructRecursionCheckFrameExData>(curFrame.exData);
 
 				if (!exData.memberIndex) {
@@ -584,7 +584,7 @@ static peff::Option<CompilationError> _isStructRecursed(
 								if (!context.frames.pushBack(StructRecursionCheckFrame{ m.castTo<AstNode>(), StructStructRecursionCheckFrameExData{ 0 } }))
 									return genOutOfMemoryCompError();
 								break;
-							case AstNodeType::StructEnum:
+							case AstNodeType::UnionEnum:
 								if (!context.frames.pushBack(StructRecursionCheckFrame{ m.castTo<AstNode>(), StructUnionEnumStructRecursionCheckFrameExData{ 0, 0 } }))
 									return genOutOfMemoryCompError();
 								break;
@@ -628,7 +628,7 @@ SLKC_API peff::Option<CompilationError> slkc::isStructRecursed(
 
 SLKC_API peff::Option<CompilationError> slkc::isStructUnionEnumRecursed(
 	peff::SharedPtr<Document> document,
-	const AstNodePtr<StructEnumNode> &derived,
+	const AstNodePtr<UnionEnumNode> &derived,
 	bool &whetherOut) {
 	StructRecursionCheckContext context(document->allocator.get());
 	peff::Set<AstNodePtr<AstNode>> walkedStructs(document->allocator.get());
@@ -964,9 +964,9 @@ SLKC_API RecordUnionEnumItemNode::RecordUnionEnumItemNode(const RecordUnionEnumI
 SLKC_API RecordUnionEnumItemNode::~RecordUnionEnumItemNode() {
 }
 
-SLKC_API AstNodePtr<AstNode> ClassEnumNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
+SLKC_API AstNodePtr<AstNode> UnionEnumNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
 	bool succeeded = false;
-	AstNodePtr<ClassEnumNode> duplicatedNode(makeAstNode<ClassEnumNode>(newAllocator, *this, newAllocator, context, succeeded));
+	AstNodePtr<UnionEnumNode> duplicatedNode(makeAstNode<UnionEnumNode>(newAllocator, *this, newAllocator, context, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -974,16 +974,16 @@ SLKC_API AstNodePtr<AstNode> ClassEnumNode::doDuplicate(peff::Alloc *newAllocato
 	return duplicatedNode.template castTo<AstNode>();
 }
 
-SLKC_API ClassEnumNode::ClassEnumNode(
+SLKC_API UnionEnumNode::UnionEnumNode(
 	peff::Alloc *selfAllocator,
 	const peff::SharedPtr<Document> &document)
-	: ModuleNode(selfAllocator, document, AstNodeType::ClassEnum),
+	: ModuleNode(selfAllocator, document, AstNodeType::UnionEnum),
 	  genericParams(selfAllocator),
 	  genericParamIndices(selfAllocator),
 	  idxGenericParamCommaTokens(selfAllocator) {
 }
 
-SLKC_API ClassEnumNode::ClassEnumNode(const ClassEnumNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut) : ModuleNode(rhs, allocator, context, succeededOut), genericParams(allocator), genericParamIndices(allocator), idxGenericParamCommaTokens(allocator) {
+SLKC_API UnionEnumNode::UnionEnumNode(const UnionEnumNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut) : ModuleNode(rhs, allocator, context, succeededOut), genericParams(allocator), genericParamIndices(allocator), idxGenericParamCommaTokens(allocator) {
 	if (!succeededOut) {
 		return;
 	}
@@ -1043,92 +1043,10 @@ SLKC_API ClassEnumNode::ClassEnumNode(const ClassEnumNode &rhs, peff::Alloc *all
 	succeededOut = true;
 }
 
-SLKC_API ClassEnumNode::~ClassEnumNode() {
+SLKC_API UnionEnumNode::~UnionEnumNode() {
 }
 
-SLKC_API AstNodePtr<AstNode> StructEnumNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
-	bool succeeded = false;
-	AstNodePtr<StructEnumNode> duplicatedNode(makeAstNode<StructEnumNode>(newAllocator, *this, newAllocator, context, succeeded));
-	if ((!duplicatedNode) || (!succeeded)) {
-		return {};
-	}
-
-	return duplicatedNode.template castTo<AstNode>();
-}
-
-SLKC_API StructEnumNode::StructEnumNode(
-	peff::Alloc *selfAllocator,
-	const peff::SharedPtr<Document> &document)
-	: ModuleNode(selfAllocator, document, AstNodeType::StructEnum),
-	  genericParams(selfAllocator),
-	  genericParamIndices(selfAllocator),
-	  idxGenericParamCommaTokens(selfAllocator) {
-}
-
-SLKC_API StructEnumNode::StructEnumNode(const StructEnumNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut) : ModuleNode(rhs, allocator, context, succeededOut), genericParams(allocator), genericParamIndices(allocator), idxGenericParamCommaTokens(allocator) {
-	if (!succeededOut) {
-		return;
-	}
-
-	if (!context.pushTask([this, &rhs, allocator, &context]() -> bool {
-			if (rhs.baseType && !(baseType = rhs.baseType->duplicate<TypeNameNode>(allocator))) {
-				return false;
-			}
-			return true;
-		})) {
-		succeededOut = false;
-		return;
-	}
-
-	if (!genericParams.resize(rhs.genericParams.size())) {
-		succeededOut = false;
-		return;
-	}
-
-	for (size_t i = 0; i < genericParams.size(); ++i) {
-		if (!context.pushTask([this, i, &rhs, allocator, &context]() -> bool {
-				if (!(genericParams.at(i) = rhs.genericParams.at(i)->duplicate<GenericParamNode>(allocator)))
-					return false;
-
-				genericParams.at(i)->setParent(this);
-				return true;
-			})) {
-			succeededOut = false;
-			return;
-		}
-	}
-
-	for (const auto &[k, v] : rhs.genericParamIndices) {
-		if (!context.pushTask([this, v, &rhs, allocator, &context]() -> bool {
-				if (!genericParamIndices.insert(genericParams.at(v)->name, +v)) {
-					return false;
-				}
-				return true;
-			})) {
-			succeededOut = false;
-			return;
-		}
-	}
-
-	if (!idxGenericParamCommaTokens.resize(rhs.idxGenericParamCommaTokens.size())) {
-		succeededOut = false;
-		return;
-	}
-
-	memcpy(idxGenericParamCommaTokens.data(), rhs.idxGenericParamCommaTokens.data(), sizeof(size_t) * idxGenericParamCommaTokens.size());
-
-	idxLAngleBracketToken = rhs.idxLAngleBracketToken;
-	idxRAngleBracketToken = rhs.idxRAngleBracketToken;
-
-	isGenericParamsIndexed = rhs.isGenericParamsIndexed;
-
-	succeededOut = true;
-}
-
-SLKC_API StructEnumNode::~StructEnumNode() {
-}
-
-SLKC_API peff::Option<CompilationError> StructEnumNode::isRecursedType(bool &whetherOut) {
+SLKC_API peff::Option<CompilationError> UnionEnumNode::isRecursedType(bool &whetherOut) {
 	if (isRecursedTypeChecked) {
 		whetherOut = isRecursedTypeFlag;
 		return {};
@@ -1141,6 +1059,6 @@ SLKC_API peff::Option<CompilationError> StructEnumNode::isRecursedType(bool &whe
 	return {};
 }
 
-SLKC_API peff::Option<CompilationError> StructEnumNode::updateRecursedTypeStatus() {
+SLKC_API peff::Option<CompilationError> UnionEnumNode::updateRecursedTypeStatus() {
 	return {};
 }

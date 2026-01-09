@@ -39,7 +39,7 @@ namespace slake {
 
 		Void,  // Void
 
-		Any,	  // Any
+		Any,  // Any
 
 		I8,		// Signed 8-bit integer
 		I16,	// Signed 16-bit integer
@@ -58,6 +58,9 @@ namespace slake {
 		String,			 // String
 		Instance,		 // Object instance
 		StructInstance,	 // Structure instance
+		ScopedEnum,		 // Scoped enumeration
+		UnionEnum,		 // Union enumeration
+		UnionEnumItem,	 // Union enumeration item
 		GenericArg,		 // Generic argument
 
 		Array,	  // Array

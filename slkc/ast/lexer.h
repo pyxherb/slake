@@ -165,6 +165,7 @@ namespace slkc {
 		TrueKeyword,
 		TryKeyword,
 		UsingKeyword,
+		UnionKeyword,
 		VarKeyword,
 		VirtualKeyword,
 		WhileKeyword,

@@ -268,6 +268,7 @@ SLAKE_API bool slake::isCompatible(const TypeRef &type, const Value &value) {
 		case TypeId::Bool:
 			if (type.typeId != valueTypeToTypeId(value.valueType))
 				return true;
+			break;
 		case TypeId::String: {
 			if (value.valueType != ValueType::Reference) return true;
 			const Reference &entityRef = value.getReference();
@@ -398,100 +399,3 @@ int TypeRefComparator::operator()(const TypeRef &lhs, const TypeRef &rhs) const 
 
 	return 0;
 }
-
-/* SLAKE_API std::string std::to_string(const slake::TypeRef &type, const slake::Runtime *rt) {
-	switch (type.typeId) {
-		case TypeId::I8:
-			return "i8";
-		case TypeId::I16:
-			return "i16";
-		case TypeId::I32:
-			return "i32";
-		case TypeId::I64:
-			return "i64";
-		case TypeId::U8:
-			return "u8";
-		case TypeId::U16:
-			return "u16";
-		case TypeId::U32:
-			return "u32";
-		case TypeId::U64:
-			return "u64";
-		case TypeId::F32:
-			return "f32";
-		case TypeId::F64:
-			return "f64";
-		case TypeId::Bool:
-			return "bool";
-		case TypeId::String:
-			return "string";
-		case TypeId::Array:
-			return to_string(type.getArrayExData(), rt) + "[]";
-		case TypeId::Ref:
-			return to_string(type.getArrayExData(), rt) + "&";
-		case TypeId::Instance: {
-			if (type.isLoadingDeferred()) {
-				return std::to_string((IdRefObject *)type.getCustomTypeExData());
-			} else {
-				peff::DynArray<slake::IdRefEntry> fullRef(peff::getDefaultAlloc());
-
-				if (!rt->getFullRef(peff::getDefaultAlloc(), (MemberObject *)type.getCustomTypeExData(), fullRef)) {
-					throw std::bad_alloc();
-				}
-
-				std::string name;
-
-				for (size_t i = 0; i < fullRef.size(); ++i) {
-					if (i) {
-						name += '.';
-					}
-
-					slake::IdRefEntry &id = fullRef.at(i);
-
-					name += id.name;
-
-					if (id.genericArgs.size()) {
-						name += '<';
-
-						for (size_t j = 0; j < id.genericArgs.size(); ++j) {
-							if (j)
-								name += ",";
-							name += std::to_string(id.genericArgs.at(j), rt);
-						}
-
-						name += '>';
-					}
-				}
-
-				return name;
-			}
-		}
-		case TypeId::GenericArg: {
-			StringObject *nameObject = (StringObject *)type.exData.genericArg.nameObject;
-			return "!" + std::string(nameObject->data);
-		}
-		case TypeId::Fn: {
-			FnTypeDefObject *fnTypeDefObject = (FnTypeDefObject *)type.exData.typeDef;
-			std::string result = "fn ";
-
-			for (size_t i = 0; i < fnTypeDefObject->paramTypes.size(); ++i) {
-				if (i)
-					result += ", ";
-
-				//result += std::to_string(fnTypeDefObject->paramTypes.at(i));
-			}
-
-			if (fnTypeDefObject->hasVarArg) {
-				result += "...";
-			}
-
-			return result;
-		}
-		case TypeId::Any:
-			return "any";
-		case TypeId::Void:
-			return "void";
-		default:
-			return "<Unknown Type>";
-	}
-}*/

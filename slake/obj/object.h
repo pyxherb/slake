@@ -34,8 +34,7 @@ namespace slake {
 		Struct,		 // Structure
 		ScopedEnum,	 // Scoped enumeration
 		UnionEnumItem, // Union enumeration item
-		ClassEnum,	 // Class enumeration
-		StructEnum,	 // Structure enumeration
+		UnionEnum,	 // Union enumeration
 
 		Instance,  // Object instance
 

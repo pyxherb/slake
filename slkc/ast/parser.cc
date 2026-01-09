@@ -796,82 +796,11 @@ accessModifierParseEnd:
 		case TokenId::EnumKeyword: {
 			nextToken();
 			switch (peekToken()->tokenId) {
-				case TokenId::StructKeyword: {
+				case TokenId::UnionKeyword: {
 					nextToken();
-					AstNodePtr<StructEnumNode> enumNode;
+					AstNodePtr<UnionEnumNode> enumNode;
 
-					if (!(enumNode = makeAstNode<StructEnumNode>(resourceAllocator.get(), resourceAllocator.get(), document)))
-						return genOutOfMemorySyntaxError();
-
-					peff::ScopeGuard setTokenRangeGuard([this, token, enumNode]() noexcept {
-						enumNode->tokenRange = TokenRange{ document->mainModule, token->index, parseContext.idxPrevToken };
-					});
-
-					Token *nameToken;
-					if ((syntaxError = expectToken((nameToken = peekToken()), TokenId::Id))) {
-						return syntaxError;
-					}
-					nextToken();
-
-					size_t idxMember;
-					if ((idxMember = p->pushMember(enumNode.castTo<MemberNode>())) == SIZE_MAX) {
-						return genOutOfMemorySyntaxError();
-					}
-
-					if (!enumNode->name.build(nameToken->sourceText)) {
-						return genOutOfMemorySyntaxError();
-					}
-
-					Token *lBraceToken;
-					if ((syntaxError = expectToken((lBraceToken = peekToken()), TokenId::LBrace))) {
-						return syntaxError;
-					}
-					nextToken();
-
-					while (true) {
-						if (peekToken()->tokenId == TokenId::RBrace)
-							break;
-
-						if ((syntaxError = parseUnionEnumItem(enumNode.castTo<ModuleNode>()))) {
-							if (syntaxError->errorKind == SyntaxErrorKind::OutOfMemory)
-								return syntaxError;
-							if (!syntaxErrors.pushBack(syntaxError.move()))
-								return genOutOfMemorySyntaxError();
-						}
-
-						if (peekToken()->tokenId != TokenId::Comma)
-							break;
-						Token *commaToken = nextToken();
-					}
-
-					Token *rBraceToken;
-					if ((syntaxError = expectToken((rBraceToken = peekToken()), TokenId::RBrace))) {
-						return syntaxError;
-					}
-					nextToken();
-
-					if (auto it = p->memberIndices.find(enumNode->name); it != p->memberIndices.end()) {
-						peff::String s(resourceAllocator.get());
-
-						if (!s.build(enumNode->name)) {
-							return genOutOfMemorySyntaxError();
-						}
-
-						ConflictingDefinitionsErrorExData exData(std::move(s));
-
-						return SyntaxError(enumNode->tokenRange, std::move(exData));
-					} else {
-						if (!(p->indexMember(idxMember))) {
-							return genOutOfMemorySyntaxError();
-						}
-					}
-					break;
-				}
-				case TokenId::ClassKeyword: {
-					nextToken();
-					AstNodePtr<ClassEnumNode> enumNode;
-
-					if (!(enumNode = makeAstNode<ClassEnumNode>(resourceAllocator.get(), resourceAllocator.get(), document)))
+					if (!(enumNode = makeAstNode<UnionEnumNode>(resourceAllocator.get(), resourceAllocator.get(), document)))
 						return genOutOfMemorySyntaxError();
 
 					peff::ScopeGuard setTokenRangeGuard([this, token, enumNode]() noexcept {

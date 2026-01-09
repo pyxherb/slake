@@ -229,12 +229,7 @@ fn valueGenericParamTest<T as i32>() {
 class ArgTest<T as i32> {
 }
 
-enum struct StructEnum {
-	A(i32, u32, f32),
-	B { a: i32, b: fu32, c: f32 }
-}
-
-enum class ClassEnum {
+enum union UnionEnum {
 	A(i32, u32, f32),
 	B { a: i32, b: fu32, c: f32 }
 }
@@ -268,6 +263,7 @@ enum ScopedTypedEnum(i32) {
 }
 
 public async main() -> i32 {
+	let se: UnionEnum, sce: ScopedEnum, scte: ScopedTypedEnum;
 	/*a() with 123;*/
 
 	let s: SA;
@@ -281,7 +277,7 @@ public async main() -> i32 {
 	let vt: VirtualBase = new VirtualDerived();
 
 	vt.testBase(123);
-	
+
 	let testDerived: TestDerived<i32> = new TestDerived<i32>();
 
 	testDerived.myTest(123, 456);

@@ -25,6 +25,129 @@ SLAKE_API char *Runtime::calcLocalVarRefStackRawDataPtr(char *p) {
 		   sizeof(TypeId) + sizeof(TypeModifier);
 }
 
+SLAKE_API void *Runtime::locateValueBasePtr(const Reference &entityRef) const noexcept {
+	switch (entityRef.kind) {
+		case ReferenceKind::StaticFieldRef: {
+			FieldRecord &fieldRecord = entityRef.asStaticField.moduleObject->fieldRecords.at(entityRef.asStaticField.index);
+
+			return entityRef.asStaticField.moduleObject->localFieldStorage.data() + fieldRecord.offset;
+		}
+		case ReferenceKind::LocalVarRef: {
+			char *basePtr = calcLocalVarRefStackBasePtr(entityRef.asLocalVar);
+			char *rawDataPtr = calcLocalVarRefStackRawDataPtr(basePtr);
+
+			TypeRef t = *(TypeId *)(rawDataPtr - sizeof(TypeModifier) - sizeof(TypeId));
+
+			switch (t.typeId) {
+				case TypeId::I8:
+				case TypeId::I16:
+				case TypeId::I32:
+				case TypeId::I64:
+				case TypeId::U8:
+				case TypeId::U16:
+				case TypeId::U32:
+				case TypeId::U64:
+				case TypeId::F32:
+				case TypeId::F64:
+				case TypeId::Bool:
+				case TypeId::String:
+					break;
+				case TypeId::Instance:
+				case TypeId::Array:
+				case TypeId::Fn:
+					rawDataPtr += sizeof(void *);
+					break;
+				case TypeId::StructInstance:
+					rawDataPtr += sizeof(void *);
+					break;
+				case TypeId::Ref:
+					rawDataPtr += sizeof(void *);
+					break;
+				case TypeId::Any:
+					break;
+				default:
+					// All fields should be checked during the instantiation.
+					std::terminate();
+			}
+
+			return calcLocalVarRefStackRawDataPtr(rawDataPtr);
+		}
+		case ReferenceKind::CoroutineLocalVarRef: {
+			char *basePtr = calcCoroutineLocalVarRefStackBasePtr(entityRef.asCoroutineLocalVar);
+			char *rawDataPtr = calcLocalVarRefStackRawDataPtr(basePtr);
+
+			TypeRef t = *(TypeId *)(rawDataPtr - sizeof(TypeModifier) - sizeof(TypeId));
+
+			switch (t.typeId) {
+				case TypeId::I8:
+				case TypeId::I16:
+				case TypeId::I32:
+				case TypeId::I64:
+				case TypeId::U8:
+				case TypeId::U16:
+				case TypeId::U32:
+				case TypeId::U64:
+				case TypeId::F32:
+				case TypeId::F64:
+				case TypeId::Bool:
+				case TypeId::String:
+					break;
+				case TypeId::Instance:
+				case TypeId::Array:
+				case TypeId::Fn:
+					rawDataPtr += sizeof(void *);
+					break;
+				case TypeId::StructInstance:
+					rawDataPtr += sizeof(void *);
+					break;
+				case TypeId::Ref:
+					rawDataPtr += sizeof(void *);
+					break;
+				case TypeId::Any:
+					break;
+				default:
+					// All fields should be checked during the instantiation.
+					std::terminate();
+			}
+
+			return calcLocalVarRefStackRawDataPtr(rawDataPtr);
+		}
+		case ReferenceKind::InstanceFieldRef: {
+			ObjectFieldRecord &fieldRecord =
+				entityRef.asObjectField.instanceObject->_class->cachedObjectLayout->fieldRecords.at(
+					entityRef.asObjectField.fieldIndex);
+
+			return entityRef.asObjectField.instanceObject->rawFieldData + fieldRecord.offset;
+		}
+		case ReferenceKind::ArrayElementRef: {
+			assert(entityRef.asArrayElement.index < entityRef.asArrayElement.arrayObject->length);
+
+			return ((char *)entityRef.asArrayElement.arrayObject->data) + entityRef.asArrayElement.index * entityRef.asArrayElement.arrayObject->elementSize;
+		}
+		case ReferenceKind::ArgRef:
+			std::terminate();
+		case ReferenceKind::CoroutineArgRef:
+			std::terminate();
+		case ReferenceKind::StructRef:
+			return locateValueBasePtr(extractStructInnerRef(entityRef.asStruct));
+		case ReferenceKind::StructFieldRef: {
+			Reference innerRef = extractStructInnerRef(entityRef.asStructField.structRef);
+			TypeRef actualType = typeofVar(innerRef);
+
+			Object *const typeObject = ((CustomTypeDefObject *)actualType.typeDef)->typeObject;
+			char *basePtr = (char*)locateValueBasePtr(innerRef);
+
+			assert(typeObject->getObjectKind() == ObjectKind::Struct);
+
+			return basePtr + ((StructObject *)typeObject)->fieldRecords.at(entityRef.asStructField.idxField).offset;
+		}
+		default:
+			break;
+	}
+
+	std::terminate();
+}
+
 SLAKE_API TypeRef Runtime::typeofVar(const Reference &entityRef) const noexcept {
 	switch (entityRef.kind) {
 		case ReferenceKind::StaticFieldRef: {
@@ -38,21 +161,40 @@ SLAKE_API TypeRef Runtime::typeofVar(const Reference &entityRef) const noexcept 
 			char *const basePtr = calcLocalVarRefStackBasePtr(entityRef.asLocalVar);
 			const char *const rawDataPtr = calcLocalVarRefStackRawDataPtr(basePtr);
 
-			char *stackTop, *stackBottom;
-
-			stackTop = entityRef.asLocalVar.context->dataStackTopPtr;
-			stackBottom = entityRef.asLocalVar.context->dataStack;
-
-			if (!stackBottomCheck(basePtr, stackBottom)) {
-				std::terminate();
-			}
-
-			if (!stackTopCheck(rawDataPtr, stackTop)) {
-				std::terminate();
-			}
-
 			TypeRef t = *(TypeId *)(rawDataPtr - sizeof(TypeModifier) - sizeof(TypeId));
 			t.typeModifier = *(TypeModifier *)(rawDataPtr - sizeof(TypeModifier));
+
+			switch (t.typeId) {
+				case TypeId::I8:
+				case TypeId::I16:
+				case TypeId::I32:
+				case TypeId::I64:
+				case TypeId::U8:
+				case TypeId::U16:
+				case TypeId::U32:
+				case TypeId::U64:
+				case TypeId::F32:
+				case TypeId::F64:
+				case TypeId::Bool:
+				case TypeId::String:
+					break;
+				case TypeId::Instance:
+				case TypeId::Array:
+				case TypeId::Fn:
+					t.typeDef = *((TypeDefObject **)rawDataPtr);
+					break;
+				case TypeId::StructInstance:
+					t.typeDef = *((TypeDefObject **)rawDataPtr);
+					break;
+				case TypeId::Ref:
+					t.typeDef = *((TypeDefObject **)rawDataPtr);
+					break;
+				case TypeId::Any:
+					break;
+				default:
+					// All fields should be checked during the instantiation.
+					std::terminate();
+			}
 
 			return t;
 		}
@@ -60,26 +202,40 @@ SLAKE_API TypeRef Runtime::typeofVar(const Reference &entityRef) const noexcept 
 			char *basePtr = calcCoroutineLocalVarRefStackBasePtr(entityRef.asCoroutineLocalVar);
 			const char *const rawDataPtr = calcLocalVarRefStackRawDataPtr(basePtr);
 
-			char *stackTop, *stackBottom;
-
-			if (entityRef.asCoroutineLocalVar.coroutine->curContext) {
-				stackTop = entityRef.asCoroutineLocalVar.coroutine->curContext->dataStackTopPtr;
-				stackBottom = entityRef.asCoroutineLocalVar.coroutine->curContext->dataStack;
-			} else {
-				stackTop = entityRef.asCoroutineLocalVar.coroutine->stackData + entityRef.asCoroutineLocalVar.coroutine->lenStackData;
-				stackBottom = entityRef.asCoroutineLocalVar.coroutine->stackData;
-			};
-
-			if (!stackBottomCheck(basePtr, stackBottom)) {
-				std::terminate();
-			}
-
-			if (!stackTopCheck(rawDataPtr, stackTop)) {
-				std::terminate();
-			}
-
 			TypeRef t = *(TypeId *)(rawDataPtr - sizeof(TypeModifier) - sizeof(TypeId));
 			t.typeModifier = *(TypeModifier *)(rawDataPtr - sizeof(TypeModifier));
+
+			switch (t.typeId) {
+				case TypeId::I8:
+				case TypeId::I16:
+				case TypeId::I32:
+				case TypeId::I64:
+				case TypeId::U8:
+				case TypeId::U16:
+				case TypeId::U32:
+				case TypeId::U64:
+				case TypeId::F32:
+				case TypeId::F64:
+				case TypeId::Bool:
+				case TypeId::String:
+					break;
+				case TypeId::Instance:
+				case TypeId::Array:
+				case TypeId::Fn:
+					t.typeDef = *((TypeDefObject **)rawDataPtr);
+					break;
+				case TypeId::StructInstance:
+					t.typeDef = *((TypeDefObject **)rawDataPtr);
+					break;
+				case TypeId::Ref:
+					t.typeDef = *((TypeDefObject **)rawDataPtr);
+					break;
+				case TypeId::Any:
+					break;
+				default:
+					// All fields should be checked during the instantiation.
+					std::terminate();
+			}
 
 			return t;
 		}
@@ -112,10 +268,16 @@ SLAKE_API TypeRef Runtime::typeofVar(const Reference &entityRef) const noexcept 
 			}
 			break;
 		}
+		case ReferenceKind::StructRef:
+			return typeofVar(extractStructInnerRef(entityRef.asStruct));
 		case ReferenceKind::StructFieldRef: {
-			const ObjectFieldRecord &fieldRecord = entityRef.asStructField.structRef.structObject->cachedObjectLayout->fieldRecords.at(entityRef.asStructField.idxField);
+			TypeRef actualType = typeofVar(extractStructInnerRef(entityRef.asStructField.structRef));
 
-			return fieldRecord.type;
+			Object *const typeObject = ((CustomTypeDefObject *)actualType.typeDef)->typeObject;
+
+			assert(typeObject->getObjectKind() == ObjectKind::Struct);
+
+			return ((StructObject *)typeObject)->fieldRecords.at(entityRef.asStructField.idxField).type;
 		}
 		default:
 			break;
@@ -126,11 +288,9 @@ SLAKE_API TypeRef Runtime::typeofVar(const Reference &entityRef) const noexcept 
 SLAKE_API InternalExceptionPointer Runtime::readVar(const Reference &entityRef, Value &valueOut) const noexcept {
 	switch (entityRef.kind) {
 		case ReferenceKind::StaticFieldRef: {
-			FieldRecord &fieldRecord = entityRef.asStaticField.moduleObject->fieldRecords.at(entityRef.asStaticField.index);
+			const char *const rawDataPtr = (char*)locateValueBasePtr(entityRef);
 
-			const char *const rawDataPtr = entityRef.asStaticField.moduleObject->localFieldStorage.data() + fieldRecord.offset;
-
-			switch (fieldRecord.type.typeId) {
+			switch (typeofVar(entityRef).typeId) {
 				case TypeId::I8:
 					valueOut = (*((int8_t *)rawDataPtr));
 					break;
@@ -187,24 +347,9 @@ SLAKE_API InternalExceptionPointer Runtime::readVar(const Reference &entityRef, 
 			break;
 		}
 		case ReferenceKind::LocalVarRef: {
-			char *const basePtr = calcLocalVarRefStackBasePtr(entityRef.asLocalVar);
-			const char *const rawDataPtr = calcLocalVarRefStackRawDataPtr(basePtr);
+			const char *const rawDataPtr = (char *)locateValueBasePtr(entityRef);
 
-			char *stackTop, *stackBottom;
-
-			stackTop = entityRef.asLocalVar.context->dataStackTopPtr;
-			stackBottom = entityRef.asLocalVar.context->dataStack;
-
-			if (!stackBottomCheck(basePtr, stackBottom)) {
-				std::terminate();
-			}
-
-			if (!stackTopCheck(rawDataPtr, stackTop)) {
-				std::terminate();
-			}
-
-			TypeRef t = *(TypeId *)(rawDataPtr - sizeof(TypeModifier) - sizeof(TypeId));
-			t.typeModifier = *(TypeModifier *)(rawDataPtr - sizeof(TypeModifier));
+			TypeRef t = typeofVar(entityRef);
 
 			switch (t.typeId) {
 				case TypeId::I8:
@@ -241,26 +386,19 @@ SLAKE_API InternalExceptionPointer Runtime::readVar(const Reference &entityRef, 
 					valueOut = (*((bool *)(rawDataPtr)));
 					break;
 				case TypeId::String:
+					valueOut = (Reference::makeObjectRef(*((Object **)(rawDataPtr))));
+					break;
 				case TypeId::Instance:
 				case TypeId::Array:
 				case TypeId::Fn:
-					if (!stackTopCheck(rawDataPtr + sizeof(void *) + sizeof(void *), stackTop)) {
-						std::terminate();
-					}
-
-					valueOut = (Reference::makeObjectRef(*((Object **)(rawDataPtr + sizeof(void *)))));
+					valueOut = (Reference::makeObjectRef(*((Object **)(rawDataPtr))));
 					break;
 				case TypeId::StructInstance: {
-					if (!stackTopCheck(rawDataPtr + sizeof(void *), stackTop)) {
-						std::terminate();
-					}
+					StructRef structRef;
+					structRef.innerReferenceKind = ReferenceKind::LocalVarRef;
+					structRef.innerReference.asLocalVar = entityRef.asLocalVar;
 
-					StructRef sr;
-
-					sr.structObject = (StructObject *)((CustomTypeDefObject *)*(TypeDefObject **)(rawDataPtr))->typeObject;
-					sr.basePtr = &((TypeDefObject **)rawDataPtr)[1];
-
-					valueOut = (Reference::makeStructRef(sr));
+					valueOut = (Reference::makeStructRef(structRef));
 					break;
 				}
 				case TypeId::Ref:
@@ -277,29 +415,9 @@ SLAKE_API InternalExceptionPointer Runtime::readVar(const Reference &entityRef, 
 			break;
 		}
 		case ReferenceKind::CoroutineLocalVarRef: {
-			char *basePtr = calcCoroutineLocalVarRefStackBasePtr(entityRef.asCoroutineLocalVar);
-			const char *const rawDataPtr = calcLocalVarRefStackRawDataPtr(basePtr);
+			const char *const rawDataPtr = (char *)locateValueBasePtr(entityRef);
 
-			char *stackTop, *stackBottom;
-
-			if (entityRef.asCoroutineLocalVar.coroutine->curContext) {
-				stackTop = entityRef.asCoroutineLocalVar.coroutine->curContext->dataStackTopPtr;
-				stackBottom = entityRef.asCoroutineLocalVar.coroutine->curContext->dataStack;
-			} else {
-				stackTop = entityRef.asCoroutineLocalVar.coroutine->stackData + entityRef.asCoroutineLocalVar.coroutine->lenStackData;
-				stackBottom = entityRef.asCoroutineLocalVar.coroutine->stackData;
-			};
-
-			if (!stackBottomCheck(basePtr, stackBottom)) {
-				std::terminate();
-			}
-
-			if (!stackTopCheck(rawDataPtr, stackTop)) {
-				std::terminate();
-			}
-
-			TypeRef t = *(TypeId *)(rawDataPtr - sizeof(TypeModifier) - sizeof(TypeId));
-			t.typeModifier = *(TypeModifier *)(rawDataPtr - sizeof(TypeModifier));
+			TypeRef t = typeofVar(entityRef);
 
 			switch (t.typeId) {
 				case TypeId::I8:
@@ -339,26 +457,14 @@ SLAKE_API InternalExceptionPointer Runtime::readVar(const Reference &entityRef, 
 				case TypeId::Instance:
 				case TypeId::Array:
 				case TypeId::Fn:
-					if (!stackTopCheck(rawDataPtr + sizeof(void *) + sizeof(void *), stackTop)) {
-						std::terminate();
-					}
-
-					valueOut = (Reference::makeObjectRef(*((Object **)(rawDataPtr + sizeof(void *)))));
+					valueOut = (Reference::makeObjectRef(*((Object **)(rawDataPtr))));
 					break;
 				case TypeId::StructInstance: {
-					if (!stackTopCheck(rawDataPtr + sizeof(void *), stackTop)) {
-						std::terminate();
-					}
+					StructRef structRef;
+					structRef.innerReferenceKind = ReferenceKind::CoroutineLocalVarRef;
+					structRef.innerReference.asCoroutineLocalVar = entityRef.asCoroutineLocalVar;
 
-					StructRef sr;
-
-					TypeDefObject **ptd = (TypeDefObject **)rawDataPtr;	 // For debugging
-					TypeDefObject *td;
-					memcpy(&td, rawDataPtr, sizeof(void *));
-					sr.structObject = (StructObject *)((CustomTypeDefObject *)td)->typeObject;
-					sr.basePtr = &ptd[1];
-
-					valueOut = (Reference::makeStructRef(sr));
+					valueOut = (Reference::makeStructRef(structRef));
 					break;
 				}
 				case TypeId::Ref:
@@ -375,13 +481,9 @@ SLAKE_API InternalExceptionPointer Runtime::readVar(const Reference &entityRef, 
 			break;
 		}
 		case ReferenceKind::InstanceFieldRef: {
-			ObjectFieldRecord &fieldRecord =
-				entityRef.asObjectField.instanceObject->_class->cachedObjectLayout->fieldRecords.at(
-					entityRef.asObjectField.fieldIndex);
+			const char *const rawFieldPtr = (char *)locateValueBasePtr(entityRef);
 
-			const char *const rawFieldPtr = entityRef.asObjectField.instanceObject->rawFieldData + fieldRecord.offset;
-
-			switch (fieldRecord.type.typeId) {
+			switch (typeofVar(entityRef).typeId) {
 				case TypeId::I8:
 					valueOut = (*((int8_t *)rawFieldPtr));
 					break;
@@ -512,11 +614,10 @@ SLAKE_API InternalExceptionPointer Runtime::readVar(const Reference &entityRef, 
 			break;
 		}
 		case ReferenceKind::StructFieldRef: {
-			const ObjectFieldRecord &fieldRecord = entityRef.asStructField.structRef.structObject->cachedObjectLayout->fieldRecords.at(entityRef.asStructField.idxField);
+			const char *rawDataPtr = ((char *)locateValueBasePtr(extractStructInnerRef(entityRef.asStructField.structRef)));
+			TypeRef t = typeofVar(entityRef);
 
-			const char *rawDataPtr = ((char *)entityRef.asStructField.structRef.basePtr) + fieldRecord.offset;
-
-			switch (fieldRecord.type.typeId) {
+			switch (t.typeId) {
 				case TypeId::I8:
 					valueOut = (*((int8_t *)rawDataPtr));
 					break;
@@ -556,15 +657,6 @@ SLAKE_API InternalExceptionPointer Runtime::readVar(const Reference &entityRef, 
 				case TypeId::Fn:
 					valueOut = (Reference::makeObjectRef(*((Object **)rawDataPtr)));
 					break;
-				case TypeId::StructInstance: {
-					StructRef sr;
-
-					sr.structObject = (StructObject *)(fieldRecord.type.getCustomTypeDef())->typeObject;
-					sr.basePtr = (void *)rawDataPtr;
-
-					valueOut = (Reference::makeStructRef(sr));
-					break;
-				}
 				case TypeId::Ref:
 					valueOut = (*((Reference *)rawDataPtr));
 					break;
@@ -588,20 +680,9 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const Reference &entityRef,
 
 	switch (entityRef.kind) {
 		case ReferenceKind::StaticFieldRef: {
-			if (entityRef.asStaticField.index >= entityRef.asStaticField.moduleObject->fieldRecords.size())
-				// TODO: Use a proper type of exception instead of this.
-				return raiseInvalidArrayIndexError(entityRef.asStaticField.moduleObject->associatedRuntime, entityRef.asArrayElement.index);
+			char *const rawDataPtr = (char *)locateValueBasePtr(entityRef);
 
-			const FieldRecord &fieldRecord =
-				entityRef.asStaticField.moduleObject->fieldRecords.at(entityRef.asStaticField.index);
-
-			if (!isCompatible(fieldRecord.type, value)) {
-				return raiseMismatchedVarTypeError(entityRef.asStaticField.moduleObject->associatedRuntime);
-			}
-
-			char *const rawDataPtr = entityRef.asStaticField.moduleObject->localFieldStorage.data() + fieldRecord.offset;
-
-			switch (fieldRecord.type.typeId) {
+			switch (typeofVar(entityRef).typeId) {
 				case TypeId::I8:
 					*((int8_t *)rawDataPtr) = value.getI8();
 					break;
@@ -648,24 +729,9 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const Reference &entityRef,
 			break;
 		}
 		case ReferenceKind::LocalVarRef: {
-			char *const basePtr = calcLocalVarRefStackBasePtr(entityRef.asLocalVar);
-			const char *const rawDataPtr = calcLocalVarRefStackRawDataPtr(basePtr);
+			char *const rawDataPtr = (char *)locateValueBasePtr(entityRef);
 
-			char *stackTop, *stackBottom;
-
-			stackTop = entityRef.asLocalVar.context->dataStackTopPtr;
-			stackBottom = entityRef.asLocalVar.context->dataStack;
-
-			if (!stackBottomCheck(basePtr, stackBottom)) {
-				std::terminate();
-			}
-
-			if (!stackTopCheck(rawDataPtr, stackTop)) {
-				std::terminate();
-			}
-
-			TypeRef t = *(TypeId *)(rawDataPtr - sizeof(TypeModifier) - sizeof(TypeId));
-			t.typeModifier = *(TypeModifier *)(rawDataPtr - sizeof(TypeModifier));
+			TypeRef t = typeofVar(entityRef);
 
 			switch (t.typeId) {
 				case TypeId::I8:
@@ -742,14 +808,10 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const Reference &entityRef,
 					break;
 				case TypeId::Instance:
 				case TypeId::Array:
-					if (!stackTopCheck(rawDataPtr + sizeof(void *) + sizeof(void *), stackTop)) {
-						std::terminate();
-					}
-					t.typeDef = *(TypeDefObject **)rawDataPtr;
 					if (!isCompatible(t, value)) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
-					*((Object **)(rawDataPtr + sizeof(void *))) = value.getReference().asObject;
+					*((Object **)(rawDataPtr)) = value.getReference().asObject;
 					break;
 				default:
 					// All fields should be checked during the instantiation.
@@ -759,29 +821,9 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const Reference &entityRef,
 			break;
 		}
 		case ReferenceKind::CoroutineLocalVarRef: {
-			char *basePtr = calcCoroutineLocalVarRefStackBasePtr(entityRef.asCoroutineLocalVar);
-			const char *const rawDataPtr = calcLocalVarRefStackRawDataPtr(basePtr);
+			const char *const rawDataPtr = (char *)locateValueBasePtr(entityRef);
 
-			char *stackTop, *stackBottom;
-
-			if (entityRef.asCoroutineLocalVar.coroutine->curContext) {
-				stackTop = entityRef.asCoroutineLocalVar.coroutine->curContext->dataStackTopPtr;
-				stackBottom = entityRef.asCoroutineLocalVar.coroutine->curContext->dataStack;
-			} else {
-				stackTop = entityRef.asCoroutineLocalVar.coroutine->stackData + entityRef.asCoroutineLocalVar.coroutine->lenStackData;
-				stackBottom = entityRef.asCoroutineLocalVar.coroutine->stackData;
-			};
-
-			if (!stackBottomCheck(basePtr, stackBottom)) {
-				std::terminate();
-			}
-
-			if (!stackTopCheck(rawDataPtr, stackTop)) {
-				std::terminate();
-			}
-
-			TypeRef t = *(TypeId *)(rawDataPtr - sizeof(TypeModifier) - sizeof(TypeId));
-			t.typeModifier = *(TypeModifier *)(rawDataPtr - sizeof(TypeModifier));
+			TypeRef t = typeofVar(entityRef);
 
 			switch (t.typeId) {
 				case TypeId::I8:
@@ -858,15 +900,10 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const Reference &entityRef,
 					break;
 				case TypeId::Instance:
 				case TypeId::Array:
-					if (!stackTopCheck(rawDataPtr + sizeof(void *) + sizeof(void *), stackTop)) {
-						std::terminate();
-					}
-
-					t.typeDef = *(TypeDefObject **)rawDataPtr;
 					if (!isCompatible(t, value)) {
 						return raiseMismatchedVarTypeError((Runtime *)this);
 					}
-					*((Object **)(rawDataPtr + sizeof(void *))) = value.getReference().asObject;
+					*((Object **)(rawDataPtr)) = value.getReference().asObject;
 					break;
 				default:
 					// All fields should be checked during the instantiation.
@@ -875,17 +912,14 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const Reference &entityRef,
 			break;
 		}
 		case ReferenceKind::InstanceFieldRef: {
-			ObjectFieldRecord &fieldRecord =
-				entityRef.asObjectField.instanceObject->_class->cachedObjectLayout->fieldRecords.at(
-					entityRef.asObjectField.fieldIndex);
+			char *const rawFieldPtr = (char *)locateValueBasePtr(entityRef);
+			TypeRef t = typeofVar(entityRef);
 
-			if (!isCompatible(fieldRecord.type, value)) {
+			if (!isCompatible(t, value)) {
 				return raiseMismatchedVarTypeError((Runtime *)this);
 			}
 
-			char *const rawFieldPtr = entityRef.asObjectField.instanceObject->rawFieldData + fieldRecord.offset;
-
-			switch (fieldRecord.type.typeId) {
+			switch (t.typeId) {
 				case TypeId::I8:
 					*((int8_t *)rawFieldPtr) = value.getI8();
 					break;
@@ -931,15 +965,12 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const Reference &entityRef,
 			break;
 		}
 		case ReferenceKind::ArrayElementRef: {
-			if (entityRef.asArrayElement.index > entityRef.asArrayElement.arrayObject->length) {
-				return raiseInvalidArrayIndexError((Runtime *)this, entityRef.asArrayElement.index);
-			}
-
-			if (!isCompatible(entityRef.asArrayElement.arrayObject->elementType, value)) {
+			TypeRef t = typeofVar(entityRef);
+			if (!isCompatible(t, value)) {
 				return raiseMismatchedVarTypeError((Runtime *)this);
 			}
 
-			switch (entityRef.asArrayElement.arrayObject->elementType.typeId) {
+			switch (t.typeId) {
 				case TypeId::I8:
 					((int8_t *)entityRef.asArrayElement.arrayObject->data)[entityRef.asArrayElement.index] = value.getI8();
 					break;
@@ -1013,11 +1044,10 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const Reference &entityRef,
 			break;
 		}
 		case ReferenceKind::StructFieldRef: {
-			const ObjectFieldRecord &fieldRecord = entityRef.asStructField.structRef.structObject->cachedObjectLayout->fieldRecords.at(entityRef.asStructField.idxField);
+			const char *rawDataPtr = (char *)locateValueBasePtr(entityRef);
+			TypeRef t = typeofVar(entityRef);
 
-			const char *rawDataPtr = ((char *)entityRef.asStructField.structRef.basePtr) + fieldRecord.offset;
-
-			switch (fieldRecord.type.typeId) {
+			switch (t.typeId) {
 				case TypeId::I8:
 					*((int8_t *)rawDataPtr) = value.getI8();
 					break;

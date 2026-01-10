@@ -111,14 +111,6 @@ namespace slake {
 		SLAKE_API void replaceAllocator(peff::Alloc *allocator) noexcept;
 	};
 
-	SLAKE_FORCEINLINE bool stackBottomCheck(const char *const rawDataPtr, const char *const bottom) {
-		return rawDataPtr >= bottom;
-	}
-
-	SLAKE_FORCEINLINE bool stackTopCheck(const char *const rawDataPtr, const char *const top) {
-		return rawDataPtr < top;
-	}
-
 	class ContextObject final : public Object {
 	public:
 		Context _context;

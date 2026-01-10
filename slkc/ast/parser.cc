@@ -278,6 +278,8 @@ SLKC_API peff::Option<SyntaxError> Parser::parseIdRef(IdRefPtr &idRefOut) {
 		idRefPtr->tokenRange.endIndex = prevEndIndex;
 		parseContext = prevParseContext;
 
+		entry.genericArgs.clear();
+
 	succeeded:
 		if (!idRefPtr->entries.pushBack(std::move(entry)))
 			return genOutOfMemorySyntaxError();

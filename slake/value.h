@@ -90,8 +90,16 @@ namespace slake {
 	// care about the structure's parent scope, just walking the structure
 	// itself.
 	struct StructRef {
-		StructObject *structObject;
-		void *basePtr;
+		union {
+			StaticFieldRef asStaticField;
+			ArrayElementRef asArrayElement;
+			ObjectFieldRef asObjectField;
+			LocalVarRef asLocalVar;
+			CoroutineLocalVarRef asCoroutineLocalVar;
+			ArgRef asArg;
+			CoroutineArgRef asCoroutineArg;
+		} innerReference;
+		ReferenceKind innerReferenceKind;
 	};
 
 	struct StructFieldRef {
@@ -333,7 +341,7 @@ namespace slake {
 
 		SLAKE_FORCEINLINE Value() = default;
 		SLAKE_API Value(const Value &other) noexcept = default;
-		SLAKE_FORCEINLINE Value(Value&& other) noexcept = default;
+		SLAKE_FORCEINLINE Value(Value &&other) noexcept = default;
 		SLAKE_FORCEINLINE constexpr Value(int8_t data) noexcept : valueType(ValueType::I8), data(data) {
 		}
 		SLAKE_FORCEINLINE constexpr Value(int16_t data) noexcept : valueType(ValueType::I16), data(data) {
@@ -383,7 +391,7 @@ namespace slake {
 			this->data.asI16 = data;
 			return *this;
 		}
-		SLAKE_FORCEINLINE constexpr Value &operator=(int32_t data) noexcept  {
+		SLAKE_FORCEINLINE constexpr Value &operator=(int32_t data) noexcept {
 			valueType = ValueType::I32;
 			this->data.asI32 = data;
 			return *this;
@@ -545,6 +553,7 @@ namespace slake {
 		SLAKE_API bool operator>(const Value &rhs) const;
 	};
 
+	SLAKE_API Reference extractStructInnerRef(const StructRef &structRef);
 	SLAKE_API bool isCompatible(const TypeRef &type, const Value &value);
 }
 

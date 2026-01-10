@@ -81,6 +81,47 @@ SLAKE_API ValueType slake::typeIdToValueType(TypeId typeId) {
 	std::terminate();
 }
 
+SLAKE_API Reference slake::extractStructInnerRef(const StructRef& structRef) {
+	switch (structRef.innerReferenceKind) {
+		case ReferenceKind::StaticFieldRef:
+			return Reference::makeStaticFieldRef(
+				structRef.innerReference.asStaticField.moduleObject,
+				structRef.innerReference.asStaticField.index);
+			break;
+		case ReferenceKind::ArrayElementRef:
+			return Reference::makeArrayElementRef(
+				structRef.innerReference.asArrayElement.arrayObject,
+				structRef.innerReference.asArrayElement.index);
+			break;
+		case ReferenceKind::InstanceFieldRef:
+			return Reference::makeInstanceFieldRef(
+				structRef.innerReference.asObjectField.instanceObject,
+				structRef.innerReference.asObjectField.fieldIndex);
+			break;
+		case ReferenceKind::LocalVarRef:
+			return Reference::makeLocalVarRef(
+				structRef.innerReference.asLocalVar.context,
+				structRef.innerReference.asLocalVar.stackOff);
+			break;
+		case ReferenceKind::CoroutineLocalVarRef:
+			return Reference::makeCoroutineLocalVarRef(
+				structRef.innerReference.asCoroutineLocalVar.coroutine,
+				structRef.innerReference.asCoroutineLocalVar.stackOff);
+		case ReferenceKind::ArgRef:
+			return Reference::makeArgRef(
+				structRef.innerReference.asArg.majorFrame,
+				structRef.innerReference.asArg.argIndex);
+			break;
+		case ReferenceKind::CoroutineArgRef:
+			return Reference::makeCoroutineLocalVarRef(
+				structRef.innerReference.asCoroutineArg.coroutine,
+				structRef.innerReference.asCoroutineArg.argIndex);
+			break;
+		default:
+			std::terminate();
+	}
+}
+
 SLAKE_API bool Reference::operator==(const Reference &rhs) const {
 	if (kind != rhs.kind)
 		return false;
@@ -270,20 +311,28 @@ SLAKE_API bool slake::isCompatible(const TypeRef &type, const Value &value) {
 				return true;
 			break;
 		case TypeId::String: {
-			if (value.valueType != ValueType::Reference) return true;
+			if (value.valueType != ValueType::Reference)
+				return false;
 			const Reference &entityRef = value.getReference();
-			if (entityRef.kind != ReferenceKind::ObjectRef) return true;
-			if (entityRef.asObject->getObjectKind() != ObjectKind::String) return true;
+			if (entityRef.kind != ReferenceKind::ObjectRef)
+				return false;
+			if (!entityRef.asObject)
+				return true;
+			if (entityRef.asObject->getObjectKind() != ObjectKind::String)
+				return false;
 			break;
 		}
 		case TypeId::Instance: {
-			if (value.valueType != ValueType::Reference) return true;
+			if (value.valueType != ValueType::Reference)
+				return false;
 
 			const Reference &entityRef = value.getReference();
-			if (entityRef.kind != ReferenceKind::ObjectRef) return true;
+			if (entityRef.kind != ReferenceKind::ObjectRef)
+				return false;
 			Object *objectPtr = entityRef.asObject;
 
-			if (!objectPtr) return true;
+			if (!objectPtr)
+				return true;
 
 			Object *typeObject = type.getCustomTypeDef()->typeObject;
 			switch (typeObject->getObjectKind()) {
@@ -293,9 +342,11 @@ SLAKE_API bool slake::isCompatible(const TypeRef &type, const Value &value) {
 					ClassObject *valueClass = ((InstanceObject *)objectPtr)->_class;
 
 					if (type.isFinal()) {
-						if (thisClass != valueClass) return false;
+						if (thisClass != valueClass)
+							return false;
 					} else {
-						if (!thisClass->isBaseOf(valueClass)) return false;
+						if (!thisClass->isBaseOf(valueClass))
+							return false;
 					}
 					break;
 				}
@@ -305,7 +356,8 @@ SLAKE_API bool slake::isCompatible(const TypeRef &type, const Value &value) {
 					ClassObject *valueClass = ((InstanceObject *)objectPtr)->_class;
 
 					assert(!type.isFinal());
-					if (!valueClass->hasImplemented(thisInterface)) return false;
+					if (!valueClass->hasImplemented(thisInterface))
+						return false;
 					break;
 				}
 				default:
@@ -315,29 +367,30 @@ SLAKE_API bool slake::isCompatible(const TypeRef &type, const Value &value) {
 			break;
 		}
 		case TypeId::StructInstance:
-			// stub
+			// Cannot pass structure instance as value.
 			return false;
 		case TypeId::GenericArg:
 			return false;
 		case TypeId::Array: {
 			if (value.valueType != ValueType::Reference) {
-				return true;
+				return false;
 			}
 
 			const Reference &entityRef = value.getReference();
 			if (entityRef.kind != ReferenceKind::ObjectRef) {
-				return true;
+				return false;
 			}
 			Object *objectPtr = entityRef.asObject;
-			if (!objectPtr) return true;
+			if (!objectPtr)
+				return false;
 			if (objectPtr->getObjectKind() != ObjectKind::Array) {
-				return true;
+				return false;
 			}
 
 			auto arrayObjectPtr = ((ArrayObject *)objectPtr);
 
 			if (arrayObjectPtr->elementType != (type.getArrayTypeDef()->elementType->typeRef)) {
-				return true;
+				return false;
 			}
 			break;
 		}

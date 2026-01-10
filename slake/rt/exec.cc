@@ -436,10 +436,10 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_addLocalVar(Context *context
 		return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
 	*typeModifier = type.typeModifier;
 
-	TypeId *typeInfo = (TypeId *)context->stackAlloc(sizeof(TypeId));
-	if (!typeInfo)
+	TypeId *typeId = (TypeId *)context->stackAlloc(sizeof(TypeId));
+	if (!typeId)
 		return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
-	*typeInfo = type.typeId;
+	*typeId = type.typeId;
 
 	stackOffset = context->stackTop;
 
@@ -520,7 +520,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 
 			switch (lhsEntityRef.kind) {
 				case ReferenceKind::StructRef: {
-					StructObject *structObject = lhsEntityRef.asStruct.structObject;
+					StructObject *structObject = (StructObject *)(((CustomTypeDefObject *)typeofVar(lhsEntityRef).typeDef)->typeObject);
 					IdRefEntry &curName = idRef->entries.at(0);
 
 					if (auto it = structObject->cachedObjectLayout->fieldNameMap.find(curName.name); it != structObject->cachedObjectLayout->fieldNameMap.end()) {

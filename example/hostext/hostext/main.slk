@@ -228,7 +228,7 @@ fn valueGenericParamTest<T as i32>() {
 
 class ArgTest<T as i32> {
 }
-
+/*
 enum union UnionEnum {
 	A(i32, u32, f32),
 	B { a: i32, b: fu32, c: f32 }
@@ -260,10 +260,10 @@ enum ScopedTypedEnum(i32) {
 	b = 0xdef,
 	c = 0x123,
 	d
-}
+}*/
 
 public async main() -> i32 {
-	let se: UnionEnum, sce: ScopedEnum, scte: ScopedTypedEnum;
+	//let se: UnionEnum, sce: ScopedEnum, scte: ScopedTypedEnum;
 	/*a() with 123;*/
 
 	let s: SA;

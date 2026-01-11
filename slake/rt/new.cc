@@ -281,7 +281,8 @@ SLAKE_API HostObjectRef<InstanceObject> slake::Runtime::newClassInstance(ClassOb
 	for (size_t i = 0; i < cls->fieldRecords.size(); ++i) {
 		const ObjectFieldRecord &fieldRecord = cls->cachedObjectLayout->fieldRecords.at(i);
 
-		Value data = readVarUnsafe(Reference::makeStaticFieldRef(p.first, fieldRecord.idxInitFieldRecord));
+		Value data;
+		readVar(Reference::makeStaticFieldRef(p.first, fieldRecord.idxInitFieldRecord), data);
 		SLAKE_UNWRAP_EXCEPT(writeVar(Reference::makeInstanceFieldRef(instance.get(), i), data));
 
 		if (cnt++ >= p.second) {

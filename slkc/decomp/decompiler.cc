@@ -544,8 +544,11 @@ SLKC_API bool Decompiler::decompileValue(peff::Alloc *allocator, DumpWriter *wri
 								}
 
 								slake::Reference rer = slake::Reference::makeArrayElementRef(a, i);
+								slake::Value data;
 
-								SLKC_RETURN_IF_FALSE(decompileValue(allocator, writer, a->associatedRuntime->readVarUnsafe(rer)));
+								a->associatedRuntime->readVar(rer, data);
+
+								SLKC_RETURN_IF_FALSE(decompileValue(allocator, writer, data));
 							}
 
 							SLKC_RETURN_IF_FALSE(writer->write(" }"));

@@ -196,7 +196,7 @@ namespace slake {
 		/// @brief Execute a single instruction.
 		/// @param context Context for execution.
 		/// @param ins Instruction to be executed.
-		[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer _execIns(ContextObject *context, MajorFrame *curMajorFrame, const Instruction &ins, bool &isContextChangedOut) noexcept;
+		[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer _execIns(ContextObject *const context, MajorFrame *const curMajorFrame, const Opcode opcode, const size_t output, const size_t nOperands, const Value *const operands, bool &isContextChangedOut) noexcept;
 
 	public:
 		Object *youngObjectList = nullptr, *persistentObjectList = nullptr;
@@ -273,7 +273,7 @@ namespace slake {
 		friend class ModuleObject;
 
 	public:
-		[[nodiscard]] SLAKE_API InternalExceptionPointer _addLocalVar(Context *context, MajorFrame *frame, TypeRef type, Reference &objectRefOut) noexcept;
+		[[nodiscard]] SLAKE_API InternalExceptionPointer _addLocalVar(Context *context, const MajorFrame *frame, TypeRef type, Reference &objectRefOut) noexcept;
 		[[nodiscard]] SLAKE_API InternalExceptionPointer _fillArgs(
 			MajorFrame *newMajorFrame,
 			const FnOverloadingObject *fn,
@@ -447,12 +447,7 @@ namespace slake {
 
 		SLAKE_API void *locateValueBasePtr(const Reference &entityRef) const noexcept;
 		[[nodiscard]] SLAKE_API TypeRef typeofVar(const Reference &entityRef) const noexcept;
-		[[nodiscard]] SLAKE_API InternalExceptionPointer readVar(const Reference &entityRef, Value &valueOut) const noexcept;
-		SLAKE_FORCEINLINE Value readVarUnsafe(const Reference& entityRef) const noexcept {
-			Value v;
-			readVar(entityRef, v).unwrap();
-			return v;
-		}
+		SLAKE_API void readVar(const Reference &entityRef, Value &valueOut) const noexcept;
 		[[nodiscard]] SLAKE_API InternalExceptionPointer writeVar(const Reference &entityRef, const Value &value) const noexcept;
 		SLAKE_FORCEINLINE void writeVarUnsafe(const Reference& entityRef, const Value& value) const noexcept {
 			writeVar(entityRef, value).unwrap();

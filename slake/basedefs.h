@@ -42,4 +42,6 @@
 	#define SLAKE_UNREACHABLE std::terminate()
 #endif
 
+#define SLAKE_RESTRICT PEFF_RESTRICT
+
 #endif

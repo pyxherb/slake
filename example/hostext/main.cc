@@ -12,16 +12,13 @@ Value print(Context *context, MajorFrame *curMajorFrame) {
 		putchar('\n');
 	else {
 		Value varArgsValue;
-		varArgsValue = curMajorFrame->curFn->associatedRuntime->readVarUnsafe(Reference::makeArgRef(curMajorFrame, 0));
+		curMajorFrame->curFn->associatedRuntime->readVar(Reference::makeArgRef(curMajorFrame, 0), varArgsValue);
 		ArrayObject *varArgs = (ArrayObject *)varArgsValue.getReference().asObject;
 
 		for (uint8_t i = 0; i < varArgs->length; ++i) {
 			Value data;
-			if (auto e = curMajorFrame->curFn->associatedRuntime->readVar(
-					Reference::makeArrayElementRef(varArgs, i),
-					data)) {
-				throw std::runtime_error("An exception has thrown");
-			}
+			curMajorFrame->curFn->associatedRuntime->readVar(
+					Reference::makeArrayElementRef(varArgs, i), data);
 
 			switch (data.valueType) {
 				case ValueType::I8:

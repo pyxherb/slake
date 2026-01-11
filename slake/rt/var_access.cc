@@ -36,17 +36,19 @@ SLAKE_API void *Runtime::locateValueBasePtr(const Reference &entityRef) const no
 			char *basePtr = calcLocalVarRefStackBasePtr(entityRef.asLocalVar);
 			char *rawDataPtr = calcLocalVarRefStackRawDataPtr(basePtr);
 
-			TypeRef t = *(TypeId *)(rawDataPtr - sizeof(TypeModifier) - sizeof(TypeId));
+			const TypeId typeId = *(TypeId *)(rawDataPtr - (sizeof(TypeModifier) + sizeof(TypeId)));
 
-			switch (t.typeId) {
+			switch (typeId) {
 				case TypeId::I8:
 				case TypeId::I16:
 				case TypeId::I32:
 				case TypeId::I64:
+				case TypeId::ISize:
 				case TypeId::U8:
 				case TypeId::U16:
 				case TypeId::U32:
 				case TypeId::U64:
+				case TypeId::USize:
 				case TypeId::F32:
 				case TypeId::F64:
 				case TypeId::Bool:
@@ -76,17 +78,19 @@ SLAKE_API void *Runtime::locateValueBasePtr(const Reference &entityRef) const no
 			char *basePtr = calcCoroutineLocalVarRefStackBasePtr(entityRef.asCoroutineLocalVar);
 			char *rawDataPtr = calcLocalVarRefStackRawDataPtr(basePtr);
 
-			TypeRef t = *(TypeId *)(rawDataPtr - sizeof(TypeModifier) - sizeof(TypeId));
+			const TypeId typeId = *(TypeId *)(rawDataPtr - (sizeof(TypeModifier) + sizeof(TypeId)));
 
-			switch (t.typeId) {
+			switch (typeId) {
 				case TypeId::I8:
 				case TypeId::I16:
 				case TypeId::I32:
 				case TypeId::I64:
+				case TypeId::ISize:
 				case TypeId::U8:
 				case TypeId::U16:
 				case TypeId::U32:
 				case TypeId::U64:
+				case TypeId::USize:
 				case TypeId::F32:
 				case TypeId::F64:
 				case TypeId::Bool:
@@ -161,7 +165,7 @@ SLAKE_API TypeRef Runtime::typeofVar(const Reference &entityRef) const noexcept 
 			char *const basePtr = calcLocalVarRefStackBasePtr(entityRef.asLocalVar);
 			const char *const rawDataPtr = calcLocalVarRefStackRawDataPtr(basePtr);
 
-			TypeRef t = *(TypeId *)(rawDataPtr - sizeof(TypeModifier) - sizeof(TypeId));
+			TypeRef t = *(TypeId *)(rawDataPtr - (sizeof(TypeModifier) + sizeof(TypeId)));
 			t.typeModifier = *(TypeModifier *)(rawDataPtr - sizeof(TypeModifier));
 
 			switch (t.typeId) {
@@ -202,7 +206,7 @@ SLAKE_API TypeRef Runtime::typeofVar(const Reference &entityRef) const noexcept 
 			char *basePtr = calcCoroutineLocalVarRefStackBasePtr(entityRef.asCoroutineLocalVar);
 			const char *const rawDataPtr = calcLocalVarRefStackRawDataPtr(basePtr);
 
-			TypeRef t = *(TypeId *)(rawDataPtr - sizeof(TypeModifier) - sizeof(TypeId));
+			TypeRef t = *(TypeId *)(rawDataPtr - (sizeof(TypeModifier) + sizeof(TypeId)));
 			t.typeModifier = *(TypeModifier *)(rawDataPtr - sizeof(TypeModifier));
 
 			switch (t.typeId) {
@@ -285,59 +289,86 @@ SLAKE_API TypeRef Runtime::typeofVar(const Reference &entityRef) const noexcept 
 	std::terminate();
 }
 
-SLAKE_API InternalExceptionPointer Runtime::readVar(const Reference &entityRef, Value &valueOut) const noexcept {
+SLAKE_API void Runtime::readVar(const Reference &entityRef, Value &valueOut) const noexcept {
 	switch (entityRef.kind) {
 		case ReferenceKind::StaticFieldRef: {
 			const char *const rawDataPtr = (char*)locateValueBasePtr(entityRef);
 
 			switch (typeofVar(entityRef).typeId) {
 				case TypeId::I8:
-					valueOut = (*((int8_t *)rawDataPtr));
+					valueOut.data.asI8 = (*((int8_t *)(rawDataPtr)));
+					valueOut.valueType = ValueType::I8;
 					break;
 				case TypeId::I16:
-					valueOut = (*((int16_t *)rawDataPtr));
+					valueOut.data.asI16 = (*((int16_t *)(rawDataPtr)));
+					valueOut.valueType = ValueType::I16;
 					break;
 				case TypeId::I32:
-					valueOut = (*((int32_t *)rawDataPtr));
+					valueOut.data.asI32 = (*((int32_t *)(rawDataPtr)));
+					valueOut.valueType = ValueType::I32;
 					break;
 				case TypeId::I64:
-					valueOut = (*((int64_t *)rawDataPtr));
+					valueOut.data.asI64 = (*((int64_t *)(rawDataPtr)));
+					valueOut.valueType = ValueType::I64;
+					break;
+				case TypeId::ISize:
+					valueOut.data.asISize = *((ssize_t *)(rawDataPtr));
+					valueOut.valueType = ValueType::ISize;
 					break;
 				case TypeId::U8:
-					valueOut = (*((uint8_t *)rawDataPtr));
+					valueOut.data.asU8 = (*((uint8_t *)(rawDataPtr)));
+					valueOut.valueType = ValueType::U8;
 					break;
 				case TypeId::U16:
-					valueOut = (*((uint16_t *)rawDataPtr));
+					valueOut.data.asU16 = (*((uint16_t *)(rawDataPtr)));
+					valueOut.valueType = ValueType::U16;
 					break;
 				case TypeId::U32:
-					valueOut = (*((uint32_t *)rawDataPtr));
+					valueOut.data.asU32 = (*((uint32_t *)(rawDataPtr)));
+					valueOut.valueType = ValueType::U32;
 					break;
 				case TypeId::U64:
-					valueOut = (*((uint64_t *)rawDataPtr));
+					valueOut.data.asU64 = (*((uint64_t *)(rawDataPtr)));
+					valueOut.valueType = ValueType::U64;
+					break;
+				case TypeId::USize:
+					valueOut.data.asUSize = *((size_t *)(rawDataPtr));
+					valueOut.valueType = ValueType::USize;
 					break;
 				case TypeId::F32:
-					valueOut = (*((float *)rawDataPtr));
+					valueOut.data.asF32 = (*((float *)(rawDataPtr)));
+					valueOut.valueType = ValueType::F32;
 					break;
 				case TypeId::F64:
-					valueOut = (*((double *)rawDataPtr));
+					valueOut.data.asF64 = (*((double *)(rawDataPtr)));
+					valueOut.valueType = ValueType::F64;
 					break;
 				case TypeId::Bool:
-					valueOut = (*((bool *)rawDataPtr));
+					valueOut.data.asBool = (*((bool *)(rawDataPtr)));
+					valueOut.valueType = ValueType::Bool;
 					break;
 				case TypeId::String:
 				case TypeId::Instance:
 				case TypeId::Array:
 				case TypeId::Fn:
-					valueOut = Reference::makeObjectRef(*((Object **)rawDataPtr));
+					valueOut.data.asReference = (Reference::makeObjectRef(*((Object **)(rawDataPtr))));
+					valueOut.valueType = ValueType::Reference;
 					break;
-				case TypeId::StructInstance:
-					valueOut = entityRef;
+				case TypeId::StructInstance: {
+					StructRef structRef;
+					structRef.innerReferenceKind = ReferenceKind::CoroutineLocalVarRef;
+					structRef.innerReference.asCoroutineLocalVar = entityRef.asCoroutineLocalVar;
+
+					valueOut.data.asReference = (Reference::makeStructRef(structRef));
+					valueOut.valueType = ValueType::Reference;
 					break;
+				}
 				case TypeId::Ref:
-					valueOut = (*((Reference *)rawDataPtr));
+					valueOut.data.asReference = (*((Reference *)(rawDataPtr)));
+					valueOut.valueType = ValueType::Reference;
 					break;
 				case TypeId::Any:
-					valueOut = (*((Value *)rawDataPtr));
+					valueOut = (*((Value *)(rawDataPtr)));
 					break;
 				default:
 					// All fields should be checked during the instantiation.
@@ -353,56 +384,76 @@ SLAKE_API InternalExceptionPointer Runtime::readVar(const Reference &entityRef, 
 
 			switch (t.typeId) {
 				case TypeId::I8:
-					valueOut = (*((int8_t *)(rawDataPtr)));
+					valueOut.data.asI8 = (*((int8_t *)(rawDataPtr)));
+					valueOut.valueType = ValueType::I8;
 					break;
 				case TypeId::I16:
-					valueOut = (*((int16_t *)(rawDataPtr)));
+					valueOut.data.asI16 = (*((int16_t *)(rawDataPtr)));
+					valueOut.valueType = ValueType::I16;
 					break;
 				case TypeId::I32:
-					valueOut = (*((int32_t *)(rawDataPtr)));
+					valueOut.data.asI32 = (*((int32_t *)(rawDataPtr)));
+					valueOut.valueType = ValueType::I32;
 					break;
 				case TypeId::I64:
-					valueOut = (*((int64_t *)(rawDataPtr)));
+					valueOut.data.asI64 = (*((int64_t *)(rawDataPtr)));
+					valueOut.valueType = ValueType::I64;
+					break;
+				case TypeId::ISize:
+					valueOut.data.asISize = *((ssize_t *)(rawDataPtr));
+					valueOut.valueType = ValueType::ISize;
 					break;
 				case TypeId::U8:
-					valueOut = (*((uint8_t *)(rawDataPtr)));
+					valueOut.data.asU8 = (*((uint8_t *)(rawDataPtr)));
+					valueOut.valueType = ValueType::U8;
 					break;
 				case TypeId::U16:
-					valueOut = (*((uint16_t *)(rawDataPtr)));
+					valueOut.data.asU16 = (*((uint16_t *)(rawDataPtr)));
+					valueOut.valueType = ValueType::U16;
 					break;
 				case TypeId::U32:
-					valueOut = (*((uint32_t *)(rawDataPtr)));
+					valueOut.data.asU32 = (*((uint32_t *)(rawDataPtr)));
+					valueOut.valueType = ValueType::U32;
 					break;
 				case TypeId::U64:
-					valueOut = (*((uint64_t *)(rawDataPtr)));
+					valueOut.data.asU64 = (*((uint64_t *)(rawDataPtr)));
+					valueOut.valueType = ValueType::U64;
+					break;
+				case TypeId::USize:
+					valueOut.data.asUSize = *((size_t *)(rawDataPtr));
+					valueOut.valueType = ValueType::USize;
 					break;
 				case TypeId::F32:
-					valueOut = (*((float *)(rawDataPtr)));
+					valueOut.data.asF32 = (*((float *)(rawDataPtr)));
+					valueOut.valueType = ValueType::F32;
 					break;
 				case TypeId::F64:
-					valueOut = (*((double *)(rawDataPtr)));
+					valueOut.data.asF64 = (*((double *)(rawDataPtr)));
+					valueOut.valueType = ValueType::F64;
 					break;
 				case TypeId::Bool:
-					valueOut = (*((bool *)(rawDataPtr)));
+					valueOut.data.asBool = (*((bool *)(rawDataPtr)));
+					valueOut.valueType = ValueType::Bool;
 					break;
 				case TypeId::String:
-					valueOut = (Reference::makeObjectRef(*((Object **)(rawDataPtr))));
-					break;
 				case TypeId::Instance:
 				case TypeId::Array:
 				case TypeId::Fn:
-					valueOut = (Reference::makeObjectRef(*((Object **)(rawDataPtr))));
+					valueOut.data.asReference = (Reference::makeObjectRef(*((Object **)(rawDataPtr))));
+					valueOut.valueType = ValueType::Reference;
 					break;
 				case TypeId::StructInstance: {
 					StructRef structRef;
-					structRef.innerReferenceKind = ReferenceKind::LocalVarRef;
-					structRef.innerReference.asLocalVar = entityRef.asLocalVar;
+					structRef.innerReferenceKind = ReferenceKind::CoroutineLocalVarRef;
+					structRef.innerReference.asCoroutineLocalVar = entityRef.asCoroutineLocalVar;
 
-					valueOut = (Reference::makeStructRef(structRef));
+					valueOut.data.asReference = (Reference::makeStructRef(structRef));
+					valueOut.valueType = ValueType::Reference;
 					break;
 				}
 				case TypeId::Ref:
-					valueOut = (*((Reference *)(rawDataPtr)));
+					valueOut.data.asReference = (*((Reference *)(rawDataPtr)));
+					valueOut.valueType = ValueType::Reference;
 					break;
 				case TypeId::Any:
 					valueOut = (*((Value *)(rawDataPtr)));
@@ -421,54 +472,76 @@ SLAKE_API InternalExceptionPointer Runtime::readVar(const Reference &entityRef, 
 
 			switch (t.typeId) {
 				case TypeId::I8:
-					valueOut = (*((int8_t *)(rawDataPtr)));
+					valueOut.data.asI8 = (*((int8_t *)(rawDataPtr)));
+					valueOut.valueType = ValueType::I8;
 					break;
 				case TypeId::I16:
-					valueOut = (*((int16_t *)(rawDataPtr)));
+					valueOut.data.asI16 = (*((int16_t *)(rawDataPtr)));
+					valueOut.valueType = ValueType::I16;
 					break;
 				case TypeId::I32:
-					valueOut = (*((int32_t *)(rawDataPtr)));
+					valueOut.data.asI32 = (*((int32_t *)(rawDataPtr)));
+					valueOut.valueType = ValueType::I32;
 					break;
 				case TypeId::I64:
-					valueOut = (*((int64_t *)(rawDataPtr)));
+					valueOut.data.asI64 = (*((int64_t *)(rawDataPtr)));
+					valueOut.valueType = ValueType::I64;
+					break;
+				case TypeId::ISize:
+					valueOut.data.asISize = *((ssize_t *)(rawDataPtr));
+					valueOut.valueType = ValueType::ISize;
 					break;
 				case TypeId::U8:
-					valueOut = (*((uint8_t *)(rawDataPtr)));
+					valueOut.data.asU8 = (*((uint8_t *)(rawDataPtr)));
+					valueOut.valueType = ValueType::U8;
 					break;
 				case TypeId::U16:
-					valueOut = (*((uint16_t *)(rawDataPtr)));
+					valueOut.data.asU16 = (*((uint16_t *)(rawDataPtr)));
+					valueOut.valueType = ValueType::U16;
 					break;
 				case TypeId::U32:
-					valueOut = (*((uint32_t *)(rawDataPtr)));
+					valueOut.data.asU32 = (*((uint32_t *)(rawDataPtr)));
+					valueOut.valueType = ValueType::U32;
 					break;
 				case TypeId::U64:
-					valueOut = (*((uint64_t *)(rawDataPtr)));
+					valueOut.data.asU64 = (*((uint64_t *)(rawDataPtr)));
+					valueOut.valueType = ValueType::U64;
+					break;
+				case TypeId::USize:
+					valueOut.data.asUSize = *((size_t *)(rawDataPtr));
+					valueOut.valueType = ValueType::USize;
 					break;
 				case TypeId::F32:
-					valueOut = (*((float *)(rawDataPtr)));
+					valueOut.data.asF32 = (*((float *)(rawDataPtr)));
+					valueOut.valueType = ValueType::F32;
 					break;
 				case TypeId::F64:
-					valueOut = (*((double *)(rawDataPtr)));
+					valueOut.data.asF64 = (*((double *)(rawDataPtr)));
+					valueOut.valueType = ValueType::F64;
 					break;
 				case TypeId::Bool:
-					valueOut = (*((bool *)(rawDataPtr)));
+					valueOut.data.asBool = (*((bool *)(rawDataPtr)));
+					valueOut.valueType = ValueType::Bool;
 					break;
 				case TypeId::String:
 				case TypeId::Instance:
 				case TypeId::Array:
 				case TypeId::Fn:
-					valueOut = (Reference::makeObjectRef(*((Object **)(rawDataPtr))));
+					valueOut.data.asReference = (Reference::makeObjectRef(*((Object **)(rawDataPtr))));
+					valueOut.valueType = ValueType::Reference;
 					break;
 				case TypeId::StructInstance: {
 					StructRef structRef;
 					structRef.innerReferenceKind = ReferenceKind::CoroutineLocalVarRef;
 					structRef.innerReference.asCoroutineLocalVar = entityRef.asCoroutineLocalVar;
 
-					valueOut = (Reference::makeStructRef(structRef));
+					valueOut.data.asReference = (Reference::makeStructRef(structRef));
+					valueOut.valueType = ValueType::Reference;
 					break;
 				}
 				case TypeId::Ref:
-					valueOut = (*((Reference *)(rawDataPtr)));
+					valueOut.data.asReference = (*((Reference *)(rawDataPtr)));
+					valueOut.valueType = ValueType::Reference;
 					break;
 				case TypeId::Any:
 					valueOut = (*((Value *)(rawDataPtr)));
@@ -481,56 +554,83 @@ SLAKE_API InternalExceptionPointer Runtime::readVar(const Reference &entityRef, 
 			break;
 		}
 		case ReferenceKind::InstanceFieldRef: {
-			const char *const rawFieldPtr = (char *)locateValueBasePtr(entityRef);
+			const char *const rawDataPtr = (char *)locateValueBasePtr(entityRef);
 
 			switch (typeofVar(entityRef).typeId) {
 				case TypeId::I8:
-					valueOut = (*((int8_t *)rawFieldPtr));
+					valueOut.data.asI8 = (*((int8_t *)(rawDataPtr)));
+					valueOut.valueType = ValueType::I8;
 					break;
 				case TypeId::I16:
-					valueOut = (*((int16_t *)rawFieldPtr));
+					valueOut.data.asI16 = (*((int16_t *)(rawDataPtr)));
+					valueOut.valueType = ValueType::I16;
 					break;
 				case TypeId::I32:
-					valueOut = (*((int32_t *)rawFieldPtr));
+					valueOut.data.asI32 = (*((int32_t *)(rawDataPtr)));
+					valueOut.valueType = ValueType::I32;
 					break;
 				case TypeId::I64:
-					valueOut = (*((int64_t *)rawFieldPtr));
+					valueOut.data.asI64 = (*((int64_t *)(rawDataPtr)));
+					valueOut.valueType = ValueType::I64;
+					break;
+				case TypeId::ISize:
+					valueOut.data.asISize = *((ssize_t *)(rawDataPtr));
+					valueOut.valueType = ValueType::ISize;
 					break;
 				case TypeId::U8:
-					valueOut = (*((uint8_t *)rawFieldPtr));
+					valueOut.data.asU8 = (*((uint8_t *)(rawDataPtr)));
+					valueOut.valueType = ValueType::U8;
 					break;
 				case TypeId::U16:
-					valueOut = (*((uint16_t *)rawFieldPtr));
+					valueOut.data.asU16 = (*((uint16_t *)(rawDataPtr)));
+					valueOut.valueType = ValueType::U16;
 					break;
 				case TypeId::U32:
-					valueOut = (*((uint32_t *)rawFieldPtr));
+					valueOut.data.asU32 = (*((uint32_t *)(rawDataPtr)));
+					valueOut.valueType = ValueType::U32;
 					break;
 				case TypeId::U64:
-					valueOut = (*((uint64_t *)rawFieldPtr));
+					valueOut.data.asU64 = (*((uint64_t *)(rawDataPtr)));
+					valueOut.valueType = ValueType::U64;
+					break;
+				case TypeId::USize:
+					valueOut.data.asUSize = *((size_t *)(rawDataPtr));
+					valueOut.valueType = ValueType::USize;
 					break;
 				case TypeId::F32:
-					valueOut = (*((float *)rawFieldPtr));
+					valueOut.data.asF32 = (*((float *)(rawDataPtr)));
+					valueOut.valueType = ValueType::F32;
 					break;
 				case TypeId::F64:
-					valueOut = (*((double *)rawFieldPtr));
+					valueOut.data.asF64 = (*((double *)(rawDataPtr)));
+					valueOut.valueType = ValueType::F64;
 					break;
 				case TypeId::Bool:
-					valueOut = (*((bool *)rawFieldPtr));
+					valueOut.data.asBool = (*((bool *)(rawDataPtr)));
+					valueOut.valueType = ValueType::Bool;
 					break;
 				case TypeId::String:
 				case TypeId::Instance:
 				case TypeId::Array:
 				case TypeId::Fn:
-					valueOut = (Reference::makeObjectRef(*((Object **)rawFieldPtr)));
+					valueOut.data.asReference = (Reference::makeObjectRef(*((Object **)(rawDataPtr))));
+					valueOut.valueType = ValueType::Reference;
 					break;
-				case TypeId::StructInstance:
-					valueOut = entityRef;
+				case TypeId::StructInstance: {
+					StructRef structRef;
+					structRef.innerReferenceKind = ReferenceKind::CoroutineLocalVarRef;
+					structRef.innerReference.asCoroutineLocalVar = entityRef.asCoroutineLocalVar;
+
+					valueOut.data.asReference = (Reference::makeStructRef(structRef));
+					valueOut.valueType = ValueType::Reference;
 					break;
+				}
 				case TypeId::Ref:
-					valueOut = (*((Reference *)rawFieldPtr));
+					valueOut.data.asReference = (*((Reference *)(rawDataPtr)));
+					valueOut.valueType = ValueType::Reference;
 					break;
 				case TypeId::Any:
-					valueOut = (*((Value *)rawFieldPtr));
+					valueOut = (*((Value *)(rawDataPtr)));
 					break;
 				default:
 					// All fields should be checked during the instantiation.
@@ -672,12 +772,9 @@ SLAKE_API InternalExceptionPointer Runtime::readVar(const Reference &entityRef, 
 		default:
 			std::terminate();
 	}
-	return {};
 }
 
 SLAKE_API InternalExceptionPointer Runtime::writeVar(const Reference &entityRef, const Value &value) const noexcept {
-	bool result;
-
 	switch (entityRef.kind) {
 		case ReferenceKind::StaticFieldRef: {
 			char *const rawDataPtr = (char *)locateValueBasePtr(entityRef);
@@ -695,6 +792,9 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const Reference &entityRef,
 				case TypeId::I64:
 					*((int64_t *)rawDataPtr) = value.getI64();
 					break;
+				case TypeId::ISize:
+					*((slake::ssize_t *)rawDataPtr) = value.getISize();
+					break;
 				case TypeId::U8:
 					*((uint8_t *)rawDataPtr) = value.getU8();
 					break;
@@ -706,6 +806,9 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const Reference &entityRef,
 					break;
 				case TypeId::U64:
 					*((uint64_t *)rawDataPtr) = value.getU64();
+					break;
+				case TypeId::USize:
+					*((size_t *)rawDataPtr) = value.getUSize();
 					break;
 				case TypeId::F32:
 					*((float *)rawDataPtr) = value.getF32();
@@ -821,7 +924,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const Reference &entityRef,
 			break;
 		}
 		case ReferenceKind::CoroutineLocalVarRef: {
-			const char *const rawDataPtr = (char *)locateValueBasePtr(entityRef);
+			char *const rawDataPtr = (char *)locateValueBasePtr(entityRef);
 
 			TypeRef t = typeofVar(entityRef);
 

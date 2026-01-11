@@ -60,14 +60,20 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, const Value &i) {
 				case ReferenceKind::InstanceFieldRef:
 					context->pushObject(entityRef.asObjectField.instanceObject);
 					break;
-				case ReferenceKind::LocalVarRef:
+				case ReferenceKind::LocalVarRef: {
+					Value data;
 					_gcWalk(context, *entityRef.asLocalVar.context);
-					_gcWalk(context, readVarUnsafe(entityRef));
+					readVar(entityRef, data);
+					_gcWalk(context, data);
 					break;
-				case ReferenceKind::CoroutineLocalVarRef:
+				}
+				case ReferenceKind::CoroutineLocalVarRef: {
+					Value data;
 					context->pushObject(entityRef.asCoroutineLocalVar.coroutine);
-					_gcWalk(context, readVarUnsafe(entityRef));
+					readVar(entityRef, data);
+					_gcWalk(context, data);
 					break;
+				}
 				case ReferenceKind::ArgRef:
 					break;
 				case ReferenceKind::CoroutineArgRef:
@@ -207,8 +213,10 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 					for (auto i = ((ModuleObject *)v)->members.begin(); i != ((ModuleObject *)v)->members.end(); ++i) {
 						context->pushObject(i.value());
 					}
+					Value data;
 					for (size_t i = 0; i < ((ModuleObject *)v)->fieldRecords.size(); ++i) {
-						_gcWalk(context, readVarUnsafe(Reference::makeStaticFieldRef((ModuleObject *)v, i)));
+						readVar(Reference::makeStaticFieldRef((ModuleObject *)v, i), data);
+						_gcWalk(context, data);
 					}
 
 					context->pushObject(((ModuleObject *)v)->getParent());
@@ -230,9 +238,11 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 						_gcWalk(context, mt);
 					}
 
+					Value data;
 					for (size_t i = 0; i < value->fieldRecords.size(); ++i) {
 						_gcWalk(context, value->fieldRecords.at(i).type);
-						_gcWalk(context, readVarUnsafe(Reference::makeStaticFieldRef(value, i)));
+						readVar(Reference::makeStaticFieldRef(value, i), data);
+						_gcWalk(context, data);
 					}
 
 					for (auto &i : value->implTypes) {
@@ -267,9 +277,11 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 
 					StructObject *value = (StructObject *)v;
 
+					Value data;
 					for (size_t i = 0; i < value->fieldRecords.size(); ++i) {
 						_gcWalk(context, value->fieldRecords.at(i).type);
-						_gcWalk(context, readVarUnsafe(Reference::makeStaticFieldRef(value, i)));
+						readVar(Reference::makeStaticFieldRef(value, i), data);
+						_gcWalk(context, data);
 					}
 
 					for (auto &i : value->genericParams) {
@@ -298,8 +310,10 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 
 					InterfaceObject *value = (InterfaceObject *)v;
 
+					Value data;
 					for (size_t i = 0; i < value->fieldRecords.size(); ++i) {
-						_gcWalk(context, readVarUnsafe(Reference::makeStaticFieldRef(value, i)));
+						readVar(Reference::makeStaticFieldRef(value, i), data);
+						_gcWalk(context, data);
 					}
 
 					for (auto &i : value->implTypes) {

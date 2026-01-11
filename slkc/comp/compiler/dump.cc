@@ -621,9 +621,12 @@ SLKC_API peff::Option<CompilationError> slkc::dumpModuleMembers(
 			case slake::TypeId::Array:
 			case slake::TypeId::Tuple:
 			case slake::TypeId::SIMD:
-			case slake::TypeId::Fn:
-				SLKC_RETURN_IF_COMP_ERROR(dumpValue(allocator, writer, mod->associatedRuntime->readVarUnsafe(slake::Reference::makeStaticFieldRef(mod, i))));
+			case slake::TypeId::Fn: {
+				slake::Value data;
+				mod->associatedRuntime->readVar(slake::Reference::makeStaticFieldRef(mod, i), data);
+				SLKC_RETURN_IF_COMP_ERROR(dumpValue(allocator, writer, data));
 				break;
+			}
 			case slake::TypeId::StructInstance:
 				break;
 			case slake::TypeId::Ref:

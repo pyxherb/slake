@@ -1,4 +1,5 @@
 #include <slake/runtime.h>
+#include <variant>
 
 using namespace slake;
 
@@ -139,9 +140,9 @@ SLAKE_API const peff::DynArray<Value> *ClassObject::getGenericArgs() const {
 SLAKE_API ClassObject::ClassObject(Duplicator *duplicator, const ClassObject &x, peff::Alloc *allocator, bool &succeededOut)
 	: BasicModuleObject(duplicator, x, allocator, succeededOut),
 	  genericArgs(allocator),
-	  mappedGenericArgs(allocator), // No need to copy
+	  mappedGenericArgs(allocator),	 // No need to copy
 	  genericParams(allocator),
-	  mappedGenericParams(allocator), // No need to copy
+	  mappedGenericParams(allocator),  // No need to copy
 	  implTypes(allocator) {
 	if (succeededOut) {
 		classFlags = x.classFlags;
@@ -296,9 +297,9 @@ SLAKE_API InterfaceObject::InterfaceObject(Runtime *rt, peff::Alloc *selfAllocat
 SLAKE_API InterfaceObject::InterfaceObject(Duplicator *duplicator, const InterfaceObject &x, peff::Alloc *allocator, bool &succeededOut)
 	: BasicModuleObject(duplicator, x, allocator, succeededOut),
 	  genericArgs(allocator),
-	  mappedGenericArgs(allocator), // No need to copy
+	  mappedGenericArgs(allocator),	 // No need to copy
 	  genericParams(allocator),
-	  mappedGenericParams(allocator), // No need to copy
+	  mappedGenericParams(allocator),  // No need to copy
 	  implTypes(allocator),
 	  implInterfaceIndices(allocator) {
 	if (succeededOut) {
@@ -471,50 +472,141 @@ SLAKE_API Object *StructObject::duplicate(Duplicator *duplicator) const {
 	return (Object *)alloc(duplicator, this).get();
 }
 
-struct StructRecursionCheckFrame {
-	StructObject *structObject;
+struct IndexedStructRecursionCheckFrameExData {
 	size_t index;
+};
+
+struct EnumModuleIteratorStructRecursionCheckFrameExData {
+	decltype(EnumModuleObject::members)::ConstIterator enumModuleIterator;
+};
+
+struct StructRecursionCheckFrame {
+	Object *structObject;
+
+	std::variant<IndexedStructRecursionCheckFrameExData,
+		EnumModuleIteratorStructRecursionCheckFrameExData>
+		exData;
 };
 
 struct StructRecursionCheckContext {
 	peff::List<StructRecursionCheckFrame> frames;
+	peff::Set<Object *> walkedObjects;
 
-	SLAKE_FORCEINLINE StructRecursionCheckContext(peff::Alloc *allocator) : frames(allocator) {}
+	SLAKE_FORCEINLINE StructRecursionCheckContext(peff::Alloc *allocator) : frames(allocator), walkedObjects(allocator) {}
 };
 
-SLAKE_FORCEINLINE InternalExceptionPointer _isStructRecursed(StructObject *structObject, StructRecursionCheckContext &context) {
-	if (!context.frames.pushBack({ structObject, 0 }))
-		return OutOfMemoryError::alloc();
+static SLAKE_FORCEINLINE InternalExceptionPointer _isStructRecursed(StructRecursionCheckContext &context) {
+	auto checkTypeRef = [&context](const TypeRef &typeRef) -> InternalExceptionPointer {
+		switch (typeRef.typeId) {
+			case TypeId::StructInstance: {
+				CustomTypeDefObject *td = typeRef.getCustomTypeDef();
 
+				assert(td->typeObject->getObjectKind() == ObjectKind::Struct);
+				if (!context.frames.pushBack({ td->typeObject, IndexedStructRecursionCheckFrameExData{ 0 } }))
+					return OutOfMemoryError::alloc();
+				break;
+			}
+			case TypeId::UnionEnum: {
+				CustomTypeDefObject *td = typeRef.getCustomTypeDef();
+
+				assert(td->typeObject->getObjectKind() == ObjectKind::UnionEnum);
+				if (!context.frames.pushBack({ td->typeObject, EnumModuleIteratorStructRecursionCheckFrameExData{ ((UnionEnumObject *)td->typeObject)->members.beginConst() } }))
+					return OutOfMemoryError::alloc();
+				break;
+			}
+			case TypeId::UnionEnumItem: {
+				CustomTypeDefObject *td = typeRef.getCustomTypeDef();
+
+				assert(td->typeObject->getObjectKind() == ObjectKind::UnionEnum);
+				if (!context.frames.pushBack({ td->typeObject, IndexedStructRecursionCheckFrameExData{ 0 } }))
+					return OutOfMemoryError::alloc();
+				break;
+			}
+		}
+		return {};
+	};
 	while (context.frames.size()) {
 		StructRecursionCheckFrame &curFrame = context.frames.back();
 
-		StructObject *structObject = curFrame.structObject;
-		// Check if the interface has cyclic inheritance.
-		if (!curFrame.index) {
-			for (auto &i : context.frames) {
-				if ((&i != &curFrame) && (i.structObject == curFrame.structObject))
-					std::terminate();
+		switch (curFrame.structObject->getObjectKind()) {
+			case ObjectKind::Struct: {
+				StructObject *structObject = (StructObject *)curFrame.structObject;
+				size_t &index = std::get<IndexedStructRecursionCheckFrameExData>(curFrame.exData).index;
+				if (!index) {
+					if (context.walkedObjects.contains(curFrame.structObject))
+						// Recursed!
+						std::terminate();
+
+					if (!context.walkedObjects.insert(+curFrame.structObject))
+						return OutOfMemoryError::alloc();
+				} else if (index >= structObject->fieldRecords.size()) {
+					context.walkedObjects.remove(structObject);
+					context.frames.popBack();
+					continue;
+				}
+
+				auto &curRecord = structObject->fieldRecords.at(index);
+
+				TypeRef typeRef = curRecord.type;
+				SLAKE_RETURN_IF_EXCEPT(checkTypeRef(typeRef));
+
+				++index;
+				break;
 			}
-		}
-		if (curFrame.index >= structObject->fieldRecords.size()) {
-			context.frames.popBack();
-			continue;
-		}
+			case ObjectKind::UnionEnum: {
+				UnionEnumObject *structObject = (UnionEnumObject *)curFrame.structObject;
+				decltype(EnumModuleObject::members)::ConstIterator &iterator = std::get<EnumModuleIteratorStructRecursionCheckFrameExData>(curFrame.exData).enumModuleIterator;
+				if (iterator == structObject->members.beginConst()) {
+					if (context.walkedObjects.contains(curFrame.structObject))
+						// Recursed!
+						std::terminate();
 
-		auto &curRecord = curFrame.structObject->fieldRecords.at(curFrame.index);
+					if (!context.walkedObjects.insert(+curFrame.structObject))
+						return OutOfMemoryError::alloc();
+				} else if (iterator == structObject->members.endConst()) {
+					context.walkedObjects.remove(structObject);
+					context.frames.popBack();
+					continue;
+				}
 
-		TypeRef typeRef = curRecord.type;
-		if (curRecord.type.typeId == TypeId::Instance) {
-			CustomTypeDefObject *td = typeRef.getCustomTypeDef();
+				auto curRecord = *iterator;
 
-			if (td->typeObject->getObjectKind() == ObjectKind::Struct) {
-				if (!context.frames.pushBack({ (StructObject *)td->typeObject, curFrame.index }))
+				if (!context.frames.pushBack({ curRecord.second, IndexedStructRecursionCheckFrameExData{ 0 } }))
 					return OutOfMemoryError::alloc();
-			}
-		}
+				if (!context.walkedObjects.insert(+structObject))
+					return OutOfMemoryError::alloc();
+				break;
 
-		++curFrame.index;
+				++iterator;
+				break;
+			}
+			case ObjectKind::UnionEnumItem: {
+				UnionEnumItemObject *structObject = (UnionEnumItemObject *)curFrame.structObject;
+				size_t &index = std::get<IndexedStructRecursionCheckFrameExData>(curFrame.exData).index;
+				if (!index) {
+					if (context.walkedObjects.contains(curFrame.structObject))
+						// Recursed!
+						std::terminate();
+
+					if (!context.walkedObjects.insert(+curFrame.structObject))
+						return OutOfMemoryError::alloc();
+				} else if (index >= structObject->fieldRecords.size()) {
+					context.walkedObjects.remove(structObject);
+					context.frames.popBack();
+					continue;
+				}
+
+				auto &curRecord = structObject->fieldRecords.at(index);
+
+				TypeRef typeRef = curRecord.type;
+				SLAKE_RETURN_IF_EXCEPT(checkTypeRef(typeRef));
+
+				++index;
+				break;
+			}
+			default:
+				std::terminate();
+		}
 	}
 
 	return {};
@@ -523,7 +615,10 @@ SLAKE_FORCEINLINE InternalExceptionPointer _isStructRecursed(StructObject *struc
 SLAKE_API InternalExceptionPointer StructObject::isRecursed(peff::Alloc *allocator) noexcept {
 	StructRecursionCheckContext context(allocator);
 
-	return _isStructRecursed(this, context);
+	if (!context.frames.pushBack({ this, IndexedStructRecursionCheckFrameExData{ 0 } }))
+		return OutOfMemoryError::alloc();
+
+	return _isStructRecursed(context);
 }
 
 SLAKE_API slake::StructObject::StructObject(Runtime *rt, peff::Alloc *selfAllocator)
@@ -542,9 +637,9 @@ SLAKE_API const peff::DynArray<Value> *StructObject::getGenericArgs() const {
 SLAKE_API StructObject::StructObject(Duplicator *duplicator, const StructObject &x, peff::Alloc *allocator, bool &succeededOut)
 	: BasicModuleObject(duplicator, x, allocator, succeededOut),
 	  genericArgs(allocator),
-	  mappedGenericArgs(allocator), // No need to copy
+	  mappedGenericArgs(allocator),	 // No need to copy
 	  genericParams(allocator),
-	  mappedGenericParams(allocator), // No need to copy
+	  mappedGenericParams(allocator),  // No need to copy
 	  implTypes(allocator) {
 	if (succeededOut) {
 		structFlags = x.structFlags;
@@ -691,11 +786,11 @@ SLAKE_API void EnumModuleObject::replaceAllocator(peff::Alloc *allocator) noexce
 	members.replaceAllocator(allocator);
 }
 
-SLAKE_API ScopedEnumObject::ScopedEnumObject(Runtime* rt, peff::Alloc* selfAllocator)
+SLAKE_API ScopedEnumObject::ScopedEnumObject(Runtime *rt, peff::Alloc *selfAllocator)
 	: EnumModuleObject(rt, selfAllocator, ObjectKind::ScopedEnum) {
 }
 
-SLAKE_API ScopedEnumObject::ScopedEnumObject(Duplicator* duplicator, const ScopedEnumObject& x, peff::Alloc* allocator, bool& succeededOut)
+SLAKE_API ScopedEnumObject::ScopedEnumObject(Duplicator *duplicator, const ScopedEnumObject &x, peff::Alloc *allocator, bool &succeededOut)
 	: EnumModuleObject(duplicator, x, allocator, succeededOut) {
 	if (succeededOut) {
 		baseType = x.baseType;
@@ -703,32 +798,31 @@ SLAKE_API ScopedEnumObject::ScopedEnumObject(Duplicator* duplicator, const Scope
 }
 
 SLAKE_API ScopedEnumObject::~ScopedEnumObject() {
-
 }
 
-SLAKE_API Object* ScopedEnumObject::duplicate(Duplicator* duplicator) const {
+SLAKE_API Object *ScopedEnumObject::duplicate(Duplicator *duplicator) const {
 	return (Object *)alloc(duplicator, this).get();
 }
 
-SLAKE_API Reference ScopedEnumObject::getMember(const std::string_view& name) const {
+SLAKE_API Reference ScopedEnumObject::getMember(const std::string_view &name) const {
 	if (auto it = members.find(name); it != members.end()) {
 		return Reference::makeObjectRef(it.value());
 	}
 	return Reference::makeInvalidRef();
 }
 
-SLAKE_API bool ScopedEnumObject::addMember(MemberObject* member) {
+SLAKE_API bool ScopedEnumObject::addMember(MemberObject *member) {
 	if (!members.insert(member->getName(), +member))
 		return false;
 	member->setParent(this);
 	return true;
 }
 
-SLAKE_API bool ScopedEnumObject::removeMember(const std::string_view& name) {
+SLAKE_API bool ScopedEnumObject::removeMember(const std::string_view &name) {
 	return members.remove(name);
 }
 
-SLAKE_API HostObjectRef<ScopedEnumObject> ScopedEnumObject::alloc(Runtime* rt) {
+SLAKE_API HostObjectRef<ScopedEnumObject> ScopedEnumObject::alloc(Runtime *rt) {
 	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();
 
 	std::unique_ptr<ScopedEnumObject, peff::DeallocableDeleter<ScopedEnumObject>> ptr(
@@ -743,7 +837,7 @@ SLAKE_API HostObjectRef<ScopedEnumObject> ScopedEnumObject::alloc(Runtime* rt) {
 	return ptr.release();
 }
 
-SLAKE_API HostObjectRef<ScopedEnumObject> ScopedEnumObject::alloc(Duplicator* duplicator, const ScopedEnumObject* other) {
+SLAKE_API HostObjectRef<ScopedEnumObject> ScopedEnumObject::alloc(Duplicator *duplicator, const ScopedEnumObject *other) {
 	return (ScopedEnumObject *)other->duplicate(duplicator);
 }
 
@@ -751,7 +845,7 @@ SLAKE_API void ScopedEnumObject::dealloc() {
 	peff::destroyAndRelease<ScopedEnumObject>(selfAllocator.get(), this, sizeof(std::max_align_t));
 }
 
-SLAKE_API void ScopedEnumObject::replaceAllocator(peff::Alloc* allocator) noexcept {
+SLAKE_API void ScopedEnumObject::replaceAllocator(peff::Alloc *allocator) noexcept {
 	this->MemberObject::replaceAllocator(allocator);
 
 	members.replaceAllocator(allocator);

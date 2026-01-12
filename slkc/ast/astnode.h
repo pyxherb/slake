@@ -13,7 +13,6 @@ namespace slkc {
 		UnionEnum,
 		EnumItem,
 		UnionEnumItem,
-		RecordUnionEnumItem,
 		AttributeDef,
 		Attribute,
 		MacroAttribute,

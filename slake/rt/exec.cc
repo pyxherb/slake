@@ -2150,6 +2150,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 					_castToLiteralValue<double>(v, valueOut);
 					break;
 				case TypeId::Instance:
+					valueOut = v;
 					break;
 				default:
 					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));

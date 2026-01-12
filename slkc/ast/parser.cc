@@ -544,58 +544,6 @@ SLKC_API peff::Option<SyntaxError> Parser::parseUnionEnumItem(AstNodePtr<ModuleN
 					enumItem->tokenRange = TokenRange{ document->mainModule, token->index, parseContext.idxPrevToken };
 				});
 
-				if ((idxMember = enumOut->pushMember(enumItem.castTo<MemberNode>())) == SIZE_MAX) {
-					return genOutOfMemorySyntaxError();
-				}
-
-				while (true) {
-					AstNodePtr<TypeNameNode> type;
-					if ((syntaxError = parseTypeName(type)))
-						return syntaxError;
-					if (!enumItem->elementTypes.pushBack(std::move(type)))
-						return genOutOfMemorySyntaxError();
-					if (peekToken()->tokenId != TokenId::Comma)
-						break;
-					Token *commaToken = nextToken();
-				}
-			}
-			Token *rParentheseToken;
-			if ((syntaxError = expectToken((rParentheseToken = peekToken()), TokenId::RParenthese)))
-				return syntaxError;
-			nextToken();
-
-			if (auto it = enumOut->memberIndices.find(enumItem->name); it != enumOut->memberIndices.end()) {
-				peff::String s(resourceAllocator.get());
-
-				if (!s.build(enumItem->name)) {
-					return genOutOfMemorySyntaxError();
-				}
-
-				ConflictingDefinitionsErrorExData exData(std::move(s));
-
-				return SyntaxError(enumItem->tokenRange, std::move(exData));
-			} else {
-				if (!(enumOut->indexMember(idxMember))) {
-					return genOutOfMemorySyntaxError();
-				}
-			}
-			break;
-		}
-		case TokenId::LBrace: {
-			AstNodePtr<RecordUnionEnumItemNode> enumItem;
-			if (!(enumItem = makeAstNode<RecordUnionEnumItemNode>(resourceAllocator.get(), resourceAllocator.get(), document)))
-				return genOutOfMemorySyntaxError();
-			nextToken();
-
-			if (!enumItem->name.build(nameToken->sourceText))
-				return genOutOfMemorySyntaxError();
-
-			size_t idxMember;
-			{
-				peff::ScopeGuard setTokenRangeGuard([this, token, enumItem]() noexcept {
-					enumItem->tokenRange = TokenRange{ document->mainModule, token->index, parseContext.idxPrevToken };
-				});
-
 				if ((idxMember = enumOut->pushMember(enumItem.castTo<MemberNode>())) == SIZE_MAX)
 					return genOutOfMemorySyntaxError();
 
@@ -629,8 +577,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseUnionEnumItem(AstNodePtr<ModuleN
 						}
 						nextToken();
 
-						AstNodePtr<TypeNameNode> type;
-						if ((syntaxError = parseTypeName(type)))
+						if ((syntaxError = parseTypeName(enumItemEntry->type)))
 							return syntaxError;
 					}
 
@@ -656,7 +603,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseUnionEnumItem(AstNodePtr<ModuleN
 				}
 			}
 			Token *rBraceToken;
-			if ((syntaxError = expectToken((rBraceToken = peekToken()), TokenId::RBrace)))
+			if ((syntaxError = expectToken((rBraceToken = peekToken()), TokenId::RParenthese)))
 				return syntaxError;
 			nextToken();
 

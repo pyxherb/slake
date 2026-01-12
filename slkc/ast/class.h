@@ -135,26 +135,14 @@ namespace slkc {
 		SLKC_API virtual ~ScopedEnumNode();
 	};
 
-	class UnionEnumItemNode : public MemberNode {
+	class UnionEnumItemNode : public ModuleNode {
 	protected:
 		SLKC_API virtual AstNodePtr<AstNode> doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const override;
 
 	public:
-		peff::DynArray<AstNodePtr<TypeNameNode>> elementTypes;
-
 		SLKC_API UnionEnumItemNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
 		SLKC_API UnionEnumItemNode(const UnionEnumItemNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut);
 		SLKC_API virtual ~UnionEnumItemNode();
-	};
-
-	class RecordUnionEnumItemNode : public ModuleNode {
-	protected:
-		SLKC_API virtual AstNodePtr<AstNode> doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const override;
-
-	public:
-		SLKC_API RecordUnionEnumItemNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
-		SLKC_API RecordUnionEnumItemNode(const RecordUnionEnumItemNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut);
-		SLKC_API virtual ~RecordUnionEnumItemNode();
 	};
 
 	class UnionEnumNode : public ModuleNode {

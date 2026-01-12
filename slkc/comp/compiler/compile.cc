@@ -164,8 +164,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileTypeName(
 					typeOut = slake::TypeRef(slake::TypeId::UnionEnum, typeDef.get());
 					break;
 				}
-				case AstNodeType::UnionEnumItem:
-				case AstNodeType::RecordUnionEnumItem: {
+				case AstNodeType::UnionEnumItem: {
 					slake::HostObjectRef<slake::CustomTypeDefObject> typeDef;
 
 					if (!(typeDef = slake::CustomTypeDefObject::alloc(compileEnv->runtime))) {

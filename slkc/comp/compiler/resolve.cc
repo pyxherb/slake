@@ -792,7 +792,6 @@ resolved:
 			case AstNodeType::ScopedEnum:
 			case AstNodeType::UnionEnum:
 			case AstNodeType::UnionEnumItem:
-			case AstNodeType::RecordUnionEnumItem:
 				memberNodeOut = member;
 				return {};
 			default:;

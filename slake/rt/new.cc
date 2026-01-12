@@ -201,7 +201,7 @@ SLAKE_API InternalExceptionPointer Runtime::prepareClassForInstantiation(ClassOb
 }
 
 struct StructPreparationFrame {
-	StructObject *structObject;
+	Object *structObject;
 	size_t index;
 };
 
@@ -211,32 +211,44 @@ struct StructPreparationContext {
 	SLAKE_FORCEINLINE StructPreparationContext(peff::Alloc *allocator) : frames(allocator) {}
 };
 
-SLAKE_FORCEINLINE InternalExceptionPointer _prepareStructForInstantiation(StructObject *structObject, StructPreparationContext &context) {
-	if (!context.frames.pushBack({ structObject, 0 }))
-		return OutOfMemoryError::alloc();
-
+SLAKE_FORCEINLINE InternalExceptionPointer _prepareStructForInstantiation(StructPreparationContext &context) {
 	while (context.frames.size()) {
 		StructPreparationFrame &curFrame = context.frames.back();
 
-		StructObject *structObject = curFrame.structObject;
-		if (curFrame.index >= structObject->fieldRecords.size()) {
-			if (!structObject->cachedObjectLayout)
-				SLAKE_RETURN_IF_EXCEPT(structObject->associatedRuntime->initObjectLayoutForStruct(structObject));
-			context.frames.popBack();
-			continue;
+		switch (curFrame.structObject->getObjectKind()) {
+			case ObjectKind::Struct: {
+				StructObject *structObject = (StructObject *)curFrame.structObject;
+				if (curFrame.index >= structObject->fieldRecords.size()) {
+					if (!structObject->cachedObjectLayout)
+						SLAKE_RETURN_IF_EXCEPT(structObject->associatedRuntime->initObjectLayoutForStruct(structObject));
+					context.frames.popBack();
+					continue;
+				}
+
+				auto &curRecord = structObject->fieldRecords.at(curFrame.index);
+
+				TypeRef typeRef = curRecord.type;
+				switch (curRecord.type.typeId) {
+					case TypeId::StructInstance: {
+						CustomTypeDefObject *td = typeRef.getCustomTypeDef();
+						assert(td->typeObject->getObjectKind() == ObjectKind::Struct);
+						if (!context.frames.pushBack({ (StructObject *)td->typeObject, 0 }))
+							return OutOfMemoryError::alloc();
+						break;
+					}
+					case TypeId::UnionEnum: {
+						CustomTypeDefObject *td = typeRef.getCustomTypeDef();
+						assert(td->typeObject->getObjectKind() == ObjectKind::UnionEnum);
+						if (!context.frames.pushBack({ (UnionEnumObject *)td->typeObject, 0 }))
+							return OutOfMemoryError::alloc();
+						break;
+					}
+				}
+
+				++curFrame.index;
+				break;
+			}
 		}
-
-		auto &curRecord = curFrame.structObject->fieldRecords.at(curFrame.index);
-
-		TypeRef typeRef = curRecord.type;
-		if (curRecord.type.typeId == TypeId::StructInstance) {
-			CustomTypeDefObject *td = typeRef.getCustomTypeDef();
-			assert(td->typeObject->getObjectKind() == ObjectKind::Struct);
-			if (!context.frames.pushBack({ (StructObject *)td->typeObject, curFrame.index }))
-				return OutOfMemoryError::alloc();
-		}
-
-		++curFrame.index;
 	}
 
 	return {};
@@ -245,7 +257,10 @@ SLAKE_FORCEINLINE InternalExceptionPointer _prepareStructForInstantiation(Struct
 SLAKE_API InternalExceptionPointer Runtime::prepareStructForInstantiation(StructObject *cls) {
 	StructPreparationContext context(getFixedAlloc());
 
-	SLAKE_RETURN_IF_EXCEPT(_prepareStructForInstantiation(cls, context));
+	if (!context.frames.pushBack({ cls, 0 }))
+		return OutOfMemoryError::alloc();
+
+	SLAKE_RETURN_IF_EXCEPT(_prepareStructForInstantiation(context));
 
 	return {};
 }

@@ -473,18 +473,13 @@ malformed:
 	return {};
 }
 
-struct StructStructRecursionCheckFrameExData {
+struct IndexedStructRecursionCheckFrameExData {
 	size_t index;
-};
-
-struct StructUnionEnumStructRecursionCheckFrameExData {
-	size_t memberIndex;
-	size_t elementIndex;
 };
 
 struct StructRecursionCheckFrame {
 	AstNodePtr<AstNode> structNode;
-	std::variant<StructStructRecursionCheckFrameExData, StructUnionEnumStructRecursionCheckFrameExData> exData;
+	std::variant<IndexedStructRecursionCheckFrameExData> exData;
 };
 
 struct StructRecursionCheckContext {
@@ -505,7 +500,7 @@ static peff::Option<CompilationError> _isStructRecursed(
 		switch (curFrame.structNode->getAstNodeType()) {
 			case AstNodeType::Struct: {
 				const AstNodePtr<StructNode> &curStruct = curFrame.structNode.castTo<StructNode>();
-				StructStructRecursionCheckFrameExData &exData = std::get<StructStructRecursionCheckFrameExData>(curFrame.exData);
+				IndexedStructRecursionCheckFrameExData &exData = std::get<IndexedStructRecursionCheckFrameExData>(curFrame.exData);
 
 				if (!exData.index) {
 					if (walkedStructs.contains(curStruct.castTo<AstNode>())) {
@@ -533,11 +528,15 @@ static peff::Option<CompilationError> _isStructRecursed(
 
 						switch (m->getAstNodeType()) {
 							case AstNodeType::Struct:
-								if (!context.frames.pushBack(StructRecursionCheckFrame{ m.castTo<AstNode>(), StructStructRecursionCheckFrameExData{ 0 } }))
+								if (!context.frames.pushBack(StructRecursionCheckFrame{ m.castTo<AstNode>(), IndexedStructRecursionCheckFrameExData{ 0 } }))
 									return genOutOfMemoryCompError();
 								break;
 							case AstNodeType::UnionEnum:
-								if (!context.frames.pushBack(StructRecursionCheckFrame{ m.castTo<AstNode>(), StructUnionEnumStructRecursionCheckFrameExData{ 0, 0 } }))
+								if (!context.frames.pushBack(StructRecursionCheckFrame{ m.castTo<AstNode>(), IndexedStructRecursionCheckFrameExData{ 0 } }))
+									return genOutOfMemoryCompError();
+								break;
+							case AstNodeType::UnionEnumItem:
+								if (!context.frames.pushBack(StructRecursionCheckFrame{ m.castTo<AstNode>(), IndexedStructRecursionCheckFrameExData{ 0 } }))
 									return genOutOfMemoryCompError();
 								break;
 							default:
@@ -552,40 +551,71 @@ static peff::Option<CompilationError> _isStructRecursed(
 			}
 			case AstNodeType::UnionEnum: {
 				const AstNodePtr<UnionEnumNode> &curStruct = curFrame.structNode.castTo<UnionEnumNode>();
-				StructUnionEnumStructRecursionCheckFrameExData &exData = std::get<StructUnionEnumStructRecursionCheckFrameExData>(curFrame.exData);
+				IndexedStructRecursionCheckFrameExData &exData = std::get<IndexedStructRecursionCheckFrameExData>(curFrame.exData);
 
-				if (!exData.memberIndex) {
-					if (!exData.elementIndex) {
-						if (walkedStructs.contains(curStruct.castTo<AstNode>())) {
-							return CompilationError(curStruct->tokenRange, CompilationErrorKind::RecursedValueType);
-						}
-						if (!walkedStructs.insert(curStruct.castTo<AstNode>()))
-							return genOutOfMemoryCompError();
+				if (!exData.index) {
+					if (walkedStructs.contains(curStruct.castTo<AstNode>())) {
+						whetherOut = true;
+						return {};
 					}
+					if (!walkedStructs.insert(curStruct.castTo<AstNode>()))
+						return genOutOfMemoryCompError();
 				}
-				if (exData.memberIndex >= curStruct->members.size()) {
+				if (exData.index >= curStruct->members.size()) {
 					walkedStructs.remove(curStruct.castTo<AstNode>());
 					context.frames.popBack();
 					continue;
 				}
 
-				AstNodePtr<MemberNode> v = curStruct->members.at(exData.memberIndex);
+				AstNodePtr<MemberNode> v = curStruct->members.at(exData.index);
 
 				if (v->getAstNodeType() == AstNodeType::UnionEnumItem) {
-					AstNodePtr<UnionEnumItemNode> varMember = v.castTo<UnionEnumItemNode>();
+					if (!context.frames.pushBack(StructRecursionCheckFrame{ v.castTo<AstNode>(), IndexedStructRecursionCheckFrameExData{ 0 } }))
+						return genOutOfMemoryCompError();
+				}
+
+				++exData.index;
+				break;
+			}
+			case AstNodeType::UnionEnumItem: {
+				const AstNodePtr<UnionEnumItemNode> &curStruct = curFrame.structNode.castTo<UnionEnumItemNode>();
+				IndexedStructRecursionCheckFrameExData &exData = std::get<IndexedStructRecursionCheckFrameExData>(curFrame.exData);
+
+				if (!exData.index) {
+					if (walkedStructs.contains(curStruct.castTo<AstNode>())) {
+						whetherOut = true;
+						return {};
+					}
+					if (!walkedStructs.insert(curStruct.castTo<AstNode>()))
+						return genOutOfMemoryCompError();
+				}
+				if (exData.index >= curStruct->members.size()) {
+					walkedStructs.remove(curStruct.castTo<AstNode>());
+					context.frames.popBack();
+					continue;
+				}
+
+				AstNodePtr<MemberNode> v = curStruct->members.at(exData.index);
+
+				if (v->getAstNodeType() == AstNodeType::Var) {
+					AstNodePtr<VarNode> varMember = v.castTo<VarNode>();
 
 					AstNodePtr<MemberNode> m;
 
-					if (auto t = varMember->elementTypes.at(exData.elementIndex); t->typeNameKind == TypeNameKind::Custom) {
+					if (auto t = varMember->type; t->typeNameKind == TypeNameKind::Custom) {
 						SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(nullptr, document, t.castTo<CustomTypeNameNode>(), m));
 
 						switch (m->getAstNodeType()) {
 							case AstNodeType::Struct:
-								if (!context.frames.pushBack(StructRecursionCheckFrame{ m.castTo<AstNode>(), StructStructRecursionCheckFrameExData{ 0 } }))
+								if (!context.frames.pushBack(StructRecursionCheckFrame{ m.castTo<AstNode>(), IndexedStructRecursionCheckFrameExData{ 0 } }))
 									return genOutOfMemoryCompError();
 								break;
 							case AstNodeType::UnionEnum:
-								if (!context.frames.pushBack(StructRecursionCheckFrame{ m.castTo<AstNode>(), StructUnionEnumStructRecursionCheckFrameExData{ 0, 0 } }))
+								if (!context.frames.pushBack(StructRecursionCheckFrame{ m.castTo<AstNode>(), IndexedStructRecursionCheckFrameExData{ 0 } }))
+									return genOutOfMemoryCompError();
+								break;
+							case AstNodeType::UnionEnumItem:
+								if (!context.frames.pushBack(StructRecursionCheckFrame{ m.castTo<AstNode>(), IndexedStructRecursionCheckFrameExData{ 0 } }))
 									return genOutOfMemoryCompError();
 								break;
 							default:
@@ -593,16 +623,9 @@ static peff::Option<CompilationError> _isStructRecursed(
 								break;
 						}
 					}
-
-					if (++exData.elementIndex >= varMember->elementTypes.size()) {
-						++exData.memberIndex;
-						exData.elementIndex = 0;
-					}
-				} else {
-					++exData.memberIndex;
-					exData.elementIndex = 0;
 				}
 
+				++exData.index;
 				break;
 			}
 			default:
@@ -620,20 +643,20 @@ SLKC_API peff::Option<CompilationError> slkc::isStructRecursed(
 	StructRecursionCheckContext context(document->allocator.get());
 	peff::Set<AstNodePtr<AstNode>> walkedStructs(document->allocator.get());
 
-	if (!context.frames.pushBack(StructRecursionCheckFrame{ derived.castTo<AstNode>(), StructStructRecursionCheckFrameExData{ 0 } }))
+	if (!context.frames.pushBack(StructRecursionCheckFrame{ derived.castTo<AstNode>(), IndexedStructRecursionCheckFrameExData{ 0 } }))
 		return genOutOfMemoryCompError();
 
 	return _isStructRecursed(document, context, walkedStructs, whetherOut);
 }
 
-SLKC_API peff::Option<CompilationError> slkc::isStructUnionEnumRecursed(
+SLKC_API peff::Option<CompilationError> slkc::isUnionEnumRecursed(
 	peff::SharedPtr<Document> document,
 	const AstNodePtr<UnionEnumNode> &derived,
 	bool &whetherOut) {
 	StructRecursionCheckContext context(document->allocator.get());
 	peff::Set<AstNodePtr<AstNode>> walkedStructs(document->allocator.get());
 
-	if (!context.frames.pushBack(StructRecursionCheckFrame{ derived.castTo<AstNode>(), StructUnionEnumStructRecursionCheckFrameExData{ 0, 0 } }))
+	if (!context.frames.pushBack(StructRecursionCheckFrame{ derived.castTo<AstNode>(), IndexedStructRecursionCheckFrameExData{ 0 } }))
 		return genOutOfMemoryCompError();
 
 	return _isStructRecursed(document, context, walkedStructs, whetherOut);
@@ -908,60 +931,16 @@ SLKC_API AstNodePtr<AstNode> UnionEnumItemNode::doDuplicate(peff::Alloc *newAllo
 SLKC_API UnionEnumItemNode::UnionEnumItemNode(
 	peff::Alloc *selfAllocator,
 	const peff::SharedPtr<Document> &document)
-	: MemberNode(AstNodeType::UnionEnumItem, selfAllocator, document),
-	  elementTypes(selfAllocator) {
+	: ModuleNode(selfAllocator, document, AstNodeType::UnionEnumItem) {
 }
 
-SLKC_API UnionEnumItemNode::UnionEnumItemNode(const UnionEnumItemNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut) : MemberNode(rhs, allocator, context, succeededOut), elementTypes(allocator) {
+SLKC_API UnionEnumItemNode::UnionEnumItemNode(const UnionEnumItemNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut) : ModuleNode(rhs, allocator, context, succeededOut) {
 	if (!succeededOut) {
 		return;
 	}
-
-	if (!elementTypes.resize(rhs.elementTypes.size())) {
-		succeededOut = false;
-		return;
-	}
-
-	for (size_t i = 0; i < elementTypes.size(); ++i) {
-		if (!context.pushTask([this, i, &rhs, allocator, &context]() -> bool {
-				if (!(elementTypes.at(i) = rhs.elementTypes.at(i)->duplicate<TypeNameNode>(allocator)))
-					return false;
-				return true;
-			})) {
-			succeededOut = false;
-			return;
-		}
-	}
-
-	succeededOut = true;
 }
 
 SLKC_API UnionEnumItemNode::~UnionEnumItemNode() {
-}
-
-SLKC_API AstNodePtr<AstNode> RecordUnionEnumItemNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
-	bool succeeded = false;
-	AstNodePtr<RecordUnionEnumItemNode> duplicatedNode(makeAstNode<RecordUnionEnumItemNode>(newAllocator, *this, newAllocator, context, succeeded));
-	if ((!duplicatedNode) || (!succeeded)) {
-		return {};
-	}
-
-	return duplicatedNode.template castTo<AstNode>();
-}
-
-SLKC_API RecordUnionEnumItemNode::RecordUnionEnumItemNode(
-	peff::Alloc *selfAllocator,
-	const peff::SharedPtr<Document> &document)
-	: ModuleNode(selfAllocator, document, AstNodeType::RecordUnionEnumItem) {
-}
-
-SLKC_API RecordUnionEnumItemNode::RecordUnionEnumItemNode(const RecordUnionEnumItemNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut) : ModuleNode(rhs, allocator, context, succeededOut) {
-	if (!succeededOut) {
-		return;
-	}
-}
-
-SLKC_API RecordUnionEnumItemNode::~RecordUnionEnumItemNode() {
 }
 
 SLKC_API AstNodePtr<AstNode> UnionEnumNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {

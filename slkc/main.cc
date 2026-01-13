@@ -573,6 +573,15 @@ void dumpCompilationError(peff::SharedPtr<slkc::Parser> parser, const slkc::Comp
 		case slkc::CompilationErrorKind::MemberIsNotAccessible:
 			printf("The member is not accessible\n");
 			break;
+		case slkc::CompilationErrorKind::InvalidEnumBaseType:
+			printf("Invalid enumeration base type\n");
+			break;
+		case slkc::CompilationErrorKind::EnumItemIsNotAssignable:
+			printf("Enumeration item is not assignable\n");
+			break;
+		case slkc::CompilationErrorKind::IncompatibleInitialValueType:
+			printf("Incompatible initial value type\n");
+			break;
 		case slkc::CompilationErrorKind::ImportLimitExceeded:
 			printf("Import item number exceeded\n");
 			break;
@@ -817,7 +826,7 @@ int main(int argc, char *argv[]) {
 			slake::HostObjectRef<slake::ModuleObject> modObj = slake::ModuleObject::alloc(runtime.get());
 			modObj->setAccess(slake::ACCESS_PUBLIC | slake::ACCESS_STATIC);
 
-			if (auto e = slkc::compileModule(&compileEnv, mod, modObj.get()); e) {
+			if (auto e = slkc::compileModuleLikeNode(&compileEnv, mod, modObj.get()); e) {
 				encounteredErrors = true;
 				dumpCompilationError(parser, *e);
 			}

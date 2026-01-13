@@ -562,7 +562,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 			break;
 		}
 		case Opcode::MOV: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<false, 1>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 1>(this, output, nOperands));
 
 			const Value *value;
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[0], value));
@@ -584,7 +584,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 		case Opcode::LAPARG:
 			return InvalidOpcodeError::alloc(getFixedAlloc(), opcode);
 		case Opcode::LVAR: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<false, 1>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 1>(this, output, nOperands));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::TypeName>(this, operands[0]));
 
 			TypeRef type = operands[0].getTypeName();
@@ -698,44 +698,44 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 			}
 			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
 
-			Value x, y;
+			const Value *x, *y;
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, operands[0], x));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, operands[1], y));
-			if (x.valueType != y.valueType) {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[0], x));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[1], y));
+			if (x->valueType != y->valueType) {
 				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
 			}
 
-			switch (x.valueType) {
+			switch (x->valueType) {
 				case ValueType::I8:
-					valueOut = (int8_t)(x.getI8() - y.getI8());
+					valueOut = (int8_t)(x->getI8() - y->getI8());
 					break;
 				case ValueType::I16:
-					valueOut = (int16_t)(x.getI16() - y.getI16());
+					valueOut = (int16_t)(x->getI16() - y->getI16());
 					break;
 				case ValueType::I32:
-					valueOut = (int32_t)(x.getI32() - y.getI32());
+					valueOut = (int32_t)(x->getI32() - y->getI32());
 					break;
 				case ValueType::I64:
-					valueOut = (int64_t)(x.getI64() - y.getI64());
+					valueOut = (int64_t)(x->getI64() - y->getI64());
 					break;
 				case ValueType::U8:
-					valueOut = (uint8_t)(x.getU8() - y.getU8());
+					valueOut = (uint8_t)(x->getU8() - y->getU8());
 					break;
 				case ValueType::U16:
-					valueOut = (uint16_t)(x.getU16() - y.getU16());
+					valueOut = (uint16_t)(x->getU16() - y->getU16());
 					break;
 				case ValueType::U32:
-					valueOut = (uint32_t)(x.getU32() - y.getU32());
+					valueOut = (uint32_t)(x->getU32() - y->getU32());
 					break;
 				case ValueType::U64:
-					valueOut = (uint64_t)(x.getU64() - y.getU64());
+					valueOut = (uint64_t)(x->getU64() - y->getU64());
 					break;
 				case ValueType::F32:
-					valueOut = (float)(x.getF32() - y.getF32());
+					valueOut = (float)(x->getF32() - y->getF32());
 					break;
 				case ValueType::F64:
-					valueOut = (double)(x.getF64() - y.getF64());
+					valueOut = (double)(x->getF64() - y->getF64());
 					break;
 				default:
 					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
@@ -750,44 +750,44 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 			}
 			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
 
-			Value x, y;
+			const Value *x, *y;
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, operands[0], x));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, operands[1], y));
-			if (x.valueType != y.valueType) {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[0], x));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[1], y));
+			if (x->valueType != y->valueType) {
 				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
 			}
 
-			switch (x.valueType) {
+			switch (x->valueType) {
 				case ValueType::I8:
-					valueOut = (int8_t)(x.getI8() * y.getI8());
+					valueOut = (int8_t)(x->getI8() * y->getI8());
 					break;
 				case ValueType::I16:
-					valueOut = (int16_t)(x.getI16() * y.getI16());
+					valueOut = (int16_t)(x->getI16() * y->getI16());
 					break;
 				case ValueType::I32:
-					valueOut = (int32_t)(x.getI32() * y.getI32());
+					valueOut = (int32_t)(x->getI32() * y->getI32());
 					break;
 				case ValueType::I64:
-					valueOut = (int64_t)(x.getI64() * y.getI64());
+					valueOut = (int64_t)(x->getI64() * y->getI64());
 					break;
 				case ValueType::U8:
-					valueOut = (uint8_t)(x.getU8() * y.getU8());
+					valueOut = (uint8_t)(x->getU8() * y->getU8());
 					break;
 				case ValueType::U16:
-					valueOut = (uint16_t)(x.getU16() * y.getU16());
+					valueOut = (uint16_t)(x->getU16() * y->getU16());
 					break;
 				case ValueType::U32:
-					valueOut = (uint32_t)(x.getU32() * y.getU32());
+					valueOut = (uint32_t)(x->getU32() * y->getU32());
 					break;
 				case ValueType::U64:
-					valueOut = (uint64_t)(x.getU64() * y.getU64());
+					valueOut = (uint64_t)(x->getU64() * y->getU64());
 					break;
 				case ValueType::F32:
-					valueOut = (float)(x.getF32() * y.getF32());
+					valueOut = (float)(x->getF32() * y->getF32());
 					break;
 				case ValueType::F64:
-					valueOut = (double)(x.getF64() * y.getF64());
+					valueOut = (double)(x->getF64() * y->getF64());
 					break;
 				default:
 					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
@@ -802,44 +802,44 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 			}
 			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
 
-			Value x, y;
+			const Value *x, *y;
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, operands[0], x));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, operands[1], y));
-			if (x.valueType != y.valueType) {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[0], x));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[1], y));
+			if (x->valueType != y->valueType) {
 				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
 			}
 
-			switch (x.valueType) {
+			switch (x->valueType) {
 				case ValueType::I8:
-					valueOut = (int8_t)(x.getI8() / y.getI8());
+					valueOut = (int8_t)(x->getI8() / y->getI8());
 					break;
 				case ValueType::I16:
-					valueOut = (int16_t)(x.getI16() / y.getI16());
+					valueOut = (int16_t)(x->getI16() / y->getI16());
 					break;
 				case ValueType::I32:
-					valueOut = (int32_t)(x.getI32() / y.getI32());
+					valueOut = (int32_t)(x->getI32() / y->getI32());
 					break;
 				case ValueType::I64:
-					valueOut = (int64_t)(x.getI64() / y.getI64());
+					valueOut = (int64_t)(x->getI64() / y->getI64());
 					break;
 				case ValueType::U8:
-					valueOut = (uint8_t)(x.getU8() / y.getU8());
+					valueOut = (uint8_t)(x->getU8() / y->getU8());
 					break;
 				case ValueType::U16:
-					valueOut = (uint16_t)(x.getU16() / y.getU16());
+					valueOut = (uint16_t)(x->getU16() / y->getU16());
 					break;
 				case ValueType::U32:
-					valueOut = (uint32_t)(x.getU32() / y.getU32());
+					valueOut = (uint32_t)(x->getU32() / y->getU32());
 					break;
 				case ValueType::U64:
-					valueOut = (uint64_t)(x.getU64() / y.getU64());
+					valueOut = (uint64_t)(x->getU64() / y->getU64());
 					break;
 				case ValueType::F32:
-					valueOut = (float)(x.getF32() / y.getF32());
+					valueOut = (float)(x->getF32() / y->getF32());
 					break;
 				case ValueType::F64:
-					valueOut = (double)(x.getF64() / y.getF64());
+					valueOut = (double)(x->getF64() / y->getF64());
 					break;
 				default:
 					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
@@ -854,44 +854,44 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 			}
 			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
 
-			Value x, y;
+			const Value *x, *y;
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, operands[0], x));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, operands[1], y));
-			if (x.valueType != y.valueType) {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[0], x));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[1], y));
+			if (x->valueType != y->valueType) {
 				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
 			}
 
-			switch (x.valueType) {
+			switch (x->valueType) {
 				case ValueType::I8:
-					valueOut = (int8_t)(x.getI8() % y.getI8());
+					valueOut = (int8_t)(x->getI8() % y->getI8());
 					break;
 				case ValueType::I16:
-					valueOut = (int16_t)(x.getI16() % y.getI16());
+					valueOut = (int16_t)(x->getI16() % y->getI16());
 					break;
 				case ValueType::I32:
-					valueOut = (int32_t)(x.getI32() % y.getI32());
+					valueOut = (int32_t)(x->getI32() % y->getI32());
 					break;
 				case ValueType::I64:
-					valueOut = (int64_t)(x.getI64() % y.getI64());
+					valueOut = (int64_t)(x->getI64() % y->getI64());
 					break;
 				case ValueType::U8:
-					valueOut = (uint8_t)(x.getU8() % y.getU8());
+					valueOut = (uint8_t)(x->getU8() % y->getU8());
 					break;
 				case ValueType::U16:
-					valueOut = (uint16_t)(x.getU16() % y.getU16());
+					valueOut = (uint16_t)(x->getU16() % y->getU16());
 					break;
 				case ValueType::U32:
-					valueOut = (uint32_t)(x.getU32() % y.getU32());
+					valueOut = (uint32_t)(x->getU32() % y->getU32());
 					break;
 				case ValueType::U64:
-					valueOut = (uint64_t)(x.getU64() % y.getU64());
+					valueOut = (uint64_t)(x->getU64() % y->getU64());
 					break;
 				case ValueType::F32:
-					valueOut = (float)flib::fmodf(x.getF32(), y.getF32());
+					valueOut = (float)flib::fmodf(x->getF32(), y->getF32());
 					break;
 				case ValueType::F64:
-					valueOut = (double)flib::fmod(x.getF64(), y.getF64());
+					valueOut = (double)flib::fmod(x->getF64(), y->getF64());
 					break;
 				default:
 					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
@@ -906,38 +906,38 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 			}
 			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
 
-			Value x, y;
+			const Value *x, *y;
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, operands[0], x));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, operands[1], y));
-			if (x.valueType != y.valueType) {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[0], x));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[1], y));
+			if (x->valueType != y->valueType) {
 				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
 			}
 
-			switch (x.valueType) {
+			switch (x->valueType) {
 				case ValueType::I8:
-					valueOut = (int8_t)(x.getI8() & y.getI8());
+					valueOut = (int8_t)(x->getI8() & y->getI8());
 					break;
 				case ValueType::I16:
-					valueOut = (int16_t)(x.getI16() & y.getI16());
+					valueOut = (int16_t)(x->getI16() & y->getI16());
 					break;
 				case ValueType::I32:
-					valueOut = (int32_t)(x.getI32() & y.getI32());
+					valueOut = (int32_t)(x->getI32() & y->getI32());
 					break;
 				case ValueType::I64:
-					valueOut = (int64_t)(x.getI64() & y.getI64());
+					valueOut = (int64_t)(x->getI64() & y->getI64());
 					break;
 				case ValueType::U8:
-					valueOut = (uint8_t)(x.getU8() & y.getU8());
+					valueOut = (uint8_t)(x->getU8() & y->getU8());
 					break;
 				case ValueType::U16:
-					valueOut = (uint16_t)(x.getU16() & y.getU16());
+					valueOut = (uint16_t)(x->getU16() & y->getU16());
 					break;
 				case ValueType::U32:
-					valueOut = (uint32_t)(x.getU32() & y.getU32());
+					valueOut = (uint32_t)(x->getU32() & y->getU32());
 					break;
 				case ValueType::U64:
-					valueOut = (uint64_t)(x.getU64() & y.getU64());
+					valueOut = (uint64_t)(x->getU64() & y->getU64());
 					break;
 				default:
 					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
@@ -952,38 +952,38 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 			}
 			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
 
-			Value x, y;
+			const Value *x, *y;
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, operands[0], x));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, operands[1], y));
-			if (x.valueType != y.valueType) {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[0], x));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[1], y));
+			if (x->valueType != y->valueType) {
 				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
 			}
 
-			switch (x.valueType) {
+			switch (x->valueType) {
 				case ValueType::I8:
-					valueOut = (int8_t)(x.getI8() | y.getI8());
+					valueOut = (int8_t)(x->getI8() | y->getI8());
 					break;
 				case ValueType::I16:
-					valueOut = (int16_t)(x.getI16() | y.getI16());
+					valueOut = (int16_t)(x->getI16() | y->getI16());
 					break;
 				case ValueType::I32:
-					valueOut = (int32_t)(x.getI32() | y.getI32());
+					valueOut = (int32_t)(x->getI32() | y->getI32());
 					break;
 				case ValueType::I64:
-					valueOut = (int64_t)(x.getI64() | y.getI64());
+					valueOut = (int64_t)(x->getI64() | y->getI64());
 					break;
 				case ValueType::U8:
-					valueOut = (uint8_t)(x.getU8() | y.getU8());
+					valueOut = (uint8_t)(x->getU8() | y->getU8());
 					break;
 				case ValueType::U16:
-					valueOut = (uint16_t)(x.getU16() | y.getU16());
+					valueOut = (uint16_t)(x->getU16() | y->getU16());
 					break;
 				case ValueType::U32:
-					valueOut = (uint32_t)(x.getU32() | y.getU32());
+					valueOut = (uint32_t)(x->getU32() | y->getU32());
 					break;
 				case ValueType::U64:
-					valueOut = (uint64_t)(x.getU64() | y.getU64());
+					valueOut = (uint64_t)(x->getU64() | y->getU64());
 					break;
 				default:
 					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
@@ -998,38 +998,38 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 			}
 			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
 
-			Value x, y;
+			const Value *x, *y;
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, operands[0], x));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, operands[1], y));
-			if (x.valueType != y.valueType) {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[0], x));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[1], y));
+			if (x->valueType != y->valueType) {
 				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
 			}
 
-			switch (x.valueType) {
+			switch (x->valueType) {
 				case ValueType::I8:
-					valueOut = (int8_t)(x.getI8() ^ y.getI8());
+					valueOut = (int8_t)(x->getI8() ^ y->getI8());
 					break;
 				case ValueType::I16:
-					valueOut = (int16_t)(x.getI16() ^ y.getI16());
+					valueOut = (int16_t)(x->getI16() ^ y->getI16());
 					break;
 				case ValueType::I32:
-					valueOut = (int32_t)(x.getI32() ^ y.getI32());
+					valueOut = (int32_t)(x->getI32() ^ y->getI32());
 					break;
 				case ValueType::I64:
-					valueOut = (int64_t)(x.getI64() ^ y.getI64());
+					valueOut = (int64_t)(x->getI64() ^ y->getI64());
 					break;
 				case ValueType::U8:
-					valueOut = (uint8_t)(x.getU8() ^ y.getU8());
+					valueOut = (uint8_t)(x->getU8() ^ y->getU8());
 					break;
 				case ValueType::U16:
-					valueOut = (uint16_t)(x.getU16() ^ y.getU16());
+					valueOut = (uint16_t)(x->getU16() ^ y->getU16());
 					break;
 				case ValueType::U32:
-					valueOut = (uint32_t)(x.getU32() ^ y.getU32());
+					valueOut = (uint32_t)(x->getU32() ^ y->getU32());
 					break;
 				case ValueType::U64:
-					valueOut = (uint64_t)(x.getU64() ^ y.getU64());
+					valueOut = (uint64_t)(x->getU64() ^ y->getU64());
 					break;
 				default:
 					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
@@ -1044,17 +1044,17 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 			}
 			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
 
-			Value x, y;
+			const Value *x, *y;
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, operands[0], x));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, operands[1], y));
-			if (x.valueType != y.valueType) {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[0], x));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[1], y));
+			if (x->valueType != y->valueType) {
 				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
 			}
 
-			switch (x.valueType) {
+			switch (x->valueType) {
 				case ValueType::Bool:
-					valueOut = Value((int16_t)(x.getBool() && y.getBool()));
+					valueOut = Value((int16_t)(x->getBool() && y->getBool()));
 					break;
 				default:
 					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
@@ -1069,17 +1069,17 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 			}
 			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
 
-			Value x, y;
+			const Value *x, *y;
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, operands[0], x));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, operands[1], y));
-			if (x.valueType != y.valueType) {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[0], x));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[1], y));
+			if (x->valueType != y->valueType) {
 				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
 			}
 
-			switch (x.valueType) {
+			switch (x->valueType) {
 				case ValueType::Bool:
-					valueOut = Value((int16_t)(x.getBool() || y.getBool()));
+					valueOut = Value((int16_t)(x->getBool() || y->getBool()));
 					break;
 				default:
 					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
@@ -1094,47 +1094,47 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 			}
 			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
 
-			Value x, y;
+			const Value *x, *y;
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, operands[0], x));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, operands[1], y));
-			if (x.valueType != y.valueType) {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[0], x));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[1], y));
+			if (x->valueType != y->valueType) {
 				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
 			}
 
-			switch (x.valueType) {
+			switch (x->valueType) {
 				case ValueType::I8:
-					valueOut = (bool)(x.getI8() == y.getI8());
+					valueOut = (bool)(x->getI8() == y->getI8());
 					break;
 				case ValueType::I16:
-					valueOut = (bool)(x.getI16() == y.getI16());
+					valueOut = (bool)(x->getI16() == y->getI16());
 					break;
 				case ValueType::I32:
-					valueOut = (bool)(x.getI32() == y.getI32());
+					valueOut = (bool)(x->getI32() == y->getI32());
 					break;
 				case ValueType::I64:
-					valueOut = (bool)(x.getI64() == y.getI64());
+					valueOut = (bool)(x->getI64() == y->getI64());
 					break;
 				case ValueType::U8:
-					valueOut = (bool)(x.getU8() == y.getU8());
+					valueOut = (bool)(x->getU8() == y->getU8());
 					break;
 				case ValueType::U16:
-					valueOut = (bool)(x.getU16() == y.getU16());
+					valueOut = (bool)(x->getU16() == y->getU16());
 					break;
 				case ValueType::U32:
-					valueOut = (bool)(x.getU32() == y.getU32());
+					valueOut = (bool)(x->getU32() == y->getU32());
 					break;
 				case ValueType::U64:
-					valueOut = (bool)(x.getU64() == y.getU64());
+					valueOut = (bool)(x->getU64() == y->getU64());
 					break;
 				case ValueType::F32:
-					valueOut = (bool)(x.getF32() == y.getF32());
+					valueOut = (bool)(x->getF32() == y->getF32());
 					break;
 				case ValueType::F64:
-					valueOut = (bool)(x.getF64() == y.getF64());
+					valueOut = (bool)(x->getF64() == y->getF64());
 					break;
 				case ValueType::Bool:
-					valueOut = (bool)(x.getBool() == y.getBool());
+					valueOut = (bool)(x->getBool() == y->getBool());
 					break;
 				default:
 					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
@@ -1149,47 +1149,47 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 			}
 			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
 
-			Value x, y;
+			const Value *x, *y;
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, operands[0], x));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, operands[1], y));
-			if (x.valueType != y.valueType) {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[0], x));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[1], y));
+			if (x->valueType != y->valueType) {
 				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
 			}
 
-			switch (x.valueType) {
+			switch (x->valueType) {
 				case ValueType::I8:
-					valueOut = (bool)(x.getI8() != y.getI8());
+					valueOut = (bool)(x->getI8() != y->getI8());
 					break;
 				case ValueType::I16:
-					valueOut = (bool)(x.getI16() != y.getI16());
+					valueOut = (bool)(x->getI16() != y->getI16());
 					break;
 				case ValueType::I32:
-					valueOut = (bool)(x.getI32() != y.getI32());
+					valueOut = (bool)(x->getI32() != y->getI32());
 					break;
 				case ValueType::I64:
-					valueOut = (bool)(x.getI64() != y.getI64());
+					valueOut = (bool)(x->getI64() != y->getI64());
 					break;
 				case ValueType::U8:
-					valueOut = (bool)(x.getU8() != y.getU8());
+					valueOut = (bool)(x->getU8() != y->getU8());
 					break;
 				case ValueType::U16:
-					valueOut = (bool)(x.getU16() != y.getU16());
+					valueOut = (bool)(x->getU16() != y->getU16());
 					break;
 				case ValueType::U32:
-					valueOut = (bool)(x.getU32() != y.getU32());
+					valueOut = (bool)(x->getU32() != y->getU32());
 					break;
 				case ValueType::U64:
-					valueOut = (bool)(x.getU64() != y.getU64());
+					valueOut = (bool)(x->getU64() != y->getU64());
 					break;
 				case ValueType::F32:
-					valueOut = (bool)(x.getF32() != y.getF32());
+					valueOut = (bool)(x->getF32() != y->getF32());
 					break;
 				case ValueType::F64:
-					valueOut = (bool)(x.getF64() != y.getF64());
+					valueOut = (bool)(x->getF64() != y->getF64());
 					break;
 				case ValueType::Bool:
-					valueOut = (bool)(x.getBool() != y.getBool());
+					valueOut = (bool)(x->getBool() != y->getBool());
 					break;
 				default:
 					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
@@ -1256,44 +1256,44 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 			}
 			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
 
-			Value x, y;
+			const Value *x, *y;
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, operands[0], x));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, operands[1], y));
-			if (x.valueType != y.valueType) {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[0], x));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[1], y));
+			if (x->valueType != y->valueType) {
 				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
 			}
 
-			switch (x.valueType) {
+			switch (x->valueType) {
 				case ValueType::I8:
-					valueOut = (bool)(x.getI8() > y.getI8());
+					valueOut = (bool)(x->getI8() > y->getI8());
 					break;
 				case ValueType::I16:
-					valueOut = (bool)(x.getI16() > y.getI16());
+					valueOut = (bool)(x->getI16() > y->getI16());
 					break;
 				case ValueType::I32:
-					valueOut = (bool)(x.getI32() > y.getI32());
+					valueOut = (bool)(x->getI32() > y->getI32());
 					break;
 				case ValueType::I64:
-					valueOut = (bool)(x.getI64() > y.getI64());
+					valueOut = (bool)(x->getI64() > y->getI64());
 					break;
 				case ValueType::U8:
-					valueOut = (bool)(x.getU8() > y.getU8());
+					valueOut = (bool)(x->getU8() > y->getU8());
 					break;
 				case ValueType::U16:
-					valueOut = (bool)(x.getU16() > y.getU16());
+					valueOut = (bool)(x->getU16() > y->getU16());
 					break;
 				case ValueType::U32:
-					valueOut = (bool)(x.getU32() > y.getU32());
+					valueOut = (bool)(x->getU32() > y->getU32());
 					break;
 				case ValueType::U64:
-					valueOut = (bool)(x.getU64() > y.getU64());
+					valueOut = (bool)(x->getU64() > y->getU64());
 					break;
 				case ValueType::F32:
-					valueOut = (bool)(x.getF32() > y.getF32());
+					valueOut = (bool)(x->getF32() > y->getF32());
 					break;
 				case ValueType::F64:
-					valueOut = (bool)(x.getF64() > y.getF64());
+					valueOut = (bool)(x->getF64() > y->getF64());
 					break;
 				default:
 					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
@@ -1308,44 +1308,44 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 			}
 			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
 
-			Value x, y;
+			const Value *x, *y;
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, operands[0], x));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, operands[1], y));
-			if (x.valueType != y.valueType) {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[0], x));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[1], y));
+			if (x->valueType != y->valueType) {
 				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
 			}
 
-			switch (x.valueType) {
+			switch (x->valueType) {
 				case ValueType::I8:
-					valueOut = (bool)(x.getI8() <= y.getI8());
+					valueOut = (bool)(x->getI8() <= y->getI8());
 					break;
 				case ValueType::I16:
-					valueOut = (bool)(x.getI16() <= y.getI16());
+					valueOut = (bool)(x->getI16() <= y->getI16());
 					break;
 				case ValueType::I32:
-					valueOut = (bool)(x.getI32() <= y.getI32());
+					valueOut = (bool)(x->getI32() <= y->getI32());
 					break;
 				case ValueType::I64:
-					valueOut = (bool)(x.getI64() <= y.getI64());
+					valueOut = (bool)(x->getI64() <= y->getI64());
 					break;
 				case ValueType::U8:
-					valueOut = (bool)(x.getU8() <= y.getU8());
+					valueOut = (bool)(x->getU8() <= y->getU8());
 					break;
 				case ValueType::U16:
-					valueOut = (bool)(x.getU16() <= y.getU16());
+					valueOut = (bool)(x->getU16() <= y->getU16());
 					break;
 				case ValueType::U32:
-					valueOut = (bool)(x.getU32() <= y.getU32());
+					valueOut = (bool)(x->getU32() <= y->getU32());
 					break;
 				case ValueType::U64:
-					valueOut = (bool)(x.getU64() <= y.getU64());
+					valueOut = (bool)(x->getU64() <= y->getU64());
 					break;
 				case ValueType::F32:
-					valueOut = (bool)(x.getF32() <= y.getF32());
+					valueOut = (bool)(x->getF32() <= y->getF32());
 					break;
 				case ValueType::F64:
-					valueOut = (bool)(x.getF64() <= y.getF64());
+					valueOut = (bool)(x->getF64() <= y->getF64());
 					break;
 				default:
 					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
@@ -1360,49 +1360,49 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 			}
 			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
 
-			Value x, y;
+			const Value *x, *y;
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, operands[0], x));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, operands[1], y));
-			if (x.valueType != y.valueType) {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[0], x));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[1], y));
+			if (x->valueType != y->valueType) {
 				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
 			}
 
-			switch (x.valueType) {
+			switch (x->valueType) {
 				case ValueType::I8:
-					valueOut = (bool)(x.getI8() >= y.getI8());
+					valueOut = (bool)(x->getI8() >= y->getI8());
 					break;
 				case ValueType::I16:
-					valueOut = (bool)(x.getI16() >= y.getI16());
+					valueOut = (bool)(x->getI16() >= y->getI16());
 					break;
 				case ValueType::I32:
-					valueOut = (bool)(x.getI32() >= y.getI32());
+					valueOut = (bool)(x->getI32() >= y->getI32());
 					break;
 				case ValueType::I64:
-					valueOut = (bool)(x.getI64() >= y.getI64());
+					valueOut = (bool)(x->getI64() >= y->getI64());
 					break;
 				case ValueType::U8:
-					valueOut = (bool)(x.getU8() >= y.getU8());
+					valueOut = (bool)(x->getU8() >= y->getU8());
 					break;
 				case ValueType::U16:
-					valueOut = (bool)(x.getU16() >= y.getU16());
+					valueOut = (bool)(x->getU16() >= y->getU16());
 					break;
 				case ValueType::U32:
-					valueOut = (bool)(x.getU32() >= y.getU32());
+					valueOut = (bool)(x->getU32() >= y->getU32());
 					break;
 				case ValueType::U64:
-					valueOut = (bool)(x.getU64() >= y.getU64());
+					valueOut = (bool)(x->getU64() >= y->getU64());
 					break;
 				case ValueType::F32:
-					valueOut = (bool)(x.getF32() >= y.getF32());
+					valueOut = (bool)(x->getF32() >= y->getF32());
 					break;
 				case ValueType::F64:
-					valueOut = (bool)(x.getF64() >= y.getF64());
+					valueOut = (bool)(x->getF64() >= y->getF64());
 					break;
 				default:
 					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
 			}
-			uint64_t lhs = x.getU64(), rhs = y.getU64();
+			uint64_t lhs = x->getU64(), rhs = y->getU64();
 			if (lhs > rhs) {
 				valueOut = Value((int32_t)1);
 			} else if (lhs < rhs) {
@@ -1412,51 +1412,51 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 			break;
 		}
 		case Opcode::CMP: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<false, 2>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 2>(this, output, nOperands));
 
 			if (!_isRegisterValid(stackSize, curMajorFrame, output)) {
 				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
 			}
 			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
 
-			Value x, y;
+			const Value *x, *y;
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, operands[0], x));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, operands[1], y));
-			if (x.valueType != y.valueType) {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[0], x));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[1], y));
+			if (x->valueType != y->valueType) {
 				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
 			}
 
-			switch (x.valueType) {
+			switch (x->valueType) {
 				case ValueType::I8:
-					valueOut = (int32_t)flib::compareI8(x.getI8(), y.getI8());
+					valueOut = (int32_t)flib::compareI8(x->getI8(), y->getI8());
 					break;
 				case ValueType::I16:
-					valueOut = (int32_t)flib::compareI16(x.getI16(), y.getI16());
+					valueOut = (int32_t)flib::compareI16(x->getI16(), y->getI16());
 					break;
 				case ValueType::I32:
-					valueOut = (int32_t)flib::compareI32(x.getI32(), y.getI32());
+					valueOut = (int32_t)flib::compareI32(x->getI32(), y->getI32());
 					break;
 				case ValueType::I64:
-					valueOut = (int32_t)flib::compareI64(x.getI64(), y.getI64());
+					valueOut = (int32_t)flib::compareI64(x->getI64(), y->getI64());
 					break;
 				case ValueType::U8:
-					valueOut = (int32_t)flib::compareU8(x.getU8(), y.getU8());
+					valueOut = (int32_t)flib::compareU8(x->getU8(), y->getU8());
 					break;
 				case ValueType::U16:
-					valueOut = (int32_t)flib::compareU16(x.getU16(), y.getU16());
+					valueOut = (int32_t)flib::compareU16(x->getU16(), y->getU16());
 					break;
 				case ValueType::U32:
-					valueOut = (int32_t)flib::compareU32(x.getU32(), y.getU32());
+					valueOut = (int32_t)flib::compareU32(x->getU32(), y->getU32());
 					break;
 				case ValueType::U64:
-					valueOut = (int32_t)flib::compareU64(x.getU64(), y.getU64());
+					valueOut = (int32_t)flib::compareU64(x->getU64(), y->getU64());
 					break;
 				case ValueType::F32:
-					valueOut = (int32_t)flib::compareF32(x.getF32(), y.getF32());
+					valueOut = (int32_t)flib::compareF32(x->getF32(), y->getF32());
 					break;
 				case ValueType::F64:
-					valueOut = (int32_t)flib::compareF64(x.getF64(), y.getF64());
+					valueOut = (int32_t)flib::compareF64(x->getF64(), y->getF64());
 					break;
 				default:
 					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
@@ -1472,39 +1472,39 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 			}
 			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
 
-			Value x, y;
+			const Value *x, *y;
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, operands[0], x));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, operands[1], y));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[0], x));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[1], y));
 
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::U32>(this, y));
 
-			uint32_t rhs = y.getU32();
+			uint32_t rhs = y->getU32();
 
-			switch (x.valueType) {
+			switch (x->valueType) {
 				case ValueType::I8:
-					valueOut = flib::shlSigned8(x.getI8(), rhs);
+					valueOut = flib::shlSigned8(x->getI8(), rhs);
 					break;
 				case ValueType::I16:
-					valueOut = flib::shlSigned16(x.getI16(), rhs);
+					valueOut = flib::shlSigned16(x->getI16(), rhs);
 					break;
 				case ValueType::I32:
-					valueOut = flib::shlSigned32(x.getI32(), rhs);
+					valueOut = flib::shlSigned32(x->getI32(), rhs);
 					break;
 				case ValueType::I64:
-					valueOut = flib::shlSigned64(x.getI64(), rhs);
+					valueOut = flib::shlSigned64(x->getI64(), rhs);
 					break;
 				case ValueType::U8:
-					valueOut = flib::shlUnsigned8(x.getU8(), rhs);
+					valueOut = flib::shlUnsigned8(x->getU8(), rhs);
 					break;
 				case ValueType::U16:
-					valueOut = flib::shlUnsigned16(x.getU16(), rhs);
+					valueOut = flib::shlUnsigned16(x->getU16(), rhs);
 					break;
 				case ValueType::U32:
-					valueOut = flib::shlUnsigned32(x.getU32(), rhs);
+					valueOut = flib::shlUnsigned32(x->getU32(), rhs);
 					break;
 				case ValueType::U64:
-					valueOut = flib::shlUnsigned64(x.getU64(), rhs);
+					valueOut = flib::shlUnsigned64(x->getU64(), rhs);
 					break;
 				default:
 					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
@@ -1519,39 +1519,39 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 			}
 			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
 
-			Value x, y;
+			const Value *x, *y;
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, operands[0], x));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, operands[1], y));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[0], x));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[1], y));
 
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::U32>(this, y));
 
-			uint32_t rhs = y.getU32();
+			uint32_t rhs = y->getU32();
 
-			switch (x.valueType) {
+			switch (x->valueType) {
 				case ValueType::I8:
-					valueOut = flib::shrSigned8(x.getI8(), rhs);
+					valueOut = flib::shrSigned8(x->getI8(), rhs);
 					break;
 				case ValueType::I16:
-					valueOut = flib::shrSigned16(x.getI16(), rhs);
+					valueOut = flib::shrSigned16(x->getI16(), rhs);
 					break;
 				case ValueType::I32:
-					valueOut = flib::shrSigned32(x.getI32(), rhs);
+					valueOut = flib::shrSigned32(x->getI32(), rhs);
 					break;
 				case ValueType::I64:
-					valueOut = flib::shrSigned64(x.getI64(), rhs);
+					valueOut = flib::shrSigned64(x->getI64(), rhs);
 					break;
 				case ValueType::U8:
-					valueOut = flib::shrUnsigned8(x.getU8(), rhs);
+					valueOut = flib::shrUnsigned8(x->getU8(), rhs);
 					break;
 				case ValueType::U16:
-					valueOut = flib::shrUnsigned16(x.getU16(), rhs);
+					valueOut = flib::shrUnsigned16(x->getU16(), rhs);
 					break;
 				case ValueType::U32:
-					valueOut = flib::shrUnsigned32(x.getU32(), rhs);
+					valueOut = flib::shrUnsigned32(x->getU32(), rhs);
 					break;
 				case ValueType::U64:
-					valueOut = flib::shrUnsigned64(x.getU64(), rhs);
+					valueOut = flib::shrUnsigned64(x->getU64(), rhs);
 					break;
 				default:
 					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
@@ -1566,32 +1566,32 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 			}
 			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
 
-			Value x(operands[1]);
-
-			switch (x.valueType) {
+			const Value *x;
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[1], x));
+			switch (x->valueType) {
 				case ValueType::I8:
-					valueOut = (int8_t)(~x.getI8());
+					valueOut = (int8_t)(~x->getI8());
 					break;
 				case ValueType::I16:
-					valueOut = (int16_t)(~x.getI16());
+					valueOut = (int16_t)(~x->getI16());
 					break;
 				case ValueType::I32:
-					valueOut = (int32_t)(~x.getI32());
+					valueOut = (int32_t)(~x->getI32());
 					break;
 				case ValueType::I64:
-					valueOut = (int64_t)(~x.getI64());
+					valueOut = (int64_t)(~x->getI64());
 					break;
 				case ValueType::U8:
-					valueOut = (uint8_t)(~x.getU8());
+					valueOut = (uint8_t)(~x->getU8());
 					break;
 				case ValueType::U16:
-					valueOut = (uint16_t)(~x.getU16());
+					valueOut = (uint16_t)(~x->getU16());
 					break;
 				case ValueType::U32:
-					valueOut = (uint32_t)(~x.getU32());
+					valueOut = (uint32_t)(~x->getU32());
 					break;
 				case ValueType::U64:
-					valueOut = (uint64_t)(~x.getU64());
+					valueOut = (uint64_t)(~x->getU64());
 					break;
 				default:
 					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
@@ -1606,41 +1606,41 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 			}
 			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
 
-			Value x(operands[1]);
-
-			switch (x.valueType) {
+			const Value *x;
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[1], x));
+			switch (x->valueType) {
 				case ValueType::I8:
-					valueOut = (bool)(!x.getI8());
+					valueOut = (bool)(!x->getI8());
 					break;
 				case ValueType::I16:
-					valueOut = (bool)(!x.getI16());
+					valueOut = (bool)(!x->getI16());
 					break;
 				case ValueType::I32:
-					valueOut = (bool)(!x.getI32());
+					valueOut = (bool)(!x->getI32());
 					break;
 				case ValueType::I64:
-					valueOut = (bool)(!x.getI64());
+					valueOut = (bool)(!x->getI64());
 					break;
 				case ValueType::U8:
-					valueOut = (bool)(!x.getI8());
+					valueOut = (bool)(!x->getI8());
 					break;
 				case ValueType::U16:
-					valueOut = (bool)(!x.getU16());
+					valueOut = (bool)(!x->getU16());
 					break;
 				case ValueType::U32:
-					valueOut = (bool)(!x.getU32());
+					valueOut = (bool)(!x->getU32());
 					break;
 				case ValueType::U64:
-					valueOut = (bool)(!x.getU64());
+					valueOut = (bool)(!x->getU64());
 					break;
 				case ValueType::F32:
-					valueOut = (bool)(!x.getF32());
+					valueOut = (bool)(!x->getF32());
 					break;
 				case ValueType::F64:
-					valueOut = (bool)(!x.getF64());
+					valueOut = (bool)(!x->getF64());
 					break;
 				case ValueType::Bool:
-					valueOut = (bool)(!x.getU64());
+					valueOut = (bool)(!x->getU64());
 					break;
 				default:
 					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
@@ -1655,38 +1655,38 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 			}
 			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
 
-			Value x(operands[1]);
-
-			switch (x.valueType) {
+			const Value *x;
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[1], x));
+			switch (x->valueType) {
 				case ValueType::I8:
-					valueOut = (int8_t)(-x.getI8());
+					valueOut = (int8_t)(-x->getI8());
 					break;
 				case ValueType::I16:
-					valueOut = (int16_t)(-x.getI16());
+					valueOut = (int16_t)(-x->getI16());
 					break;
 				case ValueType::I32:
-					valueOut = (int32_t)(-x.getI32());
+					valueOut = (int32_t)(-x->getI32());
 					break;
 				case ValueType::I64:
-					valueOut = (int64_t)(-x.getI64());
+					valueOut = (int64_t)(-x->getI64());
 					break;
 				case ValueType::U8:
-					valueOut = (uint8_t)(x.getU8());
+					valueOut = (uint8_t)(x->getU8());
 					break;
 				case ValueType::U16:
-					valueOut = (uint16_t)(x.getU16());
+					valueOut = (uint16_t)(x->getU16());
 					break;
 				case ValueType::U32:
-					valueOut = (uint32_t)(x.getU32());
+					valueOut = (uint32_t)(x->getU32());
 					break;
 				case ValueType::U64:
-					valueOut = (uint64_t)(x.getU64());
+					valueOut = (uint64_t)(x->getU64());
 					break;
 				case ValueType::F32:
-					valueOut = (float)(-x.getF32());
+					valueOut = (float)(-x->getF32());
 					break;
 				case ValueType::F64:
-					valueOut = (double)(-x.getF64());
+					valueOut = (double)(-x->getF64());
 					break;
 				default:
 					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
@@ -1964,7 +1964,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 			return {};
 		}
 		case Opcode::RESUME: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<false, 1>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 1>(this, output, nOperands));
 
 			HostObjectRef<CoroutineObject> co;
 
@@ -1988,7 +1988,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 			break;
 		}
 		case Opcode::CODONE: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<false, 1>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 1>(this, output, nOperands));
 
 			HostObjectRef<CoroutineObject> co;
 
@@ -2004,7 +2004,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 			break;
 		}
 		case Opcode::LTHIS: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<false, 0>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 0>(this, output, nOperands));
 
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, stackSize, curMajorFrame, output, Reference::makeObjectRef(curMajorFrame->resumable->thisObject)));
 			break;

@@ -657,7 +657,7 @@ namespace slkc {
 		AstNodePtr<GenericParamNode> *genericParams,
 		size_t nGenericParams,
 		slake::GenericParamList &genericParamListOut);
-	[[nodiscard]] SLKC_API peff::Option<CompilationError> compileModule(
+	[[nodiscard]] SLKC_API peff::Option<CompilationError> compileModuleLikeNode(
 		CompileEnvironment *compileEnv,
 		AstNodePtr<ModuleNode> mod,
 		slake::BasicModuleObject *modOut);

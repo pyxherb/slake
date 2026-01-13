@@ -787,7 +787,10 @@ SLKC_API peff::Option<CompilationError> slkc::compileExprStmt(
 	uint32_t sldIndex) {
 	CompileExprResult result(compileEnv->allocator.get());
 
-	SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, s->expr, ExprEvalPurpose::Stmt, {}, UINT32_MAX, result));
+	uint32_t reg;
+	SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(reg));
+
+	SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, s->expr, ExprEvalPurpose::Stmt, {}, reg, result));
 
 	return {};
 }

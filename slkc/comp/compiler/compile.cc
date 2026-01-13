@@ -729,7 +729,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileGenericParams(
 	return {};
 }
 
-SLKC_API peff::Option<CompilationError> slkc::compileModule(
+SLKC_API peff::Option<CompilationError> slkc::compileModuleLikeNode(
 	CompileEnvironment *compileEnv,
 	AstNodePtr<ModuleNode> mod,
 	slake::BasicModuleObject *modOut) {
@@ -747,19 +747,19 @@ SLKC_API peff::Option<CompilationError> slkc::compileModule(
 		restoreCurModuleGuard.release();
 
 	peff::Option<CompilationError> compilationError;
-	for (auto i : mod->anonymousImports) {
-		NormalCompilationContext compilationContext(compileEnv, nullptr);
+	if (modOut->getObjectKind() == slake::ObjectKind::Module) {
+		for (auto i : mod->anonymousImports) {
+			NormalCompilationContext compilationContext(compileEnv, nullptr);
 
-		slake::HostObjectRef<slake::IdRefObject> id;
+			slake::HostObjectRef<slake::IdRefObject> id;
 
-		for (auto &j : compileEnv->document->externalModuleProviders) {
-			SLKC_RETURN_IF_COMP_ERROR(j->loadModule(compileEnv, i->idRef.get()));
-		}
+			for (auto &j : compileEnv->document->externalModuleProviders) {
+				SLKC_RETURN_IF_COMP_ERROR(j->loadModule(compileEnv, i->idRef.get()));
+			}
 
-		SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, &compilationContext, i->idRef->entries.data(), i->idRef->entries.size(), nullptr, 0, false, {}, id));
+			SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, &compilationContext, i->idRef->entries.data(), i->idRef->entries.size(), nullptr, 0, false, {}, id));
 
-		if (modOut->getObjectKind() == slake::ObjectKind::Module) {
-			if (!((slake::ModuleObject*)modOut)->unnamedImports.pushBack(id.get()))
+			if (!((slake::ModuleObject *)modOut)->unnamedImports.pushBack(id.get()))
 				return genOutOfRuntimeMemoryCompError();
 		}
 	}
@@ -846,9 +846,15 @@ SLKC_API peff::Option<CompilationError> slkc::compileModule(
 						break;
 					}
 					case slake::TypeId::StructInstance:
+					case slake::TypeId::ScopedEnum:
+					case slake::TypeId::UnionEnum:
+					case slake::TypeId::UnionEnumItem:
 						if (!modOut->appendFieldRecordWithoutAlloc(std::move(fr))) {
 							return genOutOfRuntimeMemoryCompError();
 						}
+						// Note that we don't allocate space for types which
+						// may have not been compiled, which means we cannot
+						// or hard to evaluate their size.
 						break;
 					case slake::TypeId::GenericArg:
 					case slake::TypeId::Ref:
@@ -1120,7 +1126,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileModule(
 					}
 				}
 
-				SLKC_RETURN_IF_COMP_ERROR(compileModule(compileEnv, clsNode.castTo<ModuleNode>(), cls.get()));
+				SLKC_RETURN_IF_COMP_ERROR(compileModuleLikeNode(compileEnv, clsNode.castTo<ModuleNode>(), cls.get()));
 
 				if (!modOut->addMember(cls.get())) {
 					return genOutOfRuntimeMemoryCompError();
@@ -1185,7 +1191,188 @@ SLKC_API peff::Option<CompilationError> slkc::compileModule(
 					}
 				}
 
-				SLKC_RETURN_IF_COMP_ERROR(compileModule(compileEnv, clsNode.template castTo<ModuleNode>(), cls.get()));
+				SLKC_RETURN_IF_COMP_ERROR(compileModuleLikeNode(compileEnv, clsNode.template castTo<ModuleNode>(), cls.get()));
+
+				if (!modOut->addMember(cls.get())) {
+					return genOutOfRuntimeMemoryCompError();
+				}
+
+				break;
+			}
+			case AstNodeType::ScopedEnum: {
+				AstNodePtr<ScopedEnumNode> clsNode = m.template castTo<ScopedEnumNode>();
+
+				slake::TypeRef baseType = slake::TypeId::Invalid;
+
+				if (clsNode->baseType) {
+					bool b = false;
+					SLKC_RETURN_IF_COMP_ERROR(isBasicType(clsNode->baseType, b));
+
+					if (b) {
+						SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(
+							CompilationError(
+								clsNode->baseType->tokenRange,
+								CompilationErrorKind::InvalidEnumBaseType)));
+					}
+
+					SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, &compilationContext, clsNode->baseType, baseType));
+				}
+
+				// TODO: Fill the enumeration node
+
+				slake::HostObjectRef<slake::ScopedEnumObject> cls;
+
+				if (!(cls = slake::ScopedEnumObject::alloc(compileEnv->runtime))) {
+					return genOutOfRuntimeMemoryCompError();
+				}
+
+				cls->setAccess(mod->accessModifier);
+
+				if (!cls->setName(m->name)) {
+					return genOutOfRuntimeMemoryCompError();
+				}
+
+				cls->baseType = baseType;
+
+				for (auto i : clsNode->members) {
+					switch (i->getAstNodeType()) {
+						case AstNodeType::EnumItem: {
+							AstNodePtr<EnumItemNode> itemNode = i.castTo<EnumItemNode>();
+
+							slake::FieldRecord fr(compileEnv->runtime->getCurGenAlloc());
+
+							if (!fr.name.build(k)) {
+								return genOutOfRuntimeMemoryCompError();
+							}
+
+							fr.accessModifier = m->accessModifier;
+							fr.offset = modOut->localFieldStorage.size();
+
+							fr.type = baseType;
+
+							if (baseType != slake::TypeId::Invalid) {
+								slake::Value itemValue;
+
+								AstNodePtr<ExprNode> enumValue;
+								AstNodePtr<TypeNameNode> enumValueType;
+
+								assert(itemNode->enumValue);
+
+								SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, &compilationContext, itemNode->enumValue, enumValue));
+
+								if (!enumValue)
+									return CompilationError(itemNode->tokenRange, CompilationErrorKind::RequiresCompTimeExpr);
+								SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, &compilationContext, itemNode->enumValue, enumValue));
+
+								SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileEnv, &compilationContext, enumValue, enumValueType, clsNode->baseType));
+
+								bool isSame;
+								SLKC_RETURN_IF_COMP_ERROR(isSameType(enumValueType, clsNode->baseType, isSame));
+
+								if (!isSame) {
+									AstNodePtr<CastExprNode> castExpr;
+
+									if (!(castExpr = makeAstNode<CastExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document)))
+										return genOutOfMemoryCompError();
+
+									castExpr->targetType = clsNode->baseType;
+									castExpr->source = enumValue;
+									castExpr->tokenRange = itemNode->enumValue->tokenRange;
+
+									SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, &compilationContext, castExpr.castTo<ExprNode>(), enumValue));
+									if (!enumValue)
+										SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(
+											CompilationError(
+												itemNode->enumValue->tokenRange,
+												CompilationErrorKind::IncompatibleInitialValueType)));
+								}
+
+								SLKC_RETURN_IF_COMP_ERROR(compileValueExpr(compileEnv, &compilationContext, enumValue, itemValue));
+
+								if (!modOut->appendFieldRecord(std::move(fr))) {
+									return genOutOfRuntimeMemoryCompError();
+								}
+								modOut->associatedRuntime->writeVar(slake::Reference::makeStaticFieldRef(modOut, modOut->fieldRecords.size() - 1), itemValue).unwrap();
+							} else {
+								if (itemNode->enumValue)
+									SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(
+										CompilationError(
+											itemNode->tokenRange,
+											CompilationErrorKind::EnumItemIsNotAssignable)));
+								if (!modOut->appendFieldRecordWithoutAlloc(std::move(fr))) {
+									return genOutOfRuntimeMemoryCompError();
+								}
+							}
+
+							break;
+						}
+						default:
+							std::terminate();
+					}
+				}
+
+				if (!modOut->addMember(cls.get())) {
+					return genOutOfRuntimeMemoryCompError();
+				}
+
+				break;
+			}
+			case AstNodeType::UnionEnum: {
+				AstNodePtr<UnionEnumNode> clsNode = m.template castTo<UnionEnumNode>();
+
+				bool isCyclicInherited = false;
+				SLKC_RETURN_IF_COMP_ERROR(clsNode->isRecursedType(isCyclicInherited));
+
+				if (isCyclicInherited) {
+					SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(
+						CompilationError(
+							clsNode->tokenRange,
+							CompilationErrorKind::RecursedValueType)));
+				}
+
+				slake::HostObjectRef<slake::UnionEnumObject> cls;
+
+				if (!(cls = slake::UnionEnumObject::alloc(compileEnv->runtime))) {
+					return genOutOfRuntimeMemoryCompError();
+				}
+
+				cls->setAccess(mod->accessModifier);
+
+				if (!cls->setName(m->name)) {
+					return genOutOfRuntimeMemoryCompError();
+				}
+
+				SLKC_RETURN_IF_COMP_ERROR(compileGenericParams(compileEnv, &compilationContext, mod, clsNode->genericParams.data(), clsNode->genericParams.size(), cls->genericParams));
+
+				for (auto i : clsNode->members) {
+					switch (i->getAstNodeType()) {
+						case AstNodeType::UnionEnumItem: {
+							AstNodePtr<UnionEnumItemNode> itemNode = i.castTo<UnionEnumItemNode>();
+
+							slake::HostObjectRef<slake::UnionEnumItemObject> item;
+
+							if (!(item = slake::UnionEnumItemObject::alloc(compileEnv->runtime))) {
+								return genOutOfRuntimeMemoryCompError();
+							}
+
+							item->setAccess(mod->accessModifier);
+
+							if (!item->setName(itemNode->name)) {
+								return genOutOfRuntimeMemoryCompError();
+							}
+
+							SLKC_RETURN_IF_COMP_ERROR(compileModuleLikeNode(compileEnv, itemNode.castTo<ModuleNode>(), item.get()));
+
+							if (!cls->addMember(item.get())) {
+								return genOutOfRuntimeMemoryCompError();
+							}
+
+							break;
+						}
+						default:
+							std::terminate();
+					}
+				}
 
 				if (!modOut->addMember(cls.get())) {
 					return genOutOfRuntimeMemoryCompError();
@@ -1298,7 +1485,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileModule(
 					}
 				}
 
-				SLKC_RETURN_IF_COMP_ERROR(compileModule(compileEnv, clsNode.template castTo<ModuleNode>(), cls.get()));
+				SLKC_RETURN_IF_COMP_ERROR(compileModuleLikeNode(compileEnv, clsNode.template castTo<ModuleNode>(), cls.get()));
 
 				if (!modOut->addMember(cls.get())) {
 					return genOutOfRuntimeMemoryCompError();

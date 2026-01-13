@@ -628,6 +628,9 @@ SLKC_API peff::Option<CompilationError> slkc::dumpModuleMembers(
 				break;
 			}
 			case slake::TypeId::StructInstance:
+			case slake::TypeId::UnionEnum:
+			case slake::TypeId::UnionEnumItem:
+			case slake::TypeId::ScopedEnum:
 				break;
 			case slake::TypeId::Ref:
 			case slake::TypeId::TempRef:

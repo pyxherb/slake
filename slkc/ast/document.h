@@ -80,6 +80,9 @@ namespace slkc {
 		InterfaceMethodsConflicted,
 		TypeIsNotInitializable,
 		MemberIsNotAccessible,
+		InvalidEnumBaseType,
+		EnumItemIsNotAssignable,
+		IncompatibleInitialValueType,
 
 		ImportLimitExceeded,
 		MalformedModuleName,

@@ -85,8 +85,6 @@ SLAKE_API bool BasicModuleObject::removeMember(const std::string_view &name) {
 }
 
 SLAKE_API bool BasicModuleObject::appendFieldRecord(FieldRecord &&fieldRecord) {
-	_checkFieldsValidity();
-
 	if (!fieldRecords.pushBack(std::move(fieldRecord))) {
 		return false;
 	}
@@ -119,8 +117,8 @@ SLAKE_API bool BasicModuleObject::appendFieldRecordWithoutAlloc(FieldRecord &&fi
 			fieldRecords.popBackWithoutShrink();
 		return false;
 	}
+	fr.offset = SIZE_MAX;
 
-	this->moduleFlags |= _MOD_FIELDS_VALID;
 	return true;
 }
 
@@ -159,7 +157,6 @@ SLAKE_API bool BasicModuleObject::reallocFieldSpaces() noexcept {
 			return false;
 		}
 	}
-	moduleFlags &= ~_MOD_FIELDS_VALID;
 	return true;
 }
 

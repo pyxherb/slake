@@ -143,7 +143,7 @@ namespace slake {
 	class StructObject : public BasicModuleObject {
 	public:
 		peff::DynArray<Value> genericArgs;
-		peff::HashMap<std::string_view, TypeRef> mappedGenericArgs;
+		peff::HashMap<std::string_view, Value> mappedGenericArgs;
 
 		GenericParamList genericParams;
 		peff::HashMap<std::string_view, size_t> mappedGenericParams;
@@ -224,6 +224,12 @@ namespace slake {
 
 	class UnionEnumObject : public EnumModuleObject {
 	public:
+		peff::DynArray<Value> genericArgs;
+		peff::HashMap<std::string_view, Value> mappedGenericArgs;
+
+		GenericParamList genericParams;
+		peff::HashMap<std::string_view, size_t> mappedGenericParams;
+
 		SLAKE_API UnionEnumObject(Runtime *rt, peff::Alloc *selfAllocator);
 		SLAKE_API UnionEnumObject(Duplicator *duplicator, const UnionEnumObject &x, peff::Alloc *allocator, bool &succeededOut);
 		SLAKE_API virtual ~UnionEnumObject();

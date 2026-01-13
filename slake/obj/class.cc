@@ -657,7 +657,7 @@ SLAKE_API StructObject::StructObject(Duplicator *duplicator, const StructObject 
 				return;
 			}
 
-			if (!(mappedGenericArgs.insert(std::move(name), TypeRef(v)))) {
+			if (!(mappedGenericArgs.insert(std::move(name), Value(v)))) {
 				succeededOut = false;
 				return;
 			}
@@ -894,12 +894,51 @@ SLAKE_API void UnionEnumItemObject::replaceAllocator(peff::Alloc *allocator) noe
 }
 
 SLAKE_API UnionEnumObject::UnionEnumObject(Runtime *rt, peff::Alloc *selfAllocator)
-	: EnumModuleObject(rt, selfAllocator, ObjectKind::UnionEnum) {
+	: EnumModuleObject(rt, selfAllocator, ObjectKind::UnionEnum),
+	  genericArgs(selfAllocator),
+	  mappedGenericArgs(selfAllocator),
+	  genericParams(selfAllocator),
+	  mappedGenericParams(selfAllocator) {
 }
 
 SLAKE_API UnionEnumObject::UnionEnumObject(Duplicator *duplicator, const UnionEnumObject &x, peff::Alloc *allocator, bool &succeededOut)
-	: EnumModuleObject(duplicator, x, allocator, succeededOut) {
+	: EnumModuleObject(duplicator, x, allocator, succeededOut),
+	  genericArgs(allocator),
+	  mappedGenericArgs(allocator),
+	  genericParams(allocator),
+	  mappedGenericParams(allocator) {
 	if (succeededOut) {
+		if (!genericArgs.resize(x.genericArgs.size())) {
+			succeededOut = false;
+			return;
+		}
+		memcpy(genericArgs.data(), x.genericArgs.data(), genericArgs.size() * sizeof(Value));
+		for (auto [k, v] : x.mappedGenericArgs) {
+			peff::String name(allocator);
+
+			if (!name.build(k)) {
+				succeededOut = false;
+				return;
+			}
+
+			if (!(mappedGenericArgs.insert(std::move(name), Value(v)))) {
+				succeededOut = false;
+				return;
+			}
+		}
+		if (!genericParams.resizeUninitialized(x.genericParams.size())) {
+			succeededOut = false;
+			return;
+		}
+		for (size_t i = 0; i < x.genericParams.size(); ++i) {
+			if (!x.genericParams.at(i).copy(genericParams.at(i))) {
+				for (size_t j = i; j; --j) {
+					peff::destroyAt<GenericParam>(&genericParams.at(j - 1));
+				}
+				succeededOut = false;
+				return;
+			}
+		}
 	}
 }
 

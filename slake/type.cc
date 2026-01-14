@@ -81,8 +81,8 @@ SLAKE_API ValueType slake::typeIdToValueType(TypeId typeId) {
 	std::terminate();
 }
 
-SLAKE_API Reference slake::extractStructInnerRef(const StructRef& structRef) {
-	switch (structRef.innerReferenceKind) {
+SLAKE_API Reference slake::extractStructInnerRef(const StructRefData &structRef, ReferenceKind innerReferenceKind) {
+	switch (innerReferenceKind) {
 		case ReferenceKind::StaticFieldRef:
 			return Reference::makeStaticFieldRef(
 				structRef.innerReference.asStaticField.moduleObject,

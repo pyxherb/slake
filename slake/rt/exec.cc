@@ -5,8 +5,6 @@
 #include <peff/base/scope_guard.h>
 #include <cmath>
 
-#undef new
-
 using namespace slake;
 
 template <bool hasOutput, size_t nOperands>
@@ -49,26 +47,21 @@ template <ReferenceKind kind>
 template <ObjectKind typeId>
 [[nodiscard]] static SLAKE_FORCEINLINE InternalExceptionPointer _checkObjectOperandType(
 	Runtime *runtime,
-	Object *object) noexcept {
+	const Object *const object) noexcept {
 	if (object && object->getObjectKind() != typeId) {
 		return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(runtime->getFixedAlloc()));
 	}
 	return {};
 }
 
-[[nodiscard]] static SLAKE_FORCEINLINE bool _isRegisterValid(
-	size_t stackSize,
-	const MajorFrame *curMajorFrame,
-	uint32_t index) noexcept {
-	return index < curMajorFrame->resumable->nRegs;
-}
+#define _isRegisterValid(curMajorFrame, index) ((index) < (curMajorFrame)->resumable->nRegs)
 
 static SLAKE_FORCEINLINE Value *_calcRegPtr(
 	char *stackData,
 	size_t stackSize,
 	const MajorFrame *curMajorFrame,
 	uint32_t index) noexcept {
-	return (Value *)calcStackAddr(stackData, stackSize, curMajorFrame->offRegs + sizeof(Value) * (index + 1));
+	return (Value *)calcStackAddr(stackData, stackSize, curMajorFrame->offRegs + sizeof(Value) * index + sizeof(Value));
 }
 
 [[nodiscard]] static SLAKE_FORCEINLINE InternalExceptionPointer _setRegisterValue(
@@ -78,7 +71,7 @@ static SLAKE_FORCEINLINE Value *_calcRegPtr(
 	const MajorFrame *curMajorFrame,
 	uint32_t index,
 	const Value &value) noexcept {
-	if (!_isRegisterValid(stackSize, curMajorFrame, index)) {
+	if (!_isRegisterValid(curMajorFrame, index)) {
 		// The register does not present.
 		return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(runtime->getFixedAlloc()));
 	}
@@ -94,12 +87,11 @@ static SLAKE_FORCEINLINE Value *_calcRegPtr(
 	const Value &value,
 	Value &valueOut) noexcept {
 	if (value.valueType == ValueType::RegIndex) {
-		uint32_t index = value.getRegIndex();
-		if (index >= curMajorFrame->resumable->nRegs) {
+		if (value.data.asU32 >= curMajorFrame->resumable->nRegs) {
 			// The register does not present.
 			return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(runtime->getFixedAlloc()));
 		}
-		valueOut = *(Value *)calcStackAddr(stackData, stackSize, curMajorFrame->offRegs + sizeof(Value) * (index + 1));
+		valueOut = *(Value *)calcStackAddr(stackData, stackSize, curMajorFrame->offRegs + sizeof(Value) * (value.data.asU32 + 1));
 		return {};
 	}
 	valueOut = value;
@@ -114,12 +106,11 @@ static SLAKE_FORCEINLINE Value *_calcRegPtr(
 	const Value &value,
 	const Value *&valueOut) noexcept {
 	if (value.valueType == ValueType::RegIndex) {
-		uint32_t index = value.getRegIndex();
-		if (index >= curMajorFrame->resumable->nRegs) {
+		if (value.data.asU32 >= curMajorFrame->resumable->nRegs) {
 			// The register does not present.
 			return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(runtime->getFixedAlloc()));
 		}
-		valueOut = (Value *)calcStackAddr(stackData, stackSize, curMajorFrame->offRegs + sizeof(Value) * (index + 1));
+		valueOut = (Value *)calcStackAddr(stackData, stackSize, curMajorFrame->offRegs + sizeof(Value) * (value.data.asU32 + 1));
 		return {};
 	}
 	valueOut = &value;
@@ -518,7 +509,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 					IdRefEntry &curName = idRef->entries.at(0);
 
 					if (auto it = structObject->cachedObjectLayout->fieldNameMap.find(curName.name); it != structObject->cachedObjectLayout->fieldNameMap.end()) {
-						entityRef = Reference::makeStructFieldRef(lhsEntityRef.asStruct, it.value());
+						entityRef = Reference::makeStructFieldRef(lhsEntityRef.asStruct.structRef, lhsEntityRef.asStruct.innerReferenceKind, it.value());
 					} else {
 						entityRef = structObject->getMember(curName.name);
 
@@ -603,7 +594,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[0], dest));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::Reference>(this, *dest));
 
-			if (!_isRegisterValid(stackSize, curMajorFrame, output)) {
+			if (!_isRegisterValid(curMajorFrame, output)) {
 				// The register does not present.
 				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
 			}
@@ -640,7 +631,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 		case Opcode::ADD: {
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 2>(this, output, nOperands));
 
-			if (!_isRegisterValid(stackSize, curMajorFrame, output)) {
+			if (!_isRegisterValid(curMajorFrame, output)) {
 				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
 			}
 			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
@@ -693,7 +684,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 		case Opcode::SUB: {
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 2>(this, output, nOperands));
 
-			if (!_isRegisterValid(stackSize, curMajorFrame, output)) {
+			if (!_isRegisterValid(curMajorFrame, output)) {
 				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
 			}
 			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
@@ -745,7 +736,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 		case Opcode::MUL: {
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 2>(this, output, nOperands));
 
-			if (!_isRegisterValid(stackSize, curMajorFrame, output)) {
+			if (!_isRegisterValid(curMajorFrame, output)) {
 				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
 			}
 			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
@@ -797,7 +788,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 		case Opcode::DIV: {
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 2>(this, output, nOperands));
 
-			if (!_isRegisterValid(stackSize, curMajorFrame, output)) {
+			if (!_isRegisterValid(curMajorFrame, output)) {
 				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
 			}
 			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
@@ -849,7 +840,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 		case Opcode::MOD: {
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 2>(this, output, nOperands));
 
-			if (!_isRegisterValid(stackSize, curMajorFrame, output)) {
+			if (!_isRegisterValid(curMajorFrame, output)) {
 				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
 			}
 			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
@@ -901,7 +892,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 		case Opcode::AND: {
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 2>(this, output, nOperands));
 
-			if (!_isRegisterValid(stackSize, curMajorFrame, output)) {
+			if (!_isRegisterValid(curMajorFrame, output)) {
 				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
 			}
 			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
@@ -947,7 +938,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 		case Opcode::OR: {
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 2>(this, output, nOperands));
 
-			if (!_isRegisterValid(stackSize, curMajorFrame, output)) {
+			if (!_isRegisterValid(curMajorFrame, output)) {
 				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
 			}
 			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
@@ -993,7 +984,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 		case Opcode::XOR: {
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 2>(this, output, nOperands));
 
-			if (!_isRegisterValid(stackSize, curMajorFrame, output)) {
+			if (!_isRegisterValid(curMajorFrame, output)) {
 				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
 			}
 			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
@@ -1039,7 +1030,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 		case Opcode::LAND: {
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 2>(this, output, nOperands));
 
-			if (!_isRegisterValid(stackSize, curMajorFrame, output)) {
+			if (!_isRegisterValid(curMajorFrame, output)) {
 				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
 			}
 			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
@@ -1064,7 +1055,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 		case Opcode::LOR: {
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 2>(this, output, nOperands));
 
-			if (!_isRegisterValid(stackSize, curMajorFrame, output)) {
+			if (!_isRegisterValid(curMajorFrame, output)) {
 				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
 			}
 			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
@@ -1089,7 +1080,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 		case Opcode::EQ: {
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 2>(this, output, nOperands));
 
-			if (!_isRegisterValid(stackSize, curMajorFrame, output)) {
+			if (!_isRegisterValid(curMajorFrame, output)) {
 				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
 			}
 			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
@@ -1144,7 +1135,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 		case Opcode::NEQ: {
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 2>(this, output, nOperands));
 
-			if (!_isRegisterValid(stackSize, curMajorFrame, output)) {
+			if (!_isRegisterValid(curMajorFrame, output)) {
 				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
 			}
 			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
@@ -1199,7 +1190,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 		case Opcode::LT: {
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 2>(this, output, nOperands));
 
-			if (!_isRegisterValid(stackSize, curMajorFrame, output)) {
+			if (!_isRegisterValid(curMajorFrame, output)) {
 				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
 			}
 			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
@@ -1251,7 +1242,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 		case Opcode::GT: {
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 2>(this, output, nOperands));
 
-			if (!_isRegisterValid(stackSize, curMajorFrame, output)) {
+			if (!_isRegisterValid(curMajorFrame, output)) {
 				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
 			}
 			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
@@ -1303,7 +1294,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 		case Opcode::LTEQ: {
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 2>(this, output, nOperands));
 
-			if (!_isRegisterValid(stackSize, curMajorFrame, output)) {
+			if (!_isRegisterValid(curMajorFrame, output)) {
 				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
 			}
 			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
@@ -1355,7 +1346,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 		case Opcode::GTEQ: {
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 2>(this, output, nOperands));
 
-			if (!_isRegisterValid(stackSize, curMajorFrame, output)) {
+			if (!_isRegisterValid(curMajorFrame, output)) {
 				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
 			}
 			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
@@ -1414,7 +1405,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 		case Opcode::CMP: {
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 2>(this, output, nOperands));
 
-			if (!_isRegisterValid(stackSize, curMajorFrame, output)) {
+			if (!_isRegisterValid(curMajorFrame, output)) {
 				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
 			}
 			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
@@ -1467,7 +1458,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 		case Opcode::LSH: {
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 2>(this, output, nOperands));
 
-			if (!_isRegisterValid(stackSize, curMajorFrame, output)) {
+			if (!_isRegisterValid(curMajorFrame, output)) {
 				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
 			}
 			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
@@ -1477,7 +1468,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[0], x));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[1], y));
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::U32>(this, y));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::U32>(this, *y));
 
 			uint32_t rhs = y->getU32();
 
@@ -1514,7 +1505,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 		case Opcode::RSH: {
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 2>(this, output, nOperands));
 
-			if (!_isRegisterValid(stackSize, curMajorFrame, output)) {
+			if (!_isRegisterValid(curMajorFrame, output)) {
 				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
 			}
 			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
@@ -1561,7 +1552,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 		case Opcode::NOT: {
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 1>(this, output, nOperands));
 
-			if (!_isRegisterValid(stackSize, curMajorFrame, output)) {
+			if (!_isRegisterValid(curMajorFrame, output)) {
 				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
 			}
 			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
@@ -1601,7 +1592,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 		case Opcode::LNOT: {
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 1>(this, output, nOperands));
 
-			if (!_isRegisterValid(stackSize, curMajorFrame, output)) {
+			if (!_isRegisterValid(curMajorFrame, output)) {
 				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
 			}
 			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
@@ -1650,7 +1641,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 		case Opcode::NEG: {
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 1>(this, output, nOperands));
 
-			if (!_isRegisterValid(stackSize, curMajorFrame, output)) {
+			if (!_isRegisterValid(curMajorFrame, output)) {
 				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
 			}
 			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
@@ -1733,7 +1724,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::U32>(this, operands[2]));
 			const Value *condition;
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[0], condition));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::Bool>(this, condition));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::Bool>(this, *condition));
 
 			curMajorFrame->resumable->lastJumpSrc = curMajorFrame->resumable->curIns;
 			curMajorFrame->resumable->curIns = operands[condition->getBool() ? 1 : 2].getU32();
@@ -2104,7 +2095,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 		case Opcode::CAST: {
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 2>(this, output, nOperands));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::TypeName>(this, operands[0]));
-			if (!_isRegisterValid(stackSize, curMajorFrame, output)) {
+			if (!_isRegisterValid(curMajorFrame, output)) {
 				// The register does not present.
 				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
 			}

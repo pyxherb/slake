@@ -2,7 +2,7 @@
 
 using namespace slake;
 
-SLAKE_API char *Runtime::calcCoroutineLocalVarRefStackBasePtr(const CoroutineLocalVarRef &localVarRef) {
+SLAKE_FORCEINLINE static char *calcCoroutineLocalVarRefStackBasePtr(const CoroutineLocalVarRef &localVarRef) noexcept {
 	if (localVarRef.coroutine->curContext) {
 		return calcStackAddr(localVarRef.coroutine->curContext->dataStack,
 			localVarRef.coroutine->curContext->stackSize,
@@ -13,14 +13,16 @@ SLAKE_API char *Runtime::calcCoroutineLocalVarRefStackBasePtr(const CoroutineLoc
 			localVarRef.stackOff);
 	};
 }
-
-SLAKE_API char *Runtime::calcLocalVarRefStackBasePtr(const LocalVarRef &localVarRef) {
+SLAKE_FORCEINLINE static char *calcLocalVarRefStackBasePtr(const LocalVarRef &localVarRef) noexcept {
 	return calcStackAddr(localVarRef.context->dataStack,
 		localVarRef.context->stackSize,
 		localVarRef.stackOff);
 }
-
-SLAKE_API char *Runtime::calcLocalVarRefStackRawDataPtr(char *p) {
+SLAKE_FORCEINLINE static char *calcLocalVarRefStackRawDataPtr(char *p) noexcept {
+	return p +
+		   sizeof(TypeId) + sizeof(TypeModifier);
+}
+SLAKE_FORCEINLINE static const char *calcLocalVarRefStackRawDataPtr(const char *p) noexcept {
 	return p +
 		   sizeof(TypeId) + sizeof(TypeModifier);
 }
@@ -33,8 +35,7 @@ SLAKE_API void *Runtime::locateValueBasePtr(const Reference &entityRef) const no
 			return entityRef.asStaticField.moduleObject->localFieldStorage.data() + fieldRecord.offset;
 		}
 		case ReferenceKind::LocalVarRef: {
-			char *basePtr = calcLocalVarRefStackBasePtr(entityRef.asLocalVar);
-			char *rawDataPtr = calcLocalVarRefStackRawDataPtr(basePtr);
+			const char *rawDataPtr = calcLocalVarRefStackRawDataPtr(calcLocalVarRefStackBasePtr(entityRef.asLocalVar));
 
 			const TypeId typeId = *(TypeId *)(rawDataPtr - (sizeof(TypeModifier) + sizeof(TypeId)));
 
@@ -72,11 +73,10 @@ SLAKE_API void *Runtime::locateValueBasePtr(const Reference &entityRef) const no
 					std::terminate();
 			}
 
-			return calcLocalVarRefStackRawDataPtr(rawDataPtr);
+			return (void *)calcLocalVarRefStackRawDataPtr(rawDataPtr);
 		}
 		case ReferenceKind::CoroutineLocalVarRef: {
-			char *basePtr = calcCoroutineLocalVarRefStackBasePtr(entityRef.asCoroutineLocalVar);
-			char *rawDataPtr = calcLocalVarRefStackRawDataPtr(basePtr);
+			const char *rawDataPtr = calcLocalVarRefStackRawDataPtr(calcCoroutineLocalVarRefStackBasePtr(entityRef.asCoroutineLocalVar));
 
 			const TypeId typeId = *(TypeId *)(rawDataPtr - (sizeof(TypeModifier) + sizeof(TypeId)));
 
@@ -114,7 +114,7 @@ SLAKE_API void *Runtime::locateValueBasePtr(const Reference &entityRef) const no
 					std::terminate();
 			}
 
-			return calcLocalVarRefStackRawDataPtr(rawDataPtr);
+			return (void *)calcLocalVarRefStackRawDataPtr(rawDataPtr);
 		}
 		case ReferenceKind::InstanceFieldRef: {
 			ObjectFieldRecord &fieldRecord =
@@ -133,13 +133,13 @@ SLAKE_API void *Runtime::locateValueBasePtr(const Reference &entityRef) const no
 		case ReferenceKind::CoroutineArgRef:
 			std::terminate();
 		case ReferenceKind::StructRef:
-			return locateValueBasePtr(extractStructInnerRef(entityRef.asStruct));
+			return locateValueBasePtr(extractStructInnerRef(entityRef.asStruct.structRef, entityRef.asStruct.innerReferenceKind));
 		case ReferenceKind::StructFieldRef: {
-			Reference innerRef = extractStructInnerRef(entityRef.asStructField.structRef);
+			Reference innerRef = extractStructInnerRef(entityRef.asStructField.structRef, entityRef.asStructField.innerReferenceKind);
 			TypeRef actualType = typeofVar(innerRef);
 
 			Object *const typeObject = ((CustomTypeDefObject *)actualType.typeDef)->typeObject;
-			char *basePtr = (char*)locateValueBasePtr(innerRef);
+			char *basePtr = (char *)locateValueBasePtr(innerRef);
 
 			assert(typeObject->getObjectKind() == ObjectKind::Struct);
 
@@ -162,8 +162,7 @@ SLAKE_API TypeRef Runtime::typeofVar(const Reference &entityRef) const noexcept 
 			return fieldRecord.type;
 		}
 		case ReferenceKind::LocalVarRef: {
-			char *const basePtr = calcLocalVarRefStackBasePtr(entityRef.asLocalVar);
-			const char *const rawDataPtr = calcLocalVarRefStackRawDataPtr(basePtr);
+			const char *const rawDataPtr = calcLocalVarRefStackRawDataPtr(calcLocalVarRefStackBasePtr(entityRef.asLocalVar));
 
 			TypeRef t = *(TypeId *)(rawDataPtr - (sizeof(TypeModifier) + sizeof(TypeId)));
 			t.typeModifier = *(TypeModifier *)(rawDataPtr - sizeof(TypeModifier));
@@ -203,8 +202,7 @@ SLAKE_API TypeRef Runtime::typeofVar(const Reference &entityRef) const noexcept 
 			return t;
 		}
 		case ReferenceKind::CoroutineLocalVarRef: {
-			char *basePtr = calcCoroutineLocalVarRefStackBasePtr(entityRef.asCoroutineLocalVar);
-			const char *const rawDataPtr = calcLocalVarRefStackRawDataPtr(basePtr);
+			const char *const rawDataPtr = calcLocalVarRefStackRawDataPtr(calcCoroutineLocalVarRefStackBasePtr(entityRef.asCoroutineLocalVar));
 
 			TypeRef t = *(TypeId *)(rawDataPtr - (sizeof(TypeModifier) + sizeof(TypeId)));
 			t.typeModifier = *(TypeModifier *)(rawDataPtr - sizeof(TypeModifier));
@@ -273,9 +271,9 @@ SLAKE_API TypeRef Runtime::typeofVar(const Reference &entityRef) const noexcept 
 			break;
 		}
 		case ReferenceKind::StructRef:
-			return typeofVar(extractStructInnerRef(entityRef.asStruct));
+			return typeofVar(extractStructInnerRef(entityRef.asStruct.structRef, entityRef.asStruct.innerReferenceKind));
 		case ReferenceKind::StructFieldRef: {
-			TypeRef actualType = typeofVar(extractStructInnerRef(entityRef.asStructField.structRef));
+			TypeRef actualType = typeofVar(extractStructInnerRef(entityRef.asStructField.structRef, entityRef.asStructField.innerReferenceKind));
 
 			Object *const typeObject = ((CustomTypeDefObject *)actualType.typeDef)->typeObject;
 
@@ -292,7 +290,7 @@ SLAKE_API TypeRef Runtime::typeofVar(const Reference &entityRef) const noexcept 
 SLAKE_API void Runtime::readVar(const Reference &entityRef, Value &valueOut) const noexcept {
 	switch (entityRef.kind) {
 		case ReferenceKind::StaticFieldRef: {
-			const char *const rawDataPtr = (char*)locateValueBasePtr(entityRef);
+			const char *const rawDataPtr = (char *)locateValueBasePtr(entityRef);
 
 			switch (typeofVar(entityRef).typeId) {
 				case TypeId::I8:
@@ -355,11 +353,10 @@ SLAKE_API void Runtime::readVar(const Reference &entityRef, Value &valueOut) con
 					valueOut.valueType = ValueType::Reference;
 					break;
 				case TypeId::StructInstance: {
-					StructRef structRef;
-					structRef.innerReferenceKind = ReferenceKind::CoroutineLocalVarRef;
-					structRef.innerReference.asCoroutineLocalVar = entityRef.asCoroutineLocalVar;
+					StructRefData structRef;
+					structRef.innerReference.asStaticField = entityRef.asStaticField;
 
-					valueOut.data.asReference = (Reference::makeStructRef(structRef));
+					valueOut.data.asReference = (Reference::makeStructRef(structRef, ReferenceKind::StaticFieldRef));
 					valueOut.valueType = ValueType::Reference;
 					break;
 				}
@@ -443,11 +440,10 @@ SLAKE_API void Runtime::readVar(const Reference &entityRef, Value &valueOut) con
 					valueOut.valueType = ValueType::Reference;
 					break;
 				case TypeId::StructInstance: {
-					StructRef structRef;
-					structRef.innerReferenceKind = ReferenceKind::CoroutineLocalVarRef;
-					structRef.innerReference.asCoroutineLocalVar = entityRef.asCoroutineLocalVar;
+					StructRefData structRef;
+					structRef.innerReference.asLocalVar = entityRef.asLocalVar;
 
-					valueOut.data.asReference = (Reference::makeStructRef(structRef));
+					valueOut.data.asReference = (Reference::makeStructRef(structRef, ReferenceKind::LocalVarRef));
 					valueOut.valueType = ValueType::Reference;
 					break;
 				}
@@ -531,11 +527,10 @@ SLAKE_API void Runtime::readVar(const Reference &entityRef, Value &valueOut) con
 					valueOut.valueType = ValueType::Reference;
 					break;
 				case TypeId::StructInstance: {
-					StructRef structRef;
-					structRef.innerReferenceKind = ReferenceKind::CoroutineLocalVarRef;
+					StructRefData structRef;
 					structRef.innerReference.asCoroutineLocalVar = entityRef.asCoroutineLocalVar;
 
-					valueOut.data.asReference = (Reference::makeStructRef(structRef));
+					valueOut.data.asReference = (Reference::makeStructRef(structRef, ReferenceKind::CoroutineLocalVarRef));
 					valueOut.valueType = ValueType::Reference;
 					break;
 				}
@@ -617,11 +612,10 @@ SLAKE_API void Runtime::readVar(const Reference &entityRef, Value &valueOut) con
 					valueOut.valueType = ValueType::Reference;
 					break;
 				case TypeId::StructInstance: {
-					StructRef structRef;
-					structRef.innerReferenceKind = ReferenceKind::CoroutineLocalVarRef;
-					structRef.innerReference.asCoroutineLocalVar = entityRef.asCoroutineLocalVar;
+					StructRefData structRef;
+					structRef.innerReference.asObjectField = entityRef.asObjectField;
 
-					valueOut.data.asReference = (Reference::makeStructRef(structRef));
+					valueOut.data.asReference = (Reference::makeStructRef(structRef, ReferenceKind::InstanceFieldRef));
 					valueOut.valueType = ValueType::Reference;
 					break;
 				}
@@ -714,7 +708,7 @@ SLAKE_API void Runtime::readVar(const Reference &entityRef, Value &valueOut) con
 			break;
 		}
 		case ReferenceKind::StructFieldRef: {
-			const char *rawDataPtr = ((char *)locateValueBasePtr(extractStructInnerRef(entityRef.asStructField.structRef)));
+			const char *rawDataPtr = ((char *)locateValueBasePtr(extractStructInnerRef(entityRef.asStructField.structRef, entityRef.asStructField.innerReferenceKind)));
 			const TypeRef t = typeofVar(entityRef);
 
 			switch (t.typeId) {

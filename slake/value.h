@@ -89,7 +89,7 @@ namespace slake {
 	// Passing temporary reference out of current scope is invalid, so we don't
 	// care about the structure's parent scope, just walking the structure
 	// itself.
-	struct StructRef {
+	struct StructRefData {
 		union {
 			StaticFieldRef asStaticField;
 			ArrayElementRef asArrayElement;
@@ -99,12 +99,12 @@ namespace slake {
 			ArgRef asArg;
 			CoroutineArgRef asCoroutineArg;
 		} innerReference;
-		ReferenceKind innerReferenceKind;
 	};
 
 	struct StructFieldRef {
-		StructRef structRef;
+		StructRefData structRef;
 		uint32_t idxField;
+		ReferenceKind innerReferenceKind;
 	};
 
 	struct Reference {
@@ -118,7 +118,10 @@ namespace slake {
 			ArgRef asArg;
 			ArgPackRef asArgPack;
 			CoroutineArgRef asCoroutineArg;
-			StructRef asStruct;
+			struct {
+				StructRefData structRef;
+				ReferenceKind innerReferenceKind;
+			} asStruct;
 			StructFieldRef asStructField;
 			struct {
 				void *ptr;
@@ -224,19 +227,21 @@ namespace slake {
 			return ref;
 		}
 
-		static SLAKE_FORCEINLINE Reference makeStructRef(const StructRef &structRef) {
+		static SLAKE_FORCEINLINE Reference makeStructRef(const StructRefData &structRef, ReferenceKind innerReferenceKind) {
 			Reference ref = {};
 
-			ref.asStruct = structRef;
+			ref.asStruct.structRef = structRef;
+			ref.asStruct.innerReferenceKind = innerReferenceKind;
 			ref.kind = ReferenceKind::StructRef;
 
 			return ref;
 		}
 
-		static SLAKE_FORCEINLINE Reference makeStructFieldRef(const StructRef &structRef, uint32_t fieldIndex) {
+		static SLAKE_FORCEINLINE Reference makeStructFieldRef(const StructRefData &structRef, ReferenceKind innerReferenceKind, uint32_t fieldIndex) {
 			Reference ref = {};
 
 			ref.asStructField.structRef = structRef;
+			ref.asStructField.innerReferenceKind = innerReferenceKind;
 			ref.asStructField.idxField = fieldIndex;
 			ref.kind = ReferenceKind::StructFieldRef;
 
@@ -553,7 +558,7 @@ namespace slake {
 		SLAKE_API bool operator>(const Value &rhs) const;
 	};
 
-	SLAKE_API Reference extractStructInnerRef(const StructRef &structRef);
+	SLAKE_API Reference extractStructInnerRef(const StructRefData &structRef, ReferenceKind innerReferenceKind);
 	SLAKE_API bool isCompatible(const TypeRef &type, const Value &value);
 }
 

@@ -441,10 +441,6 @@ namespace slake {
 			void *nativeStackBaseCurrentPtr = nullptr,
 			size_t nativeStackSize = 0);
 
-		SLAKE_API static char *calcCoroutineLocalVarRefStackBasePtr(const CoroutineLocalVarRef &localVarRef);
-		SLAKE_API static char *calcLocalVarRefStackBasePtr(const LocalVarRef &localVarRef);
-		SLAKE_API static char *calcLocalVarRefStackRawDataPtr(char *p);
-
 		SLAKE_API void *locateValueBasePtr(const Reference &entityRef) const noexcept;
 		[[nodiscard]] SLAKE_API TypeRef typeofVar(const Reference &entityRef) const noexcept;
 		SLAKE_API void readVar(const Reference &entityRef, Value &valueOut) const noexcept;

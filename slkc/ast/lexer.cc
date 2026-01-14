@@ -96,6 +96,8 @@ SLKC_API const char *slkc::getTokenName(TokenId tokenId) {
 			return "@";
 		case TokenId::Dot:
 			return ".";
+		case TokenId::HashTag:
+			return "#";
 		case TokenId::VarArg:
 			return "...";
 		case TokenId::AddOp:
@@ -264,6 +266,8 @@ SLKC_API const char *slkc::getTokenName(TokenId tokenId) {
 			return "true";
 		case TokenId::TryKeyword:
 			return "try";
+		case TokenId::TypenameKeyword:
+			return "typename";
 		case TokenId::UsingKeyword:
 			return "using";
 		case TokenId::UnionKeyword:

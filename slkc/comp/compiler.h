@@ -2,12 +2,13 @@
 #define _SLKC_COMP_COMPILER_H_
 
 #include "../ast/parser.h"
+#include "../ast/bc/parser.h"
 
 namespace slkc {
 	SLKC_API peff::Option<slkc::CompilationError> typeNameCmp(AstNodePtr<TypeNameNode> lhs, AstNodePtr<TypeNameNode> rhs, int &out) noexcept;
 	SLKC_API peff::Option<slkc::CompilationError> typeNameListCmp(const peff::DynArray<AstNodePtr<TypeNameNode>> &lhs, const peff::DynArray<AstNodePtr<TypeNameNode>> &rhs, int &out) noexcept;
 
-	enum class ExprEvalPurpose {
+	enum class ExprEvalPurpose : uint8_t {
 		EvalType,	// None
 		Stmt,		// As a statement
 		LValue,		// As a lvalue
@@ -42,6 +43,7 @@ namespace slkc {
 		virtual void setLabelOffset(uint32_t labelId, uint32_t offset) const = 0;
 		[[nodiscard]] virtual peff::Option<CompilationError> setLabelName(uint32_t labelId, const std::string_view &name) = 0;
 		virtual uint32_t getLabelOffset(uint32_t labelId) const = 0;
+		virtual peff::Option<uint32_t> getLabelIndexByName(const std::string_view &sv) const = 0;
 
 		[[nodiscard]] virtual peff::Option<CompilationError> allocReg(uint32_t &regOut) = 0;
 
@@ -123,6 +125,7 @@ namespace slkc {
 		SLKC_API virtual void setLabelOffset(uint32_t labelId, uint32_t offset) const override;
 		SLKC_API virtual peff::Option<CompilationError> setLabelName(uint32_t labelId, const std::string_view &name) override;
 		SLKC_API virtual uint32_t getLabelOffset(uint32_t labelId) const override;
+		SLKC_API virtual peff::Option<uint32_t> getLabelIndexByName(const std::string_view &sv) const override;
 
 		SLKC_API virtual peff::Option<CompilationError> allocReg(uint32_t &regOut) override;
 

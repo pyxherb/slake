@@ -1,0 +1,32 @@
+module hostext;
+
+import hostext.extfns;
+
+public async main() -> i32 {
+	%0 = LVAR i64 // sum
+	%1 = LVAR i64 // i
+	%9 = CAST i64, 10000000
+	%10 = CAST i64, 1
+	%11 = CAST i64, 0
+
+	STORE %0, %11
+	STORE %1, %11
+
+	JMP #loopEnd
+loop:
+	%2 = LVALUE %0
+	%3 = LVALUE %1
+
+	%4 = ADD %2, %3
+	STORE %0, %4
+
+	%5 = ADD %3, %10
+	STORE %1, %5
+loopEnd:
+	%7 = LVALUE %1
+	%8 = LT %7, %9
+	BR %8, #loop, #end
+end:
+
+	RET 0
+}

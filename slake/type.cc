@@ -308,7 +308,7 @@ SLAKE_API bool slake::isCompatible(const TypeRef &type, const Value &value) {
 		case TypeId::F64:
 		case TypeId::Bool:
 			if (type.typeId != valueTypeToTypeId(value.valueType))
-				return true;
+				return false;
 			break;
 		case TypeId::String: {
 			if (value.valueType != ValueType::Reference)

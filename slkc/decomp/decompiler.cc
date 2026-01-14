@@ -740,9 +740,9 @@ SLKC_API bool Decompiler::decompileModuleMembers(peff::Alloc *allocator, DumpWri
 											sld = &ol->sourceLocDescs.at(curIns.offSourceLocDesc);
 
 										if (sld) {
-											char s[23];
+											char s[33];
 
-											sprintf(s, "(%u, %u): ", sld->line, sld->column);
+											sprintf(s, "(%u %u): ", sld->line, sld->column);
 
 											SLKC_RETURN_IF_FALSE(writer->write(s));
 										}

@@ -51,10 +51,18 @@ SLKC_API peff::Option<CompilationError> NormalCompilationContext::setLabelName(u
 	if (!labels.at(labelId)->name.build(name)) {
 		return genOutOfMemoryCompError();
 	}
+	if (!labelNameIndices.insert(labels.at(labelId)->name, +labelId))
+		return genOutOfMemoryCompError();
 	return {};
 }
 SLKC_API uint32_t NormalCompilationContext::getLabelOffset(uint32_t labelId) const {
 	return labels.at(labelId)->offset;
+}
+
+SLKC_API peff::Option<uint32_t> NormalCompilationContext::getLabelIndexByName(const std::string_view& sv) const {
+	if (auto it = labelNameIndices.find(sv); it != labelNameIndices.end())
+		return it.value();
+	return {};
 }
 
 SLKC_API peff::Option<CompilationError> NormalCompilationContext::allocReg(uint32_t &regOut) {

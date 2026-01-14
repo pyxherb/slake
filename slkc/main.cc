@@ -126,8 +126,13 @@ struct MatchUserData {
 	peff::DynArray<peff::String> *includeDirs;
 };
 
-const ArglessOptionMap g_arglessOptions = {
+bool isBCMode = false;
 
+const ArglessOptionMap g_arglessOptions = {
+	{ "-bc", [](const OptionMatchContext &matchContext, const char *option) -> int {
+		 isBCMode = true;
+		 return 0;
+	 } }
 };
 
 const char *g_modFileName = nullptr, *g_outputFileName = nullptr;
@@ -787,10 +792,20 @@ int main(int argc, char *argv[]) {
 		}
 		slkc::CompileEnvironment compileEnv(runtime.get(), document, &peff::g_nullAlloc, peff::getDefaultAlloc());
 		{
+			slake::HostObjectRef<slake::ModuleObject> modObj = slake::ModuleObject::alloc(runtime.get());
+			modObj->setAccess(slake::ACCESS_PUBLIC | slake::ACCESS_STATIC);
+
 			peff::SharedPtr<slkc::Parser> parser;
-			if (!(parser = peff::makeShared<slkc::Parser>(peff::getDefaultAlloc(), document, tokenList.release(), peff::getDefaultAlloc()))) {
-				printError("Error allocating memory for the parser");
-				return ENOMEM;
+			if (isBCMode) {
+				if (!(parser = peff::makeShared<slkc::bc::BCParser>(peff::getDefaultAlloc(), document, tokenList.release(), peff::getDefaultAlloc()).castTo<slkc::Parser>())) {
+					printError("Error allocating memory for the parser");
+					return ENOMEM;
+				}
+			} else {
+				if (!(parser = peff::makeShared<slkc::Parser>(peff::getDefaultAlloc(), document, tokenList.release(), peff::getDefaultAlloc()))) {
+					printError("Error allocating memory for the parser");
+					return ENOMEM;
+				}
 			}
 
 			slkc::AstNodePtr<slkc::ModuleNode> rootMod;
@@ -822,9 +837,6 @@ int main(int argc, char *argv[]) {
 				encounteredErrors = true;
 				dumpCompilationError(parser, *e);
 			}
-
-			slake::HostObjectRef<slake::ModuleObject> modObj = slake::ModuleObject::alloc(runtime.get());
-			modObj->setAccess(slake::ACCESS_PUBLIC | slake::ACCESS_STATIC);
 
 			if (auto e = slkc::compileModuleLikeNode(&compileEnv, mod, modObj.get()); e) {
 				encounteredErrors = true;

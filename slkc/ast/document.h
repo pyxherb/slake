@@ -90,6 +90,8 @@ namespace slkc {
 		ModuleNotFound,
 		RegLimitExceeded,
 
+		InvalidMnemonic,
+
 		ErrorWritingCompiledModule
 	};
 

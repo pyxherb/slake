@@ -34,6 +34,11 @@ namespace slkc {
 		Root,
 		This,
 
+		BCFn,
+		BCFnOverloading,
+		BCStmt,
+		BCTypeName,
+
 		Bad
 	};
 

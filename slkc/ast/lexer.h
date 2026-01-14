@@ -74,6 +74,7 @@ namespace slkc {
 		RParenthese,
 		At,
 		Dot,
+		HashTag,
 		VarArg,
 
 		ScopeOp,
@@ -164,6 +165,7 @@ namespace slkc {
 		TypeofKeyword,
 		TrueKeyword,
 		TryKeyword,
+		TypenameKeyword,
 		UsingKeyword,
 		UnionKeyword,
 		VarKeyword,

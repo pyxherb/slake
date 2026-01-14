@@ -552,13 +552,13 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 		case Opcode::STORE: {
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<false, 2>(this, output, nOperands));
 
-			Value destValue;
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, operands[0], destValue));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::Reference>(this, destValue));
+			const Value *destValue;
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[0], destValue));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::Reference>(this, *destValue));
 
-			Value data;
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, operands[1], data));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, writeVar(destValue.getReference(), data));
+			const Value *data;
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[1], data));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, writeVar(destValue->getReference(), *data));
 			break;
 		}
 		case Opcode::MOV: {
@@ -2235,7 +2235,7 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 						gc();
 					}
 
-					const Instruction *const SLAKE_RESTRICT instruction = ol->instructions.data() + idxCurIns;
+					const Instruction *const instruction = ol->instructions.data() + idxCurIns;
 					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _execIns(context, curMajorFrame, instruction->opcode, instruction->output, instruction->nOperands, instruction->operands, isContextChanged));
 				}
 

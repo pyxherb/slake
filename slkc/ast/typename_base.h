@@ -35,6 +35,8 @@ namespace slkc {
 		UnpackedParams,
 		UnpackedArgs,
 
+		BCCustom,
+
 		Bad
 	};
 

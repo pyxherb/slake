@@ -920,6 +920,28 @@ SLKC_API RegIndexExprNode::RegIndexExprNode(const RegIndexExprNode &rhs, peff::A
 SLKC_API RegIndexExprNode::~RegIndexExprNode() {
 }
 
+SLKC_API AstNodePtr<AstNode> TypeNameExprNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
+	bool succeeded = false;
+	AstNodePtr<TypeNameExprNode> duplicatedNode(makeAstNode<TypeNameExprNode>(newAllocator, *this, newAllocator, context, succeeded));
+	if ((!duplicatedNode) || (!succeeded)) {
+		return {};
+	}
+
+	return duplicatedNode.template castTo<AstNode>();
+}
+SLKC_API TypeNameExprNode::TypeNameExprNode(
+	peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document, AstNodePtr<TypeNameNode> type)
+	: ExprNode(ExprKind::TypeName, selfAllocator, document), type(type) {
+}
+SLKC_API TypeNameExprNode::TypeNameExprNode(const TypeNameExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut)
+	: ExprNode(rhs, allocator, context) {
+	type = rhs.type;
+
+	succeededOut = true;
+}
+SLKC_API TypeNameExprNode::~TypeNameExprNode() {
+}
+
 SLKC_API AstNodePtr<AstNode> BadExprNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
 	bool succeeded = false;
 	AstNodePtr<BadExprNode> duplicatedNode(makeAstNode<BadExprNode>(newAllocator, *this, newAllocator, context, succeeded));

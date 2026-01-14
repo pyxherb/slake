@@ -380,7 +380,7 @@ SLAKE_API void Runtime::readVar(const Reference &entityRef, Value &valueOut) con
 		case ReferenceKind::LocalVarRef: {
 			const char *const rawDataPtr = (char *)locateValueBasePtr(entityRef);
 
-			TypeRef t = typeofVar(entityRef);
+			const TypeRef t = typeofVar(entityRef);
 
 			switch (t.typeId) {
 				case TypeId::I8:
@@ -468,7 +468,7 @@ SLAKE_API void Runtime::readVar(const Reference &entityRef, Value &valueOut) con
 		case ReferenceKind::CoroutineLocalVarRef: {
 			const char *const rawDataPtr = (char *)locateValueBasePtr(entityRef);
 
-			TypeRef t = typeofVar(entityRef);
+			const TypeRef t = typeofVar(entityRef);
 
 			switch (t.typeId) {
 				case TypeId::I8:
@@ -715,7 +715,7 @@ SLAKE_API void Runtime::readVar(const Reference &entityRef, Value &valueOut) con
 		}
 		case ReferenceKind::StructFieldRef: {
 			const char *rawDataPtr = ((char *)locateValueBasePtr(extractStructInnerRef(entityRef.asStructField.structRef)));
-			TypeRef t = typeofVar(entityRef);
+			const TypeRef t = typeofVar(entityRef);
 
 			switch (t.typeId) {
 				case TypeId::I8:
@@ -779,7 +779,12 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const Reference &entityRef,
 		case ReferenceKind::StaticFieldRef: {
 			char *const rawDataPtr = (char *)locateValueBasePtr(entityRef);
 
-			switch (typeofVar(entityRef).typeId) {
+			const TypeRef t = typeofVar(entityRef);
+			if (!isCompatible(t, value)) {
+				return raiseMismatchedVarTypeError((Runtime *)this);
+			}
+
+			switch (t.typeId) {
 				case TypeId::I8:
 					*((int8_t *)rawDataPtr) = value.getI8();
 					break;
@@ -834,7 +839,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const Reference &entityRef,
 		case ReferenceKind::LocalVarRef: {
 			char *const rawDataPtr = (char *)locateValueBasePtr(entityRef);
 
-			TypeRef t = typeofVar(entityRef);
+			const TypeRef t = typeofVar(entityRef);
 
 			switch (t.typeId) {
 				case TypeId::I8:
@@ -926,7 +931,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const Reference &entityRef,
 		case ReferenceKind::CoroutineLocalVarRef: {
 			char *const rawDataPtr = (char *)locateValueBasePtr(entityRef);
 
-			TypeRef t = typeofVar(entityRef);
+			const TypeRef t = typeofVar(entityRef);
 
 			switch (t.typeId) {
 				case TypeId::I8:
@@ -1016,7 +1021,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const Reference &entityRef,
 		}
 		case ReferenceKind::InstanceFieldRef: {
 			char *const rawFieldPtr = (char *)locateValueBasePtr(entityRef);
-			TypeRef t = typeofVar(entityRef);
+			const TypeRef t = typeofVar(entityRef);
 
 			if (!isCompatible(t, value)) {
 				return raiseMismatchedVarTypeError((Runtime *)this);
@@ -1068,7 +1073,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const Reference &entityRef,
 			break;
 		}
 		case ReferenceKind::ArrayElementRef: {
-			TypeRef t = typeofVar(entityRef);
+			const TypeRef t = typeofVar(entityRef);
 			if (!isCompatible(t, value)) {
 				return raiseMismatchedVarTypeError((Runtime *)this);
 			}
@@ -1148,7 +1153,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const Reference &entityRef,
 		}
 		case ReferenceKind::StructFieldRef: {
 			const char *rawDataPtr = (char *)locateValueBasePtr(entityRef);
-			TypeRef t = typeofVar(entityRef);
+			const TypeRef t = typeofVar(entityRef);
 
 			switch (t.typeId) {
 				case TypeId::I8:

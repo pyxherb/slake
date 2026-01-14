@@ -129,6 +129,7 @@ SLKC_API peff::Option<LexicalError> Lexer::lex(ModuleNode *moduleNode, const std
 				<InitialCondition>"interface"	{ token->tokenId = TokenId::InterfaceKeyword; break; }
 				<InitialCondition>"true"		{ token->tokenId = TokenId::TrueKeyword; break; }
 				<InitialCondition>"try"			{ token->tokenId = TokenId::TryKeyword; break; }
+				<InitialCondition>"typename"	{ token->tokenId = TokenId::TypenameKeyword; break; }
 				<InitialCondition>"using"		{ token->tokenId = TokenId::UsingKeyword; break; }
 				<InitialCondition>"union"		{ token->tokenId = TokenId::UnionKeyword; break; }
 				<InitialCondition>"var"			{ token->tokenId = TokenId::VarKeyword; break; }
@@ -170,6 +171,7 @@ SLKC_API peff::Option<LexicalError> Lexer::lex(ModuleNode *moduleNode, const std
 				<InitialCondition>"}"		{ token->tokenId = TokenId::RBrace; break; }
 				<InitialCondition>"("		{ token->tokenId = TokenId::LParenthese; break; }
 				<InitialCondition>")"		{ token->tokenId = TokenId::RParenthese; break; }
+				<InitialCondition>"#"		{ token->tokenId = TokenId::HashTag; break; }
 				<InitialCondition>"..."		{ token->tokenId = TokenId::VarArg; break; }
 				<InitialCondition>"."		{ token->tokenId = TokenId::Dot; break; }
 

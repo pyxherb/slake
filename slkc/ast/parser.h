@@ -126,7 +126,7 @@ namespace slkc {
 		peff::DynArray<SyntaxError> syntaxErrors;
 
 		SLKC_API Parser(peff::SharedPtr<Document> document, TokenList &&tokenList, peff::Alloc *resourceAllocator);
-		SLKC_API ~Parser();
+		SLKC_API virtual ~Parser();
 
 		SLKC_API SyntaxError genOutOfMemorySyntaxError() {
 			return SyntaxError(TokenRange{ document->mainModule, 0 }, SyntaxErrorKind::OutOfMemory);
@@ -159,6 +159,7 @@ namespace slkc {
 		[[nodiscard]] SLKC_API peff::Option<SyntaxError> splitRshOpToken();
 		[[nodiscard]] SLKC_API peff::Option<SyntaxError> splitRDBracketsToken();
 
+	private:
 		[[nodiscard]] SLKC_API peff::Option<SyntaxError> parseVarDefs(peff::DynArray<VarDefEntryPtr> &varDefEntries);
 
 		[[nodiscard]] SLKC_API peff::Option<SyntaxError> parseIdRef(IdRefPtr &idRefOut);
@@ -202,14 +203,13 @@ namespace slkc {
 		[[nodiscard]] SLKC_API peff::Option<SyntaxError> parseUnionEnumItem(AstNodePtr<ModuleNode> enumOut);
 		[[nodiscard]] SLKC_API peff::Option<SyntaxError> parseEnumItem(AstNodePtr<ModuleNode> enumOut);
 
-		[[nodiscard]] SLKC_API peff::Option<SyntaxError> parseClassStmts();
-
 		[[nodiscard]] SLKC_API peff::Option<SyntaxError> parseProgramStmt();
 
+	public:
 		/// @brief Parse a whole program.
 		/// @return The syntax error that forced the parser to interrupt the parse progress.
 		/// @note Don't forget that there still may be syntax errors emitted even the parse progress is not interrupted.
-		[[nodiscard]] SLKC_API peff::Option<SyntaxError> parseProgram(const AstNodePtr<ModuleNode> &initialMod, IdRefPtr &moduleNameOut);
+		[[nodiscard]] SLKC_API virtual peff::Option<SyntaxError> parseProgram(const AstNodePtr<ModuleNode> &initialMod, IdRefPtr &moduleNameOut);
 	};
 }
 

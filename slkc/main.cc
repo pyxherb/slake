@@ -833,7 +833,7 @@ int main(int argc, char *argv[]) {
 				dumpCompilationError(parser, *e);
 			}
 
-			if (auto e = indexModuleMembers(&compileEnv, rootMod); e) {
+			if (auto e = indexModuleVarMembers(&compileEnv, rootMod); e) {
 				encounteredErrors = true;
 				dumpCompilationError(parser, *e);
 			}

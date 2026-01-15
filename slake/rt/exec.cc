@@ -80,9 +80,9 @@ static SLAKE_FORCEINLINE Value *_calcRegPtr(
 }
 
 [[nodiscard]] static SLAKE_FORCEINLINE InternalExceptionPointer _unwrapRegOperand(
-	Runtime *runtime,
+	Runtime *const runtime,
 	const char *stackData,
-	size_t stackSize,
+	const size_t stackSize,
 	const MajorFrame *curMajorFrame,
 	const Value &value,
 	Value &valueOut) noexcept {
@@ -99,9 +99,9 @@ static SLAKE_FORCEINLINE Value *_calcRegPtr(
 }
 
 [[nodiscard]] static SLAKE_FORCEINLINE InternalExceptionPointer _unwrapRegOperandIntoPtr(
-	Runtime *runtime,
+	Runtime *const runtime,
 	const char *stackData,
-	size_t stackSize,
+	const size_t stackSize,
 	const MajorFrame *curMajorFrame,
 	const Value &value,
 	const Value *&valueOut) noexcept {
@@ -110,7 +110,7 @@ static SLAKE_FORCEINLINE Value *_calcRegPtr(
 			// The register does not present.
 			return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(runtime->getFixedAlloc()));
 		}
-		valueOut = (Value *)calcStackAddr(stackData, stackSize, curMajorFrame->offRegs + sizeof(Value) * (value.data.asU32 + 1));
+		valueOut = (Value *)calcStackAddr(stackData, stackSize, curMajorFrame->offRegs + sizeof(Value) * (((size_t)value.data.asU32) + 1));
 		return {};
 	}
 	valueOut = &value;
@@ -2205,7 +2205,7 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 
 		switch (curFn->overloadingKind) {
 			case FnOverloadingKind::Regular: {
-				RegularFnOverloadingObject *ol = (RegularFnOverloadingObject *)curFn;
+				const RegularFnOverloadingObject *const ol = (RegularFnOverloadingObject *)curFn;
 
 				const size_t nIns = ol->instructions.size();
 

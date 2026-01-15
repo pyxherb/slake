@@ -904,7 +904,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileModuleLikeNode(
 		}
 	}
 
-	SLKC_RETURN_IF_COMP_ERROR(indexModuleMembers(compileEnv, compileEnv->document->rootModule));
+	SLKC_RETURN_IF_COMP_ERROR(indexModuleVarMembers(compileEnv, compileEnv->document->rootModule));
 
 	for (auto [k, v] : mod->memberIndices) {
 		AstNodePtr<MemberNode> m = mod->members.at(v);

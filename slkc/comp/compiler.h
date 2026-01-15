@@ -693,7 +693,7 @@ namespace slkc {
 		CompileEnvironment *compileEnv,
 		AstNodePtr<StructNode> structNode);
 
-	[[nodiscard]] SLKC_API peff::Option<CompilationError> indexModuleMembers(
+	[[nodiscard]] SLKC_API peff::Option<CompilationError> indexModuleVarMembers(
 		CompileEnvironment *compileEnv,
 		AstNodePtr<ModuleNode> moduleNode);
 

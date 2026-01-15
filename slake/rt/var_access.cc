@@ -73,7 +73,7 @@ SLAKE_API void *Runtime::locateValueBasePtr(const Reference &entityRef) const no
 					std::terminate();
 			}
 
-			return (void *)calcLocalVarRefStackRawDataPtr(rawDataPtr);
+			return (void *)rawDataPtr;
 		}
 		case ReferenceKind::CoroutineLocalVarRef: {
 			const char *rawDataPtr = calcLocalVarRefStackRawDataPtr(calcCoroutineLocalVarRefStackBasePtr(entityRef.asCoroutineLocalVar));
@@ -114,7 +114,7 @@ SLAKE_API void *Runtime::locateValueBasePtr(const Reference &entityRef) const no
 					std::terminate();
 			}
 
-			return (void *)calcLocalVarRefStackRawDataPtr(rawDataPtr);
+			return (void *)rawDataPtr;
 		}
 		case ReferenceKind::InstanceFieldRef: {
 			ObjectFieldRecord &fieldRecord =
@@ -164,8 +164,7 @@ SLAKE_API TypeRef Runtime::typeofVar(const Reference &entityRef) const noexcept 
 		case ReferenceKind::LocalVarRef: {
 			const char *const rawDataPtr = calcLocalVarRefStackRawDataPtr(calcLocalVarRefStackBasePtr(entityRef.asLocalVar));
 
-			TypeRef t = *(TypeId *)(rawDataPtr - (sizeof(TypeModifier) + sizeof(TypeId)));
-			t.typeModifier = *(TypeModifier *)(rawDataPtr - sizeof(TypeModifier));
+			TypeRef t = TypeRef(*(TypeId *)(rawDataPtr - (sizeof(TypeModifier) + sizeof(TypeId))), *(TypeModifier *)(rawDataPtr - sizeof(TypeModifier)));
 
 			switch (t.typeId) {
 				case TypeId::I8:
@@ -204,8 +203,7 @@ SLAKE_API TypeRef Runtime::typeofVar(const Reference &entityRef) const noexcept 
 		case ReferenceKind::CoroutineLocalVarRef: {
 			const char *const rawDataPtr = calcLocalVarRefStackRawDataPtr(calcCoroutineLocalVarRefStackBasePtr(entityRef.asCoroutineLocalVar));
 
-			TypeRef t = *(TypeId *)(rawDataPtr - (sizeof(TypeModifier) + sizeof(TypeId)));
-			t.typeModifier = *(TypeModifier *)(rawDataPtr - sizeof(TypeModifier));
+			TypeRef t = TypeRef(*(TypeId *)(rawDataPtr - (sizeof(TypeModifier) + sizeof(TypeId))), *(TypeModifier *)(rawDataPtr - sizeof(TypeModifier)));
 
 			switch (t.typeId) {
 				case TypeId::I8:

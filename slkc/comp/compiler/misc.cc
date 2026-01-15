@@ -157,7 +157,7 @@ SLKC_API peff::Option<CompilationError> slkc::renormalizeModuleVarDefStmts(
 			varNode->type = j->type;
 			varNode->accessModifier = i->accessModifier;
 
-			if (!mod->addMember(varNode.template castTo<MemberNode>()))
+			if (!mod->addMember(varNode.castTo<MemberNode>()))
 				return genOutOfMemoryCompError();
 		}
 	}
@@ -221,51 +221,51 @@ SLKC_API peff::Option<CompilationError> slkc::isFnSignatureDuplicated(AstNodePtr
 	return isFnSignatureSame(lhs->params.data(), rhs->params.data(), lhs->params.size(), lhs->overridenType, rhs->overridenType, whetherOut);
 }
 
-SLKC_API peff::Option<CompilationError> slkc::indexModuleMembers(
+SLKC_API peff::Option<CompilationError> slkc::indexModuleVarMembers(
 	CompileEnvironment *compileEnv,
 	AstNodePtr<ModuleNode> moduleNode) {
 	for (auto i : moduleNode->members) {
 		switch (i->getAstNodeType()) {
 			case AstNodeType::Module: {
-				AstNodePtr<ModuleNode> m = i.template castTo<ModuleNode>();
+				AstNodePtr<ModuleNode> m = i.castTo<ModuleNode>();
 
-				SLKC_RETURN_IF_COMP_ERROR(normalizeModuleVarDefStmts(compileEnv, m.template castTo<ModuleNode>()));
+				SLKC_RETURN_IF_COMP_ERROR(normalizeModuleVarDefStmts(compileEnv, m.castTo<ModuleNode>()));
 
-				SLKC_RETURN_IF_COMP_ERROR(indexModuleMembers(compileEnv, m));
+				SLKC_RETURN_IF_COMP_ERROR(indexModuleVarMembers(compileEnv, m));
 				break;
 			}
 			case AstNodeType::Class: {
-				AstNodePtr<ClassNode> m = i.template castTo<ClassNode>();
+				AstNodePtr<ClassNode> m = i.castTo<ClassNode>();
 
 				SLKC_RETURN_IF_COMP_ERROR(indexClassGenericParams(compileEnv, m));
 
-				SLKC_RETURN_IF_COMP_ERROR(normalizeModuleVarDefStmts(compileEnv, m.template castTo<ModuleNode>()));
+				SLKC_RETURN_IF_COMP_ERROR(normalizeModuleVarDefStmts(compileEnv, m.castTo<ModuleNode>()));
 
-				SLKC_RETURN_IF_COMP_ERROR(indexModuleMembers(compileEnv, m.template castTo<ModuleNode>()));
+				SLKC_RETURN_IF_COMP_ERROR(indexModuleVarMembers(compileEnv, m.castTo<ModuleNode>()));
 				break;
 			}
 			case AstNodeType::Interface: {
-				AstNodePtr<InterfaceNode> m = i.template castTo<InterfaceNode>();
+				AstNodePtr<InterfaceNode> m = i.castTo<InterfaceNode>();
 
 				SLKC_RETURN_IF_COMP_ERROR(indexInterfaceGenericParams(compileEnv, m));
 
-				SLKC_RETURN_IF_COMP_ERROR(normalizeModuleVarDefStmts(compileEnv, m.template castTo<ModuleNode>()));
+				SLKC_RETURN_IF_COMP_ERROR(normalizeModuleVarDefStmts(compileEnv, m.castTo<ModuleNode>()));
 
-				SLKC_RETURN_IF_COMP_ERROR(indexModuleMembers(compileEnv, m.template castTo<ModuleNode>()));
+				SLKC_RETURN_IF_COMP_ERROR(indexModuleVarMembers(compileEnv, m.castTo<ModuleNode>()));
 				break;
 			}
 			case AstNodeType::Struct: {
-				AstNodePtr<StructNode> m = i.template castTo<StructNode>();
+				AstNodePtr<StructNode> m = i.castTo<StructNode>();
 
 				SLKC_RETURN_IF_COMP_ERROR(indexStructGenericParams(compileEnv, m));
 
-				SLKC_RETURN_IF_COMP_ERROR(normalizeModuleVarDefStmts(compileEnv, m.template castTo<ModuleNode>()));
+				SLKC_RETURN_IF_COMP_ERROR(normalizeModuleVarDefStmts(compileEnv, m.castTo<ModuleNode>()));
 
-				SLKC_RETURN_IF_COMP_ERROR(indexModuleMembers(compileEnv, m.template castTo<ModuleNode>()));
+				SLKC_RETURN_IF_COMP_ERROR(indexModuleVarMembers(compileEnv, m.castTo<ModuleNode>()));
 				break;
 			}
 			case AstNodeType::Fn: {
-				AstNodePtr<FnNode> m = i.template castTo<FnNode>();
+				AstNodePtr<FnNode> m = i.castTo<FnNode>();
 
 				for (auto j : m->overloadings) {
 					SLKC_RETURN_IF_COMP_ERROR(indexFnParams(compileEnv, j));

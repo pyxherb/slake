@@ -105,6 +105,7 @@ namespace slkc {
 
 	public:
 		AstNodePtr<ExprNode> enumValue;
+		AstNodePtr<ExprNode> filledValue;
 
 		SLKC_API EnumItemNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
 		SLKC_API EnumItemNode(const EnumItemNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut);

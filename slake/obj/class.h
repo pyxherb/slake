@@ -171,22 +171,7 @@ namespace slake {
 		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;
 	};
 
-	class EnumModuleObject : public MemberObject {
-	public:
-		peff::HashMap<std::string_view, MemberObject *> members;
-
-		SLAKE_API EnumModuleObject(Runtime *rt, peff::Alloc *selfAllocator, ObjectKind objectKind);
-		SLAKE_API EnumModuleObject(Duplicator *duplicator, const EnumModuleObject &x, peff::Alloc *allocator, bool &succeededOut);
-		SLAKE_API virtual ~EnumModuleObject();
-
-		SLAKE_API virtual Reference getMember(const std::string_view &name) const override;
-		[[nodiscard]] SLAKE_API virtual bool addMember(MemberObject *member);
-		[[nodiscard]] SLAKE_API virtual bool removeMember(const std::string_view &name);
-
-		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;
-	};
-
-	class ScopedEnumObject : public EnumModuleObject {
+	class ScopedEnumObject : public BasicModuleObject {
 	public:
 		TypeRef baseType = TypeId::Invalid;
 
@@ -195,10 +180,6 @@ namespace slake {
 		SLAKE_API virtual ~ScopedEnumObject();
 
 		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
-
-		SLAKE_API virtual Reference getMember(const std::string_view &name) const override;
-		[[nodiscard]] SLAKE_API virtual bool addMember(MemberObject *member);
-		[[nodiscard]] SLAKE_API virtual bool removeMember(const std::string_view &name);
 
 		SLAKE_API static HostObjectRef<ScopedEnumObject> alloc(Runtime *rt);
 		SLAKE_API static HostObjectRef<ScopedEnumObject> alloc(Duplicator *duplicator, const ScopedEnumObject *other);
@@ -222,7 +203,7 @@ namespace slake {
 		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;
 	};
 
-	class UnionEnumObject : public EnumModuleObject {
+	class UnionEnumObject : public BasicModuleObject {
 	public:
 		peff::DynArray<Value> genericArgs;
 		peff::HashMap<std::string_view, Value> mappedGenericArgs;

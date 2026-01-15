@@ -2,6 +2,275 @@
 
 using namespace slkc;
 
+SLKC_API peff::Option<CompilationError> slkc::getSucceedingEnumValue(
+	CompileEnvironment* compileEnv,
+	CompilationContext* compilationContext,
+	AstNodePtr<TypeNameNode> baseType,
+	AstNodePtr<ExprNode> lastValue,
+	AstNodePtr<ExprNode>& valueOut) {
+	if (lastValue) {
+		switch (baseType->typeNameKind) {
+			case TypeNameKind::I8:
+				if (!(valueOut = makeAstNode<I8LiteralExprNode>(
+						  compileEnv->allocator.get(),
+						  compileEnv->allocator.get(),
+						  compileEnv->document,
+						  lastValue.castTo<I8LiteralExprNode>()->data + 1)
+							.castTo<ExprNode>()))
+					return genOutOfMemoryCompError();
+				break;
+			case TypeNameKind::I16:
+				if (!(valueOut = makeAstNode<I16LiteralExprNode>(
+						  compileEnv->allocator.get(),
+						  compileEnv->allocator.get(),
+						  compileEnv->document,
+						  lastValue.castTo<I16LiteralExprNode>()->data + 1)
+							.castTo<ExprNode>()))
+					return genOutOfMemoryCompError();
+				break;
+			case TypeNameKind::I32:
+				if (!(valueOut = makeAstNode<I32LiteralExprNode>(
+						  compileEnv->allocator.get(),
+						  compileEnv->allocator.get(),
+						  compileEnv->document,
+						  lastValue.castTo<I32LiteralExprNode>()->data + 1)
+							.castTo<ExprNode>()))
+					return genOutOfMemoryCompError();
+				break;
+			case TypeNameKind::I64:
+				if (!(valueOut = makeAstNode<I64LiteralExprNode>(
+						  compileEnv->allocator.get(),
+						  compileEnv->allocator.get(),
+						  compileEnv->document,
+						  lastValue.castTo<I64LiteralExprNode>()->data + 1)
+							.castTo<ExprNode>()))
+					return genOutOfMemoryCompError();
+				break;
+			case TypeNameKind::U8:
+				if (!(valueOut = makeAstNode<U8LiteralExprNode>(
+						  compileEnv->allocator.get(),
+						  compileEnv->allocator.get(),
+						  compileEnv->document,
+						  lastValue.castTo<U8LiteralExprNode>()->data + 1)
+							.castTo<ExprNode>()))
+					return genOutOfMemoryCompError();
+				break;
+			case TypeNameKind::U16:
+				if (!(valueOut = makeAstNode<U16LiteralExprNode>(
+						  compileEnv->allocator.get(),
+						  compileEnv->allocator.get(),
+						  compileEnv->document,
+						  lastValue.castTo<U16LiteralExprNode>()->data + 1)
+							.castTo<ExprNode>()))
+					return genOutOfMemoryCompError();
+				break;
+			case TypeNameKind::U32:
+				if (!(valueOut = makeAstNode<U32LiteralExprNode>(
+						  compileEnv->allocator.get(),
+						  compileEnv->allocator.get(),
+						  compileEnv->document,
+						  lastValue.castTo<U32LiteralExprNode>()->data + 1)
+							.castTo<ExprNode>()))
+					return genOutOfMemoryCompError();
+				break;
+			case TypeNameKind::U64:
+				if (!(valueOut = makeAstNode<U8LiteralExprNode>(
+						  compileEnv->allocator.get(),
+						  compileEnv->allocator.get(),
+						  compileEnv->document,
+						  lastValue.castTo<U64LiteralExprNode>()->data + 1)
+							.castTo<ExprNode>()))
+					return genOutOfMemoryCompError();
+				break;
+			case TypeNameKind::F32:
+				if (!(valueOut = makeAstNode<F32LiteralExprNode>(
+						  compileEnv->allocator.get(),
+						  compileEnv->allocator.get(),
+						  compileEnv->document,
+						  lastValue.castTo<F32LiteralExprNode>()->data + 1)
+							.castTo<ExprNode>()))
+					return genOutOfMemoryCompError();
+				break;
+			case TypeNameKind::F64:
+				if (!(valueOut = makeAstNode<F64LiteralExprNode>(
+						  compileEnv->allocator.get(),
+						  compileEnv->allocator.get(),
+						  compileEnv->document,
+						  lastValue.castTo<F64LiteralExprNode>()->data + 1)
+							.castTo<ExprNode>()))
+					return genOutOfMemoryCompError();
+				break;
+			case TypeNameKind::Bool:
+				if (!(valueOut = makeAstNode<BoolLiteralExprNode>(
+						  compileEnv->allocator.get(),
+						  compileEnv->allocator.get(),
+						  compileEnv->document,
+						  !lastValue.castTo<BoolLiteralExprNode>()->data)
+							.castTo<ExprNode>()))
+					return genOutOfMemoryCompError();
+				break;
+			default:
+				std::terminate();
+		}
+	} else {
+		switch (baseType->typeNameKind) {
+			case TypeNameKind::I8:
+				if (!(valueOut = makeAstNode<I8LiteralExprNode>(
+						  compileEnv->allocator.get(),
+						  compileEnv->allocator.get(),
+						  compileEnv->document,
+						  0)
+							.castTo<ExprNode>()))
+					return genOutOfMemoryCompError();
+				break;
+			case TypeNameKind::I16:
+				if (!(valueOut = makeAstNode<I16LiteralExprNode>(
+						  compileEnv->allocator.get(),
+						  compileEnv->allocator.get(),
+						  compileEnv->document,
+						  0)
+							.castTo<ExprNode>()))
+					return genOutOfMemoryCompError();
+				break;
+			case TypeNameKind::I32:
+				if (!(valueOut = makeAstNode<I32LiteralExprNode>(
+						  compileEnv->allocator.get(),
+						  compileEnv->allocator.get(),
+						  compileEnv->document,
+						  0)
+							.castTo<ExprNode>()))
+					return genOutOfMemoryCompError();
+				break;
+			case TypeNameKind::I64:
+				if (!(valueOut = makeAstNode<I64LiteralExprNode>(
+						  compileEnv->allocator.get(),
+						  compileEnv->allocator.get(),
+						  compileEnv->document,
+						  0)
+							.castTo<ExprNode>()))
+					return genOutOfMemoryCompError();
+				break;
+			case TypeNameKind::U8:
+				if (!(valueOut = makeAstNode<U8LiteralExprNode>(
+						  compileEnv->allocator.get(),
+						  compileEnv->allocator.get(),
+						  compileEnv->document,
+						  0)
+							.castTo<ExprNode>()))
+					return genOutOfMemoryCompError();
+				break;
+			case TypeNameKind::U16:
+				if (!(valueOut = makeAstNode<U16LiteralExprNode>(
+						  compileEnv->allocator.get(),
+						  compileEnv->allocator.get(),
+						  compileEnv->document,
+						  0)
+							.castTo<ExprNode>()))
+					return genOutOfMemoryCompError();
+				break;
+			case TypeNameKind::U32:
+				if (!(valueOut = makeAstNode<U32LiteralExprNode>(
+						  compileEnv->allocator.get(),
+						  compileEnv->allocator.get(),
+						  compileEnv->document,
+						  0)
+							.castTo<ExprNode>()))
+					return genOutOfMemoryCompError();
+				break;
+			case TypeNameKind::U64:
+				if (!(valueOut = makeAstNode<U8LiteralExprNode>(
+						  compileEnv->allocator.get(),
+						  compileEnv->allocator.get(),
+						  compileEnv->document,
+						  0)
+							.castTo<ExprNode>()))
+					return genOutOfMemoryCompError();
+				break;
+			case TypeNameKind::F32:
+				if (!(valueOut = makeAstNode<F32LiteralExprNode>(
+						  compileEnv->allocator.get(),
+						  compileEnv->allocator.get(),
+						  compileEnv->document,
+						  0)
+							.castTo<ExprNode>()))
+					return genOutOfMemoryCompError();
+				break;
+			case TypeNameKind::F64:
+				if (!(valueOut = makeAstNode<F64LiteralExprNode>(
+						  compileEnv->allocator.get(),
+						  compileEnv->allocator.get(),
+						  compileEnv->document,
+						  0)
+							.castTo<ExprNode>()))
+					return genOutOfMemoryCompError();
+				break;
+			case TypeNameKind::Bool:
+				if (!(valueOut = makeAstNode<BoolLiteralExprNode>(
+						  compileEnv->allocator.get(),
+						  compileEnv->allocator.get(),
+						  compileEnv->document,
+						  false)
+							.castTo<ExprNode>()))
+					return genOutOfMemoryCompError();
+				break;
+			default:
+				std::terminate();
+		}
+	}
+}
+
+SLKC_API peff::Option<CompilationError> slkc::fillScopedEnum(
+	CompileEnvironment *compileEnv,
+	CompilationContext *compilationContext,
+	AstNodePtr<ScopedEnumNode> enumNode) {
+	if (!enumNode->baseType)
+		return {};
+
+	AstNodePtr<ExprNode> lastValue;
+
+	for (size_t i = 0; i < enumNode->members.size(); ++i) {
+		assert(enumNode->getAstNodeType() == AstNodeType::EnumItem);
+
+		AstNodePtr<EnumItemNode> item = enumNode->members.at(i).castTo<EnumItemNode>();
+		AstNodePtr<ExprNode> fillValue;
+
+		if (item->enumValue) {
+			bool isSame;
+
+			AstNodePtr<TypeNameNode> tn;
+
+			SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, item->enumValue, fillValue));
+			if (!fillValue)
+				return CompilationError(item->enumValue->tokenRange, CompilationErrorKind::RequiresCompTimeExpr);
+
+			SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileEnv, compilationContext, fillValue, tn, enumNode->baseType));
+
+			SLKC_RETURN_IF_COMP_ERROR(isSameType(tn, enumNode->baseType, isSame));
+
+			if (!isSame) {
+				AstNodePtr<CastExprNode> castExpr;
+
+				if (!(castExpr = makeAstNode<CastExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document)))
+					return genOutOfMemoryCompError();
+
+				castExpr->tokenRange = item->enumValue->tokenRange;
+				castExpr->source = fillValue;
+				castExpr->targetType = enumNode->baseType;
+
+				SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, castExpr.castTo<ExprNode>(), fillValue));
+
+				if (!fillValue)
+					return CompilationError(item->enumValue->tokenRange, CompilationErrorKind::IncompatibleInitialValueType);
+			}
+		} else {
+			SLKC_RETURN_IF_COMP_ERROR(getSucceedingEnumValue(compileEnv, compilationContext, enumNode->baseType, lastValue, fillValue));
+		}
+		lastValue = (item->filledValue = fillValue);
+	}
+
+	return {};
+}
+
 SLKC_API peff::Option<CompilationError> slkc::reindexFnParams(
 	CompileEnvironment *compileEnv,
 	AstNodePtr<FnOverloadingNode> fn) {
@@ -107,7 +376,7 @@ SLKC_API peff::Option<CompilationError> slkc::indexInterfaceGenericParams(
 }
 
 SLKC_API peff::Option<CompilationError> slkc::reindexStructGenericParams(
-	CompileEnvironment* compileEnv,
+	CompileEnvironment *compileEnv,
 	AstNodePtr<StructNode> structNode) {
 	for (size_t i = 0; i < structNode->genericParams.size(); ++i) {
 		AstNodePtr<GenericParamNode> &curParam = structNode->genericParams.at(i);
@@ -125,7 +394,7 @@ SLKC_API peff::Option<CompilationError> slkc::reindexStructGenericParams(
 }
 
 SLKC_API peff::Option<CompilationError> slkc::indexStructGenericParams(
-	CompileEnvironment* compileEnv,
+	CompileEnvironment *compileEnv,
 	AstNodePtr<StructNode> structNode) {
 	if (structNode->isGenericParamsIndexed) {
 		return {};

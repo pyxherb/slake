@@ -838,6 +838,8 @@ SLKC_API EnumItemNode::EnumItemNode(const EnumItemNode &rhs, peff::Alloc *alloca
 		return;
 	}
 
+	// No need to copy filled value.
+
 	succeededOut = true;
 }
 

@@ -505,6 +505,9 @@ namespace slkc {
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> isBasicType(
 		AstNodePtr<TypeNameNode> lhs,
 		bool &resultOut);
+	[[nodiscard]] SLKC_API peff::Option<CompilationError> isScopedEnumBaseType(
+		AstNodePtr<TypeNameNode> lhs,
+		bool &resultOut);
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> deduceCommonType(
 		AstNodePtr<TypeNameNode> lhs,
 		AstNodePtr<TypeNameNode> rhs,
@@ -632,6 +635,17 @@ namespace slkc {
 		AstNodePtr<ExprNode> &exprOut);
 
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> getFullIdRef(peff::Alloc *allocator, AstNodePtr<MemberNode> m, IdRefPtr &idRefOut);
+
+	[[nodiscard]] SLKC_API peff::Option<CompilationError> getSucceedingEnumValue(
+		CompileEnvironment *compileEnv,
+		CompilationContext *compilationContext,
+		AstNodePtr<TypeNameNode> baseType,
+		AstNodePtr<ExprNode> lastValue,
+		AstNodePtr<ExprNode> &valueOut);
+	[[nodiscard]] SLKC_API peff::Option<CompilationError> fillScopedEnum(
+		CompileEnvironment *compileEnv,
+		CompilationContext *compilationContext,
+		AstNodePtr<ScopedEnumNode> enumNode);
 
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> compileTypeName(
 		CompileEnvironment *compileEnv,

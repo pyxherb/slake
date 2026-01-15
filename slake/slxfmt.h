@@ -105,12 +105,13 @@ namespace slake {
 		struct ClassTypeDesc final {
 			/// @brief Flags
 			uint8_t flags;
+			uint8_t reserved[3];
 			/// @brief Number of generic parameters
-			uint8_t nGenericParams;
+			uint32_t nGenericParams;
 			/// @brief Length of class name
-			uint8_t lenName;
+			uint32_t lenName;
 			/// @brief Number of implemented interfaces (for classes), or number of parents (interfaces).
-			uint8_t nImpls;
+			uint32_t nImpls;
 		};
 		constexpr static uint8_t
 			CTD_PUB = 0x01,		// Public
@@ -121,9 +122,10 @@ namespace slake {
 		/// @brief Interface Type Descriptor (ITD)
 		struct InterfaceTypeDesc final {
 			uint8_t flags;
-			uint8_t nGenericParams;
-			uint8_t lenName;
-			uint8_t nParents;
+			uint8_t reserved[3];
+			uint32_t nGenericParams;
+			uint32_t lenName;
+			uint32_t nParents;
 		};
 		constexpr static uint8_t
 			ITD_PUB = 0x01	// Public
@@ -132,13 +134,40 @@ namespace slake {
 		/// @brief Structure Type Descriptor (STD)
 		struct StructTypeDesc final {
 			uint8_t flags;
-			uint8_t nGenericParams;
-			uint8_t lenName;
-			uint8_t nImpls;
+			uint8_t reserved[3];
+			uint32_t nGenericParams;
+			uint32_t lenName;
+			uint32_t nImpls;
 		};
 		constexpr static uint8_t
 			STD_PUB = 0x01	// Public
 			;
+
+		/// @brief Scoped Enumeration Type Descriptor (SETD)
+		struct ScopedEnumTypeDesc final {
+			uint8_t flags;
+			uint8_t reserved[3];
+			uint32_t lenName;
+		};
+		constexpr static uint8_t
+			SETD_PUB = 0x01,  // Public
+			SETD_BASE = 0x80;
+
+		/// @brief Enumeration Item Descriptor (EID)
+		struct EnumItemDesc final {
+			uint32_t lenName;
+		};
+
+		/// @brief Union Enumeration Type Descriptor (UETD)
+		struct UnionEnumTypeDesc final {
+			uint8_t flags;
+			uint8_t reserved[3];
+			uint32_t nGenericParams;
+			uint32_t lenName;
+		};
+		constexpr static uint8_t
+			UETD_PUB = 0x01,  // Public
+			UETD_BASE = 0x80;
 
 		/// @brief Function Descriptor (FND)
 		struct FnDesc final {

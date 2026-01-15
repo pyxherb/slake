@@ -477,7 +477,7 @@ struct IndexedStructRecursionCheckFrameExData {
 };
 
 struct EnumModuleIteratorStructRecursionCheckFrameExData {
-	decltype(EnumModuleObject::members)::ConstIterator enumModuleIterator;
+	decltype(BasicModuleObject::members)::ConstIterator enumModuleIterator;
 };
 
 struct StructRecursionCheckFrame {
@@ -555,7 +555,7 @@ static SLAKE_FORCEINLINE InternalExceptionPointer _isStructRecursed(StructRecurs
 			}
 			case ObjectKind::UnionEnum: {
 				UnionEnumObject *structObject = (UnionEnumObject *)curFrame.structObject;
-				decltype(EnumModuleObject::members)::ConstIterator &iterator = std::get<EnumModuleIteratorStructRecursionCheckFrameExData>(curFrame.exData).enumModuleIterator;
+				decltype(BasicModuleObject::members)::ConstIterator &iterator = std::get<EnumModuleIteratorStructRecursionCheckFrameExData>(curFrame.exData).enumModuleIterator;
 				if (iterator == structObject->members.beginConst()) {
 					if (context.walkedObjects.contains(curFrame.structObject))
 						// Recursed!
@@ -747,51 +747,12 @@ SLAKE_API void StructObject::replaceAllocator(peff::Alloc *allocator) noexcept {
 		cachedObjectLayout->replaceAllocator(allocator);
 }
 
-SLAKE_API EnumModuleObject::EnumModuleObject(Runtime *rt, peff::Alloc *selfAllocator, ObjectKind objectKind)
-	: MemberObject(rt, selfAllocator, objectKind),
-	  members(selfAllocator) {
-}
-
-SLAKE_API EnumModuleObject::EnumModuleObject(Duplicator *duplicator, const EnumModuleObject &x, peff::Alloc *allocator, bool &succeededOut)
-	: MemberObject(x, allocator, succeededOut),
-	  members(allocator) {
-	if (succeededOut) {
-	}
-}
-
-SLAKE_API EnumModuleObject::~EnumModuleObject() {
-}
-
-SLAKE_API Reference EnumModuleObject::getMember(const std::string_view &name) const {
-	if (auto it = members.find(name); it != members.end()) {
-		return Reference::makeObjectRef(it.value());
-	}
-	return Reference::makeInvalidRef();
-}
-
-SLAKE_API bool EnumModuleObject::addMember(MemberObject *member) {
-	if (!members.insert(member->getName(), +member))
-		return false;
-	member->setParent(this);
-	return true;
-}
-
-SLAKE_API bool EnumModuleObject::removeMember(const std::string_view &name) {
-	return members.remove(name);
-}
-
-SLAKE_API void EnumModuleObject::replaceAllocator(peff::Alloc *allocator) noexcept {
-	this->MemberObject::replaceAllocator(allocator);
-
-	members.replaceAllocator(allocator);
-}
-
 SLAKE_API ScopedEnumObject::ScopedEnumObject(Runtime *rt, peff::Alloc *selfAllocator)
-	: EnumModuleObject(rt, selfAllocator, ObjectKind::ScopedEnum) {
+	: BasicModuleObject(rt, selfAllocator, ObjectKind::ScopedEnum) {
 }
 
 SLAKE_API ScopedEnumObject::ScopedEnumObject(Duplicator *duplicator, const ScopedEnumObject &x, peff::Alloc *allocator, bool &succeededOut)
-	: EnumModuleObject(duplicator, x, allocator, succeededOut) {
+	: BasicModuleObject(duplicator, x, allocator, succeededOut) {
 	if (succeededOut) {
 		baseType = x.baseType;
 	}
@@ -802,24 +763,6 @@ SLAKE_API ScopedEnumObject::~ScopedEnumObject() {
 
 SLAKE_API Object *ScopedEnumObject::duplicate(Duplicator *duplicator) const {
 	return (Object *)alloc(duplicator, this).get();
-}
-
-SLAKE_API Reference ScopedEnumObject::getMember(const std::string_view &name) const {
-	if (auto it = members.find(name); it != members.end()) {
-		return Reference::makeObjectRef(it.value());
-	}
-	return Reference::makeInvalidRef();
-}
-
-SLAKE_API bool ScopedEnumObject::addMember(MemberObject *member) {
-	if (!members.insert(member->getName(), +member))
-		return false;
-	member->setParent(this);
-	return true;
-}
-
-SLAKE_API bool ScopedEnumObject::removeMember(const std::string_view &name) {
-	return members.remove(name);
 }
 
 SLAKE_API HostObjectRef<ScopedEnumObject> ScopedEnumObject::alloc(Runtime *rt) {
@@ -894,7 +837,7 @@ SLAKE_API void UnionEnumItemObject::replaceAllocator(peff::Alloc *allocator) noe
 }
 
 SLAKE_API UnionEnumObject::UnionEnumObject(Runtime *rt, peff::Alloc *selfAllocator)
-	: EnumModuleObject(rt, selfAllocator, ObjectKind::UnionEnum),
+	: BasicModuleObject(rt, selfAllocator, ObjectKind::UnionEnum),
 	  genericArgs(selfAllocator),
 	  mappedGenericArgs(selfAllocator),
 	  genericParams(selfAllocator),
@@ -902,7 +845,7 @@ SLAKE_API UnionEnumObject::UnionEnumObject(Runtime *rt, peff::Alloc *selfAllocat
 }
 
 SLAKE_API UnionEnumObject::UnionEnumObject(Duplicator *duplicator, const UnionEnumObject &x, peff::Alloc *allocator, bool &succeededOut)
-	: EnumModuleObject(duplicator, x, allocator, succeededOut),
+	: BasicModuleObject(duplicator, x, allocator, succeededOut),
 	  genericArgs(allocator),
 	  mappedGenericArgs(allocator),
 	  genericParams(allocator),

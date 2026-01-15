@@ -1499,7 +1499,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileModuleLikeNode(
 
 				if (clsNode->baseType) {
 					bool b = false;
-					SLKC_RETURN_IF_COMP_ERROR(isBasicType(clsNode->baseType, b));
+					SLKC_RETURN_IF_COMP_ERROR(isScopedEnumBaseType(clsNode->baseType, b));
 
 					if (b) {
 						SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(
@@ -1511,7 +1511,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileModuleLikeNode(
 					SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, &compilationContext, clsNode->baseType, baseType));
 				}
 
-				// TODO: Fill the enumeration node
+				SLKC_RETURN_IF_COMP_ERROR(fillScopedEnum(compileEnv, &compilationContext, clsNode));
 
 				slake::HostObjectRef<slake::ScopedEnumObject> cls;
 
@@ -1549,13 +1549,13 @@ SLKC_API peff::Option<CompilationError> slkc::compileModuleLikeNode(
 								AstNodePtr<ExprNode> enumValue;
 								AstNodePtr<TypeNameNode> enumValueType;
 
-								assert(itemNode->enumValue);
+								assert(itemNode->filledValue);
 
-								SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, &compilationContext, itemNode->enumValue, enumValue));
+								SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, &compilationContext, itemNode->filledValue, enumValue));
 
 								if (!enumValue)
 									return CompilationError(itemNode->tokenRange, CompilationErrorKind::RequiresCompTimeExpr);
-								SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, &compilationContext, itemNode->enumValue, enumValue));
+								SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, &compilationContext, itemNode->filledValue, enumValue));
 
 								SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileEnv, &compilationContext, enumValue, enumValueType, clsNode->baseType));
 
@@ -1570,13 +1570,13 @@ SLKC_API peff::Option<CompilationError> slkc::compileModuleLikeNode(
 
 									castExpr->targetType = clsNode->baseType;
 									castExpr->source = enumValue;
-									castExpr->tokenRange = itemNode->enumValue->tokenRange;
+									castExpr->tokenRange = itemNode->filledValue->tokenRange;
 
 									SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, &compilationContext, castExpr.castTo<ExprNode>(), enumValue));
 									if (!enumValue)
 										SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(
 											CompilationError(
-												itemNode->enumValue->tokenRange,
+												itemNode->filledValue->tokenRange,
 												CompilationErrorKind::IncompatibleInitialValueType)));
 								}
 
@@ -1587,7 +1587,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileModuleLikeNode(
 								}
 								modOut->associatedRuntime->writeVar(slake::Reference::makeStaticFieldRef(modOut, modOut->fieldRecords.size() - 1), itemValue).unwrap();
 							} else {
-								if (itemNode->enumValue)
+								if (itemNode->filledValue)
 									SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(
 										CompilationError(
 											itemNode->tokenRange,

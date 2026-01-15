@@ -712,6 +712,29 @@ SLKC_API peff::Option<CompilationError> slkc::isBasicType(
 	return {};
 }
 
+SLKC_API peff::Option<CompilationError> slkc::isScopedEnumBaseType(
+	AstNodePtr<TypeNameNode> lhs,
+	bool& resultOut) {
+	switch (lhs->typeNameKind) {
+		case TypeNameKind::I8:
+		case TypeNameKind::I16:
+		case TypeNameKind::I32:
+		case TypeNameKind::I64:
+		case TypeNameKind::U8:
+		case TypeNameKind::U16:
+		case TypeNameKind::U32:
+		case TypeNameKind::U64:
+		case TypeNameKind::F32:
+		case TypeNameKind::F64:
+		case TypeNameKind::Bool:
+			resultOut = true;
+			break;
+		default:
+			resultOut = false;
+	}
+	return {};
+}
+
 SLKC_API peff::Option<CompilationError> slkc::deduceCommonType(
 	AstNodePtr<TypeNameNode> lhs,
 	AstNodePtr<TypeNameNode> rhs,

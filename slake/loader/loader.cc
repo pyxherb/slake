@@ -840,6 +840,8 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(LoaderContext &cont
 		}
 	}
 
+	// TODO: Load scoped enumerations.
+
 	{
 		uint32_t nFields;
 

@@ -390,7 +390,7 @@ SLKC_API peff::Option<CompilationError> slkc::dumpModuleMembers(
 	peff::DynArray<slake::StructObject *> collectedStructs(allocator);
 	peff::DynArray<slake::ScopedEnumObject *> collectedScopedEnums(allocator);
 
-	for (auto [k, v] : mod->members) {
+	for (auto [k, v] : mod->getMembers()) {
 		switch (v->getObjectKind()) {
 			case slake::ObjectKind::Class: {
 				if (!collectedClasses.pushBack((slake::ClassObject *)v)) {
@@ -537,19 +537,19 @@ SLKC_API peff::Option<CompilationError> slkc::dumpModuleMembers(
 			SLKC_RETURN_IF_COMP_ERROR(dumpTypeName(allocator, writer, i->baseType));
 		}
 
-		SLKC_RETURN_IF_COMP_ERROR(writer->writeU32(i->fieldRecordIndices.size()));
-		for (auto [k, v] : i->fieldRecordIndices) {
-			slake::FieldRecord &record = i->fieldRecords.at(v);
-
+		SLKC_RETURN_IF_COMP_ERROR(writer->writeU32(i->getNumberOfFields()));
+		size_t j = 0;
+		for (auto &record : i->getFieldRecords()) {
 			slake::Value data;
-			mod->associatedRuntime->readVar(slake::Reference::makeStaticFieldRef(mod, v), data);
+			mod->associatedRuntime->readVar(slake::Reference::makeStaticFieldRef(i, j), data);
 			SLKC_RETURN_IF_COMP_ERROR(dumpValue(allocator, writer, data));
 
 			slake::slxfmt::EnumItemDesc eid = {};
 			eid.lenName = (uint32_t)record.name.size();
 			SLKC_RETURN_IF_COMP_ERROR(writer->write((char *)&eid, sizeof(eid)));
-			SLKC_RETURN_IF_COMP_ERROR(writer->write(k.data(), k.size()));
+			SLKC_RETURN_IF_COMP_ERROR(writer->write(record.name.data(), record.name.size()));
 			SLKC_RETURN_IF_COMP_ERROR(dumpValue(allocator, writer, data));
+			++j;
 		}
 	}
 
@@ -616,9 +616,10 @@ SLKC_API peff::Option<CompilationError> slkc::dumpModuleMembers(
 		}
 	}
 
-	SLKC_RETURN_IF_COMP_ERROR(writer->writeU32(mod->fieldRecords.size()));
-	for (size_t i = 0; i < mod->fieldRecords.size(); ++i) {
-		const slake::FieldRecord &curRecord = mod->fieldRecords.at(i);
+	const size_t nFields = mod->getNumberOfFields();
+	SLKC_RETURN_IF_COMP_ERROR(writer->writeU32(nFields));
+	for (size_t i = 0; i < nFields; ++i) {
+		const slake::FieldRecord &curRecord = mod->getFieldRecords().at(i);
 
 		slake::slxfmt::VarDesc vad = {};
 

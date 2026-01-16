@@ -114,6 +114,9 @@ SLKC_API bool Decompiler::decompileGenericParam(peff::Alloc *allocator, DumpWrit
 
 SLKC_API bool Decompiler::decompileTypeName(peff::Alloc *allocator, DumpWriter *writer, const slake::TypeRef &type) {
 	switch (type.typeId) {
+		case slake::TypeId::Invalid:
+			SLKC_RETURN_IF_FALSE(writer->write("/* Invalid type */"));
+			break;
 		case slake::TypeId::Void:
 			SLKC_RETURN_IF_FALSE(writer->write("void"));
 			break;
@@ -649,7 +652,7 @@ SLKC_API bool Decompiler::decompileIdRef(peff::Alloc *allocator, DumpWriter *wri
 }
 
 SLKC_API bool Decompiler::decompileModuleMembers(peff::Alloc *allocator, DumpWriter *writer, slake::BasicModuleObject *moduleObject, size_t indentLevel) {
-	for (auto &i : moduleObject->fieldRecords) {
+	for (auto &i : moduleObject->getFieldRecords()) {
 		for (size_t j = 0; j < indentLevel; ++j) {
 			SLKC_RETURN_IF_FALSE(writer->write("\t"));
 		}
@@ -660,7 +663,7 @@ SLKC_API bool Decompiler::decompileModuleMembers(peff::Alloc *allocator, DumpWri
 		SLKC_RETURN_IF_FALSE(writer->write("\n"));
 	}
 
-	for (auto [k, v] : moduleObject->members) {
+	for (auto [k, v] : moduleObject->getMembers()) {
 		switch (v->getObjectKind()) {
 			case slake::ObjectKind::Fn: {
 				slake::FnObject *obj = (slake::FnObject *)v;

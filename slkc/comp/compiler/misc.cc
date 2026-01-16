@@ -217,6 +217,7 @@ SLKC_API peff::Option<CompilationError> slkc::getSucceedingEnumValue(
 				std::terminate();
 		}
 	}
+	return {};
 }
 
 SLKC_API peff::Option<CompilationError> slkc::fillScopedEnum(
@@ -229,10 +230,10 @@ SLKC_API peff::Option<CompilationError> slkc::fillScopedEnum(
 	AstNodePtr<ExprNode> lastValue;
 
 	for (size_t i = 0; i < enumNode->members.size(); ++i) {
-		assert(enumNode->getAstNodeType() == AstNodeType::EnumItem);
-
 		AstNodePtr<EnumItemNode> item = enumNode->members.at(i).castTo<EnumItemNode>();
 		AstNodePtr<ExprNode> fillValue;
+
+		assert(item->getAstNodeType() == AstNodeType::EnumItem);
 
 		if (item->enumValue) {
 			bool isSame;

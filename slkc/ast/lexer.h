@@ -328,6 +328,7 @@ namespace slkc {
 		UnrecognizedToken = 0,
 		UnexpectedEndOfLine,
 		PrematuredEndOfFile,
+		InvalidEscape,
 		OutOfMemory
 	};
 

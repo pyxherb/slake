@@ -407,7 +407,10 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 	CompileExprResult &resultOut) {
 	peff::Option<CompilationError> compilationError;
 	uint32_t sldIndex;
-	SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->registerSourceLocDesc(tokenRangeToSld(expr->tokenRange), sldIndex));
+	if (evalPurpose != ExprEvalPurpose::EvalType)
+		SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->registerSourceLocDesc(tokenRangeToSld(expr->tokenRange), sldIndex));
+	else
+		sldIndex = UINT32_MAX;
 
 	switch (expr->exprKind) {
 		case ExprKind::Unary:

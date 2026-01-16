@@ -176,6 +176,18 @@ SLAKE_API void BasicModuleObject::replaceAllocator(peff::Alloc *allocator) noexc
 	fieldRecordIndices.replaceAllocator(allocator);
 }
 
+SLAKE_API peff::Option<FieldRecord &> BasicModuleObject::getFieldRecord(const std::string_view &name) {
+	if (auto it = fieldRecordIndices.find(name); it != fieldRecordIndices.end())
+		return fieldRecords.at(it.value());
+	return peff::NULL_OPTION;
+}
+
+SLAKE_API peff::Option<const FieldRecord &> BasicModuleObject::getFieldRecord(const std::string_view &name) const {
+	if (auto it = fieldRecordIndices.find(name); it != fieldRecordIndices.end())
+		return fieldRecords.at(it.value());
+	return peff::NULL_OPTION;
+}
+
 SLAKE_API ModuleObject::ModuleObject(Runtime *rt, peff::Alloc *selfAllocator)
 	: BasicModuleObject(rt, selfAllocator, ObjectKind::Module), unnamedImports(selfAllocator) {
 }

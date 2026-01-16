@@ -322,6 +322,9 @@ void dumpLexicalError(const slkc::LexicalError &lexicalError, int indentLevel = 
 		case slkc::LexicalErrorKind::PrematuredEndOfFile:
 			printf("Prematured end of file\n");
 			break;
+		case slkc::LexicalErrorKind::InvalidEscape:
+			printf("Invalid escape sequence\n");
+			break;
 		case slkc::LexicalErrorKind::OutOfMemory:
 			printf("Out of memory during lexical analysis\n");
 			break;

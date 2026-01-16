@@ -229,6 +229,7 @@ SLKC_API peff::Option<CompilationError> slkc::isSubtypeOf(
 	AstNodePtr<TypeNameNode> subtype,
 	AstNodePtr<TypeNameNode> type,
 	bool &resultOut) {
+recheck:
 	switch (subtype->typeNameKind) {
 		case TypeNameKind::Void:
 			resultOut = false;
@@ -447,6 +448,17 @@ SLKC_API peff::Option<CompilationError> slkc::isSubtypeOf(
 		case TypeNameKind::Any:
 			resultOut = false;
 			break;
+		case TypeNameKind::Ref: {
+			switch (type->typeNameKind) {
+				case TypeNameKind::Ref:
+					SLKC_RETURN_IF_COMP_ERROR(isSameType(subtype.castTo<RefTypeNameNode>()->referencedType, type.castTo<RefTypeNameNode>()->referencedType, resultOut));
+					break;
+				default:
+					SLKC_RETURN_IF_COMP_ERROR(removeRefOfType(subtype, subtype));
+					goto recheck;
+			}
+			break;
+		}
 		case TypeNameKind::Custom:
 			switch (type->typeNameKind) {
 				case TypeNameKind::Object: {
@@ -714,7 +726,7 @@ SLKC_API peff::Option<CompilationError> slkc::isBasicType(
 
 SLKC_API peff::Option<CompilationError> slkc::isScopedEnumBaseType(
 	AstNodePtr<TypeNameNode> lhs,
-	bool& resultOut) {
+	bool &resultOut) {
 	switch (lhs->typeNameKind) {
 		case TypeNameKind::I8:
 		case TypeNameKind::I16:

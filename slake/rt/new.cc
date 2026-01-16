@@ -218,14 +218,15 @@ SLAKE_FORCEINLINE InternalExceptionPointer _prepareStructForInstantiation(Struct
 		switch (curFrame.structObject->getObjectKind()) {
 			case ObjectKind::Struct: {
 				StructObject *structObject = (StructObject *)curFrame.structObject;
-				if (curFrame.index >= structObject->fieldRecords.size()) {
+				auto &fieldRecords = structObject->getFieldRecords();
+				if (curFrame.index >= fieldRecords.size()) {
 					if (!structObject->cachedObjectLayout)
 						SLAKE_RETURN_IF_EXCEPT(structObject->associatedRuntime->initObjectLayoutForStruct(structObject));
 					context.frames.popBack();
 					continue;
 				}
 
-				auto &curRecord = structObject->fieldRecords.at(curFrame.index);
+				auto &curRecord = fieldRecords.at(curFrame.index);
 
 				TypeRef typeRef = curRecord.type;
 				switch (curRecord.type.typeId) {

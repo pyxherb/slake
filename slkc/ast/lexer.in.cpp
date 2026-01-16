@@ -379,6 +379,29 @@ SLKC_API peff::Option<LexicalError> Lexer::lex(ModuleNode *moduleNode, const std
 						{ (size_t)std::count(strToEnd.begin(), strToEnd.end(), '\n'), YYCURSORPos }
 					}, LexicalErrorKind::PrematuredEndOfFile};
 				}
+				<EscapeCondition>[^]{
+					size_t beginIndex = prevYYCURSOR - src.data(), endIndex = YYCURSOR - src.data();
+					std::string_view strToBegin = src.substr(0, beginIndex), strToEnd = src.substr(0, endIndex);
+
+					size_t prevYYCURSORIndex = prevYYCURSOR - src.data();
+					auto prevYYCURSORPos = src.find_last_of('\n', prevYYCURSORIndex);
+					if(prevYYCURSORPos == std::string::npos)
+						prevYYCURSORPos = 0;
+					prevYYCURSORPos = prevYYCURSORIndex - prevYYCURSORPos;
+
+					size_t YYCURSORIndex = YYCURSOR - src.data();
+					auto YYCURSORPos = src.find_last_of('\n', YYCURSORIndex);
+					if(YYCURSORPos == std::string::npos)
+						YYCURSORPos = 0;
+					YYCURSORPos = YYCURSORIndex - YYCURSORPos;
+
+					return LexicalError {
+						SourceLocation {
+						moduleNode,
+						{ (size_t)std::count(strToBegin.begin(), strToBegin.end(), '\n'), prevYYCURSORPos },
+						{ (size_t)std::count(strToEnd.begin(), strToEnd.end(), '\n'), YYCURSORPos }
+					}, LexicalErrorKind::PrematuredEndOfFile};
+				}
 
 				<CommentCondition>"*"[/]	{ YYSETCONDITION(InitialCondition); break; }
 				<CommentCondition>[^]		{ continue; }
@@ -403,7 +426,7 @@ SLKC_API peff::Option<LexicalError> Lexer::lex(ModuleNode *moduleNode, const std
 						moduleNode,
 						{ (size_t)std::count(strToBegin.begin(), strToBegin.end(), '\n'), prevYYCURSORPos },
 						{ (size_t)std::count(strToEnd.begin(), strToEnd.end(), '\n'), YYCURSORPos }
-					}, LexicalErrorKind::PrematuredEndOfFile};
+					}, LexicalErrorKind::InvalidEscape};
 				}
 
 				<LineCommentCondition>"\n"	{ YYSETCONDITION(InitialCondition); break; }

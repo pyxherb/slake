@@ -59,7 +59,7 @@ SLAKE_API bool Duplicator::exec() {
 				if (!object) {
 					return false;
 				}
-				if (!(i.asModuleMember.mod->members.insert(object->getName(), +object))) {
+				if (!(i.asModuleMember.mod->addMember(object))) {
 					return false;
 				}
 				break;

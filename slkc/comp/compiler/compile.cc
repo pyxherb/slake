@@ -1098,7 +1098,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileModuleLikeNode(
 				}
 
 				fr.accessModifier = m->accessModifier;
-				fr.offset = modOut->localFieldStorage.size();
+				fr.offset = modOut->getLocalFieldStorageSize();
 
 				slake::TypeRef type;
 
@@ -1135,7 +1135,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileModuleLikeNode(
 						if (!modOut->appendFieldRecord(std::move(fr))) {
 							return genOutOfRuntimeMemoryCompError();
 						}
-						modOut->associatedRuntime->writeVar(slake::Reference::makeStaticFieldRef(modOut, modOut->fieldRecords.size() - 1), defaultValue).unwrap();
+						modOut->associatedRuntime->writeVar(slake::Reference::makeStaticFieldRef(modOut, modOut->getNumberOfFields() - 1), defaultValue).unwrap();
 						break;
 					}
 					case slake::TypeId::StructInstance:
@@ -1501,7 +1501,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileModuleLikeNode(
 					bool b = false;
 					SLKC_RETURN_IF_COMP_ERROR(isScopedEnumBaseType(clsNode->baseType, b));
 
-					if (b) {
+					if (!b) {
 						SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(
 							CompilationError(
 								clsNode->baseType->tokenRange,
@@ -1534,12 +1534,12 @@ SLKC_API peff::Option<CompilationError> slkc::compileModuleLikeNode(
 
 							slake::FieldRecord fr(compileEnv->runtime->getCurGenAlloc());
 
-							if (!fr.name.build(k)) {
+							if (!fr.name.build(i->name)) {
 								return genOutOfRuntimeMemoryCompError();
 							}
 
 							fr.accessModifier = m->accessModifier;
-							fr.offset = modOut->localFieldStorage.size();
+							fr.offset = modOut->getLocalFieldStorageSize();
 
 							fr.type = baseType;
 
@@ -1582,17 +1582,17 @@ SLKC_API peff::Option<CompilationError> slkc::compileModuleLikeNode(
 
 								SLKC_RETURN_IF_COMP_ERROR(compileValueExpr(compileEnv, &compilationContext, enumValue, itemValue));
 
-								if (!modOut->appendFieldRecord(std::move(fr))) {
+								if (!cls->appendFieldRecord(std::move(fr))) {
 									return genOutOfRuntimeMemoryCompError();
 								}
-								modOut->associatedRuntime->writeVar(slake::Reference::makeStaticFieldRef(modOut, modOut->fieldRecords.size() - 1), itemValue).unwrap();
+								modOut->associatedRuntime->writeVar(slake::Reference::makeStaticFieldRef(cls.get(), cls->getNumberOfFields() - 1), itemValue).unwrap();
 							} else {
 								if (itemNode->filledValue)
 									SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(
 										CompilationError(
 											itemNode->tokenRange,
 											CompilationErrorKind::EnumItemIsNotAssignable)));
-								if (!modOut->appendFieldRecordWithoutAlloc(std::move(fr))) {
+								if (!cls->appendFieldRecordWithoutAlloc(std::move(fr))) {
 									return genOutOfRuntimeMemoryCompError();
 								}
 							}

@@ -39,14 +39,18 @@ namespace slake {
 	using ModuleFlags = uint32_t;
 
 	class BasicModuleObject : public MemberObject {
-	public:
-		ModuleFlags moduleFlags = 0;
-
+	protected:
 		peff::HashMap<std::string_view, MemberObject *> members;
 
 		peff::DynArray<char> localFieldStorage;
 		peff::DynArray<FieldRecord> fieldRecords;
 		peff::HashMap<std::string_view, size_t> fieldRecordIndices;
+
+		friend class Runtime;
+
+	public:
+		using MembersMap = peff::HashMap<std::string_view, MemberObject *>;
+		ModuleFlags moduleFlags = 0;
 
 		SLAKE_API BasicModuleObject(Runtime *rt, peff::Alloc *selfAllocator, ObjectKind objectKind);
 		SLAKE_API BasicModuleObject(Duplicator *duplicator, const BasicModuleObject &x, peff::Alloc *allocator, bool &succeededOut);
@@ -64,6 +68,37 @@ namespace slake {
 		SLAKE_API bool reallocFieldSpaces() noexcept;
 
 		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;
+
+		SLAKE_FORCEINLINE const peff::HashMap<std::string_view, MemberObject*>& getMembers() const {
+			return members;
+		}
+		SLAKE_FORCEINLINE size_t getNumberOfMembers() {
+			return members.size();
+		}
+		SLAKE_FORCEINLINE size_t getLocalFieldStorageSize() const {
+			return localFieldStorage.size();
+		}
+		SLAKE_FORCEINLINE char* getLocalFieldStoragePtr() {
+			return localFieldStorage.data();
+		}
+		SLAKE_FORCEINLINE const char *getLocalFieldStoragePtr() const {
+			return localFieldStorage.data();
+		}
+		SLAKE_FORCEINLINE const FieldRecord &getFieldRecord(size_t index) const {
+			assert(index < fieldRecords.size());
+			return fieldRecords.at(index);
+		}
+		SLAKE_FORCEINLINE const peff::DynArray<FieldRecord> &getFieldRecords() const {
+			return fieldRecords;
+		}
+		SLAKE_FORCEINLINE const peff::HashMap<std::string_view, size_t> &getFieldRecordIndices() const {
+			return fieldRecordIndices;
+		}
+		SLAKE_FORCEINLINE size_t getNumberOfFields() {
+			return fieldRecords.size();
+		}
+		SLAKE_API peff::Option<FieldRecord &> getFieldRecord(const std::string_view &name);
+		SLAKE_API peff::Option<const FieldRecord &> getFieldRecord(const std::string_view &name) const;
 	};
 
 	class ModuleObject : public BasicModuleObject {

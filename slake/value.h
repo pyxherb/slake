@@ -257,8 +257,11 @@ namespace slake {
 			return ref;
 		}
 
-		explicit SLAKE_FORCEINLINE operator bool() const {
+		SLAKE_FORCEINLINE bool isValid() const {
 			return kind != ReferenceKind::Invalid;
+		}
+		explicit SLAKE_FORCEINLINE operator bool() const {
+			return isValid();
 		}
 
 		SLAKE_API bool operator==(const Reference &rhs) const;

@@ -477,7 +477,7 @@ struct IndexedStructRecursionCheckFrameExData {
 };
 
 struct EnumModuleIteratorStructRecursionCheckFrameExData {
-	decltype(BasicModuleObject::members)::ConstIterator enumModuleIterator;
+	BasicModuleObject::MembersMap::ConstIterator enumModuleIterator;
 };
 
 struct StructRecursionCheckFrame {
@@ -510,7 +510,7 @@ static SLAKE_FORCEINLINE InternalExceptionPointer _isStructRecursed(StructRecurs
 				CustomTypeDefObject *td = typeRef.getCustomTypeDef();
 
 				assert(td->typeObject->getObjectKind() == ObjectKind::UnionEnum);
-				if (!context.frames.pushBack({ td->typeObject, EnumModuleIteratorStructRecursionCheckFrameExData{ ((UnionEnumObject *)td->typeObject)->members.beginConst() } }))
+				if (!context.frames.pushBack({ td->typeObject, EnumModuleIteratorStructRecursionCheckFrameExData{ ((UnionEnumObject *)td->typeObject)->getMembers().begin() } }))
 					return OutOfMemoryError::alloc();
 				break;
 			}
@@ -539,13 +539,13 @@ static SLAKE_FORCEINLINE InternalExceptionPointer _isStructRecursed(StructRecurs
 
 					if (!context.walkedObjects.insert(+curFrame.structObject))
 						return OutOfMemoryError::alloc();
-				} else if (index >= structObject->fieldRecords.size()) {
+				} else if (index >= structObject->getFieldRecords().size()) {
 					context.walkedObjects.remove(structObject);
 					context.frames.popBack();
 					continue;
 				}
 
-				auto &curRecord = structObject->fieldRecords.at(index);
+				auto &curRecord = structObject->getFieldRecords().at(index);
 
 				TypeRef typeRef = curRecord.type;
 				SLAKE_RETURN_IF_EXCEPT(checkTypeRef(typeRef));
@@ -555,15 +555,15 @@ static SLAKE_FORCEINLINE InternalExceptionPointer _isStructRecursed(StructRecurs
 			}
 			case ObjectKind::UnionEnum: {
 				UnionEnumObject *structObject = (UnionEnumObject *)curFrame.structObject;
-				decltype(BasicModuleObject::members)::ConstIterator &iterator = std::get<EnumModuleIteratorStructRecursionCheckFrameExData>(curFrame.exData).enumModuleIterator;
-				if (iterator == structObject->members.beginConst()) {
+				BasicModuleObject::MembersMap::ConstIterator &iterator = std::get<EnumModuleIteratorStructRecursionCheckFrameExData>(curFrame.exData).enumModuleIterator;
+				if (iterator == structObject->getMembers().beginConst()) {
 					if (context.walkedObjects.contains(curFrame.structObject))
 						// Recursed!
 						std::terminate();
 
 					if (!context.walkedObjects.insert(+curFrame.structObject))
 						return OutOfMemoryError::alloc();
-				} else if (iterator == structObject->members.endConst()) {
+				} else if (iterator == structObject->getMembers().endConst()) {
 					context.walkedObjects.remove(structObject);
 					context.frames.popBack();
 					continue;
@@ -590,13 +590,13 @@ static SLAKE_FORCEINLINE InternalExceptionPointer _isStructRecursed(StructRecurs
 
 					if (!context.walkedObjects.insert(+curFrame.structObject))
 						return OutOfMemoryError::alloc();
-				} else if (index >= structObject->fieldRecords.size()) {
+				} else if (index >= structObject->getFieldRecords().size()) {
 					context.walkedObjects.remove(structObject);
 					context.frames.popBack();
 					continue;
 				}
 
-				auto &curRecord = structObject->fieldRecords.at(index);
+				auto &curRecord = structObject->getFieldRecords().at(index);
 
 				TypeRef typeRef = curRecord.type;
 				SLAKE_RETURN_IF_EXCEPT(checkTypeRef(typeRef));

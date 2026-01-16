@@ -975,10 +975,10 @@ SLAKE_API InternalExceptionPointer slake::loader::completeParentNamespaces(Loade
 	for (size_t i = 0; i < ref.size() - 1; ++i) {
 		std::string_view name = ref.at(i).name;
 
-		if (auto m = mod->members.find(name); m != mod->members.end()) {
-			if (m.value()->getObjectKind() != ObjectKind::Module)
+		if (auto m = mod->getMember(name); m.isValid()) {
+			if ((m.kind != ReferenceKind::ObjectRef) || (m.asObject->getObjectKind() != ObjectKind::Module))
 				std::terminate();
-			mod = (ModuleObject *)m.value();
+			mod = (ModuleObject *)m.asObject;
 		} else {
 			HostObjectRef<ModuleObject> newMod;
 

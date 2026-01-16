@@ -276,6 +276,11 @@ namespace slake {
 	using SizeTypeMarker = bool;
 	constexpr static SizeTypeMarker SIZETYPE_MARKER = true;
 
+	struct TypelessScopedEnumValue {
+		uint32_t value;
+		TypeRef type;
+	};
+
 	union ValueData {
 		int8_t asI8;
 		int16_t asI16;
@@ -292,6 +297,7 @@ namespace slake {
 		bool asBool;
 		TypeRef asType;
 		Reference asReference;
+		TypelessScopedEnumValue asTypelessScopedEnum;
 
 		ValueData() noexcept = default;
 		SLAKE_FORCEINLINE constexpr ValueData(const ValueData &other) noexcept = default;
@@ -380,6 +386,9 @@ namespace slake {
 		}
 		SLAKE_FORCEINLINE Value(const Reference &entityRef) noexcept : valueType(ValueType::Reference) {
 			this->data.asReference = entityRef;
+		}
+		SLAKE_FORCEINLINE Value(const TypelessScopedEnumValue &v) noexcept : valueType(ValueType::TypelessScopedEnum) {
+			this->data.asTypelessScopedEnum = v;
 		}
 		SLAKE_FORCEINLINE Value(ValueType vt) noexcept : valueType(vt), data(/*Uninitialized*/) {
 		}

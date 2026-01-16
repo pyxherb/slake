@@ -278,7 +278,28 @@ SLKC_API peff::Option<CompilationError> slkc::dumpTypeName(
 					SLKC_RETURN_IF_COMP_ERROR(dumpIdRef(allocator, writer, (slake::IdRefObject *)dest));
 					break;
 				}
-				case slake::ObjectKind::Struct: {
+				case slake::ObjectKind::ScopedEnum: {
+					peff::DynArray<slake::IdRefEntry> entries(allocator);
+					if (!dest->associatedRuntime->getFullRef(allocator, (slake::MemberObject *)dest, entries)) {
+						return genOutOfMemoryCompError();
+					}
+					SLKC_RETURN_IF_COMP_ERROR(dumpIdRefEntries(allocator, writer, entries));
+					break;
+				}
+				default:
+					std::terminate();
+			}
+			break;
+		}
+		case slake::TypeId::TypelessScopedEnum: {
+			SLKC_RETURN_IF_COMP_ERROR(writer->writeU8((uint8_t)slake::slxfmt::TypeId::TypelessScopedEnum));
+			slake::Object *dest = type.getCustomTypeDef()->typeObject;
+			switch (dest->getObjectKind()) {
+				case slake::ObjectKind::IdRef: {
+					SLKC_RETURN_IF_COMP_ERROR(dumpIdRef(allocator, writer, (slake::IdRefObject *)dest));
+					break;
+				}
+				case slake::ObjectKind::ScopedEnum: {
 					peff::DynArray<slake::IdRefEntry> entries(allocator);
 					if (!dest->associatedRuntime->getFullRef(allocator, (slake::MemberObject *)dest, entries)) {
 						return genOutOfMemoryCompError();
@@ -533,23 +554,33 @@ SLKC_API peff::Option<CompilationError> slkc::dumpModuleMembers(
 
 		SLKC_RETURN_IF_COMP_ERROR(writer->write(i->getName().data(), i->getName().size()));
 
+		SLKC_RETURN_IF_COMP_ERROR(writer->writeU32(i->getNumberOfFields()));
+
 		if(i->baseType != slake::TypeId::Invalid) {
 			SLKC_RETURN_IF_COMP_ERROR(dumpTypeName(allocator, writer, i->baseType));
-		}
 
-		SLKC_RETURN_IF_COMP_ERROR(writer->writeU32(i->getNumberOfFields()));
-		size_t j = 0;
-		for (auto &record : i->getFieldRecords()) {
-			slake::Value data;
-			mod->associatedRuntime->readVar(slake::Reference::makeStaticFieldRef(i, j), data);
-			SLKC_RETURN_IF_COMP_ERROR(dumpValue(allocator, writer, data));
+			size_t j = 0;
+			for (auto &record : i->getFieldRecords()) {
+				slake::slxfmt::EnumItemDesc eid = {};
+				eid.lenName = (uint32_t)record.name.size();
+				SLKC_RETURN_IF_COMP_ERROR(writer->write((char *)&eid, sizeof(eid)));
+				SLKC_RETURN_IF_COMP_ERROR(writer->write(record.name.data(), record.name.size()));
 
-			slake::slxfmt::EnumItemDesc eid = {};
-			eid.lenName = (uint32_t)record.name.size();
-			SLKC_RETURN_IF_COMP_ERROR(writer->write((char *)&eid, sizeof(eid)));
-			SLKC_RETURN_IF_COMP_ERROR(writer->write(record.name.data(), record.name.size()));
-			SLKC_RETURN_IF_COMP_ERROR(dumpValue(allocator, writer, data));
-			++j;
+				slake::Value data;
+				mod->associatedRuntime->readVar(slake::Reference::makeStaticFieldRef(i, j), data);
+				SLKC_RETURN_IF_COMP_ERROR(dumpValue(allocator, writer, data));
+				SLKC_RETURN_IF_COMP_ERROR(dumpValue(allocator, writer, data));
+				++j;
+			}
+		} else {
+			size_t j = 0;
+			for (auto &record : i->getFieldRecords()) {
+				slake::slxfmt::EnumItemDesc eid = {};
+				eid.lenName = (uint32_t)record.name.size();
+				SLKC_RETURN_IF_COMP_ERROR(writer->write((char *)&eid, sizeof(eid)));
+				SLKC_RETURN_IF_COMP_ERROR(writer->write(record.name.data(), record.name.size()));
+				++j;
+			}
 		}
 	}
 

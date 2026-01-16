@@ -162,7 +162,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileTypeName(
 
 					typeDef->typeObject = obj.get();
 
-					typeOut = slake::TypeRef(slake::TypeId::ScopedEnum, typeDef.get());
+					typeOut = slake::TypeRef(m.castTo<ScopedEnumNode>()->baseType ? slake::TypeId::ScopedEnum : slake::TypeId::TypelessScopedEnum, typeDef.get());
 					break;
 				}
 				case AstNodeType::UnionEnum: {
@@ -1527,23 +1527,23 @@ SLKC_API peff::Option<CompilationError> slkc::compileModuleLikeNode(
 
 				cls->baseType = baseType;
 
-				for (auto i : clsNode->members) {
-					switch (i->getAstNodeType()) {
-						case AstNodeType::EnumItem: {
-							AstNodePtr<EnumItemNode> itemNode = i.castTo<EnumItemNode>();
+				if (baseType != slake::TypeId::Invalid) {
+					for (auto i : clsNode->members) {
+						switch (i->getAstNodeType()) {
+							case AstNodeType::EnumItem: {
+								AstNodePtr<EnumItemNode> itemNode = i.castTo<EnumItemNode>();
 
-							slake::FieldRecord fr(compileEnv->runtime->getCurGenAlloc());
+								slake::FieldRecord fr(compileEnv->runtime->getCurGenAlloc());
 
-							if (!fr.name.build(i->name)) {
-								return genOutOfRuntimeMemoryCompError();
-							}
+								if (!fr.name.build(i->name)) {
+									return genOutOfRuntimeMemoryCompError();
+								}
 
-							fr.accessModifier = m->accessModifier;
-							fr.offset = modOut->getLocalFieldStorageSize();
+								fr.accessModifier = m->accessModifier;
+								fr.offset = modOut->getLocalFieldStorageSize();
 
-							fr.type = baseType;
+								fr.type = baseType;
 
-							if (baseType != slake::TypeId::Invalid) {
 								slake::Value itemValue;
 
 								AstNodePtr<ExprNode> enumValue;
@@ -1586,7 +1586,29 @@ SLKC_API peff::Option<CompilationError> slkc::compileModuleLikeNode(
 									return genOutOfRuntimeMemoryCompError();
 								}
 								modOut->associatedRuntime->writeVar(slake::Reference::makeStaticFieldRef(cls.get(), cls->getNumberOfFields() - 1), itemValue).unwrap();
-							} else {
+								break;
+							}
+							default:
+								std::terminate();
+						}
+					}
+				} else {
+					for (auto i : clsNode->members) {
+						switch (i->getAstNodeType()) {
+							case AstNodeType::EnumItem: {
+								AstNodePtr<EnumItemNode> itemNode = i.castTo<EnumItemNode>();
+
+								slake::FieldRecord fr(compileEnv->runtime->getCurGenAlloc());
+
+								if (!fr.name.build(i->name)) {
+									return genOutOfRuntimeMemoryCompError();
+								}
+
+								fr.accessModifier = m->accessModifier;
+								fr.offset = modOut->getLocalFieldStorageSize();
+
+								fr.type = baseType;
+
 								if (itemNode->filledValue)
 									SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(
 										CompilationError(
@@ -1595,12 +1617,11 @@ SLKC_API peff::Option<CompilationError> slkc::compileModuleLikeNode(
 								if (!cls->appendFieldRecordWithoutAlloc(std::move(fr))) {
 									return genOutOfRuntimeMemoryCompError();
 								}
+								break;
 							}
-
-							break;
+							default:
+								std::terminate();
 						}
-						default:
-							std::terminate();
 					}
 				}
 

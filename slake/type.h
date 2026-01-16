@@ -26,6 +26,8 @@ namespace slake {
 
 		Reference,	// Reference
 
+		TypelessScopedEnum,	 // Typeless scoped enumeration
+
 		RegIndex,  // Register index
 		TypeName,  // Type name
 
@@ -55,13 +57,14 @@ namespace slake {
 		F64,	// 64-bit floating point number
 		Bool,	// Boolean
 
-		String,			 // String
-		Instance,		 // Object instance
-		StructInstance,	 // Structure instance
-		ScopedEnum,		 // Scoped enumeration
-		UnionEnum,		 // Union enumeration
-		UnionEnumItem,	 // Union enumeration item
-		GenericArg,		 // Generic argument
+		String,				 // String
+		Instance,			 // Object instance
+		StructInstance,		 // Structure instance
+		ScopedEnum,			 // Scoped enumeration
+		TypelessScopedEnum,	 // Typeless scoped enumeration
+		UnionEnum,			 // Union enumeration
+		UnionEnumItem,		 // Union enumeration item
+		GenericArg,			 // Generic argument
 
 		Array,	  // Array
 		Ref,	  // Reference

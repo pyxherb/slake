@@ -290,7 +290,9 @@ SLAKE_API void Runtime::readVar(const Reference &entityRef, Value &valueOut) con
 		case ReferenceKind::StaticFieldRef: {
 			const char *const rawDataPtr = (char *)locateValueBasePtr(entityRef);
 
-			switch (typeofVar(entityRef).typeId) {
+		staticFieldRefRead:
+			TypeRef t = typeofVar(entityRef);
+			switch (t.typeId) {
 				case TypeId::I8:
 					valueOut.data.asI8 = (*((int8_t *)(rawDataPtr)));
 					valueOut.valueType = ValueType::I8;
@@ -358,6 +360,19 @@ SLAKE_API void Runtime::readVar(const Reference &entityRef, Value &valueOut) con
 					valueOut.valueType = ValueType::Reference;
 					break;
 				}
+				case TypeId::ScopedEnum: {
+					CustomTypeDefObject *td = (CustomTypeDefObject *)t.typeDef;
+					assert(td->typeObject->getObjectKind() == ObjectKind::ScopedEnum);
+
+					if ((t = ((ScopedEnumObject *)td->typeObject)->baseType))
+						goto staticFieldRefRead;
+					break;
+				}
+				case TypeId::TypelessScopedEnum:
+					valueOut.data.asTypelessScopedEnum.type = t;
+					valueOut.data.asTypelessScopedEnum.value = (*((uint32_t *)(rawDataPtr)));
+					valueOut.valueType = ValueType::TypelessScopedEnum;
+					break;
 				case TypeId::Ref:
 					valueOut.data.asReference = (*((Reference *)(rawDataPtr)));
 					valueOut.valueType = ValueType::Reference;

@@ -61,6 +61,7 @@ namespace slake {
 		[[nodiscard]] SLAKE_API virtual bool removeMember(const std::string_view &name);
 
 		SLAKE_API bool appendFieldRecord(FieldRecord &&fieldRecord);
+		SLAKE_API InternalExceptionPointer appendFieldRecordWithValue(FieldRecord &&fieldRecord, const Value &value);
 		SLAKE_API char *appendFieldSpace(size_t size, size_t alignment);
 		SLAKE_API char *appendTypedFieldSpace(const TypeRef &type);
 		SLAKE_API bool appendFieldRecordWithoutAlloc(FieldRecord &&fieldRecord);

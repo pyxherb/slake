@@ -107,6 +107,29 @@ SLAKE_API bool BasicModuleObject::appendFieldRecord(FieldRecord &&fieldRecord) {
 	return true;
 }
 
+SLAKE_API InternalExceptionPointer BasicModuleObject::appendFieldRecordWithValue(FieldRecord&& fieldRecord, const Value& value) {
+	if (!fieldRecords.pushBack(std::move(fieldRecord))) {
+		return OutOfMemoryError::alloc();
+	}
+	FieldRecord &fr = fieldRecords.back();
+	if (!fieldRecordIndices.insert(fr.name, fieldRecordIndices.size())) {
+		if (!fieldRecords.popBack())
+			fieldRecords.popBackWithoutShrink();
+		return OutOfMemoryError::alloc();
+	}
+
+	if (char *p = appendTypedFieldSpace(fr.type); p) {
+		fr.offset = p - localFieldStorage.data();
+	} else {
+		if (!fieldRecords.popBack())
+			fieldRecords.popBackWithoutShrink();
+		return OutOfMemoryError::alloc();
+	}
+
+	SLAKE_RETURN_IF_EXCEPT(associatedRuntime->writeVar(Reference::makeStaticFieldRef(this, fieldRecords.size() - 1), value));
+	return {};
+}
+
 SLAKE_API bool BasicModuleObject::appendFieldRecordWithoutAlloc(FieldRecord &&fieldRecord) {
 	if (!fieldRecords.pushBack(std::move(fieldRecord))) {
 		return false;

@@ -216,6 +216,32 @@ SLKC_API bool Decompiler::decompileTypeName(peff::Alloc *allocator, DumpWriter *
 
 			switch (obj->typeObject->getObjectKind()) {
 				case slake::ObjectKind::Struct: {
+					SLKC_RETURN_IF_FALSE(writer->write("enum base "));
+
+					peff::DynArray<slake::IdRefEntry> moduleFullName(allocator);
+
+					if (!runtime->getFullRef(allocator, (slake::MemberObject *)obj->typeObject, moduleFullName))
+						return false;
+
+					break;
+				}
+				case slake::ObjectKind::IdRef: {
+					SLKC_RETURN_IF_FALSE(writer->write("enum base "));
+					SLKC_RETURN_IF_FALSE(decompileIdRef(allocator, writer, (slake::IdRefObject *)obj->typeObject));
+					break;
+				}
+				default:
+					std::terminate();
+			}
+			break;
+		}
+		case slake::TypeId::TypelessScopedEnum: {
+			auto obj = type.getCustomTypeDef();
+
+			slake::Runtime *runtime = obj->associatedRuntime;
+
+			switch (obj->typeObject->getObjectKind()) {
+				case slake::ObjectKind::Struct: {
 					SLKC_RETURN_IF_FALSE(writer->write("enum "));
 
 					peff::DynArray<slake::IdRefEntry> moduleFullName(allocator);
@@ -1001,6 +1027,54 @@ SLKC_API bool Decompiler::decompileModuleMembers(peff::Alloc *allocator, DumpWri
 				SLKC_RETURN_IF_FALSE(writer->write(" {\n"));
 
 				SLKC_RETURN_IF_FALSE(decompileModuleMembers(allocator, writer, obj, indentLevel + 1));
+
+				for (size_t j = 0; j < indentLevel; ++j) {
+					SLKC_RETURN_IF_FALSE(writer->write("\t"));
+				}
+
+				SLKC_RETURN_IF_FALSE(writer->write("}\n"));
+				break;
+			}
+			case slake::ObjectKind::ScopedEnum: {
+				slake::ScopedEnumObject *obj = (slake::ScopedEnumObject *)v;
+
+				for (size_t j = 0; j < indentLevel; ++j) {
+					SLKC_RETURN_IF_FALSE(writer->write("\t"));
+				}
+
+				SLKC_RETURN_IF_FALSE(writer->write("enum "));
+
+				SLKC_RETURN_IF_FALSE(writer->write(obj->getName()));
+
+				if (obj->baseType) {
+					SLKC_RETURN_IF_FALSE(writer->write("("));
+					SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, obj->baseType));
+					SLKC_RETURN_IF_FALSE(writer->write(")"));
+				}
+
+				SLKC_RETURN_IF_FALSE(writer->write(" {\n"));
+
+				size_t k = 0;
+				for (auto& j : obj->getFieldRecords()) {
+					for (size_t l = 0; l < indentLevel + 1; ++l) {
+						SLKC_RETURN_IF_FALSE(writer->write("\t"));
+					}
+					SLKC_RETURN_IF_FALSE(writer->write(j.name));
+
+					if (obj->baseType) {
+						SLKC_RETURN_IF_FALSE(writer->write(" = "));
+
+						slake::Value data;
+						moduleObject->associatedRuntime->readVar(slake::Reference::makeStaticFieldRef(obj, k), data);
+
+						SLKC_RETURN_IF_FALSE(decompileValue(allocator, writer, data));
+					}
+
+					if (k + 1 < indentLevel + 1)
+						SLKC_RETURN_IF_FALSE(writer->write(","));
+					SLKC_RETURN_IF_FALSE(writer->write("\n"));
+					++k;
+				}
 
 				for (size_t j = 0; j < indentLevel; ++j) {
 					SLKC_RETURN_IF_FALSE(writer->write("\t"));

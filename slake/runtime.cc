@@ -205,6 +205,8 @@ SLAKE_API size_t Runtime::sizeofType(const TypeRef &type) const {
 
 			return so->cachedObjectLayout->totalSize;
 		}
+		case TypeId::TypelessScopedEnum:
+			return sizeof(uint32_t);
 		case TypeId::Array:
 			return sizeof(void *);
 		case TypeId::Any:
@@ -218,31 +220,31 @@ SLAKE_API size_t Runtime::sizeofType(const TypeRef &type) const {
 SLAKE_API size_t Runtime::alignofType(const TypeRef &type) const {
 	switch (type.typeId) {
 		case TypeId::I8:
-			return sizeof(int8_t);
+			return alignof(int8_t);
 		case TypeId::I16:
-			return sizeof(int16_t);
+			return alignof(int16_t);
 		case TypeId::I32:
-			return sizeof(int32_t);
+			return alignof(int32_t);
 		case TypeId::I64:
-			return sizeof(int64_t);
+			return alignof(int64_t);
 		case TypeId::U8:
-			return sizeof(uint8_t);
+			return alignof(uint8_t);
 		case TypeId::U16:
-			return sizeof(uint16_t);
+			return alignof(uint16_t);
 		case TypeId::U32:
-			return sizeof(uint32_t);
+			return alignof(uint32_t);
 		case TypeId::U64:
-			return sizeof(uint64_t);
+			return alignof(uint64_t);
 		case TypeId::F32:
-			return sizeof(float);
+			return alignof(float);
 		case TypeId::F64:
-			return sizeof(double);
+			return alignof(double);
 		case TypeId::Bool:
-			return sizeof(bool);
+			return alignof(bool);
 		case TypeId::String:
-			return sizeof(void *);
+			return alignof(void *);
 		case TypeId::Instance:
-			return sizeof(void *);
+			return alignof(void *);
 		case TypeId::StructInstance: {
 			assert(type.getCustomTypeDef()->typeObject->getObjectKind() == ObjectKind::Struct);
 			auto so = static_cast<StructObject *>(type.getCustomTypeDef()->typeObject);
@@ -252,10 +254,12 @@ SLAKE_API size_t Runtime::alignofType(const TypeRef &type) const {
 
 			return so->cachedObjectLayout->alignment;
 		}
+		case TypeId::TypelessScopedEnum:
+			return alignof(uint32_t);
 		case TypeId::Array:
-			return sizeof(void *);
+			return alignof(void *);
 		case TypeId::TempRef:
-			return sizeof(void *);
+			return alignof(void *);
 		default:
 			break;
 	}

@@ -480,7 +480,8 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(MemberObjec
 			dispatcher.nextWalkValueInits = peff::List<ValueInitGenericInstantiationTask>(getFixedAlloc());
 
 			for (auto &i : nextWalkValueInits) {
-				if (writeVar(i.dest, i.value)) {
+				if (auto e = writeVarChecked(i.dest, i.value); e) {
+					e.reset();
 					return GenericFieldInitError::alloc(const_cast<Runtime *>(this)->getFixedAlloc(), i.dest.asStaticField.moduleObject, i.dest.asStaticField.index);
 				}
 			}

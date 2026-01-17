@@ -10,7 +10,9 @@ SLAKE_API LoaderContext::LoaderContext(peff::Alloc *allocator)
 	  loadedInterfaces(allocator),
 	  loadedStructs(allocator),
 	  loadedClasses(allocator),
+	  loadedScopedEnums(allocator),
 	  loadedFns(allocator),
+	  loadedModules(allocator),
 	  hostRefHolder(allocator) {
 }
 
@@ -711,6 +713,46 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(LoaderContext &cont
 	}
 
 	{
+		uint32_t nScopedEnums;
+
+		SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->readU32(nScopedEnums)));
+		for (size_t i = 0; i < nScopedEnums; ++i) {
+			slake::slxfmt::ScopedEnumTypeDesc desc;
+
+			SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read((char *)&desc, sizeof(desc))));
+
+			HostObjectRef<ScopedEnumObject> enumObject;
+
+			if (!(enumObject = ScopedEnumObject::alloc(runtime))) {
+				return OutOfMemoryError::alloc();
+			}
+
+			AccessModifier access = 0;
+
+			if (desc.flags & slxfmt::SETD_PUB) {
+				access |= ACCESS_PUBLIC;
+			}
+
+			if (!enumObject->resizeName(desc.lenName)) {
+				return OutOfMemoryError::alloc();
+			}
+			SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read(enumObject->getNameRawPtr(), desc.lenName)));
+
+			// TODO: Implement it.
+
+			if (!context.loadedScopedEnums.insert(enumObject.get())) {
+				return OutOfMemoryError::alloc();
+			}
+
+			enumObject->setParent(moduleObject);
+
+			if (!moduleObject->addMember(enumObject.get())) {
+				return OutOfMemoryError::alloc();
+			}
+		}
+	}
+
+	{
 		uint32_t nFns;
 
 		SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->readU32(nFns)));
@@ -880,6 +922,7 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(LoaderContext &cont
 			SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read(fr.name.data(), vad.lenName)));
 			SLAKE_RETURN_IF_EXCEPT(loadType(context, runtime, reader, moduleObject, fr.type));
 
+			// TODO: Control if to allocate space on demand.
 			if (!moduleObject->appendFieldRecord(std::move(fr))) {
 				return OutOfMemoryError::alloc();
 			}
@@ -887,14 +930,14 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(LoaderContext &cont
 			Value initialValue;
 			SLAKE_RETURN_IF_EXCEPT(loadValue(context, runtime, reader, moduleObject, initialValue));
 
-			SLAKE_RETURN_IF_EXCEPT(runtime->writeVar(Reference::makeStaticFieldRef(moduleObject, i), initialValue));
+			SLAKE_RETURN_IF_EXCEPT(runtime->writeVarChecked(Reference::makeStaticFieldRef(moduleObject, i), initialValue));
 		}
 	}
 
 	return {};
 }
 
-SLAKE_API InternalExceptionPointer loader::loadModule(LoaderContext &context, Runtime *runtime, Reader *reader, HostObjectRef<ModuleObject> &moduleObjectOut) noexcept {
+SLAKE_API InternalExceptionPointer loader::loadSingleModule(LoaderContext &context, Runtime *runtime, Reader *reader, HostObjectRef<ModuleObject> &moduleObjectOut) noexcept {
 	slxfmt::ImgHeader imh = { 0 };
 
 	SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read((char *)&imh, sizeof(imh))));
@@ -936,6 +979,51 @@ SLAKE_API InternalExceptionPointer loader::loadModule(LoaderContext &context, Ru
 		SLAKE_RETURN_IF_EXCEPT(completeParentNamespaces(context, runtime, moduleObjectOut.get(), moduleFullName));
 	}
 
+	return {};
+}
+
+SLAKE_API InternalExceptionPointer loader::loadModule(LoaderContext &context, Runtime *runtime, Reader *reader, HostObjectRef<ModuleObject> &moduleObjectOut) noexcept {
+	HostObjectRef<ModuleObject> mod;
+	SLAKE_RETURN_IF_EXCEPT(loadSingleModule(context, runtime, reader, mod));
+
+	moduleObjectOut = mod;
+
+	peff::Set<IdRefObject *, IdRefComparator, true> modNamesToBeLoaded(context.allocator.get());
+
+	for (auto i : mod->unnamedImports) {
+		if (!modNamesToBeLoaded.insert(+i))
+			return OutOfMemoryError::alloc();
+	}
+	/*
+loadDependencies:
+	peff::Set<IdRefObject *, IdRefComparator, true> newModNames(context.allocator.get());
+
+	for (auto i : modNamesToBeLoaded) {
+		slake::Reference ref;
+		InternalExceptionPointer e = runtime->resolveIdRef(i, ref);
+
+		if (ref) {
+			if (ref.kind != ReferenceKind::ObjectRef)
+				// TODO: Handle it.
+				std::terminate();
+		} else {
+			HostObjectRef<ModuleObject> importedMod;
+			peff::UniquePtr<Reader, peff::DeallocableDeleter<Reader>> importedReader;
+			SLAKE_RETURN_IF_EXCEPT(context.locateModule(runtime, i->entries, importedReader.getRef()));
+			SLAKE_RETURN_IF_EXCEPT(loadSingleModule(context, runtime, importedReader.get(), importedMod));
+
+			for (auto &j : importedMod->unnamedImports) {
+				if (!newModNames.insert(+j))
+					return OutOfMemoryError::alloc();
+			}
+		}
+	}
+
+	if (newModNames.size()) {
+		modNamesToBeLoaded = std::move(newModNames);
+		goto loadDependencies;
+	}*/
+
 	for (auto i : context.loadedCustomTypeDefs) {
 		runtime->unregisterTypeDef(i);
 	}
@@ -963,6 +1051,8 @@ SLAKE_API InternalExceptionPointer loader::loadModule(LoaderContext &context, Ru
 	for (auto i : context.loadedFns) {
 		SLAKE_RETURN_IF_EXCEPT(i->resortOverloadings());
 	}
+
+	// TODO: Allocate and resize the modules' local storage after loaded all modules.
 
 	runtime->gc();
 

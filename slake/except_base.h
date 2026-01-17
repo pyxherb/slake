@@ -40,17 +40,17 @@ namespace slake {
 		}
 
 		SLAKE_FORCEINLINE ~InternalExceptionPointer() noexcept {
-			unwrap();
-			reset();
+			if (_ptr)
+				std::terminate();
 		}
 
 		InternalExceptionPointer(const InternalExceptionPointer &) = delete;
 		InternalExceptionPointer &operator=(const InternalExceptionPointer &) = delete;
-		SLAKE_FORCEINLINE InternalExceptionPointer(InternalExceptionPointer &&other) noexcept {
-			_ptr = other._ptr;
+		SLAKE_FORCEINLINE InternalExceptionPointer(InternalExceptionPointer &&other) noexcept : _ptr(other._ptr) {
 			other._ptr = nullptr;
 		}
 		SLAKE_FORCEINLINE InternalExceptionPointer &operator=(InternalExceptionPointer &&other) noexcept {
+			reset();
 			_ptr = other._ptr;
 			other._ptr = nullptr;
 			return *this;

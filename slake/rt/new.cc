@@ -299,7 +299,7 @@ SLAKE_API HostObjectRef<InstanceObject> slake::Runtime::newClassInstance(ClassOb
 
 		Value data;
 		readVar(Reference::makeStaticFieldRef(p.first, fieldRecord.idxInitFieldRecord), data);
-		SLAKE_UNWRAP_EXCEPT(writeVar(Reference::makeInstanceFieldRef(instance.get(), i), data));
+		writeVar(Reference::makeInstanceFieldRef(instance.get(), i), data);
 
 		if (cnt++ >= p.second) {
 			cnt = 0;

@@ -103,7 +103,7 @@ SLAKE_API bool BasicModuleObject::appendFieldRecord(FieldRecord &&fieldRecord) {
 		return false;
 	}
 
-	associatedRuntime->writeVarUnsafe(Reference::makeStaticFieldRef(this, fieldRecords.size() - 1), associatedRuntime->defaultValueOf(fr.type));
+	associatedRuntime->writeVar(Reference::makeStaticFieldRef(this, fieldRecords.size() - 1), associatedRuntime->defaultValueOf(fr.type));
 	return true;
 }
 
@@ -126,7 +126,7 @@ SLAKE_API InternalExceptionPointer BasicModuleObject::appendFieldRecordWithValue
 		return OutOfMemoryError::alloc();
 	}
 
-	SLAKE_RETURN_IF_EXCEPT(associatedRuntime->writeVar(Reference::makeStaticFieldRef(this, fieldRecords.size() - 1), value));
+	SLAKE_RETURN_IF_EXCEPT(associatedRuntime->writeVarChecked(Reference::makeStaticFieldRef(this, fieldRecords.size() - 1), value));
 	return {};
 }
 

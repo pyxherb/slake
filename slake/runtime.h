@@ -444,9 +444,12 @@ namespace slake {
 		SLAKE_API void *locateValueBasePtr(const Reference &entityRef) const noexcept;
 		[[nodiscard]] SLAKE_API TypeRef typeofVar(const Reference &entityRef) const noexcept;
 		SLAKE_API void readVar(const Reference &entityRef, Value &valueOut) const noexcept;
-		[[nodiscard]] SLAKE_API InternalExceptionPointer writeVar(const Reference &entityRef, const Value &value) const noexcept;
-		SLAKE_FORCEINLINE void writeVarUnsafe(const Reference& entityRef, const Value& value) const noexcept {
-			writeVar(entityRef, value).unwrap();
+		[[nodiscard]] SLAKE_API void writeVar(const Reference &entityRef, const Value &value) const noexcept;
+		SLAKE_FORCEINLINE InternalExceptionPointer writeVarChecked(const Reference& entityRef, const Value& value) const noexcept {
+			if (!isCompatible(typeofVar(entityRef), value))
+				return MismatchedVarTypeError::alloc(getFixedAlloc());
+			writeVar(entityRef, value);
+			return {};
 		}
 
 		SLAKE_API size_t sizeofType(const TypeRef &type) const;

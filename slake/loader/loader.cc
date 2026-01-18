@@ -1086,14 +1086,13 @@ loadDependencies:
 
 	for (auto i : modNamesToBeLoaded) {
 		slake::Reference ref;
-		InternalExceptionPointer e = runtime->resolveIdRef(i, ref);
+		SLAKE_RETURN_IF_EXCEPT(runtime->resolveIdRef(i, ref));
 
-		if (!e) {
+		if (ref) {
 			if (ref.kind != ReferenceKind::ObjectRef)
 				// TODO: Handle it.
 				std::terminate();
 		} else {
-			e.reset();
 			HostObjectRef<ModuleObject> importedMod;
 			peff::UniquePtr<Reader, peff::DeallocableDeleter<Reader>> importedReader;
 			SLAKE_RETURN_IF_EXCEPT(context.locateModule(runtime, i->entries, importedReader.getRef()));

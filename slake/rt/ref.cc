@@ -47,8 +47,10 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 					break;
 			}
 		} else {
-			if (i + 1 != ref->entries.size())
-				return allocOutOfMemoryErrorIfAllocFailed(ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(this)->getFixedAlloc(), ref));
+			if (i + 1 != ref->entries.size()) {
+				objectRefOut = Reference::makeInvalidRef();
+				return {};
+			}
 		}
 	}
 
@@ -66,8 +68,10 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 				else {
 					it = fnObject->overloadings.find(FnSignature{ paramTypes, ref->hasVarArgs, ref->entries.back().genericArgs.size(), TypeId::Void });
 
-					if (it == fnObject->overloadings.end())
-						return allocOutOfMemoryErrorIfAllocFailed(ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(this)->getFixedAlloc(), ref));
+					if (it == fnObject->overloadings.end()) {
+						objectRefOut = Reference::makeInvalidRef();
+						return {};
+					}
 				}
 
 				objectRefOut = Reference::makeObjectRef(it.value());
@@ -75,15 +79,16 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 				break;
 			}
 			default:
-				return allocOutOfMemoryErrorIfAllocFailed(ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(this)->getFixedAlloc(), ref));
+				objectRefOut = Reference::makeInvalidRef();
+				return {};
 		}
 	}
 
 	return {};
 
 fail:;
-
-	return allocOutOfMemoryErrorIfAllocFailed(ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(this)->getFixedAlloc(), ref));
+	objectRefOut = Reference::makeInvalidRef();
+	return {};
 }
 
 SLAKE_API bool Runtime::getFullRef(peff::Alloc *allocator, const MemberObject *v, peff::DynArray<IdRefEntry> &idRefOut) const {

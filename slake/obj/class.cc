@@ -789,9 +789,7 @@ SLAKE_API void ScopedEnumObject::dealloc() {
 }
 
 SLAKE_API void ScopedEnumObject::replaceAllocator(peff::Alloc *allocator) noexcept {
-	this->MemberObject::replaceAllocator(allocator);
-
-	members.replaceAllocator(allocator);
+	this->BasicModuleObject::replaceAllocator(allocator);
 }
 
 SLAKE_API UnionEnumItemObject::UnionEnumItemObject(Runtime *rt, peff::Alloc *selfAllocator)

@@ -445,7 +445,7 @@ SLAKE_API ReadError::ReadError(peff::Alloc *selfAllocator)
 SLAKE_API ReadError::~ReadError() {}
 
 SLAKE_API const char *ReadError::what() const {
-	return "Bad magic number";
+	return "I/O reading error";
 }
 
 SLAKE_API void ReadError::dealloc() {

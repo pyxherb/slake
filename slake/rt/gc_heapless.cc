@@ -301,6 +301,25 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 
 					break;
 				}
+				case ObjectKind::ScopedEnum: {
+					for (auto i = ((ScopedEnumObject *)v)->members.begin(); i != ((ScopedEnumObject *)v)->members.end(); ++i) {
+						context->pushObject(i.value());
+					}
+					context->pushObject(((ScopedEnumObject *)v)->getParent());
+
+					ScopedEnumObject *value = (ScopedEnumObject *)v;
+
+					if (value->baseType) {
+						Value data;
+						for (size_t i = 0; i < value->fieldRecords.size(); ++i) {
+							_gcWalk(context, value->fieldRecords.at(i).type);
+							readVar(Reference::makeStaticFieldRef(value, i), data);
+							_gcWalk(context, data);
+						}
+					}
+
+					break;
+				}
 				case ObjectKind::Interface: {
 					// TODO: Walk generic parameters.
 					for (auto i = ((InterfaceObject *)v)->members.begin(); i != ((InterfaceObject *)v)->members.end(); ++i) {

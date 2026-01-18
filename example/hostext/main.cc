@@ -128,8 +128,9 @@ public:
 
 	FILE *fp;
 
-	MyReader(peff::Alloc *selfAllocator, FILE *fp) : fp(fp) {}
+	MyReader(peff::Alloc *selfAllocator, FILE *fp) : selfAllocator(selfAllocator), fp(fp) {}
 	virtual ~MyReader() {
+		fclose(fp);
 	}
 
 	virtual bool isEof() noexcept {
@@ -233,6 +234,8 @@ public:
 			return OutOfMemoryError::alloc();
 
 		readerOut = reader.release();
+
+		closeFpGuard.release();
 
 		return {};
 	}

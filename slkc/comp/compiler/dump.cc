@@ -569,7 +569,6 @@ SLKC_API peff::Option<CompilationError> slkc::dumpModuleMembers(
 				slake::Value data;
 				mod->associatedRuntime->readVar(slake::Reference::makeStaticFieldRef(i, j), data);
 				SLKC_RETURN_IF_COMP_ERROR(dumpValue(allocator, writer, data));
-				SLKC_RETURN_IF_COMP_ERROR(dumpValue(allocator, writer, data));
 				++j;
 			}
 		} else {

@@ -13,6 +13,7 @@ SLAKE_API LoaderContext::LoaderContext(peff::Alloc *allocator)
 	  loadedScopedEnums(allocator),
 	  loadedFns(allocator),
 	  loadedModules(allocator),
+	  initVarData(allocator),
 	  hostRefHolder(allocator) {
 }
 
@@ -739,6 +740,59 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(LoaderContext &cont
 			SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read(enumObject->getNameRawPtr(), desc.lenName)));
 
 			// TODO: Implement it.
+			uint32_t nFields;
+
+			SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->readU32(nFields)));
+
+			if (desc.flags & slxfmt::SETD_BASE) {
+				SLAKE_RETURN_IF_EXCEPT(loadType(context, runtime, reader, moduleObject, enumObject->baseType));
+
+				for (size_t j = 0; j < nFields; ++j) {
+					slxfmt::EnumItemDesc eid;
+					SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read((char *)&eid, sizeof(eid))));
+
+					FieldRecord fr(moduleObject->selfAllocator.get());
+
+					if (!fr.name.resize(desc.lenName)) {
+						return OutOfMemoryError::alloc();
+					}
+					SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read(fr.name.data(), eid.lenName)));
+
+					fr.type = enumObject->baseType;
+
+					Value initialValue;
+
+					SLAKE_RETURN_IF_EXCEPT(loadValue(context, runtime, reader, enumObject.get(), initialValue));
+
+					if (!isCompatible(fr.type, initialValue))
+						std::terminate();
+
+					Reference ref = Reference::makeStaticFieldRef(enumObject.get(), i);
+
+					if (!context.initVarData.pushBack({ ref, std::move(initialValue) }))
+						return OutOfMemoryError::alloc();
+
+					if (!enumObject->appendFieldRecordWithoutAlloc(std::move(fr))) {
+						return OutOfMemoryError::alloc();
+					}
+				}
+			} else {
+				for (size_t j = 0; j < nFields; ++j) {
+					slxfmt::EnumItemDesc eid;
+					SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read((char *)&eid, sizeof(eid))));
+
+					FieldRecord fr(moduleObject->selfAllocator.get());
+
+					if (!fr.name.resize(desc.lenName)) {
+						return OutOfMemoryError::alloc();
+					}
+					SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read(fr.name.data(), eid.lenName)));
+
+					if (!enumObject->appendFieldRecordWithoutAlloc(std::move(fr))) {
+						return OutOfMemoryError::alloc();
+					}
+				}
+			}
 
 			if (!context.loadedScopedEnums.insert(enumObject.get())) {
 				return OutOfMemoryError::alloc();
@@ -882,8 +936,6 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(LoaderContext &cont
 		}
 	}
 
-	// TODO: Load scoped enumerations.
-
 	{
 		uint32_t nFields;
 
@@ -922,15 +974,46 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(LoaderContext &cont
 			SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read(fr.name.data(), vad.lenName)));
 			SLAKE_RETURN_IF_EXCEPT(loadType(context, runtime, reader, moduleObject, fr.type));
 
-			// TODO: Control if to allocate space on demand.
-			if (!moduleObject->appendFieldRecord(std::move(fr))) {
-				return OutOfMemoryError::alloc();
+			switch (fr.type.typeId) {
+				case slake::TypeId::Any:
+				case slake::TypeId::I8:
+				case slake::TypeId::I16:
+				case slake::TypeId::I32:
+				case slake::TypeId::I64:
+				case slake::TypeId::ISize:
+				case slake::TypeId::U8:
+				case slake::TypeId::U16:
+				case slake::TypeId::U32:
+				case slake::TypeId::U64:
+				case slake::TypeId::USize:
+				case slake::TypeId::F32:
+				case slake::TypeId::F64:
+				case slake::TypeId::Bool:
+				case slake::TypeId::String:
+				case slake::TypeId::Instance:
+				case slake::TypeId::Array:
+				case slake::TypeId::Tuple:
+				case slake::TypeId::SIMD:
+				case slake::TypeId::Fn: {
+					Value initialValue;
+					SLAKE_RETURN_IF_EXCEPT(loadValue(context, runtime, reader, moduleObject, initialValue));
+
+					if (!isCompatible(fr.type, initialValue))
+						std::terminate();
+
+					Reference ref = Reference::makeStaticFieldRef(moduleObject, i);
+
+					if (!context.initVarData.pushBack({ ref, std::move(initialValue) }))
+						return OutOfMemoryError::alloc();
+					break;
+				}
+				default:
+					break;
 			}
 
-			Value initialValue;
-			SLAKE_RETURN_IF_EXCEPT(loadValue(context, runtime, reader, moduleObject, initialValue));
-
-			SLAKE_RETURN_IF_EXCEPT(runtime->writeVarChecked(Reference::makeStaticFieldRef(moduleObject, i), initialValue));
+			if (!moduleObject->appendFieldRecordWithoutAlloc(std::move(fr))) {
+				return OutOfMemoryError::alloc();
+			}
 		}
 	}
 
@@ -979,6 +1062,9 @@ SLAKE_API InternalExceptionPointer loader::loadSingleModule(LoaderContext &conte
 		SLAKE_RETURN_IF_EXCEPT(completeParentNamespaces(context, runtime, moduleObjectOut.get(), moduleFullName));
 	}
 
+	if (!context.loadedModules.insert(moduleObjectOut.get()))
+		return OutOfMemoryError::alloc();
+
 	return {};
 }
 
@@ -994,7 +1080,7 @@ SLAKE_API InternalExceptionPointer loader::loadModule(LoaderContext &context, Ru
 		if (!modNamesToBeLoaded.insert(+i))
 			return OutOfMemoryError::alloc();
 	}
-	/*
+
 loadDependencies:
 	peff::Set<IdRefObject *, IdRefComparator, true> newModNames(context.allocator.get());
 
@@ -1002,11 +1088,12 @@ loadDependencies:
 		slake::Reference ref;
 		InternalExceptionPointer e = runtime->resolveIdRef(i, ref);
 
-		if (ref) {
+		if (!e) {
 			if (ref.kind != ReferenceKind::ObjectRef)
 				// TODO: Handle it.
 				std::terminate();
 		} else {
+			e.reset();
 			HostObjectRef<ModuleObject> importedMod;
 			peff::UniquePtr<Reader, peff::DeallocableDeleter<Reader>> importedReader;
 			SLAKE_RETURN_IF_EXCEPT(context.locateModule(runtime, i->entries, importedReader.getRef()));
@@ -1022,7 +1109,7 @@ loadDependencies:
 	if (newModNames.size()) {
 		modNamesToBeLoaded = std::move(newModNames);
 		goto loadDependencies;
-	}*/
+	}
 
 	for (auto i : context.loadedCustomTypeDefs) {
 		runtime->unregisterTypeDef(i);
@@ -1052,7 +1139,34 @@ loadDependencies:
 		SLAKE_RETURN_IF_EXCEPT(i->resortOverloadings());
 	}
 
-	// TODO: Allocate and resize the modules' local storage after loaded all modules.
+	context.loadedFns.clear();
+
+	for (auto i : context.loadedScopedEnums) {
+		if (i->baseType)
+			if (!i->reallocFieldSpaces())
+				return OutOfMemoryError::alloc();
+	}
+
+	for (auto i : context.loadedStructs) {
+		if (!i->reallocFieldSpaces())
+			return OutOfMemoryError::alloc();
+	}
+
+	for (auto i : context.loadedClasses) {
+		if (!i->reallocFieldSpaces())
+			return OutOfMemoryError::alloc();
+	}
+
+	for (auto i : context.loadedModules) {
+		if (!i->reallocFieldSpaces())
+			return OutOfMemoryError::alloc();
+	}
+
+	for (auto &i : context.initVarData) {
+		runtime->writeVar(i.first, i.second);
+	}
+
+	context.initVarData.clear();
 
 	runtime->gc();
 

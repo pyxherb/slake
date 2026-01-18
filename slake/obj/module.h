@@ -13,8 +13,8 @@ namespace slake {
 		size_t offset;
 		TypeRef type;
 
-		SLAKE_FORCEINLINE FieldRecord(peff::Alloc *allocator) : name(allocator) {}
-		SLAKE_FORCEINLINE FieldRecord(FieldRecord &&rhs)
+		SLAKE_FORCEINLINE FieldRecord(peff::Alloc *allocator) noexcept : name(allocator), accessModifier(0), offset(SIZE_MAX), type(TypeId::Invalid) {}
+		SLAKE_FORCEINLINE FieldRecord(FieldRecord &&rhs) noexcept
 			: name(std::move(rhs.name)),
 			  accessModifier(rhs.accessModifier),
 			  offset(rhs.offset),

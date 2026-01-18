@@ -17,6 +17,7 @@ namespace slake {
 			peff::Set<ScopedEnumObject *> loadedScopedEnums;
 			peff::Set<FnObject *> loadedFns;
 			peff::Set<ModuleObject *> loadedModules;
+			peff::List<std::pair<Reference, Value>> initVarData;
 			HostRefHolder hostRefHolder;
 
 			SLAKE_API LoaderContext(peff::Alloc *allocator);

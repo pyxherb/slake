@@ -228,6 +228,8 @@ SLKC_API const char *slkc::getTokenName(TokenId tokenId) {
 			return "interface";
 		case TokenId::LetKeyword:
 			return "let";
+		case TokenId::LocalKeyword:
+			return "local";
 		case TokenId::MacroKeyword:
 			return "macro";
 		case TokenId::MatchKeyword:

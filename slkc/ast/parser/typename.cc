@@ -432,6 +432,20 @@ SLKC_API peff::Option<SyntaxError> Parser::parseTypeName(AstNodePtr<TypeNameNode
 	if (withCircumfixes) {
 		while (true) {
 			switch ((t = peekToken())->tokenId) {
+				case TokenId::FinalKeyword: {
+					nextToken();
+
+					typeNameOut->isFinal = true;
+					typeNameOut->idxFinalToken = t->index;
+					break;
+				}
+				case TokenId::LocalKeyword: {
+					nextToken();
+
+					typeNameOut->isLocal = true;
+					typeNameOut->idxLocalToken = t->index;
+					break;
+				}
 				case TokenId::LBracket: {
 					nextToken();
 

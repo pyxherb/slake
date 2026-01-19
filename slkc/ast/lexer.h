@@ -146,6 +146,7 @@ namespace slkc {
 		InKeyword,
 		InterfaceKeyword,
 		LetKeyword,
+		LocalKeyword,
 		MacroKeyword,
 		MatchKeyword,
 		ModuleKeyword,

@@ -44,10 +44,45 @@ namespace slkc {
 	public:
 		TypeNameKind typeNameKind;
 		bool isFinal = false;
+		bool isLocal = false;
+
+		size_t idxFinalToken = SIZE_MAX, idxLocalToken = SIZE_MAX;
 
 		SLKC_API TypeNameNode(TypeNameKind typeNameKind, peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
 		SLKC_API TypeNameNode(const TypeNameNode &rhs, peff::Alloc *selfAllocator, DuplicationContext &context);
 		SLKC_API virtual ~TypeNameNode();
+
+		SLAKE_FORCEINLINE void setFinal() noexcept {
+			isFinal = true;
+		}
+
+		SLAKE_FORCEINLINE void setLocal() noexcept {
+			isLocal = true;
+		}
+
+		SLAKE_FORCEINLINE void clearFinal() noexcept {
+			isFinal = false;
+		}
+
+		SLAKE_FORCEINLINE void clearLocal() noexcept {
+			isLocal = false;
+		}
+
+		SLAKE_FORCEINLINE bool isExplicitFinal() const noexcept {
+			return idxFinalToken != SIZE_MAX;
+		}
+
+		SLAKE_FORCEINLINE bool isExplicitLocal() const noexcept {
+			return idxLocalToken != SIZE_MAX;
+		}
+
+		SLAKE_FORCEINLINE bool isImplicitFinal() const noexcept {
+			return idxFinalToken == SIZE_MAX;
+		}
+
+		SLAKE_FORCEINLINE bool isImplicitLocal() const noexcept {
+			return idxLocalToken == SIZE_MAX;
+		}
 	};
 }
 

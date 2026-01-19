@@ -132,7 +132,7 @@ namespace slake {
 	SLAKE_API bool isTypeDefObject(Object *object);
 
 	using TypeModifier = uint8_t;
-	constexpr static TypeModifier TYPE_FINAL = 0x01;
+	constexpr static TypeModifier TYPE_FINAL = 0x01, TYPE_LOCAL = 0x02;
 
 	struct TypeRef {
 		TypeId typeId;
@@ -181,6 +181,10 @@ namespace slake {
 
 		SLAKE_FORCEINLINE bool isFinal() const noexcept {
 			return typeModifier & TYPE_FINAL;
+		}
+
+		SLAKE_FORCEINLINE bool isLocal() const noexcept {
+			return typeModifier & TYPE_LOCAL;
 		}
 
 		SLAKE_FORCEINLINE CustomTypeDefObject *getCustomTypeDef() const;

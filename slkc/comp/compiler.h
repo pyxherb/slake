@@ -516,7 +516,7 @@ namespace slkc {
 		AstNodePtr<TypeNameNode> lhs,
 		AstNodePtr<TypeNameNode> rhs,
 		bool &whetherOut);
-	[[nodiscard]] SLKC_API peff::Option<CompilationError> isTypeConvertible(
+	[[nodiscard]] SLKC_API peff::Option<CompilationError> isConvertible(
 		AstNodePtr<TypeNameNode> src,
 		AstNodePtr<TypeNameNode> dest,
 		bool isSealed,

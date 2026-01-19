@@ -201,7 +201,7 @@ SLKC_API peff::Option<CompilationError> slkc::determinePromotionalType(
 
 						bool b;
 
-						SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(rhs, lhs, true, b));
+						SLKC_RETURN_IF_COMP_ERROR(isConvertible(rhs, lhs, true, b));
 						if (b) {
 							// In sealed context, derived types cannot be converted to base types,
 							// therefore when rhs can be converted to lhs, rhs is the base type.
@@ -229,6 +229,12 @@ SLKC_API peff::Option<CompilationError> slkc::isSubtypeOf(
 	AstNodePtr<TypeNameNode> subtype,
 	AstNodePtr<TypeNameNode> type,
 	bool &resultOut) {
+	if (!subtype->isLocal) {
+		if (type->isLocal) {
+			resultOut = false;
+			return {};
+		}
+	}
 recheck:
 	switch (subtype->typeNameKind) {
 		case TypeNameKind::Void:
@@ -473,17 +479,47 @@ recheck:
 					break;
 				}
 				case TypeNameKind::Custom: {
-					AstNodePtr<MemberNode> stm, tm;
+					AstNodePtr<MemberNode> stm;	 // Subtype member
+					AstNodePtr<MemberNode> tm;	 // Type member
 
 					SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(nullptr, type->document->sharedFromThis(), type.castTo<CustomTypeNameNode>(), tm));
 					SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(nullptr, subtype->document->sharedFromThis(), subtype.castTo<CustomTypeNameNode>(), stm));
 
 					switch (tm->getAstNodeType()) {
+						case AstNodeType::GenericParam:
+							switch (stm->getAstNodeType()) {
+								case AstNodeType::Class:
+								case AstNodeType::Interface:
+									// Nope - the generic parameter may not be exactly the base type of the subtype,
+									// it may be more derived.
+									resultOut = false;
+									break;
+								default:
+									resultOut = false;
+									break;
+							}
+							break;
 						case AstNodeType::Class:
 							switch (stm->getAstNodeType()) {
 								case AstNodeType::Class:
 									SLKC_RETURN_IF_COMP_ERROR(isBaseOf(type->document->sharedFromThis(), tm.castTo<ClassNode>(), stm.castTo<ClassNode>(), resultOut));
 									break;
+								case AstNodeType::GenericParam: {
+									auto gp = stm.castTo<GenericParamNode>();
+									AstNodePtr<MemberNode> gpBaseMember;
+
+									resultOut = false;
+									if (gp->genericConstraint) {
+										if (gp->genericConstraint->baseType) {
+											SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(nullptr, subtype->document->sharedFromThis(), gp->genericConstraint->baseType.castTo<CustomTypeNameNode>(), gpBaseMember));
+
+											if (gpBaseMember->getAstNodeType() == AstNodeType::Class) {
+												SLKC_RETURN_IF_COMP_ERROR(isBaseOf(type->document->sharedFromThis(), tm.castTo<ClassNode>(), gpBaseMember.castTo<ClassNode>(), resultOut));
+											}
+										}
+									}
+									break;
+								}
 								default:
 									resultOut = false;
 									break;
@@ -501,6 +537,32 @@ recheck:
 									// TODO: Process struct here...
 									resultOut = false;
 									break;
+								case AstNodeType::GenericParam: {
+									auto gp = stm.castTo<GenericParamNode>();
+									AstNodePtr<MemberNode> gpBaseMember;
+
+									resultOut = false;
+									if (gp->genericConstraint) {
+										if (gp->genericConstraint->baseType) {
+											SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(nullptr, subtype->document->sharedFromThis(), gp->genericConstraint->baseType.castTo<CustomTypeNameNode>(), gpBaseMember));
+
+											if (gpBaseMember->getAstNodeType() == AstNodeType::Class) {
+												SLKC_RETURN_IF_COMP_ERROR(isImplementedByClass(type->document->sharedFromThis(), tm.castTo<InterfaceNode>(), gpBaseMember.castTo<ClassNode>(), resultOut));
+											}
+										}
+										for (auto i : gp->genericConstraint->implTypes) {
+											SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(nullptr, subtype->document->sharedFromThis(), i.castTo<CustomTypeNameNode>(), gpBaseMember));
+
+											if (gpBaseMember->getAstNodeType() == AstNodeType::Interface) {
+												SLKC_RETURN_IF_COMP_ERROR(isImplementedByInterface(type->document->sharedFromThis(), tm.castTo<InterfaceNode>(), gpBaseMember.castTo<InterfaceNode>(), resultOut));
+											}
+
+											if (resultOut)
+												break;
+										}
+									}
+									break;
+								}
 							}
 							break;
 						default:
@@ -984,11 +1046,11 @@ SLKC_API peff::Option<CompilationError> slkc::isSameTypeInSignature(
 	return {};
 }
 
-SLKC_API peff::Option<CompilationError> slkc::isTypeConvertible(
+SLKC_API peff::Option<CompilationError> slkc::isConvertible(
 	AstNodePtr<TypeNameNode> src,
 	AstNodePtr<TypeNameNode> dest,
 	bool isSealed,
-	bool &whetherOut) {
+	bool &resultOut) {
 	peff::SharedPtr<Document> document = src->document->sharedFromThis();
 	if (document != dest->document->sharedFromThis())
 		std::terminate();
@@ -999,249 +1061,87 @@ SLKC_API peff::Option<CompilationError> slkc::isTypeConvertible(
 	if (dest->isFinal)
 		isSealed = true;
 
+recheck:
 	switch (dest->typeNameKind) {
+		case TypeNameKind::Void:
+			resultOut = false;
+			return {};
 		case TypeNameKind::I8:
 		case TypeNameKind::I16:
 		case TypeNameKind::I32:
 		case TypeNameKind::I64:
+		case TypeNameKind::ISize:
 		case TypeNameKind::U8:
 		case TypeNameKind::U16:
 		case TypeNameKind::U32:
 		case TypeNameKind::U64:
+		case TypeNameKind::USize:
 		case TypeNameKind::F32:
 		case TypeNameKind::F64:
-		case TypeNameKind::ISize:
-		case TypeNameKind::USize: {
+		case TypeNameKind::Bool:
 			switch (src->typeNameKind) {
 				case TypeNameKind::I8:
 				case TypeNameKind::I16:
 				case TypeNameKind::I32:
 				case TypeNameKind::I64:
+				case TypeNameKind::ISize:
 				case TypeNameKind::U8:
 				case TypeNameKind::U16:
 				case TypeNameKind::U32:
 				case TypeNameKind::U64:
+				case TypeNameKind::USize:
 				case TypeNameKind::F32:
 				case TypeNameKind::F64:
-				case TypeNameKind::ISize:
-				case TypeNameKind::USize:
-					whetherOut = true;
-					break;
-				case TypeNameKind::Ref:
-					SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(src.castTo<RefTypeNameNode>()->referencedType, dest, isSealed, whetherOut));
-					break;
-				default:
-					whetherOut = false;
-			}
-			break;
-		}
-		case TypeNameKind::String: {
-			switch (src->typeNameKind) {
 				case TypeNameKind::String:
-					whetherOut = true;
-					break;
-				case TypeNameKind::Ref:
-					SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(src.castTo<RefTypeNameNode>()->referencedType, dest, isSealed, whetherOut));
-					break;
-				default:
-					whetherOut = false;
-			}
-			break;
-		}
-		case TypeNameKind::Bool: {
-			switch (src->typeNameKind) {
-				case TypeNameKind::I8:
-				case TypeNameKind::I16:
-				case TypeNameKind::I32:
-				case TypeNameKind::I64:
-				case TypeNameKind::U8:
-				case TypeNameKind::U16:
-				case TypeNameKind::U32:
-				case TypeNameKind::U64:
-				case TypeNameKind::F32:
-				case TypeNameKind::F64:
-				case TypeNameKind::ISize:
-				case TypeNameKind::USize:
-				case TypeNameKind::String:
-				case TypeNameKind::Object:
 				case TypeNameKind::Bool:
-					whetherOut = true;
+				case TypeNameKind::Any:
+					resultOut = true;
 					break;
 				case TypeNameKind::Ref:
-					SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(src.castTo<RefTypeNameNode>()->referencedType, dest, isSealed, whetherOut));
-					break;
+					SLKC_RETURN_IF_COMP_ERROR(removeRefOfType(src, src));
+					goto recheck;
 				default:
-					whetherOut = false;
-			}
-			break;
-		}
-		case TypeNameKind::Object: {
-			switch (src->typeNameKind) {
-				case TypeNameKind::String:
-				case TypeNameKind::Custom:
-					if (isSealed) {
-						return isSameType(src, dest, whetherOut);
-					}
-					whetherOut = true;
+					resultOut = false;
 					break;
-				case TypeNameKind::Ref:
-					SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(src.castTo<RefTypeNameNode>()->referencedType, dest, isSealed, whetherOut));
-					break;
-				default:
-					whetherOut = false;
 			}
-			break;
-		}
+			return {};
 		case TypeNameKind::Any:
-			if (isSealed) {
-				return isSameType(src, dest, whetherOut);
-			}
-			whetherOut = true;
-			break;
-		case TypeNameKind::Custom: {
 			switch (src->typeNameKind) {
-				case TypeNameKind::Custom: {
-					AstNodePtr<CustomTypeNameNode>
-						st = src.castTo<CustomTypeNameNode>(),
-						dt = dest.castTo<CustomTypeNameNode>();
-
-					AstNodePtr<MemberNode> stm, dtm;
-
-					SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(nullptr, document, st, stm));
-					SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(nullptr, document, dt, dtm));
-
-					switch (stm->getAstNodeType()) {
-						case AstNodeType::Class:
-							switch (dtm->getAstNodeType()) {
-								case AstNodeType::Interface:
-									SLKC_RETURN_IF_COMP_ERROR(isImplementedByClass(document, dtm.castTo<InterfaceNode>(), stm.castTo<ClassNode>(), whetherOut));
-									break;
-								case AstNodeType::Class:
-									SLKC_RETURN_IF_COMP_ERROR(isBaseOf(document, dtm.castTo<ClassNode>(), stm.castTo<ClassNode>(), whetherOut));
-									if ((!isSealed) && (!whetherOut)) {
-										// Covariance is not allowed in sealed context.
-										SLKC_RETURN_IF_COMP_ERROR(isBaseOf(document, stm.castTo<ClassNode>(), dtm.castTo<ClassNode>(), whetherOut));
-									}
-									break;
-								case AstNodeType::GenericParam: {
-									auto dgp = dtm.castTo<GenericParamNode>();
-
-									if (dgp->genericConstraint->baseType && dgp->genericConstraint->baseType->typeNameKind == TypeNameKind::Custom) {
-										SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(src, dgp->genericConstraint->baseType, isSealed, whetherOut));
-
-										if (whetherOut) {
-											break;
-										}
-									}
-									break;
-								}
-							}
-							break;
-						case AstNodeType::Interface:
-							switch (dtm->getAstNodeType()) {
-								case AstNodeType::Interface:
-									SLKC_RETURN_IF_COMP_ERROR(isImplementedByInterface(document, dtm.castTo<InterfaceNode>(), stm.castTo<InterfaceNode>(), whetherOut));
-									if ((!isSealed) && (!whetherOut)) {
-										// Covariance is not allowed in sealed context.
-										SLKC_RETURN_IF_COMP_ERROR(isImplementedByInterface(document, stm.castTo<InterfaceNode>(), dtm.castTo<InterfaceNode>(), whetherOut));
-									}
-									break;
-								case AstNodeType::Class:
-									SLKC_RETURN_IF_COMP_ERROR(isImplementedByClass(document, stm.castTo<InterfaceNode>(), dtm.castTo<ClassNode>(), whetherOut));
-									break;
-								case AstNodeType::GenericParam: {
-									auto dgp = dtm.castTo<GenericParamNode>();
-
-									if (dgp->genericConstraint->baseType && dgp->genericConstraint->baseType->typeNameKind == TypeNameKind::Custom) {
-										SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(src, dgp->genericConstraint->baseType, isSealed, whetherOut));
-
-										if (whetherOut) {
-											break;
-										}
-									}
-
-									for (auto i : dgp->genericConstraint->implTypes) {
-										SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(src, i, isSealed, whetherOut));
-
-										if (whetherOut) {
-											break;
-										}
-									}
-									break;
-								}
-							}
-							break;
-						case AstNodeType::GenericParam: {
-							auto sgp = stm.castTo<GenericParamNode>();
-
-							switch (dtm->getAstNodeType()) {
-								case AstNodeType::Interface:
-									if (sgp->genericConstraint->baseType && sgp->genericConstraint->baseType->typeNameKind == TypeNameKind::Custom) {
-										SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(sgp->genericConstraint->baseType, dest, isSealed, whetherOut));
-									}
-									for (auto i : sgp->genericConstraint->implTypes) {
-										SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(i, dest, isSealed, whetherOut));
-
-										if (whetherOut) {
-											break;
-										}
-									}
-									break;
-								case AstNodeType::Class:
-									if (sgp->genericConstraint->baseType && sgp->genericConstraint->baseType->typeNameKind == TypeNameKind::Custom) {
-										SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(sgp->genericConstraint->baseType, dest, isSealed, whetherOut));
-									}
-									break;
-								case AstNodeType::GenericParam:
-									// Direct conversions between generic parameters are disabled.
-									break;
-							}
-							break;
-						}
-						default:
-							whetherOut = false;
-							break;
-					}
-
-					break;
-				}
 				case TypeNameKind::Ref:
-					SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(src.castTo<RefTypeNameNode>()->referencedType, dest, isSealed, whetherOut));
-					break;
+					SLKC_RETURN_IF_COMP_ERROR(removeRefOfType(src, src));
+					goto recheck;
 				default:
-					whetherOut = false;
-			}
-			break;
-		}
-		case TypeNameKind::Array:
-			switch (src->typeNameKind) {
-				case TypeNameKind::Ref: {
-					SLKC_RETURN_IF_COMP_ERROR(isSameType(src.castTo<RefTypeNameNode>()->referencedType, dest, whetherOut));
-					break;
-				}
-				default:
-					SLKC_RETURN_IF_COMP_ERROR(isSameType(src, dest, whetherOut));
+					resultOut = true;
 					break;
 			}
-			break;
+			return {};
 		case TypeNameKind::Ref:
 			switch (src->typeNameKind) {
-				case TypeNameKind::Ref: {
-					SLKC_RETURN_IF_COMP_ERROR(isSameType(src, dest, whetherOut));
+				case TypeNameKind::Ref:
+					SLKC_RETURN_IF_COMP_ERROR(isSameType(dest.castTo<RefTypeNameNode>()->referencedType, src.castTo<RefTypeNameNode>()->referencedType, resultOut));
 					break;
-				}
 				default:
-					// RValue to LValue is not allowed.
-					whetherOut = false;
+					resultOut = false;
 					break;
 			}
-			break;
-		case TypeNameKind::TempRef:
-			SLKC_RETURN_IF_COMP_ERROR(isSameType(src, dest, whetherOut));
-			whetherOut = false;
-			break;
+			return {};
 	}
 
+	if (resultOut)
+		return {};
+
+	SLKC_RETURN_IF_COMP_ERROR(isSubtypeOf(src, dest, resultOut));
+
+	if (resultOut) {
+		return {};
+	}
+
+	if (!isSealed) {
+		SLKC_RETURN_IF_COMP_ERROR(isSubtypeOf(dest, src, resultOut));
+		return {};
+	}
+
+	resultOut = false;
 	return {};
 }
 

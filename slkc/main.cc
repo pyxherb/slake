@@ -428,6 +428,12 @@ void dumpCompilationError(peff::SharedPtr<slkc::Parser> parser, const slkc::Comp
 		case slkc::CompilationErrorKind::TargetIsNotCallable:
 			printf("Expression is not callable\n");
 			break;
+		case slkc::CompilationErrorKind::NoSuchFnOverloading:
+			printf("No such function overloading\n");
+			break;
+		case slkc::CompilationErrorKind::IncompatibleOperand:
+			printf("Incompatible operand\n");
+			break;
 		case slkc::CompilationErrorKind::OperatorNotFound:
 			printf("No matching operator found\n");
 			break;

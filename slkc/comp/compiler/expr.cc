@@ -66,7 +66,7 @@ SLKC_API peff::Option<CompilationError> slkc::_compileOrCastOperand(
 		return {};
 	}
 
-	SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(operandType, desiredType, true, whether));
+	SLKC_RETURN_IF_COMP_ERROR(isConvertible(operandType, desiredType, true, whether));
 	if (whether) {
 		CompileExprResult result(compileEnv->allocator.get());
 
@@ -1571,7 +1571,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, evalExprType(compileEnv, compilationContext, e->source, exprType, targetType));
 
 			bool b;
-			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, isTypeConvertible(exprType, targetType, false, b));
+			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, isConvertible(exprType, targetType, false, b));
 
 			if (!b) {
 				return CompilationError(e->source->tokenRange, CompilationErrorKind::InvalidCast);

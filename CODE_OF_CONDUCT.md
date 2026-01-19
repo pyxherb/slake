@@ -31,7 +31,7 @@ Examples of unacceptable behavior by participants include:
   contributors
 * Other conduct which could reasonably be considered inappropriate in a
   professional setting
-* Initiating/joining/sponsoring/encouraging/covering up unacceptable behaviors
+* Instigating/joining/sponsoring/encouraging/covering up unacceptable behaviors
   or incite others to violate the code of conduct
 
 ## Our Responsibilities

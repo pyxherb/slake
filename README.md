@@ -9,6 +9,14 @@
 Slake is a type-safe and embeddable programming language for extensible
 applications.
 
+It supports:
+
+* Function Overloading
+* Value-based Generics
+* Union Enumeration (ADT-like)
+* Coroutine
+* and more...
+
 ## Development Progress
 
 ✅: Completed
@@ -19,40 +27,58 @@ applications.
 
 📝: Planned
 
-* Bytecode Compiler 📝
-
-* Core Language Compiler 🕓
-  * Lexer and Parser 🕓
-  * Compiler 🕓
-  * Language Server 🕓
-    * Linting 🕓
-    * Snippets 🕓
-    * Formatting 🕓
-    * Renaming 🕓
-
-* Runtime 🕓
-  * Exception Mechanism ✅
-  * Type Checker ✅
-  * Interpreting ✅
+* Compiler 🕓
+  * Type Checker 🕓
   * Type-based Generic ✅
   * Value-based Generic ✅
-  * Overloading ✅
+  * Function Invoking ✅
+  * Parameter-name-based Function Invoking 📝
   * Class Instantiation ✅
   * Class Inheritance ✅
+    * Cyclic Inheritance Checker ✅
   * Interface Implementing ✅
+    * Cyclic Inheritance Checker ✅
+  * Structure Instantiation 🕓
+    * Type Recursion Checker ✅
   * Coroutine 🕓
+    * As Type 🕓
+  * Exception 🕓
+  * Constant Enumeration (syntatic sugar) 🕓
+  * Scoped Enumeration 🕓
+  * Union Enumeration (ADT-like) 🕓
+    * Type Recursion Checker ✅
+  * Tuple Type 🕓
+  * Parameter Pack 🕓
+    * Unpacking as Parameters ✅
+  * Type-specific Path (`with`) 🕓
+  * Pattern Matching 🕓
+  * Type-based Pattern Matching 🕓
+  * Attribute 🕓
+  * Lambda Expression 🕓
+  * Generic Type Specialization 📝
+  * Generic Function Specialization 📝
+  * Macro 📝
+  * Accessor (syntactic sugar, with back field accessing) 📝
+* Language Server 📝
+  * Linting 📝
+  * Snippets 📝
+  * Formatting 📝
+  * Renaming 📝
+
+* Runtime 🕓
+  * Interpreter ✅ (Most of the functions are completed)
   * Program Analyzer 🕓
   * Program Optimizer 🕓
   * Runtime Library 🕓
 
 * JIT Recompiler 🕓
-    * x86-64 Backend 🕓
-    * ARM64 Backend 📝
-    * RISC-V Backend 📝
+  * x86-64 Backend 🕓
+  * ARM64 Backend 📝
+  * RISC-V Backend 📝
 
 * AOT Compiler 🕓
-    * Native C++ Backend (SLX2CXX) 🕓
-    * WASM Backend (SLX2WASM) 📝
+  * Native C++ Backend (SLX2CXX) 🕓
+  * WASM Backend (SLX2WASM) 📝
 
 ## Building
 

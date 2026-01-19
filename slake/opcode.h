@@ -10,22 +10,11 @@ namespace slake {
 	enum class Opcode : uint8_t {
 		INVALID = 0,  // Invalid
 
-		LOAD,	// Load value of a variable.
-		RLOAD,	// Access and load corresponding member with an existing value.
-		STORE,	// Store a value into a variable.
-
-		MOV,  // Move values between registers
-
-		LARG,	 // Load an argument.
-		LAPARG,	 // Load an argument pack.
-
-		LVAR,	 // Create a new local variable
-		ALLOCA,	 // Allocate spaces from the stack
-
 		LVALUE,	 // Load value of a variable
+		STORE,	 // Store a value into a variable.
 
-		ENTER,	// Enter frame
-		LEAVE,	// Leave frame
+		JMP,  // Jump
+		BR,	  // Branch
 
 		ADD,   // Add
 		SUB,   // Subtract
@@ -53,8 +42,19 @@ namespace slake {
 
 		AT,	 // Subscript
 
-		JMP,  // Jump
-		BR,	  // Branch
+		LOAD,	// Load value of a variable.
+		RLOAD,	// Access and load corresponding member with an existing value.
+
+		MOV,  // Move values between registers
+
+		LARG,	 // Load an argument.
+		LAPARG,	 // Load an argument pack.
+
+		LVAR,	 // Create a new local variable
+		ALLOCA,	 // Allocate spaces from the stack
+
+		ENTER,	// Enter frame
+		LEAVE,	// Leave frame
 
 		PUSHARG,  // Push an value into the argument stack
 		PUSHAP,	  // Push an argument pack.

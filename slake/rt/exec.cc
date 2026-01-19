@@ -485,6 +485,26 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 			writeVar(destValue->getReference(), *data);
 			break;
 		}
+		case Opcode::JMP: {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<false, 1>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::U32>(this, operands[0]));
+
+			curMajorFrame->resumable->lastJumpSrc = curMajorFrame->resumable->curIns;
+			curMajorFrame->resumable->curIns = operands[0].getU32();
+			return {};
+		}
+		case Opcode::BR: {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<false, 3>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::U32>(this, operands[1]));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::U32>(this, operands[2]));
+			const Value *condition;
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[0], condition));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::Bool>(this, *condition));
+
+			curMajorFrame->resumable->lastJumpSrc = curMajorFrame->resumable->curIns;
+			curMajorFrame->resumable->curIns = operands[((uint8_t)!condition->getBool()) + 1].getU32();
+			return {};
+		}
 		case Opcode::ADD: {
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 2>(this, output, nOperands));
 
@@ -1566,26 +1586,6 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, stackSize, curMajorFrame, output, Value(Reference::makeArrayElementRef(arrayObject, indexIn))));
 
 			break;
-		}
-		case Opcode::JMP: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<false, 1>(this, output, nOperands));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::U32>(this, operands[0]));
-
-			curMajorFrame->resumable->lastJumpSrc = curMajorFrame->resumable->curIns;
-			curMajorFrame->resumable->curIns = operands[0].getU32();
-			return {};
-		}
-		case Opcode::BR: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<false, 3>(this, output, nOperands));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::U32>(this, operands[1]));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::U32>(this, operands[2]));
-			const Value *condition;
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[0], condition));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::Bool>(this, *condition));
-
-			curMajorFrame->resumable->lastJumpSrc = curMajorFrame->resumable->curIns;
-			curMajorFrame->resumable->curIns = operands[((uint8_t)!condition->getBool()) + 1].getU32();
-			return {};
 		}
 		case Opcode::LOAD: {
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 1>(this, output, nOperands));

@@ -1058,6 +1058,12 @@ SLKC_API peff::Option<CompilationError> slkc::isConvertible(
 	SLKC_RETURN_IF_COMP_ERROR(unwrapFacadeTypeName(src, src));
 	SLKC_RETURN_IF_COMP_ERROR(unwrapFacadeTypeName(dest, dest));
 
+	if (!dest->isLocal) {
+		if (src->isLocal) {
+			resultOut = false;
+			return {};
+		}
+	}
 	if (dest->isFinal)
 		isSealed = true;
 

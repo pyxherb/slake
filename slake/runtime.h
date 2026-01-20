@@ -355,6 +355,7 @@ namespace slake {
 		/// @param v Object to be instantiated.
 		/// @param genericArgs Generic arguments for instantiation.
 		/// @return Instantiated value.
+		/// @note You must make sure that there's no local values in the instantiation context, or the operation will trigger termination.
 		[[nodiscard]] SLAKE_API InternalExceptionPointer instantiateGenericObject(MemberObject *object, MemberObject *&objectOut, GenericInstantiationContext *instantiationContext);
 
 		SLAKE_API InternalExceptionPointer setGenericCache(MemberObject *object, const peff::DynArray<Value> &genericArgs, MemberObject *instantiatedObject);

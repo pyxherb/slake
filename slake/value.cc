@@ -3,128 +3,114 @@
 using namespace slake;
 
 SLAKE_API bool Value::operator==(const Value &rhs) const {
-	if (valueType != rhs.valueType)
-		return false;
+	return !comparesTo(rhs);
+}
+
+SLAKE_API int Value::comparesTo(const Value& rhs) const noexcept {
+	if (valueFlags < rhs.valueFlags)
+		return -1;
+	if (valueFlags > rhs.valueFlags)
+		return 1;
+	if (valueType < rhs.valueType)
+		return -1;
+	if (valueType > rhs.valueType)
+		return 1;
 
 	switch (valueType) {
-		case ValueType::Invalid:
-			break;
 		case ValueType::I8:
-			return data.asI8 == rhs.data.asI8;
+			if (data.asI8 < rhs.data.asI8)
+				return -1;
+			if (data.asI8 > rhs.data.asI8)
+				return 1;
+			break;
 		case ValueType::I16:
-			return data.asI16 == rhs.data.asI16;
+			if (data.asI16 < rhs.data.asI16)
+				return -1;
+			if (data.asI16 > rhs.data.asI16)
+				return 1;
+			break;
 		case ValueType::I32:
-			return data.asI32 == rhs.data.asI32;
+			if (data.asI32 < rhs.data.asI32)
+				return -1;
+			if (data.asI32 > rhs.data.asI32)
+				return 1;
+			break;
 		case ValueType::I64:
-			return data.asI64 == rhs.data.asI64;
+			if (data.asI64 < rhs.data.asI64)
+				return -1;
+			if (data.asI64 > rhs.data.asI64)
+				return 1;
+			break;
 		case ValueType::ISize:
-			return data.asISize == rhs.data.asISize;
+			if (data.asISize < rhs.data.asISize)
+				return -1;
+			if (data.asISize > rhs.data.asISize)
+				return 1;
+			break;
 		case ValueType::U8:
-			return data.asU8 == rhs.data.asU8;
+			if (data.asU8 < rhs.data.asU8)
+				return -1;
+			if (data.asU8 > rhs.data.asU8)
+				return 1;
+			break;
 		case ValueType::U16:
-			return data.asU16 == rhs.data.asU16;
+			if (data.asU16 < rhs.data.asU16)
+				return -1;
+			if (data.asU16 > rhs.data.asU16)
+				return 1;
+			break;
 		case ValueType::U32:
-			return data.asU32 == rhs.data.asU32;
+			if (data.asU32 < rhs.data.asU32)
+				return -1;
+			if (data.asU32 > rhs.data.asU32)
+				return 1;
+			break;
 		case ValueType::U64:
-			return data.asU64 == rhs.data.asU64;
+			if (data.asU64 < rhs.data.asU64)
+				return -1;
+			if (data.asU64 > rhs.data.asU64)
+				return 1;
+			break;
 		case ValueType::USize:
-			return data.asUSize == rhs.data.asUSize;
+			if (data.asUSize < rhs.data.asUSize)
+				return -1;
+			if (data.asUSize > rhs.data.asUSize)
+				return 1;
+			break;
 		case ValueType::Bool:
-			return data.asBool == rhs.data.asBool;
-		case ValueType::Reference: {
-			return data.asReference == data.asReference;
-		}
+			if (data.asBool < rhs.data.asBool)
+				return -1;
+			if (data.asBool > rhs.data.asBool)
+				return 1;
+			break;
+		case ValueType::Reference:
+			if (data.asReference < rhs.data.asReference)
+				return -1;
+			if (data.asReference > rhs.data.asReference)
+				return 1;
+			break;
 		case ValueType::RegIndex:
-			return data.asU32 == rhs.data.asU32;
+			if (data.asU32 < rhs.data.asU32)
+				return -1;
+			if (data.asU32 > rhs.data.asU32)
+				return 1;
+			break;
 		case ValueType::TypeName:
-			return data.asType == rhs.data.asType;
+			if (int result = data.asType.comparesTo(rhs.data.asType); result)
+				return result;
+			break;
 		case ValueType::Undefined:
-			return true;
+			std::terminate();
 		default:;
 	}
-	return true;
+
+	return 0;
 }
 
 SLAKE_API bool Value::operator<(const Value &rhs) const {
-	if (valueType < rhs.valueType)
-		return true;
-	if (valueType > rhs.valueType)
-		return false;
-
-	switch (valueType) {
-		case ValueType::I8:
-			return data.asI8 < rhs.data.asI8;
-		case ValueType::I16:
-			return data.asI16 < rhs.data.asI16;
-		case ValueType::I32:
-			return data.asI32 < rhs.data.asI32;
-		case ValueType::I64:
-			return data.asI64 < rhs.data.asI64;
-		case ValueType::ISize:
-			return data.asISize < rhs.data.asISize;
-		case ValueType::U8:
-			return data.asU8 < rhs.data.asU8;
-		case ValueType::U16:
-			return data.asU16 < rhs.data.asU16;
-		case ValueType::U32:
-			return data.asU32 < rhs.data.asU32;
-		case ValueType::U64:
-			return data.asU64 < rhs.data.asU64;
-		case ValueType::USize:
-			return data.asUSize < rhs.data.asUSize;
-		case ValueType::Bool:
-			return data.asBool < rhs.data.asBool;
-		case ValueType::Reference:
-			return data.asReference < rhs.data.asReference;
-		case ValueType::RegIndex:
-			return data.asU32 < rhs.data.asU32;
-		case ValueType::TypeName:
-			return data.asType < rhs.data.asType;
-		case ValueType::Undefined:
-			return false;
-		default:;
-	}
-	return false;
+	return comparesTo(rhs) < 0;
 }
 
-SLAKE_API bool Value::operator>(const Value& rhs) const {
-	if (valueType > rhs.valueType)
-		return true;
-	if (valueType < rhs.valueType)
-		return false;
-
-	switch (valueType) {
-		case ValueType::I8:
-			return data.asI8 > rhs.data.asI8;
-		case ValueType::I16:
-			return data.asI16 > rhs.data.asI16;
-		case ValueType::I32:
-			return data.asI32 > rhs.data.asI32;
-		case ValueType::I64:
-			return data.asI64 > rhs.data.asI64;
-		case ValueType::ISize:
-			return data.asISize > rhs.data.asISize;
-		case ValueType::U8:
-			return data.asU8 > rhs.data.asU8;
-		case ValueType::U16:
-			return data.asU16 > rhs.data.asU16;
-		case ValueType::U32:
-			return data.asU32 > rhs.data.asU32;
-		case ValueType::U64:
-			return data.asU64 > rhs.data.asU64;
-		case ValueType::USize:
-			return data.asUSize > rhs.data.asUSize;
-		case ValueType::Bool:
-			return data.asBool > rhs.data.asBool;
-		case ValueType::Reference:
-			return data.asReference > rhs.data.asReference;
-		case ValueType::RegIndex:
-			return data.asU32 > rhs.data.asU32;
-		case ValueType::TypeName:
-			return data.asType > rhs.data.asType;
-		case ValueType::Undefined:
-			return false;
-		default:;
-	}
-	return false;
+SLAKE_API bool Value::operator>(const Value &rhs) const {
+	return comparesTo(rhs) > 0;
 }

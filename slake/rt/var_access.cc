@@ -351,6 +351,9 @@ SLAKE_API void Runtime::readVar(const Reference &entityRef, Value &valueOut) con
 					std::terminate();
 			}
 
+			if (t.isLocal())
+				valueOut.setLocal();
+
 			break;
 		}
 		case ReferenceKind::LocalVarRef: {
@@ -437,6 +440,9 @@ SLAKE_API void Runtime::readVar(const Reference &entityRef, Value &valueOut) con
 					// All fields should be checked during the instantiation.
 					std::terminate();
 			}
+
+			if (t.isLocal())
+				valueOut.setLocal();
 
 			break;
 		}
@@ -525,12 +531,16 @@ SLAKE_API void Runtime::readVar(const Reference &entityRef, Value &valueOut) con
 					std::terminate();
 			}
 
+			if (t.isLocal())
+				valueOut.setLocal();
+
 			break;
 		}
 		case ReferenceKind::InstanceFieldRef: {
 			const char *const rawDataPtr = (char *)locateValueBasePtr(entityRef);
 
-			switch (typeofVar(entityRef).typeId) {
+			TypeRef t = typeofVar(entityRef);
+			switch (t.typeId) {
 				case TypeId::I8:
 					valueOut.data.asI8 = (*((int8_t *)(rawDataPtr)));
 					valueOut.valueType = ValueType::I8;
@@ -609,6 +619,10 @@ SLAKE_API void Runtime::readVar(const Reference &entityRef, Value &valueOut) con
 					// All fields should be checked during the instantiation.
 					std::terminate();
 			}
+
+			if (t.isLocal())
+				valueOut.setLocal();
+
 			break;
 		}
 		case ReferenceKind::ArrayElementRef: {
@@ -666,12 +680,17 @@ SLAKE_API void Runtime::readVar(const Reference &entityRef, Value &valueOut) con
 				default:
 					std::terminate();
 			}
+
+			// Locality is invalid here.
 			break;
 		}
 		case ReferenceKind::ArgRef: {
 			const ArgRecord &argRecord = entityRef.asArg.majorFrame->resumable->argStack.at(entityRef.asArg.argIndex);
 
 			valueOut = argRecord.value;
+
+			if (argRecord.type.isLocal())
+				valueOut.setLocal();
 			break;
 		}
 		case ReferenceKind::CoroutineArgRef: {
@@ -679,10 +698,16 @@ SLAKE_API void Runtime::readVar(const Reference &entityRef, Value &valueOut) con
 				const ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->resumable->argStack.at(entityRef.asArg.argIndex);
 
 				valueOut = argRecord.value;
+
+				if (argRecord.type.isLocal())
+					valueOut.setLocal();
 			} else {
 				const ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->curMajorFrame->resumable->argStack.at(entityRef.asArg.argIndex);
 
 				valueOut = argRecord.value;
+
+				if (argRecord.type.isLocal())
+					valueOut.setLocal();
 			}
 			break;
 		}
@@ -740,6 +765,8 @@ SLAKE_API void Runtime::readVar(const Reference &entityRef, Value &valueOut) con
 					// All fields should be checked during the instantiation.
 					std::terminate();
 			}
+
+			// Locality is invalid here.
 			break;
 		}
 		default:
@@ -753,6 +780,9 @@ SLAKE_API void Runtime::writeVar(const Reference &entityRef, const Value &value)
 			char *const rawDataPtr = (char *)locateValueBasePtr(entityRef);
 
 			const TypeRef t = typeofVar(entityRef);
+
+			if (value.isLocal() && !t.isLocal())
+				std::terminate();
 
 			switch (t.typeId) {
 				case TypeId::I8:
@@ -811,6 +841,9 @@ SLAKE_API void Runtime::writeVar(const Reference &entityRef, const Value &value)
 
 			const TypeRef t = typeofVar(entityRef);
 
+			if (value.isLocal() && !t.isLocal())
+				std::terminate();
+
 			switch (t.typeId) {
 				case TypeId::I8:
 					*((int8_t *)(rawDataPtr)) = value.getI8();
@@ -864,6 +897,9 @@ SLAKE_API void Runtime::writeVar(const Reference &entityRef, const Value &value)
 
 			const TypeRef t = typeofVar(entityRef);
 
+			if (value.isLocal() && !t.isLocal())
+				std::terminate();
+
 			switch (t.typeId) {
 				case TypeId::I8:
 					*((int8_t *)(rawDataPtr)) = value.getI8();
@@ -915,6 +951,9 @@ SLAKE_API void Runtime::writeVar(const Reference &entityRef, const Value &value)
 			char *const rawFieldPtr = (char *)locateValueBasePtr(entityRef);
 			const TypeRef t = typeofVar(entityRef);
 
+			if (value.isLocal() && !t.isLocal())
+				std::terminate();
+
 			switch (t.typeId) {
 				case TypeId::I8:
 					*((int8_t *)rawFieldPtr) = value.getI8();
@@ -962,7 +1001,10 @@ SLAKE_API void Runtime::writeVar(const Reference &entityRef, const Value &value)
 		}
 		case ReferenceKind::ArrayElementRef: {
 			const TypeRef t = typeofVar(entityRef);
-			
+
+			if (value.isLocal() && !t.isLocal())
+				std::terminate();
+
 			switch (t.typeId) {
 				case TypeId::I8:
 					((int8_t *)entityRef.asArrayElement.arrayObject->data)[entityRef.asArrayElement.index] = value.getI8();
@@ -1009,6 +1051,8 @@ SLAKE_API void Runtime::writeVar(const Reference &entityRef, const Value &value)
 		case ReferenceKind::ArgRef: {
 			ArgRecord &argRecord = entityRef.asArg.majorFrame->resumable->argStack.at(entityRef.asArg.argIndex);
 
+			if (value.isLocal() && !argRecord.type.isLocal())
+				std::terminate();
 			argRecord.value = value;
 			break;
 		}
@@ -1016,10 +1060,14 @@ SLAKE_API void Runtime::writeVar(const Reference &entityRef, const Value &value)
 			if (entityRef.asCoroutineArg.coroutine->curContext) {
 				ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->curMajorFrame->resumable->argStack.at(entityRef.asArg.argIndex);
 
+				if (value.isLocal() && !argRecord.type.isLocal())
+					std::terminate();
 				argRecord.value = value;
 			} else {
 				ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->resumable->argStack.at(entityRef.asArg.argIndex);
 
+				if (value.isLocal() && !argRecord.type.isLocal())
+					std::terminate();
 				argRecord.value = value;
 			}
 			break;
@@ -1027,6 +1075,9 @@ SLAKE_API void Runtime::writeVar(const Reference &entityRef, const Value &value)
 		case ReferenceKind::StructFieldRef: {
 			const char *rawDataPtr = (char *)locateValueBasePtr(entityRef);
 			const TypeRef t = typeofVar(entityRef);
+
+			if (value.isLocal() && !t.isLocal())
+				std::terminate();
 
 			switch (t.typeId) {
 				case TypeId::I8:

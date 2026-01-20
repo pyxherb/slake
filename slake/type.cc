@@ -291,6 +291,9 @@ SLAKE_API TypeRef TypeRef::duplicate(bool &succeededOut) const {
 }
 
 SLAKE_API bool slake::isCompatible(const TypeRef &type, const Value &value) {
+	if (value.isLocal() && !type.isLocal())
+		return false;
+
 	switch (type.typeId) {
 		case TypeId::I8:
 		case TypeId::I16:

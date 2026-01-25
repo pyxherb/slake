@@ -35,6 +35,7 @@ namespace slake {
 
 	class CoroutineObject;
 
+	/// @brief The resumable object.
 	class ResumableObject : public Object {
 	public:
 		uint32_t curIns = 0;
@@ -50,6 +51,7 @@ namespace slake {
 		SLAKE_API ~ResumableObject();
 
 		SLAKE_API static ResumableObject *alloc(Runtime *rt);
+		SLAKE_API static ResumableObject *allocEphemeral(Runtime *rt);
 		SLAKE_API virtual void dealloc() noexcept override;
 
 		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;

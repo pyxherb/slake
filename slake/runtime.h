@@ -15,6 +15,27 @@
 #include <peff/advutils/buffer_alloc.h>
 
 namespace slake {
+	class EphemeralPoolAlloc : public peff::Alloc {
+	public:
+		Runtime *runtime;
+
+		peff::RcObjectPtr<peff::Alloc> upstream;
+
+		SLAKE_API EphemeralPoolAlloc(Runtime *runtime, peff::Alloc *upstream);
+
+		SLAKE_API virtual size_t incRef(size_t globalRc) noexcept override;
+		SLAKE_API virtual size_t decRef(size_t globalRc) noexcept override;
+
+		SLAKE_API virtual void *alloc(size_t size, size_t alignment) noexcept override;
+		SLAKE_API virtual void *realloc(void *ptr, size_t size, size_t alignment, size_t newSize, size_t newAlignment) noexcept override;
+		SLAKE_API virtual void release(void *p, size_t size, size_t alignment) noexcept override;
+
+		SLAKE_API virtual bool isReplaceable(const peff::Alloc *rhs) const noexcept override;
+
+		SLAKE_API virtual peff::UUID getTypeId() const noexcept override;
+		SLAKE_API virtual void onRefZero() noexcept;
+	};
+
 	class CountablePoolAlloc : public peff::Alloc {
 	protected:
 		std::atomic_size_t refCount = 0;
@@ -152,6 +173,7 @@ namespace slake {
 
 		struct GenericInstantiationDispatcher;
 
+		mutable EphemeralPoolAlloc ephemeralAlloc;
 		mutable CountablePoolAlloc fixedAlloc;
 		mutable GenerationalPoolAlloc youngAlloc;
 		mutable GenerationalPoolAlloc persistentAlloc;
@@ -368,9 +390,13 @@ namespace slake {
 		/// @return Resolved value which is referred by the reference.
 		SLAKE_API InternalExceptionPointer resolveIdRef(IdRefObject *ref, Reference &objectRefOut, Object *scopeObject = nullptr);
 
-		[[nodiscard]] SLAKE_API bool addObject(Object *object);
+		[[nodiscard]] SLAKE_API bool addObject(Object *object) noexcept;
+		SLAKE_API void removeObject(Object *object) noexcept;
 		SLAKE_FORCEINLINE peff::Alloc *getFixedAlloc() const {
 			return &fixedAlloc;
+		}
+		SLAKE_FORCEINLINE peff::Alloc *getEphemeralAlloc() const {
+			return &ephemeralAlloc;
 		}
 		SLAKE_API peff::Alloc *getCurGenAlloc();
 

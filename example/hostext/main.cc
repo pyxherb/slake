@@ -156,7 +156,7 @@ public:
 		size_t alignment;
 	};
 
-	std::map<void *, AllocRecord> allocRecords;
+	// std::map<void *, AllocRecord> allocRecords;
 
 	~MyAllocator() {
 		assert(allocRecords.empty());
@@ -167,7 +167,7 @@ public:
 		if (!p)
 			std::terminate();
 
-		allocRecords[p] = { size, alignment };
+		// allocRecords[p] = { size, alignment };
 
 		return p;
 	}
@@ -177,25 +177,25 @@ public:
 		if (!ptr)
 			return nullptr;
 
-		AllocRecord &allocRecord = allocRecords.at(p);
+		/* AllocRecord &allocRecord = allocRecords.at(p);
 
 		assert(allocRecord.size == size);
 		assert(allocRecord.alignment == alignment);
 
 		allocRecords.erase(p);
 
-		allocRecords[ptr] = { newSize, newAlignment };
+		allocRecords[ptr] = { newSize, newAlignment };*/
 
 		return ptr;
 	}
 
 	virtual void release(void *p, size_t size, size_t alignment) noexcept override {
-		AllocRecord &allocRecord = allocRecords.at(p);
+		/* AllocRecord &allocRecord = allocRecords.at(p);
 
 		assert(allocRecord.size == size);
 		assert(allocRecord.alignment == alignment);
 
-		allocRecords.erase(p);
+		allocRecords.erase(p);*/
 
 		this->StdAlloc::release(p, size, alignment);
 	}

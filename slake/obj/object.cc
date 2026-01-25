@@ -99,9 +99,10 @@ SLAKE_API Object *Object::duplicate(Duplicator *duplicator) const {
 }
 
 SLAKE_API void Object::replaceAllocator(peff::Alloc *allocator) noexcept {
-	peff::verifyReplaceable(selfAllocator.get(), allocator);
-
-	selfAllocator = allocator;
+	if (selfAllocator != associatedRuntime->getEphemeralAlloc()) {
+		peff::verifyReplaceable(selfAllocator.get(), allocator);
+		selfAllocator = allocator;
+	}
 }
 
 SLAKE_API Reference Object::getMember(const std::string_view &name) const {

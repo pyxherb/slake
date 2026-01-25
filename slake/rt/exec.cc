@@ -308,7 +308,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_createNewMajorFrame(
 		return OutOfMemoryError::alloc();
 	}
 
-	if (!(newMajorFrame->resumable = ResumableObject::alloc(this)))
+	if (!(newMajorFrame->resumable = ResumableObject::allocEphemeral(this)))
 		return OutOfMemoryError::alloc();
 
 	if (!newMajorFrame->resumable->minorFrames.pushBack(MinorFrame(this, context->selfAllocator.get(), 0)))

@@ -29,12 +29,12 @@ namespace slake {
 		Array,			// Array
 		Ref,			// Reference
 
-		Class,		 // Class
-		Interface,	 // Interface
-		Struct,		 // Structure
-		ScopedEnum,	 // Scoped enumeration
-		UnionEnumItem, // Union enumeration item
-		UnionEnum,	 // Union enumeration
+		Class,			// Class
+		Interface,		// Interface
+		Struct,			// Structure
+		ScopedEnum,		// Scoped enumeration
+		UnionEnumItem,	// Union enumeration item
+		UnionEnum,		// Union enumeration
 
 		Instance,  // Object instance
 
@@ -126,6 +126,8 @@ namespace slake {
 		[[nodiscard]] SLAKE_API bool exec();
 	};
 
+	constexpr static size_t HOSTREF_EPHEMERAL = SIZE_MAX;
+
 	class Object {
 	public:
 		peff::RcObjectPtr<peff::Alloc> selfAllocator;
@@ -182,6 +184,11 @@ namespace slake {
 	public:
 		T *_value = nullptr;
 
+		SLAKE_FORCEINLINE void _assertEphemeral(T *ptr) {
+			if (ptr)
+				assert(ptr->hostRefCount != HOSTREF_EPHEMERAL);
+		}
+
 		SLAKE_FORCEINLINE void reset() noexcept {
 			if (_value) {
 				--_value->hostRefCount;
@@ -209,6 +216,7 @@ namespace slake {
 			}
 		}
 		SLAKE_FORCEINLINE HostObjectRef(T *value = nullptr) noexcept : _value(value) {
+			_assertEphemeral(value);
 			if (_value) {
 				++_value->hostRefCount;
 			}
@@ -244,6 +252,7 @@ namespace slake {
 		SLAKE_FORCEINLINE HostObjectRef<T> &operator=(T *other) noexcept {
 			reset();
 
+			_assertEphemeral(other);
 			if ((_value = other)) {
 				++_value->hostRefCount;
 			}

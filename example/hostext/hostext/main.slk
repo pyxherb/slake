@@ -2,7 +2,7 @@ module hostext;
 
 import hostext.extfns;
 
-attribute TestAttribute {
+/*attribute TestAttribute {
 	let test: i32;
 }
 
@@ -28,21 +28,6 @@ class C: ICA + ICB + ICC {
 	fn a() virtual override ICC {
 	}
 }
-
-/*interface IF: IE {
-}
-
-interface IG {
-}
-
-interface IC: IG + IF {
-}
-
-interface ID: IF {
-}
-
-interface IE: IC + ID {
-}*/
 
 struct SA {
 	public let a: i32;
@@ -216,15 +201,15 @@ fn t() {
 fn valueGenericParamTest<T as i32>() {
 }
 
-/*class CallableTest<...T> {
-	fn call(test: ...T) {
-		extfns.print("Called CallableTest, values: ", ...test, "\n");
-		return;
-	}
-}*/
+//class CallableTest<...T> {
+//	fn call(test: ...T) {
+//		extfns.print("Called CallableTest, values: ", ...test, "\n");
+//		return;
+//	}
+//}
 
-/*fn t2() -> simd_t<i32, (4 + 8)> {
-}*/
+//fn t2() -> simd_t<i32, (4 + 8)> {
+//}
 
 class ArgTest<T as i32> {
 }
@@ -304,7 +289,7 @@ public async main() -> i32 {
 		yield test.getX();
 	}
 
-	/*1 <=> 1;*/
+	1 <=> 1;
 
 	extfns.print("Match result:", match const (123) -> i32 {
 		123: 0xffff,
@@ -328,27 +313,31 @@ public async main() -> i32 {
 
 	let interfaceTest: InterfaceTest<ImplTest> = new InterfaceTest<ImplTest>();
 
-	/*let callableTest: CallableTest<(i32, u32, f32)>;
+	//let callableTest: CallableTest<(i32, u32, f32)>;
 
-	callableTest.call(114, 514 as u32, 1919810.0f);*/
+	//callableTest.call(114, 514 as u32, 1919810.0f);
 
-	/*match const (123) -> i32 {
+	match const (123) -> i32 {
 		456: 789,
 		abc: 0xdef
-	};*/
-
-	/*let sum: i64 = 0, i: i64 = 0;
-
-	while(i < 10000000) {
-		sum = sum + i;
-		i = i + 1;
-	}
-
-	extfns.print("Sum: ", sum, "\n");*/
+	};
 
 	hostext.extfns.print(s.a, "\n");
 	hostext.extfns.print(s.b, "\n");
 	hostext.extfns.print(s.c, "\n");
 
 	return 114514;
+}*/
+
+public fn fib(n: u64) -> u64 {
+	if (n < 1)
+		return 0;
+	else if (n < 3)
+		return 1;
+	return fib(n - 1) + fib(n - 2);
+}
+
+public async main() -> i32 {
+	extfns.print("fib(30)=", fib(30));
+	return 0;
 }

@@ -635,7 +635,7 @@ enum class GCTarget : uint8_t {
 	All
 };
 
-SLAKE_API void Runtime::_gcSerial(Object *&objectList, Object *&endObjectOut, size_t &nObjects, ObjectGeneration newGeneration) {
+SLAKE_API void Runtime::_gcSerial(Object *&objectList, Object *&endObjectOut, size_t &nObjects, ObjectGeneration newGeneration, peff::Alloc *newGenerationAllocator) {
 	size_t iterationTimes = 0;
 rescan:
 	++iterationTimes;
@@ -825,10 +825,19 @@ rescanDeletables:
 
 	nObjects -= nDeletedObjects;
 
-	for (Object *i = context.getWalkedList(), *next; i; i = next) {
-		next = i->nextSameGCSet;
-		context.removeFromCurGCSet(i);
-		i->gcStatus = ObjectGCStatus::Unwalked;
+	if (newGenerationAllocator) {
+		for (Object *i = context.getWalkedList(), *next; i; i = next) {
+			next = i->nextSameGCSet;
+			context.removeFromCurGCSet(i);
+			i->replaceAllocator(newGenerationAllocator);
+			i->gcStatus = ObjectGCStatus::Unwalked;
+		}
+	} else {
+		for (Object *i = context.getWalkedList(), *next; i; i = next) {
+			next = i->nextSameGCSet;
+			context.removeFromCurGCSet(i);
+			i->gcStatus = ObjectGCStatus::Unwalked;
+		}
 	}
 }
 

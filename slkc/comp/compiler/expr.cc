@@ -1277,19 +1277,41 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 			peff::DynArray<std::pair<AstNodePtr<TypeNameNode>, uint32_t>> argPassingInfo(compileEnv->allocator.get());
 
 			for (size_t i = 0; i < e->args.size(); ++i) {
-				CompileExprResult argResult(compileEnv->allocator.get());
-
 				uint32_t reg;
+				CompileExprResult argResult(compileEnv->allocator.get());
 
 				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->allocReg(reg));
 
 				if (i < tn->paramTypes.size()) {
-					bool b = false;
-					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, isLValueType(tn->paramTypes.at(i), b));
+					bool isSame;
 
-					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, e->args.at(i), b ? ExprEvalPurpose::LValue : ExprEvalPurpose::RValue, tn->paramTypes.at(i), reg, argResult));
+					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, isSameType(argTypes.at(i), tn->paramTypes.at(i), isSame));
+					if (isSame)
+						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, e->args.at(i), ExprEvalPurpose::RValue, {}, reg, argResult));
+					else {
+						AstNodePtr<CastExprNode> castExpr;
+
+						if (!(castExpr = makeAstNode<CastExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document)))
+							return genOutOfMemoryCompError();
+
+						castExpr->tokenRange = e->args.at(i)->tokenRange;
+						castExpr->source = e->args.at(i);
+						castExpr->targetType = tn->paramTypes.at(i);
+
+						if (i < tn->paramTypes.size()) {
+							bool b = false;
+							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, isLValueType(tn->paramTypes.at(i), b));
+
+							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, castExpr.castTo<ExprNode>(), b ? ExprEvalPurpose::LValue : ExprEvalPurpose::RValue, tn->paramTypes.at(i), reg, argResult));
+						} else {
+							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, castExpr.castTo<ExprNode>(), ExprEvalPurpose::RValue, {}, reg, argResult));
+						}
+					}
 				} else {
-					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, e->args.at(i), ExprEvalPurpose::RValue, {}, reg, argResult));
+					bool b = false;
+					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, isLValueType(argTypes.at(i), b));
+
+					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, e->args.at(i), b ? ExprEvalPurpose::LValue : ExprEvalPurpose::RValue, argTypes.at(i), reg, argResult));
 				}
 
 				AstNodePtr<TypeNameNode> argType = argResult.evaluatedType;

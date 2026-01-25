@@ -170,12 +170,12 @@ namespace slake {
 		using GenericCacheTable =
 			peff::Map<
 				peff::DynArray<Value>,	// Generic arguments.
-				MemberObject *,	 // Cached instantiated value.
+				MemberObject *,			// Cached instantiated value.
 				GenericArgListComparator,
 				true>;
 
 		using GenericCacheDirectory = peff::Map<
-			MemberObject *,  // Original uninstantiated generic value.
+			MemberObject *,	 // Original uninstantiated generic value.
 			GenericCacheTable>;
 
 		/// @brief Cached instances of generic values.
@@ -183,7 +183,9 @@ namespace slake {
 
 		/// @brief Size of memory allocated for values after last GC cycle.
 		size_t _szMemUsedAfterLastGc = 0,
-			   _szComputedGcLimit = 0;
+			   _szComputedGcLimit = 0,
+			   _szPersistentMemUsedAfterLastGc = 0,
+			   _szComputedPersistentGcLimit = 0;
 
 		UncaughtExceptionHandler _uncaughtExceptionHandler = nullptr;
 
@@ -220,7 +222,7 @@ namespace slake {
 		SLAKE_API void _gcWalk(GCWalkContext *context, Object *i);
 		SLAKE_API void _gcWalk(GCWalkContext *context, char *dataStack, size_t stackSize, MajorFrame *majorFrame);
 		SLAKE_API void _gcWalk(GCWalkContext *context, Context &i);
-		SLAKE_API void _gcSerial(Object *&objectList, Object *&endObjectOut, size_t &nObjects, ObjectGeneration newGeneration);
+		SLAKE_API void _gcSerial(Object *&objectList, Object *&endObjectOut, size_t &nObjects, ObjectGeneration newGeneration, peff::Alloc *newGenerationAllocator);
 
 		std::unique_ptr<Thread, peff::DeallocableDeleter<Thread>> parallelGcThread;
 
@@ -446,7 +448,7 @@ namespace slake {
 		[[nodiscard]] SLAKE_API TypeRef typeofVar(const Reference &entityRef) const noexcept;
 		SLAKE_API void readVar(const Reference &entityRef, Value &valueOut) const noexcept;
 		[[nodiscard]] SLAKE_API void writeVar(const Reference &entityRef, const Value &value) const noexcept;
-		SLAKE_FORCEINLINE InternalExceptionPointer writeVarChecked(const Reference& entityRef, const Value& value) const noexcept {
+		SLAKE_FORCEINLINE InternalExceptionPointer writeVarChecked(const Reference &entityRef, const Value &value) const noexcept {
 			if (!isCompatible(typeofVar(entityRef), value))
 				return MismatchedVarTypeError::alloc(getFixedAlloc());
 			writeVar(entityRef, value);

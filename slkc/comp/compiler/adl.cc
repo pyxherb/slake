@@ -35,7 +35,7 @@ static peff::Option<CompilationError> _determineWithCurrentOverloading(
 			SLKC_RETURN_IF_COMP_ERROR(isSameType(currentParam->type, argTypes[j], whether));
 
 			if (!whether) {
-				SLKC_RETURN_IF_COMP_ERROR(isSubtypeOf(argTypes[j], currentParam->type, whether));
+				SLKC_RETURN_IF_COMP_ERROR(isConvertible(argTypes[j], currentParam->type, true, whether));
 				if (!whether) {
 					goto mismatched;
 				}

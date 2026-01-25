@@ -334,7 +334,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_createNewMajorFrame(
 				newMajorFrame->offRegs = context->stackTop;
 				Value *regs = (Value *)context->stackAlloc(sizeof(Value) * ol->nRegisters);
 				for (size_t i = 0; i < ol->nRegisters; ++i)
-					regs[i] = Value(ValueType::Undefined);
+					regs[i].valueType = ValueType::Undefined;
 				break;
 			}
 			default:;

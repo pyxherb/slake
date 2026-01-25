@@ -391,7 +391,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileIfStmt(
 
 	compilationContext->setLabelOffset(falseLabel, compilationContext->getCurInsOff());
 
-	SLKC_RETURN_IF_COMP_ERROR(compileStmt(compileEnv, compilationContext, s->falseBody));
+	if (s->falseBody)
+		SLKC_RETURN_IF_COMP_ERROR(compileStmt(compileEnv, compilationContext, s->falseBody));
 
 	compilationContext->setLabelOffset(endLabel, compilationContext->getCurInsOff());
 
@@ -781,8 +782,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileSwitchStmt(
 }
 
 SLKC_API peff::Option<CompilationError> slkc::compileExprStmt(
-	CompileEnvironment* compileEnv,
-	CompilationContext* compilationContext,
+	CompileEnvironment *compileEnv,
+	CompilationContext *compilationContext,
 	AstNodePtr<ExprStmtNode> s,
 	uint32_t sldIndex) {
 	CompileExprResult result(compileEnv->allocator.get());
@@ -850,8 +851,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileContinueStmt(
 }
 
 SLKC_API peff::Option<CompilationError> slkc::compileReturnStmt(
-	CompileEnvironment* compileEnv,
-	CompilationContext* compilationContext,
+	CompileEnvironment *compileEnv,
+	CompilationContext *compilationContext,
 	AstNodePtr<ReturnStmtNode> s,
 	uint32_t sldIndex) {
 	uint32_t reg;
@@ -880,8 +881,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileReturnStmt(
 }
 
 SLKC_API peff::Option<CompilationError> slkc::compileYieldStmt(
-	CompileEnvironment* compileEnv,
-	CompilationContext* compilationContext,
+	CompileEnvironment *compileEnv,
+	CompilationContext *compilationContext,
 	AstNodePtr<YieldStmtNode> s,
 	uint32_t sldIndex) {
 	uint32_t reg;

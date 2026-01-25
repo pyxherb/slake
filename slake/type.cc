@@ -28,6 +28,8 @@ SLAKE_API TypeId slake::valueTypeToTypeId(ValueType valueType) {
 			return TypeId::F64;
 		case ValueType::Bool:
 			return TypeId::Bool;
+		case ValueType::Reference:
+			return TypeId::Ref;
 		default:;
 	}
 	std::terminate();

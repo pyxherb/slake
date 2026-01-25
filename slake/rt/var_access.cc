@@ -352,7 +352,7 @@ SLAKE_API void Runtime::readVar(const Reference &entityRef, Value &valueOut) con
 			}
 
 			if (t.isLocal())
-				valueOut.setLocal();
+				std::terminate();
 
 			break;
 		}
@@ -621,14 +621,15 @@ SLAKE_API void Runtime::readVar(const Reference &entityRef, Value &valueOut) con
 			}
 
 			if (t.isLocal())
-				valueOut.setLocal();
+				std::terminate();
 
 			break;
 		}
 		case ReferenceKind::ArrayElementRef: {
+			TypeRef t = entityRef.asArrayElement.arrayObject->elementType;
 			assert(entityRef.asArrayElement.index < entityRef.asArrayElement.arrayObject->length);
 
-			switch (entityRef.asArrayElement.arrayObject->elementType.typeId) {
+			switch (t.typeId) {
 				case TypeId::I8:
 					valueOut = (((int8_t *)entityRef.asArrayElement.arrayObject->data)[entityRef.asArrayElement.index]);
 					break;
@@ -681,7 +682,8 @@ SLAKE_API void Runtime::readVar(const Reference &entityRef, Value &valueOut) con
 					std::terminate();
 			}
 
-			// Locality is invalid here.
+			if (t.isLocal())
+				std::terminate();
 			break;
 		}
 		case ReferenceKind::ArgRef: {
@@ -766,7 +768,8 @@ SLAKE_API void Runtime::readVar(const Reference &entityRef, Value &valueOut) con
 					std::terminate();
 			}
 
-			// Locality is invalid here.
+			if (t.isLocal())
+				std::terminate();
 			break;
 		}
 		default:
@@ -781,7 +784,9 @@ SLAKE_API void Runtime::writeVar(const Reference &entityRef, const Value &value)
 
 			const TypeRef t = typeofVar(entityRef);
 
-			if (value.isLocal() && !t.isLocal())
+			if (t.isLocal())
+				std::terminate();
+			if (value.isLocal())
 				std::terminate();
 
 			switch (t.typeId) {
@@ -951,7 +956,9 @@ SLAKE_API void Runtime::writeVar(const Reference &entityRef, const Value &value)
 			char *const rawFieldPtr = (char *)locateValueBasePtr(entityRef);
 			const TypeRef t = typeofVar(entityRef);
 
-			if (value.isLocal() && !t.isLocal())
+			if (t.isLocal())
+				std::terminate();
+			if (value.isLocal())
 				std::terminate();
 
 			switch (t.typeId) {
@@ -1002,7 +1009,9 @@ SLAKE_API void Runtime::writeVar(const Reference &entityRef, const Value &value)
 		case ReferenceKind::ArrayElementRef: {
 			const TypeRef t = typeofVar(entityRef);
 
-			if (value.isLocal() && !t.isLocal())
+			if (t.isLocal())
+				std::terminate();
+			if (value.isLocal())
 				std::terminate();
 
 			switch (t.typeId) {
@@ -1076,7 +1085,9 @@ SLAKE_API void Runtime::writeVar(const Reference &entityRef, const Value &value)
 			const char *rawDataPtr = (char *)locateValueBasePtr(entityRef);
 			const TypeRef t = typeofVar(entityRef);
 
-			if (value.isLocal() && !t.isLocal())
+			if (t.isLocal())
+				std::terminate();
+			if (value.isLocal())
 				std::terminate();
 
 			switch (t.typeId) {

@@ -57,7 +57,6 @@ namespace slake {
 
 	/// @brief A major frame represents a single calling frame.
 	struct MajorFrame final {
-		peff::RcObjectPtr<peff::Alloc> selfAllocator;
 		Runtime *associatedRuntime;
 
 		const FnOverloadingObject *curFn = nullptr;	 // Current function overloading.
@@ -72,14 +71,12 @@ namespace slake {
 
 		Value curExcept = Value();	// Current exception.
 
-		SLAKE_API MajorFrame(Runtime *rt, peff::Alloc *allocator);
+		SLAKE_API MajorFrame(Runtime *rt);
 		SLAKE_API ~MajorFrame();
 
 		SLAKE_API void dealloc() noexcept;
 
 		SLAKE_API static MajorFrame *alloc(Runtime *rt, Context *context);
-
-		SLAKE_API void replaceAllocator(peff::Alloc *allocator) noexcept;
 	};
 
 	using MajorFramePtr = std::unique_ptr<MajorFrame, peff::DeallocableDeleter<MajorFrame>>;

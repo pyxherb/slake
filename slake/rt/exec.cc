@@ -177,8 +177,10 @@ SLAKE_API InternalExceptionPointer Runtime::_fillArgs(
 	if (!newMajorFrame->resumable->argStack.resize(fn->paramTypes.size()))
 		return OutOfMemoryError::alloc();
 	for (size_t i = 0; i < fn->paramTypes.size(); ++i) {
-		newMajorFrame->resumable->argStack.at(i) = { Value(), fn->paramTypes.at(i) };
-		SLAKE_RETURN_IF_EXCEPT(writeVarChecked(Reference::makeArgRef(newMajorFrame, i), args[i]));
+		TypeRef t = fn->paramTypes.at(i);
+		if (!isCompatible(t, args[i]))
+			return MismatchedVarTypeError::alloc(getFixedAlloc());
+		newMajorFrame->resumable->argStack.at(i) = { args[i], fn->paramTypes.at(i) };
 	}
 
 	if (fn->isWithVarArgs()) {
@@ -2360,7 +2362,7 @@ SLAKE_API InternalExceptionPointer Runtime::createCoroutineInstance(
 
 	co->overloading = fn;
 
-	MajorFrame newMajorFrame(this, co->selfAllocator.get());
+	MajorFrame newMajorFrame(this);
 
 	if (!(newMajorFrame.resumable = ResumableObject::alloc(this)))
 		return OutOfMemoryError::alloc();

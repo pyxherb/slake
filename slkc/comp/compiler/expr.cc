@@ -1274,6 +1274,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 
 			auto tn = fnType.template castTo<FnTypeNameNode>();
 
+			peff::DynArray<std::pair<AstNodePtr<TypeNameNode>, uint32_t>> argPassingInfo(compileEnv->allocator.get());
+
 			for (size_t i = 0; i < e->args.size(); ++i) {
 				CompileExprResult argResult(compileEnv->allocator.get());
 
@@ -1292,16 +1294,22 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 
 				AstNodePtr<TypeNameNode> argType = argResult.evaluatedType;
 
-				// SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, simplifyParamListTypeNameTree(argResult.evaluatedType, compileEnv->allocator.get(), argType));
+				if (!argPassingInfo.pushBack({ std::move(argType), reg }))
+					return genOutOfMemoryCompError();
 
-				switch (argType->typeNameKind) {
+				// SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, simplifyParamListTypeNameTree(argResult.evaluatedType, compileEnv->allocator.get(), argType));
+			}
+
+			for (size_t i = 0; i < e->args.size(); ++i) {
+				const auto &passingInfo = argPassingInfo.at(i);
+				switch (passingInfo.first->typeNameKind) {
 					case TypeNameKind::UnpackedArgs:
 						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
 							compilationContext->emitIns(
 								sldIndex,
 								slake::Opcode::PUSHAP,
 								UINT32_MAX,
-								{ slake::Value(slake::ValueType::RegIndex, reg) }));
+								{ slake::Value(slake::ValueType::RegIndex, passingInfo.second) }));
 						break;
 					default:
 						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
@@ -1309,7 +1317,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 								sldIndex,
 								slake::Opcode::PUSHARG,
 								UINT32_MAX,
-								{ slake::Value(slake::ValueType::RegIndex, reg) }));
+								{ slake::Value(slake::ValueType::RegIndex, passingInfo.second) }));
 				}
 			}
 

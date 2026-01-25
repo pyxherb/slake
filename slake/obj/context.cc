@@ -54,19 +54,12 @@ SLAKE_API MinorFrame::MinorFrame(
 	  exceptHandlers(allocator) {
 }
 
-SLAKE_API MajorFrame::MajorFrame(Runtime *rt, peff::Alloc *allocator)
-	: associatedRuntime(rt),
-	  selfAllocator(allocator) {
+SLAKE_API MajorFrame::MajorFrame(Runtime *rt)
+	: associatedRuntime(rt) {
 }
 
 SLAKE_API void MajorFrame::dealloc() noexcept {
-	peff::destroyAndRelease<MajorFrame>(selfAllocator.get(), this, alignof(MajorFrame));
-}
-
-SLAKE_API void MajorFrame::replaceAllocator(peff::Alloc *allocator) noexcept {
-	peff::verifyReplaceable(selfAllocator.get(), allocator);
-
-	selfAllocator = allocator;
+	peff::destroyAndRelease<MajorFrame>(associatedRuntime->getFixedAlloc(), this, alignof(MajorFrame));
 }
 
 SLAKE_API void Context::leaveMajor() {
@@ -100,10 +93,6 @@ SLAKE_API void Context::replaceAllocator(peff::Alloc *allocator) noexcept {
 	selfAllocator = allocator;
 
 	majorFrames.replaceAllocator(allocator);
-
-	for (auto &i : majorFrames) {
-		i->replaceAllocator(allocator);
-	}
 }
 
 SLAKE_API ContextObject::ContextObject(
@@ -147,9 +136,7 @@ SLAKE_API void slake::ContextObject::dealloc() {
 }
 
 SLAKE_API MajorFrame *MajorFrame::alloc(Runtime *rt, Context *context) {
-	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();
-
-	return peff::allocAndConstruct<MajorFrame>(curGenerationAllocator.get(), alignof(MajorFrame), rt, curGenerationAllocator.get());
+	return peff::allocAndConstruct<MajorFrame>(rt->getFixedAlloc(), alignof(MajorFrame), rt);
 }
 
 SLAKE_API InternalExceptionPointer ContextObject::resume(HostRefHolder *hostRefHolder) {

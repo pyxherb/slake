@@ -15,7 +15,7 @@ namespace slake {
 		size_t lenStackData;
 		size_t offStackTop;
 		const FnOverloadingObject *overloading;
-		ResumableObject *resumable = nullptr;
+		peff::Option<ResumableContextData> resumable;
 
 		Value finalResult;
 

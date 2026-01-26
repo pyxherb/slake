@@ -120,8 +120,8 @@ SLAKE_API bool CountablePoolAlloc::isReplaceable(const peff::Alloc *rhs) const n
 SLAKE_API size_t GenerationalPoolAlloc::incRef(size_t globalRc) noexcept {
 	++refCount;
 
-	if (globalRc == 1868)
-		puts("");
+	//if (globalRc == 1868)
+	//	puts("");
 #ifndef _NDEBUG
 	#if SLAKE_DEBUG_ALLOCATOR
 	if (!recordedRefPoints.insert(+globalRc)) {

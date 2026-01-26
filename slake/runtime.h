@@ -241,9 +241,10 @@ namespace slake {
 		SLAKE_API void _gcWalk(GCWalkContext *context, GenericParamList &genericParamList);
 		SLAKE_API void _gcWalk(GCWalkContext *context, const TypeRef &type);
 		SLAKE_API void _gcWalk(GCWalkContext *context, const Value &i);
+		SLAKE_API void _gcWalk(GCWalkContext *context, ResumableContextData &i);
 		SLAKE_API void _gcWalk(GCWalkContext *context, Object *i);
 		SLAKE_API void _gcWalk(GCWalkContext *context, char *dataStack, size_t stackSize, MajorFrame *majorFrame);
-		SLAKE_API void _gcWalk(GCWalkContext *context, Context &i);
+		SLAKE_API void _gcWalk(GCWalkContext *context, Context &value);
 		SLAKE_API void _gcSerial(Object *&objectList, Object *&endObjectOut, size_t &nObjects, ObjectGeneration newGeneration, peff::Alloc *newGenerationAllocator);
 
 		std::unique_ptr<Thread, peff::DeallocableDeleter<Thread>> parallelGcThread;

@@ -35,17 +35,24 @@ namespace slake {
 
 	class CoroutineObject;
 
-	/// @brief The resumable object.
-	class ResumableObject : public Object {
-	public:
+	struct ResumableContextData {
 		uint32_t curIns = 0;
 		uint32_t lastJumpSrc = UINT32_MAX;
 		peff::DynArray<ArgRecord> argStack;
-		peff::DynArray<size_t> lvarRecordOffsets;
 		peff::DynArray<Value> nextArgStack;
+		peff::DynArray<MinorFrame> minorFrames;
 		size_t nRegs = 0;
 		Object *thisObject = nullptr;
-		peff::DynArray<MinorFrame> minorFrames;
+
+		SLAKE_API ResumableContextData(peff::Alloc *allocator);
+
+		SLAKE_API void replaceAllocator(peff::Alloc *allocator) noexcept;
+	};
+
+	/// @brief The resumable object.
+	class ResumableObject : public Object {
+	public:
+		ResumableContextData contextData;
 
 		SLAKE_API ResumableObject(Runtime *rt, peff::Alloc *allocator);
 		SLAKE_API ~ResumableObject();
@@ -64,7 +71,7 @@ namespace slake {
 		const FnOverloadingObject *curFn = nullptr;	 // Current function overloading.
 		CoroutineObject *curCoroutine = nullptr;
 
-		ResumableObject *resumable = nullptr;
+		peff::Option<ResumableContextData> resumableContextData;
 
 		uint32_t returnValueOutReg = UINT32_MAX;
 
@@ -74,11 +81,14 @@ namespace slake {
 		Value curExcept = Value();	// Current exception.
 
 		SLAKE_API MajorFrame(Runtime *rt);
+		SLAKE_API MajorFrame(MajorFrame &&other);
 		SLAKE_API ~MajorFrame();
 
 		SLAKE_API void dealloc() noexcept;
 
 		SLAKE_API static MajorFrame *alloc(Runtime *rt, Context *context);
+
+		SLAKE_API void replaceAllocator(peff::Alloc *allocator) noexcept;
 	};
 
 	using MajorFramePtr = std::unique_ptr<MajorFrame, peff::DeallocableDeleter<MajorFrame>>;
@@ -93,7 +103,7 @@ namespace slake {
 	struct Context {
 		Runtime *runtime;
 		peff::RcObjectPtr<peff::Alloc> selfAllocator;
-		peff::List<MajorFramePtr> majorFrames;	// Major frame list
+		peff::List<MajorFrame> majorFrames;	// Major frame list
 		ContextFlags flags = 0;					// Flags
 		char *dataStack = nullptr;				// Data stack
 		char *dataStackTopPtr = nullptr;		// Data stack top pointer

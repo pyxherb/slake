@@ -51,4 +51,7 @@ SLAKE_API void slake::CoroutineObject::releaseStackData() {
 
 SLAKE_API void CoroutineObject::replaceAllocator(peff::Alloc *allocator) noexcept {
 	this->Object::replaceAllocator(allocator);
+
+	if(resumable.hasValue())
+		resumable->replaceAllocator(allocator);
 }

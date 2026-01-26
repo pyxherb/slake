@@ -218,7 +218,7 @@ SLAKE_API TypeRef Runtime::typeofVar(const Reference &entityRef) const noexcept 
 			return entityRef.asArrayElement.arrayObject->elementType;
 		}
 		case ReferenceKind::ArgRef: {
-			const ArgRecord &argRecord = entityRef.asArg.majorFrame->resumable->argStack.at(entityRef.asArg.argIndex);
+			const ArgRecord &argRecord = entityRef.asArg.majorFrame->resumableContextData->argStack.at(entityRef.asArg.argIndex);
 
 			return argRecord.type;
 		}
@@ -228,7 +228,7 @@ SLAKE_API TypeRef Runtime::typeofVar(const Reference &entityRef) const noexcept 
 
 				return argRecord.type;
 			} else {
-				const ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->curMajorFrame->resumable->argStack.at(entityRef.asArg.argIndex);
+				const ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->curMajorFrame->resumableContextData->argStack.at(entityRef.asArg.argIndex);
 
 				return argRecord.type;
 			}
@@ -687,7 +687,7 @@ SLAKE_API void Runtime::readVar(const Reference &entityRef, Value &valueOut) con
 			break;
 		}
 		case ReferenceKind::ArgRef: {
-			const ArgRecord &argRecord = entityRef.asArg.majorFrame->resumable->argStack.at(entityRef.asArg.argIndex);
+			const ArgRecord &argRecord = entityRef.asArg.majorFrame->resumableContextData->argStack.at(entityRef.asArg.argIndex);
 
 			valueOut = argRecord.value;
 
@@ -704,7 +704,7 @@ SLAKE_API void Runtime::readVar(const Reference &entityRef, Value &valueOut) con
 				if (argRecord.type.isLocal())
 					valueOut.setLocal();
 			} else {
-				const ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->curMajorFrame->resumable->argStack.at(entityRef.asArg.argIndex);
+				const ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->curMajorFrame->resumableContextData->argStack.at(entityRef.asArg.argIndex);
 
 				valueOut = argRecord.value;
 
@@ -1058,7 +1058,7 @@ SLAKE_API void Runtime::writeVar(const Reference &entityRef, const Value &value)
 			break;
 		}
 		case ReferenceKind::ArgRef: {
-			ArgRecord &argRecord = entityRef.asArg.majorFrame->resumable->argStack.at(entityRef.asArg.argIndex);
+			ArgRecord &argRecord = const_cast<MajorFrame *>(entityRef.asArg.majorFrame)->resumableContextData->argStack.at(entityRef.asArg.argIndex);
 
 			if (value.isLocal() && !argRecord.type.isLocal())
 				std::terminate();
@@ -1067,7 +1067,7 @@ SLAKE_API void Runtime::writeVar(const Reference &entityRef, const Value &value)
 		}
 		case ReferenceKind::CoroutineArgRef: {
 			if (entityRef.asCoroutineArg.coroutine->curContext) {
-				ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->curMajorFrame->resumable->argStack.at(entityRef.asArg.argIndex);
+				ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->curMajorFrame->resumableContextData->argStack.at(entityRef.asArg.argIndex);
 
 				if (value.isLocal() && !argRecord.type.isLocal())
 					std::terminate();

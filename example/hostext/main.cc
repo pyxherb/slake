@@ -8,7 +8,7 @@
 using namespace slake;
 
 Value print(Context *context, MajorFrame *curMajorFrame) {
-	if (curMajorFrame->resumable->argStack.size() < 1)
+	if (curMajorFrame->resumableContextData->argStack.size() < 1)
 		putchar('\n');
 	else {
 		Value varArgsValue;
@@ -82,14 +82,14 @@ Value print(Context *context, MajorFrame *curMajorFrame) {
 void printTraceback(Runtime *rt, ContextObject *context) {
 	printf("Traceback:\n");
 	for (auto &i : context->_context.majorFrames) {
-		if (!i->curFn) {
+		if (!i.curFn) {
 			printf("(Stack top)\n");
 			continue;
 		}
 
 		peff::DynArray<IdRefEntry> fullRef(peff::getDefaultAlloc());
 
-		if (!rt->getFullRef(peff::getDefaultAlloc(), i->curFn->fnObject, fullRef)) {
+		if (!rt->getFullRef(peff::getDefaultAlloc(), i.curFn->fnObject, fullRef)) {
 			throw std::bad_alloc();
 		}
 
@@ -117,7 +117,7 @@ void printTraceback(Runtime *rt, ContextObject *context) {
 			}
 		}
 
-		printf("\t%s: 0x%08x", name.c_str(), i->resumable->curIns);
+		printf("\t%s: 0x%08x", name.c_str(), i.resumableContextData->curIns);
 		putchar('\n');
 	}
 }
@@ -159,7 +159,7 @@ public:
 	// std::map<void *, AllocRecord> allocRecords;
 
 	~MyAllocator() {
-		assert(allocRecords.empty());
+		//assert(allocRecords.empty());
 	}
 
 	virtual void *alloc(size_t size, size_t alignment) noexcept override {

@@ -344,15 +344,15 @@ InternalExceptionPointer slake::opti::analyzeProgramInfoPass(
 		hostRefHolder
 	};
 
-	if (!(pseudoMajorFrame->resumable = ResumableObject::alloc(runtime)))
+	if (!(pseudoMajorFrame->resumableContextData = ResumableContextData(fnObject->selfAllocator.get())))
 		return OutOfMemoryError::alloc();
 
-	if (!pseudoMajorFrame->resumable->argStack.resizeUninitialized(fnObject->paramTypes.size()))
+	if (!pseudoMajorFrame->resumableContextData->argStack.resizeUninitialized(fnObject->paramTypes.size()))
 		return OutOfMemoryError::alloc();
-	for (size_t i = 0; i < pseudoMajorFrame->resumable->argStack.size(); ++i)
-		peff::constructAt<ArgRecord>(&pseudoMajorFrame->resumable->argStack.at(i));
+	for (size_t i = 0; i < pseudoMajorFrame->resumableContextData->argStack.size(); ++i)
+		peff::constructAt<ArgRecord>(&pseudoMajorFrame->resumableContextData->argStack.at(i));
 	for (size_t i = 0; i < fnObject->paramTypes.size(); ++i) {
-		pseudoMajorFrame->resumable->argStack.at(i) = { Value(), fnObject->paramTypes.at(i) };
+		pseudoMajorFrame->resumableContextData->argStack.at(i) = { Value(), fnObject->paramTypes.at(i) };
 	}
 
 	if (fnObject->overloadingFlags & OL_VARG) {
@@ -360,7 +360,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfoPass(
 
 		SLAKE_RETURN_IF_EXCEPT(wrapIntoArrayType(analyzeContext.runtime, TypeId::Any, analyzeContext.hostRefHolder, varArgTypeRef));
 
-		if (!pseudoMajorFrame->resumable->argStack.pushBack({ Value(), varArgTypeRef }))
+		if (!pseudoMajorFrame->resumableContextData->argStack.pushBack({ Value(), varArgTypeRef }))
 			return OutOfMemoryError::alloc();
 	}
 

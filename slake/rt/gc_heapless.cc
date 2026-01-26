@@ -107,16 +107,24 @@ SLAKE_API void GCWalkContext::removeFromDestructibleList(Object *v) {
 	MutexGuard accessMutexGuard(accessMutex);
 }
 
-SLAKE_API void Runtime::_gcWalk(GCWalkContext* context, ResumableContextData& value) {
+SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, char *stackTop, size_t szStack, ResumableContextData &value) {
 	context->pushObject(value.thisObject);
 	for (auto &k : value.argStack) {
 		_gcWalk(context, k);
 	}
 	for (auto &k : value.nextArgStack)
 		_gcWalk(context, k);
-	for (auto &k : value.minorFrames) {
-		for (auto &l : k.exceptHandlers)
-			_gcWalk(context, l.type);
+	char *const stackBase = stackTop + szStack;
+	for (auto k = value.offCurMinorFrame; k != SIZE_MAX; ) {
+		MinorFrameMetadata *mjf = (MinorFrameMetadata*)(stackBase - k);
+		for (auto l = mjf->offExceptHandler; l != SIZE_MAX;) {
+			ExceptHandler *eh = (ExceptHandler *)(stackBase - l);
+
+			_gcWalk(context, eh->type);
+
+			l = eh->offNext;
+		}
+		k = mjf->offLastMinorFrame;
 	}
 }
 
@@ -454,7 +462,7 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 					context->pushObject((FnOverloadingObject *)value->overloading);
 
 					if (value->resumable.hasValue()) {
-						_gcWalk(context, value->resumable.value());
+						_gcWalk(context, value->stackData, value->lenStackData, value->resumable.value());
 
 						if (value->stackData) {
 							for (size_t i = 0; i < value->resumable->nRegs; ++i)
@@ -488,7 +496,7 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, char *dataStack, size_t 
 		context->pushObject(majorFrame->curCoroutine);
 
 	if (majorFrame->resumableContextData.hasValue()) {
-		_gcWalk(context, majorFrame->resumableContextData.value());
+		_gcWalk(context, dataStack, stackSize, majorFrame->resumableContextData.value());
 
 		size_t nRegs = majorFrame->resumableContextData->nRegs;
 		for (size_t i = 0; i < nRegs; ++i)
@@ -500,6 +508,7 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Context &ctxt) {
 	bool isWalkableObjectDetected = false;
 
 	for (auto &i : ctxt.majorFrames) {
+		context->pushObject(i.curCoroutine);
 		_gcWalk(context, ctxt.dataStack, ctxt.stackSize, &i);
 	}
 }
@@ -924,5 +933,6 @@ SLAKE_API void Runtime::_releaseParallelGcResources() {
 	while (parallelGcThreadRunnable->threadState == ParallelGcThreadState::NotifyTermination)
 		yieldCurrentThread();
 
+	parallelGcThreadRunnable.reset();
 	parallelGcThread.reset();
 }

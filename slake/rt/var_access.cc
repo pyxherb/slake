@@ -268,6 +268,7 @@ SLAKE_API TypeRef Runtime::typeofVar(const Reference &entityRef) const noexcept 
 }
 
 SLAKE_API void Runtime::readVar(const Reference &entityRef, Value &valueOut) const noexcept {
+	valueOut.valueFlags = 0;
 	switch (entityRef.kind) {
 		case ReferenceKind::StaticFieldRef: {
 			const char *const rawDataPtr = (char *)locateValueBasePtr(entityRef);

@@ -635,6 +635,8 @@ SLKC_API peff::Option<CompilationError> slkc::dumpModuleMembers(
 				SLKC_RETURN_IF_COMP_ERROR(dumpTypeName(allocator, writer, k));
 			}
 
+			SLKC_RETURN_IF_COMP_ERROR(dumpTypeName(allocator, writer, ol->returnType));
+
 			for (auto &k : ol->instructions) {
 				SLKC_RETURN_IF_COMP_ERROR(writer->writeU8((uint8_t)k.opcode));
 				SLKC_RETURN_IF_COMP_ERROR(writer->writeU32((uint32_t)k.output));

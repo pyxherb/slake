@@ -6,60 +6,16 @@ SLAKE_API void ResumableContextData::replaceAllocator(peff::Alloc *allocator) no
 	argStack.replaceAllocator(allocator);
 
 	nextArgStack.replaceAllocator(allocator);
-
-	minorFrames.replaceAllocator(allocator);
-
-	for (auto &i : minorFrames) {
-		i.replaceAllocator(allocator);
-	}
 }
 
-SLAKE_API ResumableContextData::ResumableContextData(peff::Alloc *allocator) noexcept : argStack(allocator), nextArgStack(allocator), minorFrames(allocator) {
-}
-
-SLAKE_API ResumableContextData::ResumableContextData(ResumableContextData &&rhs) noexcept
-	: curIns(rhs.curIns),
-	  lastJumpSrc(rhs.lastJumpSrc),
-	  argStack(std::move(rhs.argStack)),
-	  nextArgStack(std::move(rhs.nextArgStack)),
-	  minorFrames(std::move(rhs.minorFrames)),
-	  nRegs(rhs.nRegs),
-	  thisObject(rhs.thisObject) {
+SLAKE_API ResumableContextData::ResumableContextData(peff::Alloc *allocator) noexcept : argStack(allocator), nextArgStack(allocator) {
 }
 
 SLAKE_API ResumableContextData::~ResumableContextData() {
 }
 
-SLAKE_API MinorFrame::MinorFrame(
-	Runtime *rt,
-	peff::Alloc *allocator,
-	size_t stackBase) noexcept
-	: stackBase(stackBase),
-	  exceptHandlers(allocator) {
-}
-
-SLAKE_API MinorFrame::MinorFrame(MinorFrame &&other) noexcept : stackBase(std::move(other.stackBase)), exceptHandlers(std::move(other.exceptHandlers)) {
-}
-
-SLAKE_API MinorFrame::~MinorFrame() {}
-
-SLAKE_API void MinorFrame::replaceAllocator(peff::Alloc *allocator) noexcept {
-	exceptHandlers.replaceAllocator(allocator);
-}
-
 SLAKE_API MajorFrame::MajorFrame(Runtime *rt) noexcept
 	: associatedRuntime(rt) {
-}
-
-SLAKE_API MajorFrame::MajorFrame(MajorFrame &&other) noexcept
-	: associatedRuntime(other.associatedRuntime),
-	  curFn(other.curFn),
-	  curCoroutine(other.curCoroutine),
-	  resumableContextData(std::move(other.resumableContextData)),
-	  returnValueOutReg(other.returnValueOutReg),
-	  stackBase(other.stackBase),
-	  offRegs(other.offRegs),
-	  curExcept(std::move(other.curExcept)) {
 }
 
 SLAKE_API void MajorFrame::dealloc() noexcept {

@@ -186,6 +186,38 @@ SLAKE_API InternalExceptionPointer Runtime::_fillArgs(
 	return {};
 }
 
+SLAKE_FORCEINLINE MinorFrameMetadata *_fetchMinorFrameMetadata(
+	Context *context,
+	MajorFrame *majorFrame,
+	size_t stackOffset) {
+	size_t offset;
+	if (majorFrame->curCoroutine) {
+		offset = stackOffset - majorFrame->curCoroutine->offStackTop;
+	} else {
+		offset = stackOffset;
+	}
+
+	return (MinorFrameMetadata *)calcStackAddr(context->dataStack,
+		context->stackSize,
+		offset);
+}
+
+SLAKE_FORCEINLINE ExceptHandler *_fetchExceptHandler(
+	Context *context,
+	MajorFrame *majorFrame,
+	size_t stackOffset) {
+	size_t offset;
+	if (majorFrame->curCoroutine) {
+		offset = stackOffset - majorFrame->curCoroutine->offStackTop;
+	} else {
+		offset = stackOffset;
+	}
+
+	return (ExceptHandler *)calcStackAddr(context->dataStack,
+		context->stackSize,
+		offset);
+}
+
 SLAKE_API InternalExceptionPointer Runtime::_createNewCoroutineMajorFrame(
 	Context *context,
 	CoroutineObject *coroutine,
@@ -208,22 +240,44 @@ SLAKE_API InternalExceptionPointer Runtime::_createNewCoroutineMajorFrame(
 	newMajorFrame.curFn = coroutine->overloading;
 	newMajorFrame.curCoroutine = coroutine;
 
+	newMajorFrame.offRegs = context->stackTop + coroutine->offRegs;
+
 	if (coroutine->stackData) {
 		size_t align = alignof(std::max_align_t);
 		if (size_t diff = align - (uintptr_t)(calcStackAddr(context->dataStack, context->stackSize, context->stackTop)) % align; (diff != align) && diff) {
 			if (!context->stackAlloc(align - diff))
 				return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
 		}
-		newMajorFrame.offRegs = context->stackTop;
-		size_t stackOffset = context->stackTop;
+		coroutine->offStackTop = context->stackTop;
 		char *initialData = context->stackAlloc(coroutine->lenStackData);
 		if (!initialData) {
 			return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
 		}
-		coroutine->offStackTop = stackOffset;
 		memcpy(initialData, coroutine->stackData, coroutine->lenStackData);
 		coroutine->releaseStackData();
 	} else {
+		// Create minor frame.
+		if (size_t diff = alignof(MinorFrameMetadata) - (uintptr_t)(calcStackAddr(context->dataStack, context->stackSize, context->stackTop)) % alignof(MinorFrameMetadata); (diff != alignof(MinorFrameMetadata)) && diff) {
+			if (!context->stackAlloc(alignof(MinorFrameMetadata) - diff))
+				return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
+		}
+
+		if (!context->stackAlloc(sizeof(MinorFrameMetadata)))
+			return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
+
+		size_t mfStackOff = context->stackTop;
+
+		MinorFrameMetadata *mf = _fetchMinorFrameMetadata(context, &newMajorFrame, context->stackTop);
+
+		if (newMajorFrame.curCoroutine) {
+			mfStackOff -= newMajorFrame.curCoroutine->offStackTop;
+		}
+
+		mf->offExceptHandler = SIZE_MAX;
+		mf->offLastMinorFrame = newMajorFrame.resumableContextData->offCurMinorFrame;
+		mf->stackBase = newMajorFrame.curCoroutine ? prevStackTop - newMajorFrame.curCoroutine->offStackTop : prevStackTop;
+		newMajorFrame.resumableContextData->offCurMinorFrame = mfStackOff;
+
 		switch (coroutine->overloading->overloadingKind) {
 			case FnOverloadingKind::Regular: {
 				RegularFnOverloadingObject *ol = (RegularFnOverloadingObject *)coroutine->overloading;
@@ -238,7 +292,6 @@ SLAKE_API InternalExceptionPointer Runtime::_createNewCoroutineMajorFrame(
 			}
 			default:;
 		}
-		coroutine->offStackTop = prevStackTop;
 	}
 
 	newMajorFrame.returnValueOutReg = returnValueOut;
@@ -271,8 +324,27 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_createNewMajorFrame(
 
 	newMajorFrame.resumableContextData = ResumableContextData(context->selfAllocator.get());
 
-	if (!newMajorFrame.resumableContextData->minorFrames.pushBack(MinorFrame(this, context->selfAllocator.get(), 0)))
-		return OutOfMemoryError::alloc();
+	// Create minor frame.
+	if (size_t diff = alignof(MinorFrameMetadata) - (uintptr_t)(calcStackAddr(context->dataStack, context->stackSize, context->stackTop)) % alignof(MinorFrameMetadata); (diff != alignof(MinorFrameMetadata)) && diff) {
+		if (!context->stackAlloc(alignof(MinorFrameMetadata) - diff))
+			return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
+	}
+
+	if (!context->stackAlloc(sizeof(MinorFrameMetadata)))
+		return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
+
+	size_t mfStackOff = context->stackTop;
+
+	MinorFrameMetadata *mf = _fetchMinorFrameMetadata(context, &newMajorFrame, context->stackTop);
+
+	if (newMajorFrame.curCoroutine) {
+		mfStackOff -= newMajorFrame.curCoroutine->offStackTop;
+	}
+
+	mf->offExceptHandler = SIZE_MAX;
+	mf->offLastMinorFrame = newMajorFrame.resumableContextData->offCurMinorFrame;
+	mf->stackBase = newMajorFrame.curCoroutine ? prevStackTop - newMajorFrame.curCoroutine->offStackTop : prevStackTop;
+	newMajorFrame.resumableContextData->offCurMinorFrame = mfStackOff;
 
 	if (!fn) {
 		// Used in the creation of top major frame.
@@ -297,7 +369,8 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_createNewMajorFrame(
 					regs[i].valueType = ValueType::Undefined;
 				break;
 			}
-			default:;
+			default:
+				break;
 		}
 	}
 
@@ -1682,26 +1755,43 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 			return InvalidOpcodeError::alloc(getFixedAlloc(), opcode);
 		case Opcode::ENTER: {
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<false, 0>(this, output, nOperands));
-			MinorFrame frame(
-				this,
-				context->selfAllocator.get(),
-				context->_context.stackTop - curMajorFrame->stackBase);
+			size_t prevStackTop = context->getContext().stackTop;
 
-			if (!curMajorFrame->resumableContextData->minorFrames.pushBack(std::move(frame)))
-				return OutOfMemoryError::alloc();
+			if (size_t diff = alignof(MinorFrameMetadata) - (uintptr_t)(calcStackAddr(dataStack, stackSize, context->_context.stackTop)) % alignof(MinorFrameMetadata); (diff != alignof(MinorFrameMetadata)) && diff) {
+				if (!context->_context.stackAlloc(alignof(MinorFrameMetadata) - diff))
+					return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
+			}
+
+			if (!context->_context.stackAlloc(sizeof(MinorFrameMetadata)))
+				return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
+
+			size_t mfStackOff = context->_context.stackTop;
+
+			if (curMajorFrame->curCoroutine) {
+				mfStackOff -= curMajorFrame->curCoroutine->offStackTop;
+			}
+
+			MinorFrameMetadata *mf = _fetchMinorFrameMetadata(&context->getContext(), curMajorFrame, context->getContext().stackTop);
+
+			mf->offExceptHandler = SIZE_MAX;
+			mf->offLastMinorFrame = curMajorFrame->resumableContextData->offCurMinorFrame;
+			mf->stackBase = curMajorFrame->curCoroutine ? prevStackTop - curMajorFrame->curCoroutine->offStackTop : prevStackTop;
+			curMajorFrame->resumableContextData->offCurMinorFrame = mfStackOff;
 			break;
 		}
 		case Opcode::LEAVE: {
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<false, 1>(this, output, nOperands));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::U32>(this, operands[0]));
 			uint32_t level = operands[0].getU32();
-			if (curMajorFrame->resumableContextData->minorFrames.size() < level + 1) {
-				return allocOutOfMemoryErrorIfAllocFailed(FrameBoundaryExceededError::alloc(getFixedAlloc()));
-			}
 			for (uint32_t i = 0; i < level; ++i) {
-				size_t stackTop = curMajorFrame->resumableContextData->minorFrames.back().stackBase;
-				curMajorFrame->resumableContextData->minorFrames.popBack();
-				context->_context.stackTop = curMajorFrame->stackBase + stackTop;
+				MinorFrameMetadata *mf = _fetchMinorFrameMetadata(&context->_context, curMajorFrame, curMajorFrame->resumableContextData->offCurMinorFrame);
+
+				if (mf->offLastMinorFrame == SIZE_MAX)
+					return allocOutOfMemoryErrorIfAllocFailed(FrameBoundaryExceededError::alloc(getFixedAlloc()));
+
+				size_t stackTop = mf->offLastMinorFrame;
+				context->_context.stackTop = mf->stackBase;
+				curMajorFrame->resumableContextData->offCurMinorFrame = stackTop;
 			}
 			break;
 		}
@@ -1802,11 +1892,17 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 				co->setDone();
 			}
 
+			TypeRef returnType = curMajorFrame->curFn->returnType;
+
 			if (returnValue.valueType == ValueType::Invalid) {
+				if (returnType.typeId != TypeId::Void)
+					std::terminate();
 				if (returnValueOutReg != UINT32_MAX)
 					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
 				context->_context.leaveMajor();
 			} else {
+				if (!isCompatible(returnType, returnValue))
+					std::terminate();
 				context->_context.leaveMajor();
 				if (returnValueOutReg != UINT32_MAX) {
 					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, stackSize, &context->_context.majorFrames.back(), returnValueOutReg, returnValue));
@@ -1911,6 +2007,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 			curMajorFrame->curCoroutine->unbindContext();
 			++curMajorFrame->resumableContextData->curIns;
 
+			curMajorFrame->curCoroutine->offRegs = curMajorFrame->offRegs - curMajorFrame->curCoroutine->offStackTop;
 			curMajorFrame->curCoroutine->resumable = std::move(curMajorFrame->resumableContextData);
 
 			if (returnValue == ValueType::Invalid) {
@@ -2014,59 +2111,38 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 
 			break;
 		}
-		case Opcode::THROW: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<false, 1>(this, output, nOperands));
-
-			Value x;
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, operands[0], x));
-
-			size_t nUnwindedFrames = 0;
-			for (auto it = context->_context.majorFrames.beginReversed(); it != context->_context.majorFrames.endReversed(); ++it) {
-				MajorFrame *majorFrame = &*it;
-
-				size_t k = 0;
-				auto end = majorFrame->resumableContextData->minorFrames.endReversed();
-				for (auto j = majorFrame->resumableContextData->minorFrames.beginReversed(); j != end; ++j, ++k) {
-					auto &minorFrame = *j;
-
-					uint32_t off;
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _findAndDispatchExceptHandler(majorFrame->curExcept, minorFrame, off));
-					if (off != UINT32_MAX) {
-						for (size_t l = 0; l < k; ++k)
-							majorFrame->resumableContextData->minorFrames.popBack();
-						// Do not increase the current instruction offset,
-						// the offset has been set to offset to first instruction
-						// of the exception handler.
-						majorFrame->resumableContextData->curIns = off;
-						for (size_t l = 0; l < nUnwindedFrames; ++l) {
-							context->_context.leaveMajor();
-						}
-						return {};
-					}
-				}
-				++nUnwindedFrames;
-			}
-
-			curMajorFrame->curExcept = x;
-			return allocOutOfMemoryErrorIfAllocFailed(UncaughtExceptionError::alloc(getFixedAlloc(), x));
-		}
+		// case Opcode::THROW: {
+		//  TODO: Implement it.
+		//  return allocOutOfMemoryErrorIfAllocFailed(UncaughtExceptionError::alloc(getFixedAlloc(), x));
+		//}
 		case Opcode::PUSHEH: {
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<false, 2>(this, output, nOperands));
 
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::TypeName>(this, operands[0]));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::U32>(this, operands[1]));
 
-			ExceptionHandler xh;
+			MinorFrameMetadata *mf = _fetchMinorFrameMetadata(&context->getContext(), curMajorFrame, curMajorFrame->resumableContextData->offCurMinorFrame);
 
-			TypeRef type = operands[0].getTypeName();
+			if (size_t diff = alignof(ExceptHandler) - (uintptr_t)(calcStackAddr(dataStack, stackSize, context->_context.stackTop)) % alignof(ExceptHandler); (diff != alignof(ExceptHandler)) && diff) {
+				if (!context->_context.stackAlloc(alignof(ExceptHandler) - diff))
+					return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
+			}
 
-			xh.type = operands[0].getTypeName();
-			xh.off = operands[1].getU32();
+			if (!context->_context.stackAlloc(sizeof(ExceptHandler)))
+				return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
 
-			auto &minorFrame = curMajorFrame->resumableContextData->minorFrames.back();
+			size_t ehStackOff = context->_context.stackTop;
 
-			if (!minorFrame.exceptHandlers.pushBack(std::move(xh)))
-				return OutOfMemoryError::alloc();
+			if (curMajorFrame->curCoroutine) {
+				ehStackOff -= curMajorFrame->curCoroutine->offStackTop;
+			}
+
+			ExceptHandler *eh = _fetchExceptHandler(&context->getContext(), curMajorFrame, context->getContext().stackTop);
+
+			eh->type = operands[0].getTypeName();
+			eh->offNext = mf->offExceptHandler;
+
+			mf->offExceptHandler = ehStackOff;
 			break;
 		}
 		case Opcode::CAST: {
@@ -2340,9 +2416,6 @@ SLAKE_API InternalExceptionPointer Runtime::createCoroutineInstance(
 
 	SLAKE_RETURN_IF_EXCEPT(_fillArgs(&newMajorFrame, fn, args, nArgs, holder));
 	newMajorFrame.resumableContextData->thisObject = thisObject;
-
-	if (!newMajorFrame.resumableContextData->minorFrames.pushBack(MinorFrame(this, co->selfAllocator.get(), 0)))
-		return OutOfMemoryError::alloc();
 
 	coroutineOut = co;
 	return {};

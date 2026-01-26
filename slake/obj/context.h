@@ -13,36 +13,31 @@ namespace slake {
 		uint32_t off;
 	};
 
-	/// @brief Minor frames are created by ENTER instructions and destroyed by
-	/// LEAVE instructions.
-	struct MinorFrame final {
-		peff::List<ExceptionHandler> exceptHandlers;  // Exception handlers
+	class CoroutineObject;
 
-		size_t stackBase = 0;
-
-		SLAKE_API MinorFrame(
-			Runtime *rt,
-			peff::Alloc *allocator,
-			size_t stackBase) noexcept;
-		SLAKE_API MinorFrame(MinorFrame &&other) noexcept;
-		SLAKE_API ~MinorFrame();
-
-		SLAKE_API void replaceAllocator(peff::Alloc *allocator) noexcept;
+	struct ExceptHandler {
+		size_t offNext;
+		TypeRef type;
+		uint32_t offHandler;
 	};
 
-	class CoroutineObject;
+	struct MinorFrameMetadata {
+		size_t offLastMinorFrame;
+		size_t offExceptHandler;
+		size_t stackBase;
+	};
 
 	struct ResumableContextData {
 		uint32_t curIns = 0;
 		uint32_t lastJumpSrc = UINT32_MAX;
 		peff::DynArray<Value> argStack;
 		peff::DynArray<Value> nextArgStack;
-		peff::List<MinorFrame> minorFrames;
+		size_t offCurMinorFrame = SIZE_MAX;
 		size_t nRegs = 0;
 		Object *thisObject = nullptr;
 
 		SLAKE_API ResumableContextData(peff::Alloc *allocator) noexcept;
-		SLAKE_API ResumableContextData(ResumableContextData &&rhs) noexcept;
+		ResumableContextData(ResumableContextData &&) noexcept = default;
 		SLAKE_API ~ResumableContextData();
 
 		SLAKE_API void replaceAllocator(peff::Alloc *allocator) noexcept;
@@ -65,7 +60,7 @@ namespace slake {
 		Value curExcept = Value();	// Current exception.
 
 		SLAKE_API MajorFrame(Runtime *rt) noexcept;
-		SLAKE_API MajorFrame(MajorFrame &&other) noexcept;
+		MajorFrame(MajorFrame &&) noexcept = default;
 		SLAKE_API ~MajorFrame();
 
 		SLAKE_API void dealloc() noexcept;

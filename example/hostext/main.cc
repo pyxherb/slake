@@ -114,7 +114,7 @@ void printTraceback(Runtime *rt, ContextObject *context) {
 			}
 		}
 
-		printf("\t%s: 0x%08x", name.c_str(), i.resumableContextData->curIns);
+		printf("\t%s: %u", name.c_str(), i.resumableContextData->curIns);
 		putchar('\n');
 	}
 }
@@ -250,140 +250,142 @@ int main(int argc, char **argv) {
 				&myAllocator,
 				RT_DEBUG | RT_GCDBG));
 
-		HostObjectRef<ModuleObject> mod;
 		{
-			FILE *fp;
+			HostObjectRef<ModuleObject> mod;
+			{
+				FILE *fp;
 
-			if (!(fp = fopen("hostext/main.slx", "rb"))) {
-				puts("Error opening the main module");
-				return -1;
-			}
-
-			peff::ScopeGuard closeFpGuard([fp]() noexcept {
-				fclose(fp);
-			});
-
-			LoaderContext loaderContext(peff::getDefaultAlloc());
-			MyReader reader(&peff::g_nullAlloc, fp);
-
-			if (auto e = loader::loadModule(loaderContext, rt.get(), &reader, mod); e) {
-				printf("Error loading main module: %s\n", e->what());
-				e.reset();
-				return -1;
-			}
-		}
-
-		{
-			HostRefHolder hostRefHolder(rt->getFixedAlloc());
-
-			HostObjectRef<ModuleObject> modObjectHostext = mod;
-			HostObjectRef<ModuleObject> modObjectExtfns = ModuleObject::alloc(rt.get());
-
-			/*
-			if (!modObjectHostext->setName("hostext")) {
-				std::terminate();
-			}*/
-			if (!modObjectExtfns->setName("extfns")) {
-				std::terminate();
-			}
-
-			if (!modObjectHostext->addMember(modObjectExtfns.get())) {
-				std::terminate();
-			}
-			if (!rt->getRootObject()->addMember(modObjectHostext.get())) {
-				std::terminate();
-			}
-
-			HostObjectRef<FnObject> fnObject = FnObject::alloc(rt.get());
-
-			auto printFn = NativeFnOverloadingObject::alloc(
-				fnObject.get(),
-				print);
-			printFn->setAccess(ACCESS_PUBLIC);
-			printFn->returnType = TypeId::Void;
-			printFn->setVarArgs();
-			printFn->overridenType = TypeId::Void;
-			if (!fnObject->overloadings.insert({ printFn->paramTypes, printFn->isWithVarArgs(), printFn->genericParams.size(), printFn->overridenType }, printFn.get()))
-				throw std::bad_alloc();
-			fnObject->setName("print");
-
-			((ModuleObject *)((ModuleObject *)rt->getRootObject()->getMember("hostext").asObject)
-					->getMember("extfns")
-					.asObject)
-				->removeMember("print");
-			if (!((ModuleObject *)((ModuleObject *)rt->getRootObject()->getMember("hostext").asObject)
-						->getMember("extfns")
-						.asObject)
-					->addMember(fnObject.get()))
-				throw std::bad_alloc();
-
-			auto fn = (FnObject *)mod->getMember("main").asObject;
-			FnOverloadingObject *overloading;
-
-			peff::DynArray<TypeRef> params(&myAllocator);
-
-			overloading = fn->overloadings.at(FnSignature(params, false, 0, TypeId::Void));
-
-			/* opti::ProgramAnalyzedInfo analyzedInfo(rt.get(), &myAllocator);
-			if (auto e = opti::analyzeProgramInfoPass(rt.get(), &myAllocator, (RegularFnOverloadingObject *)overloading, analyzedInfo, hostRefHolder);
-				e) {
-				printf("Internal exception: %s\n", e->what());
-				switch (e->kind) {
-					case ErrorKind::OptimizerError: {
-						OptimizerError *err = (OptimizerError *)e.get();
-
-						switch (err->optimizerErrorCode) {
-							case OptimizerErrorCode::MalformedProgram: {
-								MalformedProgramError *err = (MalformedProgramError *)e.get();
-
-								printf("Malformed program error at instruction #%zu\n", err->offIns);
-							}
-							default:;
-						}
-					}
-					default:;
+				if (!(fp = fopen("hostext/main.slx", "rb"))) {
+					puts("Error opening the main module");
+					return -1;
 				}
-				e.reset();
-				goto end;
+
+				peff::ScopeGuard closeFpGuard([fp]() noexcept {
+					fclose(fp);
+				});
+
+				LoaderContext loaderContext(peff::getDefaultAlloc());
+				MyReader reader(&peff::g_nullAlloc, fp);
+
+				if (auto e = loader::loadModule(loaderContext, rt.get(), &reader, mod); e) {
+					printf("Error loading main module: %s\n", e->what());
+					e.reset();
+					return -1;
+				}
 			}
-			for (auto it = analyzedInfo.analyzedRegInfo.begin(); it != analyzedInfo.analyzedRegInfo.end(); ++it) {
-				printf("Register #%u\n", it.key());
-				printf("Lifetime: %u-%u\n", it.value().lifetime.offBeginIns, it.value().lifetime.offEndIns);
-			}*/
 
 			{
-				HostObjectRef<CoroutineObject> co;
-				if (auto e = rt->createCoroutineInstance(overloading, nullptr, nullptr, 0, co); e) {
+				HostRefHolder hostRefHolder(rt->getFixedAlloc());
+
+				HostObjectRef<ModuleObject> modObjectHostext = mod;
+				HostObjectRef<ModuleObject> modObjectExtfns = ModuleObject::alloc(rt.get());
+
+				/*
+				if (!modObjectHostext->setName("hostext")) {
+					std::terminate();
+				}*/
+				if (!modObjectExtfns->setName("extfns")) {
+					std::terminate();
+				}
+
+				if (!modObjectHostext->addMember(modObjectExtfns.get())) {
+					std::terminate();
+				}
+				if (!rt->getRootObject()->addMember(modObjectHostext.get())) {
+					std::terminate();
+				}
+
+				HostObjectRef<FnObject> fnObject = FnObject::alloc(rt.get());
+
+				auto printFn = NativeFnOverloadingObject::alloc(
+					fnObject.get(),
+					print);
+				printFn->setAccess(ACCESS_PUBLIC);
+				printFn->returnType = TypeId::Void;
+				printFn->setVarArgs();
+				printFn->overridenType = TypeId::Void;
+				if (!fnObject->overloadings.insert({ printFn->paramTypes, printFn->isWithVarArgs(), printFn->genericParams.size(), printFn->overridenType }, printFn.get()))
+					throw std::bad_alloc();
+				fnObject->setName("print");
+
+				((ModuleObject *)((ModuleObject *)rt->getRootObject()->getMember("hostext").asObject)
+						->getMember("extfns")
+						.asObject)
+					->removeMember("print");
+				if (!((ModuleObject *)((ModuleObject *)rt->getRootObject()->getMember("hostext").asObject)
+							->getMember("extfns")
+							.asObject)
+						->addMember(fnObject.get()))
+					throw std::bad_alloc();
+
+				auto fn = (FnObject *)mod->getMember("main").asObject;
+				FnOverloadingObject *overloading;
+
+				peff::DynArray<TypeRef> params(&myAllocator);
+
+				overloading = fn->overloadings.at(FnSignature(params, false, 0, TypeId::Void));
+
+				/* opti::ProgramAnalyzedInfo analyzedInfo(rt.get(), &myAllocator);
+				if (auto e = opti::analyzeProgramInfoPass(rt.get(), &myAllocator, (RegularFnOverloadingObject *)overloading, analyzedInfo, hostRefHolder);
+					e) {
 					printf("Internal exception: %s\n", e->what());
+					switch (e->kind) {
+						case ErrorKind::OptimizerError: {
+							OptimizerError *err = (OptimizerError *)e.get();
+
+							switch (err->optimizerErrorCode) {
+								case OptimizerErrorCode::MalformedProgram: {
+									MalformedProgramError *err = (MalformedProgramError *)e.get();
+
+									printf("Malformed program error at instruction #%zu\n", err->offIns);
+								}
+								default:;
+							}
+						}
+						default:;
+					}
 					e.reset();
 					goto end;
 				}
+				for (auto it = analyzedInfo.analyzedRegInfo.begin(); it != analyzedInfo.analyzedRegInfo.end(); ++it) {
+					printf("Register #%u\n", it.key());
+					printf("Lifetime: %u-%u\n", it.value().lifetime.offBeginIns, it.value().lifetime.offEndIns);
+				}*/
 
-				HostObjectRef<ContextObject> context;
-
-				if (!(context = ContextObject::alloc(rt.get(), 114514))) {
-					puts("Out of memory");
-					goto end;
-				}
-
-				Value result;
-				while (!co->isDone()) {
-					if (auto e = rt->resumeCoroutine(context.get(), co.get(), result);
-						e) {
+				{
+					HostObjectRef<CoroutineObject> co;
+					if (auto e = rt->createCoroutineInstance(overloading, nullptr, nullptr, 0, co); e) {
 						printf("Internal exception: %s\n", e->what());
-						printTraceback(rt.get(), context.get());
 						e.reset();
 						goto end;
 					}
+
+					HostObjectRef<ContextObject> context;
+
+					if (!(context = ContextObject::alloc(rt.get(), 114514))) {
+						puts("Out of memory");
+						goto end;
+					}
+
+					Value result;
+					while (!co->isDone()) {
+						if (auto e = rt->resumeCoroutine(context.get(), co.get(), result);
+							e) {
+							printf("Internal exception: %s\n", e->what());
+							printTraceback(rt.get(), context.get());
+							e.reset();
+							goto end;
+						}
+					}
 				}
+				rt->gc();
+
+				puts("");
 			}
-			rt->gc();
+		end:
 
-			puts("");
+			mod.reset();
 		}
-	end:
-
-		mod.reset();
 
 		rt.reset();
 	}

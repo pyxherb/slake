@@ -15,27 +15,6 @@
 #include <peff/advutils/buffer_alloc.h>
 
 namespace slake {
-	class EphemeralPoolAlloc : public peff::Alloc {
-	public:
-		Runtime *runtime;
-
-		peff::RcObjectPtr<peff::Alloc> upstream;
-
-		SLAKE_API EphemeralPoolAlloc(Runtime *runtime, peff::Alloc *upstream);
-
-		SLAKE_API virtual size_t incRef(size_t globalRc) noexcept override;
-		SLAKE_API virtual size_t decRef(size_t globalRc) noexcept override;
-
-		SLAKE_API virtual void *alloc(size_t size, size_t alignment) noexcept override;
-		SLAKE_API virtual void *realloc(void *ptr, size_t size, size_t alignment, size_t newSize, size_t newAlignment) noexcept override;
-		SLAKE_API virtual void release(void *p, size_t size, size_t alignment) noexcept override;
-
-		SLAKE_API virtual bool isReplaceable(const peff::Alloc *rhs) const noexcept override;
-
-		SLAKE_API virtual peff::UUID getTypeId() const noexcept override;
-		SLAKE_API virtual void onRefZero() noexcept;
-	};
-
 	class CountablePoolAlloc : public peff::Alloc {
 	protected:
 		std::atomic_size_t refCount = 0;
@@ -173,7 +152,6 @@ namespace slake {
 
 		struct GenericInstantiationDispatcher;
 
-		mutable EphemeralPoolAlloc ephemeralAlloc;
 		mutable CountablePoolAlloc fixedAlloc;
 		mutable GenerationalPoolAlloc youngAlloc;
 		mutable GenerationalPoolAlloc persistentAlloc;
@@ -241,7 +219,7 @@ namespace slake {
 		SLAKE_API void _gcWalk(GCWalkContext *context, GenericParamList &genericParamList);
 		SLAKE_API void _gcWalk(GCWalkContext *context, const TypeRef &type);
 		SLAKE_API void _gcWalk(GCWalkContext *context, const Value &i);
-		SLAKE_API void _gcWalk(GCWalkContext *context, ResumableContextData &i);
+		SLAKE_API void _gcWalk(GCWalkContext *context, char *stackTop, size_t szStack, ResumableContextData &i);
 		SLAKE_API void _gcWalk(GCWalkContext *context, Object *i);
 		SLAKE_API void _gcWalk(GCWalkContext *context, char *dataStack, size_t stackSize, MajorFrame *majorFrame);
 		SLAKE_API void _gcWalk(GCWalkContext *context, Context &value);
@@ -288,8 +266,6 @@ namespace slake {
 		[[nodiscard]] SLAKE_API InternalExceptionPointer _instantiateGenericObject(GenericInstantiationDispatcher &dispatcher, Value &value, GenericInstantiationContext *instantiationContext);
 		[[nodiscard]] SLAKE_API InternalExceptionPointer _instantiateGenericObject(GenericInstantiationDispatcher &dispatcher, Object *v, GenericInstantiationContext *instantiationContext);
 		[[nodiscard]] SLAKE_API InternalExceptionPointer _instantiateGenericObject(GenericInstantiationDispatcher &dispatcher, FnOverloadingObject *ol, GenericInstantiationContext *instantiationContext);
-
-		SLAKE_API InternalExceptionPointer _findAndDispatchExceptHandler(const Value &curExcept, const MinorFrame &minorFrame, uint32_t &offsetOut) const;
 
 		friend class Object;
 		friend class RegularFnOverloadingObject;
@@ -395,9 +371,6 @@ namespace slake {
 		SLAKE_API void removeObject(Object *object) noexcept;
 		SLAKE_FORCEINLINE peff::Alloc *getFixedAlloc() const {
 			return &fixedAlloc;
-		}
-		SLAKE_FORCEINLINE peff::Alloc *getEphemeralAlloc() const {
-			return &ephemeralAlloc;
 		}
 		SLAKE_API peff::Alloc *getCurGenAlloc();
 

@@ -2,51 +2,6 @@
 
 using namespace slake;
 
-SLAKE_API EphemeralPoolAlloc::EphemeralPoolAlloc(Runtime *runtime, peff::Alloc *upstream) : runtime(runtime), upstream(upstream) {}
-
-SLAKE_API peff::UUID EphemeralPoolAlloc::getTypeId() const noexcept {
-	return PEFF_UUID(12345678, abcd, ef09, cafe, 114514191981);
-}
-
-SLAKE_API size_t EphemeralPoolAlloc::incRef(size_t globalRc) noexcept {
-	SLAKE_REFERENCED_PARAM(globalRc);
-
-	return 0;
-}
-
-SLAKE_API size_t EphemeralPoolAlloc::decRef(size_t globalRc) noexcept {
-	SLAKE_REFERENCED_PARAM(globalRc);
-
-	return 0;
-}
-
-SLAKE_API void EphemeralPoolAlloc::onRefZero() noexcept {
-}
-
-SLAKE_API void *EphemeralPoolAlloc::alloc(size_t size, size_t alignment) noexcept {
-	void *p = upstream->alloc(size, alignment);
-	if (!p)
-		return nullptr;
-
-	return p;
-}
-
-SLAKE_API void *EphemeralPoolAlloc::realloc(void *ptr, size_t size, size_t alignment, size_t newSize, size_t newAlignment) noexcept {
-	void *p = upstream->realloc(ptr, size, alignment, newSize, newAlignment);
-	if (!p)
-		return nullptr;
-
-	return p;
-}
-
-SLAKE_API void EphemeralPoolAlloc::release(void *p, size_t size, size_t alignment) noexcept {
-	upstream->release(p, size, alignment);
-}
-
-SLAKE_API bool EphemeralPoolAlloc::isReplaceable(const peff::Alloc *rhs) const noexcept {
-	return false;
-}
-
 SLAKE_API CountablePoolAlloc::CountablePoolAlloc(Runtime *runtime, peff::Alloc *upstream) : runtime(runtime), upstream(upstream) {}
 
 SLAKE_API peff::UUID CountablePoolAlloc::getTypeId() const noexcept {
@@ -371,7 +326,6 @@ SLAKE_API InternalExceptionPointer Runtime::loadDeferredCustomTypeDef(CustomType
 
 SLAKE_API Runtime::Runtime(peff::Alloc *selfAllocator, peff::Alloc *upstream, RuntimeFlags flags)
 	: selfAllocator(selfAllocator),
-	  ephemeralAlloc(this, upstream),
 	  fixedAlloc(this, upstream),
 	  runtimeFlags(flags | _RT_INITING),
 	  _genericCacheLookupTable(&fixedAlloc),
@@ -394,12 +348,15 @@ SLAKE_API Runtime::~Runtime() {
 
 	_rootObject = nullptr;
 
+	_szComputedGcLimit = 0;
+	_szComputedPersistentGcLimit = 0;
 	gc();
 
 	_releaseParallelGcResources();
 
 	// No need to delete the root object explicitly.
 
+	assert(!fixedAlloc.szAllocated);
 	assert(!youngObjectList);
 	assert(!persistentObjectList);
 	// Self allocator should be moved out in the dealloc() method, or the runtime has been destructed prematurely.

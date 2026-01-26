@@ -885,6 +885,8 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(LoaderContext &cont
 				// stub
 				fnOverloadingObject->overridenType = TypeId::Void;
 
+				SLAKE_RETURN_IF_EXCEPT(loadType(context, runtime, reader, fnOverloadingObject.get(), fnOverloadingObject->returnType));
+
 				for (size_t k = 0; k < fnd.lenBody; ++k) {
 					Opcode opcode;
 

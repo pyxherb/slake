@@ -1,8 +1,8 @@
 #include "../compiler.h"
 
-#undef max
-
 using namespace slkc;
+
+#undef max
 
 SLKC_API peff::Option<CompilationError> slkc::compileTypeName(
 	CompileEnvironment *compileEnv,

@@ -44,7 +44,8 @@ SLAKE_API void Runtime::gc() {
 	if (persistentObjectList) {
 		persistentObjectList->prevSameGenObject = youngObjectsEnd;
 	}
-	persistentObjectList = youngObjectList;
+	if (youngObjectList)
+		persistentObjectList = youngObjectList;
 	nPersistentObjects += nYoungObjects;
 
 	youngObjectList = nullptr;

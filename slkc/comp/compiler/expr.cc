@@ -44,7 +44,7 @@ static peff::Option<CompilationError> _compileLiteralExpr(
 			  compileEnv->allocator.get(),
 			  compileEnv->allocator.get(),
 			  compileEnv->document)
-				.template castTo<TypeNameNode>())) {
+				.castTo<TypeNameNode>())) {
 		return genOutOfMemoryCompError();
 	}
 	return {};
@@ -83,7 +83,7 @@ SLKC_API peff::Option<CompilationError> slkc::_compileOrCastOperand(
 		castExpr->targetType = desiredType;
 		castExpr->source = operand;
 
-		SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, castExpr.template castTo<ExprNode>(), evalPurpose, desiredType, regOut, result));
+		SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, castExpr.castTo<ExprNode>(), evalPurpose, desiredType, regOut, result));
 		return {};
 	}
 
@@ -106,7 +106,7 @@ static peff::Option<CompilationError> _loadTheRestOfIdRef(CompileEnvironment *co
 	}
 
 	if (parts.back().member->getAstNodeType() == AstNodeType::FnOverloading) {
-		AstNodePtr<FnOverloadingNode> fn = parts.back().member.template castTo<FnOverloadingNode>();
+		AstNodePtr<FnOverloadingNode> fn = parts.back().member.castTo<FnOverloadingNode>();
 
 		if (parts.size() > 1) {
 			if (fn->fnFlags & FN_VIRTUAL) {
@@ -202,15 +202,44 @@ static peff::Option<CompilationError> _loadTheRestOfIdRef(CompileEnvironment *co
 					}
 				}
 
-				IdRefPtr fullIdRef;
-
 				resultOut.idxThisRegOut = idxReg;
-				SLKC_RETURN_IF_COMP_ERROR(getFullIdRef(compileEnv->allocator.get(), fn.template castTo<MemberNode>(), fullIdRef));
-
-				idxReg;
-
 				SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(idxReg));
 
+				if (fn == compileEnv->curOverloading) {
+					SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::LCURFN, idxReg, {}));
+				} else {
+					IdRefPtr fullIdRef;
+
+					SLKC_RETURN_IF_COMP_ERROR(getFullIdRef(compileEnv->allocator.get(), fn.castTo<MemberNode>(), fullIdRef));
+
+					SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, compilationContext, fullIdRef->entries.data(), fullIdRef->entries.size(), nullptr, 0, false, {}, idRefObject));
+
+					if (extraFnArgs) {
+						idRefObject->paramTypes = peff::DynArray<slake::TypeRef>(compileEnv->runtime->getCurGenAlloc());
+
+						if (!idRefObject->paramTypes->resize(extraFnArgs->paramTypes.size()))
+							return genOutOfRuntimeMemoryCompError();
+
+						for (size_t i = 0; i < idRefObject->paramTypes->size(); ++i) {
+							SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, compilationContext, extraFnArgs->paramTypes.at(i), idRefObject->paramTypes->at(i)));
+						}
+
+						if (extraFnArgs->hasVarArgs)
+							idRefObject->hasVarArgs = true;
+					}
+
+					SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::LOAD, idxReg, { slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));
+				}
+			}
+		} else {
+			if (fn == compileEnv->curOverloading) {
+				SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::LCURFN, idxReg, {}));
+			} else {
+				// Is calling a static method.
+				IdRefPtr fullIdRef;
+				SLKC_RETURN_IF_COMP_ERROR(getFullIdRef(compileEnv->allocator.get(), fn.castTo<MemberNode>(), fullIdRef));
+
+				slake::HostObjectRef<slake::IdRefObject> idRefObject;
 				SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, compilationContext, fullIdRef->entries.data(), fullIdRef->entries.size(), nullptr, 0, false, {}, idRefObject));
 
 				if (extraFnArgs) {
@@ -229,29 +258,6 @@ static peff::Option<CompilationError> _loadTheRestOfIdRef(CompileEnvironment *co
 
 				SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::LOAD, idxReg, { slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));
 			}
-		} else {
-			// Is calling a static method.
-			IdRefPtr fullIdRef;
-			SLKC_RETURN_IF_COMP_ERROR(getFullIdRef(compileEnv->allocator.get(), fn.template castTo<MemberNode>(), fullIdRef));
-
-			slake::HostObjectRef<slake::IdRefObject> idRefObject;
-			SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, compilationContext, fullIdRef->entries.data(), fullIdRef->entries.size(), nullptr, 0, false, {}, idRefObject));
-
-			if (extraFnArgs) {
-				idRefObject->paramTypes = peff::DynArray<slake::TypeRef>(compileEnv->runtime->getCurGenAlloc());
-
-				if (!idRefObject->paramTypes->resize(extraFnArgs->paramTypes.size()))
-					return genOutOfRuntimeMemoryCompError();
-
-				for (size_t i = 0; i < idRefObject->paramTypes->size(); ++i) {
-					SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, compilationContext, extraFnArgs->paramTypes.at(i), idRefObject->paramTypes->at(i)));
-				}
-
-				if (extraFnArgs->hasVarArgs)
-					idRefObject->hasVarArgs = true;
-			}
-
-			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::LOAD, idxReg, { slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));
 		}
 	} else {
 		slake::HostObjectRef<slake::IdRefObject> idRefObject;
@@ -282,12 +288,12 @@ static peff::Option<CompilationError> _loadTheRestOfIdRef(CompileEnvironment *co
 	return {};
 };
 peff::Option<CompilationError> selectSingleMatchingOverloading(CompileEnvironment *compileEnv, const TokenRange &tokenRange, AstNodePtr<MemberNode> &finalMember, AstNodePtr<TypeNameNode> desiredType, bool isStatic, CompileExprResult &resultOut) {
-	AstNodePtr<FnNode> m = finalMember.template castTo<FnNode>();
+	AstNodePtr<FnNode> m = finalMember.castTo<FnNode>();
 
 	resultOut.callTargetFnSlot = m;
 
 	if (m->overloadings.size() == 1) {
-		finalMember = m->overloadings.back().template castTo<MemberNode>();
+		finalMember = m->overloadings.back().castTo<MemberNode>();
 		if (!resultOut.callTargetMatchedOverloadings.pushBack(AstNodePtr<FnOverloadingNode>(m->overloadings.back()))) {
 			return genOutOfMemoryCompError();
 		}
@@ -299,7 +305,7 @@ peff::Option<CompilationError> selectSingleMatchingOverloading(CompileEnvironmen
 				CompilationErrorKind::MemberIsNotAccessible);
 	} else {
 		if (desiredType && (desiredType->typeNameKind == TypeNameKind::Fn)) {
-			AstNodePtr<FnTypeNameNode> tn = desiredType.template castTo<FnTypeNameNode>();
+			AstNodePtr<FnTypeNameNode> tn = desiredType.castTo<FnTypeNameNode>();
 			peff::DynArray<AstNodePtr<FnOverloadingNode>> matchedOverloadings(compileEnv->allocator.get());
 
 			// TODO: Check tn->isForAdl and do strictly equality check.
@@ -314,7 +320,7 @@ peff::Option<CompilationError> selectSingleMatchingOverloading(CompileEnvironmen
 					return CompilationError(tokenRange, CompilationErrorKind::UnableToDetermineOverloading);
 			}
 
-			finalMember = matchedOverloadings.back().template castTo<MemberNode>();
+			finalMember = matchedOverloadings.back().castTo<MemberNode>();
 
 			bool accessible;
 			SLKC_RETURN_IF_COMP_ERROR(isMemberAccessible(compileEnv, {}, finalMember.castTo<MemberNode>(), accessible));
@@ -335,7 +341,7 @@ peff::Option<CompilationError> selectSingleMatchingOverloading(CompileEnvironmen
 static peff::Option<CompilationError> _determineNodeType(CompileEnvironment *compileEnv, AstNodePtr<MemberNode> node, AstNodePtr<TypeNameNode> &typeNameOut) {
 	switch (node->getAstNodeType()) {
 		case AstNodeType::This: {
-			auto m = node.template castTo<ThisNode>()->thisType;
+			auto m = node.castTo<ThisNode>()->thisType;
 
 			IdRefPtr fullIdRef;
 
@@ -346,15 +352,15 @@ static peff::Option<CompilationError> _determineNodeType(CompileEnvironment *com
 			if (!tn) {
 				return genOutOfMemoryCompError();
 			}
-			tn->contextNode = compileEnv->document->rootModule.template castTo<MemberNode>();
+			tn->contextNode = compileEnv->document->rootModule.castTo<MemberNode>();
 
 			tn->idRefPtr = std::move(fullIdRef);
 
-			typeNameOut = tn.template castTo<TypeNameNode>();
+			typeNameOut = tn.castTo<TypeNameNode>();
 			break;
 		}
 		case AstNodeType::Var: {
-			auto originalType = node.template castTo<VarNode>()->type;
+			auto originalType = node.castTo<VarNode>()->type;
 
 			AstNodePtr<TypeNameNode> unpackedTypeNameNode;
 
@@ -366,8 +372,8 @@ static peff::Option<CompilationError> _determineNodeType(CompileEnvironment *com
 				if (!(t = makeAstNode<RefTypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, AstNodePtr<TypeNameNode>()))) {
 					return genOutOfMemoryCompError();
 				}
-				t->referencedType = node.template castTo<VarNode>()->type;
-				typeNameOut = t.template castTo<TypeNameNode>();
+				t->referencedType = node.castTo<VarNode>()->type;
+				typeNameOut = t.castTo<TypeNameNode>();
 			} else {
 				typeNameOut = originalType;
 			}
@@ -375,8 +381,8 @@ static peff::Option<CompilationError> _determineNodeType(CompileEnvironment *com
 		}
 		case AstNodeType::FnOverloading: {
 			AstNodePtr<FnTypeNameNode> tn;
-			SLKC_RETURN_IF_COMP_ERROR(fnToTypeName(compileEnv, node.template castTo<FnOverloadingNode>(), tn));
-			typeNameOut = tn.template castTo<TypeNameNode>();
+			SLKC_RETURN_IF_COMP_ERROR(fnToTypeName(compileEnv, node.castTo<FnOverloadingNode>(), tn));
+			typeNameOut = tn.castTo<TypeNameNode>();
 			break;
 		}
 		case AstNodeType::Fn:
@@ -414,13 +420,13 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 
 	switch (expr->exprKind) {
 		case ExprKind::Unary:
-			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileUnaryExpr(compileEnv, compilationContext, expr.template castTo<UnaryExprNode>(), evalPurpose, resultRegOut, resultOut));
+			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileUnaryExpr(compileEnv, compilationContext, expr.castTo<UnaryExprNode>(), evalPurpose, resultRegOut, resultOut));
 			break;
 		case ExprKind::Binary:
-			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileBinaryExpr(compileEnv, compilationContext, expr.template castTo<BinaryExprNode>(), evalPurpose, resultRegOut, resultOut));
+			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileBinaryExpr(compileEnv, compilationContext, expr.castTo<BinaryExprNode>(), evalPurpose, resultRegOut, resultOut));
 			break;
 		case ExprKind::HeadedIdRef: {
-			AstNodePtr<HeadedIdRefExprNode> e = expr.template castTo<HeadedIdRefExprNode>();
+			AstNodePtr<HeadedIdRefExprNode> e = expr.castTo<HeadedIdRefExprNode>();
 
 			CompileExprResult result(compileEnv->allocator.get());
 
@@ -454,17 +460,17 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 				case TypeNameKind::Object:
 					return CompilationError(e->idRefPtr->tokenRange, CompilationErrorKind::IdNotFound);
 				case TypeNameKind::Custom:
-					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, resolveCustomTypeName(compileEnv, tn->document->sharedFromThis(), tn.template castTo<CustomTypeNameNode>(), initialMember));
+					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, resolveCustomTypeName(compileEnv, tn->document->sharedFromThis(), tn.castTo<CustomTypeNameNode>(), initialMember));
 					break;
 				case TypeNameKind::Fn:
 				case TypeNameKind::Array:
 					return CompilationError(e->idRefPtr->tokenRange, CompilationErrorKind::IdNotFound);
 				case TypeNameKind::Ref:
-					tn = tn.template castTo<RefTypeNameNode>()->referencedType;
+					tn = tn.castTo<RefTypeNameNode>()->referencedType;
 
 					goto determineInitialMember;
 				case TypeNameKind::TempRef:
-					tn = tn.template castTo<TempRefTypeNameNode>()->referencedType;
+					tn = tn.castTo<TempRefTypeNameNode>()->referencedType;
 
 					goto determineInitialMember;
 				case TypeNameKind::Bad:
@@ -520,7 +526,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, selectSingleMatchingOverloading(compileEnv, e->idRefPtr->tokenRange, finalMember, desiredType, false, resultOut));
 
 				AstNodePtr<FnTypeNameNode> fnType;
-				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, fnToTypeName(compileEnv, finalMember.template castTo<FnOverloadingNode>(), fnType));
+				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, fnToTypeName(compileEnv, finalMember.castTo<FnOverloadingNode>(), fnType));
 
 				parts.back().member = finalMember;
 
@@ -620,7 +626,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 			break;
 		}
 		case ExprKind::IdRef: {
-			AstNodePtr<IdRefExprNode> e = expr.template castTo<IdRefExprNode>();
+			AstNodePtr<IdRefExprNode> e = expr.castTo<IdRefExprNode>();
 
 			AstNodePtr<MemberNode> initialMember, finalMember;
 			IdRefEntry &initialEntry = e->idRefPtr->entries.at(0);
@@ -638,7 +644,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 					if (!compileEnv->thisNode)
 						return CompilationError(e->idRefPtr->tokenRange, CompilationErrorKind::InvalidThisUsage);
 
-					initialMember = compileEnv->thisNode.template castTo<MemberNode>();
+					initialMember = compileEnv->thisNode.castTo<MemberNode>();
 
 					if (e->idRefPtr->entries.size() > 1) {
 						initialMemberEvalPurpose = ExprEvalPurpose::RValue;
@@ -675,7 +681,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 						initialMemberEvalPurpose = evalPurpose;
 					}
 
-					initialMember = it.template castTo<MemberNode>();
+					initialMember = it.castTo<MemberNode>();
 
 					switch (initialMemberEvalPurpose) {
 						case ExprEvalPurpose::EvalType:
@@ -702,7 +708,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 				// Check if the entry refers to a function parameter.
 				if (auto it = compileEnv->curOverloading->paramIndices.find(e->idRefPtr->entries.at(0).name);
 					it != compileEnv->curOverloading->paramIndices.end()) {
-					initialMember = compileEnv->curOverloading->params.at(it.value()).template castTo<MemberNode>();
+					initialMember = compileEnv->curOverloading->params.at(it.value()).castTo<MemberNode>();
 
 					if (e->idRefPtr->entries.size() > 1) {
 						initialMemberEvalPurpose = ExprEvalPurpose::RValue;
@@ -781,7 +787,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, selectSingleMatchingOverloading(compileEnv, e->idRefPtr->tokenRange, finalMember, desiredType, false, resultOut));
 
 						AstNodePtr<FnTypeNameNode> fnType;
-						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, fnToTypeName(compileEnv, finalMember.template castTo<FnOverloadingNode>(), fnType));
+						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, fnToTypeName(compileEnv, finalMember.castTo<FnOverloadingNode>(), fnType));
 
 						parts.back().member = finalMember;
 
@@ -810,7 +816,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 							compileEnv,
 							compileEnv->document,
 							walkedMemberNodes,
-							compileEnv->curOverloading.template castTo<MemberNode>(),
+							compileEnv->curOverloading.castTo<MemberNode>(),
 							e->idRefPtr->entries.data(),
 							e->idRefPtr->entries.size(),
 							finalMember,
@@ -825,7 +831,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, selectSingleMatchingOverloading(compileEnv, e->idRefPtr->tokenRange, finalMember, desiredType, false, resultOut));
 
 					AstNodePtr<FnTypeNameNode> fnType;
-					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, fnToTypeName(compileEnv, finalMember.template castTo<FnOverloadingNode>(), fnType));
+					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, fnToTypeName(compileEnv, finalMember.castTo<FnOverloadingNode>(), fnType));
 
 					parts.back().member = finalMember;
 
@@ -959,7 +965,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, _compileLiteralExpr<BoolLiteralExprNode, bool, BoolTypeNameNode>(compileEnv, compilationContext, expr, evalPurpose, resultRegOut, resultOut));
 			break;
 		case ExprKind::String: {
-			AstNodePtr<StringLiteralExprNode> e = expr.template castTo<StringLiteralExprNode>();
+			AstNodePtr<StringLiteralExprNode> e = expr.castTo<StringLiteralExprNode>();
 
 			switch (evalPurpose) {
 				case ExprEvalPurpose::EvalType:
@@ -1004,13 +1010,13 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 					  compileEnv->allocator.get(),
 					  compileEnv->allocator.get(),
 					  compileEnv->document)
-						.template castTo<TypeNameNode>())) {
+						.castTo<TypeNameNode>())) {
 				return genOutOfMemoryCompError();
 			}
 			break;
 		}
 		case ExprKind::Null: {
-			AstNodePtr<NullLiteralExprNode> e = expr.template castTo<NullLiteralExprNode>();
+			AstNodePtr<NullLiteralExprNode> e = expr.castTo<NullLiteralExprNode>();
 
 			switch (evalPurpose) {
 				case ExprEvalPurpose::Stmt:
@@ -1041,13 +1047,13 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 					  compileEnv->allocator.get(),
 					  compileEnv->allocator.get(),
 					  compileEnv->document)
-						.template castTo<TypeNameNode>())) {
+						.castTo<TypeNameNode>())) {
 				return genOutOfMemoryCompError();
 			}
 			break;
 		}
 		case ExprKind::InitializerList: {
-			AstNodePtr<InitializerListExprNode> e = expr.template castTo<InitializerListExprNode>();
+			AstNodePtr<InitializerListExprNode> e = expr.castTo<InitializerListExprNode>();
 
 			AstNodePtr<TypeNameNode> tn;
 			if (!desiredType) {
@@ -1070,13 +1076,13 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 					return CompilationError(expr->tokenRange, CompilationErrorKind::ErrorDeducingInitializerListType);
 				}
 
-				if (!(resultOut.evaluatedType = makeAstNode<ArrayTypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, tn).template castTo<TypeNameNode>())) {
+				if (!(resultOut.evaluatedType = makeAstNode<ArrayTypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, tn).castTo<TypeNameNode>())) {
 					return genOutOfMemoryCompError();
 				}
 			} else {
 				switch (desiredType->typeNameKind) {
 					case TypeNameKind::Array:
-						tn = desiredType.template castTo<ArrayTypeNameNode>()->elementType;
+						tn = desiredType.castTo<ArrayTypeNameNode>()->elementType;
 						break;
 					default:
 						return CompilationError(expr->tokenRange, CompilationErrorKind::InvalidInitializerListUsage);
@@ -1124,7 +1130,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 
 							CompileExprResult result(compileEnv->allocator.get());
 
-							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, e->elements.at(i), ExprEvalPurpose::RValue, tn.template castTo<TypeNameNode>(), curElementRegIndex, result));
+							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, e->elements.at(i), ExprEvalPurpose::RValue, tn.castTo<TypeNameNode>(), curElementRegIndex, result));
 
 							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
 								compilationContext->emitIns(
@@ -1138,7 +1144,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 						for (size_t i = 0; i < e->elements.size(); ++i) {
 							CompileExprResult result(compileEnv->allocator.get());
 
-							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, e->elements.at(i), ExprEvalPurpose::RValue, tn.template castTo<TypeNameNode>(), UINT32_MAX, result));
+							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, e->elements.at(i), ExprEvalPurpose::RValue, tn.castTo<TypeNameNode>(), UINT32_MAX, result));
 						}
 					}
 					break;
@@ -1154,7 +1160,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 			break;
 		}
 		case ExprKind::Call: {
-			AstNodePtr<CallExprNode> e = expr.template castTo<CallExprNode>();
+			AstNodePtr<CallExprNode> e = expr.castTo<CallExprNode>();
 
 			uint32_t targetReg;
 
@@ -1181,7 +1187,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, evalExprType(compileEnv, compilationContext, e->args.at(i), argTypes.at(j)));
 
 					if (argTypes.at(j)->typeNameKind == TypeNameKind::UnpackedArgs) {
-						AstNodePtr<UnpackedArgsTypeNameNode> t = argTypes.at(i).template castTo<UnpackedArgsTypeNameNode>();
+						AstNodePtr<UnpackedArgsTypeNameNode> t = argTypes.at(i).castTo<UnpackedArgsTypeNameNode>();
 
 						if (!argTypes.resize(argTypes.size() + t->paramTypes.size() - 1)) {
 							return genOutOfMemoryCompError();
@@ -1210,7 +1216,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 				fnPrototype->paramTypes = std::move(argTypes);
 				fnPrototype->isForAdl = true;
 
-				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, e->target, ExprEvalPurpose::Call, fnPrototype.template castTo<TypeNameNode>(), targetReg, result));
+				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, e->target, ExprEvalPurpose::Call, fnPrototype.castTo<TypeNameNode>(), targetReg, result));
 
 				argTypes = std::move(fnPrototype->paramTypes);
 				fnType = result.evaluatedType;
@@ -1219,7 +1225,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 
 				fnType = result.evaluatedType;
 
-				AstNodePtr<FnTypeNameNode> tn = fnType.template castTo<FnTypeNameNode>();
+				AstNodePtr<FnTypeNameNode> tn = fnType.castTo<FnTypeNameNode>();
 
 				for (size_t i = 0, j = 0; i < e->args.size(); ++i, ++j) {
 					if (i < tn->paramTypes.size()) {
@@ -1235,7 +1241,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 					// SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, simplifyParamListTypeNameTree(argTypes.at(j), compileEnv->allocator.get(), argTypes.at(j)));
 
 					if (argTypes.at(j)->typeNameKind == TypeNameKind::UnpackedArgs) {
-						AstNodePtr<UnpackedArgsTypeNameNode> t = argTypes.at(i).template castTo<UnpackedArgsTypeNameNode>();
+						AstNodePtr<UnpackedArgsTypeNameNode> t = argTypes.at(i).castTo<UnpackedArgsTypeNameNode>();
 
 						if (!argTypes.resize(argTypes.size() + t->paramTypes.size() - 1)) {
 							return genOutOfMemoryCompError();
@@ -1272,7 +1278,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 				}
 			}
 
-			auto tn = fnType.template castTo<FnTypeNameNode>();
+			auto tn = fnType.castTo<FnTypeNameNode>();
 
 			peff::DynArray<std::pair<AstNodePtr<TypeNameNode>, uint32_t>> argPassingInfo(compileEnv->allocator.get());
 
@@ -1344,7 +1350,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 
 			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, removeRefOfType(fnType, fnType));
 
-			if (fnType.template castTo<FnTypeNameNode>()->thisType) {
+			if (fnType.castTo<FnTypeNameNode>()->thisType) {
 				if (result.idxThisRegOut == UINT32_MAX) {
 					if (!e->withObject) {
 						return CompilationError(expr->tokenRange, CompilationErrorKind::MissingBindingObject);
@@ -1352,7 +1358,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 
 					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->allocReg(thisReg));
 
-					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, e->withObject, ExprEvalPurpose::RValue, fnType.template castTo<FnTypeNameNode>()->thisType, thisReg, result));
+					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, e->withObject, ExprEvalPurpose::RValue, fnType.castTo<FnTypeNameNode>()->thisType, thisReg, result));
 				} else {
 					thisReg = result.idxThisRegOut;
 				}
@@ -1374,7 +1380,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 					break;
 				case ExprEvalPurpose::LValue: {
 					bool b = false;
-					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, isLValueType(fnType.template castTo<FnTypeNameNode>()->returnType, b));
+					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, isLValueType(fnType.castTo<FnTypeNameNode>()->returnType, b));
 					if (!b) {
 						return CompilationError(expr->tokenRange, CompilationErrorKind::ExpectingLValueExpr);
 					}
@@ -1389,7 +1395,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 				case ExprEvalPurpose::RValue:
 				case ExprEvalPurpose::Call: {
 					bool b = false;
-					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, isLValueType(fnType.template castTo<FnTypeNameNode>()->returnType, b));
+					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, isLValueType(fnType.castTo<FnTypeNameNode>()->returnType, b));
 
 					if (b) {
 						uint32_t tmpRegIndex;
@@ -1415,17 +1421,17 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 				}
 			}
 
-			if (auto rt = fnType.template castTo<FnTypeNameNode>()->returnType; rt) {
-				resultOut.evaluatedType = fnType.template castTo<FnTypeNameNode>()->returnType;
+			if (auto rt = fnType.castTo<FnTypeNameNode>()->returnType; rt) {
+				resultOut.evaluatedType = fnType.castTo<FnTypeNameNode>()->returnType;
 			} else {
-				if (!(resultOut.evaluatedType = makeAstNode<VoidTypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document).template castTo<TypeNameNode>())) {
+				if (!(resultOut.evaluatedType = makeAstNode<VoidTypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document).castTo<TypeNameNode>())) {
 					return genOutOfMemoryCompError();
 				}
 			}
 			break;
 		}
 		case ExprKind::New: {
-			AstNodePtr<NewExprNode> e = expr.template castTo<NewExprNode>();
+			AstNodePtr<NewExprNode> e = expr.castTo<NewExprNode>();
 
 			uint32_t targetReg;
 
@@ -1437,31 +1443,31 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 
 			AstNodePtr<MemberNode> m;
 
-			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, resolveCustomTypeName(compileEnv, compileEnv->document, e->targetType.template castTo<CustomTypeNameNode>(), m));
+			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, resolveCustomTypeName(compileEnv, compileEnv->document, e->targetType.castTo<CustomTypeNameNode>(), m));
 
 			if (m->getAstNodeType() != AstNodeType::Class) {
 				return CompilationError(e->targetType->tokenRange, CompilationErrorKind::TypeIsNotConstructible);
 			}
 
-			AstNodePtr<ClassNode> c = m.template castTo<ClassNode>();
+			AstNodePtr<ClassNode> c = m.castTo<ClassNode>();
 
 			slake::TypeRef type;
 			{
 				IdRefPtr fullIdRef;
-				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, getFullIdRef(compileEnv->allocator.get(), c.template castTo<MemberNode>(), fullIdRef));
+				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, getFullIdRef(compileEnv->allocator.get(), c.castTo<MemberNode>(), fullIdRef));
 
 				auto tn = makeAstNode<CustomTypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document);
 
 				if (!tn) {
 					return genOutOfMemoryCompError();
 				}
-				tn->contextNode = compileEnv->document->rootModule.template castTo<MemberNode>();
+				tn->contextNode = compileEnv->document->rootModule.castTo<MemberNode>();
 
 				tn->idRefPtr = std::move(fullIdRef);
 
 				tn->tokenRange = e->targetType->tokenRange;
 
-				auto e = compileTypeName(compileEnv, compilationContext, tn.template castTo<TypeNameNode>(), type);
+				auto e = compileTypeName(compileEnv, compilationContext, tn.castTo<TypeNameNode>(), type);
 				/* if (e) {
 					std::terminate();
 				}*/
@@ -1472,7 +1478,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 				if (c->members.at(it.value())->getAstNodeType() != AstNodeType::Fn) {
 					return CompilationError(e->targetType->tokenRange, CompilationErrorKind::TypeIsNotConstructible);
 				}
-				AstNodePtr<FnNode> constructor = c->members.at(it.value()).template castTo<FnNode>();
+				AstNodePtr<FnNode> constructor = c->members.at(it.value()).castTo<FnNode>();
 
 				peff::DynArray<AstNodePtr<TypeNameNode>> argTypes(compileEnv->allocator.get());
 
@@ -1536,7 +1542,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 				slake::HostObjectRef<slake::IdRefObject> idRefObject;
 				{
 					IdRefPtr fullIdRef;
-					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, getFullIdRef(compileEnv->allocator.get(), constructor.template castTo<MemberNode>(), fullIdRef));
+					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, getFullIdRef(compileEnv->allocator.get(), constructor.castTo<MemberNode>(), fullIdRef));
 
 					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileIdRef(compileEnv, compilationContext, fullIdRef->entries.data(), fullIdRef->entries.size(), nullptr, 0, false, {}, idRefObject));
 
@@ -1591,7 +1597,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 			break;
 		}
 		case ExprKind::Cast: {
-			AstNodePtr<CastExprNode> e = expr.template castTo<CastExprNode>();
+			AstNodePtr<CastExprNode> e = expr.castTo<CastExprNode>();
 
 			AstNodePtr<TypeNameNode> exprType, targetType = e->targetType;
 
@@ -1647,7 +1653,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 			break;
 		}
 		case ExprKind::Match: {
-			AstNodePtr<MatchExprNode> e = expr.template castTo<MatchExprNode>();
+			AstNodePtr<MatchExprNode> e = expr.castTo<MatchExprNode>();
 
 			AstNodePtr<TypeNameNode> returnType = e->returnType;
 
@@ -1765,7 +1771,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 
 						cmpExpr->tokenRange = curCase.first->tokenRange;
 
-						if (!(cmpExpr->lhs = makeAstNode<RegIndexExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, conditionReg, conditionType).template castTo<ExprNode>())) {
+						if (!(cmpExpr->lhs = makeAstNode<RegIndexExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, conditionReg, conditionType).castTo<ExprNode>())) {
 							return genOutOfMemoryCompError();
 						}
 
@@ -1783,7 +1789,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 
 							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->allocReg(cmpResultReg));
 
-							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, cmpExpr.template castTo<ExprNode>(), ExprEvalPurpose::RValue, boolTypeName.template castTo<TypeNameNode>(), cmpResultReg, cmpExprResult));
+							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, cmpExpr.castTo<ExprNode>(), ExprEvalPurpose::RValue, boolTypeName.castTo<TypeNameNode>(), cmpResultReg, cmpExprResult));
 						}
 
 						uint32_t succeededValueLabel;
@@ -1869,7 +1875,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 			break;
 		}
 		case ExprKind::RegIndex: {
-			auto e = expr.template castTo<RegIndexExprNode>();
+			auto e = expr.castTo<RegIndexExprNode>();
 
 			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->emitIns(sldIndex, slake::Opcode::MOV, resultRegOut, { slake::Value(slake::ValueType::RegIndex, e->reg) }));
 
@@ -1878,7 +1884,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 			break;
 		}
 		case ExprKind::Wrapper:
-			return compileExpr(compileEnv, compilationContext, expr.template castTo<WrapperExprNode>()->target, evalPurpose, desiredType, resultRegOut, resultOut);
+			return compileExpr(compileEnv, compilationContext, expr.castTo<WrapperExprNode>()->target, evalPurpose, desiredType, resultRegOut, resultOut);
 		default:
 			std::terminate();
 	}

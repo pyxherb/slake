@@ -349,20 +349,8 @@ InternalExceptionPointer slake::opti::analyzeProgramInfoPass(
 
 	if (!pseudoMajorFrame->resumableContextData->argStack.resizeUninitialized(fnObject->paramTypes.size()))
 		return OutOfMemoryError::alloc();
-	for (size_t i = 0; i < pseudoMajorFrame->resumableContextData->argStack.size(); ++i)
-		peff::constructAt<ArgRecord>(&pseudoMajorFrame->resumableContextData->argStack.at(i));
-	for (size_t i = 0; i < fnObject->paramTypes.size(); ++i) {
-		pseudoMajorFrame->resumableContextData->argStack.at(i) = { Value(), fnObject->paramTypes.at(i) };
-	}
-
-	if (fnObject->overloadingFlags & OL_VARG) {
-		TypeRef varArgTypeRef;
-
-		SLAKE_RETURN_IF_EXCEPT(wrapIntoArrayType(analyzeContext.runtime, TypeId::Any, analyzeContext.hostRefHolder, varArgTypeRef));
-
-		if (!pseudoMajorFrame->resumableContextData->argStack.pushBack({ Value(), varArgTypeRef }))
-			return OutOfMemoryError::alloc();
-	}
+	for (size_t i = 0; i < fnObject->paramTypes.size(); ++i)
+		pseudoMajorFrame->resumableContextData->argStack.at(i) = Value();
 
 	// Analyze lifetime of virtual registers.
 	bool newExpectableRegFound;

@@ -122,7 +122,7 @@ SLAKE_API size_t GenerationalPoolAlloc::incRef(size_t globalRc) noexcept {
 
 	//if (globalRc == 1868)
 	//	puts("");
-#ifndef _NDEBUG
+#ifndef NDEBUG
 	#if SLAKE_DEBUG_ALLOCATOR
 	if (!recordedRefPoints.insert(+globalRc)) {
 		puts("Error: error adding reference point!");
@@ -134,7 +134,7 @@ SLAKE_API size_t GenerationalPoolAlloc::incRef(size_t globalRc) noexcept {
 
 SLAKE_API size_t GenerationalPoolAlloc::decRef(size_t globalRc) noexcept {
 	--refCount;
-#ifndef _NDEBUG
+#ifndef NDEBUG
 	#if SLAKE_DEBUG_ALLOCATOR
 	if (auto it = recordedRefPoints.find(+globalRc); it != recordedRefPoints.end()) {
 		recordedRefPoints.remove(+globalRc);

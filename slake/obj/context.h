@@ -16,21 +16,18 @@ namespace slake {
 	/// @brief Minor frames are created by ENTER instructions and destroyed by
 	/// LEAVE instructions.
 	struct MinorFrame final {
-		peff::DynArray<ExceptionHandler> exceptHandlers;  // Exception handlers
+		peff::List<ExceptionHandler> exceptHandlers;  // Exception handlers
 
 		size_t stackBase = 0;
 
 		SLAKE_API MinorFrame(
 			Runtime *rt,
 			peff::Alloc *allocator,
-			size_t stackBase);
+			size_t stackBase) noexcept;
+		SLAKE_API MinorFrame(MinorFrame &&other) noexcept;
+		SLAKE_API ~MinorFrame();
 
 		SLAKE_API void replaceAllocator(peff::Alloc *allocator) noexcept;
-	};
-
-	struct ArgRecord {
-		Value value;
-		TypeRef type;
 	};
 
 	class CoroutineObject;
@@ -38,30 +35,17 @@ namespace slake {
 	struct ResumableContextData {
 		uint32_t curIns = 0;
 		uint32_t lastJumpSrc = UINT32_MAX;
-		peff::DynArray<ArgRecord> argStack;
+		peff::DynArray<Value> argStack;
 		peff::DynArray<Value> nextArgStack;
-		peff::DynArray<MinorFrame> minorFrames;
+		peff::List<MinorFrame> minorFrames;
 		size_t nRegs = 0;
 		Object *thisObject = nullptr;
 
-		SLAKE_API ResumableContextData(peff::Alloc *allocator);
+		SLAKE_API ResumableContextData(peff::Alloc *allocator) noexcept;
+		SLAKE_API ResumableContextData(ResumableContextData &&rhs) noexcept;
+		SLAKE_API ~ResumableContextData();
 
 		SLAKE_API void replaceAllocator(peff::Alloc *allocator) noexcept;
-	};
-
-	/// @brief The resumable object.
-	class ResumableObject : public Object {
-	public:
-		ResumableContextData contextData;
-
-		SLAKE_API ResumableObject(Runtime *rt, peff::Alloc *allocator);
-		SLAKE_API ~ResumableObject();
-
-		SLAKE_API static ResumableObject *alloc(Runtime *rt);
-		SLAKE_API static ResumableObject *allocEphemeral(Runtime *rt);
-		SLAKE_API virtual void dealloc() noexcept override;
-
-		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;
 	};
 
 	/// @brief A major frame represents a single calling frame.
@@ -80,8 +64,8 @@ namespace slake {
 
 		Value curExcept = Value();	// Current exception.
 
-		SLAKE_API MajorFrame(Runtime *rt);
-		SLAKE_API MajorFrame(MajorFrame &&other);
+		SLAKE_API MajorFrame(Runtime *rt) noexcept;
+		SLAKE_API MajorFrame(MajorFrame &&other) noexcept;
 		SLAKE_API ~MajorFrame();
 
 		SLAKE_API void dealloc() noexcept;

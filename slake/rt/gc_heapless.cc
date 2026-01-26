@@ -110,8 +110,7 @@ SLAKE_API void GCWalkContext::removeFromDestructibleList(Object *v) {
 SLAKE_API void Runtime::_gcWalk(GCWalkContext* context, ResumableContextData& value) {
 	context->pushObject(value.thisObject);
 	for (auto &k : value.argStack) {
-		_gcWalk(context, k.type);
-		_gcWalk(context, k.value);
+		_gcWalk(context, k);
 	}
 	for (auto &k : value.nextArgStack)
 		_gcWalk(context, k);

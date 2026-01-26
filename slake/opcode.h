@@ -45,6 +45,8 @@ namespace slake {
 		LOAD,	// Load value of a variable.
 		RLOAD,	// Access and load corresponding member with an existing value.
 
+		LCURFN,	 // Load current function.
+
 		MOV,  // Move values between registers
 
 		LARG,	 // Load an argument.

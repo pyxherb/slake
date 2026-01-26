@@ -13,12 +13,9 @@ Value print(Context *context, MajorFrame *curMajorFrame) {
 	else {
 		Value varArgsValue;
 		curMajorFrame->curFn->associatedRuntime->readVar(Reference::makeArgRef(curMajorFrame, 0), varArgsValue);
-		ArrayObject *varArgs = (ArrayObject *)varArgsValue.getReference().asObject;
 
-		for (uint8_t i = 0; i < varArgs->length; ++i) {
-			Value data;
-			curMajorFrame->curFn->associatedRuntime->readVar(
-					Reference::makeArrayElementRef(varArgs, i), data);
+		for (uint8_t i = 0; i < curMajorFrame->resumableContextData->argStack.size(); ++i) {
+			const Value &data = curMajorFrame->resumableContextData->argStack.at(i);
 
 			switch (data.valueType) {
 				case ValueType::I8:

@@ -218,19 +218,35 @@ SLAKE_API TypeRef Runtime::typeofVar(const Reference &entityRef) const noexcept 
 			return entityRef.asArrayElement.arrayObject->elementType;
 		}
 		case ReferenceKind::ArgRef: {
-			const ArgRecord &argRecord = entityRef.asArg.majorFrame->resumableContextData->argStack.at(entityRef.asArg.argIndex);
+			auto overloading = entityRef.asArg.majorFrame->curFn;
 
-			return argRecord.type;
+			if (entityRef.asArg.argIndex >= overloading->paramTypes.size()) {
+				assert(overloading->overloadingFlags & OL_VARG);
+				return TypeId::Any;
+			}
+
+			return overloading->paramTypes.at(entityRef.asArg.argIndex);
 		}
 		case ReferenceKind::CoroutineArgRef: {
-			if (entityRef.asCoroutineArg.coroutine->curContext) {
-				const ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->resumable->argStack.at(entityRef.asArg.argIndex);
+			auto coroutine = entityRef.asCoroutineArg.coroutine;
+			if (coroutine->curContext) {
+				auto overloading = coroutine->curMajorFrame->curFn;
 
-				return argRecord.type;
+				if (entityRef.asCoroutineArg.argIndex >= overloading->paramTypes.size()) {
+					assert(overloading->overloadingFlags & OL_VARG);
+					return TypeId::Any;
+				}
+
+				return overloading->paramTypes.at(entityRef.asCoroutineArg.argIndex);
 			} else {
-				const ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->curMajorFrame->resumableContextData->argStack.at(entityRef.asArg.argIndex);
+				auto overloading = coroutine->overloading;
 
-				return argRecord.type;
+				if (entityRef.asCoroutineArg.argIndex >= overloading->paramTypes.size()) {
+					assert(overloading->overloadingFlags & OL_VARG);
+					return TypeId::Any;
+				}
+
+				return overloading->paramTypes.at(entityRef.asCoroutineArg.argIndex);
 			}
 			break;
 		}
@@ -687,28 +703,25 @@ SLAKE_API void Runtime::readVar(const Reference &entityRef, Value &valueOut) con
 			break;
 		}
 		case ReferenceKind::ArgRef: {
-			const ArgRecord &argRecord = entityRef.asArg.majorFrame->resumableContextData->argStack.at(entityRef.asArg.argIndex);
+			TypeRef t = typeofVar(entityRef);
 
-			valueOut = argRecord.value;
+			valueOut = entityRef.asArg.majorFrame->resumableContextData->argStack.at(entityRef.asArg.argIndex);
 
-			if (argRecord.type.isLocal())
+			if (t.isLocal())
 				valueOut.setLocal();
 			break;
 		}
 		case ReferenceKind::CoroutineArgRef: {
+			TypeRef t = typeofVar(entityRef);
 			if (entityRef.asCoroutineArg.coroutine->curContext) {
-				const ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->resumable->argStack.at(entityRef.asArg.argIndex);
+				valueOut = entityRef.asCoroutineArg.coroutine->resumable->argStack.at(entityRef.asArg.argIndex);
 
-				valueOut = argRecord.value;
-
-				if (argRecord.type.isLocal())
+				if (t.isLocal())
 					valueOut.setLocal();
 			} else {
-				const ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->curMajorFrame->resumableContextData->argStack.at(entityRef.asArg.argIndex);
+				valueOut = entityRef.asCoroutineArg.coroutine->curMajorFrame->resumableContextData->argStack.at(entityRef.asArg.argIndex);
 
-				valueOut = argRecord.value;
-
-				if (argRecord.type.isLocal())
+				if (t.isLocal())
 					valueOut.setLocal();
 			}
 			break;
@@ -1058,26 +1071,20 @@ SLAKE_API void Runtime::writeVar(const Reference &entityRef, const Value &value)
 			break;
 		}
 		case ReferenceKind::ArgRef: {
-			ArgRecord &argRecord = const_cast<MajorFrame *>(entityRef.asArg.majorFrame)->resumableContextData->argStack.at(entityRef.asArg.argIndex);
-
-			if (value.isLocal() && !argRecord.type.isLocal())
+			TypeRef t = typeofVar(entityRef);
+			if (value.isLocal() && !t.isLocal())
 				std::terminate();
-			argRecord.value = value;
+			const_cast<MajorFrame *>(entityRef.asArg.majorFrame)->resumableContextData->argStack.at(entityRef.asArg.argIndex) = value;
 			break;
 		}
 		case ReferenceKind::CoroutineArgRef: {
+			TypeRef t = typeofVar(entityRef);
+			if (value.isLocal() && !t.isLocal())
+				std::terminate();
 			if (entityRef.asCoroutineArg.coroutine->curContext) {
-				ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->curMajorFrame->resumableContextData->argStack.at(entityRef.asArg.argIndex);
-
-				if (value.isLocal() && !argRecord.type.isLocal())
-					std::terminate();
-				argRecord.value = value;
+				entityRef.asCoroutineArg.coroutine->curMajorFrame->resumableContextData->argStack.at(entityRef.asArg.argIndex) = value;
 			} else {
-				ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->resumable->argStack.at(entityRef.asArg.argIndex);
-
-				if (value.isLocal() && !argRecord.type.isLocal())
-					std::terminate();
-				argRecord.value = value;
+				entityRef.asCoroutineArg.coroutine->resumable->argStack.at(entityRef.asArg.argIndex) = value;
 			}
 			break;
 		}

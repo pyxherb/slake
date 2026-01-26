@@ -2,10 +2,6 @@
 
 using namespace slake;
 
-SLAKE_API void MinorFrame::replaceAllocator(peff::Alloc *allocator) noexcept {
-	exceptHandlers.replaceAllocator(allocator);
-}
-
 SLAKE_API void ResumableContextData::replaceAllocator(peff::Alloc *allocator) noexcept {
 	argStack.replaceAllocator(allocator);
 
@@ -18,67 +14,44 @@ SLAKE_API void ResumableContextData::replaceAllocator(peff::Alloc *allocator) no
 	}
 }
 
-SLAKE_API ResumableContextData::ResumableContextData(peff::Alloc *allocator) : argStack(allocator), nextArgStack(allocator), minorFrames(allocator) {
+SLAKE_API ResumableContextData::ResumableContextData(peff::Alloc *allocator) noexcept : argStack(allocator), nextArgStack(allocator), minorFrames(allocator) {
 }
 
-SLAKE_API ResumableObject::ResumableObject(Runtime *rt, peff::Alloc *allocator) : Object(rt, allocator, ObjectKind::Resumable), contextData(allocator) {
+SLAKE_API ResumableContextData::ResumableContextData(ResumableContextData &&rhs) noexcept
+	: curIns(rhs.curIns),
+	  lastJumpSrc(rhs.lastJumpSrc),
+	  argStack(std::move(rhs.argStack)),
+	  nextArgStack(std::move(rhs.nextArgStack)),
+	  minorFrames(std::move(rhs.minorFrames)),
+	  nRegs(rhs.nRegs),
+	  thisObject(rhs.thisObject) {
 }
 
-SLAKE_API ResumableObject::~ResumableObject() {}
-
-SLAKE_API ResumableObject *ResumableObject::alloc(Runtime *rt) {
-	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();
-
-	std::unique_ptr<ResumableObject, peff::DeallocableDeleter<ResumableObject>> ptr(
-		peff::allocAndConstruct<ResumableObject>(
-			curGenerationAllocator.get(),
-			alignof(ResumableObject),
-			rt, curGenerationAllocator.get()));
-
-	if (!rt->addObject(ptr.get()))
-		return nullptr;
-
-	return ptr.release();
-}
-
-SLAKE_API ResumableObject *ResumableObject::allocEphemeral(Runtime *rt) {
-	std::unique_ptr<ResumableObject, peff::DeallocableDeleter<ResumableObject>> ptr(
-		peff::allocAndConstruct<ResumableObject>(
-			rt->getEphemeralAlloc(),
-			alignof(ResumableObject),
-			rt, rt->getEphemeralAlloc()));
-
-	ptr->hostRefCount = HOSTREF_EPHEMERAL;
-
-	if (!rt->addObject(ptr.get()))
-		return nullptr;
-
-	return ptr.release();
-}
-
-SLAKE_API void ResumableObject::dealloc() noexcept {
-	return peff::destroyAndRelease<ResumableObject>(selfAllocator.get(), this, alignof(ResumableObject));
-}
-
-SLAKE_API void ResumableObject::replaceAllocator(peff::Alloc *allocator) noexcept {
-	this->Object::replaceAllocator(allocator);
-
-	contextData.replaceAllocator(allocator);
+SLAKE_API ResumableContextData::~ResumableContextData() {
 }
 
 SLAKE_API MinorFrame::MinorFrame(
 	Runtime *rt,
 	peff::Alloc *allocator,
-	size_t stackBase)
+	size_t stackBase) noexcept
 	: stackBase(stackBase),
 	  exceptHandlers(allocator) {
 }
 
-SLAKE_API MajorFrame::MajorFrame(Runtime *rt)
+SLAKE_API MinorFrame::MinorFrame(MinorFrame &&other) noexcept : stackBase(std::move(other.stackBase)), exceptHandlers(std::move(other.exceptHandlers)) {
+}
+
+SLAKE_API MinorFrame::~MinorFrame() {}
+
+SLAKE_API void MinorFrame::replaceAllocator(peff::Alloc *allocator) noexcept {
+	exceptHandlers.replaceAllocator(allocator);
+}
+
+SLAKE_API MajorFrame::MajorFrame(Runtime *rt) noexcept
 	: associatedRuntime(rt) {
 }
 
-SLAKE_API MajorFrame::MajorFrame(MajorFrame &&other)
+SLAKE_API MajorFrame::MajorFrame(MajorFrame &&other) noexcept
 	: associatedRuntime(other.associatedRuntime),
 	  curFn(other.curFn),
 	  curCoroutine(other.curCoroutine),

@@ -596,6 +596,10 @@ void dumpCompilationError(peff::SharedPtr<slkc::Parser> parser, const slkc::Comp
 		case slkc::CompilationErrorKind::IncompatibleInitialValueType:
 			printf("Incompatible initial value type\n");
 			break;
+		case slkc::CompilationErrorKind::FunctionOverloadingDuplicatedDuringInstantiation:
+			printf("Duplicated function overloading detected during instantiation\n");
+			break;
+
 		case slkc::CompilationErrorKind::ImportLimitExceeded:
 			printf("Import item number exceeded\n");
 			break;

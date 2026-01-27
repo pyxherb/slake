@@ -1,5 +1,8 @@
 #include "../compiler.h"
 
+#undef min
+#undef max
+
 using namespace slkc;
 
 SLKC_API peff::Option<CompilationError> Document::lookupGenericCacheTable(
@@ -42,6 +45,8 @@ static peff::Option<CompilationError> _walkTypeNameForGenericInstantiation(
 static peff::Option<CompilationError> _walkTypeNameForGenericInstantiation(
 	AstNodePtr<AstNode> &astNode,
 	const GenericInstantiationContext &context) {
+	SLKC_RETURN_IF_COMP_ERROR(checkStackBounds(1024 * 8));
+
 	if (!astNode)
 		return {};
 
@@ -50,25 +55,25 @@ static peff::Option<CompilationError> _walkTypeNameForGenericInstantiation(
 			const AstNodePtr<TypeNameNode> typeName = astNode.castTo<TypeNameNode>();
 			switch (typeName->typeNameKind) {
 				case TypeNameKind::Array: {
-					AstNodePtr<ArrayTypeNameNode> tn = typeName.template castTo<ArrayTypeNameNode>();
+					AstNodePtr<ArrayTypeNameNode> tn = typeName.castTo<ArrayTypeNameNode>();
 
 					SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(tn->elementType, context));
 					break;
 				}
 				case TypeNameKind::Ref: {
-					AstNodePtr<RefTypeNameNode> tn = typeName.template castTo<RefTypeNameNode>();
+					AstNodePtr<RefTypeNameNode> tn = typeName.castTo<RefTypeNameNode>();
 
 					SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(tn->referencedType, context));
 					break;
 				}
 				case TypeNameKind::TempRef: {
-					AstNodePtr<TempRefTypeNameNode> tn = typeName.template castTo<TempRefTypeNameNode>();
+					AstNodePtr<TempRefTypeNameNode> tn = typeName.castTo<TempRefTypeNameNode>();
 
 					SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(tn->referencedType, context));
 					break;
 				}
 				case TypeNameKind::Fn: {
-					AstNodePtr<FnTypeNameNode> tn = typeName.template castTo<FnTypeNameNode>();
+					AstNodePtr<FnTypeNameNode> tn = typeName.castTo<FnTypeNameNode>();
 
 					for (size_t i = 0; i < tn->paramTypes.size(); ++i) {
 						SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(tn->paramTypes.at(i), context));
@@ -77,7 +82,7 @@ static peff::Option<CompilationError> _walkTypeNameForGenericInstantiation(
 					break;
 				}
 				case TypeNameKind::Custom: {
-					AstNodePtr<CustomTypeNameNode> tn = typeName.template castTo<CustomTypeNameNode>();
+					AstNodePtr<CustomTypeNameNode> tn = typeName.castTo<CustomTypeNameNode>();
 
 					if (tn->idRefPtr->entries.size() == 1) {
 						IdRefEntry &entry = tn->idRefPtr->entries.at(0);
@@ -100,13 +105,13 @@ static peff::Option<CompilationError> _walkTypeNameForGenericInstantiation(
 					break;
 				}
 				case TypeNameKind::Unpacking: {
-					AstNodePtr<UnpackingTypeNameNode> tn = typeName.template castTo<UnpackingTypeNameNode>();
+					AstNodePtr<UnpackingTypeNameNode> tn = typeName.castTo<UnpackingTypeNameNode>();
 
 					SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(tn->innerTypeName, context));
 					break;
 				}
 				case TypeNameKind::ParamTypeList: {
-					AstNodePtr<ParamTypeListTypeNameNode> tn = typeName.template castTo<ParamTypeListTypeNameNode>();
+					AstNodePtr<ParamTypeListTypeNameNode> tn = typeName.castTo<ParamTypeListTypeNameNode>();
 
 					for (size_t i = 0; i < tn->paramTypes.size(); ++i) {
 						SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(tn->paramTypes.at(i), context));
@@ -122,31 +127,33 @@ static peff::Option<CompilationError> _walkTypeNameForGenericInstantiation(
 static peff::Option<CompilationError> _walkTypeNameForGenericInstantiation(
 	AstNodePtr<TypeNameNode> &typeName,
 	const GenericInstantiationContext &context) {
+	SLKC_RETURN_IF_COMP_ERROR(checkStackBounds(1024 * 8));
+
 	if (!typeName) {
 		return {};
 	}
 
 	switch (typeName->typeNameKind) {
 		case TypeNameKind::Array: {
-			AstNodePtr<ArrayTypeNameNode> tn = typeName.template castTo<ArrayTypeNameNode>();
+			AstNodePtr<ArrayTypeNameNode> tn = typeName.castTo<ArrayTypeNameNode>();
 
 			SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(tn->elementType, context));
 			break;
 		}
 		case TypeNameKind::Ref: {
-			AstNodePtr<RefTypeNameNode> tn = typeName.template castTo<RefTypeNameNode>();
+			AstNodePtr<RefTypeNameNode> tn = typeName.castTo<RefTypeNameNode>();
 
 			SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(tn->referencedType, context));
 			break;
 		}
 		case TypeNameKind::TempRef: {
-			AstNodePtr<TempRefTypeNameNode> tn = typeName.template castTo<TempRefTypeNameNode>();
+			AstNodePtr<TempRefTypeNameNode> tn = typeName.castTo<TempRefTypeNameNode>();
 
 			SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(tn->referencedType, context));
 			break;
 		}
 		case TypeNameKind::Fn: {
-			AstNodePtr<FnTypeNameNode> tn = typeName.template castTo<FnTypeNameNode>();
+			AstNodePtr<FnTypeNameNode> tn = typeName.castTo<FnTypeNameNode>();
 
 			for (size_t i = 0; i < tn->paramTypes.size(); ++i) {
 				SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(tn->paramTypes.at(i), context));
@@ -155,7 +162,7 @@ static peff::Option<CompilationError> _walkTypeNameForGenericInstantiation(
 			break;
 		}
 		case TypeNameKind::Custom: {
-			AstNodePtr<CustomTypeNameNode> tn = typeName.template castTo<CustomTypeNameNode>();
+			AstNodePtr<CustomTypeNameNode> tn = typeName.castTo<CustomTypeNameNode>();
 
 			if (tn->idRefPtr->entries.size() == 1) {
 				IdRefEntry &entry = tn->idRefPtr->entries.at(0);
@@ -180,13 +187,13 @@ static peff::Option<CompilationError> _walkTypeNameForGenericInstantiation(
 			break;
 		}
 		case TypeNameKind::Unpacking: {
-			AstNodePtr<UnpackingTypeNameNode> tn = typeName.template castTo<UnpackingTypeNameNode>();
+			AstNodePtr<UnpackingTypeNameNode> tn = typeName.castTo<UnpackingTypeNameNode>();
 
 			SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(tn->innerTypeName, context));
 			break;
 		}
 		case TypeNameKind::ParamTypeList: {
-			AstNodePtr<ParamTypeListTypeNameNode> tn = typeName.template castTo<ParamTypeListTypeNameNode>();
+			AstNodePtr<ParamTypeListTypeNameNode> tn = typeName.castTo<ParamTypeListTypeNameNode>();
 
 			for (size_t i = 0; i < tn->paramTypes.size(); ++i) {
 				SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(tn->paramTypes.at(i), context));
@@ -201,6 +208,8 @@ static peff::Option<CompilationError> _walkTypeNameForGenericInstantiation(
 static peff::Option<CompilationError> _walkNodeForGenericInstantiation(
 	AstNodePtr<MemberNode> astNode,
 	const GenericInstantiationContext &context) {
+	SLKC_RETURN_IF_COMP_ERROR(checkStackBounds(1024 * 8));
+
 	if (!astNode) {
 		return {};
 	}
@@ -220,10 +229,10 @@ static peff::Option<CompilationError> _walkNodeForGenericInstantiation(
 
 	switch (astNode->getAstNodeType()) {
 		case AstNodeType::FnOverloading: {
-			AstNodePtr<FnOverloadingNode> fnSlot = astNode.template castTo<FnOverloadingNode>();
+			AstNodePtr<FnOverloadingNode> fnSlot = astNode.castTo<FnOverloadingNode>();
 
 			for (auto i : fnSlot->genericParams) {
-				SLKC_RETURN_IF_COMP_ERROR(_walkNodeForGenericInstantiation(i.template castTo<MemberNode>(), context));
+				SLKC_RETURN_IF_COMP_ERROR(_walkNodeForGenericInstantiation(i.castTo<MemberNode>(), context));
 			}
 
 			if ((context.mappedNode != astNode) && (fnSlot->genericParams.size())) {
@@ -260,10 +269,10 @@ static peff::Option<CompilationError> _walkNodeForGenericInstantiation(
 
 				if (curParamType) {
 					if (curParamType->typeNameKind == TypeNameKind::Unpacking) {
-						AstNodePtr<UnpackingTypeNameNode> unpackingType = curParamType.template castTo<UnpackingTypeNameNode>();
+						AstNodePtr<UnpackingTypeNameNode> unpackingType = curParamType.castTo<UnpackingTypeNameNode>();
 
 						if (unpackingType->innerTypeName->typeNameKind == TypeNameKind::ParamTypeList) {
-							AstNodePtr<ParamTypeListTypeNameNode> innerTypeName = unpackingType->innerTypeName.template castTo<ParamTypeListTypeNameNode>();
+							AstNodePtr<ParamTypeListTypeNameNode> innerTypeName = unpackingType->innerTypeName.castTo<ParamTypeListTypeNameNode>();
 
 							if (!fnSlot->params.eraseRange(i, i + 1)) {
 								return genOutOfMemoryCompError();
@@ -317,25 +326,50 @@ static peff::Option<CompilationError> _walkNodeForGenericInstantiation(
 			break;
 		}
 		case AstNodeType::Fn: {
-			AstNodePtr<FnNode> fnSlot = astNode.template castTo<FnNode>();
+			AstNodePtr<FnNode> fnSlot = astNode.castTo<FnNode>();
 
 			for (auto i : fnSlot->overloadings) {
 				AstNodePtr<MemberNode> a = i.castTo<MemberNode>();
 				SLKC_RETURN_IF_COMP_ERROR(_walkNodeForGenericInstantiation(a, context));
 			}
+
+			for (auto it = fnSlot->overloadings.begin(); it != fnSlot->overloadings.end(); ++it) {
+				for (auto jt = it + 1; jt != fnSlot->overloadings.end(); ++jt) {
+					bool whether;
+					SLKC_RETURN_IF_COMP_ERROR(isFnSignatureDuplicated(*it, *jt, whether));
+
+					if (whether) {
+						ModuleNode *mod = nullptr;
+						size_t idxMinToken = SIZE_MAX, idxMaxToken = 0;
+
+						for (auto i : *context.genericArgs) {
+							if (!mod) {
+								mod = i->tokenRange.moduleNode;
+							} else if (i->tokenRange.moduleNode != mod)
+								std::terminate();
+							idxMinToken = std::min(i->tokenRange.beginIndex, idxMinToken);
+							idxMaxToken = std::max(i->tokenRange.endIndex, idxMaxToken);
+						}
+
+						return CompilationError(
+							TokenRange(mod, idxMinToken, idxMaxToken),
+							CompilationErrorKind::FunctionOverloadingDuplicatedDuringInstantiation);
+					}
+				}
+			}
 			break;
 		}
 		case AstNodeType::Var: {
-			AstNodePtr<VarNode> varNode = astNode.template castTo<VarNode>();
+			AstNodePtr<VarNode> varNode = astNode.castTo<VarNode>();
 
 			SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(varNode->type, context));
 			break;
 		}
 		case AstNodeType::Class: {
-			AstNodePtr<ClassNode> cls = astNode.template castTo<ClassNode>();
+			AstNodePtr<ClassNode> cls = astNode.castTo<ClassNode>();
 
 			for (auto j : cls->genericParams) {
-				SLKC_RETURN_IF_COMP_ERROR(_walkNodeForGenericInstantiation(j.template castTo<MemberNode>(), context));
+				SLKC_RETURN_IF_COMP_ERROR(_walkNodeForGenericInstantiation(j.castTo<MemberNode>(), context));
 			}
 
 			if ((context.mappedNode != astNode) && (cls->genericParams.size())) {
@@ -373,10 +407,10 @@ static peff::Option<CompilationError> _walkNodeForGenericInstantiation(
 			break;
 		}
 		case AstNodeType::Struct: {
-			AstNodePtr<StructNode> cls = astNode.template castTo<StructNode>();
+			AstNodePtr<StructNode> cls = astNode.castTo<StructNode>();
 
 			for (auto j : cls->genericParams) {
-				SLKC_RETURN_IF_COMP_ERROR(_walkNodeForGenericInstantiation(j.template castTo<MemberNode>(), context));
+				SLKC_RETURN_IF_COMP_ERROR(_walkNodeForGenericInstantiation(j.castTo<MemberNode>(), context));
 			}
 
 			if ((context.mappedNode != astNode) && (cls->genericParams.size())) {
@@ -401,10 +435,10 @@ static peff::Option<CompilationError> _walkNodeForGenericInstantiation(
 			break;
 		}
 		case AstNodeType::Interface: {
-			AstNodePtr<InterfaceNode> cls = astNode.template castTo<InterfaceNode>();
+			AstNodePtr<InterfaceNode> cls = astNode.castTo<InterfaceNode>();
 
 			for (auto j : cls->genericParams) {
-				SLKC_RETURN_IF_COMP_ERROR(_walkNodeForGenericInstantiation(j.template castTo<MemberNode>(), context));
+				SLKC_RETURN_IF_COMP_ERROR(_walkNodeForGenericInstantiation(j.castTo<MemberNode>(), context));
 			}
 
 			if ((context.mappedNode != astNode) && (cls->genericParams.size())) {
@@ -438,7 +472,7 @@ static peff::Option<CompilationError> _walkNodeForGenericInstantiation(
 			break;
 		}
 		case AstNodeType::GenericParam: {
-			AstNodePtr<GenericParamNode> cls = astNode.template castTo<GenericParamNode>();
+			AstNodePtr<GenericParamNode> cls = astNode.castTo<GenericParamNode>();
 
 			if (cls->genericConstraint) {
 				SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(cls->genericConstraint->baseType, context));
@@ -459,6 +493,8 @@ SLKC_API peff::Option<CompilationError> Document::instantiateGenericObject(
 	AstNodePtr<MemberNode> originalObject,
 	const peff::DynArray<AstNodePtr<AstNode>> &genericArgs,
 	AstNodePtr<MemberNode> &memberOut) {
+	SLKC_RETURN_IF_COMP_ERROR(checkStackBounds(1024 * 16));
+
 	AstNodePtr<MemberNode> duplicatedObject;
 	SLKC_RETURN_IF_COMP_ERROR(lookupGenericCache(originalObject, genericArgs, duplicatedObject));
 	if (duplicatedObject) {
@@ -532,7 +568,7 @@ SLKC_API peff::Option<CompilationError> Document::instantiateGenericObject(
 			// Map generic arguments.
 			switch (originalObject->getAstNodeType()) {
 				case AstNodeType::Fn: {
-					AstNodePtr<FnNode> obj = duplicatedObject.template castTo<FnNode>();
+					AstNodePtr<FnNode> obj = duplicatedObject.castTo<FnNode>();
 
 					peff::DynArray<AstNodePtr<FnOverloadingNode>> overloadings(allocator.get());
 
@@ -591,7 +627,7 @@ SLKC_API peff::Option<CompilationError> Document::instantiateGenericObject(
 					break;
 				}
 				case AstNodeType::Class: {
-					AstNodePtr<ClassNode> obj = duplicatedObject.template castTo<ClassNode>();
+					AstNodePtr<ClassNode> obj = duplicatedObject.castTo<ClassNode>();
 
 					GenericInstantiationContext instantiationContext(allocator.get(), &duplicatedGenericArgs);
 					instantiationContext.mappedNode = obj.castTo<MemberNode>();
@@ -644,7 +680,7 @@ SLKC_API peff::Option<CompilationError> Document::instantiateGenericObject(
 					break;
 				}
 				case AstNodeType::Interface: {
-					AstNodePtr<InterfaceNode> obj = duplicatedObject.template castTo<InterfaceNode>();
+					AstNodePtr<InterfaceNode> obj = duplicatedObject.castTo<InterfaceNode>();
 
 					GenericInstantiationContext instantiationContext(allocator.get(), &duplicatedGenericArgs);
 					instantiationContext.mappedNode = obj.castTo<MemberNode>();

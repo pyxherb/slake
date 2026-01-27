@@ -301,6 +301,27 @@ SLAKE_API GenericArgTypeError *GenericArgTypeError::alloc(
 	return peff::allocAndConstruct<GenericArgTypeError>(selfAllocator, sizeof(std::max_align_t), selfAllocator, std::move(name));
 }
 
+SLAKE_API GenericDuplicatedFnOverloadingError::GenericDuplicatedFnOverloadingError(
+	peff::Alloc *selfAllocator,
+	FnObject *originalFn)
+	: RuntimeExecError(selfAllocator, RuntimeExecErrorCode::InvalidArgumentIndex),
+	  originalFn(originalFn) {}
+SLAKE_API GenericDuplicatedFnOverloadingError::~GenericDuplicatedFnOverloadingError() {}
+
+SLAKE_API const char *GenericDuplicatedFnOverloadingError::what() const {
+	return "Duplicated function overloadings detected during generic instantiation";
+}
+
+SLAKE_API void GenericDuplicatedFnOverloadingError::dealloc() {
+	peff::destroyAndRelease<GenericDuplicatedFnOverloadingError>(selfAllocator.get(), this, sizeof(std::max_align_t));
+}
+
+SLAKE_API GenericDuplicatedFnOverloadingError *GenericDuplicatedFnOverloadingError::alloc(
+	peff::Alloc *selfAllocator,
+	FnObject *originalFn) {
+	return peff::allocAndConstruct<GenericDuplicatedFnOverloadingError>(selfAllocator, sizeof(std::max_align_t), selfAllocator, originalFn);
+}
+
 SLAKE_API GenericFieldInitError::GenericFieldInitError(
 	peff::Alloc *selfAllocator,
 	BasicModuleObject *object,

@@ -26,3 +26,8 @@ if(/* condition */) {
 } else
     /* Do something... */;
 ```
+
+### Stack Overflow In Generic Instantiator
+
+There's a stack overflow risk in the generic instantiator, perhaps we can
+replace it with iteration method instead of recursion?

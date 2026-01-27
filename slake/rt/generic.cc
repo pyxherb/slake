@@ -625,10 +625,6 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(MemberObjec
 						}
 
 						if (i.context->mappedObject == value) {
-							//
-							// We expect there's only one overloading can be instantiated.
-							// Uninstantiatable overloadings will be discarded.
-							//
 							peff::Map<FnSignature, FnOverloadingObject *, FnSignatureComparator, true> overloadings(value->overloadings.allocator());
 
 							for (auto [signature, overloading] : value->overloadings) {
@@ -654,6 +650,13 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(MemberObjec
 									SLAKE_RETURN_IF_EXCEPT(_mapGenericParams(overloading, newInstantiationContext.get()));
 
 									SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(dispatcher, overloading, newInstantiationContext.get()));
+									if (overloadings.contains({ overloading->paramTypes,
+											overloading->isWithVarArgs(),
+											overloading->genericParams.size(),
+											overloading->overridenType }))
+										return GenericDuplicatedFnOverloadingError::alloc(
+											instantiationContext->selfAllocator.get(),
+											value);
 									if (!overloadings.insert(
 											{ overloading->paramTypes,
 												overloading->isWithVarArgs(),
@@ -666,6 +669,8 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(MemberObjec
 
 							value->overloadings = std::move(overloadings);
 						} else {
+							peff::Map<FnSignature, FnOverloadingObject *, FnSignatureComparator, true> overloadings(value->overloadings.allocator());
+
 							for (auto j : value->overloadings) {
 								size_t originalTypeSlotSize = dispatcher.nextWalkTypeSlots.size();
 								if (j.second->genericParams.size()) {
@@ -698,7 +703,23 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(MemberObjec
 								} else {
 									SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(dispatcher, j.second, i.context.get()));
 								}
+								if (overloadings.contains({ j.second->paramTypes,
+										j.second->isWithVarArgs(),
+										j.second->genericParams.size(),
+										j.second->overridenType }))
+									return GenericDuplicatedFnOverloadingError::alloc(
+										instantiationContext->selfAllocator.get(),
+										value);
+								if (!overloadings.insert(
+										{ j.second->paramTypes,
+											j.second->isWithVarArgs(),
+											j.second->genericParams.size(),
+											j.second->overridenType },
+										+j.second))
+									return OutOfMemoryError::alloc();
 							}
+
+							value->overloadings = std::move(overloadings);
 						}
 						break;
 					}
@@ -729,6 +750,8 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(MemberObjec
 	}
 
 	for (auto i : fns) {
+		peff::Map<FnSignature, FnOverloadingObject *, FnSignatureComparator, true> overloadings(i->overloadings.allocator());
+
 		for (auto j : i->overloadings) {
 			// Expand the parameter pack.
 			size_t originalParamNum;
@@ -755,8 +778,21 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(MemberObjec
 					}
 				}
 			} while (originalParamNum != nParams);
+			if (overloadings.contains({ j.second->paramTypes,
+					j.second->isWithVarArgs(),
+					j.second->genericParams.size(),
+					j.second->overridenType }))
+				return GenericDuplicatedFnOverloadingError::alloc(
+					instantiationContext->selfAllocator.get(),
+					i);
+			if (!overloadings.insert(
+					{ j.second->paramTypes,
+						j.second->isWithVarArgs(),
+						j.second->genericParams.size(),
+						j.second->overridenType },
+					+j.second))
+				return OutOfMemoryError::alloc();
 		}
-		SLAKE_RETURN_IF_EXCEPT(i->resortOverloadings());
 	}
 
 	/* for (auto i : deferredTypeDefs) {

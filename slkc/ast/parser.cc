@@ -1666,7 +1666,8 @@ accessModifierParseEnd:
 
 					ConflictingDefinitionsErrorExData exData(std::move(s));
 
-					return SyntaxError(TokenRange(p.get(), i->idxNameToken), std::move(exData));
+					if(syntaxErrors.pushBack(SyntaxError(TokenRange(p.get(), i->idxNameToken), std::move(exData))))
+						return genOutOfMemorySyntaxError();
 				}
 				AstNodePtr<VarNode> varNode;
 

@@ -846,10 +846,10 @@ int main(int argc, char *argv[]) {
 				dumpCompilationError(parser, *e);
 			}
 
-			if (auto e = indexModuleVarMembers(&compileEnv, rootMod); e) {
+			/* if (auto e = indexModuleVarMembers(&compileEnv, rootMod); e) {
 				encounteredErrors = true;
 				dumpCompilationError(parser, *e);
-			}
+			}*/
 
 			if (auto e = slkc::compileModuleLikeNode(&compileEnv, mod, modObj.get()); e) {
 				encounteredErrors = true;

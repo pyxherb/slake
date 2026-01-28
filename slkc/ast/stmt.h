@@ -54,6 +54,7 @@ namespace slkc {
 		AstNodePtr<TypeNameNode> type;
 		AstNodePtr<ExprNode> initialValue;
 		peff::DynArray<AstNodePtr<AttributeNode>> attributes;
+		size_t idxNameToken = SIZE_MAX;
 
 		SLKC_API VarDefEntry(peff::Alloc *selfAllocator);
 		SLKC_API virtual ~VarDefEntry();

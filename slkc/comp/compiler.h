@@ -686,31 +686,6 @@ namespace slkc {
 		CompileEnvironment *compileEnv,
 		AstNodePtr<FnOverloadingNode> fn);
 
-	[[nodiscard]] SLKC_API peff::Option<CompilationError> reindexClassGenericParams(
-		CompileEnvironment *compileEnv,
-		AstNodePtr<ClassNode> cls);
-	[[nodiscard]] SLKC_API peff::Option<CompilationError> indexClassGenericParams(
-		CompileEnvironment *compileEnv,
-		AstNodePtr<ClassNode> cls);
-
-	[[nodiscard]] SLKC_API peff::Option<CompilationError> reindexInterfaceGenericParams(
-		CompileEnvironment *compileEnv,
-		AstNodePtr<InterfaceNode> interfaceNode);
-	[[nodiscard]] SLKC_API peff::Option<CompilationError> indexInterfaceGenericParams(
-		CompileEnvironment *compileEnv,
-		AstNodePtr<InterfaceNode> interfaceNode);
-
-	[[nodiscard]] SLKC_API peff::Option<CompilationError> reindexStructGenericParams(
-		CompileEnvironment *compileEnv,
-		AstNodePtr<StructNode> structNode);
-	[[nodiscard]] SLKC_API peff::Option<CompilationError> indexStructGenericParams(
-		CompileEnvironment *compileEnv,
-		AstNodePtr<StructNode> structNode);
-
-	[[nodiscard]] SLKC_API peff::Option<CompilationError> indexModuleVarMembers(
-		CompileEnvironment *compileEnv,
-		AstNodePtr<ModuleNode> moduleNode);
-
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> determineFnOverloading(
 		CompileEnvironment *compileEnv,
 		AstNodePtr<FnNode> fnSlot,

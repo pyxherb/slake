@@ -422,6 +422,22 @@ SLKC_API peff::Option<SyntaxError> Parser::parseFn(AstNodePtr<FnOverloadingNode>
 	if ((syntaxError = parseGenericParams(fnNodeOut->genericParams, fnNodeOut->idxGenericParamCommaTokens, fnNodeOut->lAngleBracketIndex, fnNodeOut->rAngleBracketIndex))) {
 		return syntaxError;
 	}
+	for (size_t i = 0;  i < fnNodeOut->genericParams.size(); ++i) {
+		auto gp = fnNodeOut->genericParams.at(i);
+		if (fnNodeOut->genericParamIndices.contains(gp->name)) {
+			peff::String s(resourceAllocator.get());
+
+			if (!s.build(gp->name)) {
+				return genOutOfMemorySyntaxError();
+			}
+
+			ConflictingDefinitionsErrorExData exData(std::move(s));
+
+			return SyntaxError(gp->tokenRange, std::move(exData));
+		}
+		if(!fnNodeOut->genericParamIndices.insert(gp->name, +i))
+			return genOutOfMemorySyntaxError();
+	}
 
 	bool hasVarArg = false;
 	if ((syntaxError = parseParams(fnNodeOut->params, hasVarArg, fnNodeOut->idxParamCommaTokens, fnNodeOut->lParentheseIndex, fnNodeOut->rParentheseIndex))) {
@@ -429,6 +445,26 @@ SLKC_API peff::Option<SyntaxError> Parser::parseFn(AstNodePtr<FnOverloadingNode>
 	}
 	if (hasVarArg) {
 		fnNodeOut->fnFlags |= FN_VARG;
+	}
+	// Index the parameters.
+	for (size_t i = 0; i < fnNodeOut->params.size(); ++i) {
+		AstNodePtr<VarNode> &curParam = fnNodeOut->params.at(i);
+		if (fnNodeOut->paramIndices.contains(curParam->name)) {
+			peff::String s(resourceAllocator.get());
+
+			if (!s.build(curParam->name)) {
+				return genOutOfMemorySyntaxError();
+			}
+
+			ConflictingDefinitionsErrorExData exData(std::move(s));
+
+			if (!syntaxErrors.pushBack(SyntaxError(curParam->tokenRange, std::move(exData))))
+				return genOutOfMemorySyntaxError();
+		}
+
+		if (!fnNodeOut->paramIndices.insert(curParam->name, +i)) {
+			return genOutOfMemorySyntaxError();
+		}
 	}
 
 	Token *virtualToken;
@@ -1157,6 +1193,22 @@ accessModifierParseEnd:
 				if ((syntaxError = parseGenericParams(classNode->genericParams, classNode->idxGenericParamCommaTokens, classNode->idxLAngleBracketToken, classNode->idxRAngleBracketToken))) {
 					return syntaxError;
 				}
+				for (size_t i = 0; i < classNode->genericParams.size(); ++i) {
+					auto gp = classNode->genericParams.at(i);
+					if (classNode->genericParamIndices.contains(gp->name)) {
+						peff::String s(resourceAllocator.get());
+
+						if (!s.build(gp->name)) {
+							return genOutOfMemorySyntaxError();
+						}
+
+						ConflictingDefinitionsErrorExData exData(std::move(s));
+
+						return SyntaxError(gp->tokenRange, std::move(exData));
+					}
+					if (!classNode->genericParamIndices.insert(gp->name, +i))
+						return genOutOfMemorySyntaxError();
+				}
 
 				if (Token *lParentheseToken = peekToken(); lParentheseToken->tokenId == TokenId::LParenthese) {
 					nextToken();
@@ -1290,6 +1342,22 @@ accessModifierParseEnd:
 				if ((syntaxError = parseGenericParams(structNode->genericParams, structNode->idxGenericParamCommaTokens, structNode->idxLAngleBracketToken, structNode->idxRAngleBracketToken))) {
 					return syntaxError;
 				}
+				for (size_t i = 0; i < structNode->genericParams.size(); ++i) {
+					auto gp = structNode->genericParams.at(i);
+					if (structNode->genericParamIndices.contains(gp->name)) {
+						peff::String s(resourceAllocator.get());
+
+						if (!s.build(gp->name)) {
+							return genOutOfMemorySyntaxError();
+						}
+
+						ConflictingDefinitionsErrorExData exData(std::move(s));
+
+						return SyntaxError(gp->tokenRange, std::move(exData));
+					}
+					if (!structNode->genericParamIndices.insert(gp->name, +i))
+						return genOutOfMemorySyntaxError();
+				}
 
 				if (Token *colonToken = peekToken(); colonToken->tokenId == TokenId::Colon) {
 					nextToken();
@@ -1410,6 +1478,22 @@ accessModifierParseEnd:
 
 				if ((syntaxError = parseGenericParams(interfaceNode->genericParams, interfaceNode->idxGenericParamCommaTokens, interfaceNode->idxLAngleBracketToken, interfaceNode->idxRAngleBracketToken))) {
 					return syntaxError;
+				}
+				for (size_t i = 0; i < interfaceNode->genericParams.size(); ++i) {
+					auto gp = interfaceNode->genericParams.at(i);
+					if (interfaceNode->genericParamIndices.contains(gp->name)) {
+						peff::String s(resourceAllocator.get());
+
+						if (!s.build(gp->name)) {
+							return genOutOfMemorySyntaxError();
+						}
+
+						ConflictingDefinitionsErrorExData exData(std::move(s));
+
+						return SyntaxError(gp->tokenRange, std::move(exData));
+					}
+					if (!interfaceNode->genericParamIndices.insert(gp->name, +i))
+						return genOutOfMemorySyntaxError();
 				}
 
 				if (Token *colonToken = peekToken(); colonToken->tokenId == TokenId::Colon) {
@@ -1553,16 +1637,16 @@ accessModifierParseEnd:
 
 			stmt->accessModifier = access;
 
+			if (!p->varDefStmts.pushBack(AstNodePtr<VarDefStmtNode>(stmt))) {
+				return genOutOfMemorySyntaxError();
+			}
+
 			peff::ScopeGuard setTokenRangeGuard([this, token, stmt]() noexcept {
 				stmt->tokenRange = TokenRange{ document->mainModule, token->index, parseContext.idxPrevToken };
 			});
 
 			if ((syntaxError = parseVarDefs(stmt->varDefEntries))) {
 				return syntaxError;
-			}
-
-			if (!p->varDefStmts.pushBack(std::move(stmt))) {
-				return genOutOfMemorySyntaxError();
 			}
 
 			Token *semicolonToken;
@@ -1572,6 +1656,33 @@ accessModifierParseEnd:
 			}
 
 			nextToken();
+
+			for (auto &i : stmt->varDefEntries) {
+				if (p->memberIndices.contains(i->name)) {
+					peff::String s(resourceAllocator.get());
+
+					if (!s.build(i->name))
+						return genOutOfMemorySyntaxError();
+
+					ConflictingDefinitionsErrorExData exData(std::move(s));
+
+					return SyntaxError(TokenRange(p.get(), i->idxNameToken), std::move(exData));
+				}
+				AstNodePtr<VarNode> varNode;
+
+				if (!(varNode = makeAstNode<VarNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
+					return genOutOfMemorySyntaxError();
+				}
+
+				if (!varNode->name.build(i->name))
+					return genOutOfMemorySyntaxError();
+				varNode->initialValue = i->initialValue;
+				varNode->type = i->type;
+				varNode->accessModifier = stmt->accessModifier;
+
+				if (!p->addMember(varNode.castTo<MemberNode>()))
+					return genOutOfMemorySyntaxError();
+			}
 
 			break;
 		}

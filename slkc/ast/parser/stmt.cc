@@ -36,6 +36,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseVarDefs(peff::DynArray<VarDefEnt
 			return genOutOfMemorySyntaxError();
 		}
 
+		entry->idxNameToken = currentToken->index;
 		if (!entry->name.build(currentToken->sourceText)) {
 			return genOutOfMemorySyntaxError();
 		}

@@ -63,6 +63,8 @@ SLKC_API VarDefEntryPtr slkc::duplicateVarDefEntry(VarDefEntry *varDefEntry, pef
 		return {};
 	}
 
+	ptr->idxNameToken = varDefEntry->idxNameToken;
+
 	return ptr;
 }
 

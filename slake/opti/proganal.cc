@@ -332,7 +332,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfoPass(
 	analyzedInfoOut.contextObject = ContextObject::alloc(runtime, SLAKE_STACK_SIZE_MAX);
 	MajorFramePtr pseudoMajorFrame;
 	{
-		SLAKE_RETURN_IF_EXCEPT(runtime->_createNewMajorFrame(&analyzedInfoOut.contextObject->_context, nullptr, nullptr, nullptr, 0, UINT32_MAX));
+		SLAKE_RETURN_IF_EXCEPT(runtime->_createNewMajorFrame(&analyzedInfoOut.contextObject->_context, nullptr, nullptr, nullptr, 0, UINT32_MAX, nullptr));
 		pseudoMajorFrame = MajorFramePtr(MajorFrame::alloc(runtime, &analyzedInfoOut.contextObject->_context));
 	}
 

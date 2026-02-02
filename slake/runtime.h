@@ -274,7 +274,7 @@ namespace slake {
 		friend class ModuleObject;
 
 	public:
-		[[nodiscard]] SLAKE_API InternalExceptionPointer _addLocalVar(Context *context, const MajorFrame *frame, TypeRef type, Reference &objectRefOut) noexcept;
+		[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer _addLocalVar(Context *context, const MajorFrame *frame, TypeRef type, Reference &objectRefOut) noexcept;
 		[[nodiscard]] SLAKE_API InternalExceptionPointer _fillArgs(
 			MajorFrame *newMajorFrame,
 			const FnOverloadingObject *fn,
@@ -284,14 +284,16 @@ namespace slake {
 		[[nodiscard]] SLAKE_API InternalExceptionPointer _createNewCoroutineMajorFrame(
 			Context *context,
 			CoroutineObject *coroutine,
-			uint32_t returnValueOut) noexcept;
+			uint32_t returnValueOut,
+			const Reference *returnStructRef) noexcept;
 		[[nodiscard]] SLAKE_API InternalExceptionPointer _createNewMajorFrame(
 			Context *context,
 			Object *thisObject,
 			const FnOverloadingObject *fn,
 			const Value *args,
 			uint32_t nArgs,
-			uint32_t returnValueOut) noexcept;
+			uint32_t returnValueOut,
+			const Reference *returnStructRef) noexcept;
 
 		/// @brief Runtime flags.
 		RuntimeFlags runtimeFlags = 0;
@@ -413,17 +415,7 @@ namespace slake {
 			Object *thisObject,
 			const Value *args,
 			uint32_t nArgs,
-			Value &valueOut,
-			void *nativeStackBaseCurrentPtr = nullptr,
-			size_t nativeStackSize = 0);
-		[[nodiscard]] SLAKE_API InternalExceptionPointer execFnInAotFn(
-			const FnOverloadingObject *overloading,
-			ContextObject *context,
-			Object *thisObject,
-			const Value *args,
-			uint32_t nArgs,
-			void *nativeStackBaseCurrentPtr = nullptr,
-			size_t nativeStackSize = 0);
+			Value &valueOut);
 		[[nodiscard]] SLAKE_API InternalExceptionPointer execFnWithSeparatedExecutionThread(
 			const FnOverloadingObject *overloading,
 			ContextObject *context,

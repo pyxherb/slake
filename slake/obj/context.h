@@ -53,6 +53,7 @@ namespace slake {
 		peff::Option<ResumableContextData> resumableContextData;
 
 		uint32_t returnValueOutReg = UINT32_MAX;
+		Reference returnStructRef;
 
 		size_t stackBase = 0;
 		size_t offRegs = UINT32_MAX;

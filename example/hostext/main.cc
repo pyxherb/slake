@@ -78,15 +78,16 @@ Value print(Context *context, MajorFrame *curMajorFrame) {
 
 void printTraceback(Runtime *rt, ContextObject *context) {
 	printf("Traceback:\n");
-	for (auto &i : context->_context.majorFrames) {
-		if (!i.curFn) {
+
+	auto walker = [](MajorFrame *i, void *userData) {
+		if (!i->curFn) {
 			printf("(Stack top)\n");
-			continue;
+			return true;
 		}
 
 		peff::DynArray<IdRefEntry> fullRef(peff::getDefaultAlloc());
 
-		if (!rt->getFullRef(peff::getDefaultAlloc(), i.curFn->fnObject, fullRef)) {
+		if (!i->associatedRuntime->getFullRef(peff::getDefaultAlloc(), i->curFn->fnObject, fullRef)) {
 			throw std::bad_alloc();
 		}
 
@@ -114,9 +115,13 @@ void printTraceback(Runtime *rt, ContextObject *context) {
 			}
 		}
 
-		printf("\t%s: %u", name.c_str(), i.resumableContextData->curIns);
+		printf("\t%s: %u", name.c_str(), i->resumableContextData->curIns);
 		putchar('\n');
-	}
+
+		return true;
+	};
+
+	context->getContext().forEachMajorFrame(walker, nullptr);
 }
 
 class MyReader : public loader::Reader {

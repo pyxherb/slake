@@ -2,7 +2,7 @@ module hostext;
 
 import hostext.extfns;
 
-attribute TestAttribute {
+/*attribute TestAttribute {
 	let test: i32;
 }
 
@@ -327,17 +327,17 @@ public async main() -> i32 {
 	hostext.extfns.print(s.c, "\n");
 
 	return 114514;
-}
+}*/
 
-/*public fn fib(n: u64) -> u64 {
+public fn fib(n: u64) -> u64 {
 	if (n < 1)
-		return 0;
+		return 0 as u64;
 	else if (n < 3)
-		return 1;
+		return 1 as u64;
 	return fib(n - 1) + fib(n - 2);
 }
 
 public async main() -> i32 {
 	extfns.print("fib(30)=", fib(30));
 	return 0;
-}*/
+}

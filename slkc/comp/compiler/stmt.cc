@@ -862,6 +862,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileReturnStmt(
 	if (s->value) {
 		CompileExprResult result(compileEnv->allocator.get());
 
+		// TODO: Convert the return value.
+
 		SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, s->value, ExprEvalPurpose::RValue, compileEnv->curOverloading->returnType, reg, result));
 
 		SLKC_RETURN_IF_COMP_ERROR(

@@ -21,7 +21,7 @@ namespace slake {
 		uint32_t offHandler;
 	};
 
-	struct MinorFrameMetadata {
+	struct MinorFrame {
 		size_t offLastMinorFrame;
 		size_t offExceptHandler;
 		size_t stackBase;
@@ -45,6 +45,8 @@ namespace slake {
 
 	/// @brief A major frame represents a single calling frame.
 	struct MajorFrame final {
+		size_t offPrevFrame = SIZE_MAX, offNextFrame = SIZE_MAX;
+
 		Runtime *associatedRuntime;
 
 		const FnOverloadingObject *curFn = nullptr;	 // Current function overloading.
@@ -83,21 +85,24 @@ namespace slake {
 	struct Context {
 		Runtime *runtime;
 		peff::RcObjectPtr<peff::Alloc> selfAllocator;
-		peff::List<MajorFrame> majorFrames;	// Major frame list
-		ContextFlags flags = 0;					// Flags
-		char *dataStack = nullptr;				// Data stack
-		char *dataStackTopPtr = nullptr;		// Data stack top pointer
-		size_t stackTop = 0;					// Stack top
+		size_t nMajorFrames = 0;
+		size_t offCurMajorFrame = SIZE_MAX;	 // Offset of current major frame
+		ContextFlags flags = 0;				 // Flags
+		char *dataStack = nullptr;			 // Data stack
+		char *dataStackTopPtr = nullptr;	 // Data stack top pointer
+		size_t stackTop = 0;				 // Stack top
 		size_t stackSize;
 
 		SLAKE_API char *stackAlloc(size_t size);
-		SLAKE_API void leaveMajor();
 
 		SLAKE_API Context(Runtime *runtime, peff::Alloc *allocator);
 
 		SLAKE_API ~Context();
 
 		SLAKE_API void replaceAllocator(peff::Alloc *allocator) noexcept;
+
+		typedef bool (*MajorFrameWalker)(MajorFrame *majorFrame, void *userData);
+		SLAKE_API void forEachMajorFrame(MajorFrameWalker walker, void *userData);
 	};
 
 	class ContextObject final : public Object {

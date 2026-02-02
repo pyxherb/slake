@@ -195,10 +195,23 @@ namespace slake {
 			bool isInGenericScope;
 		};
 
+		SLAKE_API MinorFrame *Runtime::_fetchMinorFrame(
+			Context *context,
+			MajorFrame *majorFrame,
+			size_t stackOffset);
+		SLAKE_API MajorFrame *_fetchMajorFrame(
+			Context *context,
+			size_t stackOffset);
+		SLAKE_API ExceptHandler *_fetchExceptHandler(
+			Context *context,
+			MajorFrame *majorFrame,
+			size_t stackOffset);
 		/// @brief Execute a single instruction.
 		/// @param context Context for execution.
 		/// @param ins Instruction to be executed.
 		[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer _execIns(ContextObject *const context, MajorFrame *const curMajorFrame, const Opcode opcode, const size_t output, const size_t nOperands, const Value *const operands, bool &isContextChangedOut) noexcept;
+
+		friend struct Context;
 
 	public:
 		Object *youngObjectList = nullptr, *persistentObjectList = nullptr;
@@ -294,6 +307,7 @@ namespace slake {
 			uint32_t nArgs,
 			uint32_t returnValueOut,
 			const Reference *returnStructRef) noexcept;
+		[[nodiscard]] SLAKE_API InternalExceptionPointer _leaveMajorFrame(Context *context) noexcept;
 
 		/// @brief Runtime flags.
 		RuntimeFlags runtimeFlags = 0;

@@ -22,12 +22,6 @@ SLAKE_API void MajorFrame::dealloc() noexcept {
 	peff::destroyAndRelease<MajorFrame>(associatedRuntime->getFixedAlloc(), this, alignof(MajorFrame));
 }
 
-SLAKE_API void Context::leaveMajor() {
-	stackTop = majorFrames.back().stackBase;
-
-	majorFrames.popBack();
-}
-
 SLAKE_API char *Context::stackAlloc(size_t size) {
 	if (size_t newStackTop = stackTop + size;
 		newStackTop > stackSize) {
@@ -38,10 +32,22 @@ SLAKE_API char *Context::stackAlloc(size_t size) {
 	return dataStack + stackSize - stackTop;
 }
 
-SLAKE_API Context::Context(Runtime *runtime, peff::Alloc *selfAllocator) : runtime(runtime), selfAllocator(selfAllocator), majorFrames(selfAllocator) {
+SLAKE_API Context::Context(Runtime *runtime, peff::Alloc *selfAllocator) : runtime(runtime), selfAllocator(selfAllocator) {
 }
 
 SLAKE_API Context::~Context() {
+	{
+		MajorFrame *curMajorFrame;
+		size_t offCurMajorFrame = this->offCurMajorFrame;
+
+		if (offCurMajorFrame != SIZE_MAX)
+			do {
+				curMajorFrame = this->runtime->_fetchMajorFrame(this, offCurMajorFrame);
+				offCurMajorFrame = curMajorFrame->offPrevFrame;
+				std::destroy_at(curMajorFrame);
+			} while (offCurMajorFrame != SIZE_MAX);
+	}
+
 	if (dataStack) {
 		selfAllocator->release(dataStack, stackSize, sizeof(std::max_align_t));
 	}
@@ -52,10 +58,26 @@ SLAKE_API void Context::replaceAllocator(peff::Alloc *allocator) noexcept {
 
 	selfAllocator = allocator;
 
-	majorFrames.replaceAllocator(allocator);
+	MajorFrame *curMajorFrame;
+	size_t offCurMajorFrame = this->offCurMajorFrame;
 
-	for (auto &i : majorFrames)
-		i.replaceAllocator(allocator);
+	do {
+		curMajorFrame = this->runtime->_fetchMajorFrame(this, offCurMajorFrame);
+		curMajorFrame->replaceAllocator(allocator);
+		offCurMajorFrame = curMajorFrame->offPrevFrame;
+	} while (curMajorFrame->offPrevFrame != SIZE_MAX);
+}
+
+SLAKE_API void Context::forEachMajorFrame(MajorFrameWalker walker, void *userData) {
+	MajorFrame *curMajorFrame;
+	size_t offCurMajorFrame = this->offCurMajorFrame;
+
+	do {
+		curMajorFrame = this->runtime->_fetchMajorFrame(this, offCurMajorFrame);
+		if (!walker(curMajorFrame, userData))
+			break;
+		offCurMajorFrame = curMajorFrame->offPrevFrame;
+	} while (curMajorFrame->offPrevFrame != SIZE_MAX);
 }
 
 SLAKE_API ContextObject::ContextObject(

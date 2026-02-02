@@ -116,7 +116,7 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, char *stackTop, size_t s
 		_gcWalk(context, k);
 	char *const stackBase = stackTop + szStack;
 	for (auto k = value.offCurMinorFrame; k != SIZE_MAX; ) {
-		MinorFrameMetadata *mjf = (MinorFrameMetadata*)(stackBase - k);
+		MinorFrame *mjf = (MinorFrame*)(stackBase - k);
 		for (auto l = mjf->offExceptHandler; l != SIZE_MAX;) {
 			ExceptHandler *eh = (ExceptHandler *)(stackBase - l);
 
@@ -507,10 +507,14 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, char *dataStack, size_t 
 SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Context &ctxt) {
 	bool isWalkableObjectDetected = false;
 
-	for (auto &i : ctxt.majorFrames) {
-		context->pushObject(i.curCoroutine);
-		_gcWalk(context, ctxt.dataStack, ctxt.stackSize, &i);
-	}
+	MajorFrame *mf;
+	size_t offCurMajorFrame = ctxt.offCurMajorFrame;
+	do {
+		mf = _fetchMajorFrame(&ctxt, offCurMajorFrame);
+		context->pushObject(mf->curCoroutine);
+		_gcWalk(context, ctxt.dataStack, ctxt.stackSize, mf);
+		offCurMajorFrame = mf->offPrevFrame;
+	} while (mf->offPrevFrame != SIZE_MAX);
 }
 
 SLAKE_API void GCWalkContext::removeFromCurGCSet(Object *object) {

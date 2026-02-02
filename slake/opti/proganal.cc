@@ -769,19 +769,21 @@ InternalExceptionPointer slake::opti::analyzeProgramInfoPass(
 
 					TypeRef typeName = curIns.operands[0].getTypeName();
 
-					Reference entityRef;
-					SLAKE_RETURN_IF_EXCEPT(runtime->_addLocalVar(&analyzedInfoOut.contextObject->_context, pseudoMajorFrame.get(), typeName, entityRef));
+					if (curIns.output != UINT32_MAX) {
+						Reference entityRef;
+						SLAKE_RETURN_IF_EXCEPT(runtime->_addLocalVar(&analyzedInfoOut.contextObject->_context, pseudoMajorFrame.get(), typeName, curIns.output, entityRef));
 
-					SLAKE_RETURN_IF_EXCEPT(
-						wrapIntoRefType(
-							runtime,
-							typeName,
-							hostRefHolder,
-							analyzedInfoOut.analyzedRegInfo.at(regIndex).type));
+						SLAKE_RETURN_IF_EXCEPT(
+							wrapIntoRefType(
+								runtime,
+								typeName,
+								hostRefHolder,
+								analyzedInfoOut.analyzedRegInfo.at(regIndex).type));
 
-					analyzedInfoOut.analyzedRegInfo.at(regIndex).storageType = RegStorageType::LocalVar;
-					analyzedInfoOut.analyzedRegInfo.at(regIndex).storageInfo.asLocalVar.definitionReg = curIns.output;
-					setExpectedValue(regIndex, Value(entityRef));
+						analyzedInfoOut.analyzedRegInfo.at(regIndex).storageType = RegStorageType::LocalVar;
+						analyzedInfoOut.analyzedRegInfo.at(regIndex).storageInfo.asLocalVar.definitionReg = curIns.output;
+						setExpectedValue(regIndex, Value(entityRef));
+					}
 					break;
 				}
 				case Opcode::LVALUE: {

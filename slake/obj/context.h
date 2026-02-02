@@ -22,9 +22,17 @@ namespace slake {
 	};
 
 	struct MinorFrame {
-		size_t offLastMinorFrame;
-		size_t offExceptHandler;
-		size_t stackBase;
+		size_t offLastMinorFrame = SIZE_MAX;
+		size_t offExceptHandler = SIZE_MAX;
+		size_t offAllocaRecords = SIZE_MAX;
+		size_t stackBase = 0;
+	};
+
+	/// @brief Alloca record, used for invalidating references in the registers, etc.
+	/// @note Do not forget to add GC scan codes when you adding anything new into this structure!
+	struct AllocaRecord {
+		size_t offNext;
+		uint32_t defReg;
 	};
 
 	struct ResumableContextData {
@@ -32,6 +40,7 @@ namespace slake {
 		uint32_t lastJumpSrc = UINT32_MAX;
 		peff::DynArray<Value> argStack;
 		peff::DynArray<Value> nextArgStack;
+		/// @brief Offset of current minor frame, note that it is context-dependent offset.
 		size_t offCurMinorFrame = SIZE_MAX;
 		size_t nRegs = 0;
 		Object *thisObject = nullptr;

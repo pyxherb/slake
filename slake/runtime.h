@@ -197,7 +197,11 @@ namespace slake {
 
 		SLAKE_API MinorFrame *Runtime::_fetchMinorFrame(
 			Context *context,
-			MajorFrame *majorFrame,
+			const MajorFrame *majorFrame,
+			size_t stackOffset);
+		SLAKE_API AllocaRecord *Runtime::_fetchAllocaRecord(
+			Context *context,
+			const MajorFrame *majorFrame,
 			size_t stackOffset);
 		SLAKE_API MajorFrame *_fetchMajorFrame(
 			Context *context,
@@ -287,7 +291,7 @@ namespace slake {
 		friend class ModuleObject;
 
 	public:
-		[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer _addLocalVar(Context *context, const MajorFrame *frame, TypeRef type, Reference &objectRefOut) noexcept;
+		[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer _addLocalVar(Context *context, const MajorFrame *frame, TypeRef type, uint32_t outputReg, Reference &objectRefOut) noexcept;
 		[[nodiscard]] SLAKE_API InternalExceptionPointer _fillArgs(
 			MajorFrame *newMajorFrame,
 			const FnOverloadingObject *fn,

@@ -9,17 +9,6 @@ namespace slake {
 	struct MajorFrame;
 	struct Context;
 
-	struct LocalVarRecord {
-		size_t stackOffset;
-		TypeRef type;
-	};
-
-	struct AllocaRecord {
-		size_t stackOffset;
-		size_t length;
-		TypeRef type;
-	};
-
 	[[nodiscard]] InternalExceptionPointer raiseMismatchedVarTypeError(Runtime *rt);
 }
 

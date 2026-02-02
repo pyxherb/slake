@@ -580,6 +580,7 @@ SLKC_API peff::Option<SyntaxError> BCParser::parseStmt(AstNodePtr<BCStmtNode> &s
 
 			while (true) {
 				if (peekToken()->tokenId == TokenId::Semicolon) {
+					nextToken();
 					break;
 				}
 

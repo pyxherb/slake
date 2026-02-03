@@ -561,9 +561,10 @@ SLAKE_FORCEINLINE InternalExceptionPointer slake::Runtime::_addLocalVar(Context 
 
 	restoreStackTopGuard.release();
 
-	objectRefOut = frame->curCoroutine
-					   ? Reference::makeCoroutineLocalVarRef(frame->curCoroutine, offOut - frame->curCoroutine->offStackTop)
-					   : Reference::makeLocalVarRef(context, offOut);
+	if (frame->curCoroutine)
+		objectRefOut = CoroutineLocalVarRef(frame->curCoroutine, offOut - frame->curCoroutine->offStackTop);
+	else
+		objectRefOut = LocalVarRef(context, offOut);
 	return {};
 }
 
@@ -573,9 +574,9 @@ SLAKE_FORCEINLINE InternalExceptionPointer larg(Context *context, MajorFrame *ma
 	}
 
 	if (majorFrame->curCoroutine) {
-		objectRefOut = Reference::makeCoroutineArgRef(majorFrame->curCoroutine, off);
+		objectRefOut = CoroutineArgRef(majorFrame->curCoroutine, off);
 	} else {
-		objectRefOut = Reference::makeArgRef(majorFrame, context->dataStack, context->stackSize, off);
+		objectRefOut = ArgRef(majorFrame, context->dataStack, context->stackSize, off);
 	}
 	return {};
 }
@@ -1714,7 +1715,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 				return allocOutOfMemoryErrorIfAllocFailed(InvalidArrayIndexError::alloc(getFixedAlloc(), indexIn));
 			}
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, stackSize, curMajorFrame, output, Value(Reference::makeArrayElementRef(arrayObject, indexIn))));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, stackSize, curMajorFrame, output, Value(Reference(ArrayElementRef(arrayObject, indexIn)))));
 
 			break;
 		}
@@ -1783,7 +1784,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 							genericInstantiationContext.genericArgs = &curName.genericArgs;
 							MemberObject *m;
 							SLAKE_RETURN_IF_EXCEPT(instantiateGenericObject((MemberObject *)entityRef.asObject, m, &genericInstantiationContext));
-							entityRef = Reference::makeObjectRef(m);
+							entityRef = Reference(m);
 						}
 					}
 
@@ -2114,7 +2115,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 			curMajorFrame->resumableContextData->nNextArgs = 0;
 
 			if (returnValueOutputReg != UINT32_MAX) {
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, stackSize, curMajorFrame, returnValueOutputReg, Reference::makeObjectRef(co.get())));
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, stackSize, curMajorFrame, returnValueOutputReg, Reference(co.get())));
 			}
 			break;
 		}
@@ -2217,7 +2218,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 		case Opcode::LTHIS: {
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 0>(this, output, nOperands));
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, stackSize, curMajorFrame, output, Reference::makeObjectRef(curMajorFrame->resumableContextData->thisObject)));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, stackSize, curMajorFrame, output, Reference(curMajorFrame->resumableContextData->thisObject)));
 			break;
 		}
 		case Opcode::NEW: {
@@ -2233,7 +2234,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 					if (!instance)
 						// TODO: Return more detail exceptions.
 						return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, stackSize, curMajorFrame, output, Reference::makeObjectRef(instance.get())));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, stackSize, curMajorFrame, output, Reference(instance.get())));
 					break;
 				}
 				default:
@@ -2255,7 +2256,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 				// TODO: Return more detailed exceptions.
 				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, stackSize, curMajorFrame, output, Reference::makeObjectRef(instance.get())));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, stackSize, curMajorFrame, output, Reference(instance.get())));
 
 			break;
 		}

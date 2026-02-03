@@ -293,13 +293,13 @@ SLAKE_API Value Runtime::defaultValueOf(const TypeRef &type) const {
 		case TypeId::String:
 		case TypeId::Instance:
 		case TypeId::Array:
-			return Value(slake::Reference::makeObjectRef(nullptr));
+			return Value(slake::Reference(nullptr));
 		case TypeId::Ref:
-			return Value(slake::Reference::makeInstanceFieldRef(nullptr, SIZE_MAX));
+			return Value(slake::ObjectFieldRef(nullptr, SIZE_MAX));
 			break;
 		case TypeId::TempRef:
 			// TODO: Replace it with TempRef version.
-			return Value(slake::Reference::makeInstanceFieldRef(nullptr, SIZE_MAX));
+			return Value(slake::ObjectFieldRef(nullptr, SIZE_MAX));
 			break;
 		default:
 			break;

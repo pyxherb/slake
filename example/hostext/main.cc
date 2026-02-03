@@ -14,9 +14,9 @@ Value print(Context *context, MajorFrame *curMajorFrame) {
 		for (uint8_t i = 0; i < curMajorFrame->resumableContextData->nArgs; ++i) {
 			Value data;
 			if (curMajorFrame->curCoroutine)
-				curMajorFrame->curFn->associatedRuntime->readVar(Reference::makeCoroutineArgRef(curMajorFrame->curCoroutine, i), data);
+				curMajorFrame->curFn->associatedRuntime->readVar(CoroutineArgRef(curMajorFrame->curCoroutine, i), data);
 			else
-				curMajorFrame->curFn->associatedRuntime->readVar(Reference::makeArgRef(curMajorFrame, context->dataStack, context->stackSize, i), data);
+				curMajorFrame->curFn->associatedRuntime->readVar(ArgRef(curMajorFrame, context->dataStack, context->stackSize, i), data);
 
 			switch (data.valueType) {
 				case ValueType::I8:

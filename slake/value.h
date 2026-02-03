@@ -23,7 +23,7 @@ namespace slake {
 		StaticFieldRef,
 		LocalVarRef,
 		CoroutineLocalVarRef,
-		InstanceFieldRef,
+		ObjectFieldRef,
 		ArrayElementRef,
 		ArgRef,
 		CoroutineArgRef,
@@ -40,31 +40,49 @@ namespace slake {
 	struct StaticFieldRef {
 		BasicModuleObject *moduleObject;
 		uint32_t index;
+
+		StaticFieldRef() = default;
+		SLAKE_FORCEINLINE StaticFieldRef(BasicModuleObject *moduleObject, uint32_t index) : moduleObject(moduleObject), index(index) {}
 	};
 
 	struct ArrayElementRef {
 		ArrayObject *arrayObject;
 		size_t index;
+
+		ArrayElementRef() = default;
+		SLAKE_FORCEINLINE ArrayElementRef(ArrayObject *arrayObject, uint32_t index) : arrayObject(arrayObject), index(index) {}
 	};
 
 	struct ObjectFieldRef {
 		InstanceObject *instanceObject;
 		uint32_t fieldIndex;
+
+		ObjectFieldRef() = default;
+		SLAKE_FORCEINLINE ObjectFieldRef(InstanceObject *instanceObject, uint32_t fieldIndex) : instanceObject(instanceObject), fieldIndex(fieldIndex) {}
 	};
 
 	struct LocalVarRef {
 		Context *context;
 		size_t stackOff;
+
+		LocalVarRef() = default;
+		SLAKE_FORCEINLINE LocalVarRef(Context *context, size_t stackOff) : context(context), stackOff(stackOff) {}
 	};
 
 	struct CoroutineLocalVarRef {
 		CoroutineObject *coroutine;
 		size_t stackOff;
+
+		CoroutineLocalVarRef() = default;
+		SLAKE_FORCEINLINE CoroutineLocalVarRef(CoroutineObject *coroutine, size_t stackOff) : coroutine(coroutine), stackOff(stackOff) {}
 	};
 
 	struct LocalVarStructRef {
 		void *ptr;
 		StructObject *structObject;
+
+		LocalVarStructRef() = default;
+		SLAKE_FORCEINLINE LocalVarStructRef(void *ptr, StructObject *structObject) : ptr(ptr), structObject(structObject) {}
 	};
 
 	struct ArgRef {
@@ -72,17 +90,25 @@ namespace slake {
 		char *dataStack;
 		size_t stackSize;
 		uint32_t argIndex;
+
+		ArgRef() = default;
+		SLAKE_FORCEINLINE ArgRef(const MajorFrame *majorFrame, char *dataStack, size_t stackSize, uint32_t argIndex) : majorFrame(majorFrame), dataStack(dataStack), stackSize(stackSize), argIndex(argIndex) {}
 	};
 
 	struct ArgPackRef {
 		MajorFrame *majorFrame;
 		uint32_t begin;
 		uint32_t end;
+
+		ArgPackRef() = default;
 	};
 
 	struct CoroutineArgRef {
 		CoroutineObject *coroutine;
 		uint32_t argIndex;
+
+		CoroutineArgRef() = default;
+		SLAKE_FORCEINLINE CoroutineArgRef(CoroutineObject *coroutine, uint32_t argIndex) : coroutine(coroutine), argIndex(argIndex) {}
 	};
 
 	// Because struct is a value type,
@@ -131,108 +157,78 @@ namespace slake {
 		};
 		ReferenceKind kind;
 
-		static SLAKE_FORCEINLINE Reference makeInvalidRef() {
-			Reference ref = {};
+		SLAKE_FORCEINLINE Reference() noexcept = default;
+		SLAKE_FORCEINLINE Reference(const Reference &) noexcept = default;
 
-			ref.kind = ReferenceKind::Invalid;
+		SLAKE_FORCEINLINE Reference(ReferenceKind referenceKind) noexcept : kind(referenceKind) {}
+		SLAKE_FORCEINLINE Reference(std::nullptr_t) noexcept : kind(ReferenceKind::ObjectRef), asObject(nullptr) {}
+		SLAKE_FORCEINLINE Reference(Object *object) noexcept : kind(ReferenceKind::ObjectRef), asObject(object) {}
+		SLAKE_FORCEINLINE Reference(const StaticFieldRef &ref) noexcept : kind(ReferenceKind::StaticFieldRef), asStaticField(ref) {}
+		SLAKE_FORCEINLINE Reference(const ArrayElementRef &ref) noexcept : kind(ReferenceKind::ArrayElementRef), asArrayElement(ref) {}
+		SLAKE_FORCEINLINE Reference(const ObjectFieldRef &ref) noexcept : kind(ReferenceKind::ObjectFieldRef), asObjectField(ref) {}
+		SLAKE_FORCEINLINE Reference(const LocalVarRef &ref) noexcept : kind(ReferenceKind::LocalVarRef), asLocalVar(ref) {}
+		SLAKE_FORCEINLINE Reference(const CoroutineLocalVarRef &ref) noexcept : kind(ReferenceKind::CoroutineLocalVarRef), asCoroutineLocalVar(ref) {}
+		SLAKE_FORCEINLINE Reference(const ArgRef &ref) noexcept : kind(ReferenceKind::ArgRef), asArg(ref) {}
+		SLAKE_FORCEINLINE Reference(const ArgPackRef &ref) noexcept : kind(ReferenceKind::ArgPackRef), asArgPack(ref) {}
+		SLAKE_FORCEINLINE Reference(const CoroutineArgRef &ref) noexcept : kind(ReferenceKind::CoroutineArgRef), asCoroutineArg(ref) {}
 
-			return ref;
+		Reference &operator=(const Reference &) noexcept = default;
+
+		SLAKE_FORCEINLINE Reference &operator=(ReferenceKind referenceKind) noexcept {
+			this->kind = referenceKind;
+			return *this;
 		}
 
-		static SLAKE_FORCEINLINE Reference makeStaticFieldRef(BasicModuleObject *moduleObject, size_t index) {
-			Reference ref = {};
-
-			ref.asStaticField.moduleObject = moduleObject;
-			ref.asStaticField.index = index;
-			ref.kind = ReferenceKind::StaticFieldRef;
-
-			return ref;
+		SLAKE_FORCEINLINE Reference &operator=(const StaticFieldRef &ref) noexcept {
+			kind = ReferenceKind::StaticFieldRef;
+			asStaticField = ref;
+			return *this;
 		}
 
-		static SLAKE_FORCEINLINE Reference makeArrayElementRef(ArrayObject *arrayObject, size_t index) {
-			Reference ref = {};
-
-			ref.asArrayElement.arrayObject = arrayObject;
-			ref.asArrayElement.index = index;
-			ref.kind = ReferenceKind::ArrayElementRef;
-
-			return ref;
+		SLAKE_FORCEINLINE Reference &operator=(const ArrayElementRef &ref) noexcept {
+			kind = ReferenceKind::ArrayElementRef;
+			asArrayElement = ref;
+			return *this;
 		}
 
-		static SLAKE_FORCEINLINE Reference makeObjectRef(Object *instanceObject) {
-			Reference ref = {};
-
-			ref.asObject = instanceObject;
-			ref.kind = ReferenceKind::ObjectRef;
-
-			return ref;
+		SLAKE_FORCEINLINE Reference &operator=(const ObjectFieldRef &ref) noexcept {
+			kind = ReferenceKind::ObjectFieldRef;
+			asObjectField = ref;
+			return *this;
 		}
 
-		static SLAKE_FORCEINLINE Reference makeInstanceFieldRef(InstanceObject *instanceObject, size_t fieldIndex) {
-			Reference ref = {};
-
-			ref.asObjectField.instanceObject = instanceObject;
-			ref.asObjectField.fieldIndex = fieldIndex;
-			ref.kind = ReferenceKind::InstanceFieldRef;
-
-			return ref;
+		SLAKE_FORCEINLINE Reference &operator=(const LocalVarRef &ref) noexcept {
+			kind = ReferenceKind::LocalVarRef;
+			asLocalVar = ref;
+			return *this;
 		}
 
-		static SLAKE_FORCEINLINE Reference makeLocalVarRef(Context *context, size_t offset) {
-			Reference ref = {};
-
-			ref.asLocalVar.context = context;
-			ref.asLocalVar.stackOff = offset;
-			ref.kind = ReferenceKind::LocalVarRef;
-
-			return ref;
+		SLAKE_FORCEINLINE Reference &operator=(const CoroutineLocalVarRef &ref) noexcept {
+			kind = ReferenceKind::CoroutineLocalVarRef;
+			asCoroutineLocalVar = ref;
+			return *this;
 		}
 
-		static SLAKE_FORCEINLINE Reference makeCoroutineLocalVarRef(CoroutineObject *coroutine, size_t offset) {
-			Reference ref = {};
-
-			ref.asCoroutineLocalVar.coroutine = coroutine;
-			ref.asCoroutineLocalVar.stackOff = offset;
-			ref.kind = ReferenceKind::CoroutineLocalVarRef;
-
-			return ref;
+		SLAKE_FORCEINLINE Reference &operator=(const ArgRef &ref) noexcept {
+			kind = ReferenceKind::ArgRef;
+			asArg = ref;
+			return *this;
 		}
 
-		static SLAKE_FORCEINLINE Reference makeArgRef(const MajorFrame *majorFrame, char *dataStack, size_t stackSize, size_t argIndex) {
-			Reference ref = {};
-
-			ref.asArg.majorFrame = majorFrame;
-			ref.asArg.dataStack = dataStack;
-			ref.asArg.stackSize = stackSize;
-			ref.asArg.argIndex = argIndex;
-			ref.kind = ReferenceKind::ArgRef;
-
-			return ref;
+		SLAKE_FORCEINLINE Reference &operator=(const ArgPackRef &ref) noexcept {
+			kind = ReferenceKind::ArgPackRef;
+			asArgPack = ref;
+			return *this;
 		}
 
-		static SLAKE_FORCEINLINE Reference makeArgPackRef(MajorFrame *majorFrame, size_t begin, size_t end) {
-			Reference ref = {};
-
-			ref.asArgPack.majorFrame = majorFrame;
-			ref.asArgPack.begin = begin;
-			ref.asArgPack.end = end;
-			ref.kind = ReferenceKind::ArgPackRef;
-
-			return ref;
-		}
-
-		static SLAKE_FORCEINLINE Reference makeCoroutineArgRef(CoroutineObject *coroutine, size_t argIndex) {
-			Reference ref = {};
-
-			ref.asCoroutineArg.coroutine = coroutine;
-			ref.asCoroutineArg.argIndex = argIndex;
-			ref.kind = ReferenceKind::CoroutineArgRef;
-
-			return ref;
+		SLAKE_FORCEINLINE Reference &operator=(const CoroutineArgRef &ref) noexcept {
+			kind = ReferenceKind::CoroutineArgRef;
+			asCoroutineArg = ref;
+			return *this;
 		}
 
 		static SLAKE_FORCEINLINE Reference makeStructRef(const StructRefData &structRef, ReferenceKind innerReferenceKind) {
-			Reference ref = {};
+			Reference ref;
 
 			ref.asStruct.structRef = structRef;
 			ref.asStruct.innerReferenceKind = innerReferenceKind;
@@ -242,7 +238,7 @@ namespace slake {
 		}
 
 		static SLAKE_FORCEINLINE Reference makeStructFieldRef(const StructRefData &structRef, ReferenceKind innerReferenceKind, uint32_t fieldIndex) {
-			Reference ref = {};
+			Reference ref;
 
 			ref.asStructField.structRef = structRef;
 			ref.asStructField.innerReferenceKind = innerReferenceKind;
@@ -253,7 +249,7 @@ namespace slake {
 		}
 
 		static SLAKE_FORCEINLINE Reference makeAotPtrRef(void *ptr) {
-			Reference ref = {};
+			Reference ref;
 
 			ref.asAotPtr.ptr = ptr;
 			ref.kind = ReferenceKind::ArgRef;
@@ -405,6 +401,11 @@ namespace slake {
 			data.asType = type;
 		}
 
+		SLAKE_FORCEINLINE constexpr Value &operator=(ValueType data) noexcept {
+			valueType = data;
+			this->valueFlags = 0;
+			return *this;
+		}
 		SLAKE_FORCEINLINE constexpr Value &operator=(int8_t data) noexcept {
 			valueType = ValueType::I8;
 			this->data.asI8 = data;

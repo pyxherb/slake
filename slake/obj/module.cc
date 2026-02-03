@@ -65,12 +65,12 @@ SLAKE_API BasicModuleObject::~BasicModuleObject() {
 
 SLAKE_API Reference BasicModuleObject::getMember(const std::string_view &name) const {
 	if (auto it = fieldRecordIndices.find(name); it != fieldRecordIndices.endConst()) {
-		return Reference::makeStaticFieldRef((BasicModuleObject *)this, it.value());
+		return StaticFieldRef((BasicModuleObject *)this, it.value());
 	}
 	if (auto it = members.find(name); it != members.end()) {
-		return Reference::makeObjectRef(it.value());
+		return Reference(it.value());
 	}
-	return Reference::makeInvalidRef();
+	return ReferenceKind::Invalid;
 }
 
 SLAKE_API bool BasicModuleObject::addMember(MemberObject *member) {
@@ -103,7 +103,7 @@ SLAKE_API bool BasicModuleObject::appendFieldRecord(FieldRecord &&fieldRecord) {
 		return false;
 	}
 
-	associatedRuntime->writeVar(Reference::makeStaticFieldRef(this, fieldRecords.size() - 1), associatedRuntime->defaultValueOf(fr.type));
+	associatedRuntime->writeVar(StaticFieldRef(this, fieldRecords.size() - 1), associatedRuntime->defaultValueOf(fr.type));
 	return true;
 }
 
@@ -126,7 +126,7 @@ SLAKE_API InternalExceptionPointer BasicModuleObject::appendFieldRecordWithValue
 		return OutOfMemoryError::alloc();
 	}
 
-	SLAKE_RETURN_IF_EXCEPT(associatedRuntime->writeVarChecked(Reference::makeStaticFieldRef(this, fieldRecords.size() - 1), value));
+	SLAKE_RETURN_IF_EXCEPT(associatedRuntime->writeVarChecked(StaticFieldRef(this, fieldRecords.size() - 1), value));
 	return {};
 }
 

@@ -98,7 +98,7 @@ SLAKE_API void *Runtime::locateValueBasePtr(const Reference &entityRef) const no
 
 			return (void *)rawDataPtr;
 		}
-		case ReferenceKind::InstanceFieldRef: {
+		case ReferenceKind::ObjectFieldRef: {
 			ObjectFieldRecord &fieldRecord =
 				entityRef.asObjectField.instanceObject->_class->cachedObjectLayout->fieldRecords.at(
 					entityRef.asObjectField.fieldIndex);
@@ -134,7 +134,7 @@ SLAKE_API void *Runtime::locateValueBasePtr(const Reference &entityRef) const no
 	std::terminate();
 }
 
-SLAKE_API TypeRef Runtime::typeofVar(const Reference &entityRef) const noexcept {
+SLAKE_API TypeRef Runtime::typeofVar(const Reference &entityRef) noexcept {
 	switch (entityRef.kind) {
 		case ReferenceKind::StaticFieldRef: {
 			FieldRecord &fieldRecord = entityRef.asStaticField.moduleObject->fieldRecords.at(entityRef.asStaticField.index);
@@ -205,7 +205,7 @@ SLAKE_API TypeRef Runtime::typeofVar(const Reference &entityRef) const noexcept 
 
 			return t;
 		}
-		case ReferenceKind::InstanceFieldRef: {
+		case ReferenceKind::ObjectFieldRef: {
 			ObjectFieldRecord &fieldRecord =
 				entityRef.asObjectField.instanceObject->_class->cachedObjectLayout->fieldRecords.at(
 					entityRef.asObjectField.fieldIndex);
@@ -332,7 +332,7 @@ SLAKE_API void Runtime::readVar(const Reference &entityRef, Value &valueOut) con
 				case TypeId::Instance:
 				case TypeId::Array:
 				case TypeId::Fn:
-					valueOut.data.asReference = (Reference::makeObjectRef(*((Object **)(rawDataPtr))));
+					valueOut.data.asReference = (Reference(*((Object **)(rawDataPtr))));
 					valueOut.valueType = ValueType::Reference;
 					break;
 				case TypeId::StructInstance: {
@@ -435,7 +435,7 @@ SLAKE_API void Runtime::readVar(const Reference &entityRef, Value &valueOut) con
 				case TypeId::Instance:
 				case TypeId::Array:
 				case TypeId::Fn:
-					valueOut.data.asReference = (Reference::makeObjectRef(*((Object **)(rawDataPtr))));
+					valueOut.data.asReference = (Reference(*((Object **)(rawDataPtr))));
 					valueOut.valueType = ValueType::Reference;
 					break;
 				case TypeId::StructInstance: {
@@ -525,7 +525,7 @@ SLAKE_API void Runtime::readVar(const Reference &entityRef, Value &valueOut) con
 				case TypeId::Instance:
 				case TypeId::Array:
 				case TypeId::Fn:
-					valueOut.data.asReference = (Reference::makeObjectRef(*((Object **)(rawDataPtr))));
+					valueOut.data.asReference = (Reference(*((Object **)(rawDataPtr))));
 					valueOut.valueType = ValueType::Reference;
 					break;
 				case TypeId::StructInstance: {
@@ -553,7 +553,7 @@ SLAKE_API void Runtime::readVar(const Reference &entityRef, Value &valueOut) con
 
 			break;
 		}
-		case ReferenceKind::InstanceFieldRef: {
+		case ReferenceKind::ObjectFieldRef: {
 			const char *const rawDataPtr = (char *)locateValueBasePtr(entityRef);
 
 			TypeRef t = typeofVar(entityRef);
@@ -614,14 +614,14 @@ SLAKE_API void Runtime::readVar(const Reference &entityRef, Value &valueOut) con
 				case TypeId::Instance:
 				case TypeId::Array:
 				case TypeId::Fn:
-					valueOut.data.asReference = (Reference::makeObjectRef(*((Object **)(rawDataPtr))));
+					valueOut.data.asReference = (Reference(*((Object **)(rawDataPtr))));
 					valueOut.valueType = ValueType::Reference;
 					break;
 				case TypeId::StructInstance: {
 					StructRefData structRef;
 					structRef.innerReference.asObjectField = entityRef.asObjectField;
 
-					valueOut.data.asReference = (Reference::makeStructRef(structRef, ReferenceKind::InstanceFieldRef));
+					valueOut.data.asReference = (Reference::makeStructRef(structRef, ReferenceKind::ObjectFieldRef));
 					valueOut.valueType = ValueType::Reference;
 					break;
 				}
@@ -684,7 +684,7 @@ SLAKE_API void Runtime::readVar(const Reference &entityRef, Value &valueOut) con
 				case TypeId::String:
 				case TypeId::Array:
 				case TypeId::Fn:
-					valueOut = (Reference::makeObjectRef(((Object **)entityRef.asArrayElement.arrayObject->data)[entityRef.asArrayElement.index]));
+					valueOut = (Reference(((Object **)entityRef.asArrayElement.arrayObject->data)[entityRef.asArrayElement.index]));
 					break;
 				case TypeId::StructInstance:
 					valueOut = entityRef;
@@ -781,7 +781,7 @@ SLAKE_API void Runtime::readVar(const Reference &entityRef, Value &valueOut) con
 				case TypeId::Instance:
 				case TypeId::Array:
 				case TypeId::Fn:
-					valueOut = (Reference::makeObjectRef(*((Object **)rawDataPtr)));
+					valueOut = (Reference(*((Object **)rawDataPtr)));
 					break;
 				case TypeId::Ref:
 					valueOut = (*((Reference *)rawDataPtr));
@@ -978,7 +978,7 @@ SLAKE_API void Runtime::writeVar(const Reference &entityRef, const Value &value)
 			}
 			break;
 		}
-		case ReferenceKind::InstanceFieldRef: {
+		case ReferenceKind::ObjectFieldRef: {
 			char *const rawFieldPtr = (char *)locateValueBasePtr(entityRef);
 			const TypeRef t = typeofVar(entityRef);
 

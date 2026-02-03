@@ -42,13 +42,13 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 						MemberObject *m;
 						SLAKE_RETURN_IF_EXCEPT(instantiateGenericObject((MemberObject *)curObject, m, &genericInstantiationContext));
 						curObject = m;
-						objectRefOut = Reference::makeObjectRef(curObject);
+						objectRefOut = Reference(curObject);
 					}
 					break;
 			}
 		} else {
 			if (i + 1 != ref->entries.size()) {
-				objectRefOut = Reference::makeInvalidRef();
+				objectRefOut = ReferenceKind::Invalid;
 				return {};
 			}
 		}
@@ -64,22 +64,22 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 				auto it = fnObject->overloadings.find(FnSignature{ paramTypes, ref->hasVarArgs, ref->entries.back().genericArgs.size(), ref->overridenType });
 
 				if (it != fnObject->overloadings.end())
-					objectRefOut = Reference::makeObjectRef(it.value());
+					objectRefOut = Reference(it.value());
 				else {
 					it = fnObject->overloadings.find(FnSignature{ paramTypes, ref->hasVarArgs, ref->entries.back().genericArgs.size(), TypeId::Void });
 
 					if (it == fnObject->overloadings.end()) {
-						objectRefOut = Reference::makeInvalidRef();
+						objectRefOut = ReferenceKind::Invalid;
 						return {};
 					}
 				}
 
-				objectRefOut = Reference::makeObjectRef(it.value());
+				objectRefOut = Reference(it.value());
 
 				break;
 			}
 			default:
-				objectRefOut = Reference::makeInvalidRef();
+				objectRefOut = ReferenceKind::Invalid;
 				return {};
 		}
 	}
@@ -87,7 +87,7 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 	return {};
 
 fail:;
-	objectRefOut = Reference::makeInvalidRef();
+	objectRefOut = ReferenceKind::Invalid;
 	return {};
 }
 

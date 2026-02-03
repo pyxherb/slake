@@ -104,7 +104,7 @@ SLAKE_API void Object::replaceAllocator(peff::Alloc *allocator) noexcept {
 }
 
 SLAKE_API Reference Object::getMember(const std::string_view &name) const {
-	return Reference::makeInvalidRef();
+	return ReferenceKind::Invalid;
 }
 
 SLAKE_API HostRefHolder::HostRefHolder(peff::Alloc *selfAllocator)

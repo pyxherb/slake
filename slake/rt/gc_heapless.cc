@@ -57,7 +57,7 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, const Value &i) {
 				case ReferenceKind::ObjectRef:
 					context->pushObject(entityRef.asObject);
 					break;
-				case ReferenceKind::InstanceFieldRef:
+				case ReferenceKind::ObjectFieldRef:
 					context->pushObject(entityRef.asObjectField.instanceObject);
 					break;
 				case ReferenceKind::LocalVarRef: {
@@ -241,7 +241,7 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 					}
 					Value data;
 					for (size_t i = 0; i < ((ModuleObject *)v)->fieldRecords.size(); ++i) {
-						readVar(Reference::makeStaticFieldRef((ModuleObject *)v, i), data);
+						readVar(StaticFieldRef((ModuleObject *)v, i), data);
 						_gcWalk(context, data);
 					}
 
@@ -267,7 +267,7 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 					Value data;
 					for (size_t i = 0; i < value->fieldRecords.size(); ++i) {
 						_gcWalk(context, value->fieldRecords.at(i).type);
-						readVar(Reference::makeStaticFieldRef(value, i), data);
+						readVar(StaticFieldRef(value, i), data);
 						_gcWalk(context, data);
 					}
 
@@ -306,7 +306,7 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 					Value data;
 					for (size_t i = 0; i < value->fieldRecords.size(); ++i) {
 						_gcWalk(context, value->fieldRecords.at(i).type);
-						readVar(Reference::makeStaticFieldRef(value, i), data);
+						readVar(StaticFieldRef(value, i), data);
 						_gcWalk(context, data);
 					}
 
@@ -339,7 +339,7 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 						Value data;
 						for (size_t i = 0; i < value->fieldRecords.size(); ++i) {
 							_gcWalk(context, value->fieldRecords.at(i).type);
-							readVar(Reference::makeStaticFieldRef(value, i), data);
+							readVar(StaticFieldRef(value, i), data);
 							_gcWalk(context, data);
 						}
 					}
@@ -357,7 +357,7 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 
 					Value data;
 					for (size_t i = 0; i < value->fieldRecords.size(); ++i) {
-						readVar(Reference::makeStaticFieldRef(value, i), data);
+						readVar(StaticFieldRef(value, i), data);
 						_gcWalk(context, data);
 					}
 

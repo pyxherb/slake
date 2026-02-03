@@ -86,38 +86,38 @@ SLAKE_API ValueType slake::typeIdToValueType(TypeId typeId) {
 SLAKE_API Reference slake::extractStructInnerRef(const StructRefData &structRef, ReferenceKind innerReferenceKind) {
 	switch (innerReferenceKind) {
 		case ReferenceKind::StaticFieldRef:
-			return Reference::makeStaticFieldRef(
+			return StaticFieldRef(
 				structRef.innerReference.asStaticField.moduleObject,
 				structRef.innerReference.asStaticField.index);
 			break;
 		case ReferenceKind::ArrayElementRef:
-			return Reference::makeArrayElementRef(
+			return ArrayElementRef(
 				structRef.innerReference.asArrayElement.arrayObject,
 				structRef.innerReference.asArrayElement.index);
 			break;
-		case ReferenceKind::InstanceFieldRef:
-			return Reference::makeInstanceFieldRef(
+		case ReferenceKind::ObjectFieldRef:
+			return ObjectFieldRef(
 				structRef.innerReference.asObjectField.instanceObject,
 				structRef.innerReference.asObjectField.fieldIndex);
 			break;
 		case ReferenceKind::LocalVarRef:
-			return Reference::makeLocalVarRef(
+			return LocalVarRef(
 				structRef.innerReference.asLocalVar.context,
 				structRef.innerReference.asLocalVar.stackOff);
 			break;
 		case ReferenceKind::CoroutineLocalVarRef:
-			return Reference::makeCoroutineLocalVarRef(
+			return CoroutineLocalVarRef(
 				structRef.innerReference.asCoroutineLocalVar.coroutine,
 				structRef.innerReference.asCoroutineLocalVar.stackOff);
 		case ReferenceKind::ArgRef:
-			return Reference::makeArgRef(
+			return ArgRef(
 				structRef.innerReference.asArg.majorFrame,
 				structRef.innerReference.asArg.dataStack,
 				structRef.innerReference.asArg.stackSize,
 				structRef.innerReference.asArg.argIndex);
 			break;
 		case ReferenceKind::CoroutineArgRef:
-			return Reference::makeCoroutineLocalVarRef(
+			return CoroutineLocalVarRef(
 				structRef.innerReference.asCoroutineArg.coroutine,
 				structRef.innerReference.asCoroutineArg.argIndex);
 			break;
@@ -142,7 +142,7 @@ SLAKE_API bool Reference::operator==(const Reference &rhs) const {
 			return asStaticField.index == rhs.asStaticField.index;
 		case ReferenceKind::ObjectRef:
 			return asObject == rhs.asObject;
-		case ReferenceKind::InstanceFieldRef:
+		case ReferenceKind::ObjectFieldRef:
 			if (asObjectField.instanceObject != rhs.asObjectField.instanceObject)
 				return false;
 			return asObjectField.fieldIndex == rhs.asObjectField.fieldIndex;
@@ -182,7 +182,7 @@ SLAKE_API bool Reference::operator<(const Reference &rhs) const {
 			return asStaticField.index < rhs.asStaticField.index;
 		case ReferenceKind::ObjectRef:
 			return asObject < rhs.asObject;
-		case ReferenceKind::InstanceFieldRef:
+		case ReferenceKind::ObjectFieldRef:
 			if (asObjectField.instanceObject < rhs.asObjectField.instanceObject)
 				return true;
 			if (asObjectField.instanceObject > rhs.asObjectField.instanceObject)
@@ -230,7 +230,7 @@ SLAKE_API bool Reference::operator>(const Reference &rhs) const {
 			return asStaticField.index > rhs.asStaticField.index;
 		case ReferenceKind::ObjectRef:
 			return asObject > rhs.asObject;
-		case ReferenceKind::InstanceFieldRef:
+		case ReferenceKind::ObjectFieldRef:
 			if (asObjectField.instanceObject > rhs.asObjectField.instanceObject)
 				return true;
 			if (asObjectField.instanceObject < rhs.asObjectField.instanceObject)
@@ -399,45 +399,20 @@ SLAKE_API bool slake::isCompatible(const TypeRef &type, const Value &value) {
 			}
 			break;
 		}
-			/*
 		case TypeId::Ref: {
-			if (value.valueType != ValueType::Reference) {return true;
-			}
-
-			const Reference &entityRef = value.getReference();
-			Runtime *rt;
-			switch (entityRef.kind) {
-				case ReferenceKind::FieldRef:
-					rt = entityRef.asField.moduleObject->associatedRuntime;
-					break;
-				case ReferenceKind::InstanceFieldRef:
-					rt = entityRef.asObjectField.instanceObject->associatedRuntime;
-					break;
+			const Reference &ref = value.getReference();
+			switch (ref.kind) {
+				case ReferenceKind::Invalid:
 				case ReferenceKind::LocalVarRef:
-					rt = entityRef.asLocalVar.context->runtime;
-					break;
-				case ReferenceKind::ArrayElementRef:
-					rt = entityRef.asArray.arrayObject->associatedRuntime;
-					break;
+				case ReferenceKind::CoroutineLocalVarRef:
 				case ReferenceKind::ArgRef:
-					rt = entityRef.asArg.majorFrame->curFn->associatedRuntime;
-					break;
+				case ReferenceKind::CoroutineArgRef:
+					return false;
 				default:
-					resultOut = false;
-					return {};
+					break;
 			}
-			TypeRef type;
-
-			InternalExceptionPointer e = rt->typeofVar(entityRef, type);
-			if (e) {
-				resultOut = false;
-				return e;
-			}
-
-			if (type != type.getRefTypeDef()->referencedType->typeRef) {return true;
-			}
-			break;
-		}*/
+			return isCompatible(((RefTypeDefObject *)type.typeDef)->referencedType->typeRef, Runtime::typeofVar(value.getReference()));
+		}
 		case TypeId::Any:
 			return true;
 		default:

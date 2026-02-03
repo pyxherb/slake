@@ -28,14 +28,14 @@ SLAKE_API Object *InstanceObject::duplicate(Duplicator *duplicator) const {
 SLAKE_API Reference InstanceObject::getMember(const std::string_view &name) const {
 	if (auto it = _class->cachedInstantiatedMethodTable->methods.find(name);
 		it != _class->cachedInstantiatedMethodTable->methods.end())
-		return Reference::makeObjectRef(it.value());
+		return Reference(it.value());
 
 	if (auto it = _class->cachedObjectLayout->fieldNameMap.find(name);
 		it != _class->cachedObjectLayout->fieldNameMap.end()) {
-		return Reference::makeInstanceFieldRef((InstanceObject *)this, it.value());
+		return ObjectFieldRef((InstanceObject *)this, it.value());
 	}
 
-	return Reference::makeInvalidRef();
+	return ReferenceKind::Invalid;
 }
 
 SLAKE_API HostObjectRef<InstanceObject> slake::InstanceObject::alloc(Runtime *rt) {

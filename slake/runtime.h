@@ -462,7 +462,7 @@ namespace slake {
 			size_t nativeStackSize = 0);
 
 		SLAKE_API void *locateValueBasePtr(const Reference &entityRef) const noexcept;
-		[[nodiscard]] SLAKE_API TypeRef typeofVar(const Reference &entityRef) const noexcept;
+		[[nodiscard]] static SLAKE_API TypeRef typeofVar(const Reference &entityRef) noexcept;
 		SLAKE_API void readVar(const Reference &entityRef, Value &valueOut) const noexcept;
 		[[nodiscard]] SLAKE_API void writeVar(const Reference &entityRef, const Value &value) const noexcept;
 		SLAKE_FORCEINLINE InternalExceptionPointer writeVarChecked(const Reference &entityRef, const Value &value) const noexcept {

@@ -141,8 +141,8 @@ InternalExceptionPointer slake::opti::evalObjectType(
 		case ReferenceKind::ArrayElementRef:
 		case ReferenceKind::LocalVarRef:
 		case ReferenceKind::ArgRef:
-		case ReferenceKind::InstanceFieldRef: {
-			TypeRef varType = analyzeContext.runtime->typeofVar(entityRef);
+		case ReferenceKind::ObjectFieldRef: {
+			TypeRef varType = Runtime::typeofVar(entityRef);
 
 			SLAKE_RETURN_IF_EXCEPT(
 				wrapIntoRefType(
@@ -462,7 +462,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfoPass(
 							case ReferenceKind::StaticFieldRef:
 								analyzedInfoOut.analyzedRegInfo.at(regIndex).storageType = RegStorageType::FieldVar;
 								break;
-							case ReferenceKind::InstanceFieldRef:
+							case ReferenceKind::ObjectFieldRef:
 								analyzedInfoOut.analyzedRegInfo.at(regIndex).storageType = RegStorageType::InstanceFieldVar;
 								break;
 							case ReferenceKind::ObjectRef: {
@@ -555,7 +555,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfoPass(
 										}
 										break;
 									}
-									case ReferenceKind::InstanceFieldRef:
+									case ReferenceKind::ObjectFieldRef:
 										analyzedInfoOut.analyzedRegInfo.at(regIndex).storageType = RegStorageType::InstanceFieldVar;
 										break;
 									case ReferenceKind::StaticFieldRef:
@@ -738,7 +738,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfoPass(
 						analyzedInfoOut.analyzedRegInfo.at(regIndex).storageType = RegStorageType::ArgRef;
 						analyzedInfoOut.analyzedRegInfo.at(regIndex).storageInfo.asArgRef = {};
 						analyzedInfoOut.analyzedRegInfo.at(regIndex).storageInfo.asArgRef.idxArg = index;
-						setExpectedValue(regIndex, Value(Reference::makeArgRef(pseudoMajorFrame.get(), /*stub*/nullptr, 0, index)));
+						setExpectedValue(regIndex, Value(ArgRef(pseudoMajorFrame.get(), /*stub*/nullptr, 0, index)));
 					}
 					break;
 				}

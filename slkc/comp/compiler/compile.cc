@@ -577,7 +577,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileValueExpr(
 				return genOutOfMemoryCompError();
 			}
 
-			slake::Reference entityRef = slake::Reference::makeObjectRef(id.get());
+			slake::Reference entityRef = slake::Reference(id.get());
 
 			valueOut = slake::Value(entityRef);
 			break;
@@ -659,7 +659,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileValueExpr(
 				return genOutOfMemoryCompError();
 			}
 
-			slake::Reference entityRef = slake::Reference::makeObjectRef(s.get());
+			slake::Reference entityRef = slake::Reference(s.get());
 
 			valueOut = slake::Value(entityRef);
 			break;
@@ -673,7 +673,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileValueExpr(
 		case ExprKind::Null: {
 			AstNodePtr<NullLiteralExprNode> e = expr.castTo<NullLiteralExprNode>();
 
-			slake::Reference entityRef = slake::Reference::makeObjectRef(nullptr);
+			slake::Reference entityRef = slake::Reference(nullptr);
 
 			valueOut = slake::Value(entityRef);
 			break;
@@ -1158,7 +1158,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileModuleLikeNode(
 						if (!modOut->appendFieldRecord(std::move(fr))) {
 							return genOutOfRuntimeMemoryCompError();
 						}
-						modOut->associatedRuntime->writeVar(slake::Reference::makeStaticFieldRef(modOut, modOut->getNumberOfFields() - 1), defaultValue);
+						modOut->associatedRuntime->writeVar(slake::StaticFieldRef(modOut, modOut->getNumberOfFields() - 1), defaultValue);
 						break;
 					}
 					case slake::TypeId::StructInstance:
@@ -1608,7 +1608,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileModuleLikeNode(
 								if (!cls->appendFieldRecord(std::move(fr))) {
 									return genOutOfRuntimeMemoryCompError();
 								}
-								modOut->associatedRuntime->writeVar(slake::Reference::makeStaticFieldRef(cls.get(), cls->getNumberOfFields() - 1), itemValue);
+								modOut->associatedRuntime->writeVar(slake::StaticFieldRef(cls.get(), cls->getNumberOfFields() - 1), itemValue);
 								break;
 							}
 							default:

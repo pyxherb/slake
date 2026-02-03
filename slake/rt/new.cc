@@ -298,8 +298,8 @@ SLAKE_API HostObjectRef<InstanceObject> slake::Runtime::newClassInstance(ClassOb
 		const ObjectFieldRecord &fieldRecord = cls->cachedObjectLayout->fieldRecords.at(i);
 
 		Value data;
-		readVar(Reference::makeStaticFieldRef(p.first, fieldRecord.idxInitFieldRecord), data);
-		writeVar(Reference::makeInstanceFieldRef(instance.get(), i), data);
+		readVar(StaticFieldRef(p.first, fieldRecord.idxInitFieldRecord), data);
+		writeVar(ObjectFieldRef(instance.get(), i), data);
 
 		if (cnt++ >= p.second) {
 			cnt = 0;

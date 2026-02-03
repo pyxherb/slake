@@ -138,13 +138,13 @@ static peff::Option<CompilationError> _loadTheRestOfIdRef(CompileEnvironment *co
 						SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, compilationContext, idRef->entries.data() + curIdx, part.nEntries, nullptr, 0, false, {}, idRefObject));
 
 						if (part.isStatic) {
-							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::LOAD, idxReg, { slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::LOAD, idxReg, { slake::Value(slake::Reference(idRefObject.get())) }));
 						} else {
 							uint32_t idxNewReg;
 
 							SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(idxNewReg));
 
-							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::RLOAD, idxNewReg, { slake::Value(slake::ValueType::RegIndex, idxReg), slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::RLOAD, idxNewReg, { slake::Value(slake::ValueType::RegIndex, idxReg), slake::Value(slake::Reference(idRefObject.get())) }));
 							idxReg = idxNewReg;
 						}
 						curIdx += part.nEntries;
@@ -175,7 +175,7 @@ static peff::Option<CompilationError> _loadTheRestOfIdRef(CompileEnvironment *co
 
 					SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(idxNewReg));
 
-					SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::RLOAD, idxNewReg, { slake::Value(slake::ValueType::RegIndex, idxReg), slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));
+					SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::RLOAD, idxNewReg, { slake::Value(slake::ValueType::RegIndex, idxReg), slake::Value(slake::Reference(idRefObject.get())) }));
 					idxReg = idxNewReg;
 				}
 			} else {
@@ -189,13 +189,13 @@ static peff::Option<CompilationError> _loadTheRestOfIdRef(CompileEnvironment *co
 						SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, compilationContext, idRef->entries.data() + curIdx, part.nEntries, nullptr, 0, false, {}, idRefObject));
 
 						if (part.isStatic) {
-							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::LOAD, idxReg, { slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::LOAD, idxReg, { slake::Value(slake::Reference(idRefObject.get())) }));
 						} else {
 							uint32_t idxNewReg;
 
 							SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(idxNewReg));
 
-							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::RLOAD, idxNewReg, { slake::Value(slake::ValueType::RegIndex, idxReg), slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::RLOAD, idxNewReg, { slake::Value(slake::ValueType::RegIndex, idxReg), slake::Value(slake::Reference(idRefObject.get())) }));
 							idxReg = idxNewReg;
 						}
 						curIdx += part.nEntries;
@@ -228,7 +228,7 @@ static peff::Option<CompilationError> _loadTheRestOfIdRef(CompileEnvironment *co
 							idRefObject->hasVarArgs = true;
 					}
 
-					SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::LOAD, idxReg, { slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));
+					SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::LOAD, idxReg, { slake::Value(slake::Reference(idRefObject.get())) }));
 				}
 			}
 		} else {
@@ -256,7 +256,7 @@ static peff::Option<CompilationError> _loadTheRestOfIdRef(CompileEnvironment *co
 						idRefObject->hasVarArgs = true;
 				}
 
-				SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::LOAD, idxReg, { slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));
+				SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::LOAD, idxReg, { slake::Value(slake::Reference(idRefObject.get())) }));
 			}
 		}
 	} else {
@@ -269,13 +269,13 @@ static peff::Option<CompilationError> _loadTheRestOfIdRef(CompileEnvironment *co
 				SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileEnv, compilationContext, idRef->entries.data() + curIdx, part.nEntries, nullptr, 0, false, {}, idRefObject));
 
 				if (part.isStatic) {
-					SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::LOAD, idxReg, { slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));
+					SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::LOAD, idxReg, { slake::Value(slake::Reference(idRefObject.get())) }));
 				} else {
 					uint32_t idxNewReg;
 
 					SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(idxNewReg));
 
-					SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::RLOAD, idxNewReg, { slake::Value(slake::ValueType::RegIndex, idxReg), slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));
+					SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::RLOAD, idxNewReg, { slake::Value(slake::ValueType::RegIndex, idxReg), slake::Value(slake::Reference(idRefObject.get())) }));
 					idxReg = idxNewReg;
 				}
 
@@ -993,7 +993,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 								sldIndex,
 								slake::Opcode::MOV,
 								resultRegOut,
-								{ slake::Value(slake::Reference::makeObjectRef(sl.get())) }));
+								{ slake::Value(slake::Reference(sl.get())) }));
 					}
 					break;
 				}
@@ -1030,7 +1030,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 								sldIndex,
 								slake::Opcode::MOV,
 								resultRegOut,
-								{ slake::Value(slake::Reference::makeObjectRef(nullptr)) }));
+								{ slake::Value(slake::Reference(nullptr)) }));
 					}
 					break;
 				case ExprEvalPurpose::LValue:
@@ -1563,7 +1563,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 
 				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->allocReg(ctorCallTarget));
 
-				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->emitIns(sldIndex, slake::Opcode::LOAD, ctorCallTarget, { slake::Value(slake::Reference::makeObjectRef(idRefObject.get())) }));
+				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->emitIns(sldIndex, slake::Opcode::LOAD, ctorCallTarget, { slake::Value(slake::Reference(idRefObject.get())) }));
 
 				for (size_t i = 0; i < e->args.size(); ++i) {
 					CompileExprResult argResult(compileEnv->allocator.get());

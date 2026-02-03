@@ -892,9 +892,9 @@ SLAKE_API Object *UnionEnumObject::duplicate(Duplicator *duplicator) const {
 
 SLAKE_API Reference UnionEnumObject::getMember(const std::string_view &name) const {
 	if (auto it = members.find(name); it != members.end()) {
-		return Reference::makeObjectRef(it.value());
+		return Reference(it.value());
 	}
-	return Reference::makeInvalidRef();
+	return ReferenceKind::Invalid;
 }
 
 SLAKE_API bool UnionEnumObject::addMember(MemberObject *member) {

@@ -325,7 +325,7 @@ SLAKE_API InternalExceptionPointer loader::loadValue(LoaderContext &context, Run
 
 	switch (vt) {
 		case slake::slxfmt::ValueType::None: {
-			valueOut = Value(Reference::makeObjectRef(nullptr));
+			valueOut = Value(Reference(nullptr));
 			break;
 		}
 		case slake::slxfmt::ValueType::I8: {
@@ -425,7 +425,7 @@ SLAKE_API InternalExceptionPointer loader::loadValue(LoaderContext &context, Run
 				SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read(strObj->data.data(), lenName)));
 			}
 
-			valueOut = Value(Reference::makeObjectRef(strObj.get()));
+			valueOut = Value(Reference(strObj.get()));
 			break;
 		}
 		case slake::slxfmt::ValueType::IdRef: {
@@ -433,7 +433,7 @@ SLAKE_API InternalExceptionPointer loader::loadValue(LoaderContext &context, Run
 
 			SLAKE_RETURN_IF_EXCEPT(loadIdRef(context, runtime, reader, member, idRefObj));
 
-			valueOut = Value(Reference::makeObjectRef(idRefObj.get()));
+			valueOut = Value(Reference(idRefObj.get()));
 			break;
 		}
 		case slake::slxfmt::ValueType::Array: {
@@ -767,7 +767,7 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(LoaderContext &cont
 					if (!isCompatible(fr.type, initialValue))
 						std::terminate();
 
-					Reference ref = Reference::makeStaticFieldRef(enumObject.get(), i);
+					Reference ref = StaticFieldRef(enumObject.get(), i);
 
 					if (!context.initVarData.pushBack({ ref, std::move(initialValue) }))
 						return OutOfMemoryError::alloc();
@@ -1003,7 +1003,7 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(LoaderContext &cont
 					if (!isCompatible(fr.type, initialValue))
 						std::terminate();
 
-					Reference ref = Reference::makeStaticFieldRef(moduleObject, i);
+					Reference ref = StaticFieldRef(moduleObject, i);
 
 					if (!context.initVarData.pushBack({ ref, std::move(initialValue) }))
 						return OutOfMemoryError::alloc();

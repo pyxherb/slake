@@ -102,7 +102,9 @@ namespace slake {
 		size_t stackTop = 0;				 // Stack top
 		size_t stackSize;
 
-		SLAKE_API char *stackAlloc(size_t size);
+		SLAKE_API char *stackAlloc(size_t size) noexcept;
+		SLAKE_API char *alignStack(size_t alignment) noexcept;
+		SLAKE_API char *alignedStackAlloc(size_t size, size_t alignment) noexcept;
 
 		SLAKE_API Context(Runtime *runtime, peff::Alloc *allocator);
 

@@ -311,7 +311,7 @@ namespace slake {
 			uint32_t nArgs,
 			uint32_t returnValueOut,
 			const Reference *returnStructRef) noexcept;
-		[[nodiscard]] SLAKE_API InternalExceptionPointer _leaveMajorFrame(Context *context) noexcept;
+		[[nodiscard]] SLAKE_API void _leaveMajorFrame(Context *context) noexcept;
 
 		/// @brief Runtime flags.
 		RuntimeFlags runtimeFlags = 0;

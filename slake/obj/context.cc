@@ -22,7 +22,7 @@ SLAKE_API void MajorFrame::dealloc() noexcept {
 	peff::destroyAndRelease<MajorFrame>(associatedRuntime->getFixedAlloc(), this, alignof(MajorFrame));
 }
 
-SLAKE_API char *Context::stackAlloc(size_t size) {
+SLAKE_API char *Context::stackAlloc(size_t size) noexcept {
 	if (size_t newStackTop = stackTop + size;
 		newStackTop > stackSize) {
 		return nullptr;
@@ -30,6 +30,28 @@ SLAKE_API char *Context::stackAlloc(size_t size) {
 		stackTop = newStackTop;
 
 	return dataStack + stackSize - stackTop;
+}
+
+SLAKE_API char *Context::alignStack(size_t alignment) noexcept {
+	if (size_t diff = alignment - (uintptr_t)(calcStackAddr(dataStack, stackSize, stackTop)) % alignment; (diff != alignment) && diff)
+		return stackAlloc(alignment - diff);
+	return dataStack + stackSize - stackTop;
+}
+
+SLAKE_API char *Context::alignedStackAlloc(size_t size, size_t alignment) noexcept {
+	size_t originalStackTop = stackTop;
+
+	if (size_t diff = alignment - (uintptr_t)(calcStackAddr(dataStack, stackSize, stackTop)) % alignment; (diff != alignment) && diff) {
+		if (!stackAlloc(alignment - diff))
+			return nullptr;
+	}
+
+	char *p = stackAlloc(size);
+
+	if (!p)
+		stackTop = originalStackTop;
+
+	return p;
 }
 
 SLAKE_API Context::Context(Runtime *runtime, peff::Alloc *selfAllocator) : runtime(runtime), selfAllocator(selfAllocator) {

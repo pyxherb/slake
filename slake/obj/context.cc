@@ -3,12 +3,9 @@
 using namespace slake;
 
 SLAKE_API void ResumableContextData::replaceAllocator(peff::Alloc *allocator) noexcept {
-	argStack.replaceAllocator(allocator);
-
-	nextArgStack.replaceAllocator(allocator);
 }
 
-SLAKE_API ResumableContextData::ResumableContextData(peff::Alloc *allocator) noexcept : argStack(allocator), nextArgStack(allocator) {
+SLAKE_API ResumableContextData::ResumableContextData(peff::Alloc *allocator) noexcept {
 }
 
 SLAKE_API ResumableContextData::~ResumableContextData() {

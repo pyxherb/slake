@@ -112,6 +112,8 @@ SLAKE_API Reference slake::extractStructInnerRef(const StructRefData &structRef,
 		case ReferenceKind::ArgRef:
 			return Reference::makeArgRef(
 				structRef.innerReference.asArg.majorFrame,
+				structRef.innerReference.asArg.dataStack,
+				structRef.innerReference.asArg.stackSize,
 				structRef.innerReference.asArg.argIndex);
 			break;
 		case ReferenceKind::CoroutineArgRef:

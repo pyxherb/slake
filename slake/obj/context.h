@@ -38,8 +38,8 @@ namespace slake {
 	struct ResumableContextData {
 		uint32_t curIns = 0;
 		uint32_t lastJumpSrc = UINT32_MAX;
-		peff::DynArray<Value> argStack;
-		peff::DynArray<Value> nextArgStack;
+		size_t offArgs = SIZE_MAX, offNextArgs = SIZE_MAX;
+		size_t nArgs = 0, nNextArgs = 0;
 		/// @brief Offset of current minor frame, note that it is context-dependent offset.
 		size_t offCurMinorFrame = SIZE_MAX;
 		size_t nRegs = 0;

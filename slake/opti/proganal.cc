@@ -347,10 +347,10 @@ InternalExceptionPointer slake::opti::analyzeProgramInfoPass(
 	if (!(pseudoMajorFrame->resumableContextData = ResumableContextData(fnObject->selfAllocator.get())))
 		return OutOfMemoryError::alloc();
 
-	if (!pseudoMajorFrame->resumableContextData->argStack.resizeUninitialized(fnObject->paramTypes.size()))
-		return OutOfMemoryError::alloc();
-	for (size_t i = 0; i < fnObject->paramTypes.size(); ++i)
-		pseudoMajorFrame->resumableContextData->argStack.at(i) = Value();
+	//if (!pseudoMajorFrame->resumableContextData->argStack.resizeUninitialized(fnObject->paramTypes.size()))
+	//	return OutOfMemoryError::alloc();
+	//for (size_t i = 0; i < fnObject->paramTypes.size(); ++i)
+	//	pseudoMajorFrame->resumableContextData->argStack.at(i) = Value();
 
 	// Analyze lifetime of virtual registers.
 	bool newExpectableRegFound;
@@ -738,7 +738,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfoPass(
 						analyzedInfoOut.analyzedRegInfo.at(regIndex).storageType = RegStorageType::ArgRef;
 						analyzedInfoOut.analyzedRegInfo.at(regIndex).storageInfo.asArgRef = {};
 						analyzedInfoOut.analyzedRegInfo.at(regIndex).storageInfo.asArgRef.idxArg = index;
-						setExpectedValue(regIndex, Value(Reference::makeArgRef(pseudoMajorFrame.get(), index)));
+						setExpectedValue(regIndex, Value(Reference::makeArgRef(pseudoMajorFrame.get(), /*stub*/nullptr, 0, index)));
 					}
 					break;
 				}

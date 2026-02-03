@@ -109,11 +109,16 @@ SLAKE_API void GCWalkContext::removeFromDestructibleList(Object *v) {
 
 SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, char *stackTop, size_t szStack, ResumableContextData &value) {
 	context->pushObject(value.thisObject);
-	for (auto &k : value.argStack) {
-		_gcWalk(context, k);
+	{
+		Value *argStack = _fetchArgStack(stackTop, szStack, nullptr, value.offArgs, value.nArgs);
+		for (size_t i = 0; i < value.nArgs; ++i)
+			_gcWalk(context, argStack[i]);
 	}
-	for (auto &k : value.nextArgStack)
-		_gcWalk(context, k);
+	{
+		Value *argStack = _fetchArgStack(stackTop, szStack, nullptr, value.offNextArgs, value.nNextArgs);
+		for (size_t i = 0; i < value.nNextArgs; ++i)
+			_gcWalk(context, argStack[i]);
+	};
 	char *const stackBase = stackTop + szStack;
 	for (auto k = value.offCurMinorFrame; k != SIZE_MAX; ) {
 		MinorFrame *mjf = (MinorFrame*)(stackBase - k);

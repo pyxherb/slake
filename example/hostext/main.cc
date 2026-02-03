@@ -8,14 +8,15 @@
 using namespace slake;
 
 Value print(Context *context, MajorFrame *curMajorFrame) {
-	if (curMajorFrame->resumableContextData->argStack.size() < 1)
+	if (curMajorFrame->resumableContextData->nArgs < 1)
 		putchar('\n');
 	else {
-		Value varArgsValue;
-		curMajorFrame->curFn->associatedRuntime->readVar(Reference::makeArgRef(curMajorFrame, 0), varArgsValue);
-
-		for (uint8_t i = 0; i < curMajorFrame->resumableContextData->argStack.size(); ++i) {
-			const Value &data = curMajorFrame->resumableContextData->argStack.at(i);
+		for (uint8_t i = 0; i < curMajorFrame->resumableContextData->nArgs; ++i) {
+			Value data;
+			if (curMajorFrame->curCoroutine)
+				curMajorFrame->curFn->associatedRuntime->readVar(Reference::makeCoroutineArgRef(curMajorFrame->curCoroutine, i), data);
+			else
+				curMajorFrame->curFn->associatedRuntime->readVar(Reference::makeArgRef(curMajorFrame, context->dataStack, context->stackSize, i), data);
 
 			switch (data.valueType) {
 				case ValueType::I8:
@@ -161,7 +162,7 @@ public:
 	// std::map<void *, AllocRecord> allocRecords;
 
 	~MyAllocator() {
-		//assert(allocRecords.empty());
+		// assert(allocRecords.empty());
 	}
 
 	virtual void *alloc(size_t size, size_t alignment) noexcept override {

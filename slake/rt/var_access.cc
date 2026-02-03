@@ -230,7 +230,7 @@ SLAKE_API TypeRef Runtime::typeofVar(const Reference &entityRef) const noexcept 
 		case ReferenceKind::CoroutineArgRef: {
 			auto coroutine = entityRef.asCoroutineArg.coroutine;
 			if (coroutine->curContext) {
-				auto overloading = coroutine->curMajorFrame->curFn;
+				auto overloading = coroutine->boundMajorFrame->curFn;
 
 				if (entityRef.asCoroutineArg.argIndex >= overloading->paramTypes.size()) {
 					assert(overloading->overloadingFlags & OL_VARG);
@@ -706,7 +706,12 @@ SLAKE_API void Runtime::readVar(const Reference &entityRef, Value &valueOut) con
 		case ReferenceKind::ArgRef: {
 			TypeRef t = typeofVar(entityRef);
 
-			valueOut = entityRef.asArg.majorFrame->resumableContextData->argStack.at(entityRef.asArg.argIndex);
+			valueOut = _fetchArgStack(
+				entityRef.asArg.dataStack,
+				entityRef.asArg.stackSize,
+				entityRef.asArg.majorFrame,
+				entityRef.asArg.majorFrame->resumableContextData->offArgs,
+				entityRef.asArg.majorFrame->resumableContextData->nArgs)[entityRef.asArg.argIndex];
 
 			if (t.isLocal())
 				valueOut.setLocal();
@@ -715,12 +720,19 @@ SLAKE_API void Runtime::readVar(const Reference &entityRef, Value &valueOut) con
 		case ReferenceKind::CoroutineArgRef: {
 			TypeRef t = typeofVar(entityRef);
 			if (entityRef.asCoroutineArg.coroutine->curContext) {
-				valueOut = entityRef.asCoroutineArg.coroutine->resumable->argStack.at(entityRef.asArg.argIndex);
+				MajorFrame *mf = _fetchMajorFrame(entityRef.asCoroutineArg.coroutine->curContext, entityRef.asCoroutineArg.coroutine->curContext->offCurMajorFrame);
+				valueOut = _fetchArgStack(
+					entityRef.asCoroutineArg.coroutine->curContext->dataStack,
+					entityRef.asCoroutineArg.coroutine->curContext->stackSize,
+					mf,
+					mf->resumableContextData->offArgs,
+					mf->resumableContextData->nArgs)[entityRef.asCoroutineArg.argIndex];
 
 				if (t.isLocal())
 					valueOut.setLocal();
 			} else {
-				valueOut = entityRef.asCoroutineArg.coroutine->curMajorFrame->resumableContextData->argStack.at(entityRef.asArg.argIndex);
+				// TODO: Implement it.
+				std::terminate();
 
 				if (t.isLocal())
 					valueOut.setLocal();
@@ -1075,7 +1087,12 @@ SLAKE_API void Runtime::writeVar(const Reference &entityRef, const Value &value)
 			TypeRef t = typeofVar(entityRef);
 			if (value.isLocal() && !t.isLocal())
 				std::terminate();
-			const_cast<MajorFrame *>(entityRef.asArg.majorFrame)->resumableContextData->argStack.at(entityRef.asArg.argIndex) = value;
+			_fetchArgStack(
+				entityRef.asArg.dataStack,
+				entityRef.asArg.stackSize,
+				entityRef.asArg.majorFrame,
+				entityRef.asArg.majorFrame->resumableContextData->offArgs,
+				entityRef.asArg.majorFrame->resumableContextData->nArgs)[entityRef.asArg.argIndex] = value;
 			break;
 		}
 		case ReferenceKind::CoroutineArgRef: {
@@ -1083,9 +1100,16 @@ SLAKE_API void Runtime::writeVar(const Reference &entityRef, const Value &value)
 			if (value.isLocal() && !t.isLocal())
 				std::terminate();
 			if (entityRef.asCoroutineArg.coroutine->curContext) {
-				entityRef.asCoroutineArg.coroutine->curMajorFrame->resumableContextData->argStack.at(entityRef.asArg.argIndex) = value;
+				MajorFrame *mf = _fetchMajorFrame(entityRef.asCoroutineArg.coroutine->curContext, entityRef.asCoroutineArg.coroutine->curContext->offCurMajorFrame);
+				_fetchArgStack(
+					entityRef.asCoroutineArg.coroutine->curContext->dataStack,
+					entityRef.asCoroutineArg.coroutine->curContext->stackSize,
+					mf,
+					mf->resumableContextData->offArgs,
+					mf->resumableContextData->nArgs)[entityRef.asCoroutineArg.argIndex] = value;
 			} else {
-				entityRef.asCoroutineArg.coroutine->resumable->argStack.at(entityRef.asArg.argIndex) = value;
+				// TODO: Implement it.
+				std::terminate();
 			}
 			break;
 		}

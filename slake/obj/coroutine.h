@@ -9,7 +9,7 @@ namespace slake {
 	class CoroutineObject : public Object {
 	public:
 		Context *curContext;
-		MajorFrame *curMajorFrame;
+		MajorFrame *boundMajorFrame;
 
 		char *stackData;
 		size_t lenStackData;
@@ -31,11 +31,11 @@ namespace slake {
 
 		SLAKE_FORCEINLINE void bindToContext(Context *curContext, MajorFrame *curMajorFrame) noexcept {
 			this->curContext = curContext;
-			this->curMajorFrame = curMajorFrame;
+			this->boundMajorFrame = curMajorFrame;
 		}
 		SLAKE_FORCEINLINE void unbindContext() noexcept {
 			this->curContext = nullptr;
-			this->curMajorFrame = nullptr;
+			this->boundMajorFrame = nullptr;
 		}
 
 		SLAKE_FORCEINLINE bool isActive() const noexcept {

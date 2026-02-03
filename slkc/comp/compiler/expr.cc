@@ -1325,8 +1325,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 				// SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, simplifyParamListTypeNameTree(argResult.evaluatedType, compileEnv->allocator.get(), argType));
 			}
 
-			for (size_t i = 0; i < e->args.size(); ++i) {
-				const auto &passingInfo = argPassingInfo.at(i);
+			for (size_t i = e->args.size(); i; --i) {
+				const auto &passingInfo = argPassingInfo.at(i - 1);
 				switch (passingInfo.first->typeNameKind) {
 					case TypeNameKind::UnpackedArgs:
 						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,

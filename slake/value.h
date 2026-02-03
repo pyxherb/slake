@@ -69,6 +69,8 @@ namespace slake {
 
 	struct ArgRef {
 		const MajorFrame *majorFrame;
+		char *dataStack;
+		size_t stackSize;
 		uint32_t argIndex;
 	};
 
@@ -196,10 +198,12 @@ namespace slake {
 			return ref;
 		}
 
-		static SLAKE_FORCEINLINE Reference makeArgRef(const MajorFrame *majorFrame, size_t argIndex) {
+		static SLAKE_FORCEINLINE Reference makeArgRef(const MajorFrame *majorFrame, char *dataStack, size_t stackSize, size_t argIndex) {
 			Reference ref = {};
 
 			ref.asArg.majorFrame = majorFrame;
+			ref.asArg.dataStack = dataStack;
+			ref.asArg.stackSize = stackSize;
 			ref.asArg.argIndex = argIndex;
 			ref.kind = ReferenceKind::ArgRef;
 

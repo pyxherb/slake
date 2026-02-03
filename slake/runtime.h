@@ -199,13 +199,19 @@ namespace slake {
 			Context *context,
 			const MajorFrame *majorFrame,
 			size_t stackOffset);
+		SLAKE_API Value *Runtime::_fetchArgStack(
+			char *dataStack,
+			size_t stackSize,
+			const MajorFrame *majorFrame,
+			size_t stackOffset,
+			size_t nArgs) const;
 		SLAKE_API AllocaRecord *Runtime::_fetchAllocaRecord(
 			Context *context,
 			const MajorFrame *majorFrame,
 			size_t stackOffset);
 		SLAKE_API MajorFrame *_fetchMajorFrame(
 			Context *context,
-			size_t stackOffset);
+			size_t stackOffset) const;
 		SLAKE_API ExceptHandler *_fetchExceptHandler(
 			Context *context,
 			MajorFrame *majorFrame,
@@ -293,6 +299,7 @@ namespace slake {
 	public:
 		[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer _addLocalVar(Context *context, const MajorFrame *frame, TypeRef type, uint32_t outputReg, Reference &objectRefOut) noexcept;
 		[[nodiscard]] SLAKE_API InternalExceptionPointer _fillArgs(
+			Context *context,
 			MajorFrame *newMajorFrame,
 			const FnOverloadingObject *fn,
 			const Value *args,

@@ -318,8 +318,7 @@ SLKC_API peff::Option<CompilationError> slkc::cleanupUnusedModuleTree(
 
 		AstNodePtr<ModuleNode> parent = cur->parent->sharedFromThis().template castTo<ModuleNode>();
 
-		if (!parent->removeMember(cur->name))
-			return genOutOfMemoryCompError();
+		parent->removeMember(cur->name);
 
 		cur = parent;
 	}

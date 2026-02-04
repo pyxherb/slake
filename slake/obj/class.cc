@@ -904,8 +904,8 @@ SLAKE_API bool UnionEnumObject::addMember(MemberObject *member) {
 	return true;
 }
 
-SLAKE_API bool UnionEnumObject::removeMember(const std::string_view &name) {
-	return members.remove(name);
+SLAKE_API void UnionEnumObject::removeMember(const std::string_view &name) {
+	members.remove(name);
 }
 
 SLAKE_API HostObjectRef<UnionEnumObject> UnionEnumObject::alloc(Runtime *rt) {

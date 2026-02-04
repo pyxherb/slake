@@ -58,7 +58,7 @@ namespace slake {
 
 		SLAKE_API virtual Reference getMember(const std::string_view &name) const override;
 		[[nodiscard]] SLAKE_API virtual bool addMember(MemberObject *member);
-		[[nodiscard]] SLAKE_API virtual bool removeMember(const std::string_view &name);
+		[[nodiscard]] SLAKE_API virtual void removeMember(const std::string_view &name);
 
 		SLAKE_API bool appendFieldRecord(FieldRecord &&fieldRecord);
 		SLAKE_API InternalExceptionPointer appendFieldRecordWithValue(FieldRecord &&fieldRecord, const Value &value);

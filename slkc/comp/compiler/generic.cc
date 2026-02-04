@@ -274,9 +274,7 @@ static peff::Option<CompilationError> _walkNodeForGenericInstantiation(
 						if (unpackingType->innerTypeName->typeNameKind == TypeNameKind::ParamTypeList) {
 							AstNodePtr<ParamTypeListTypeNameNode> innerTypeName = unpackingType->innerTypeName.castTo<ParamTypeListTypeNameNode>();
 
-							if (!fnSlot->params.eraseRange(i, i + 1)) {
-								return genOutOfMemoryCompError();
-							}
+							fnSlot->params.eraseRange(i, i + 1);
 
 							if (!fnSlot->params.insertRangeInitialized(i, innerTypeName->paramTypes.size())) {
 								return genOutOfMemoryCompError();

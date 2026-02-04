@@ -1,6 +1,10 @@
 #include <slake/runtime.h>
 
 #if defined(_MSC_VER)
+#include <intrin.h>
+#endif
+
+#if defined(_MSC_VER)
 void *slake::estimateCurrentStackPointer() {
 	return _AddressOfReturnAddress();
 }

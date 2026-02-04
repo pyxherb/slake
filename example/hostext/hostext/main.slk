@@ -2,7 +2,7 @@ module hostext;
 
 import hostext.extfns;
 
-/*attribute TestAttribute {
+attribute TestAttribute {
 	let test: i32;
 }
 
@@ -198,7 +198,7 @@ fn t() {
 	123456 + test;
 }
 
-fn valueGenericParamTest<T as i32>() {
+fn valueGenericParamTest<const T: i32>() {
 }
 
 //class CallableTest<...T> {
@@ -211,7 +211,7 @@ fn valueGenericParamTest<T as i32>() {
 //fn t2() -> simd_t<i32, (4 + 8)> {
 //}
 
-class ArgTest<T as i32> {
+class ArgTest<const T: i32> {
 }
 
 enum union UnionEnum {
@@ -327,9 +327,9 @@ public async main() -> i32 {
 	hostext.extfns.print(s.c, "\n");
 
 	return 114514;
-}*/
+}
 
-public fn fib(n: u64) -> u64 {
+/*public fn fib(n: u64) -> u64 {
 	if (n < 1)
 		return 0 as u64;
 	else if (n < 3)
@@ -340,4 +340,4 @@ public fn fib(n: u64) -> u64 {
 public async main() -> i32 {
 	extfns.print("fib(30)=", fib(30));
 	return 0;
-}
+}*/

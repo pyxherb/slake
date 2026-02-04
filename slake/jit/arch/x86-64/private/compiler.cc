@@ -61,7 +61,7 @@ InternalExceptionPointer compileInstruction(
 				Value expectedValue = analyzedInfo.analyzedRegInfo.at(outputRegIndex).expectedValue;
 
 				if (expectedValue.valueType != ValueType::Undefined) {
-					Instruction ins = { Opcode::MOV, curIns.output, { expectedValue } };
+					Instruction ins = { Opcode::COPY, curIns.output, { expectedValue } };
 					compileInstruction(compileContext, analyzedInfo, SIZE_MAX, ins);
 					return {};
 				}
@@ -120,7 +120,7 @@ InternalExceptionPointer compileInstruction(
 				Value expectedValue = analyzedInfo.analyzedRegInfo.at(outputRegIndex).expectedValue;
 
 				if (expectedValue.valueType != ValueType::Undefined) {
-					Instruction ins = { Opcode::MOV, curIns.output, { expectedValue } };
+					Instruction ins = { Opcode::COPY, curIns.output, { expectedValue } };
 					compileInstruction(compileContext, analyzedInfo, SIZE_MAX, ins);
 					return {};
 				}
@@ -197,7 +197,7 @@ InternalExceptionPointer compileInstruction(
 		}
 		case Opcode::LVALUE: {
 		}
-		case Opcode::MOV: {
+		case Opcode::COPY: {
 			SLAKE_RETURN_IF_EXCEPT(compileMovInstruction(compileContext, analyzedInfo, offIns, curIns));
 			break;
 		}

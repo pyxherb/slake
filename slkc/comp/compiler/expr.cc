@@ -24,7 +24,7 @@ static peff::Option<CompilationError> _compileLiteralExpr(
 				SLKC_RETURN_IF_COMP_ERROR(
 					compilationContext->emitIns(
 						expr->tokenRange,
-						slake::Opcode::MOV,
+						slake::Opcode::COPY,
 						resultRegOut,
 						{ slake::Value((DT)e->data) }));
 			}
@@ -284,7 +284,7 @@ static peff::Option<CompilationError> _loadTheRestOfIdRef(CompileEnvironment *co
 		}
 	}
 
-	SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::MOV, resultRegOut, { slake::Value(slake::ValueType::RegIndex, idxReg) }));
+	SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::COPY, resultRegOut, { slake::Value(slake::ValueType::RegIndex, idxReg) }));
 	return {};
 };
 peff::Option<CompilationError> selectSingleMatchingOverloading(CompileEnvironment *compileEnv, const TokenRange &tokenRange, AstNodePtr<MemberNode> &finalMember, AstNodePtr<TypeNameNode> desiredType, bool isStatic, CompileExprResult &resultOut) {
@@ -564,7 +564,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
 						compilationContext->emitIns(
 							sldIndex,
-							slake::Opcode::MOV,
+							slake::Opcode::COPY,
 							resultRegOut,
 							{ slake::Value(slake::ValueType::RegIndex, finalRegister) }));
 					break;
@@ -583,7 +583,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
 							compilationContext->emitIns(
 								sldIndex,
-								slake::Opcode::MOV,
+								slake::Opcode::COPY,
 								resultRegOut,
 								{ slake::Value(slake::ValueType::RegIndex, finalRegister) }));
 					}
@@ -611,7 +611,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
 							compilationContext->emitIns(
 								sldIndex,
-								slake::Opcode::MOV,
+								slake::Opcode::COPY,
 								resultRegOut,
 								{ slake::Value(slake::ValueType::RegIndex, finalRegister) }));
 					}
@@ -691,7 +691,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 																					  CompilationWarning(e->tokenRange, CompilationWarningKind::UnusedExprResult)));
 							break;
 						case ExprEvalPurpose::LValue: {
-							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->emitIns(sldIndex, slake::Opcode::MOV, initialMemberReg, { slake::Value(slake::ValueType::RegIndex, it->idxReg) }));
+							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->emitIns(sldIndex, slake::Opcode::COPY, initialMemberReg, { slake::Value(slake::ValueType::RegIndex, it->idxReg) }));
 							break;
 						}
 						case ExprEvalPurpose::RValue:
@@ -801,7 +801,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
 						compilationContext->emitIns(
 							sldIndex,
-							slake::Opcode::MOV,
+							slake::Opcode::COPY,
 							finalRegister,
 							{ slake::Value(slake::ValueType::RegIndex, initialMemberReg) }));
 				}
@@ -863,7 +863,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
 						compilationContext->emitIns(
 							sldIndex,
-							slake::Opcode::MOV,
+							slake::Opcode::COPY,
 							resultRegOut,
 							{ slake::Value(slake::ValueType::RegIndex, finalRegister) }));
 					break;
@@ -882,7 +882,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
 							compilationContext->emitIns(
 								sldIndex,
-								slake::Opcode::MOV,
+								slake::Opcode::COPY,
 								resultRegOut,
 								{ slake::Value(slake::ValueType::RegIndex, finalRegister) }));
 					}
@@ -910,7 +910,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
 							compilationContext->emitIns(
 								sldIndex,
-								slake::Opcode::MOV,
+								slake::Opcode::COPY,
 								resultRegOut,
 								{ slake::Value(slake::ValueType::RegIndex, finalRegister) }));
 					}
@@ -920,7 +920,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
 						compilationContext->emitIns(
 							sldIndex,
-							slake::Opcode::MOV,
+							slake::Opcode::COPY,
 							resultRegOut,
 							{ slake::Value(slake::ValueType::RegIndex, finalRegister) }));
 					break;
@@ -991,7 +991,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
 							compilationContext->emitIns(
 								sldIndex,
-								slake::Opcode::MOV,
+								slake::Opcode::COPY,
 								resultRegOut,
 								{ slake::Value(slake::Reference(sl.get())) }));
 					}
@@ -1028,7 +1028,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
 							compilationContext->emitIns(
 								sldIndex,
-								slake::Opcode::MOV,
+								slake::Opcode::COPY,
 								resultRegOut,
 								{ slake::Value(slake::Reference(nullptr)) }));
 					}
@@ -1877,7 +1877,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 		case ExprKind::RegIndex: {
 			auto e = expr.castTo<RegIndexExprNode>();
 
-			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->emitIns(sldIndex, slake::Opcode::MOV, resultRegOut, { slake::Value(slake::ValueType::RegIndex, e->reg) }));
+			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->emitIns(sldIndex, slake::Opcode::COPY, resultRegOut, { slake::Value(slake::ValueType::RegIndex, e->reg) }));
 
 			resultOut.evaluatedType = e->type;
 

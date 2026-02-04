@@ -597,7 +597,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfoPass(
 
 					break;
 				}
-				case Opcode::MOV: {
+				case Opcode::COPY: {
 					if (regIndex != UINT32_MAX) {
 						switch (curIns.operands[0].valueType) {
 							case ValueType::I8:

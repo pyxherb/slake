@@ -295,9 +295,6 @@ SLAKE_API TypeRef TypeRef::duplicate(bool &succeededOut) const {
 }
 
 SLAKE_API bool slake::isCompatible(const TypeRef &type, const Value &value) {
-	if (value.isLocal() && !type.isLocal())
-		return false;
-
 	switch (type.typeId) {
 		case TypeId::I8:
 		case TypeId::I16:
@@ -316,6 +313,8 @@ SLAKE_API bool slake::isCompatible(const TypeRef &type, const Value &value) {
 				return false;
 			break;
 		case TypeId::String: {
+			if (value.isLocal() && !type.isLocal())
+				return false;
 			if (value.valueType != ValueType::Reference)
 				return false;
 			const Reference &entityRef = value.getReference();
@@ -328,6 +327,8 @@ SLAKE_API bool slake::isCompatible(const TypeRef &type, const Value &value) {
 			break;
 		}
 		case TypeId::Instance: {
+			if (value.isLocal() && !type.isLocal())
+				return false;
 			if (value.valueType != ValueType::Reference)
 				return false;
 
@@ -377,6 +378,8 @@ SLAKE_API bool slake::isCompatible(const TypeRef &type, const Value &value) {
 		case TypeId::GenericArg:
 			return false;
 		case TypeId::Array: {
+			if (value.isLocal() && !type.isLocal())
+				return false;
 			if (value.valueType != ValueType::Reference) {
 				return false;
 			}
@@ -400,6 +403,8 @@ SLAKE_API bool slake::isCompatible(const TypeRef &type, const Value &value) {
 			break;
 		}
 		case TypeId::Ref: {
+			if (value.isLocal() && !type.isLocal())
+				return false;
 			const Reference &ref = value.getReference();
 			switch (ref.kind) {
 				case ReferenceKind::Invalid:
@@ -414,6 +419,8 @@ SLAKE_API bool slake::isCompatible(const TypeRef &type, const Value &value) {
 			return isCompatible(((RefTypeDefObject *)type.typeDef)->referencedType->typeRef, Runtime::typeofVar(value.getReference()));
 		}
 		case TypeId::Any:
+			if (value.isLocal() && !type.isLocal())
+				return false;
 			return true;
 		default:
 			return false;

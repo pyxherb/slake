@@ -478,6 +478,12 @@ namespace slake {
 			this->valueFlags = 0;
 			return *this;
 		}
+		SLAKE_FORCEINLINE Value &operator=(const TypelessScopedEnumValue &data) noexcept {
+			valueType = ValueType::TypelessScopedEnum;
+			this->data.asTypelessScopedEnum = data;
+			this->valueFlags = 0;
+			return *this;
+		}
 		SLAKE_FORCEINLINE Value &operator=(const TypeRef &type) noexcept {
 			valueType = ValueType::TypeName;
 			data.asType = type;
@@ -576,6 +582,14 @@ namespace slake {
 		SLAKE_FORCEINLINE const Reference &getReference() const noexcept {
 			assert(valueType == ValueType::Reference);
 			return data.asReference;
+		}
+		SLAKE_FORCEINLINE TypelessScopedEnumValue &getTypelessScopedEnum() noexcept {
+			assert(valueType == ValueType::TypelessScopedEnum);
+			return data.asTypelessScopedEnum;
+		}
+		SLAKE_FORCEINLINE const TypelessScopedEnumValue &getTypelessScopedEnum() const noexcept {
+			assert(valueType == ValueType::TypelessScopedEnum);
+			return data.asTypelessScopedEnum;
 		}
 
 		SLAKE_FORCEINLINE bool isLocal() const noexcept {

@@ -47,7 +47,7 @@ namespace slake {
 
 		LCURFN,	 // Load current function.
 
-		MOV,  // Move values between registers
+		COPY,  // Copy values between registers
 
 		LARG,	 // Load an argument.
 		LAPARG,	 // Load an argument pack.

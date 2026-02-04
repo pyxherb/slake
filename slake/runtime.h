@@ -199,6 +199,7 @@ namespace slake {
 			Context *context,
 			const MajorFrame *majorFrame,
 			size_t stackOffset);
+		SLAKE_API AllocaRecord *_allocAllocaRecord(Context *context, const MajorFrame *frame, uint32_t outputReg);
 		SLAKE_API Value *Runtime::_fetchArgStack(
 			char *dataStack,
 			size_t stackSize,

@@ -191,6 +191,20 @@ SLAKE_API InternalExceptionPointer Runtime::_fillArgs(
 	return {};
 }
 
+SLAKE_API AllocaRecord* Runtime::_allocAllocaRecord(Context *context, const MajorFrame *frame, uint32_t outputReg) {
+	MinorFrame *mf = _fetchMinorFrame(context, frame, frame->resumableContextData->offCurMinorFrame);
+	char *pRecord;
+	if (!(pRecord = context->alignedStackAlloc(sizeof(AllocaRecord), alignof(AllocaRecord))))
+		return nullptr;
+	AllocaRecord *record = (AllocaRecord *)pRecord;
+	record->defReg = outputReg;
+	record->offNext = mf->offAllocaRecords;
+	mf->offAllocaRecords = frame->curCoroutine
+							   ? context->stackTop - frame->curCoroutine->offStackTop
+							   : context->stackTop;
+	return record;
+}
+
 SLAKE_API MinorFrame *Runtime::_fetchMinorFrame(
 	Context *context,
 	const MajorFrame *majorFrame,
@@ -429,8 +443,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_createNewMajorFrame(
 				newMajorFrame.resumableContextData->nRegs = ol->nRegisters;
 				newMajorFrame.offRegs = context->stackTop;
 				Value *regs = (Value *)context->alignedStackAlloc(sizeof(Value) * ol->nRegisters, alignof(Value));
-				for (size_t i = 0; i < ol->nRegisters; ++i)
-					regs[i].valueType = ValueType::Undefined;
+				memset(regs, 0, sizeof(Value) * ol->nRegisters);
 				break;
 			}
 			default:
@@ -558,6 +571,8 @@ SLAKE_FORCEINLINE InternalExceptionPointer slake::Runtime::_addLocalVar(Context 
 								   ? context->stackTop - frame->curCoroutine->offStackTop
 								   : context->stackTop;
 	}
+	if(!_allocAllocaRecord(context, frame, outputReg))
+		return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
 
 	restoreStackTopGuard.release();
 
@@ -1815,14 +1830,114 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 			}
 			break;
 		}
-		case Opcode::MOV: {
+		case Opcode::COPY: {
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 1>(this, output, nOperands));
 
 			const Value *value;
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[0], value));
 
 			if (output != UINT32_MAX) {
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, stackSize, curMajorFrame, output, *value));
+				if (!_isRegisterValid(curMajorFrame, output)) {
+					// The register does not present.
+					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+				}
+				Value *outputReg = _calcRegPtr(dataStack, stackSize, curMajorFrame, output);
+				switch (value->valueType) {
+					case ValueType::I8:
+						outputReg->data.asI8 = value->getI8();
+						outputReg->valueType = ValueType::I8;
+						break;
+					case ValueType::I16:
+						outputReg->data.asI16 = value->getI16();
+						outputReg->valueType = ValueType::I16;
+						break;
+					case ValueType::I32:
+						outputReg->data.asI32 = value->getI32();
+						outputReg->valueType = ValueType::I32;
+						break;
+					case ValueType::I64:
+						outputReg->data.asI64 = value->getI64();
+						outputReg->valueType = ValueType::I64;
+						break;
+					case ValueType::ISize:
+						outputReg->data.asISize = value->getISize();
+						outputReg->valueType = ValueType::ISize;
+						break;
+					case ValueType::U8:
+						outputReg->data.asU8 = value->getU8();
+						outputReg->valueType = ValueType::U8;
+						break;
+					case ValueType::U16:
+						outputReg->data.asU16 = value->getU16();
+						outputReg->valueType = ValueType::U16;
+						break;
+					case ValueType::U32:
+						outputReg->data.asU32 = value->getU32();
+						outputReg->valueType = ValueType::U32;
+						break;
+					case ValueType::U64:
+						outputReg->data.asU64 = value->getU64();
+						outputReg->valueType = ValueType::U64;
+						break;
+					case ValueType::USize:
+						outputReg->data.asUSize = value->getUSize();
+						outputReg->valueType = ValueType::USize;
+						break;
+					case ValueType::F32:
+						outputReg->data.asF32 = value->getF32();
+						outputReg->valueType = ValueType::F32;
+						break;
+					case ValueType::F64:
+						outputReg->data.asF64 = value->getF64();
+						outputReg->valueType = ValueType::F64;
+						break;
+					case ValueType::Bool:
+						outputReg->data.asBool = value->getBool();
+						outputReg->valueType = ValueType::Bool;
+						break;
+					case ValueType::Reference: {
+						const Reference &ref = value->getReference();
+						switch (ref.kind) {
+							case ReferenceKind::Invalid:
+								return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+							case ReferenceKind::LocalVarRef:
+								if (!_allocAllocaRecord(&context->getContext(), curMajorFrame, output))
+									return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
+								outputReg->data.asReference.asLocalVar = value->data.asReference.asLocalVar;
+								outputReg->data.asReference.kind = ReferenceKind::LocalVarRef;
+								break;
+							case ReferenceKind::CoroutineLocalVarRef:
+								if (!_allocAllocaRecord(&context->getContext(), curMajorFrame, output))
+									return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
+								outputReg->data.asReference.asCoroutineLocalVar = value->data.asReference.asCoroutineLocalVar;
+								outputReg->data.asReference.kind = ReferenceKind::CoroutineLocalVarRef;
+								break;
+							default:
+								outputReg->data.asReference = ref;
+								break;
+						}
+						outputReg->valueType = ValueType::Reference;
+						break;
+					}
+					case ValueType::TypelessScopedEnum:
+						outputReg->data.asTypelessScopedEnum = value->getTypelessScopedEnum();
+						outputReg->valueType = ValueType::Bool;
+						break;
+					case ValueType::RegIndex:
+						outputReg->data.asU32 = value->getRegIndex();
+						outputReg->valueType = ValueType::RegIndex;
+						break;
+					case ValueType::TypeName:
+						outputReg->data.asU32 = value->getRegIndex();
+						outputReg->valueType = ValueType::TypeName;
+						break;
+					case ValueType::Label:
+						outputReg->data.asU32 = value->getLabel();
+						outputReg->valueType = ValueType::Label;
+						break;
+					default:
+						std::terminate();
+				}
 			}
 			break;
 		}

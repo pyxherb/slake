@@ -822,7 +822,7 @@ SLKC_API peff::Option<slake::Opcode> _getOpcode(const std::string_view &sv) {
 
 	MNEMONIC_NAME_CASE(LCURFN);
 
-	MNEMONIC_NAME_CASE(MOV);
+	MNEMONIC_NAME_CASE(COPY);
 
 	MNEMONIC_NAME_CASE(LARG);
 	MNEMONIC_NAME_CASE(LAPARG);

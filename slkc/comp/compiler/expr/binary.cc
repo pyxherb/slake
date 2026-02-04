@@ -138,7 +138,7 @@ peff::Option<CompilationError> slkc::_compileSimpleAssignBinaryExpr(
 				{ slake::Value(slake::ValueType::RegIndex, lhsReg), slake::Value(slake::ValueType::RegIndex, rhsReg) }));
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
 				idxSld,
-				slake::Opcode::MOV,
+				slake::Opcode::COPY,
 				resultRegOut,
 				{ slake::Value(slake::ValueType::RegIndex, rhsReg) }));
 
@@ -386,7 +386,7 @@ SLKC_API peff::Option<CompilationError> slkc::_compileSimpleBinaryAssignOpExpr(
 
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
 				idxSld,
-				slake::Opcode::MOV,
+				slake::Opcode::COPY,
 				resultRegOut,
 				{ slake::Value(slake::ValueType::RegIndex, lhsReg) }));
 			break;
@@ -429,7 +429,7 @@ SLKC_API peff::Option<CompilationError> slkc::_compileSimpleBinaryAssignOpExpr(
 				{ slake::Value(slake::ValueType::RegIndex, lhsReg), slake::Value(slake::ValueType::RegIndex, resultValueReg) }));
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
 				idxSld,
-				slake::Opcode::MOV,
+				slake::Opcode::COPY,
 				resultRegOut,
 				{ slake::Value(slake::ValueType::RegIndex, resultValueReg) }));
 			break;

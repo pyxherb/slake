@@ -200,19 +200,19 @@ namespace slake {
 			const MajorFrame *majorFrame,
 			size_t stackOffset);
 		SLAKE_API AllocaRecord *_allocAllocaRecord(Context *context, const MajorFrame *frame, uint32_t outputReg);
-		SLAKE_API Value *Runtime::_fetchArgStack(
+		SLAKE_API static Value *Runtime::_fetchArgStack(
 			char *dataStack,
 			size_t stackSize,
 			const MajorFrame *majorFrame,
 			size_t stackOffset,
-			size_t nArgs) const;
+			size_t nArgs);
 		SLAKE_API AllocaRecord *Runtime::_fetchAllocaRecord(
 			Context *context,
 			const MajorFrame *majorFrame,
 			size_t stackOffset);
-		SLAKE_API MajorFrame *_fetchMajorFrame(
+		SLAKE_API static MajorFrame *_fetchMajorFrame(
 			Context *context,
-			size_t stackOffset) const;
+			size_t stackOffset);
 		SLAKE_API ExceptHandler *_fetchExceptHandler(
 			Context *context,
 			MajorFrame *majorFrame,
@@ -462,10 +462,10 @@ namespace slake {
 			void *nativeStackBaseCurrentPtr = nullptr,
 			size_t nativeStackSize = 0);
 
-		SLAKE_API void *locateValueBasePtr(const Reference &entityRef) const noexcept;
-		[[nodiscard]] static SLAKE_API TypeRef typeofVar(const Reference &entityRef) noexcept;
-		SLAKE_API void readVar(const Reference &entityRef, Value &valueOut) const noexcept;
-		[[nodiscard]] SLAKE_API void writeVar(const Reference &entityRef, const Value &value) const noexcept;
+		SLAKE_API static void *locateValueBasePtr(const Reference &entityRef) noexcept;
+		[[nodiscard]] SLAKE_API static TypeRef typeofVar(const Reference &entityRef) noexcept;
+		SLAKE_API static void readVar(const Reference &entityRef, Value &valueOut) noexcept;
+		[[nodiscard]] SLAKE_API static void writeVar(const Reference &entityRef, const Value &value) noexcept;
 		SLAKE_FORCEINLINE InternalExceptionPointer writeVarChecked(const Reference &entityRef, const Value &value) const noexcept {
 			if (!isCompatible(typeofVar(entityRef), value))
 				return MismatchedVarTypeError::alloc(getFixedAlloc());

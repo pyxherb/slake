@@ -2,7 +2,7 @@
 
 using namespace slake;
 
-SLAKE_API bool Value::operator==(const Value &rhs) const {
+SLAKE_API bool Value::operator==(const Value &rhs) const noexcept {
 	return !comparesTo(rhs);
 }
 
@@ -107,10 +107,10 @@ SLAKE_API int Value::comparesTo(const Value& rhs) const noexcept {
 	return 0;
 }
 
-SLAKE_API bool Value::operator<(const Value &rhs) const {
+SLAKE_API bool Value::operator<(const Value &rhs) const noexcept {
 	return comparesTo(rhs) < 0;
 }
 
-SLAKE_API bool Value::operator>(const Value &rhs) const {
+SLAKE_API bool Value::operator>(const Value &rhs) const noexcept {
 	return comparesTo(rhs) > 0;
 }

@@ -567,7 +567,7 @@ SLKC_API peff::Option<CompilationError> slkc::dumpModuleMembers(
 				SLKC_RETURN_IF_COMP_ERROR(writer->write(record.name.data(), record.name.size()));
 
 				slake::Value data;
-				mod->associatedRuntime->readVar(slake::StaticFieldRef(i, j), data);
+				slake::Runtime::readVar(slake::StaticFieldRef(i, j), data);
 				SLKC_RETURN_IF_COMP_ERROR(dumpValue(allocator, writer, data));
 				++j;
 			}
@@ -699,7 +699,7 @@ SLKC_API peff::Option<CompilationError> slkc::dumpModuleMembers(
 			case slake::TypeId::SIMD:
 			case slake::TypeId::Fn: {
 				slake::Value data;
-				mod->associatedRuntime->readVar(slake::StaticFieldRef(mod, i), data);
+				slake::Runtime::readVar(slake::StaticFieldRef(mod, i), data);
 				SLKC_RETURN_IF_COMP_ERROR(dumpValue(allocator, writer, data));
 				break;
 			}

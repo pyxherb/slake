@@ -4,7 +4,7 @@
 
 using namespace slake;
 
-SLAKE_API TypeId slake::valueTypeToTypeId(ValueType valueType) {
+SLAKE_API TypeId slake::valueTypeToTypeId(ValueType valueType) noexcept {
 	switch (valueType) {
 		case ValueType::I8:
 			return TypeId::I8;
@@ -30,12 +30,13 @@ SLAKE_API TypeId slake::valueTypeToTypeId(ValueType valueType) {
 			return TypeId::Bool;
 		case ValueType::Reference:
 			return TypeId::Ref;
-		default:;
+		default:
+			break;
 	}
 	std::terminate();
 }
 
-SLAKE_API bool slake::isValueTypeCompatibleTypeId(TypeId typeId) {
+SLAKE_API bool slake::isValueTypeCompatibleTypeId(TypeId typeId) noexcept {
 	switch (typeId) {
 		case TypeId::I8:
 		case TypeId::I16:
@@ -54,7 +55,7 @@ SLAKE_API bool slake::isValueTypeCompatibleTypeId(TypeId typeId) {
 	return false;
 }
 
-SLAKE_API ValueType slake::typeIdToValueType(TypeId typeId) {
+SLAKE_API ValueType slake::typeIdToValueType(TypeId typeId) noexcept {
 	switch (typeId) {
 		case TypeId::I8:
 			return ValueType::I8;
@@ -294,7 +295,7 @@ SLAKE_API TypeRef TypeRef::duplicate(bool &succeededOut) const {
 	return newType;
 }
 
-SLAKE_API bool slake::isCompatible(const TypeRef &type, const Value &value) {
+SLAKE_API bool slake::isCompatible(const TypeRef &type, const Value &value) noexcept {
 	switch (type.typeId) {
 		case TypeId::I8:
 		case TypeId::I16:
@@ -311,11 +312,11 @@ SLAKE_API bool slake::isCompatible(const TypeRef &type, const Value &value) {
 		case TypeId::Bool:
 			if (type.typeId != valueTypeToTypeId(value.valueType))
 				return false;
-			break;
+			return true;
 		case TypeId::String: {
-			if (value.isLocal() && !type.isLocal())
-				return false;
 			if (value.valueType != ValueType::Reference)
+				return false;
+			if (value.isLocal() && !type.isLocal())
 				return false;
 			const Reference &entityRef = value.getReference();
 			if (entityRef.kind != ReferenceKind::ObjectRef)
@@ -324,12 +325,12 @@ SLAKE_API bool slake::isCompatible(const TypeRef &type, const Value &value) {
 				return true;
 			if (entityRef.asObject->getObjectKind() != ObjectKind::String)
 				return false;
-			break;
+			return true;
 		}
 		case TypeId::Instance: {
-			if (value.isLocal() && !type.isLocal())
-				return false;
 			if (value.valueType != ValueType::Reference)
+				return false;
+			if (value.isLocal() && !type.isLocal())
 				return false;
 
 			const Reference &entityRef = value.getReference();
@@ -370,7 +371,7 @@ SLAKE_API bool slake::isCompatible(const TypeRef &type, const Value &value) {
 					break;
 			}
 
-			break;
+			return true;
 		}
 		case TypeId::StructInstance:
 			// Cannot pass structure instance as value.
@@ -378,11 +379,11 @@ SLAKE_API bool slake::isCompatible(const TypeRef &type, const Value &value) {
 		case TypeId::GenericArg:
 			return false;
 		case TypeId::Array: {
-			if (value.isLocal() && !type.isLocal())
-				return false;
 			if (value.valueType != ValueType::Reference) {
 				return false;
 			}
+			if (value.isLocal() && !type.isLocal())
+				return false;
 
 			const Reference &entityRef = value.getReference();
 			if (entityRef.kind != ReferenceKind::ObjectRef) {
@@ -400,7 +401,7 @@ SLAKE_API bool slake::isCompatible(const TypeRef &type, const Value &value) {
 			if (arrayObjectPtr->elementType != (type.getArrayTypeDef()->elementType->typeRef)) {
 				return false;
 			}
-			break;
+			return true;
 		}
 		case TypeId::Ref: {
 			if (value.isLocal() && !type.isLocal())

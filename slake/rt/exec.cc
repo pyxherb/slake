@@ -28,9 +28,8 @@ template <ValueType valueType>
 [[nodiscard]] static SLAKE_FORCEINLINE InternalExceptionPointer _checkOperandType(
 	Runtime *runtime,
 	const Value &operand) noexcept {
-	if (operand.valueType != valueType) {
+	if (operand.valueType != valueType)
 		return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(runtime->getFixedAlloc()));
-	}
 	return {};
 }
 
@@ -191,7 +190,7 @@ SLAKE_API InternalExceptionPointer Runtime::_fillArgs(
 	return {};
 }
 
-SLAKE_API AllocaRecord* Runtime::_allocAllocaRecord(Context *context, const MajorFrame *frame, uint32_t outputReg) {
+SLAKE_API AllocaRecord *Runtime::_allocAllocaRecord(Context *context, const MajorFrame *frame, uint32_t outputReg) {
 	MinorFrame *mf = _fetchMinorFrame(context, frame, frame->resumableContextData->offCurMinorFrame);
 	char *pRecord;
 	if (!(pRecord = context->alignedStackAlloc(sizeof(AllocaRecord), alignof(AllocaRecord))))
@@ -226,7 +225,7 @@ SLAKE_API Value *Runtime::_fetchArgStack(
 	size_t stackSize,
 	const MajorFrame *majorFrame,
 	size_t stackOffset,
-	size_t nArgs) const {
+	size_t nArgs) {
 	if (!nArgs)
 		return nullptr;
 	size_t offset;
@@ -259,7 +258,7 @@ SLAKE_API AllocaRecord *Runtime::_fetchAllocaRecord(
 
 SLAKE_API MajorFrame *Runtime::_fetchMajorFrame(
 	Context *context,
-	size_t stackOffset) const {
+	size_t stackOffset) {
 	return (MajorFrame *)calcStackAddr(context->dataStack,
 		context->stackSize,
 		stackOffset);
@@ -571,7 +570,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer slake::Runtime::_addLocalVar(Context 
 								   ? context->stackTop - frame->curCoroutine->offStackTop
 								   : context->stackTop;
 	}
-	if(!_allocAllocaRecord(context, frame, outputReg))
+	if (!_allocAllocaRecord(context, frame, outputReg))
 		return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
 
 	restoreStackTopGuard.release();
@@ -609,10 +608,9 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[0], dest));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::Reference>(this, *dest));
 
-			if (!_isRegisterValid(curMajorFrame, output)) {
+			if (!_isRegisterValid(curMajorFrame, output))
 				// The register does not present.
 				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
-			}
 			readVar(dest->getReference(), *_calcRegPtr(dataStack, stackSize, curMajorFrame, output));
 
 			break;

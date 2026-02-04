@@ -1164,7 +1164,7 @@ loadDependencies:
 	}
 
 	for (auto &i : context.initVarData) {
-		runtime->writeVar(i.first, i.second);
+		Runtime::writeVar(i.first, i.second);
 	}
 
 	context.initVarData.clear();

@@ -356,7 +356,7 @@ namespace slake {
 		ValueType valueType;
 		ValueFlags valueFlags;
 
-		SLAKE_FORCEINLINE Value() = default;
+		SLAKE_FORCEINLINE Value() noexcept = default;
 		SLAKE_API Value(const Value &other) noexcept = default;
 		SLAKE_FORCEINLINE Value(Value &&other) noexcept = default;
 		SLAKE_FORCEINLINE constexpr Value(int8_t data) noexcept : valueType(ValueType::I8), data(data), valueFlags(0) {
@@ -605,19 +605,19 @@ namespace slake {
 		Value &operator=(const Value &other) noexcept = default;
 		Value &operator=(Value &&other) noexcept = default;
 
-		SLAKE_API bool operator==(const Value &rhs) const;
+		SLAKE_API bool operator==(const Value &rhs) const noexcept;
 
-		SLAKE_FORCEINLINE bool operator!=(const Value &rhs) const {
+		SLAKE_FORCEINLINE bool operator!=(const Value &rhs) const noexcept {
 			return !(*this == rhs);
 		}
 
 		SLAKE_API int comparesTo(const Value &rhs) const noexcept;
-		SLAKE_API bool operator<(const Value &rhs) const;
-		SLAKE_API bool operator>(const Value &rhs) const;
+		SLAKE_API bool operator<(const Value &rhs) const noexcept;
+		SLAKE_API bool operator>(const Value &rhs) const noexcept;
 	};
 
 	SLAKE_API Reference extractStructInnerRef(const StructRefData &structRef, ReferenceKind innerReferenceKind);
-	SLAKE_API bool isCompatible(const TypeRef &type, const Value &value);
+	SLAKE_API bool isCompatible(const TypeRef &type, const Value &value) noexcept;
 }
 
 #endif

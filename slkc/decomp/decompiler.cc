@@ -576,7 +576,7 @@ SLKC_API bool Decompiler::decompileValue(peff::Alloc *allocator, DumpWriter *wri
 								slake::Reference rer = slake::ArrayElementRef(a, i);
 								slake::Value data;
 
-								a->associatedRuntime->readVar(rer, data);
+								slake::Runtime::readVar(rer, data);
 
 								SLKC_RETURN_IF_FALSE(decompileValue(allocator, writer, data));
 							}
@@ -1066,7 +1066,7 @@ SLKC_API bool Decompiler::decompileModuleMembers(peff::Alloc *allocator, DumpWri
 						SLKC_RETURN_IF_FALSE(writer->write(" = "));
 
 						slake::Value data;
-						moduleObject->associatedRuntime->readVar(slake::StaticFieldRef(obj, k), data);
+						slake::Runtime::readVar(slake::StaticFieldRef(obj, k), data);
 
 						SLKC_RETURN_IF_FALSE(decompileValue(allocator, writer, data));
 					}

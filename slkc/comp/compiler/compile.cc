@@ -1158,7 +1158,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileModuleLikeNode(
 						if (!modOut->appendFieldRecord(std::move(fr))) {
 							return genOutOfRuntimeMemoryCompError();
 						}
-						modOut->associatedRuntime->writeVar(slake::StaticFieldRef(modOut, modOut->getNumberOfFields() - 1), defaultValue);
+						slake::Runtime::writeVar(slake::StaticFieldRef(modOut, modOut->getNumberOfFields() - 1), defaultValue);
 						break;
 					}
 					case slake::TypeId::StructInstance:
@@ -1608,7 +1608,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileModuleLikeNode(
 								if (!cls->appendFieldRecord(std::move(fr))) {
 									return genOutOfRuntimeMemoryCompError();
 								}
-								modOut->associatedRuntime->writeVar(slake::StaticFieldRef(cls.get(), cls->getNumberOfFields() - 1), itemValue);
+								slake::Runtime::writeVar(slake::StaticFieldRef(cls.get(), cls->getNumberOfFields() - 1), itemValue);
 								break;
 							}
 							default:

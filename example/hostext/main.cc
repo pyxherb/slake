@@ -14,9 +14,9 @@ Value print(Context *context, MajorFrame *curMajorFrame) {
 		for (uint8_t i = 0; i < curMajorFrame->resumableContextData->nArgs; ++i) {
 			Value data;
 			if (curMajorFrame->curCoroutine)
-				curMajorFrame->curFn->associatedRuntime->readVar(CoroutineArgRef(curMajorFrame->curCoroutine, i), data);
+				Runtime::readVar(CoroutineArgRef(curMajorFrame->curCoroutine, i), data);
 			else
-				curMajorFrame->curFn->associatedRuntime->readVar(ArgRef(curMajorFrame, context->dataStack, context->stackSize, i), data);
+				Runtime::readVar(ArgRef(curMajorFrame, context->dataStack, context->stackSize, i), data);
 
 			switch (data.valueType) {
 				case ValueType::I8:
@@ -152,58 +152,6 @@ public:
 	}
 };
 
-class MyAllocator : public peff::StdAlloc {
-public:
-	struct AllocRecord {
-		size_t size;
-		size_t alignment;
-	};
-
-	// std::map<void *, AllocRecord> allocRecords;
-
-	~MyAllocator() {
-		// assert(allocRecords.empty());
-	}
-
-	virtual void *alloc(size_t size, size_t alignment) noexcept override {
-		void *p = this->StdAlloc::alloc(size, alignment);
-		if (!p)
-			std::terminate();
-
-		// allocRecords[p] = { size, alignment };
-
-		return p;
-	}
-
-	virtual void *realloc(void *p, size_t size, size_t alignment, size_t newSize, size_t newAlignment) noexcept override {
-		void *ptr = this->StdAlloc::realloc(p, size, alignment, newSize, newAlignment);
-		if (!ptr)
-			return nullptr;
-
-		/* AllocRecord &allocRecord = allocRecords.at(p);
-
-		assert(allocRecord.size == size);
-		assert(allocRecord.alignment == alignment);
-
-		allocRecords.erase(p);
-
-		allocRecords[ptr] = { newSize, newAlignment };*/
-
-		return ptr;
-	}
-
-	virtual void release(void *p, size_t size, size_t alignment) noexcept override {
-		/* AllocRecord &allocRecord = allocRecords.at(p);
-
-		assert(allocRecord.size == size);
-		assert(allocRecord.alignment == alignment);
-
-		allocRecords.erase(p);*/
-
-		this->StdAlloc::release(p, size, alignment);
-	}
-};
-
 class LoaderContext : public loader::LoaderContext {
 public:
 	LoaderContext(peff::Alloc *allocator) : loader::LoaderContext(allocator) {
@@ -247,13 +195,11 @@ public:
 int main(int argc, char **argv) {
 	util::setupMemoryLeakDetector();
 
-	MyAllocator myAllocator;
-
 	{
 		std::unique_ptr<Runtime, peff::DeallocableDeleter<Runtime>> rt = std::unique_ptr<Runtime, peff::DeallocableDeleter<Runtime>>(
 			Runtime::alloc(
-				&myAllocator,
-				&myAllocator,
+				peff::getDefaultAlloc(),
+				peff::getDefaultAlloc(),
 				RT_DEBUG | RT_GCDBG));
 
 		{
@@ -327,7 +273,7 @@ int main(int argc, char **argv) {
 				auto fn = (FnObject *)mod->getMember("main").asObject;
 				FnOverloadingObject *overloading;
 
-				peff::DynArray<TypeRef> params(&myAllocator);
+				peff::DynArray<TypeRef> params(peff::getDefaultAlloc());
 
 				overloading = fn->overloadings.at(FnSignature(params, false, 0, TypeId::Void));
 

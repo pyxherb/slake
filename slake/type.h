@@ -79,9 +79,9 @@ namespace slake {
 		Unknown,  // Unknown
 	};
 
-	SLAKE_API TypeId valueTypeToTypeId(ValueType valueType);
-	SLAKE_API bool isValueTypeCompatibleTypeId(TypeId typeId);
-	SLAKE_API ValueType typeIdToValueType(TypeId typeId);
+	SLAKE_API TypeId valueTypeToTypeId(ValueType valueType) noexcept;
+	SLAKE_API bool isValueTypeCompatibleTypeId(TypeId typeId) noexcept;
+	SLAKE_API ValueType typeIdToValueType(TypeId typeId) noexcept;
 
 	SLAKE_FORCEINLINE constexpr bool isFundamentalType(TypeId typeId) {
 		switch (typeId) {

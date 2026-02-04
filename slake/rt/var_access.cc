@@ -20,11 +20,11 @@ SLAKE_FORCEINLINE static char *calcLocalVarRefStackBasePtr(const LocalVarRef &lo
 }
 SLAKE_FORCEINLINE static char *calcLocalVarRefStackRawDataPtr(char *p) noexcept {
 	return p +
-		   sizeof(TypeId) + sizeof(TypeModifier);
+		   (sizeof(TypeId) + sizeof(TypeModifier));
 }
 SLAKE_FORCEINLINE static const char *calcLocalVarRefStackRawDataPtr(const char *p) noexcept {
 	return p +
-		   sizeof(TypeId) + sizeof(TypeModifier);
+		   (sizeof(TypeId) + sizeof(TypeModifier));
 }
 
 SLAKE_API void *Runtime::locateValueBasePtr(const Reference &entityRef) noexcept {
@@ -263,65 +263,63 @@ SLAKE_API TypeRef Runtime::typeofVar(const Reference &entityRef) noexcept {
 	std::terminate();
 }
 
-SLAKE_API void Runtime::readVar(const Reference &entityRef, Value &valueOut) noexcept {
+SLAKE_API void Runtime::readVarWithType(const Reference &entityRef, const TypeRef &t, Value &valueOut) noexcept {
 	valueOut.valueFlags = 0;
 	switch (entityRef.kind) {
 		case ReferenceKind::StaticFieldRef: {
 			const char *const rawDataPtr = (char *)locateValueBasePtr(entityRef);
 
-			TypeRef t = typeofVar(entityRef);
-		staticFieldRefRead:
 			switch (t.typeId) {
 				case TypeId::I8:
-					valueOut.data.asI8 = (*(reinterpret_cast<const int8_t*>(rawDataPtr)));
+					valueOut.data.asI8 = (*(reinterpret_cast<const int8_t *>(rawDataPtr)));
 					valueOut.valueType = ValueType::I8;
 					break;
 				case TypeId::I16:
-					valueOut.data.asI16 = (*(reinterpret_cast<const int16_t*>(rawDataPtr)));
+					valueOut.data.asI16 = (*(reinterpret_cast<const int16_t *>(rawDataPtr)));
 					valueOut.valueType = ValueType::I16;
 					break;
 				case TypeId::I32:
-					valueOut.data.asI32 = (*(reinterpret_cast<const int32_t*>(rawDataPtr)));
+					valueOut.data.asI32 = (*(reinterpret_cast<const int32_t *>(rawDataPtr)));
 					valueOut.valueType = ValueType::I32;
 					break;
 				case TypeId::I64:
-					valueOut.data.asI64 = (*(reinterpret_cast<const int64_t*>(rawDataPtr)));
+					valueOut.data.asI64 = (*(reinterpret_cast<const int64_t *>(rawDataPtr)));
 					valueOut.valueType = ValueType::I64;
 					break;
 				case TypeId::ISize:
-					valueOut.data.asISize = *(reinterpret_cast<const ssize_t*>(rawDataPtr));
+					valueOut.data.asISize = *(reinterpret_cast<const ssize_t *>(rawDataPtr));
 					valueOut.valueType = ValueType::ISize;
 					break;
 				case TypeId::U8:
-					valueOut.data.asU8 = (*(reinterpret_cast<const uint8_t*>(rawDataPtr)));
+					valueOut.data.asU8 = (*(reinterpret_cast<const uint8_t *>(rawDataPtr)));
 					valueOut.valueType = ValueType::U8;
 					break;
 				case TypeId::U16:
-					valueOut.data.asU16 = (*(reinterpret_cast<const uint16_t*>(rawDataPtr)));
+					valueOut.data.asU16 = (*(reinterpret_cast<const uint16_t *>(rawDataPtr)));
 					valueOut.valueType = ValueType::U16;
 					break;
 				case TypeId::U32:
-					valueOut.data.asU32 = (*(reinterpret_cast<const uint32_t*>(rawDataPtr)));
+					valueOut.data.asU32 = (*(reinterpret_cast<const uint32_t *>(rawDataPtr)));
 					valueOut.valueType = ValueType::U32;
 					break;
 				case TypeId::U64:
-					valueOut.data.asU64 = (*(reinterpret_cast<const uint64_t*>(rawDataPtr)));
+					valueOut.data.asU64 = (*(reinterpret_cast<const uint64_t *>(rawDataPtr)));
 					valueOut.valueType = ValueType::U64;
 					break;
 				case TypeId::USize:
-					valueOut.data.asUSize = *(reinterpret_cast<const size_t*>(rawDataPtr));
+					valueOut.data.asUSize = *(reinterpret_cast<const size_t *>(rawDataPtr));
 					valueOut.valueType = ValueType::USize;
 					break;
 				case TypeId::F32:
-					valueOut.data.asF32 = (*(reinterpret_cast<const float*>(rawDataPtr)));
+					valueOut.data.asF32 = (*(reinterpret_cast<const float *>(rawDataPtr)));
 					valueOut.valueType = ValueType::F32;
 					break;
 				case TypeId::F64:
-					valueOut.data.asF64 = (*(reinterpret_cast<const double*>(rawDataPtr)));
+					valueOut.data.asF64 = (*(reinterpret_cast<const double *>(rawDataPtr)));
 					valueOut.valueType = ValueType::F64;
 					break;
 				case TypeId::Bool:
-					valueOut.data.asBool = (*(reinterpret_cast<const bool*>(rawDataPtr)));
+					valueOut.data.asBool = (*(reinterpret_cast<const bool *>(rawDataPtr)));
 					valueOut.valueType = ValueType::Bool;
 					break;
 				case TypeId::String:
@@ -345,23 +343,79 @@ SLAKE_API void Runtime::readVar(const Reference &entityRef, Value &valueOut) noe
 					CustomTypeDefObject *td = (CustomTypeDefObject *)t.typeDef;
 					assert(td->typeObject->getObjectKind() == ObjectKind::ScopedEnum);
 
-					if ((t = ((ScopedEnumObject *)td->typeObject)->baseType))
-						goto staticFieldRefRead;
+					TypeRef type;
+					if ((type = ((ScopedEnumObject *)td->typeObject)->baseType))
+						switch (type.typeId) {
+							case TypeId::I8:
+								valueOut.data.asI8 = (*(reinterpret_cast<const int8_t *>(rawDataPtr)));
+								valueOut.valueType = ValueType::I8;
+								break;
+							case TypeId::I16:
+								valueOut.data.asI16 = (*(reinterpret_cast<const int16_t *>(rawDataPtr)));
+								valueOut.valueType = ValueType::I16;
+								break;
+							case TypeId::I32:
+								valueOut.data.asI32 = (*(reinterpret_cast<const int32_t *>(rawDataPtr)));
+								valueOut.valueType = ValueType::I32;
+								break;
+							case TypeId::I64:
+								valueOut.data.asI64 = (*(reinterpret_cast<const int64_t *>(rawDataPtr)));
+								valueOut.valueType = ValueType::I64;
+								break;
+							case TypeId::ISize:
+								valueOut.data.asISize = *(reinterpret_cast<const ssize_t *>(rawDataPtr));
+								valueOut.valueType = ValueType::ISize;
+								break;
+							case TypeId::U8:
+								valueOut.data.asU8 = (*(reinterpret_cast<const uint8_t *>(rawDataPtr)));
+								valueOut.valueType = ValueType::U8;
+								break;
+							case TypeId::U16:
+								valueOut.data.asU16 = (*(reinterpret_cast<const uint16_t *>(rawDataPtr)));
+								valueOut.valueType = ValueType::U16;
+								break;
+							case TypeId::U32:
+								valueOut.data.asU32 = (*(reinterpret_cast<const uint32_t *>(rawDataPtr)));
+								valueOut.valueType = ValueType::U32;
+								break;
+							case TypeId::U64:
+								valueOut.data.asU64 = (*(reinterpret_cast<const uint64_t *>(rawDataPtr)));
+								valueOut.valueType = ValueType::U64;
+								break;
+							case TypeId::USize:
+								valueOut.data.asUSize = *(reinterpret_cast<const size_t *>(rawDataPtr));
+								valueOut.valueType = ValueType::USize;
+								break;
+							case TypeId::F32:
+								valueOut.data.asF32 = (*(reinterpret_cast<const float *>(rawDataPtr)));
+								valueOut.valueType = ValueType::F32;
+								break;
+							case TypeId::F64:
+								valueOut.data.asF64 = (*(reinterpret_cast<const double *>(rawDataPtr)));
+								valueOut.valueType = ValueType::F64;
+								break;
+							case TypeId::Bool:
+								valueOut.data.asBool = (*(reinterpret_cast<const bool *>(rawDataPtr)));
+								valueOut.valueType = ValueType::Bool;
+								break;
+							default:
+								std::terminate();
+						}
 					break;
 				}
 				case TypeId::TypelessScopedEnum:
 					valueOut.data.asTypelessScopedEnum.type = t;
-					valueOut.data.asTypelessScopedEnum.value = (*(reinterpret_cast<const uint32_t*>(rawDataPtr)));
+					valueOut.data.asTypelessScopedEnum.value = (*(reinterpret_cast<const uint32_t *>(rawDataPtr)));
 					valueOut.valueType = ValueType::TypelessScopedEnum;
 					break;
 				case TypeId::Ref:
-					valueOut.data.asReference = (*(reinterpret_cast<const Reference*>(rawDataPtr)));
+					valueOut.data.asReference = (*(reinterpret_cast<const Reference *>(rawDataPtr)));
 					valueOut.valueType = ValueType::Reference;
 					if (t.isLocal())
 						std::terminate();
 					break;
 				case TypeId::Any:
-					valueOut = (*(reinterpret_cast<const Value*>(rawDataPtr)));
+					valueOut = (*(reinterpret_cast<const Value *>(rawDataPtr)));
 					if (t.isLocal())
 						std::terminate();
 					break;
@@ -375,59 +429,57 @@ SLAKE_API void Runtime::readVar(const Reference &entityRef, Value &valueOut) noe
 		case ReferenceKind::LocalVarRef: {
 			const char *const rawDataPtr = (char *)locateValueBasePtr(entityRef);
 
-			const TypeRef t = typeofVar(entityRef);
-
 			switch (t.typeId) {
 				case TypeId::I8:
-					valueOut.data.asI8 = (*(reinterpret_cast<const int8_t*>(rawDataPtr)));
+					valueOut.data.asI8 = (*(reinterpret_cast<const int8_t *>(rawDataPtr)));
 					valueOut.valueType = ValueType::I8;
 					break;
 				case TypeId::I16:
-					valueOut.data.asI16 = (*(reinterpret_cast<const int16_t*>(rawDataPtr)));
+					valueOut.data.asI16 = (*(reinterpret_cast<const int16_t *>(rawDataPtr)));
 					valueOut.valueType = ValueType::I16;
 					break;
 				case TypeId::I32:
-					valueOut.data.asI32 = (*(reinterpret_cast<const int32_t*>(rawDataPtr)));
+					valueOut.data.asI32 = (*(reinterpret_cast<const int32_t *>(rawDataPtr)));
 					valueOut.valueType = ValueType::I32;
 					break;
 				case TypeId::I64:
-					valueOut.data.asI64 = (*(reinterpret_cast<const int64_t*>(rawDataPtr)));
+					valueOut.data.asI64 = (*(reinterpret_cast<const int64_t *>(rawDataPtr)));
 					valueOut.valueType = ValueType::I64;
 					break;
 				case TypeId::ISize:
-					valueOut.data.asISize = *(reinterpret_cast<const ssize_t*>(rawDataPtr));
+					valueOut.data.asISize = *(reinterpret_cast<const ssize_t *>(rawDataPtr));
 					valueOut.valueType = ValueType::ISize;
 					break;
 				case TypeId::U8:
-					valueOut.data.asU8 = (*(reinterpret_cast<const uint8_t*>(rawDataPtr)));
+					valueOut.data.asU8 = (*(reinterpret_cast<const uint8_t *>(rawDataPtr)));
 					valueOut.valueType = ValueType::U8;
 					break;
 				case TypeId::U16:
-					valueOut.data.asU16 = (*(reinterpret_cast<const uint16_t*>(rawDataPtr)));
+					valueOut.data.asU16 = (*(reinterpret_cast<const uint16_t *>(rawDataPtr)));
 					valueOut.valueType = ValueType::U16;
 					break;
 				case TypeId::U32:
-					valueOut.data.asU32 = (*(reinterpret_cast<const uint32_t*>(rawDataPtr)));
+					valueOut.data.asU32 = (*(reinterpret_cast<const uint32_t *>(rawDataPtr)));
 					valueOut.valueType = ValueType::U32;
 					break;
 				case TypeId::U64:
-					valueOut.data.asU64 = (*(reinterpret_cast<const uint64_t*>(rawDataPtr)));
+					valueOut.data.asU64 = (*(reinterpret_cast<const uint64_t *>(rawDataPtr)));
 					valueOut.valueType = ValueType::U64;
 					break;
 				case TypeId::USize:
-					valueOut.data.asUSize = *(reinterpret_cast<const size_t*>(rawDataPtr));
+					valueOut.data.asUSize = *(reinterpret_cast<const size_t *>(rawDataPtr));
 					valueOut.valueType = ValueType::USize;
 					break;
 				case TypeId::F32:
-					valueOut.data.asF32 = (*(reinterpret_cast<const float*>(rawDataPtr)));
+					valueOut.data.asF32 = (*(reinterpret_cast<const float *>(rawDataPtr)));
 					valueOut.valueType = ValueType::F32;
 					break;
 				case TypeId::F64:
-					valueOut.data.asF64 = (*(reinterpret_cast<const double*>(rawDataPtr)));
+					valueOut.data.asF64 = (*(reinterpret_cast<const double *>(rawDataPtr)));
 					valueOut.valueType = ValueType::F64;
 					break;
 				case TypeId::Bool:
-					valueOut.data.asBool = (*(reinterpret_cast<const bool*>(rawDataPtr)));
+					valueOut.data.asBool = (*(reinterpret_cast<const bool *>(rawDataPtr)));
 					valueOut.valueType = ValueType::Bool;
 					break;
 				case TypeId::String:
@@ -450,13 +502,13 @@ SLAKE_API void Runtime::readVar(const Reference &entityRef, Value &valueOut) noe
 					break;
 				}
 				case TypeId::Ref:
-					valueOut.data.asReference = (*(reinterpret_cast<const Reference*>(rawDataPtr)));
+					valueOut.data.asReference = (*(reinterpret_cast<const Reference *>(rawDataPtr)));
 					valueOut.valueType = ValueType::Reference;
 					if (t.isLocal())
 						valueOut.setLocal();
 					break;
 				case TypeId::Any:
-					valueOut = (*(reinterpret_cast<const Value*>(rawDataPtr)));
+					valueOut = (*(reinterpret_cast<const Value *>(rawDataPtr)));
 					if (t.isLocal())
 						valueOut.setLocal();
 					break;
@@ -470,59 +522,57 @@ SLAKE_API void Runtime::readVar(const Reference &entityRef, Value &valueOut) noe
 		case ReferenceKind::CoroutineLocalVarRef: {
 			const char *const rawDataPtr = (char *)locateValueBasePtr(entityRef);
 
-			const TypeRef t = typeofVar(entityRef);
-
 			switch (t.typeId) {
 				case TypeId::I8:
-					valueOut.data.asI8 = (*(reinterpret_cast<const int8_t*>(rawDataPtr)));
+					valueOut.data.asI8 = (*(reinterpret_cast<const int8_t *>(rawDataPtr)));
 					valueOut.valueType = ValueType::I8;
 					break;
 				case TypeId::I16:
-					valueOut.data.asI16 = (*(reinterpret_cast<const int16_t*>(rawDataPtr)));
+					valueOut.data.asI16 = (*(reinterpret_cast<const int16_t *>(rawDataPtr)));
 					valueOut.valueType = ValueType::I16;
 					break;
 				case TypeId::I32:
-					valueOut.data.asI32 = (*(reinterpret_cast<const int32_t*>(rawDataPtr)));
+					valueOut.data.asI32 = (*(reinterpret_cast<const int32_t *>(rawDataPtr)));
 					valueOut.valueType = ValueType::I32;
 					break;
 				case TypeId::I64:
-					valueOut.data.asI64 = (*(reinterpret_cast<const int64_t*>(rawDataPtr)));
+					valueOut.data.asI64 = (*(reinterpret_cast<const int64_t *>(rawDataPtr)));
 					valueOut.valueType = ValueType::I64;
 					break;
 				case TypeId::ISize:
-					valueOut.data.asISize = *(reinterpret_cast<const ssize_t*>(rawDataPtr));
+					valueOut.data.asISize = *(reinterpret_cast<const ssize_t *>(rawDataPtr));
 					valueOut.valueType = ValueType::ISize;
 					break;
 				case TypeId::U8:
-					valueOut.data.asU8 = (*(reinterpret_cast<const uint8_t*>(rawDataPtr)));
+					valueOut.data.asU8 = (*(reinterpret_cast<const uint8_t *>(rawDataPtr)));
 					valueOut.valueType = ValueType::U8;
 					break;
 				case TypeId::U16:
-					valueOut.data.asU16 = (*(reinterpret_cast<const uint16_t*>(rawDataPtr)));
+					valueOut.data.asU16 = (*(reinterpret_cast<const uint16_t *>(rawDataPtr)));
 					valueOut.valueType = ValueType::U16;
 					break;
 				case TypeId::U32:
-					valueOut.data.asU32 = (*(reinterpret_cast<const uint32_t*>(rawDataPtr)));
+					valueOut.data.asU32 = (*(reinterpret_cast<const uint32_t *>(rawDataPtr)));
 					valueOut.valueType = ValueType::U32;
 					break;
 				case TypeId::U64:
-					valueOut.data.asU64 = (*(reinterpret_cast<const uint64_t*>(rawDataPtr)));
+					valueOut.data.asU64 = (*(reinterpret_cast<const uint64_t *>(rawDataPtr)));
 					valueOut.valueType = ValueType::U64;
 					break;
 				case TypeId::USize:
-					valueOut.data.asUSize = *(reinterpret_cast<const size_t*>(rawDataPtr));
+					valueOut.data.asUSize = *(reinterpret_cast<const size_t *>(rawDataPtr));
 					valueOut.valueType = ValueType::USize;
 					break;
 				case TypeId::F32:
-					valueOut.data.asF32 = (*(reinterpret_cast<const float*>(rawDataPtr)));
+					valueOut.data.asF32 = (*(reinterpret_cast<const float *>(rawDataPtr)));
 					valueOut.valueType = ValueType::F32;
 					break;
 				case TypeId::F64:
-					valueOut.data.asF64 = (*(reinterpret_cast<const double*>(rawDataPtr)));
+					valueOut.data.asF64 = (*(reinterpret_cast<const double *>(rawDataPtr)));
 					valueOut.valueType = ValueType::F64;
 					break;
 				case TypeId::Bool:
-					valueOut.data.asBool = (*(reinterpret_cast<const bool*>(rawDataPtr)));
+					valueOut.data.asBool = (*(reinterpret_cast<const bool *>(rawDataPtr)));
 					valueOut.valueType = ValueType::Bool;
 					break;
 				case TypeId::String:
@@ -545,13 +595,13 @@ SLAKE_API void Runtime::readVar(const Reference &entityRef, Value &valueOut) noe
 					break;
 				}
 				case TypeId::Ref:
-					valueOut.data.asReference = (*(reinterpret_cast<const Reference*>(rawDataPtr)));
+					valueOut.data.asReference = (*(reinterpret_cast<const Reference *>(rawDataPtr)));
 					valueOut.valueType = ValueType::Reference;
 					if (t.isLocal())
 						valueOut.setLocal();
 					break;
 				case TypeId::Any:
-					valueOut = (*(reinterpret_cast<const Value*>(rawDataPtr)));
+					valueOut = (*(reinterpret_cast<const Value *>(rawDataPtr)));
 					if (t.isLocal())
 						valueOut.setLocal();
 					break;
@@ -565,58 +615,57 @@ SLAKE_API void Runtime::readVar(const Reference &entityRef, Value &valueOut) noe
 		case ReferenceKind::ObjectFieldRef: {
 			const char *const rawDataPtr = (char *)locateValueBasePtr(entityRef);
 
-			TypeRef t = typeofVar(entityRef);
 			switch (t.typeId) {
 				case TypeId::I8:
-					valueOut.data.asI8 = (*(reinterpret_cast<const int8_t*>(rawDataPtr)));
+					valueOut.data.asI8 = (*(reinterpret_cast<const int8_t *>(rawDataPtr)));
 					valueOut.valueType = ValueType::I8;
 					break;
 				case TypeId::I16:
-					valueOut.data.asI16 = (*(reinterpret_cast<const int16_t*>(rawDataPtr)));
+					valueOut.data.asI16 = (*(reinterpret_cast<const int16_t *>(rawDataPtr)));
 					valueOut.valueType = ValueType::I16;
 					break;
 				case TypeId::I32:
-					valueOut.data.asI32 = (*(reinterpret_cast<const int32_t*>(rawDataPtr)));
+					valueOut.data.asI32 = (*(reinterpret_cast<const int32_t *>(rawDataPtr)));
 					valueOut.valueType = ValueType::I32;
 					break;
 				case TypeId::I64:
-					valueOut.data.asI64 = (*(reinterpret_cast<const int64_t*>(rawDataPtr)));
+					valueOut.data.asI64 = (*(reinterpret_cast<const int64_t *>(rawDataPtr)));
 					valueOut.valueType = ValueType::I64;
 					break;
 				case TypeId::ISize:
-					valueOut.data.asISize = *(reinterpret_cast<const ssize_t*>(rawDataPtr));
+					valueOut.data.asISize = *(reinterpret_cast<const ssize_t *>(rawDataPtr));
 					valueOut.valueType = ValueType::ISize;
 					break;
 				case TypeId::U8:
-					valueOut.data.asU8 = (*(reinterpret_cast<const uint8_t*>(rawDataPtr)));
+					valueOut.data.asU8 = (*(reinterpret_cast<const uint8_t *>(rawDataPtr)));
 					valueOut.valueType = ValueType::U8;
 					break;
 				case TypeId::U16:
-					valueOut.data.asU16 = (*(reinterpret_cast<const uint16_t*>(rawDataPtr)));
+					valueOut.data.asU16 = (*(reinterpret_cast<const uint16_t *>(rawDataPtr)));
 					valueOut.valueType = ValueType::U16;
 					break;
 				case TypeId::U32:
-					valueOut.data.asU32 = (*(reinterpret_cast<const uint32_t*>(rawDataPtr)));
+					valueOut.data.asU32 = (*(reinterpret_cast<const uint32_t *>(rawDataPtr)));
 					valueOut.valueType = ValueType::U32;
 					break;
 				case TypeId::U64:
-					valueOut.data.asU64 = (*(reinterpret_cast<const uint64_t*>(rawDataPtr)));
+					valueOut.data.asU64 = (*(reinterpret_cast<const uint64_t *>(rawDataPtr)));
 					valueOut.valueType = ValueType::U64;
 					break;
 				case TypeId::USize:
-					valueOut.data.asUSize = *(reinterpret_cast<const size_t*>(rawDataPtr));
+					valueOut.data.asUSize = *(reinterpret_cast<const size_t *>(rawDataPtr));
 					valueOut.valueType = ValueType::USize;
 					break;
 				case TypeId::F32:
-					valueOut.data.asF32 = (*(reinterpret_cast<const float*>(rawDataPtr)));
+					valueOut.data.asF32 = (*(reinterpret_cast<const float *>(rawDataPtr)));
 					valueOut.valueType = ValueType::F32;
 					break;
 				case TypeId::F64:
-					valueOut.data.asF64 = (*(reinterpret_cast<const double*>(rawDataPtr)));
+					valueOut.data.asF64 = (*(reinterpret_cast<const double *>(rawDataPtr)));
 					valueOut.valueType = ValueType::F64;
 					break;
 				case TypeId::Bool:
-					valueOut.data.asBool = (*(reinterpret_cast<const bool*>(rawDataPtr)));
+					valueOut.data.asBool = (*(reinterpret_cast<const bool *>(rawDataPtr)));
 					valueOut.valueType = ValueType::Bool;
 					break;
 				case TypeId::String:
@@ -639,13 +688,13 @@ SLAKE_API void Runtime::readVar(const Reference &entityRef, Value &valueOut) noe
 					break;
 				}
 				case TypeId::Ref:
-					valueOut.data.asReference = (*(reinterpret_cast<const Reference*>(rawDataPtr)));
+					valueOut.data.asReference = (*(reinterpret_cast<const Reference *>(rawDataPtr)));
 					valueOut.valueType = ValueType::Reference;
 					if (t.isLocal())
 						std::terminate();
 					break;
 				case TypeId::Any:
-					valueOut = (*(reinterpret_cast<const Value*>(rawDataPtr)));
+					valueOut = (*(reinterpret_cast<const Value *>(rawDataPtr)));
 					if (t.isLocal())
 						std::terminate();
 					break;
@@ -657,7 +706,6 @@ SLAKE_API void Runtime::readVar(const Reference &entityRef, Value &valueOut) noe
 			break;
 		}
 		case ReferenceKind::ArrayElementRef: {
-			TypeRef t = entityRef.asArrayElement.arrayObject->elementType;
 			assert(entityRef.asArrayElement.index < entityRef.asArrayElement.arrayObject->length);
 
 			switch (t.typeId) {
@@ -723,8 +771,6 @@ SLAKE_API void Runtime::readVar(const Reference &entityRef, Value &valueOut) noe
 			break;
 		}
 		case ReferenceKind::ArgRef: {
-			TypeRef t = typeofVar(entityRef);
-
 			valueOut = _fetchArgStack(
 				entityRef.asArg.dataStack,
 				entityRef.asArg.stackSize,
@@ -737,7 +783,6 @@ SLAKE_API void Runtime::readVar(const Reference &entityRef, Value &valueOut) noe
 			break;
 		}
 		case ReferenceKind::CoroutineArgRef: {
-			TypeRef t = typeofVar(entityRef);
 			if (entityRef.asCoroutineArg.coroutine->curContext) {
 				MajorFrame *mf = _fetchMajorFrame(entityRef.asCoroutineArg.coroutine->curContext, entityRef.asCoroutineArg.coroutine->curContext->offCurMajorFrame);
 				valueOut = _fetchArgStack(
@@ -760,7 +805,6 @@ SLAKE_API void Runtime::readVar(const Reference &entityRef, Value &valueOut) noe
 		}
 		case ReferenceKind::StructFieldRef: {
 			const char *rawDataPtr = ((char *)locateValueBasePtr(extractStructInnerRef(entityRef.asStructField.structRef, entityRef.asStructField.innerReferenceKind)));
-			const TypeRef t = typeofVar(entityRef);
 
 			switch (t.typeId) {
 				case TypeId::I8:
@@ -825,12 +869,10 @@ SLAKE_API void Runtime::readVar(const Reference &entityRef, Value &valueOut) noe
 	}
 }
 
-SLAKE_API void Runtime::writeVar(const Reference &entityRef, const Value &value) noexcept {
+SLAKE_API void Runtime::writeVarWithType(const Reference &entityRef, const TypeRef &t, const Value &value) noexcept {
 	switch (entityRef.kind) {
 		case ReferenceKind::StaticFieldRef: {
 			char *const rawDataPtr = (char *)locateValueBasePtr(entityRef);
-
-			const TypeRef t = typeofVar(entityRef);
 
 			switch (t.typeId) {
 				case TypeId::I8:
@@ -891,41 +933,39 @@ SLAKE_API void Runtime::writeVar(const Reference &entityRef, const Value &value)
 		case ReferenceKind::LocalVarRef: {
 			char *const rawDataPtr = (char *)locateValueBasePtr(entityRef);
 
-			const TypeRef t = typeofVar(entityRef);
-
 			switch (t.typeId) {
 				case TypeId::I8:
-					*(reinterpret_cast<int8_t*>(rawDataPtr)) = value.getI8();
+					*(reinterpret_cast<int8_t *>(rawDataPtr)) = value.getI8();
 					break;
 				case TypeId::I16:
-					*(reinterpret_cast<int16_t*>(rawDataPtr)) = value.getI16();
+					*(reinterpret_cast<int16_t *>(rawDataPtr)) = value.getI16();
 					break;
 				case TypeId::I32:
-					*(reinterpret_cast<int32_t*>(rawDataPtr)) = value.getI32();
+					*(reinterpret_cast<int32_t *>(rawDataPtr)) = value.getI32();
 					break;
 				case TypeId::I64:
-					*(reinterpret_cast<int64_t*>(rawDataPtr)) = value.getI64();
+					*(reinterpret_cast<int64_t *>(rawDataPtr)) = value.getI64();
 					break;
 				case TypeId::U8:
-					*(reinterpret_cast<uint8_t*>(rawDataPtr)) = value.getU8();
+					*(reinterpret_cast<uint8_t *>(rawDataPtr)) = value.getU8();
 					break;
 				case TypeId::U16:
-					*(reinterpret_cast<uint16_t*>(rawDataPtr)) = value.getU16();
+					*(reinterpret_cast<uint16_t *>(rawDataPtr)) = value.getU16();
 					break;
 				case TypeId::U32:
-					*(reinterpret_cast<uint32_t*>(rawDataPtr)) = value.getU32();
+					*(reinterpret_cast<uint32_t *>(rawDataPtr)) = value.getU32();
 					break;
 				case TypeId::U64:
-					*(reinterpret_cast<uint64_t*>(rawDataPtr)) = value.getU64();
+					*(reinterpret_cast<uint64_t *>(rawDataPtr)) = value.getU64();
 					break;
 				case TypeId::F32:
-					*(reinterpret_cast<float*>(rawDataPtr)) = value.getF32();
+					*(reinterpret_cast<float *>(rawDataPtr)) = value.getF32();
 					break;
 				case TypeId::F64:
-					*(reinterpret_cast<double*>(rawDataPtr)) = value.getF64();
+					*(reinterpret_cast<double *>(rawDataPtr)) = value.getF64();
 					break;
 				case TypeId::Bool:
-					*(reinterpret_cast<bool*>(rawDataPtr)) = value.getBool();
+					*(reinterpret_cast<bool *>(rawDataPtr)) = value.getBool();
 					break;
 				case TypeId::String:
 					if (value.isLocal() && !t.isLocal())
@@ -948,41 +988,39 @@ SLAKE_API void Runtime::writeVar(const Reference &entityRef, const Value &value)
 		case ReferenceKind::CoroutineLocalVarRef: {
 			char *const rawDataPtr = (char *)locateValueBasePtr(entityRef);
 
-			const TypeRef t = typeofVar(entityRef);
-
 			switch (t.typeId) {
 				case TypeId::I8:
-					*(reinterpret_cast<int8_t*>(rawDataPtr)) = value.getI8();
+					*(reinterpret_cast<int8_t *>(rawDataPtr)) = value.getI8();
 					break;
 				case TypeId::I16:
-					*(reinterpret_cast<int16_t*>(rawDataPtr)) = value.getI16();
+					*(reinterpret_cast<int16_t *>(rawDataPtr)) = value.getI16();
 					break;
 				case TypeId::I32:
-					*(reinterpret_cast<int32_t*>(rawDataPtr)) = value.getI32();
+					*(reinterpret_cast<int32_t *>(rawDataPtr)) = value.getI32();
 					break;
 				case TypeId::I64:
-					*(reinterpret_cast<int64_t*>(rawDataPtr)) = value.getI64();
+					*(reinterpret_cast<int64_t *>(rawDataPtr)) = value.getI64();
 					break;
 				case TypeId::U8:
-					*(reinterpret_cast<uint8_t*>(rawDataPtr)) = value.getU8();
+					*(reinterpret_cast<uint8_t *>(rawDataPtr)) = value.getU8();
 					break;
 				case TypeId::U16:
-					*(reinterpret_cast<uint16_t*>(rawDataPtr)) = value.getU16();
+					*(reinterpret_cast<uint16_t *>(rawDataPtr)) = value.getU16();
 					break;
 				case TypeId::U32:
-					*(reinterpret_cast<uint32_t*>(rawDataPtr)) = value.getU32();
+					*(reinterpret_cast<uint32_t *>(rawDataPtr)) = value.getU32();
 					break;
 				case TypeId::U64:
-					*(reinterpret_cast<uint64_t*>(rawDataPtr)) = value.getU64();
+					*(reinterpret_cast<uint64_t *>(rawDataPtr)) = value.getU64();
 					break;
 				case TypeId::F32:
-					*(reinterpret_cast<float*>(rawDataPtr)) = value.getF32();
+					*(reinterpret_cast<float *>(rawDataPtr)) = value.getF32();
 					break;
 				case TypeId::F64:
-					*(reinterpret_cast<double*>(rawDataPtr)) = value.getF64();
+					*(reinterpret_cast<double *>(rawDataPtr)) = value.getF64();
 					break;
 				case TypeId::Bool:
-					*(reinterpret_cast<bool*>(rawDataPtr)) = value.getBool();
+					*(reinterpret_cast<bool *>(rawDataPtr)) = value.getBool();
 					break;
 				case TypeId::String:
 					if (value.isLocal() && !t.isLocal())
@@ -1003,7 +1041,6 @@ SLAKE_API void Runtime::writeVar(const Reference &entityRef, const Value &value)
 		}
 		case ReferenceKind::ObjectFieldRef: {
 			char *const rawFieldPtr = (char *)locateValueBasePtr(entityRef);
-			const TypeRef t = typeofVar(entityRef);
 
 			switch (t.typeId) {
 				case TypeId::I8:
@@ -1055,8 +1092,6 @@ SLAKE_API void Runtime::writeVar(const Reference &entityRef, const Value &value)
 			break;
 		}
 		case ReferenceKind::ArrayElementRef: {
-			const TypeRef t = typeofVar(entityRef);
-
 			switch (t.typeId) {
 				case TypeId::I8:
 					((int8_t *)entityRef.asArrayElement.arrayObject->data)[entityRef.asArrayElement.index] = value.getI8();
@@ -1105,7 +1140,6 @@ SLAKE_API void Runtime::writeVar(const Reference &entityRef, const Value &value)
 			break;
 		}
 		case ReferenceKind::ArgRef: {
-			TypeRef t = typeofVar(entityRef);
 			if (value.isLocal() && !t.isLocal())
 				std::terminate();
 			_fetchArgStack(
@@ -1117,7 +1151,6 @@ SLAKE_API void Runtime::writeVar(const Reference &entityRef, const Value &value)
 			break;
 		}
 		case ReferenceKind::CoroutineArgRef: {
-			TypeRef t = typeofVar(entityRef);
 			if (value.isLocal() && !t.isLocal())
 				std::terminate();
 			if (entityRef.asCoroutineArg.coroutine->curContext) {
@@ -1136,7 +1169,6 @@ SLAKE_API void Runtime::writeVar(const Reference &entityRef, const Value &value)
 		}
 		case ReferenceKind::StructFieldRef: {
 			const char *rawDataPtr = (char *)locateValueBasePtr(entityRef);
-			const TypeRef t = typeofVar(entityRef);
 
 			if (t.isLocal())
 				std::terminate();

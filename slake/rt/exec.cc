@@ -625,9 +625,11 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 			const Value *data;
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[1], data));
 
-			if (!isCompatible(typeofVar(destValue->getReference()), *data))
+			const Reference &ref = destValue->getReference();
+			TypeRef t = typeofVar(ref);
+			if (!isCompatible(t, *data))
 				return MismatchedVarTypeError::alloc(getFixedAlloc());
-			writeVar(destValue->getReference(), *data);
+			writeVarWithType(ref, t, *data);
 			break;
 		}
 		case Opcode::JMP: {

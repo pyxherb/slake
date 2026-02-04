@@ -298,21 +298,31 @@ SLAKE_API TypeRef TypeRef::duplicate(bool &succeededOut) const {
 SLAKE_API bool slake::isCompatible(const TypeRef &type, const Value &value) noexcept {
 	switch (type.typeId) {
 		case TypeId::I8:
+			return value.valueType == ValueType::I8;
 		case TypeId::I16:
+			return value.valueType == ValueType::I16;
 		case TypeId::I32:
+			return value.valueType == ValueType::I32;
 		case TypeId::I64:
+			return value.valueType == ValueType::I64;
 		case TypeId::ISize:
+			return value.valueType == ValueType::ISize;
 		case TypeId::U8:
+			return value.valueType == ValueType::U8;
 		case TypeId::U16:
+			return value.valueType == ValueType::U16;
 		case TypeId::U32:
+			return value.valueType == ValueType::U32;
 		case TypeId::U64:
+			return value.valueType == ValueType::U64;
 		case TypeId::USize:
+			return value.valueType == ValueType::USize;
 		case TypeId::F32:
+			return value.valueType == ValueType::F32;
 		case TypeId::F64:
+			return value.valueType == ValueType::F64;
 		case TypeId::Bool:
-			if (type.typeId != valueTypeToTypeId(value.valueType))
-				return false;
-			return true;
+			return value.valueType == ValueType::Bool;
 		case TypeId::String: {
 			if (value.valueType != ValueType::Reference)
 				return false;

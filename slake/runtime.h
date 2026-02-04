@@ -463,9 +463,15 @@ namespace slake {
 			size_t nativeStackSize = 0);
 
 		SLAKE_API static void *locateValueBasePtr(const Reference &entityRef) noexcept;
-		[[nodiscard]] SLAKE_API static TypeRef typeofVar(const Reference &entityRef) noexcept;
-		SLAKE_API static void readVar(const Reference &entityRef, Value &valueOut) noexcept;
-		[[nodiscard]] SLAKE_API static void writeVar(const Reference &entityRef, const Value &value) noexcept;
+		SLAKE_API static TypeRef typeofVar(const Reference &entityRef) noexcept;
+		SLAKE_API static void readVarWithType(const Reference &entityRef, const TypeRef &t, Value &valueOut) noexcept;
+		SLAKE_FORCEINLINE static void readVar(const Reference& entityRef, Value& valueOut) noexcept {
+			readVarWithType(entityRef, typeofVar(entityRef), valueOut);
+		}
+		SLAKE_API static void writeVarWithType(const Reference &entityRef, const TypeRef &t, const Value &value) noexcept;
+		SLAKE_FORCEINLINE static void writeVar(const Reference& entityRef, const Value& value) noexcept {
+			writeVarWithType(entityRef, typeofVar(entityRef), value);
+		}
 		SLAKE_FORCEINLINE InternalExceptionPointer writeVarChecked(const Reference &entityRef, const Value &value) const noexcept {
 			if (!isCompatible(typeofVar(entityRef), value))
 				return MismatchedVarTypeError::alloc(getFixedAlloc());

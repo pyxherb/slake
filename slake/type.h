@@ -139,8 +139,8 @@ namespace slake {
 		TypeModifier typeModifier;
 		TypeDefObject *typeDef;
 
-		TypeRef() = default;
-		TypeRef(const TypeRef &) = default;
+		TypeRef() noexcept = default;
+		TypeRef(const TypeRef &) noexcept = default;
 		SLAKE_FORCEINLINE TypeRef(TypeId typeId) : typeId(typeId), typeModifier(0), typeDef(nullptr) {
 		}
 		SLAKE_FORCEINLINE TypeRef(TypeId typeId, TypeModifier typeModifier) : typeId(typeId), typeModifier(typeModifier), typeDef(nullptr) {
@@ -153,7 +153,7 @@ namespace slake {
 		}
 		~TypeRef() = default;
 
-		TypeRef &operator=(const TypeRef &) = default;
+		TypeRef &operator=(const TypeRef &) noexcept = default;
 
 		SLAKE_API int comparesTo(const TypeRef &rhs) const noexcept;
 

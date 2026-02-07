@@ -395,5 +395,9 @@ SLKC_API peff::Option<CompilationError> slkc::isFnSignatureDuplicated(AstNodePtr
 		whetherOut = false;
 		return {};
 	}
+	if (lhs->isVaridic() != rhs->isVaridic()) {
+		whetherOut = false;
+		return {};
+	}
 	return isFnSignatureSame(lhs->params.data(), rhs->params.data(), lhs->params.size(), lhs->overridenType, rhs->overridenType, whetherOut);
 }

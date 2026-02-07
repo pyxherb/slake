@@ -860,11 +860,44 @@ SLKC_API peff::Option<CompilationError> slkc::compileReturnStmt(
 	SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(reg));
 
 	if (s->value) {
+		if (compileEnv->curOverloading->returnType->typeNameKind == TypeNameKind::Void)
+			return CompilationError(s->value->tokenRange, CompilationErrorKind::ReturnValueTypeDoesNotMatch);
 		CompileExprResult result(compileEnv->allocator.get());
 
-		// TODO: Convert the return value.
+		AstNodePtr<TypeNameNode> valueType;
 
-		SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, s->value, ExprEvalPurpose::RValue, compileEnv->curOverloading->returnType, reg, result));
+		SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileEnv, compilationContext, s->value, valueType));
+
+		bool l;
+		SLKC_RETURN_IF_COMP_ERROR(isLValueType(compileEnv->curOverloading->returnType, l));
+
+		bool b;
+		SLKC_RETURN_IF_COMP_ERROR(isSameType(valueType, compileEnv->curOverloading->returnType, b));
+		if (b)
+			SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, s->value, l ? ExprEvalPurpose::LValue : ExprEvalPurpose::RValue, compileEnv->curOverloading->returnType, reg, result));
+		else {
+			SLKC_RETURN_IF_COMP_ERROR(isConvertible(valueType, compileEnv->curOverloading->returnType, true, b));
+			if (b) {
+				CompileExprResult result(compileEnv->allocator.get());
+
+				AstNodePtr<CastExprNode> castExpr;
+
+				if (!(castExpr = makeAstNode<CastExprNode>(
+						  compileEnv->allocator.get(),
+						  compileEnv->allocator.get(),
+						  compileEnv->document))) {
+					return genOutOfMemoryCompError();
+				}
+
+				castExpr->tokenRange = s->value->tokenRange;
+				castExpr->targetType = compileEnv->curOverloading->returnType;
+				castExpr->source = s->value;
+
+				SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, castExpr.castTo<ExprNode>(), ExprEvalPurpose::RValue, compileEnv->curOverloading->returnType, reg, result));
+				return {};
+			} else
+				return CompilationError(s->value->tokenRange, CompilationErrorKind::ReturnValueTypeDoesNotMatch);
+		}
 
 		SLKC_RETURN_IF_COMP_ERROR(
 			compilationContext->emitIns(

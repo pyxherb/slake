@@ -599,6 +599,9 @@ void dumpCompilationError(peff::SharedPtr<slkc::Parser> parser, const slkc::Comp
 		case slkc::CompilationErrorKind::FunctionOverloadingDuplicatedDuringInstantiation:
 			printf("Duplicated function overloading detected during instantiation\n");
 			break;
+		case slkc::CompilationErrorKind::ReturnValueTypeDoesNotMatch:
+			printf("Return value type does not match\n");
+			break;
 
 		case slkc::CompilationErrorKind::ImportLimitExceeded:
 			printf("Import item number exceeded\n");

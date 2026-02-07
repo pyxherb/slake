@@ -68,6 +68,10 @@ namespace slkc {
 		SLAKE_FORCEINLINE bool isReturnTypeAutoInferred() const noexcept {
 			return returnTypeTokenIndex != SIZE_MAX;
 		}
+
+		SLAKE_FORCEINLINE bool isVaridic() const noexcept {
+			return fnFlags & FN_VARG;
+		}
 	};
 }
 

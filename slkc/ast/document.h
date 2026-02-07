@@ -84,6 +84,7 @@ namespace slkc {
 		EnumItemIsNotAssignable,
 		IncompatibleInitialValueType,
 		FunctionOverloadingDuplicatedDuringInstantiation,
+		ReturnValueTypeDoesNotMatch,
 
 		ImportLimitExceeded,
 		MalformedModuleName,

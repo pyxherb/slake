@@ -1082,9 +1082,6 @@ recheck:
 		case TypeNameKind::U32:
 		case TypeNameKind::U64:
 		case TypeNameKind::USize:
-		case TypeNameKind::F32:
-		case TypeNameKind::F64:
-		case TypeNameKind::Bool:
 			switch (src->typeNameKind) {
 				case TypeNameKind::I8:
 				case TypeNameKind::I16:
@@ -1098,7 +1095,56 @@ recheck:
 				case TypeNameKind::USize:
 				case TypeNameKind::F32:
 				case TypeNameKind::F64:
-				case TypeNameKind::String:
+				case TypeNameKind::Bool:
+				case TypeNameKind::Any:
+					resultOut = true;
+					break;
+				case TypeNameKind::Ref:
+					SLKC_RETURN_IF_COMP_ERROR(removeRefOfType(src, src));
+					goto recheck;
+				default:
+					resultOut = false;
+					break;
+			}
+			return {};
+		case TypeNameKind::F32:
+		case TypeNameKind::F64:
+			switch (src->typeNameKind) {
+				case TypeNameKind::I8:
+				case TypeNameKind::I16:
+				case TypeNameKind::I32:
+				case TypeNameKind::I64:
+				case TypeNameKind::ISize:
+				case TypeNameKind::U8:
+				case TypeNameKind::U16:
+				case TypeNameKind::U32:
+				case TypeNameKind::U64:
+				case TypeNameKind::USize:
+				case TypeNameKind::F32:
+				case TypeNameKind::F64:
+				case TypeNameKind::Any:
+					resultOut = true;
+					break;
+				case TypeNameKind::Ref:
+					SLKC_RETURN_IF_COMP_ERROR(removeRefOfType(src, src));
+					goto recheck;
+				default:
+					resultOut = false;
+					break;
+			}
+			return {};
+		case TypeNameKind::Bool:
+			switch (src->typeNameKind) {
+				case TypeNameKind::I8:
+				case TypeNameKind::I16:
+				case TypeNameKind::I32:
+				case TypeNameKind::I64:
+				case TypeNameKind::ISize:
+				case TypeNameKind::U8:
+				case TypeNameKind::U16:
+				case TypeNameKind::U32:
+				case TypeNameKind::U64:
+				case TypeNameKind::USize:
 				case TypeNameKind::Bool:
 				case TypeNameKind::Any:
 					resultOut = true;

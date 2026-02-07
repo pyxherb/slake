@@ -53,6 +53,7 @@ namespace slkc {
 		size_t lvalueMarkerIndex = SIZE_MAX;
 
 		AstNodePtr<TypeNameNode> returnType;
+		size_t returnTypeTokenIndex = SIZE_MAX;
 
 		AstNodePtr<TypeNameNode> overridenType;
 
@@ -63,6 +64,10 @@ namespace slkc {
 		SLKC_API FnOverloadingNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
 		SLKC_API FnOverloadingNode(const FnOverloadingNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut);
 		SLKC_API virtual ~FnOverloadingNode();
+
+		SLAKE_FORCEINLINE bool isReturnTypeAutoInferred() const noexcept {
+			return returnTypeTokenIndex != SIZE_MAX;
+		}
 	};
 }
 

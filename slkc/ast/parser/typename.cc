@@ -28,6 +28,9 @@ SLKC_API peff::Option<SyntaxError> Parser::parseGenericArg(AstNodePtr<AstNode>& 
 			argOut = e.castTo<AstNode>();
 			break;
 		}
+		case TokenId::TypenameKeyword:
+			nextToken();
+			[[fallthrough]];
 		default: {
 			AstNodePtr<TypeNameNode> t;
 			if ((syntaxError = parseTypeName(t)))

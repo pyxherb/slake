@@ -422,7 +422,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseFn(AstNodePtr<FnOverloadingNode>
 	if ((syntaxError = parseGenericParams(fnNodeOut->genericParams, fnNodeOut->idxGenericParamCommaTokens, fnNodeOut->lAngleBracketIndex, fnNodeOut->rAngleBracketIndex))) {
 		return syntaxError;
 	}
-	for (size_t i = 0;  i < fnNodeOut->genericParams.size(); ++i) {
+	for (size_t i = 0; i < fnNodeOut->genericParams.size(); ++i) {
 		auto gp = fnNodeOut->genericParams.at(i);
 		if (fnNodeOut->genericParamIndices.contains(gp->name)) {
 			peff::String s(resourceAllocator.get());
@@ -435,7 +435,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseFn(AstNodePtr<FnOverloadingNode>
 
 			return SyntaxError(gp->tokenRange, std::move(exData));
 		}
-		if(!fnNodeOut->genericParamIndices.insert(gp->name, +i))
+		if (!fnNodeOut->genericParamIndices.insert(gp->name, +i))
 			return genOutOfMemorySyntaxError();
 	}
 
@@ -496,6 +496,10 @@ SLKC_API peff::Option<SyntaxError> Parser::parseFn(AstNodePtr<FnOverloadingNode>
 		nextToken();
 		if ((syntaxError = parseTypeName(fnNodeOut->returnType))) {
 			return syntaxError;
+		}
+	} else {
+		if (!(fnNodeOut->returnType = makeAstNode<VoidTypeNameNode>(resourceAllocator.get(), resourceAllocator.get(), document).castTo<TypeNameNode>())) {
+			return genOutOfMemorySyntaxError();
 		}
 	}
 
@@ -1666,7 +1670,7 @@ accessModifierParseEnd:
 
 					ConflictingDefinitionsErrorExData exData(std::move(s));
 
-					if(syntaxErrors.pushBack(SyntaxError(TokenRange(p.get(), i->idxNameToken), std::move(exData))))
+					if (syntaxErrors.pushBack(SyntaxError(TokenRange(p.get(), i->idxNameToken), std::move(exData))))
 						return genOutOfMemorySyntaxError();
 				}
 				AstNodePtr<VarNode> varNode;

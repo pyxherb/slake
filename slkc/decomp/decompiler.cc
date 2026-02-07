@@ -743,7 +743,7 @@ SLKC_API bool Decompiler::decompileModuleMembers(peff::Alloc *allocator, DumpWri
 									std::terminate();
 								}
 
-								SLKC_RETURN_IF_FALSE(writer->write(" [\n"));
+								SLKC_RETURN_IF_FALSE(writer->write(" {\n"));
 
 								for (size_t j = 0; j < cfg.basicBlocks.size(); ++j) {
 									for (size_t k = 0; k < indentLevel; ++k) {
@@ -820,7 +820,7 @@ SLKC_API bool Decompiler::decompileModuleMembers(peff::Alloc *allocator, DumpWri
 									SLKC_RETURN_IF_FALSE(writer->write("\t"));
 								}
 
-								SLKC_RETURN_IF_FALSE(writer->write("]\n"));
+								SLKC_RETURN_IF_FALSE(writer->write("}\n"));
 							} else {
 								SLKC_RETURN_IF_FALSE(writer->write(" {\n"));
 

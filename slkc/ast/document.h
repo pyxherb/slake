@@ -216,18 +216,64 @@ namespace slkc {
 			GenericArgListCmp,
 			true>;
 
-	struct GenericInstantiationContext {
+	struct GenericInstantiationContext;
+
+	struct MemberGenericInstantiationTask {
+		peff::SharedPtr<GenericInstantiationContext> context;
+		AstNodePtr<MemberNode> member;
+	};
+
+	struct TypeSlotGenericInstantiationTask {
+		peff::SharedPtr<GenericInstantiationContext> context;
+		AstNodePtr<TypeNameNode> &typeName;
+	};
+
+	struct AstNodeGenericInstantiationTask {
+		peff::SharedPtr<GenericInstantiationContext> context;
+		AstNodePtr<AstNode> &node;
+	};
+
+	class FnOverloadingNode;
+	class FnNode;
+
+	struct GenericInstantiationDispatcher {
+		peff::RcObjectPtr<peff::Alloc> allocator;
+		peff::List<MemberGenericInstantiationTask> memberTasks;
+		peff::List<TypeSlotGenericInstantiationTask> typeTasks;
+		peff::List<AstNodeGenericInstantiationTask> astNodeTasks;
+		peff::Set<AstNodePtr<FnOverloadingNode>> collectedFnOverloadings;
+		peff::Set<AstNodePtr<FnNode>> collectedFns;
+
+		SLAKE_FORCEINLINE GenericInstantiationDispatcher(peff::Alloc *allocator) : allocator(allocator), memberTasks(allocator), astNodeTasks(allocator), typeTasks(allocator), collectedFnOverloadings(allocator), collectedFns(allocator) {}
+
+		[[nodiscard]] SLAKE_FORCEINLINE peff::Option<CompilationError> pushMemberTask(MemberGenericInstantiationTask &&task) noexcept {
+			return memberTasks.pushBack(std::move(task)) ? peff::Option<CompilationError>{} : genOutOfMemoryCompError();
+		}
+
+		[[nodiscard]] SLAKE_FORCEINLINE peff::Option<CompilationError> pushTypeSlotTask(TypeSlotGenericInstantiationTask &&task) noexcept {
+			return typeTasks.pushBack(std::move(task)) ? peff::Option<CompilationError>{} : genOutOfMemoryCompError();
+		}
+
+		[[nodiscard]] SLAKE_FORCEINLINE peff::Option<CompilationError> pushAstNodeTask(AstNodeGenericInstantiationTask &&task) noexcept {
+			return astNodeTasks.pushBack(std::move(task)) ? peff::Option<CompilationError>{} : genOutOfMemoryCompError();
+		}
+	};
+
+	struct GenericInstantiationContext : public peff::SharedFromThis<GenericInstantiationContext> {
 		peff::RcObjectPtr<peff::Alloc> allocator;
 		const peff::DynArray<AstNodePtr<AstNode>> *genericArgs;
 		peff::HashMap<std::string_view, AstNodePtr<AstNode>> mappedGenericArgs;
 		AstNodePtr<MemberNode> mappedNode;
+		GenericInstantiationDispatcher *dispatcher = nullptr;
 
 		SLAKE_FORCEINLINE GenericInstantiationContext(
 			peff::Alloc *allocator,
-			const peff::DynArray<AstNodePtr<AstNode>> *genericArgs)
+			const peff::DynArray<AstNodePtr<AstNode>> *genericArgs,
+			GenericInstantiationDispatcher *dispatcher)
 			: allocator(allocator),
 			  genericArgs(genericArgs),
-			  mappedGenericArgs(allocator) {
+			  mappedGenericArgs(allocator),
+			  dispatcher(dispatcher) {
 		}
 	};
 

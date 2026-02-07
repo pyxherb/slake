@@ -1314,7 +1314,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 						}
 					}
 				} else {
-					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, e->args.at(i), ExprEvalPurpose::RValue, argTypes.at(i), reg, argResult));
+					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, e->args.at(i), ExprEvalPurpose::RValue, {}, reg, argResult));
 				}
 
 				AstNodePtr<TypeNameNode> argType = argResult.evaluatedType;

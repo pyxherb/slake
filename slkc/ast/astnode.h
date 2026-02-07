@@ -121,11 +121,14 @@ namespace slkc {
 
 		template <typename T>
 		[[nodiscard]] bool pushTask(T &&callable) noexcept {
-			return tasks.pushBack(
+			auto task =
 				std::unique_ptr<
 					BaseAstNodeDuplicationTask,
 					peff::DeallocableDeleter<BaseAstNodeDuplicationTask>>(
-					AstNodeDuplicationTask<T>::alloc(allocator.get(), std::move(callable))));
+					AstNodeDuplicationTask<T>::alloc(allocator.get(), std::move(callable)));
+			if (!task)
+				return false;
+			return tasks.pushBack(std::move(task));
 		}
 	};
 

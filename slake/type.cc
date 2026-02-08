@@ -88,39 +88,39 @@ SLAKE_API Reference slake::extractStructInnerRef(const StructRefData &structRef,
 	switch (innerReferenceKind) {
 		case ReferenceKind::StaticFieldRef:
 			return StaticFieldRef(
-				structRef.innerReference.asStaticField.moduleObject,
-				structRef.innerReference.asStaticField.index);
+				structRef.asStaticField.moduleObject,
+				structRef.asStaticField.index);
 			break;
 		case ReferenceKind::ArrayElementRef:
 			return ArrayElementRef(
-				structRef.innerReference.asArrayElement.arrayObject,
-				structRef.innerReference.asArrayElement.index);
+				structRef.asArrayElement.arrayObject,
+				structRef.asArrayElement.index);
 			break;
 		case ReferenceKind::ObjectFieldRef:
 			return ObjectFieldRef(
-				structRef.innerReference.asObjectField.instanceObject,
-				structRef.innerReference.asObjectField.fieldIndex);
+				structRef.asObjectField.instanceObject,
+				structRef.asObjectField.fieldIndex);
 			break;
 		case ReferenceKind::LocalVarRef:
 			return LocalVarRef(
-				structRef.innerReference.asLocalVar.context,
-				structRef.innerReference.asLocalVar.stackOff);
+				structRef.asLocalVar.context,
+				structRef.asLocalVar.stackOff);
 			break;
 		case ReferenceKind::CoroutineLocalVarRef:
 			return CoroutineLocalVarRef(
-				structRef.innerReference.asCoroutineLocalVar.coroutine,
-				structRef.innerReference.asCoroutineLocalVar.stackOff);
+				structRef.asCoroutineLocalVar.coroutine,
+				structRef.asCoroutineLocalVar.stackOff);
 		case ReferenceKind::ArgRef:
 			return ArgRef(
-				structRef.innerReference.asArg.majorFrame,
-				structRef.innerReference.asArg.dataStack,
-				structRef.innerReference.asArg.stackSize,
-				structRef.innerReference.asArg.argIndex);
+				structRef.asArg.majorFrame,
+				structRef.asArg.dataStack,
+				structRef.asArg.stackSize,
+				structRef.asArg.argIndex);
 			break;
 		case ReferenceKind::CoroutineArgRef:
 			return CoroutineLocalVarRef(
-				structRef.innerReference.asCoroutineArg.coroutine,
-				structRef.innerReference.asCoroutineArg.argIndex);
+				structRef.asCoroutineArg.coroutine,
+				structRef.asCoroutineArg.argIndex);
 			break;
 		default:
 			std::terminate();
@@ -202,7 +202,7 @@ SLAKE_API bool Reference::operator<(const Reference &rhs) const {
 				return false;
 			return asArg.argIndex < rhs.asArg.argIndex;
 		case ReferenceKind::AotPtrRef:
-			return asAotPtr.ptr < rhs.asAotPtr.ptr;
+			return asAotPtr < rhs.asAotPtr;
 		default:
 			break;
 	}
@@ -250,7 +250,7 @@ SLAKE_API bool Reference::operator>(const Reference &rhs) const {
 				return false;
 			return asArg.argIndex > rhs.asArg.argIndex;
 		case ReferenceKind::AotPtrRef:
-			return asAotPtr.ptr > rhs.asAotPtr.ptr;
+			return asAotPtr > rhs.asAotPtr;
 		default:
 			break;
 	}

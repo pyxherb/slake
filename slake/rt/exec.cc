@@ -1788,7 +1788,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 					IdRefEntry &curName = idRef->entries.at(0);
 
 					if (auto it = structObject->cachedObjectLayout->fieldNameMap.find(curName.name); it != structObject->cachedObjectLayout->fieldNameMap.end()) {
-						entityRef = Reference::makeStructFieldRef(lhsEntityRef.asStruct.structRef, lhsEntityRef.asStruct.innerReferenceKind, it.value());
+						entityRef = StructFieldRef(lhsEntityRef.asStruct.structRef, it.value(), lhsEntityRef.asStruct.innerReferenceKind);
 					} else {
 						entityRef = structObject->getMember(curName.name);
 
@@ -2548,9 +2548,35 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 			case FnOverloadingKind::Native: {
 				NativeFnOverloadingObject *ol = (NativeFnOverloadingObject *)curFn;
 
-				Value returnValue = ol->callback(
-					&context->getContext(),
-					curMajorFrame);
+				MinorFrame *mf = _fetchMinorFrame(&context->getContext(), curMajorFrame, curMajorFrame->offPrevFrame);
+				const Value *args = _fetchArgStack(
+					context->getContext().dataStack,
+					context->getContext().stackSize,
+					curMajorFrame,
+					curMajorFrame->resumableContextData->offArgs,
+					curMajorFrame->resumableContextData->nArgs);
+				Value returnValue;
+				{
+					peff::ScopeGuard decRefArgsGuard([this, curMajorFrame, args]() noexcept {
+						for (size_t i = 0; i < curMajorFrame->resumableContextData->nArgs; ++i) {
+							if (args[i].isReference()) {
+								const Reference &ref = args[i].getReference();
+								if (ref.isObjectRef())
+									ref.getObjectRef()->decHostRef();
+							}
+						}
+					});
+					for (size_t i = 0; i < curMajorFrame->resumableContextData->nArgs; ++i) {
+						if (args[i].isReference()) {
+							const Reference &ref = args[i].getReference();
+							if (ref.isObjectRef())
+								ref.getObjectRef()->incHostRef();
+						}
+					}
+					returnValue = ol->callback(
+						&context->getContext(),
+						curMajorFrame);
+				}
 				uint32_t returnValueOutReg = curMajorFrame->returnValueOutReg;
 				_leaveMajorFrame(&context->getContext());
 				if (returnValueOutReg != UINT32_MAX) {

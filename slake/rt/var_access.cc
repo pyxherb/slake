@@ -333,9 +333,9 @@ SLAKE_API void Runtime::readVarWithType(const Reference &entityRef, const TypeRe
 					break;
 				case TypeId::StructInstance: {
 					StructRefData structRef;
-					structRef.innerReference.asStaticField = entityRef.asStaticField;
+					structRef.asStaticField = entityRef.asStaticField;
 
-					valueOut.data.asReference = (Reference::makeStructRef(structRef, ReferenceKind::StaticFieldRef));
+					valueOut.data.asReference = (StructRef(structRef, ReferenceKind::StaticFieldRef));
 					valueOut.valueType = ValueType::Reference;
 					break;
 				}
@@ -493,9 +493,9 @@ SLAKE_API void Runtime::readVarWithType(const Reference &entityRef, const TypeRe
 					break;
 				case TypeId::StructInstance: {
 					StructRefData structRef;
-					structRef.innerReference.asLocalVar = entityRef.asLocalVar;
+					structRef.asLocalVar = entityRef.asLocalVar;
 
-					valueOut.data.asReference = (Reference::makeStructRef(structRef, ReferenceKind::LocalVarRef));
+					valueOut.data.asReference = (StructRef(structRef, ReferenceKind::LocalVarRef));
 					valueOut.valueType = ValueType::Reference;
 					if (t.isLocal())
 						valueOut.setLocal();
@@ -586,9 +586,9 @@ SLAKE_API void Runtime::readVarWithType(const Reference &entityRef, const TypeRe
 					break;
 				case TypeId::StructInstance: {
 					StructRefData structRef;
-					structRef.innerReference.asCoroutineLocalVar = entityRef.asCoroutineLocalVar;
+					structRef.asCoroutineLocalVar = entityRef.asCoroutineLocalVar;
 
-					valueOut.data.asReference = (Reference::makeStructRef(structRef, ReferenceKind::CoroutineLocalVarRef));
+					valueOut.data.asReference = (StructRef(structRef, ReferenceKind::CoroutineLocalVarRef));
 					valueOut.valueType = ValueType::Reference;
 					if (t.isLocal())
 						valueOut.setLocal();
@@ -679,9 +679,9 @@ SLAKE_API void Runtime::readVarWithType(const Reference &entityRef, const TypeRe
 					break;
 				case TypeId::StructInstance: {
 					StructRefData structRef;
-					structRef.innerReference.asObjectField = entityRef.asObjectField;
+					structRef.asObjectField = entityRef.asObjectField;
 
-					valueOut.data.asReference = (Reference::makeStructRef(structRef, ReferenceKind::ObjectFieldRef));
+					valueOut.data.asReference = (StructRef(structRef, ReferenceKind::ObjectFieldRef));
 					valueOut.valueType = ValueType::Reference;
 					if (t.isLocal())
 						std::terminate();

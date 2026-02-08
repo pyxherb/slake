@@ -176,6 +176,15 @@ namespace slake {
 			return _objectKind;
 		}
 
+		SLAKE_FORCEINLINE void incHostRef() const noexcept {
+			++hostRefCount;
+		}
+
+		SLAKE_FORCEINLINE void decHostRef() const noexcept {
+			assert(hostRefCount > 0);
+			--hostRefCount;
+		}
+
 		SLAKE_API virtual Reference getMember(const std::string_view &name) const;
 	};
 

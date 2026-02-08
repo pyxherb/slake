@@ -126,13 +126,41 @@ namespace slake {
 			CoroutineLocalVarRef asCoroutineLocalVar;
 			ArgRef asArg;
 			CoroutineArgRef asCoroutineArg;
-		} innerReference;
+		};
+
+		StructRefData() = default;
+		SLAKE_FORCEINLINE StructRefData(const StaticFieldRef &innerReference) : asStaticField(innerReference) {}
+		SLAKE_FORCEINLINE StructRefData(const ArrayElementRef &innerReference) : asArrayElement(innerReference) {}
+		SLAKE_FORCEINLINE StructRefData(const ObjectFieldRef &innerReference) : asObjectField(innerReference) {}
+		SLAKE_FORCEINLINE StructRefData(const LocalVarRef &innerReference) : asLocalVar(innerReference) {}
+		SLAKE_FORCEINLINE StructRefData(const CoroutineLocalVarRef &innerReference) : asCoroutineLocalVar(innerReference) {}
+		SLAKE_FORCEINLINE StructRefData(const ArgRef &innerReference) : asArg(innerReference) {}
+		SLAKE_FORCEINLINE StructRefData(const CoroutineArgRef &innerReference) : asCoroutineArg(innerReference) {}
 	};
 
 	struct StructFieldRef {
 		StructRefData structRef;
 		uint32_t idxField;
 		ReferenceKind innerReferenceKind;
+
+		StructFieldRef() = default;
+		StructFieldRef(const StructRefData &structRef,
+			uint32_t idxField,
+			ReferenceKind innerReferenceKind)
+			: structRef(structRef),
+			  idxField(idxField),
+			  innerReferenceKind(innerReferenceKind) {}
+	};
+
+	struct StructRef {
+		StructRefData structRef;
+		ReferenceKind innerReferenceKind;
+
+		StructRef() = default;
+		StructRef(const StructRefData &structRef,
+			ReferenceKind innerReferenceKind)
+			: structRef(structRef),
+			  innerReferenceKind(innerReferenceKind) {}
 	};
 
 	struct Reference {
@@ -146,14 +174,9 @@ namespace slake {
 			ArgRef asArg;
 			ArgPackRef asArgPack;
 			CoroutineArgRef asCoroutineArg;
-			struct {
-				StructRefData structRef;
-				ReferenceKind innerReferenceKind;
-			} asStruct;
+			StructRef asStruct;
 			StructFieldRef asStructField;
-			struct {
-				void *ptr;
-			} asAotPtr;
+			void *asAotPtr;
 		};
 		ReferenceKind kind;
 
@@ -171,6 +194,8 @@ namespace slake {
 		SLAKE_FORCEINLINE Reference(const ArgRef &ref) noexcept : kind(ReferenceKind::ArgRef), asArg(ref) {}
 		SLAKE_FORCEINLINE Reference(const ArgPackRef &ref) noexcept : kind(ReferenceKind::ArgPackRef), asArgPack(ref) {}
 		SLAKE_FORCEINLINE Reference(const CoroutineArgRef &ref) noexcept : kind(ReferenceKind::CoroutineArgRef), asCoroutineArg(ref) {}
+		SLAKE_FORCEINLINE Reference(const StructRef &ref) noexcept : kind(ReferenceKind::StructRef), asStruct(ref) {}
+		SLAKE_FORCEINLINE Reference(const StructFieldRef &ref) noexcept : kind(ReferenceKind::StructFieldRef), asStructField(ref) {}
 
 		Reference &operator=(const Reference &) noexcept = default;
 
@@ -227,40 +252,194 @@ namespace slake {
 			return *this;
 		}
 
-		static SLAKE_FORCEINLINE Reference makeStructRef(const StructRefData &structRef, ReferenceKind innerReferenceKind) {
-			Reference ref;
-
-			ref.asStruct.structRef = structRef;
-			ref.asStruct.innerReferenceKind = innerReferenceKind;
-			ref.kind = ReferenceKind::StructRef;
-
-			return ref;
+		SLAKE_FORCEINLINE Reference &operator=(const StructRef &ref) noexcept {
+			kind = ReferenceKind::StructRef;
+			asStruct = ref;
+			return *this;
 		}
 
-		static SLAKE_FORCEINLINE Reference makeStructFieldRef(const StructRefData &structRef, ReferenceKind innerReferenceKind, uint32_t fieldIndex) {
-			Reference ref;
-
-			ref.asStructField.structRef = structRef;
-			ref.asStructField.innerReferenceKind = innerReferenceKind;
-			ref.asStructField.idxField = fieldIndex;
-			ref.kind = ReferenceKind::StructFieldRef;
-
-			return ref;
+		SLAKE_FORCEINLINE Reference &operator=(const StructFieldRef &ref) noexcept {
+			kind = ReferenceKind::StructFieldRef;
+			asStructField = ref;
+			return *this;
 		}
 
-		static SLAKE_FORCEINLINE Reference makeAotPtrRef(void *ptr) {
-			Reference ref;
-
-			ref.asAotPtr.ptr = ptr;
-			ref.kind = ReferenceKind::ArgRef;
-
-			return ref;
+		SLAKE_FORCEINLINE bool isInvalid() const noexcept {
+			return kind == ReferenceKind::Invalid;
 		}
 
-		SLAKE_FORCEINLINE bool isValid() const {
+		SLAKE_FORCEINLINE bool isObjectRef() const noexcept {
+			return kind == ReferenceKind::ObjectRef;
+		}
+
+		SLAKE_FORCEINLINE bool isStaticFieldRef() const noexcept {
+			return kind == ReferenceKind::StaticFieldRef;
+		}
+
+		SLAKE_FORCEINLINE bool isLocalVarRef() const noexcept {
+			return kind == ReferenceKind::LocalVarRef;
+		}
+
+		SLAKE_FORCEINLINE bool isCoroutineLocalVarRef() const noexcept {
+			return kind == ReferenceKind::CoroutineLocalVarRef;
+		}
+
+		SLAKE_FORCEINLINE bool isObjectFieldRef() const noexcept {
+			return kind == ReferenceKind::ObjectFieldRef;
+		}
+
+		SLAKE_FORCEINLINE bool isArrayElementRef() const noexcept {
+			return kind == ReferenceKind::ArrayElementRef;
+		}
+
+		SLAKE_FORCEINLINE bool isArgRef() const noexcept {
+			return kind == ReferenceKind::ArgRef;
+		}
+
+		SLAKE_FORCEINLINE bool isCoroutineArgRef() const noexcept {
+			return kind == ReferenceKind::CoroutineArgRef;
+		}
+
+		SLAKE_FORCEINLINE bool isStructFieldRef() const noexcept {
+			return kind == ReferenceKind::StructFieldRef;
+		}
+
+		SLAKE_FORCEINLINE bool isArgPackRef() const noexcept {
+			return kind == ReferenceKind::ArgPackRef;
+		}
+
+		SLAKE_FORCEINLINE bool isAotPtrRef() const noexcept {
+			return kind == ReferenceKind::AotPtrRef;
+		}
+
+		SLAKE_FORCEINLINE bool isStructRef() const noexcept {
+			return kind == ReferenceKind::StructRef;
+		}
+
+		SLAKE_FORCEINLINE const StaticFieldRef &getStaticFieldRef() const noexcept {
+			assert(kind == ReferenceKind::StaticFieldRef);
+			return asStaticField;
+		}
+
+		SLAKE_FORCEINLINE Object *getObjectRef() const noexcept {
+			assert(kind == ReferenceKind::ObjectRef);
+			return asObject;
+		}
+
+		SLAKE_FORCEINLINE Object *&getObjectRef() noexcept {
+			assert(kind == ReferenceKind::ArrayElementRef);
+			return asObject;
+		}
+
+		SLAKE_FORCEINLINE StaticFieldRef &getStaticFieldRef() noexcept {
+			assert(kind == ReferenceKind::StaticFieldRef);
+			return asStaticField;
+		}
+
+		SLAKE_FORCEINLINE const LocalVarRef &getLocalVarRef() const noexcept {
+			assert(kind == ReferenceKind::LocalVarRef);
+			return asLocalVar;
+		}
+
+		SLAKE_FORCEINLINE LocalVarRef &getLocalVarRef() noexcept {
+			assert(kind == ReferenceKind::LocalVarRef);
+			return asLocalVar;
+		}
+
+		SLAKE_FORCEINLINE const CoroutineLocalVarRef &getCoroutineLocalVarRef() const noexcept {
+			assert(kind == ReferenceKind::CoroutineLocalVarRef);
+			return asCoroutineLocalVar;
+		}
+
+		SLAKE_FORCEINLINE CoroutineLocalVarRef &getCoroutineLocalVarRef() noexcept {
+			assert(kind == ReferenceKind::CoroutineLocalVarRef);
+			return asCoroutineLocalVar;
+		}
+
+		SLAKE_FORCEINLINE const ObjectFieldRef &getObjectFieldRef() const noexcept {
+			assert(kind == ReferenceKind::ObjectFieldRef);
+			return asObjectField;
+		}
+
+		SLAKE_FORCEINLINE ObjectFieldRef &getObjectFieldRef() noexcept {
+			assert(kind == ReferenceKind::ObjectFieldRef);
+			return asObjectField;
+		}
+
+		SLAKE_FORCEINLINE const ArrayElementRef &getArrayElementRef() const noexcept {
+			assert(kind == ReferenceKind::ArrayElementRef);
+			return asArrayElement;
+		}
+
+		SLAKE_FORCEINLINE ArrayElementRef &getArrayElementRef() noexcept {
+			assert(kind == ReferenceKind::ArrayElementRef);
+			return asArrayElement;
+		}
+
+		SLAKE_FORCEINLINE const ArgRef &getArgRef() const noexcept {
+			assert(kind == ReferenceKind::ArgRef);
+			return asArg;
+		}
+
+		SLAKE_FORCEINLINE ArgRef &getArgRef() noexcept {
+			assert(kind == ReferenceKind::ArgRef);
+			return asArg;
+		}
+
+		SLAKE_FORCEINLINE const CoroutineArgRef &getCoroutineArgRef() const noexcept {
+			assert(kind == ReferenceKind::ArrayElementRef);
+			return asCoroutineArg;
+		}
+
+		SLAKE_FORCEINLINE CoroutineArgRef &getCoroutineArgRef() noexcept {
+			assert(kind == ReferenceKind::ArrayElementRef);
+			return asCoroutineArg;
+		}
+
+		SLAKE_FORCEINLINE const ArgPackRef &getArgPackRef() const noexcept {
+			assert(kind == ReferenceKind::ArgPackRef);
+			return asArgPack;
+		}
+
+		SLAKE_FORCEINLINE ArgPackRef &getArgPackRef() noexcept {
+			assert(kind == ReferenceKind::ArgPackRef);
+			return asArgPack;
+		}
+
+		SLAKE_FORCEINLINE const void *getAotPtrRef() const noexcept {
+			assert(kind == ReferenceKind::AotPtrRef);
+			return asAotPtr;
+		}
+
+		SLAKE_FORCEINLINE void *&getAotPtrRef() noexcept {
+			assert(kind == ReferenceKind::AotPtrRef);
+			return asAotPtr;
+		}
+
+		SLAKE_FORCEINLINE const StructRef &getStructRef() const noexcept {
+			assert(kind == ReferenceKind::StructRef);
+			return asStruct;
+		}
+
+		SLAKE_FORCEINLINE StructRef &getStructRef() noexcept {
+			assert(kind == ReferenceKind::StructRef);
+			return asStruct;
+		}
+
+		SLAKE_FORCEINLINE const StructFieldRef &getStructFieldRef() const noexcept {
+			assert(kind == ReferenceKind::StructRef);
+			return asStructField;
+		}
+
+		SLAKE_FORCEINLINE StructFieldRef &getStructFieldRef() noexcept {
+			assert(kind == ReferenceKind::StructRef);
+			return asStructField;
+		}
+
+		SLAKE_FORCEINLINE bool isValid() const noexcept {
 			return kind != ReferenceKind::Invalid;
 		}
-		explicit SLAKE_FORCEINLINE operator bool() const {
+		explicit SLAKE_FORCEINLINE operator bool() const noexcept {
 			return isValid();
 		}
 
@@ -590,6 +769,81 @@ namespace slake {
 		SLAKE_FORCEINLINE const TypelessScopedEnumValue &getTypelessScopedEnum() const noexcept {
 			assert(valueType == ValueType::TypelessScopedEnum);
 			return data.asTypelessScopedEnum;
+		}
+
+		//
+		// Helper APIs.
+		//
+
+		SLAKE_FORCEINLINE bool isI8() const noexcept {
+			return valueType == ValueType::I8;
+		}
+
+		SLAKE_FORCEINLINE bool isI16() const noexcept {
+			return valueType == ValueType::I16;
+		}
+
+		SLAKE_FORCEINLINE bool isI32() const noexcept {
+			return valueType == ValueType::I32;
+		}
+
+		SLAKE_FORCEINLINE bool isI64() const noexcept {
+			return valueType == ValueType::I64;
+		}
+
+		SLAKE_FORCEINLINE bool isISize() const noexcept {
+			return valueType == ValueType::ISize;
+		}
+
+		SLAKE_FORCEINLINE bool isU8() const noexcept {
+			return valueType == ValueType::U8;
+		}
+
+		SLAKE_FORCEINLINE bool isU16() const noexcept {
+			return valueType == ValueType::U16;
+		}
+
+		SLAKE_FORCEINLINE bool isU32() const noexcept {
+			return valueType == ValueType::U32;
+		}
+
+		SLAKE_FORCEINLINE bool isU64() const noexcept {
+			return valueType == ValueType::U64;
+		}
+
+		SLAKE_FORCEINLINE bool isUSize() const noexcept {
+			return valueType == ValueType::USize;
+		}
+
+		SLAKE_FORCEINLINE bool isF32() const noexcept {
+			return valueType == ValueType::F32;
+		}
+
+		SLAKE_FORCEINLINE bool isF64() const noexcept {
+			return valueType == ValueType::F64;
+		}
+
+		SLAKE_FORCEINLINE bool isBool() const noexcept {
+			return valueType == ValueType::Bool;
+		}
+
+		SLAKE_FORCEINLINE bool isRegIndex() const noexcept {
+			return valueType == ValueType::RegIndex;
+		}
+
+		SLAKE_FORCEINLINE bool isLabel() const noexcept {
+			return valueType == ValueType::Label;
+		}
+
+		SLAKE_FORCEINLINE bool isTypeName() const noexcept {
+			return valueType == ValueType::TypeName;
+		}
+
+		SLAKE_FORCEINLINE bool isReference() const noexcept {
+			return valueType == ValueType::Reference;
+		}
+		SLAKE_FORCEINLINE bool isTypelessScopedEnum() const noexcept {
+			return valueType == ValueType::TypelessScopedEnum;
 		}
 
 		SLAKE_FORCEINLINE bool isLocal() const noexcept {

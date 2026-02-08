@@ -894,7 +894,6 @@ SLKC_API peff::Option<CompilationError> slkc::compileReturnStmt(
 				castExpr->source = s->value;
 
 				SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, castExpr.castTo<ExprNode>(), ExprEvalPurpose::RValue, compileEnv->curOverloading->returnType, reg, result));
-				return {};
 			} else
 				return CompilationError(s->value->tokenRange, CompilationErrorKind::ReturnValueTypeDoesNotMatch);
 		}

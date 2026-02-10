@@ -436,6 +436,8 @@ SLKC_API peff::Option<CompilationError> FileSystemExternalModuleProvider::loadMo
 					goto fail;
 				}
 
+				fileContent.get()[fileSize] = '\0';
+
 				AstNodePtr<ModuleNode> mod;
 
 				if (!(mod = makeAstNode<ModuleNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {

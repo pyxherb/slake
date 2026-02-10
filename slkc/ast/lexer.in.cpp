@@ -176,15 +176,15 @@ SLKC_API peff::Option<LexicalError> Lexer::lex(ModuleNode *moduleNode, const std
 				<InitialCondition>"..."		{ token->tokenId = TokenId::VarArg; break; }
 				<InitialCondition>"."		{ token->tokenId = TokenId::Dot; break; }
 
-				<InitialCondition>[a-zA-Z_][a-zA-Z0-9_]* {
+				<InitialCondition>[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]* {
 					token->tokenId = TokenId::Id;
 					break;
 				}
 
 				<InitialCondition>"0"[0-7]+ {
-					token->tokenId = TokenId::UIntLiteral;
+					token->tokenId = TokenId::IntLiteral;
 					token->exData = std::unique_ptr<TokenExtension, peff::DeallocableDeleter<TokenExtension>>(
-						peff::allocAndConstruct<UIntTokenExtension>(allocator, sizeof(std::max_align_t), allocator, strtoul(prevYYCURSOR, nullptr, 8)));
+						peff::allocAndConstruct<IntTokenExtension>(allocator, sizeof(std::max_align_t), allocator, strtol(prevYYCURSOR, nullptr, 8)));
 					break;
 				}
 
@@ -196,16 +196,16 @@ SLKC_API peff::Option<LexicalError> Lexer::lex(ModuleNode *moduleNode, const std
 				}
 
 				<InitialCondition>"0"[xX][0-9a-fA-F]+ {
-					token->tokenId = TokenId::UIntLiteral;
+					token->tokenId = TokenId::IntLiteral;
 					token->exData = std::unique_ptr<TokenExtension, peff::DeallocableDeleter<TokenExtension>>(
-						peff::allocAndConstruct<UIntTokenExtension>(allocator, sizeof(std::max_align_t), allocator, strtoul(prevYYCURSOR, nullptr, 16)));
+						peff::allocAndConstruct<IntTokenExtension>(allocator, sizeof(std::max_align_t), allocator, strtol(prevYYCURSOR, nullptr, 16)));
 					break;
 				}
 
 				<InitialCondition>"0"[bB][01]+ {
-					token->tokenId = TokenId::UIntLiteral;
+					token->tokenId = TokenId::IntLiteral;
 					token->exData = std::unique_ptr<TokenExtension, peff::DeallocableDeleter<TokenExtension>>(
-						peff::allocAndConstruct<UIntTokenExtension>(allocator, sizeof(std::max_align_t), allocator, strtoul(prevYYCURSOR, nullptr, 2)));
+						peff::allocAndConstruct<IntTokenExtension>(allocator, sizeof(std::max_align_t), allocator, strtol(prevYYCURSOR, nullptr, 2)));
 					break;
 				}
 

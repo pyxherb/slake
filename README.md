@@ -6,7 +6,7 @@
 
 ## Introduction
 
-Slake is a type-safe and embeddable programming language for extensible
+Slake is a statically-typed and embeddable programming language for extensible
 applications.
 
 It supports:

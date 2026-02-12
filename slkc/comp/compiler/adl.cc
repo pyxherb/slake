@@ -3,7 +3,7 @@
 using namespace slkc;
 
 static peff::Option<CompilationError> _determineWithCurrentSlot(
-	CompileEnvironment *compileEnv,
+	CompileEnv *compileEnv,
 	AstNodePtr<FnNode> fnSlot,
 	const AstNodePtr<TypeNameNode> *argTypes,
 	size_t nArgTypes,
@@ -63,7 +63,7 @@ static peff::Option<CompilationError> _determineWithCurrentSlot(
 }
 
 static peff::Option<CompilationError> _determineWithParentClass(
-	CompileEnvironment *compileEnv,
+	CompileEnv *compileEnv,
 	AstNodePtr<FnNode> fnSlot,
 	const AstNodePtr<TypeNameNode> *argTypes,
 	size_t nArgTypes,
@@ -117,7 +117,7 @@ classBaseClassMalformed:
 }
 
 static peff::Option<CompilationError> _determineWithParentInterface(
-	CompileEnvironment *compileEnv,
+	CompileEnv *compileEnv,
 	AstNodePtr<FnNode> fnSlot,
 	const AstNodePtr<TypeNameNode> *argTypes,
 	size_t nArgTypes,
@@ -149,7 +149,7 @@ static peff::Option<CompilationError> _determineWithParentInterface(
 }
 
 SLKC_API peff::Option<CompilationError> slkc::determineFnOverloading(
-	CompileEnvironment *compileEnv,
+	CompileEnv *compileEnv,
 	AstNodePtr<FnNode> fnSlot,
 	const AstNodePtr<TypeNameNode> *argTypes,
 	size_t nArgTypes,

@@ -23,7 +23,7 @@ SLKC_API void Document::_doClearDeferredDestructibleAstNodes() {
 	}
 }
 
-SLAKE_API GenericArgListCmp::GenericArgListCmp(Document *document, CompileEnvironment *compileEnv) : document(document), compileEnv(compileEnv) {
+SLAKE_API GenericArgListCmp::GenericArgListCmp(Document *document, CompileEnv *compileEnv) : document(document), compileEnv(compileEnv) {
 }
 
 SLAKE_API GenericArgListCmp::GenericArgListCmp(const GenericArgListCmp &r): document(r.document), compileEnv(r.compileEnv) {

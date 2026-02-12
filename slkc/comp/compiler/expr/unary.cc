@@ -3,8 +3,9 @@
 using namespace slkc;
 
 static peff::Option<CompilationError> _compileSimpleRValueUnaryExpr(
-	CompileEnvironment *compileEnv,
+	CompileEnv *compileEnv,
 	CompilationContext *compilationContext,
+	PathEnv *pathEnv,
 	AstNodePtr<UnaryExprNode> expr,
 	ExprEvalPurpose evalPurpose,
 	AstNodePtr<TypeNameNode> desiredType,
@@ -28,7 +29,7 @@ static peff::Option<CompilationError> _compileSimpleRValueUnaryExpr(
 
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(tmpReg));
 
-			SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, expr->operand, ExprEvalPurpose::RValue, desiredType, tmpReg, result));
+			SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, pathEnv, expr->operand, ExprEvalPurpose::RValue, desiredType, tmpReg, result));
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
 				idxSld,
 				slake::Opcode::NEG,
@@ -47,8 +48,9 @@ static peff::Option<CompilationError> _compileSimpleRValueUnaryExpr(
 }
 
 SLKC_API peff::Option<CompilationError> slkc::compileUnaryExpr(
-	CompileEnvironment *compileEnv,
+	CompileEnv *compileEnv,
 	CompilationContext *compilationContext,
+	PathEnv *pathEnv,
 	AstNodePtr<UnaryExprNode> expr,
 	ExprEvalPurpose evalPurpose,
 	uint32_t resultRegOut,
@@ -56,7 +58,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileUnaryExpr(
 	AstNodePtr<TypeNameNode> operandType, decayedOperandType;
 
 	SLKC_RETURN_IF_COMP_ERROR(
-		evalExprType(compileEnv, compilationContext, expr->operand, operandType));
+		evalExprType(compileEnv, compilationContext, pathEnv, expr->operand, operandType));
 	SLKC_RETURN_IF_COMP_ERROR(
 		removeRefOfType(operandType, decayedOperandType));
 
@@ -74,15 +76,15 @@ SLKC_API peff::Option<CompilationError> slkc::compileUnaryExpr(
 		case TypeNameKind::U64: {
 			switch (expr->unaryOp) {
 				case UnaryOp::LNot:
-					SLKC_RETURN_IF_COMP_ERROR(_compileSimpleRValueUnaryExpr(compileEnv, compilationContext, expr, evalPurpose, decayedOperandType, resultRegOut, resultOut, slake::Opcode::LNOT, sldIndex));
+					SLKC_RETURN_IF_COMP_ERROR(_compileSimpleRValueUnaryExpr(compileEnv, compilationContext, pathEnv, expr, evalPurpose, decayedOperandType, resultRegOut, resultOut, slake::Opcode::LNOT, sldIndex));
 					resultOut.evaluatedType = decayedOperandType;
 					break;
 				case UnaryOp::Not:
-					SLKC_RETURN_IF_COMP_ERROR(_compileSimpleRValueUnaryExpr(compileEnv, compilationContext, expr, evalPurpose, decayedOperandType, resultRegOut, resultOut, slake::Opcode::NOT, sldIndex));
+					SLKC_RETURN_IF_COMP_ERROR(_compileSimpleRValueUnaryExpr(compileEnv, compilationContext, pathEnv, expr, evalPurpose, decayedOperandType, resultRegOut, resultOut, slake::Opcode::NOT, sldIndex));
 					resultOut.evaluatedType = decayedOperandType;
 					break;
 				case UnaryOp::Neg:
-					SLKC_RETURN_IF_COMP_ERROR(_compileSimpleRValueUnaryExpr(compileEnv, compilationContext, expr, evalPurpose, decayedOperandType, resultRegOut, resultOut, slake::Opcode::NEG, sldIndex));
+					SLKC_RETURN_IF_COMP_ERROR(_compileSimpleRValueUnaryExpr(compileEnv, compilationContext, pathEnv, expr, evalPurpose, decayedOperandType, resultRegOut, resultOut, slake::Opcode::NEG, sldIndex));
 					resultOut.evaluatedType = decayedOperandType;
 					break;
 				default:
@@ -94,11 +96,11 @@ SLKC_API peff::Option<CompilationError> slkc::compileUnaryExpr(
 		case TypeNameKind::F64: {
 			switch (expr->unaryOp) {
 				case UnaryOp::LNot:
-					SLKC_RETURN_IF_COMP_ERROR(_compileSimpleRValueUnaryExpr(compileEnv, compilationContext, expr, evalPurpose, decayedOperandType, resultRegOut, resultOut, slake::Opcode::LNOT, sldIndex));
+					SLKC_RETURN_IF_COMP_ERROR(_compileSimpleRValueUnaryExpr(compileEnv, compilationContext, pathEnv, expr, evalPurpose, decayedOperandType, resultRegOut, resultOut, slake::Opcode::LNOT, sldIndex));
 					resultOut.evaluatedType = decayedOperandType;
 					break;
 				case UnaryOp::Neg:
-					SLKC_RETURN_IF_COMP_ERROR(_compileSimpleRValueUnaryExpr(compileEnv, compilationContext, expr, evalPurpose, decayedOperandType, resultRegOut, resultOut, slake::Opcode::NEG, sldIndex));
+					SLKC_RETURN_IF_COMP_ERROR(_compileSimpleRValueUnaryExpr(compileEnv, compilationContext, pathEnv, expr, evalPurpose, decayedOperandType, resultRegOut, resultOut, slake::Opcode::NEG, sldIndex));
 					resultOut.evaluatedType = decayedOperandType;
 					break;
 				default:
@@ -109,7 +111,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileUnaryExpr(
 		case TypeNameKind::Bool: {
 			switch (expr->unaryOp) {
 				case UnaryOp::LNot:
-					SLKC_RETURN_IF_COMP_ERROR(_compileSimpleRValueUnaryExpr(compileEnv, compilationContext, expr, evalPurpose, decayedOperandType, resultRegOut, resultOut, slake::Opcode::LNOT, sldIndex));
+					SLKC_RETURN_IF_COMP_ERROR(_compileSimpleRValueUnaryExpr(compileEnv, compilationContext, pathEnv, expr, evalPurpose, decayedOperandType, resultRegOut, resultOut, slake::Opcode::LNOT, sldIndex));
 					resultOut.evaluatedType = decayedOperandType;
 					break;
 				default:
@@ -144,7 +146,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileUnaryExpr(
 							// The function argument compilation goes this way (?).
 							CompileExprResult result(compileEnv->allocator.get());
 
-							SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, expr->operand, ExprEvalPurpose::Unpacking, {}, resultRegOut, result));
+							SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, pathEnv, expr->operand, ExprEvalPurpose::Unpacking, {}, resultRegOut, result));
 
 							AstNodePtr<TypeNameNode> unpackedType;
 
@@ -165,7 +167,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileUnaryExpr(
 
 							SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(tmpReg));
 
-							SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, expr->operand, ExprEvalPurpose::Unpacking, {}, tmpReg, result));
+							SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, pathEnv, expr->operand, ExprEvalPurpose::Unpacking, {}, tmpReg, result));
 
 							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::APTOTUPLE, resultRegOut, { slake::Value(tmpReg) }));
 

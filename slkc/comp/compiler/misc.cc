@@ -3,7 +3,7 @@
 using namespace slkc;
 
 SLKC_API peff::Option<CompilationError> slkc::getSucceedingEnumValue(
-	CompileEnvironment* compileEnv,
+	CompileEnv* compileEnv,
 	CompilationContext* compilationContext,
 	AstNodePtr<TypeNameNode> baseType,
 	AstNodePtr<ExprNode> lastValue,
@@ -221,7 +221,7 @@ SLKC_API peff::Option<CompilationError> slkc::getSucceedingEnumValue(
 }
 
 SLKC_API peff::Option<CompilationError> slkc::fillScopedEnum(
-	CompileEnvironment *compileEnv,
+	CompileEnv *compileEnv,
 	CompilationContext *compilationContext,
 	AstNodePtr<ScopedEnumNode> enumNode) {
 	if (!enumNode->baseType)
@@ -244,7 +244,10 @@ SLKC_API peff::Option<CompilationError> slkc::fillScopedEnum(
 			if (!fillValue)
 				return CompilationError(item->enumValue->tokenRange, CompilationErrorKind::RequiresCompTimeExpr);
 
-			SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileEnv, compilationContext, fillValue, tn, enumNode->baseType));
+			{
+				PathEnv rootPathEnv(compileEnv->allocator.get());
+				SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileEnv, compilationContext, &rootPathEnv, fillValue, tn, enumNode->baseType));
+			}
 
 			SLKC_RETURN_IF_COMP_ERROR(isSameType(tn, enumNode->baseType, isSame));
 
@@ -273,7 +276,7 @@ SLKC_API peff::Option<CompilationError> slkc::fillScopedEnum(
 }
 
 SLKC_API peff::Option<CompilationError> slkc::reindexFnParams(
-	CompileEnvironment *compileEnv,
+	CompileEnv *compileEnv,
 	AstNodePtr<FnOverloadingNode> fn) {
 	for (size_t i = 0; i < fn->params.size(); ++i) {
 		AstNodePtr<VarNode> &curParam = fn->params.at(i);
@@ -302,7 +305,7 @@ SLKC_API peff::Option<CompilationError> slkc::reindexFnParams(
 }
 
 SLKC_API peff::Option<CompilationError> slkc::indexFnParams(
-	CompileEnvironment *compileEnv,
+	CompileEnv *compileEnv,
 	AstNodePtr<FnOverloadingNode> fn) {
 	if (fn->isParamsIndexed) {
 		return {};
@@ -315,7 +318,7 @@ SLKC_API peff::Option<CompilationError> slkc::indexFnParams(
 }
 
 SLKC_API peff::Option<CompilationError> slkc::renormalizeModuleVarDefStmts(
-	CompileEnvironment *compileEnv,
+	CompileEnv *compileEnv,
 	AstNodePtr<ModuleNode> mod) {
 	for (auto &i : mod->varDefStmts) {
 		for (auto &j : i->varDefEntries) {
@@ -343,7 +346,7 @@ SLKC_API peff::Option<CompilationError> slkc::renormalizeModuleVarDefStmts(
 }
 
 SLKC_API peff::Option<CompilationError> slkc::normalizeModuleVarDefStmts(
-	CompileEnvironment *compileEnv,
+	CompileEnv *compileEnv,
 	AstNodePtr<ModuleNode> mod) {
 	if (mod->isVarDefStmtsNormalized) {
 		return {};

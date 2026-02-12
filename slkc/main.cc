@@ -806,7 +806,7 @@ int main(int argc, char *argv[]) {
 			printError("Error allocating memory for the runtime");
 			return ENOMEM;
 		}
-		slkc::CompileEnvironment compileEnv(runtime.get(), document, &peff::g_nullAlloc, peff::getDefaultAlloc());
+		slkc::CompileEnv compileEnv(runtime.get(), document, &peff::g_nullAlloc, peff::getDefaultAlloc());
 		{
 			slake::HostObjectRef<slake::ModuleObject> modObj = slake::ModuleObject::alloc(runtime.get());
 			modObj->setAccess(slake::ACCESS_PUBLIC | slake::ACCESS_STATIC);

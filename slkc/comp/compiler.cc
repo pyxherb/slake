@@ -5,6 +5,26 @@ using namespace slkc;
 size_t slkc::szDefaultParseThreadStack = 1024 * 1024 * 2;
 size_t slkc::szDefaultCompileThreadStack = 1024 * 1024 * 32;
 
+SLAKE_API AstNodePtr<TypeNameNode> PathEnv::lookupVarTypeOverride(AstNodePtr<VarNode> varNode) {
+	for (PathEnv* i = this; i; i = i->parent) {
+		if (auto it = i->varTypeOverrides.find(varNode);
+			it != i->varTypeOverrides.end()) {
+			return it.value();
+		}
+	}
+	return {};
+}
+
+SLAKE_API peff::Option<CompilationError> PathEnv::setVarTypeOverride(AstNodePtr<VarNode> varNode, AstNodePtr<TypeNameNode> type) {
+	if (!varTypeOverrides.insert(std::move(varNode), std::move(type)))
+		return genOutOfMemoryCompError();
+	return genOutOfMemoryCompError();
+}
+
+SLAKE_API void PathEnv::removeVarTypeOverride(const AstNodePtr<VarNode>& varNode) {
+	varTypeOverrides.remove(varNode);
+}
+
 SLKC_API CompilationContext::CompilationContext(CompilationContext *parent) : parent(parent) {
 }
 SLKC_API CompilationContext::~CompilationContext() {
@@ -24,7 +44,7 @@ SLKC_API AstNodePtr<VarNode> CompilationContext::lookupLocalVar(const std::strin
 SLKC_API NormalCompilationContext::BlockLayer::~BlockLayer() {
 }
 
-SLKC_API NormalCompilationContext::NormalCompilationContext(CompileEnvironment *compileEnv, CompilationContext *parent) : CompilationContext(parent), allocator(compileEnv->allocator), savedBlockLayers(compileEnv->allocator.get()), curBlockLayer(compileEnv->allocator.get()), labels(compileEnv->allocator.get()), labelNameIndices(compileEnv->allocator.get()), generatedInstructions(compileEnv->allocator.get()), document(compileEnv->document), baseBlockLevel(parent ? parent->getBlockLevel() : 0), baseInsOff(parent ? parent->getCurInsOff() : 0), sourceLocDescs(compileEnv->allocator.get()), sourceLocDescsMap(compileEnv->allocator.get()) {
+SLKC_API NormalCompilationContext::NormalCompilationContext(CompileEnv *compileEnv, CompilationContext *parent) : CompilationContext(parent), allocator(compileEnv->allocator), savedBlockLayers(compileEnv->allocator.get()), curBlockLayer(compileEnv->allocator.get()), labels(compileEnv->allocator.get()), labelNameIndices(compileEnv->allocator.get()), generatedInstructions(compileEnv->allocator.get()), document(compileEnv->document), baseBlockLevel(parent ? parent->getBlockLevel() : 0), baseInsOff(parent ? parent->getCurInsOff() : 0), sourceLocDescs(compileEnv->allocator.get()), sourceLocDescsMap(compileEnv->allocator.get()) {
 }
 SLKC_API NormalCompilationContext::~NormalCompilationContext() {
 }
@@ -217,16 +237,17 @@ SLKC_API peff::Option<CompilationError> NormalCompilationContext::registerSource
 	return {};
 }
 
-SLKC_API CompileEnvironment::~CompileEnvironment() {
+SLKC_API CompileEnv::~CompileEnv() {
 }
 
-SLKC_API void CompileEnvironment::onRefZero() noexcept {
-	peff::destroyAndRelease<CompileEnvironment>(selfAllocator.get(), this, sizeof(std::max_align_t));
+SLKC_API void CompileEnv::onRefZero() noexcept {
+	peff::destroyAndRelease<CompileEnv>(selfAllocator.get(), this, sizeof(std::max_align_t));
 }
 
 SLKC_API peff::Option<CompilationError> slkc::evalExprType(
-	CompileEnvironment *compileEnv,
+	CompileEnv *compileEnv,
 	CompilationContext *compilationContext,
+	PathEnv *pathEnv,
 	const AstNodePtr<ExprNode> &expr,
 	AstNodePtr<TypeNameNode> &typeOut,
 	AstNodePtr<TypeNameNode> desiredType) {
@@ -234,14 +255,14 @@ SLKC_API peff::Option<CompilationError> slkc::evalExprType(
 
 	CompileExprResult result(compileEnv->allocator.get());
 
-	SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, &tmpContext, expr, ExprEvalPurpose::EvalType, desiredType, UINT32_MAX, result));
+	SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, &tmpContext, pathEnv, expr, ExprEvalPurpose::EvalType, desiredType, UINT32_MAX, result));
 
 	typeOut = result.evaluatedType;
 	return {};
 }
 
 SLKC_API peff::Option<CompilationError> slkc::completeParentModules(
-	CompileEnvironment *compileEnv,
+	CompileEnv *compileEnv,
 	IdRef *modulePath,
 	AstNodePtr<ModuleNode> leaf) {
 	peff::DynArray<AstNodePtr<ModuleNode>> modules(compileEnv->allocator.get());
@@ -298,7 +319,7 @@ SLKC_API peff::Option<CompilationError> slkc::completeParentModules(
 }
 
 SLKC_API peff::Option<CompilationError> slkc::cleanupUnusedModuleTree(
-	CompileEnvironment *compileEnv,
+	CompileEnv *compileEnv,
 	AstNodePtr<ModuleNode> leaf) {
 	AstNodePtr<ModuleNode> cur = leaf;
 
@@ -351,7 +372,7 @@ FileSystemExternalModuleProvider::FileSystemExternalModuleProvider(peff::Alloc *
 FileSystemExternalModuleProvider::~FileSystemExternalModuleProvider() {
 }
 
-SLKC_API peff::Option<CompilationError> FileSystemExternalModuleProvider::loadModule(CompileEnvironment *compileEnv, IdRef *moduleName) {
+SLKC_API peff::Option<CompilationError> FileSystemExternalModuleProvider::loadModule(CompileEnv *compileEnv, IdRef *moduleName) {
 	peff::String suffixPath(compileEnv->allocator.get());
 
 	{

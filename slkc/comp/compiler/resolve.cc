@@ -50,7 +50,7 @@ end:
 }
 
 SLKC_API peff::Option<CompilationError> slkc::resolveStaticMember(
-	CompileEnvironment *compileEnv,
+	CompileEnv *compileEnv,
 	peff::SharedPtr<Document> document,
 	const AstNodePtr<MemberNode> &memberNode,
 	const IdRefEntry &name,
@@ -140,7 +140,7 @@ SLKC_API peff::Option<CompilationError> slkc::resolveStaticMember(
 }
 
 SLKC_API peff::Option<CompilationError> slkc::resolveInstanceMember(
-	CompileEnvironment *compileEnv,
+	CompileEnv *compileEnv,
 	peff::SharedPtr<Document> document,
 	AstNodePtr<MemberNode> memberNode,
 	const IdRefEntry &name,
@@ -333,7 +333,7 @@ SLKC_API peff::Option<CompilationError> slkc::resolveInstanceMember(
 }
 
 SLKC_API peff::Option<CompilationError> slkc::isMemberAccessible(
-	CompileEnvironment *compileEnv,
+	CompileEnv *compileEnv,
 	AstNodePtr<MemberNode> parent,
 	AstNodePtr<MemberNode> member,
 	bool &resultOut) {
@@ -393,7 +393,7 @@ accessCheckPassed:
 }
 
 SLKC_API peff::Option<CompilationError> slkc::resolveIdRef(
-	CompileEnvironment *compileEnv,
+	CompileEnv *compileEnv,
 	peff::SharedPtr<Document> document,
 	const AstNodePtr<MemberNode> &resolveRoot,
 	IdRefEntry *idRef,
@@ -486,7 +486,7 @@ SLKC_API peff::Option<CompilationError> slkc::resolveIdRef(
 }
 
 SLKC_API peff::Option<CompilationError> slkc::resolveIdRefWithScopeNode(
-	CompileEnvironment *compileEnv,
+	CompileEnv *compileEnv,
 	peff::SharedPtr<Document> document,
 	peff::Set<AstNodePtr<MemberNode>> &walkedNodes,
 	const AstNodePtr<MemberNode> &resolveScope,
@@ -757,7 +757,7 @@ SLKC_API peff::Option<CompilationError> slkc::resolveIdRefWithScopeNode(
 }
 
 SLKC_API peff::Option<CompilationError> slkc::resolveCustomTypeName(
-	CompileEnvironment *compileEnv,
+	CompileEnv *compileEnv,
 	peff::SharedPtr<Document> document,
 	const AstNodePtr<CustomTypeNameNode> &typeName,
 	AstNodePtr<MemberNode> &memberNodeOut,

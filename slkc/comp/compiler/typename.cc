@@ -1482,7 +1482,7 @@ SLKC_API peff::Option<CompilationError> slkc::getUnpackedTypeOf(
 }
 
 SLKC_API peff::Option<CompilationError> slkc::fnToTypeName(
-	CompileEnvironment *compileEnv,
+	CompileEnv *compileEnv,
 	AstNodePtr<FnOverloadingNode> fn,
 	AstNodePtr<FnTypeNameNode> &evaluatedTypeOut) {
 	AstNodePtr<FnTypeNameNode> tn;

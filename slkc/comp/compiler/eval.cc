@@ -6,7 +6,7 @@ using namespace slkc;
 
 template <typename T, typename E, typename SetData = typename E::SetData>
 peff::Option<CompilationError> _doSimpleIntLiteralCast(
-	CompileEnvironment *compileEnv,
+	CompileEnv *compileEnv,
 	AstNodePtr<ExprNode> src,
 	peff::SharedPtr<E> &exprOut) {
 	static SetData _setData;
@@ -88,7 +88,7 @@ peff::Option<CompilationError> _doSimpleIntLiteralCast(
 
 template <typename E, typename R, typename GetData = typename E::GetData, typename SetData = typename R::SetData>
 peff::Option<CompilationError> _doSimpleArithmeticBinaryOp(
-	CompileEnvironment *compileEnv,
+	CompileEnv *compileEnv,
 	BinaryOp binaryOp,
 	peff::SharedPtr<E> lhs,
 	peff::SharedPtr<E> rhs,
@@ -121,7 +121,7 @@ peff::Option<CompilationError> _doSimpleArithmeticBinaryOp(
 
 template <typename E, typename R, typename GetData = typename E::GetData, typename SetData = typename R::SetData>
 peff::Option<CompilationError> _doSimpleFloatingPointArithmeticBinaryOp(
-	CompileEnvironment *compileEnv,
+	CompileEnv *compileEnv,
 	BinaryOp binaryOp,
 	peff::SharedPtr<E> lhs,
 	peff::SharedPtr<E> rhs,
@@ -151,7 +151,7 @@ peff::Option<CompilationError> _doSimpleFloatingPointArithmeticBinaryOp(
 
 template <typename T, typename E, typename R, typename GetData = typename E::GetData, typename SetData = typename R::SetData>
 peff::Option<CompilationError> _doSimpleBitwiseBinaryOp(
-	CompileEnvironment *compileEnv,
+	CompileEnv *compileEnv,
 	BinaryOp binaryOp,
 	peff::SharedPtr<E> lhs,
 	peff::SharedPtr<E> rhs,
@@ -178,7 +178,7 @@ peff::Option<CompilationError> _doSimpleBitwiseBinaryOp(
 
 template <typename E, typename GetData = typename E::GetData>
 peff::Option<CompilationError> _doSimpleComparisonBinaryOp(
-	CompileEnvironment *compileEnv,
+	CompileEnv *compileEnv,
 	BinaryOp binaryOp,
 	peff::SharedPtr<E> lhs,
 	peff::SharedPtr<E> rhs,
@@ -286,7 +286,7 @@ peff::Option<CompilationError> _doSimpleComparisonBinaryOp(
 }
 
 peff::Option<CompilationError> _castConstExpr(
-	CompileEnvironment *compileEnv,
+	CompileEnv *compileEnv,
 	CompilationContext *compilationContext,
 	AstNodePtr<ExprNode> expr,
 	AstNodePtr<TypeNameNode> type,
@@ -307,7 +307,7 @@ peff::Option<CompilationError> _castConstExpr(
 
 template <typename LT, ExprKind exprKind, typename TN>
 static peff::Option<CompilationError> _evalSignedIntegralBinaryOp(
-	CompileEnvironment *compileEnv,
+	CompileEnv *compileEnv,
 	CompilationContext *compilationContext,
 	AstNodePtr<BinaryExprNode> e,
 	AstNodePtr<ExprNode> lhs,
@@ -488,7 +488,7 @@ static peff::Option<CompilationError> _evalSignedIntegralBinaryOp(
 
 template <typename LT, ExprKind exprKind, typename TN>
 static peff::Option<CompilationError> _evalUnsignedIntegralBinaryOp(
-	CompileEnvironment *compileEnv,
+	CompileEnv *compileEnv,
 	CompilationContext *compilationContext,
 	AstNodePtr<BinaryExprNode> e,
 	AstNodePtr<ExprNode> lhs,
@@ -664,7 +664,7 @@ static peff::Option<CompilationError> _evalUnsignedIntegralBinaryOp(
 }
 
 SLKC_API peff::Option<CompilationError> slkc::evalConstExpr(
-	CompileEnvironment *compileEnv,
+	CompileEnv *compileEnv,
 	CompilationContext *compilationContext,
 	AstNodePtr<ExprNode> expr,
 	AstNodePtr<ExprNode> &exprOut) {

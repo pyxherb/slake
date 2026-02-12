@@ -125,9 +125,9 @@ SLKC_API peff::Option<CompilationError> Document::instantiateGenericObject(
 			cacheTable = &it.value();
 			removeCacheDirEntryGuard.release();
 		} else {
-			peff::RcObjectPtr<CompileEnvironment> compileEnv;
+			peff::RcObjectPtr<CompileEnv> compileEnv;
 
-			if (!(compileEnv = peff::allocAndConstruct<CompileEnvironment>(allocator.get(), alignof(CompileEnvironment), nullptr, sharedFromThis(), allocator.get(), allocator.get())))
+			if (!(compileEnv = peff::allocAndConstruct<CompileEnv>(allocator.get(), alignof(CompileEnv), nullptr, sharedFromThis(), allocator.get(), allocator.get())))
 				return genOutOfMemoryCompError();
 			if (!genericCacheDir.insert(
 					originalObject.get(),
@@ -185,7 +185,10 @@ SLKC_API peff::Option<CompilationError> Document::instantiateGenericObject(
 										CompilationErrorKind::RequiresCompTimeExpr);
 
 								AstNodePtr<TypeNameNode> argType;
-								SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileEnv, &compilationContext, curArg.castTo<ExprNode>(), argType));
+								{
+									PathEnv rootPathEnv(compileEnv->allocator.get());
+									SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileEnv, &compilationContext, &rootPathEnv, curArg.castTo<ExprNode>(), argType));
+								}
 
 								bool same = false;
 								SLKC_RETURN_IF_COMP_ERROR(isSameType(argType, i->genericParams.at(j)->inputType, same));
@@ -246,7 +249,10 @@ SLKC_API peff::Option<CompilationError> Document::instantiateGenericObject(
 									CompilationErrorKind::RequiresCompTimeExpr);
 
 							AstNodePtr<TypeNameNode> argType;
-							SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileEnv, &compilationContext, curArg.castTo<ExprNode>(), argType));
+							{
+								PathEnv rootPathEnv(compileEnv->allocator.get());
+								SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileEnv, &compilationContext, &rootPathEnv, curArg.castTo<ExprNode>(), argType));
+							}
 
 							bool same = false;
 							SLKC_RETURN_IF_COMP_ERROR(isSameType(argType, obj->genericParams.at(i)->inputType, same));
@@ -298,7 +304,10 @@ SLKC_API peff::Option<CompilationError> Document::instantiateGenericObject(
 									CompilationErrorKind::RequiresCompTimeExpr);
 
 							AstNodePtr<TypeNameNode> argType;
-							SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileEnv, &compilationContext, curArg.castTo<ExprNode>(), argType));
+							{
+								PathEnv rootPathEnv(compileEnv->allocator.get());
+								SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileEnv, &compilationContext, &rootPathEnv, curArg.castTo<ExprNode>(), argType));
+							}
 
 							bool same = false;
 							SLKC_RETURN_IF_COMP_ERROR(isSameType(argType, obj->genericParams.at(i)->inputType, same));
@@ -732,11 +741,9 @@ SLKC_API peff::Option<CompilationError> Document::instantiateGenericObject(
 								}
 
 								for (size_t k = 0; k < innerTypeName->paramTypes.size(); ++k) {
-									bool succeeded;
-
 									AstNodePtr<VarNode> p = curParam->duplicate<VarNode>(allocator.get());
 
-									if ((!p) || (!succeeded)) {
+									if (!p) {
 										return genOutOfMemoryCompError();
 									}
 

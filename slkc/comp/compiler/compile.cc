@@ -5,7 +5,7 @@ using namespace slkc;
 #undef max
 
 SLKC_API peff::Option<CompilationError> slkc::compileTypeName(
-	CompileEnvironment *compileEnv,
+	CompileEnv *compileEnv,
 	CompilationContext *compilationContext,
 	AstNodePtr<TypeNameNode> typeName,
 	slake::TypeRef &typeOut) {
@@ -477,7 +477,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileTypeName(
 }
 
 SLKC_API peff::Option<CompilationError> slkc::compileIdRef(
-	CompileEnvironment *compileEnv,
+	CompileEnv *compileEnv,
 	CompilationContext *compilationContext,
 	const IdRefEntry *entries,
 	size_t nEntries,
@@ -552,7 +552,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileIdRef(
 }
 
 SLKC_API peff::Option<CompilationError> slkc::compileValueExpr(
-	CompileEnvironment *compileEnv,
+	CompileEnv *compileEnv,
 	CompilationContext *compilationContext,
 	AstNodePtr<ExprNode> expr,
 	slake::Value &valueOut) {
@@ -710,7 +710,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileValueExpr(
 }
 
 SLKC_API peff::Option<CompilationError> slkc::compileGenericParams(
-	CompileEnvironment *compileEnv,
+	CompileEnv *compileEnv,
 	CompilationContext *compilationContext,
 	AstNodePtr<ModuleNode> mod,
 	AstNodePtr<GenericParamNode> *genericParams,
@@ -870,7 +870,7 @@ SLKC_API peff::Option<slake::Opcode> _getOpcode(const std::string_view &sv) {
 #undef MNEMONIC_NAME_CASE
 
 SLKC_API peff::Option<CompilationError> slkc::compileModuleLikeNode(
-	CompileEnvironment *compileEnv,
+	CompileEnv *compileEnv,
 	AstNodePtr<ModuleNode> mod,
 	slake::BasicModuleObject *modOut) {
 	peff::OneshotScopeGuard restoreCurParentAccessNodeGuard([compileEnv, oldNode = compileEnv->curParentAccessNode]() noexcept {
@@ -1580,7 +1580,10 @@ SLKC_API peff::Option<CompilationError> slkc::compileModuleLikeNode(
 									return CompilationError(itemNode->tokenRange, CompilationErrorKind::RequiresCompTimeExpr);
 								SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, &compilationContext, itemNode->filledValue, enumValue));
 
-								SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileEnv, &compilationContext, enumValue, enumValueType, clsNode->baseType));
+								{
+									PathEnv rootPathEnv(compileEnv->allocator.get());
+									SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileEnv, &compilationContext, &rootPathEnv, enumValue, enumValueType, clsNode->baseType));
+								}
 
 								bool isSame;
 								SLKC_RETURN_IF_COMP_ERROR(isSameType(enumValueType, clsNode->baseType, isSame));
@@ -1921,7 +1924,9 @@ SLKC_API peff::Option<CompilationError> slkc::compileModuleLikeNode(
 						NormalCompilationContext compContext(compileEnv, nullptr);
 
 						for (auto j : i->body->body) {
-							if ((e = compileStmt(compileEnv, &compContext, j))) {
+							PathEnv rootPathEnv(compileEnv->allocator.get());
+
+							if ((e = compileStmt(compileEnv, &compContext, &rootPathEnv, j))) {
 								if (e->errorKind == CompilationErrorKind::OutOfMemory)
 									return e;
 								if (!compileEnv->errors.pushBack(std::move(*e))) {

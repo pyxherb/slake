@@ -509,6 +509,9 @@ namespace slkc {
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> isUnsigned(
 		AstNodePtr<TypeNameNode> type,
 		bool &resultOut);
+	[[nodiscard]] SLKC_API peff::Option<CompilationError> isClassType(
+		AstNodePtr<TypeNameNode> type,
+		bool &resultOut);
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> toSigned(
 		AstNodePtr<TypeNameNode> type,
 		AstNodePtr<TypeNameNode> &typeNameOut);

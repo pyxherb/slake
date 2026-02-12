@@ -479,8 +479,8 @@ namespace slake {
 			return {};
 		}
 
-		SLAKE_API size_t sizeofType(const TypeRef &type) const;
-		SLAKE_API size_t alignofType(const TypeRef &type) const;
+		SLAKE_API static size_t sizeofType(const TypeRef &type);
+		SLAKE_API static size_t alignofType(const TypeRef &type);
 		SLAKE_API Value defaultValueOf(const TypeRef &type) const;
 		SLAKE_API InternalExceptionPointer loadDeferredCustomTypeDef(CustomTypeDefObject *customTypeDef);
 

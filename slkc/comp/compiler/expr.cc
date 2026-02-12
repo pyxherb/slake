@@ -1021,6 +1021,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 			AstNodePtr<NullLiteralExprNode> e = expr.castTo<NullLiteralExprNode>();
 
 			switch (evalPurpose) {
+				case ExprEvalPurpose::EvalType:
+					break;
 				case ExprEvalPurpose::Stmt:
 					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileEnv->pushWarning(
 																			  CompilationWarning(e->tokenRange, CompilationWarningKind::UnusedExprResult)));
@@ -1045,7 +1047,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 					std::terminate();
 			}
 
-			if (!(resultOut.evaluatedType = makeAstNode<ObjectTypeNameNode>(
+			if (!(resultOut.evaluatedType = makeAstNode<NullTypeNameNode>(
 					  compileEnv->allocator.get(),
 					  compileEnv->allocator.get(),
 					  compileEnv->document)
@@ -1642,6 +1644,16 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileTypeName(compileEnv, compilationContext, targetType, type));
 
 				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->emitIns(sldIndex, slake::Opcode::CAST, resultRegOut, { slake::Value(type), slake::Value(slake::ValueType::RegIndex, idxReg) }));
+
+				resultOut.evaluatedType = targetType;
+
+				// Convert to subtypes may fail.
+				bool subtype;
+				if (isSubtypeOf(targetType, decayedExprType, subtype)) {
+					if (!(resultOut.evaluatedType = resultOut.evaluatedType->duplicate<TypeNameNode>(compileEnv->allocator.get())))
+						return genOutOfMemoryCompError();
+					resultOut.evaluatedType->isNullable = true;
+				}
 			} else {
 				CompileExprResult result(compileEnv->allocator.get());
 				if (!leftValue) {
@@ -1649,9 +1661,9 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 				} else {
 					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, e->source, ExprEvalPurpose::LValue, {}, resultRegOut, result));
 				}
+				resultOut.evaluatedType = targetType;
 			}
 
-			resultOut.evaluatedType = targetType;
 			break;
 		}
 		case ExprKind::Match: {

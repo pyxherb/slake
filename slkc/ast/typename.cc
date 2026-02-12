@@ -706,3 +706,24 @@ SLKC_API UnpackedArgsTypeNameNode::UnpackedArgsTypeNameNode(const UnpackedArgsTy
 
 SLKC_API UnpackedArgsTypeNameNode::~UnpackedArgsTypeNameNode() {
 }
+
+SLKC_API AstNodePtr<AstNode> NullTypeNameNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
+	bool succeeded = false;
+	AstNodePtr<NullTypeNameNode> duplicatedNode(makeAstNode<NullTypeNameNode>(newAllocator, *this, newAllocator, context, succeeded));
+	if ((!duplicatedNode) || (!succeeded)) {
+		return {};
+	}
+
+	return duplicatedNode.template castTo<AstNode>();
+}
+
+SLKC_API NullTypeNameNode::NullTypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : TypeNameNode(TypeNameKind::Null, selfAllocator, document) {
+	isNullable = true;
+}
+
+SLKC_API NullTypeNameNode::NullTypeNameNode(const NullTypeNameNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut) : TypeNameNode(rhs, allocator, context) {
+	succeededOut = true;
+}
+
+SLKC_API NullTypeNameNode::~NullTypeNameNode() {
+}

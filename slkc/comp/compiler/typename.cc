@@ -62,6 +62,11 @@ SLKC_API peff::Option<CompilationError> slkc::isSameType(
 		return {};
 	}
 
+	if (lhs->isNullable != rhs->isNullable) {
+		whetherOut = false;
+		return {};
+	}
+
 	switch (lhs->typeNameKind) {
 		case TypeNameKind::Custom: {
 			AstNodePtr<CustomTypeNameNode>
@@ -229,6 +234,12 @@ SLKC_API peff::Option<CompilationError> slkc::isSubtypeOf(
 	AstNodePtr<TypeNameNode> subtype,
 	AstNodePtr<TypeNameNode> type,
 	bool &resultOut) {
+	if (!subtype->isNullable) {
+		if (type->isNullable) {
+			resultOut = false;
+			return {};
+		}
+	}
 	if (!subtype->isLocal) {
 		if (type->isLocal) {
 			resultOut = false;
@@ -237,6 +248,23 @@ SLKC_API peff::Option<CompilationError> slkc::isSubtypeOf(
 	}
 recheck:
 	switch (subtype->typeNameKind) {
+		case TypeNameKind::Null:
+			if (type->isNullable) {
+				resultOut = true;
+				break;
+			}
+			switch (type->typeNameKind) {
+				case TypeNameKind::Null:
+					resultOut = false;
+					break;
+				case TypeNameKind::Any:
+					resultOut = true;
+					break;
+				default:
+					resultOut = false;
+					break;
+			}
+			break;
 		case TypeNameKind::Void:
 			resultOut = false;
 			break;
@@ -249,6 +277,9 @@ recheck:
 				case TypeNameKind::I32:
 				case TypeNameKind::I64:
 				case TypeNameKind::ISize:
+					resultOut = true;
+					break;
+				case TypeNameKind::Any:
 					resultOut = true;
 					break;
 				default:
@@ -267,6 +298,9 @@ recheck:
 				case TypeNameKind::ISize:
 					resultOut = true;
 					break;
+				case TypeNameKind::Any:
+					resultOut = true;
+					break;
 				default:
 					resultOut = false;
 					break;
@@ -281,6 +315,9 @@ recheck:
 					break;
 				case TypeNameKind::ISize:
 				case TypeNameKind::I64:
+					resultOut = true;
+					break;
+				case TypeNameKind::Any:
 					resultOut = true;
 					break;
 				default:
@@ -299,6 +336,9 @@ recheck:
 				case TypeNameKind::ISize:
 					resultOut = true;
 					break;
+				case TypeNameKind::Any:
+					resultOut = true;
+					break;
 				default:
 					resultOut = false;
 					break;
@@ -313,6 +353,9 @@ recheck:
 				case TypeNameKind::ISize:
 					resultOut = false;
 					break;
+				case TypeNameKind::Any:
+					resultOut = true;
+					break;
 				default:
 					resultOut = false;
 					break;
@@ -325,6 +368,9 @@ recheck:
 				case TypeNameKind::U32:
 				case TypeNameKind::U64:
 				case TypeNameKind::USize:
+					resultOut = true;
+					break;
+				case TypeNameKind::Any:
 					resultOut = true;
 					break;
 				default:
@@ -343,6 +389,9 @@ recheck:
 				case TypeNameKind::USize:
 					resultOut = true;
 					break;
+				case TypeNameKind::Any:
+					resultOut = true;
+					break;
 				default:
 					resultOut = false;
 					break;
@@ -357,6 +406,9 @@ recheck:
 					break;
 				case TypeNameKind::U64:
 				case TypeNameKind::USize:
+					resultOut = true;
+					break;
+				case TypeNameKind::Any:
 					resultOut = true;
 					break;
 				default:
@@ -375,6 +427,9 @@ recheck:
 				case TypeNameKind::USize:
 					resultOut = true;
 					break;
+				case TypeNameKind::Any:
+					resultOut = true;
+					break;
 				default:
 					resultOut = false;
 					break;
@@ -389,6 +444,9 @@ recheck:
 				case TypeNameKind::U64:
 					resultOut = false;
 					break;
+				case TypeNameKind::Any:
+					resultOut = true;
+					break;
 				default:
 					resultOut = false;
 					break;
@@ -402,6 +460,9 @@ recheck:
 				case TypeNameKind::F64:
 					resultOut = true;
 					break;
+				case TypeNameKind::Any:
+					resultOut = true;
+					break;
 				default:
 					resultOut = false;
 					break;
@@ -412,6 +473,9 @@ recheck:
 				case TypeNameKind::F32:
 				case TypeNameKind::F64:
 					resultOut = false;
+					break;
+				case TypeNameKind::Any:
+					resultOut = true;
 					break;
 				default:
 					resultOut = false;
@@ -425,6 +489,9 @@ recheck:
 					break;
 				case TypeNameKind::String:
 					resultOut = false;
+					break;
+				case TypeNameKind::Any:
+					resultOut = true;
 					break;
 				default:
 					resultOut = false;
@@ -445,12 +512,24 @@ recheck:
 				case TypeNameKind::USize:
 					resultOut = true;
 					break;
+				case TypeNameKind::Any:
+					resultOut = true;
+					break;
 				default:
 					resultOut = false;
 					break;
 			}
 			break;
 		case TypeNameKind::Object:
+			switch (type->typeNameKind) {
+				case TypeNameKind::Any:
+					resultOut = true;
+					break;
+				default:
+					resultOut = false;
+					break;
+			}
+			break;
 		case TypeNameKind::Any:
 			resultOut = false;
 			break;
@@ -571,6 +650,9 @@ recheck:
 					}
 					break;
 				}
+				case TypeNameKind::Any:
+					resultOut = true;
+					break;
 				default:
 					resultOut = false;
 					break;
@@ -597,6 +679,57 @@ SLKC_API peff::Option<CompilationError> slkc::isUnsigned(
 		default:
 			resultOut = false;
 	}
+	return {};
+}
+
+SLKC_API peff::Option<CompilationError> slkc::isClassType(
+	AstNodePtr<TypeNameNode> type,
+	bool &resultOut) {
+recurse:
+	switch (type->typeNameKind) {
+		case TypeNameKind::Object: {
+			AstNodePtr<MemberNode> stm;
+
+			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(nullptr, type->document->sharedFromThis(), type.castTo<CustomTypeNameNode>(), stm));
+
+			if (stm->getAstNodeType() == AstNodeType::Class)
+				resultOut = true;
+			else
+				resultOut = false;
+			break;
+		}
+		case TypeNameKind::Custom: {
+			AstNodePtr<MemberNode> tm;	// Type member
+
+			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(nullptr, type->document->sharedFromThis(), type.castTo<CustomTypeNameNode>(), tm));
+
+			switch (tm->getAstNodeType()) {
+				case AstNodeType::GenericParam: {
+					auto gp = tm.castTo<GenericParamNode>();
+
+					if (gp->genericConstraint->baseType) {
+						// Tail recurse.
+						type = gp->genericConstraint->baseType;
+						goto recurse;
+					}
+					resultOut = false;
+					break;
+				}
+				case AstNodeType::Class:
+					resultOut = true;
+					break;
+				case AstNodeType::Interface:
+					// TODO: Is Interface& a class type?
+					resultOut = true;
+					break;
+				default:
+					resultOut = false;
+					break;
+			}
+			break;
+		}
+	}
+
 	return {};
 }
 
@@ -1058,6 +1191,14 @@ SLKC_API peff::Option<CompilationError> slkc::isConvertible(
 	SLKC_RETURN_IF_COMP_ERROR(unwrapFacadeTypeName(src, src));
 	SLKC_RETURN_IF_COMP_ERROR(unwrapFacadeTypeName(dest, dest));
 
+	if (!dest->isNullable) {
+		if (src->isNullable) {
+			// T? to T should be eliminated by null check expressions.
+			resultOut = false;
+			return {};
+		}
+	}
+
 	if (!dest->isLocal) {
 		if (src->isLocal) {
 			resultOut = false;
@@ -1369,6 +1510,8 @@ SLKC_API peff::Option<CompilationError> slkc::unwrapParamListTypeNameTree(
 	}
 
 	typeNameOut = type;
+	if (type->isNullable)
+		typeNameOut->setNullable();
 	return {};
 }
 

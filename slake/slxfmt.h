@@ -94,7 +94,9 @@ namespace slake {
 		};
 
 		constexpr static uint8_t
-			TYPE_FINAL = 0x01;
+			TYPE_FINAL = 0x01,
+			TYPE_LOCAL = 0x02,
+			TYPE_NULLABLE = 0x04;
 
 		enum class ConstObjectType : uint8_t {
 			IdRef = 0,

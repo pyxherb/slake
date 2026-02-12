@@ -279,6 +279,10 @@ SLAKE_API InternalExceptionPointer loader::loadType(LoaderContext &context, Runt
 
 	if (modifier & slxfmt::TYPE_FINAL)
 		typeOut.typeModifier |= TYPE_FINAL;
+	if (modifier & slxfmt::TYPE_LOCAL)
+		typeOut.typeModifier |= TYPE_LOCAL;
+	if (modifier & slxfmt::TYPE_NULLABLE)
+		typeOut.typeModifier |= TYPE_NULLABLE;
 
 	return {};
 }

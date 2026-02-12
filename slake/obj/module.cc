@@ -162,7 +162,7 @@ SLAKE_API char *BasicModuleObject::appendFieldSpace(size_t size, size_t alignmen
 }
 
 SLAKE_API char *BasicModuleObject::appendTypedFieldSpace(const TypeRef &type) {
-	return appendFieldSpace(associatedRuntime->sizeofType(type), associatedRuntime->alignofType(type));
+	return appendFieldSpace(Runtime::sizeofType(type), Runtime::alignofType(type));
 }
 
 SLAKE_API bool BasicModuleObject::reallocFieldSpaces() noexcept {

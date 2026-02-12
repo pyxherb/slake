@@ -395,6 +395,12 @@ SLKC_API peff::Option<CompilationError> slkc::dumpTypeName(
 	if (type.typeModifier & slake::TYPE_FINAL) {
 		typeModifier |= slake::slxfmt::TYPE_FINAL;
 	}
+	if (type.typeModifier & slake::TYPE_LOCAL) {
+		typeModifier |= slake::slxfmt::TYPE_LOCAL;
+	}
+	if (type.typeModifier & slake::TYPE_NULLABLE) {
+		typeModifier |= slake::slxfmt::TYPE_NULLABLE;
+	}
 
 	SLKC_RETURN_IF_COMP_ERROR(writer->writeU8(typeModifier));
 

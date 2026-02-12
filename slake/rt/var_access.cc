@@ -269,6 +269,11 @@ SLAKE_API void Runtime::readVarWithType(const Reference &entityRef, const TypeRe
 		case ReferenceKind::StaticFieldRef: {
 			const char *const rawDataPtr = (char *)locateValueBasePtr(entityRef);
 
+			if (t.isNullable())
+				if (!*(bool *)((rawDataPtr + sizeofType(t)))) {
+					valueOut = nullptr;
+					break;
+				}
 			switch (t.typeId) {
 				case TypeId::I8:
 					valueOut.data.asI8 = (*(reinterpret_cast<const int8_t *>(rawDataPtr)));
@@ -429,6 +434,11 @@ SLAKE_API void Runtime::readVarWithType(const Reference &entityRef, const TypeRe
 		case ReferenceKind::LocalVarRef: {
 			const char *const rawDataPtr = (char *)locateValueBasePtr(entityRef);
 
+			if (t.isNullable())
+				if (!*(bool *)((rawDataPtr + sizeofType(t)))) {
+					valueOut = nullptr;
+					break;
+				}
 			switch (t.typeId) {
 				case TypeId::I8:
 					valueOut.data.asI8 = (*(reinterpret_cast<const int8_t *>(rawDataPtr)));
@@ -522,6 +532,11 @@ SLAKE_API void Runtime::readVarWithType(const Reference &entityRef, const TypeRe
 		case ReferenceKind::CoroutineLocalVarRef: {
 			const char *const rawDataPtr = (char *)locateValueBasePtr(entityRef);
 
+			if (t.isNullable())
+				if (!*(bool *)((rawDataPtr + sizeofType(t)))) {
+					valueOut = nullptr;
+					break;
+				}
 			switch (t.typeId) {
 				case TypeId::I8:
 					valueOut.data.asI8 = (*(reinterpret_cast<const int8_t *>(rawDataPtr)));
@@ -615,6 +630,11 @@ SLAKE_API void Runtime::readVarWithType(const Reference &entityRef, const TypeRe
 		case ReferenceKind::ObjectFieldRef: {
 			const char *const rawDataPtr = (char *)locateValueBasePtr(entityRef);
 
+			if (t.isNullable())
+				if (!*(bool *)((rawDataPtr + sizeofType(t)))) {
+					valueOut = nullptr;
+					break;
+				}
 			switch (t.typeId) {
 				case TypeId::I8:
 					valueOut.data.asI8 = (*(reinterpret_cast<const int8_t *>(rawDataPtr)));
@@ -708,6 +728,9 @@ SLAKE_API void Runtime::readVarWithType(const Reference &entityRef, const TypeRe
 		case ReferenceKind::ArrayElementRef: {
 			assert(entityRef.asArrayElement.index < entityRef.asArrayElement.arrayObject->length);
 
+			if (t.isNullable())
+				// TODO: Handle it.
+				std::terminate();
 			switch (t.typeId) {
 				case TypeId::I8:
 					valueOut = (((int8_t *)entityRef.asArrayElement.arrayObject->data)[entityRef.asArrayElement.index]);
@@ -806,6 +829,11 @@ SLAKE_API void Runtime::readVarWithType(const Reference &entityRef, const TypeRe
 		case ReferenceKind::StructFieldRef: {
 			const char *rawDataPtr = ((char *)locateValueBasePtr(extractStructInnerRef(entityRef.asStructField.structRef, entityRef.asStructField.innerReferenceKind)));
 
+			if (t.isNullable())
+				if (!*(bool *)((rawDataPtr + sizeofType(t)))) {
+					valueOut = nullptr;
+					break;
+				}
 			switch (t.typeId) {
 				case TypeId::I8:
 					valueOut = (*((int8_t *)rawDataPtr));
@@ -874,6 +902,12 @@ SLAKE_API void Runtime::writeVarWithType(const Reference &entityRef, const TypeR
 		case ReferenceKind::StaticFieldRef: {
 			char *const rawDataPtr = (char *)locateValueBasePtr(entityRef);
 
+			if (t.isNullable()) {
+				if (value.isNull()) {
+					*(bool *)((rawDataPtr + sizeofType(t))) = false;
+					break;
+				}
+			}
 			switch (t.typeId) {
 				case TypeId::I8:
 					*((int8_t *)rawDataPtr) = value.getI8();
@@ -933,6 +967,12 @@ SLAKE_API void Runtime::writeVarWithType(const Reference &entityRef, const TypeR
 		case ReferenceKind::LocalVarRef: {
 			char *const rawDataPtr = (char *)locateValueBasePtr(entityRef);
 
+			if (t.isNullable()) {
+				if (value.isNull()) {
+					*(bool *)((rawDataPtr + sizeofType(t))) = false;
+					break;
+				}
+			}
 			switch (t.typeId) {
 				case TypeId::I8:
 					*(reinterpret_cast<int8_t *>(rawDataPtr)) = value.getI8();
@@ -988,6 +1028,12 @@ SLAKE_API void Runtime::writeVarWithType(const Reference &entityRef, const TypeR
 		case ReferenceKind::CoroutineLocalVarRef: {
 			char *const rawDataPtr = (char *)locateValueBasePtr(entityRef);
 
+			if (t.isNullable()) {
+				if (value.isNull()) {
+					*(bool *)((rawDataPtr + sizeofType(t))) = false;
+					break;
+				}
+			}
 			switch (t.typeId) {
 				case TypeId::I8:
 					*(reinterpret_cast<int8_t *>(rawDataPtr)) = value.getI8();
@@ -1040,41 +1086,47 @@ SLAKE_API void Runtime::writeVarWithType(const Reference &entityRef, const TypeR
 			break;
 		}
 		case ReferenceKind::ObjectFieldRef: {
-			char *const rawFieldPtr = (char *)locateValueBasePtr(entityRef);
+			char *const rawDataPtr = (char *)locateValueBasePtr(entityRef);
 
+			if (t.isNullable()) {
+				if (value.isNull()) {
+					*(bool *)((rawDataPtr + sizeofType(t))) = false;
+					break;
+				}
+			}
 			switch (t.typeId) {
 				case TypeId::I8:
-					*((int8_t *)rawFieldPtr) = value.getI8();
+					*((int8_t *)rawDataPtr) = value.getI8();
 					break;
 				case TypeId::I16:
-					*((int16_t *)rawFieldPtr) = value.getI16();
+					*((int16_t *)rawDataPtr) = value.getI16();
 					break;
 				case TypeId::I32:
-					*((int32_t *)rawFieldPtr) = value.getI32();
+					*((int32_t *)rawDataPtr) = value.getI32();
 					break;
 				case TypeId::I64:
-					*((int64_t *)rawFieldPtr) = value.getI64();
+					*((int64_t *)rawDataPtr) = value.getI64();
 					break;
 				case TypeId::U8:
-					*((uint8_t *)rawFieldPtr) = value.getU8();
+					*((uint8_t *)rawDataPtr) = value.getU8();
 					break;
 				case TypeId::U16:
-					*((uint16_t *)rawFieldPtr) = value.getU16();
+					*((uint16_t *)rawDataPtr) = value.getU16();
 					break;
 				case TypeId::U32:
-					*((uint32_t *)rawFieldPtr) = value.getU32();
+					*((uint32_t *)rawDataPtr) = value.getU32();
 					break;
 				case TypeId::U64:
-					*((uint64_t *)rawFieldPtr) = value.getU64();
+					*((uint64_t *)rawDataPtr) = value.getU64();
 					break;
 				case TypeId::F32:
-					*((float *)rawFieldPtr) = value.getF32();
+					*((float *)rawDataPtr) = value.getF32();
 					break;
 				case TypeId::F64:
-					*((double *)rawFieldPtr) = value.getF64();
+					*((double *)rawDataPtr) = value.getF64();
 					break;
 				case TypeId::Bool:
-					*((bool *)rawFieldPtr) = value.getBool();
+					*((bool *)rawDataPtr) = value.getBool();
 					break;
 				case TypeId::String:
 				case TypeId::Instance:
@@ -1083,7 +1135,7 @@ SLAKE_API void Runtime::writeVarWithType(const Reference &entityRef, const TypeR
 						std::terminate();
 					if (value.isLocal())
 						std::terminate();
-					*((Object **)rawFieldPtr) = value.getReference().asObject;
+					*((Object **)rawDataPtr) = value.getReference().asObject;
 					break;
 				default:
 					// All fields should be checked during the instantiation.
@@ -1092,6 +1144,12 @@ SLAKE_API void Runtime::writeVarWithType(const Reference &entityRef, const TypeR
 			break;
 		}
 		case ReferenceKind::ArrayElementRef: {
+			if (t.isNullable()) {
+				if (value.isNull()) {
+					// TODO: Handle this.
+					std::terminate();
+				}
+			}
 			switch (t.typeId) {
 				case TypeId::I8:
 					((int8_t *)entityRef.asArrayElement.arrayObject->data)[entityRef.asArrayElement.index] = value.getI8();
@@ -1175,6 +1233,12 @@ SLAKE_API void Runtime::writeVarWithType(const Reference &entityRef, const TypeR
 			if (value.isLocal())
 				std::terminate();
 
+			if (t.isNullable()) {
+				if (value.isNull()) {
+					*(bool *)((rawDataPtr + sizeofType(t))) = false;
+					break;
+				}
+			}
 			switch (t.typeId) {
 				case TypeId::I8:
 					*((int8_t *)rawDataPtr) = value.getI8();

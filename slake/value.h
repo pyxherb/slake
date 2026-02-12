@@ -204,6 +204,11 @@ namespace slake {
 			return *this;
 		}
 
+		SLAKE_FORCEINLINE Reference &operator=(std::nullptr_t) noexcept {
+			this->kind = ReferenceKind::ObjectRef;
+			this->asObject = nullptr;
+			return *this;
+		}
 		SLAKE_FORCEINLINE Reference &operator=(const StaticFieldRef &ref) noexcept {
 			kind = ReferenceKind::StaticFieldRef;
 			asStaticField = ref;
@@ -569,6 +574,9 @@ namespace slake {
 		SLAKE_FORCEINLINE Value(const Reference &entityRef) noexcept : valueType(ValueType::Reference), valueFlags(0) {
 			this->data.asReference = entityRef;
 		}
+		SLAKE_FORCEINLINE Value(std::nullptr_t) noexcept : valueType(ValueType::Reference), valueFlags(0) {
+			this->data.asReference = nullptr;
+		}
 		SLAKE_FORCEINLINE Value(const TypelessScopedEnumValue &v) noexcept : valueType(ValueType::TypelessScopedEnum), valueFlags(0) {
 			this->data.asTypelessScopedEnum = v;
 		}
@@ -652,6 +660,12 @@ namespace slake {
 			return *this;
 		}
 		SLAKE_FORCEINLINE Value &operator=(const Reference &entityRef) noexcept {
+			valueType = ValueType::Reference;
+			this->data.asReference = entityRef;
+			this->valueFlags = 0;
+			return *this;
+		}
+		SLAKE_FORCEINLINE Value &operator=(std::nullptr_t entityRef) noexcept {
 			valueType = ValueType::Reference;
 			this->data.asReference = entityRef;
 			this->valueFlags = 0;
@@ -841,6 +855,9 @@ namespace slake {
 
 		SLAKE_FORCEINLINE bool isReference() const noexcept {
 			return valueType == ValueType::Reference;
+		}
+		SLAKE_FORCEINLINE bool isNull() const noexcept {
+			return (valueType == ValueType::Reference) && (data.asReference.kind == ReferenceKind::ObjectRef) && (!data.asReference.asObject);
 		}
 		SLAKE_FORCEINLINE bool isTypelessScopedEnum() const noexcept {
 			return valueType == ValueType::TypelessScopedEnum;

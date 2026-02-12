@@ -449,6 +449,13 @@ SLKC_API peff::Option<SyntaxError> Parser::parseTypeName(AstNodePtr<TypeNameNode
 					typeNameOut->idxLocalToken = t->index;
 					break;
 				}
+				case TokenId::Question: {
+					nextToken();
+
+					typeNameOut->isNullable = true;
+					typeNameOut->idxNullableToken = t->index;
+					break;
+				}
 				case TokenId::LBracket: {
 					nextToken();
 

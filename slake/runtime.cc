@@ -168,30 +168,30 @@ SLAKE_API peff::Alloc *Runtime::getCurGenAlloc() {
 	return &youngAlloc;
 }
 
-SLAKE_API size_t Runtime::sizeofType(const TypeRef &type) const {
+SLAKE_API size_t Runtime::sizeofType(const TypeRef &type) {
 	switch (type.typeId) {
 		case TypeId::I8:
-			return sizeof(int8_t);
+			return sizeof(int8_t) + (type.typeModifier & TYPE_NULLABLE ? 1 : 0);
 		case TypeId::I16:
-			return sizeof(int16_t);
+			return sizeof(int16_t) + (type.typeModifier & TYPE_NULLABLE ? 1 : 0);
 		case TypeId::I32:
-			return sizeof(int32_t);
+			return sizeof(int32_t) + (type.typeModifier & TYPE_NULLABLE ? 1 : 0);
 		case TypeId::I64:
-			return sizeof(int64_t);
+			return sizeof(int64_t) + (type.typeModifier & TYPE_NULLABLE ? 1 : 0);
 		case TypeId::U8:
-			return sizeof(uint8_t);
+			return sizeof(uint8_t) + (type.typeModifier & TYPE_NULLABLE ? 1 : 0);
 		case TypeId::U16:
-			return sizeof(uint16_t);
+			return sizeof(uint16_t) + (type.typeModifier & TYPE_NULLABLE ? 1 : 0);
 		case TypeId::U32:
-			return sizeof(uint32_t);
+			return sizeof(uint32_t) + (type.typeModifier & TYPE_NULLABLE ? 1 : 0);
 		case TypeId::U64:
-			return sizeof(uint64_t);
+			return sizeof(uint64_t) + (type.typeModifier & TYPE_NULLABLE ? 1 : 0);
 		case TypeId::F32:
-			return sizeof(float);
+			return sizeof(float) + (type.typeModifier & TYPE_NULLABLE ? 1 : 0);
 		case TypeId::F64:
-			return sizeof(double);
+			return sizeof(double) + (type.typeModifier & TYPE_NULLABLE ? 1 : 0);
 		case TypeId::Bool:
-			return sizeof(bool);
+			return sizeof(bool) + (type.typeModifier & TYPE_NULLABLE ? 1 : 0);
 		case TypeId::String:
 			return sizeof(void *);
 		case TypeId::Instance:
@@ -203,10 +203,10 @@ SLAKE_API size_t Runtime::sizeofType(const TypeRef &type) const {
 			if (!so->cachedObjectLayout)
 				std::terminate();
 
-			return so->cachedObjectLayout->totalSize;
+			return so->cachedObjectLayout->totalSize + (type.typeModifier & TYPE_NULLABLE ? 1 : 0);
 		}
 		case TypeId::TypelessScopedEnum:
-			return sizeof(uint32_t);
+			return sizeof(uint32_t) + (type.typeModifier & TYPE_NULLABLE ? 1 : 0);
 		case TypeId::Array:
 			return sizeof(void *);
 		case TypeId::Any:
@@ -217,7 +217,7 @@ SLAKE_API size_t Runtime::sizeofType(const TypeRef &type) const {
 	std::terminate();
 }
 
-SLAKE_API size_t Runtime::alignofType(const TypeRef &type) const {
+SLAKE_API size_t Runtime::alignofType(const TypeRef &type) {
 	switch (type.typeId) {
 		case TypeId::I8:
 			return alignof(int8_t);

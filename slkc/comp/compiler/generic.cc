@@ -400,7 +400,9 @@ SLKC_API peff::Option<CompilationError> Document::instantiateGenericObject(
 										it != task.context->mappedGenericArgs.end()) {
 										if (it.value()->getAstNodeType() != AstNodeType::TypeName)
 											return CompilationError(it.value()->tokenRange, CompilationErrorKind::ExpectingTypeName);
+										bool nullable = typeName->isNullable;
 										typeName = it.value().castTo<TypeNameNode>();
+										typeName->isNullable = nullable;
 										break;
 									}
 								}

@@ -35,6 +35,8 @@ namespace slkc {
 		UnpackedParams,
 		UnpackedArgs,
 
+		Null,
+
 		BCCustom,
 
 		Bad
@@ -45,8 +47,9 @@ namespace slkc {
 		TypeNameKind typeNameKind;
 		bool isFinal = false;
 		bool isLocal = false;
+		bool isNullable = false;
 
-		size_t idxFinalToken = SIZE_MAX, idxLocalToken = SIZE_MAX;
+		size_t idxFinalToken = SIZE_MAX, idxLocalToken = SIZE_MAX, idxNullableToken = SIZE_MAX;
 
 		SLKC_API TypeNameNode(TypeNameKind typeNameKind, peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
 		SLKC_API TypeNameNode(const TypeNameNode &rhs, peff::Alloc *selfAllocator, DuplicationContext &context);
@@ -60,12 +63,20 @@ namespace slkc {
 			isLocal = true;
 		}
 
+		SLAKE_FORCEINLINE void setNullable() noexcept {
+			isNullable = true;
+		}
+
 		SLAKE_FORCEINLINE void clearFinal() noexcept {
 			isFinal = false;
 		}
 
 		SLAKE_FORCEINLINE void clearLocal() noexcept {
 			isLocal = false;
+		}
+
+		SLAKE_FORCEINLINE void clearNullable() noexcept {
+			isNullable = false;
 		}
 
 		SLAKE_FORCEINLINE bool isExplicitFinal() const noexcept {
@@ -76,12 +87,20 @@ namespace slkc {
 			return idxLocalToken != SIZE_MAX;
 		}
 
+		SLAKE_FORCEINLINE bool isExplicitNullable() const noexcept {
+			return idxNullableToken != SIZE_MAX;
+		}
+
 		SLAKE_FORCEINLINE bool isImplicitFinal() const noexcept {
 			return idxFinalToken == SIZE_MAX;
 		}
 
 		SLAKE_FORCEINLINE bool isImplicitLocal() const noexcept {
 			return idxLocalToken == SIZE_MAX;
+		}
+
+		SLAKE_FORCEINLINE bool isImplicitNullable() const noexcept {
+			return idxNullableToken == SIZE_MAX;
 		}
 	};
 }

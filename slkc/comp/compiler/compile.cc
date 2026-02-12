@@ -473,6 +473,13 @@ SLKC_API peff::Option<CompilationError> slkc::compileTypeName(
 			std::terminate();
 	}
 
+	if (typeName->isFinal)
+		typeOut.setFinal();
+	if (typeName->isLocal)
+		typeOut.setLocal();
+	if (typeName->isNullable)
+		typeOut.setNullable();
+
 	return {};
 }
 

@@ -406,6 +406,8 @@ SLKC_API bool Decompiler::decompileTypeName(peff::Alloc *allocator, DumpWriter *
 			std::terminate();
 	}
 
+	if (type.isNullable())
+		SLKC_RETURN_IF_FALSE(writer->write("?"));
 	return true;
 }
 

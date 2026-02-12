@@ -327,6 +327,16 @@ namespace slkc {
 		SLKC_API virtual ~UnpackedArgsTypeNameNode();
 	};
 
+	class NullTypeNameNode : public TypeNameNode {
+	protected:
+		SLKC_API virtual AstNodePtr<AstNode> doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const override;
+
+	public:
+		SLKC_API NullTypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
+		SLKC_API NullTypeNameNode(const NullTypeNameNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut);
+		SLKC_API virtual ~NullTypeNameNode();
+	};
+
 	enum class MetaTypeKind : uint8_t {
 		Id = 0,
 		Tokens,

@@ -523,7 +523,7 @@ namespace slkc {
 		bool &resultOut);
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> isSubtypeOf(
 		AstNodePtr<TypeNameNode> subtype,
-		AstNodePtr<TypeNameNode> type,
+		AstNodePtr<TypeNameNode> baseType,
 		bool &resultOut);
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> isBasicType(
 		AstNodePtr<TypeNameNode> lhs,

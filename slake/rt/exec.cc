@@ -519,6 +519,8 @@ SLAKE_FORCEINLINE InternalExceptionPointer slake::Runtime::_addLocalVar(Context 
 		case TypeId::Bool:
 		case TypeId::String:
 		case TypeId::Any:
+			if (type.isNullable())
+				context->stackAlloc(sizeof(bool));
 			break;
 		case TypeId::Instance:
 		case TypeId::GenericArg:

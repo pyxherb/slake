@@ -557,6 +557,7 @@ recheck:
 		case TypeNameKind::Any:
 			switch (baseType->typeNameKind) {
 				case TypeNameKind::Any:
+					// Any type is always nullable.
 					resultOut = true;
 					break;
 				default:
@@ -581,7 +582,7 @@ recheck:
 				case TypeNameKind::Object: {
 					AstNodePtr<MemberNode> stm;
 
-					SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(nullptr, baseType->document->sharedFromThis(), baseType.castTo<CustomTypeNameNode>(), stm));
+					SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(nullptr, subtype->document->sharedFromThis(), subtype.castTo<CustomTypeNameNode>(), stm));
 
 					if (stm->getAstNodeType() == AstNodeType::Class)
 						// class <: object

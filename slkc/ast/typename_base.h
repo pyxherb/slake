@@ -44,7 +44,7 @@ namespace slkc {
 
 	class TypeNameNode : public AstNode {
 	public:
-		TypeNameKind typeNameKind;
+		const TypeNameKind typeNameKind;
 		bool isFinal = false;
 		bool isLocal = false;
 		bool isNullable = false;

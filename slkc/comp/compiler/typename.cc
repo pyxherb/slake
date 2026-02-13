@@ -579,6 +579,10 @@ recheck:
 									// it may be more derived.
 									resultOut = false;
 									break;
+								case AstNodeType::GenericParam:
+									// Generic parameters are always incompatible.
+									resultOut = false;
+									break;
 								default:
 									resultOut = false;
 									break;

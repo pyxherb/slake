@@ -16,6 +16,8 @@ namespace slake {
 		JMP,  // Jump
 		BR,	  // Branch
 
+		PHI,  // Phi
+
 		ADD,   // Add
 		SUB,   // Subtract
 		MUL,   // Multiply
@@ -85,11 +87,11 @@ namespace slake {
 
 		APTOTUPLE,	// Cast an argument pack to a tuple
 
+		DCMT,  // Downcast method table
+
 		TYPEOF,	 // Get type of an object
 
 		CONSTSW,  // Constant switch
-
-		PHI,  // Phi
 
 		OPCODE_MAX
 	};

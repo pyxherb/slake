@@ -7,27 +7,65 @@ The compiler has 3 main modules:
 
 ## Issues
 
-### SLKC_RETURN_IF_XXX trap
+### Path-based Null Checker
 
-In some cases you may see:
+Implement the path-based null checker.
 
-```cpp
-if(/* condition */)
-    SLKC_RETURN_IF_XXX(/*...*/);
-else
-    /* Do something... */;
+```slake
+let a : i32?;
+
+a = 123;
+
+// a is i32.
+
+let b : i32?;
+
+if (b === null) {
+    // b is null.
+} else {
+    // optional, b is i32.
+}
+// b is perhaps i32?,
+
+let b : i32?;
+
+if (b === null) {
+    // b is null.
+    return;
+}
+// b is i32,
 ```
 
-does not pass the compilation, that is because expansion of `SLKC_RETURN_IF_XXX` by add a pair of braces like following:
+We have to be carefully to deal with following cases:
 
-```cpp
-if(/* condition */) {
-    SLKC_RETURN_IF_XXX(/*...*/);
-} else
-    /* Do something... */;
+```slake
+let a : i32?;
+
+if (true) {
+    a = 123;
+} else {
+    a = null;
+}
+// Then a should be i32.
 ```
 
-### Stack Overflow In Generic Instantiator
+```slake
+let a : i32?;
 
-There's a stack overflow risk in the generic instantiator, perhaps we can
-replace it with iteration method instead of recursion?
+while (true) {
+    a = 123;
+    if (true)
+        break;
+    a = null;
+}
+// Then a should be i32.
+```
+
+### Constructor Initialization Checker
+
+Implement the constructor initialization checker.
+
+Mostly in the same way of the path-based null checker.
+
+Take notice of the initialization completion point, and switch the object type
+using `DCMT` instruction on that time point.

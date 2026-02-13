@@ -798,6 +798,8 @@ SLKC_API peff::Option<slake::Opcode> _getOpcode(const std::string_view &sv) {
 	MNEMONIC_NAME_CASE(JMP);
 	MNEMONIC_NAME_CASE(BR);
 
+	MNEMONIC_NAME_CASE(PHI);
+
 	MNEMONIC_NAME_CASE(ADD);
 	MNEMONIC_NAME_CASE(SUB);
 	MNEMONIC_NAME_CASE(MUL);
@@ -867,11 +869,11 @@ SLKC_API peff::Option<slake::Opcode> _getOpcode(const std::string_view &sv) {
 
 	MNEMONIC_NAME_CASE(APTOTUPLE);
 
+	MNEMONIC_NAME_CASE(DCMT);
+
 	MNEMONIC_NAME_CASE(TYPEOF);
 
 	MNEMONIC_NAME_CASE(CONSTSW);
-
-	MNEMONIC_NAME_CASE(PHI);
 	return {};
 }
 #undef MNEMONIC_NAME_CASE

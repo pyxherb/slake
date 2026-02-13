@@ -234,12 +234,6 @@ SLKC_API peff::Option<CompilationError> slkc::isSubtypeOf(
 	AstNodePtr<TypeNameNode> subtype,
 	AstNodePtr<TypeNameNode> baseType,
 	bool &resultOut) {
-	if (!subtype->isNullable) {
-		if (baseType->isNullable) {
-			resultOut = false;
-			return {};
-		}
-	}
 	if (!subtype->isLocal) {
 		if (baseType->isLocal) {
 			resultOut = false;
@@ -247,40 +241,14 @@ SLKC_API peff::Option<CompilationError> slkc::isSubtypeOf(
 		}
 	}
 
-	// Call this function when we found that the `subtype` argument is the same
-	// type of the `baseType` argument.
-	auto checkNullabilityWhenIsSameType =
-		[](AstNodePtr<TypeNameNode> subtype,
-			AstNodePtr<TypeNameNode> baseType,
-			bool &resultOut) {
-			if (subtype->isNullable) {
-				if (baseType->isNullable)
-					// T? <: T?
-					// false
-					resultOut = false;
-				else
-					// T? <: T
-					// false
-					resultOut = false;
-			} else {
-				if (baseType->isNullable)
-					// T <: T?
-					// true
-					resultOut = true;
-				else
-					// T <: T
-					// false
-					resultOut = false;
-			}
-		};
 	// Call this function when we found that the `subtype` argument is a subtype
-	// of the `baseType` argument.
+	// of the `baseType` argument. Note that T <: T is true.
 	auto checkNullabilityWhenBaseTypeIsParentType =
-		[](AstNodePtr<TypeNameNode> subtype,
-			AstNodePtr<TypeNameNode> baseType,
+		[](bool isSubtypeNullable,
+			bool isBaseTypeNullable,
 			bool &resultOut) {
-			if (subtype->isNullable) {
-				if (baseType->isNullable)
+			if (isSubtypeNullable) {
+				if (isBaseTypeNullable)
 					// T? <: P?
 					// true
 					resultOut = true;
@@ -289,7 +257,7 @@ SLKC_API peff::Option<CompilationError> slkc::isSubtypeOf(
 					// false
 					resultOut = false;
 			} else {
-				if (baseType->isNullable)
+				if (isBaseTypeNullable)
 					// T <: P?
 					// true
 					resultOut = true;
@@ -308,7 +276,8 @@ recheck:
 			}
 			switch (baseType->typeNameKind) {
 				case TypeNameKind::Null:
-					resultOut = false;
+					// Null type is always nullable.
+					resultOut = true;
 					break;
 				case TypeNameKind::Any:
 					resultOut = true;
@@ -324,12 +293,12 @@ recheck:
 		case TypeNameKind::I8:
 			switch (baseType->typeNameKind) {
 				case TypeNameKind::I8:
-					checkNullabilityWhenIsSameType(subtype, baseType, resultOut);
+					checkNullabilityWhenBaseTypeIsParentType(subtype->isNullable, baseType->isNullable, resultOut);
 					break;
 				case TypeNameKind::I16:
 				case TypeNameKind::I32:
 				case TypeNameKind::I64:
-					checkNullabilityWhenBaseTypeIsParentType(subtype, baseType, resultOut);
+					checkNullabilityWhenBaseTypeIsParentType(subtype->isNullable, baseType->isNullable, resultOut);
 					break;
 				case TypeNameKind::Any:
 					resultOut = true;
@@ -345,11 +314,11 @@ recheck:
 					resultOut = false;
 					break;
 				case TypeNameKind::I16:
-					checkNullabilityWhenIsSameType(subtype, baseType, resultOut);
+					checkNullabilityWhenBaseTypeIsParentType(subtype->isNullable, baseType->isNullable, resultOut);
 					break;
 				case TypeNameKind::I32:
 				case TypeNameKind::I64:
-					checkNullabilityWhenBaseTypeIsParentType(subtype, baseType, resultOut);
+					checkNullabilityWhenBaseTypeIsParentType(subtype->isNullable, baseType->isNullable, resultOut);
 					break;
 				case TypeNameKind::Any:
 					resultOut = true;
@@ -366,10 +335,10 @@ recheck:
 					resultOut = false;
 					break;
 				case TypeNameKind::I32:
-					checkNullabilityWhenIsSameType(subtype, baseType, resultOut);
+					checkNullabilityWhenBaseTypeIsParentType(subtype->isNullable, baseType->isNullable, resultOut);
 					break;
 				case TypeNameKind::I64:
-					checkNullabilityWhenBaseTypeIsParentType(subtype, baseType, resultOut);
+					checkNullabilityWhenBaseTypeIsParentType(subtype->isNullable, baseType->isNullable, resultOut);
 					break;
 				case TypeNameKind::Any:
 					resultOut = true;
@@ -387,7 +356,7 @@ recheck:
 					resultOut = false;
 					break;
 				case TypeNameKind::I64:
-					checkNullabilityWhenIsSameType(subtype, baseType, resultOut);
+					checkNullabilityWhenBaseTypeIsParentType(subtype->isNullable, baseType->isNullable, resultOut);
 					break;
 				case TypeNameKind::Any:
 					resultOut = true;
@@ -406,7 +375,7 @@ recheck:
 					resultOut = false;
 					break;
 				case TypeNameKind::ISize:
-					checkNullabilityWhenIsSameType(subtype, baseType, resultOut);
+					checkNullabilityWhenBaseTypeIsParentType(subtype->isNullable, baseType->isNullable, resultOut);
 					break;
 				case TypeNameKind::Any:
 					resultOut = true;
@@ -419,12 +388,12 @@ recheck:
 		case TypeNameKind::U8:
 			switch (baseType->typeNameKind) {
 				case TypeNameKind::U8:
-					checkNullabilityWhenIsSameType(subtype, baseType, resultOut);
+					checkNullabilityWhenBaseTypeIsParentType(subtype->isNullable, baseType->isNullable, resultOut);
 					break;
 				case TypeNameKind::U16:
 				case TypeNameKind::U32:
 				case TypeNameKind::U64:
-					checkNullabilityWhenBaseTypeIsParentType(subtype, baseType, resultOut);
+					checkNullabilityWhenBaseTypeIsParentType(subtype->isNullable, baseType->isNullable, resultOut);
 					break;
 				case TypeNameKind::Any:
 					resultOut = true;
@@ -440,11 +409,11 @@ recheck:
 					resultOut = false;
 					break;
 				case TypeNameKind::U16:
-					checkNullabilityWhenIsSameType(subtype, baseType, resultOut);
+					checkNullabilityWhenBaseTypeIsParentType(subtype->isNullable, baseType->isNullable, resultOut);
 					break;
 				case TypeNameKind::U32:
 				case TypeNameKind::U64:
-					checkNullabilityWhenBaseTypeIsParentType(subtype, baseType, resultOut);
+					checkNullabilityWhenBaseTypeIsParentType(subtype->isNullable, baseType->isNullable, resultOut);
 					break;
 				case TypeNameKind::Any:
 					resultOut = true;
@@ -461,10 +430,10 @@ recheck:
 					resultOut = false;
 					break;
 				case TypeNameKind::U32:
-					checkNullabilityWhenIsSameType(subtype, baseType, resultOut);
+					checkNullabilityWhenBaseTypeIsParentType(subtype->isNullable, baseType->isNullable, resultOut);
 					break;
 				case TypeNameKind::U64:
-					checkNullabilityWhenBaseTypeIsParentType(subtype, baseType, resultOut);
+					checkNullabilityWhenBaseTypeIsParentType(subtype->isNullable, baseType->isNullable, resultOut);
 					break;
 				case TypeNameKind::Any:
 					resultOut = true;
@@ -482,7 +451,7 @@ recheck:
 					resultOut = false;
 					break;
 				case TypeNameKind::U64:
-					checkNullabilityWhenIsSameType(subtype, baseType, resultOut);
+					checkNullabilityWhenBaseTypeIsParentType(subtype->isNullable, baseType->isNullable, resultOut);
 					break;
 				case TypeNameKind::Any:
 					resultOut = true;
@@ -501,7 +470,7 @@ recheck:
 					resultOut = false;
 					break;
 				case TypeNameKind::USize:
-					checkNullabilityWhenIsSameType(subtype, baseType, resultOut);
+					checkNullabilityWhenBaseTypeIsParentType(subtype->isNullable, baseType->isNullable, resultOut);
 					break;
 				case TypeNameKind::Any:
 					resultOut = true;
@@ -514,10 +483,10 @@ recheck:
 		case TypeNameKind::F32:
 			switch (baseType->typeNameKind) {
 				case TypeNameKind::F32:
-					checkNullabilityWhenIsSameType(subtype, baseType, resultOut);
+					checkNullabilityWhenBaseTypeIsParentType(subtype->isNullable, baseType->isNullable, resultOut);
 					break;
 				case TypeNameKind::F64:
-					checkNullabilityWhenBaseTypeIsParentType(subtype, baseType, resultOut);
+					checkNullabilityWhenBaseTypeIsParentType(subtype->isNullable, baseType->isNullable, resultOut);
 					break;
 				case TypeNameKind::Any:
 					resultOut = true;
@@ -533,7 +502,7 @@ recheck:
 					resultOut = false;
 					break;
 				case TypeNameKind::F64:
-					checkNullabilityWhenIsSameType(subtype, baseType, resultOut);
+					checkNullabilityWhenBaseTypeIsParentType(subtype->isNullable, baseType->isNullable, resultOut);
 					break;
 				case TypeNameKind::Any:
 					resultOut = true;
@@ -546,10 +515,10 @@ recheck:
 		case TypeNameKind::String:
 			switch (baseType->typeNameKind) {
 				case TypeNameKind::Object:
-					checkNullabilityWhenBaseTypeIsParentType(subtype, baseType, resultOut);
+					checkNullabilityWhenBaseTypeIsParentType(subtype->isNullable, baseType->isNullable, resultOut);
 					break;
 				case TypeNameKind::String:
-					checkNullabilityWhenIsSameType(subtype, baseType, resultOut);
+					checkNullabilityWhenBaseTypeIsParentType(subtype->isNullable, baseType->isNullable, resultOut);
 					break;
 				case TypeNameKind::Any:
 					resultOut = true;
@@ -562,7 +531,7 @@ recheck:
 		case TypeNameKind::Bool:
 			switch (baseType->typeNameKind) {
 				case TypeNameKind::Bool:
-					checkNullabilityWhenIsSameType(subtype, baseType, resultOut);
+					checkNullabilityWhenBaseTypeIsParentType(subtype->isNullable, baseType->isNullable, resultOut);
 					break;
 				case TypeNameKind::Any:
 					resultOut = true;
@@ -575,7 +544,7 @@ recheck:
 		case TypeNameKind::Object:
 			switch (baseType->typeNameKind) {
 				case TypeNameKind::Object:
-					checkNullabilityWhenIsSameType(subtype, baseType, resultOut);
+					checkNullabilityWhenBaseTypeIsParentType(subtype->isNullable, baseType->isNullable, resultOut);
 					break;
 				case TypeNameKind::Any:
 					resultOut = true;
@@ -586,7 +555,14 @@ recheck:
 			}
 			break;
 		case TypeNameKind::Any:
-			resultOut = false;
+			switch (baseType->typeNameKind) {
+				case TypeNameKind::Any:
+					resultOut = true;
+					break;
+				default:
+					resultOut = false;
+					break;
+			}
 			break;
 		case TypeNameKind::Ref: {
 			switch (baseType->typeNameKind) {
@@ -609,7 +585,7 @@ recheck:
 
 					if (stm->getAstNodeType() == AstNodeType::Class)
 						// class <: object
-						checkNullabilityWhenBaseTypeIsParentType(subtype, baseType, resultOut);
+						checkNullabilityWhenBaseTypeIsParentType(subtype->isNullable, baseType->isNullable, resultOut);
 					else
 						resultOut = false;
 					break;
@@ -641,7 +617,7 @@ recheck:
 									SLKC_RETURN_IF_COMP_ERROR(isBaseOf(baseType->document->sharedFromThis(), typeMember.castTo<ClassNode>(), subtypeMember.castTo<ClassNode>(), resultOut));
 									if (resultOut) {
 										// subtype <: baseType
-										checkNullabilityWhenBaseTypeIsParentType(subtype, baseType, resultOut);
+										checkNullabilityWhenBaseTypeIsParentType(subtype->isNullable, baseType->isNullable, resultOut);
 									}
 									break;
 								case AstNodeType::GenericParam: {
@@ -658,7 +634,7 @@ recheck:
 												SLKC_RETURN_IF_COMP_ERROR(isBaseOf(baseType->document->sharedFromThis(), typeMember.castTo<ClassNode>(), gpBaseMember.castTo<ClassNode>(), resultOut));
 												if (resultOut) {
 													// subtype <: baseType
-													checkNullabilityWhenBaseTypeIsParentType(subtype, baseType, resultOut);
+													checkNullabilityWhenBaseTypeIsParentType(subtype->isNullable, baseType->isNullable, resultOut);
 												}
 											}
 										}
@@ -676,14 +652,14 @@ recheck:
 									SLKC_RETURN_IF_COMP_ERROR(isImplementedByClass(baseType->document->sharedFromThis(), typeMember.castTo<InterfaceNode>(), subtypeMember.castTo<ClassNode>(), resultOut));
 									if (resultOut) {
 										// subtype <: baseType
-										checkNullabilityWhenBaseTypeIsParentType(subtype, baseType, resultOut);
+										checkNullabilityWhenBaseTypeIsParentType(subtype->isNullable, baseType->isNullable, resultOut);
 									}
 									break;
 								case AstNodeType::Interface:
 									SLKC_RETURN_IF_COMP_ERROR(isImplementedByInterface(baseType->document->sharedFromThis(), typeMember.castTo<InterfaceNode>(), subtypeMember.castTo<InterfaceNode>(), resultOut));
 									if (resultOut) {
 										// subtype <: baseType
-										checkNullabilityWhenBaseTypeIsParentType(subtype, baseType, resultOut);
+										checkNullabilityWhenBaseTypeIsParentType(subtype->isNullable, baseType->isNullable, resultOut);
 									}
 									break;
 								case AstNodeType::Struct:
@@ -704,7 +680,7 @@ recheck:
 												SLKC_RETURN_IF_COMP_ERROR(isImplementedByClass(baseType->document->sharedFromThis(), typeMember.castTo<InterfaceNode>(), gpBaseMember.castTo<ClassNode>(), resultOut));
 												if (resultOut) {
 													// subtype <: baseType
-													checkNullabilityWhenBaseTypeIsParentType(subtype, baseType, resultOut);
+													checkNullabilityWhenBaseTypeIsParentType(subtype->isNullable, baseType->isNullable, resultOut);
 												}
 											}
 										}
@@ -717,7 +693,7 @@ recheck:
 													SLKC_RETURN_IF_COMP_ERROR(isImplementedByInterface(baseType->document->sharedFromThis(), typeMember.castTo<InterfaceNode>(), gpBaseMember.castTo<InterfaceNode>(), resultOut));
 													if (resultOut) {
 														// subtype <: baseType
-														checkNullabilityWhenBaseTypeIsParentType(subtype, baseType, resultOut);
+														checkNullabilityWhenBaseTypeIsParentType(subtype->isNullable, baseType->isNullable, resultOut);
 													}
 												}
 

@@ -311,17 +311,15 @@ SLAKE_API InternalExceptionPointer Runtime::_createNewCoroutineMajorFrame(
 	newMajorFrame.curFn = coroutine->overloading;
 	newMajorFrame.curCoroutine = coroutine;
 
-	newMajorFrame.offRegs = context->stackTop + coroutine->offRegs;
-
 	size_t offMajorFrame = context->stackTop;
 
 	if (coroutine->stackData) {
 		// Note: code commented causes stack addressing error, fix them and re-enable them.
-		// if (!context->alignStack(alignof(std::max_align_t)))
-			// return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
+		if (!context->alignStack(alignof(std::max_align_t)))
+			return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
 		coroutine->offStackTop = context->stackTop;
-		// char *initialData = context->alignedStackAlloc(coroutine->lenStackData, alignof(std::max_align_t));
-		char *initialData = context->stackAlloc(coroutine->lenStackData);
+		newMajorFrame.offRegs = context->stackTop + coroutine->offRegs;
+		char *initialData = context->alignedStackAlloc(coroutine->lenStackData, alignof(std::max_align_t));
 		if (!initialData) {
 			return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
 		}

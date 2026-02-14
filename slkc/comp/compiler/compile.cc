@@ -1932,9 +1932,9 @@ SLKC_API peff::Option<CompilationError> slkc::compileModuleLikeNode(
 					if (i->body) {
 						NormalCompilationContext compContext(compileEnv, nullptr);
 
-						for (auto j : i->body->body) {
-							PathEnv rootPathEnv(compileEnv->allocator.get());
+						PathEnv rootPathEnv(compileEnv->allocator.get());
 
+						for (auto j : i->body->body) {
 							if ((e = compileStmt(compileEnv, &compContext, &rootPathEnv, j))) {
 								if (e->errorKind == CompilationErrorKind::OutOfMemory)
 									return e;

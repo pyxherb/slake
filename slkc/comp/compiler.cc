@@ -5,24 +5,58 @@ using namespace slkc;
 size_t slkc::szDefaultParseThreadStack = 1024 * 1024 * 2;
 size_t slkc::szDefaultCompileThreadStack = 1024 * 1024 * 32;
 
-SLAKE_API AstNodePtr<TypeNameNode> PathEnv::lookupVarTypeOverride(AstNodePtr<VarNode> varNode) {
-	for (PathEnv* i = this; i; i = i->parent) {
-		if (auto it = i->varTypeOverrides.find(varNode);
-			it != i->varTypeOverrides.end()) {
-			return it.value();
+SLKC_API PathPossibility slkc::combinePossibility(PathPossibility outer, PathPossibility inner) noexcept {
+	switch (outer) {
+		case PathPossibility::Never:
+			return PathPossibility::Never;
+		case PathPossibility::May:
+			switch (inner) {
+				case PathPossibility::May:
+				case PathPossibility::Must:
+					return PathPossibility::May;
+				case PathPossibility::Never:
+					return PathPossibility::Never;
+				default:
+					break;
+			}
+			std::terminate();
+		case PathPossibility::Must:
+			switch (inner) {
+				case PathPossibility::May:
+					return PathPossibility::May;
+				case PathPossibility::Must:
+					return PathPossibility::Must;
+				case PathPossibility::Never:
+					return PathPossibility::Never;
+				default:
+					break;
+			}
+			std::terminate();
+		default:
+			break;
+	}
+	std::terminate();
+}
+
+SLAKE_API peff::Option<NullOverrideType> PathEnv::lookupVarNullOverride(const AstNodePtr<VarNode> &varNode) {
+	for (PathEnv *i = this; i; i = i->parent) {
+		if (auto it = i->varNullOverrides.find(varNode);
+			it != i->varNullOverrides.end()) {
+			NullOverrideType v = it.value();
+			return std::move(v);
 		}
 	}
 	return {};
 }
 
-SLAKE_API peff::Option<CompilationError> PathEnv::setVarTypeOverride(AstNodePtr<VarNode> varNode, AstNodePtr<TypeNameNode> type) {
-	if (!varTypeOverrides.insert(std::move(varNode), std::move(type)))
+SLAKE_API peff::Option<CompilationError> PathEnv::setVarNullOverride(AstNodePtr<VarNode> varNode, NullOverrideType type) {
+	if (!varNullOverrides.insert(std::move(varNode), std::move(type)))
 		return genOutOfMemoryCompError();
-	return genOutOfMemoryCompError();
+	return {};
 }
 
-SLAKE_API void PathEnv::removeVarTypeOverride(const AstNodePtr<VarNode>& varNode) {
-	varTypeOverrides.remove(varNode);
+SLAKE_API void PathEnv::removeVarNullOverride(const AstNodePtr<VarNode> &varNode) {
+	varNullOverrides.remove(varNode);
 }
 
 SLKC_API CompilationContext::CompilationContext(CompilationContext *parent) : parent(parent) {
@@ -79,7 +113,7 @@ SLKC_API uint32_t NormalCompilationContext::getLabelOffset(uint32_t labelId) con
 	return labels.at(labelId)->offset;
 }
 
-SLKC_API peff::Option<uint32_t> NormalCompilationContext::getLabelIndexByName(const std::string_view& sv) const {
+SLKC_API peff::Option<uint32_t> NormalCompilationContext::getLabelIndexByName(const std::string_view &sv) const {
 	if (auto it = labelNameIndices.find(sv); it != labelNameIndices.end())
 		return it.value();
 	return {};

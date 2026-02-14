@@ -115,7 +115,7 @@ SLKC_API peff::Option<CompilationError> slkc::dumpIdRef(
 			break;
 		case slake::ValueType::Bool:
 			SLKC_RETURN_IF_COMP_ERROR(writer->writeU8((uint8_t)slake::slxfmt::ValueType::Bool));
-			SLKC_RETURN_IF_COMP_ERROR(writer->writeBool(value.getI8()));
+			SLKC_RETURN_IF_COMP_ERROR(writer->writeBool(value.getBool()));
 			break;
 		case slake::ValueType::TypeName:
 			SLKC_RETURN_IF_COMP_ERROR(writer->writeU8((uint8_t)slake::slxfmt::ValueType::TypeName));

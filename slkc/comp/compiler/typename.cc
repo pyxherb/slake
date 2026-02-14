@@ -1754,6 +1754,30 @@ SLKC_API peff::Option<slkc::CompilationError> slkc::typeNameCmp(AstNodePtr<TypeN
 		out = 1;
 		return {};
 	}
+	if (((uint8_t)lhs->isFinal) < ((uint8_t)rhs->isFinal)) {
+		out = -1;
+		return {};
+	}
+	if (((uint8_t)lhs->isFinal) > ((uint8_t)rhs->isFinal)) {
+		out = 1;
+		return {};
+	}
+	if (((uint8_t)lhs->isLocal) < ((uint8_t)rhs->isLocal)) {
+		out = -1;
+		return {};
+	}
+	if (((uint8_t)lhs->isLocal) > ((uint8_t)rhs->isLocal)) {
+		out = 1;
+		return {};
+	}
+	if (((uint8_t)lhs->isNullable) < ((uint8_t)rhs->isNullable)) {
+		out = -1;
+		return {};
+	}
+	if (((uint8_t)lhs->isNullable) > ((uint8_t)rhs->isNullable)) {
+		out = 1;
+		return {};
+	}
 	switch (lhs->typeNameKind) {
 		case TypeNameKind::Custom: {
 			AstNodePtr<CustomTypeNameNode>

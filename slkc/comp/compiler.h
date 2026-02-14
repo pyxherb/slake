@@ -32,18 +32,43 @@ namespace slkc {
 		SLAKE_FORCEINLINE Label(peff::String &&name) : name(std::move(name)) {}
 	};
 
+	enum class NullOverrideType : uint8_t {
+		Nullify = 0,
+		Denullify
+	};
+
+	enum class PathPossibility : uint8_t {
+		Never = 0,	// The path will never consist of a property.
+		May,		// The path may consist of a property.
+		Must,		// The path will always consist of a property.
+	};
+
+	SLKC_API PathPossibility combinePossibility(PathPossibility outer, PathPossibility inner) noexcept;
+
 	struct PathEnv {
 		PathEnv *parent = nullptr;
-		peff::Map<AstNodePtr<VarNode>, AstNodePtr<TypeNameNode>> varTypeOverrides;
+		peff::Map<AstNodePtr<VarNode>, NullOverrideType> varNullOverrides;
 
-		SLAKE_FORCEINLINE PathEnv(peff::Alloc *allocator) noexcept : varTypeOverrides(allocator) {
+		/// @brief Indicates if the path will be executed at least one times.
+		PathPossibility execPossibility = PathPossibility::Must;
+
+		/// @brief Indicates if the path will return from the function.
+		PathPossibility returnPossibility = PathPossibility::Never;
+
+		/// @brief Indicates if the path will never halt.
+		PathPossibility noReturnPossibility = PathPossibility::Never;
+
+		/// @brief Indicates if the path will break current control flow (e.g. jump out from current loop).
+		PathPossibility breakPossibility = PathPossibility::Never;
+
+		SLAKE_FORCEINLINE PathEnv(peff::Alloc *allocator) noexcept : varNullOverrides(allocator) {
 		}
 		PathEnv(PathEnv &&) noexcept = default;
 		SLAKE_FORCEINLINE ~PathEnv() {}
 
-		SLAKE_API AstNodePtr<TypeNameNode> lookupVarTypeOverride(AstNodePtr<VarNode> varNode);
-		SLAKE_API peff::Option<CompilationError> setVarTypeOverride(AstNodePtr<VarNode> varNode, AstNodePtr<TypeNameNode> type);
-		SLAKE_API void removeVarTypeOverride(const AstNodePtr<VarNode> &varNode);
+		SLAKE_API peff::Option<NullOverrideType> lookupVarNullOverride(const AstNodePtr<VarNode> &varNode);
+		SLAKE_API peff::Option<CompilationError> setVarNullOverride(AstNodePtr<VarNode> varNode, NullOverrideType type);
+		SLAKE_API void removeVarNullOverride(const AstNodePtr<VarNode> &varNode);
 	};
 
 	class CompilationContext {
@@ -262,6 +287,7 @@ namespace slkc {
 
 	struct CompileExprResult {
 		AstNodePtr<TypeNameNode> evaluatedType;
+		AstNodePtr<MemberNode> evaluatedFinalMember;
 
 		// For parameter name query, etc, if exists.
 		AstNodePtr<FnNode> callTargetFnSlot;
@@ -287,7 +313,8 @@ namespace slkc {
 		ExprEvalPurpose evalPurpose,
 		AstNodePtr<TypeNameNode> desiredType,
 		AstNodePtr<ExprNode> operand,
-		AstNodePtr<TypeNameNode> operandType);
+		AstNodePtr<TypeNameNode> operandType,
+		CompileExprResult &resultOut);
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> _compileSimpleBinaryExpr(
 		CompileEnv *compileEnv,
 		CompilationContext *compilationContext,

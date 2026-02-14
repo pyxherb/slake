@@ -10,6 +10,7 @@ SLKC_API TypeNameNode::TypeNameNode(const TypeNameNode &rhs, peff::Alloc *selfAl
 	  typeNameKind(rhs.typeNameKind),
 	  isFinal(rhs.isFinal),
 	  isLocal(rhs.isLocal),
+	  isNullable(rhs.isNullable),
 	  idxFinalToken(rhs.idxFinalToken),
 	  idxLocalToken(rhs.idxLocalToken) {
 }

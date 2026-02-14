@@ -29,6 +29,7 @@ It supports:
 
 * Compiler 🕓
   * Type Checker 🕓
+  * Nullable Detection 🕓
   * Type-based Generic ✅
   * Value-based Generic ✅
   * Function Invoking ✅

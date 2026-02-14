@@ -188,8 +188,8 @@ peff::Option<CompilationError> slkc::_compileSimpleLAndBinaryExpr(
 			uint32_t cmpEndLabelId;
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocLabel(cmpEndLabelId));
 
-			if ((e = _compileOrCastOperand(compileEnv, compilationContext, pathEnv, lhsReg, ExprEvalPurpose::RValue, boolType.template castTo<TypeNameNode>(), expr->lhs, lhsType))) {
-				if (auto re = _compileOrCastOperand(compileEnv, compilationContext, pathEnv, rhsReg, ExprEvalPurpose::RValue, boolType.template castTo<TypeNameNode>(), expr->rhs, rhsType); re) {
+			if ((e = _compileOrCastOperand(compileEnv, compilationContext, pathEnv, lhsReg, ExprEvalPurpose::RValue, boolType.castTo<TypeNameNode>(), expr->lhs, lhsType))) {
+				if (auto re = _compileOrCastOperand(compileEnv, compilationContext, pathEnv, rhsReg, ExprEvalPurpose::RValue, boolType.castTo<TypeNameNode>(), expr->rhs, rhsType); re) {
 					if (!compileEnv->errors.pushBack(std::move(*e))) {
 						return genOutOfMemoryCompError();
 					}
@@ -213,7 +213,7 @@ peff::Option<CompilationError> slkc::_compileSimpleLAndBinaryExpr(
 
 			compilationContext->setLabelOffset(postBranchLabelId, compilationContext->getCurInsOff());
 
-			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileEnv, compilationContext, pathEnv, rhsReg, ExprEvalPurpose::RValue, boolType.template castTo<TypeNameNode>(), expr->rhs, rhsType));
+			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileEnv, compilationContext, pathEnv, rhsReg, ExprEvalPurpose::RValue, boolType.castTo<TypeNameNode>(), expr->rhs, rhsType));
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
 				idxSld,
 				slake::Opcode::LAND,
@@ -281,8 +281,8 @@ peff::Option<CompilationError> slkc::_compileSimpleLOrBinaryExpr(
 			uint32_t cmpEndLabelId;
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocLabel(cmpEndLabelId));
 
-			if ((e = _compileOrCastOperand(compileEnv, compilationContext, pathEnv, lhsReg, ExprEvalPurpose::RValue, boolType.template castTo<TypeNameNode>(), expr->lhs, lhsType))) {
-				if (auto re = _compileOrCastOperand(compileEnv, compilationContext, pathEnv, rhsReg, ExprEvalPurpose::RValue, boolType.template castTo<TypeNameNode>(), expr->rhs, rhsType); re) {
+			if ((e = _compileOrCastOperand(compileEnv, compilationContext, pathEnv, lhsReg, ExprEvalPurpose::RValue, boolType.castTo<TypeNameNode>(), expr->lhs, lhsType))) {
+				if (auto re = _compileOrCastOperand(compileEnv, compilationContext, pathEnv, rhsReg, ExprEvalPurpose::RValue, boolType.castTo<TypeNameNode>(), expr->rhs, rhsType); re) {
 					if (!compileEnv->errors.pushBack(std::move(*e))) {
 						return genOutOfMemoryCompError();
 					}
@@ -306,7 +306,7 @@ peff::Option<CompilationError> slkc::_compileSimpleLOrBinaryExpr(
 
 			compilationContext->setLabelOffset(postBranchLabelId, compilationContext->getCurInsOff());
 
-			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileEnv, compilationContext, pathEnv, rhsReg, ExprEvalPurpose::RValue, boolType.template castTo<TypeNameNode>(), expr->rhs, rhsType));
+			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileEnv, compilationContext, pathEnv, rhsReg, ExprEvalPurpose::RValue, boolType.castTo<TypeNameNode>(), expr->rhs, rhsType));
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
 				idxSld,
 				slake::Opcode::LAND,
@@ -548,7 +548,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 			case BinaryOp::Cmp: {
 				AstNodePtr<MemberNode> clsNode, operatorSlot;
 
-				SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(compileEnv, decayedRhsType->document->sharedFromThis(), decayedRhsType.template castTo<CustomTypeNameNode>(), clsNode));
+				SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(compileEnv, decayedRhsType->document->sharedFromThis(), decayedRhsType.castTo<CustomTypeNameNode>(), clsNode));
 
 				IdRefEntry e(compileEnv->allocator.get());
 
@@ -584,11 +584,11 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 					return genOutOfMemoryCompError();
 				}
 
-				if (!operatorParamTypes.pushBack(voidType.template castTo<TypeNameNode>())) {
+				if (!operatorParamTypes.pushBack(voidType.castTo<TypeNameNode>())) {
 					return genOutOfMemoryCompError();
 				}
 
-				SLKC_RETURN_IF_COMP_ERROR(determineFnOverloading(compileEnv, operatorSlot.template castTo<FnNode>(), operatorParamTypes.data(), operatorParamTypes.size(), false, matchedOverloadingIndices));
+				SLKC_RETURN_IF_COMP_ERROR(determineFnOverloading(compileEnv, operatorSlot.castTo<FnNode>(), operatorParamTypes.data(), operatorParamTypes.size(), false, matchedOverloadingIndices));
 
 				switch (matchedOverloadingIndices.size()) {
 					case 0:
@@ -890,7 +890,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								resultOut,
 								slake::Opcode::LAND,
 								sldIndex));
-						resultOut.evaluatedType = boolType.template castTo<TypeNameNode>();
+						resultOut.evaluatedType = boolType.castTo<TypeNameNode>();
 						break;
 					case BinaryOp::LOr:
 						SLKC_RETURN_IF_COMP_ERROR(
@@ -907,7 +907,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								resultOut,
 								slake::Opcode::LOR,
 								sldIndex));
-						resultOut.evaluatedType = boolType.template castTo<TypeNameNode>();
+						resultOut.evaluatedType = boolType.castTo<TypeNameNode>();
 						break;
 					case BinaryOp::Shl:
 						SLKC_RETURN_IF_COMP_ERROR(
@@ -919,7 +919,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								evalPurpose,
 								decayedLhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								decayedRhsType,
-								u32Type.template castTo<TypeNameNode>(),
+								u32Type.castTo<TypeNameNode>(),
 								ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
@@ -937,7 +937,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								evalPurpose,
 								decayedLhsType, promotionalTypeName, ExprEvalPurpose::RValue,
 								decayedRhsType,
-								u32Type.template castTo<TypeNameNode>(),
+								u32Type.castTo<TypeNameNode>(),
 								ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
@@ -1102,7 +1102,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 									compileEnv->allocator.get(),
 									compileEnv->allocator.get(),
 									compileEnv->document)
-									.template castTo<TypeNameNode>(),
+									.castTo<TypeNameNode>(),
 								ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
@@ -1124,7 +1124,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 									compileEnv->allocator.get(),
 									compileEnv->allocator.get(),
 									compileEnv->document)
-									.template castTo<TypeNameNode>(),
+									.castTo<TypeNameNode>(),
 								ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
@@ -1147,7 +1147,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								resultOut,
 								slake::Opcode::EQ,
 								sldIndex));
-						resultOut.evaluatedType = boolType.template castTo<TypeNameNode>();
+						resultOut.evaluatedType = boolType.castTo<TypeNameNode>();
 						break;
 					case BinaryOp::Neq:
 					case BinaryOp::StrictNeq:
@@ -1164,7 +1164,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								resultOut,
 								slake::Opcode::NEQ,
 								sldIndex));
-						resultOut.evaluatedType = boolType.template castTo<TypeNameNode>();
+						resultOut.evaluatedType = boolType.castTo<TypeNameNode>();
 						break;
 					case BinaryOp::Lt:
 						SLKC_RETURN_IF_COMP_ERROR(
@@ -1180,7 +1180,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								resultOut,
 								slake::Opcode::LT,
 								sldIndex));
-						resultOut.evaluatedType = boolType.template castTo<TypeNameNode>();
+						resultOut.evaluatedType = boolType.castTo<TypeNameNode>();
 						break;
 					case BinaryOp::Gt:
 						SLKC_RETURN_IF_COMP_ERROR(
@@ -1196,7 +1196,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								resultOut,
 								slake::Opcode::GT,
 								sldIndex));
-						resultOut.evaluatedType = boolType.template castTo<TypeNameNode>();
+						resultOut.evaluatedType = boolType.castTo<TypeNameNode>();
 						break;
 					case BinaryOp::LtEq:
 						SLKC_RETURN_IF_COMP_ERROR(
@@ -1212,7 +1212,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								resultOut,
 								slake::Opcode::LTEQ,
 								sldIndex));
-						resultOut.evaluatedType = boolType.template castTo<TypeNameNode>();
+						resultOut.evaluatedType = boolType.castTo<TypeNameNode>();
 						break;
 					case BinaryOp::GtEq:
 						SLKC_RETURN_IF_COMP_ERROR(
@@ -1228,7 +1228,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								resultOut,
 								slake::Opcode::GTEQ,
 								sldIndex));
-						resultOut.evaluatedType = boolType.template castTo<TypeNameNode>();
+						resultOut.evaluatedType = boolType.castTo<TypeNameNode>();
 						break;
 					case BinaryOp::Cmp:
 						SLKC_RETURN_IF_COMP_ERROR(
@@ -1244,7 +1244,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								resultOut,
 								slake::Opcode::CMP,
 								sldIndex));
-						resultOut.evaluatedType = boolType.template castTo<TypeNameNode>();
+						resultOut.evaluatedType = boolType.castTo<TypeNameNode>();
 						break;
 					default:
 						return CompilationError(expr->tokenRange, CompilationErrorKind::OperatorNotFound);
@@ -1349,7 +1349,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								resultOut,
 								slake::Opcode::LAND,
 								sldIndex));
-						resultOut.evaluatedType = boolType.template castTo<TypeNameNode>();
+						resultOut.evaluatedType = boolType.castTo<TypeNameNode>();
 						break;
 					case BinaryOp::LOr:
 						SLKC_RETURN_IF_COMP_ERROR(
@@ -1366,7 +1366,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								resultOut,
 								slake::Opcode::LOR,
 								sldIndex));
-						resultOut.evaluatedType = boolType.template castTo<TypeNameNode>();
+						resultOut.evaluatedType = boolType.castTo<TypeNameNode>();
 						break;
 					case BinaryOp::Assign:
 						SLKC_RETURN_IF_COMP_ERROR(
@@ -1477,7 +1477,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 									compileEnv->allocator.get(),
 									compileEnv->allocator.get(),
 									compileEnv->document)
-									.template castTo<TypeNameNode>(),
+									.castTo<TypeNameNode>(),
 								ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
@@ -1499,7 +1499,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 									compileEnv->allocator.get(),
 									compileEnv->allocator.get(),
 									compileEnv->document)
-									.template castTo<TypeNameNode>(),
+									.castTo<TypeNameNode>(),
 								ExprEvalPurpose::RValue,
 								resultRegOut,
 								resultOut,
@@ -1522,7 +1522,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								resultOut,
 								slake::Opcode::EQ,
 								sldIndex));
-						resultOut.evaluatedType = boolType.template castTo<TypeNameNode>();
+						resultOut.evaluatedType = boolType.castTo<TypeNameNode>();
 						break;
 					case BinaryOp::Neq:
 					case BinaryOp::StrictNeq:
@@ -1539,7 +1539,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								resultOut,
 								slake::Opcode::NEQ,
 								sldIndex));
-						resultOut.evaluatedType = boolType.template castTo<TypeNameNode>();
+						resultOut.evaluatedType = boolType.castTo<TypeNameNode>();
 						break;
 					case BinaryOp::Lt:
 						SLKC_RETURN_IF_COMP_ERROR(
@@ -1555,7 +1555,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								resultOut,
 								slake::Opcode::LT,
 								sldIndex));
-						resultOut.evaluatedType = boolType.template castTo<TypeNameNode>();
+						resultOut.evaluatedType = boolType.castTo<TypeNameNode>();
 						break;
 					case BinaryOp::Gt:
 						SLKC_RETURN_IF_COMP_ERROR(
@@ -1571,7 +1571,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								resultOut,
 								slake::Opcode::GT,
 								sldIndex));
-						resultOut.evaluatedType = boolType.template castTo<TypeNameNode>();
+						resultOut.evaluatedType = boolType.castTo<TypeNameNode>();
 						break;
 					case BinaryOp::LtEq:
 						SLKC_RETURN_IF_COMP_ERROR(
@@ -1587,7 +1587,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								resultOut,
 								slake::Opcode::LTEQ,
 								sldIndex));
-						resultOut.evaluatedType = boolType.template castTo<TypeNameNode>();
+						resultOut.evaluatedType = boolType.castTo<TypeNameNode>();
 						break;
 					case BinaryOp::GtEq:
 						SLKC_RETURN_IF_COMP_ERROR(
@@ -1603,7 +1603,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								resultOut,
 								slake::Opcode::GTEQ,
 								sldIndex));
-						resultOut.evaluatedType = boolType.template castTo<TypeNameNode>();
+						resultOut.evaluatedType = boolType.castTo<TypeNameNode>();
 						break;
 					case BinaryOp::Cmp:
 						SLKC_RETURN_IF_COMP_ERROR(
@@ -1619,7 +1619,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								resultOut,
 								slake::Opcode::CMP,
 								sldIndex));
-						resultOut.evaluatedType = boolType.template castTo<TypeNameNode>();
+						resultOut.evaluatedType = boolType.castTo<TypeNameNode>();
 						break;
 					default:
 						return CompilationError(expr->tokenRange, CompilationErrorKind::OperatorNotFound);
@@ -1691,7 +1691,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								resultOut,
 								slake::Opcode::LAND,
 								sldIndex));
-						resultOut.evaluatedType = boolType.template castTo<TypeNameNode>();
+						resultOut.evaluatedType = boolType.castTo<TypeNameNode>();
 						break;
 					case BinaryOp::LOr:
 						SLKC_RETURN_IF_COMP_ERROR(
@@ -1708,7 +1708,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								resultOut,
 								slake::Opcode::LOR,
 								sldIndex));
-						resultOut.evaluatedType = boolType.template castTo<TypeNameNode>();
+						resultOut.evaluatedType = boolType.castTo<TypeNameNode>();
 						break;
 					case BinaryOp::Assign:
 						SLKC_RETURN_IF_COMP_ERROR(
@@ -1788,7 +1788,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								resultOut,
 								slake::Opcode::EQ,
 								sldIndex));
-						resultOut.evaluatedType = boolType.template castTo<TypeNameNode>();
+						resultOut.evaluatedType = boolType.castTo<TypeNameNode>();
 						break;
 					case BinaryOp::Neq:
 					case BinaryOp::StrictNeq:
@@ -1805,7 +1805,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								resultOut,
 								slake::Opcode::NEQ,
 								sldIndex));
-						resultOut.evaluatedType = boolType.template castTo<TypeNameNode>();
+						resultOut.evaluatedType = boolType.castTo<TypeNameNode>();
 						break;
 					default:
 						return CompilationError(expr->tokenRange, CompilationErrorKind::OperatorNotFound);
@@ -1828,7 +1828,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								resultOut,
 								slake::Opcode::EQ,
 								sldIndex));
-						resultOut.evaluatedType = boolType.template castTo<TypeNameNode>();
+						resultOut.evaluatedType = boolType.castTo<TypeNameNode>();
 						break;
 					case BinaryOp::StrictNeq:
 						SLKC_RETURN_IF_COMP_ERROR(
@@ -1844,7 +1844,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								resultOut,
 								slake::Opcode::NEQ,
 								sldIndex));
-						resultOut.evaluatedType = boolType.template castTo<TypeNameNode>();
+						resultOut.evaluatedType = boolType.castTo<TypeNameNode>();
 						break;
 					default:
 						return CompilationError(expr->tokenRange, CompilationErrorKind::OperatorNotFound);
@@ -1867,7 +1867,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								resultOut,
 								slake::Opcode::EQ,
 								sldIndex));
-						resultOut.evaluatedType = boolType.template castTo<TypeNameNode>();
+						resultOut.evaluatedType = boolType.castTo<TypeNameNode>();
 						break;
 					case BinaryOp::StrictNeq:
 						SLKC_RETURN_IF_COMP_ERROR(
@@ -1883,7 +1883,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								resultOut,
 								slake::Opcode::NEQ,
 								sldIndex));
-						resultOut.evaluatedType = boolType.template castTo<TypeNameNode>();
+						resultOut.evaluatedType = boolType.castTo<TypeNameNode>();
 						break;
 					case BinaryOp::Subscript: {
 						AstNodePtr<TypeNameNode> evaluatedType;
@@ -1891,8 +1891,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								  compileEnv->allocator.get(),
 								  compileEnv->allocator.get(),
 								  compileEnv->document,
-								  decayedLhsType.template castTo<ArrayTypeNameNode>()->elementType)
-									.template castTo<TypeNameNode>())) {
+								  decayedLhsType.castTo<ArrayTypeNameNode>()->elementType)
+									.castTo<TypeNameNode>())) {
 							return genOutOfMemoryCompError();
 						}
 						peff::Option<CompilationError> e;
@@ -1910,7 +1910,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(rhsReg));
 
 								if ((e = _compileOrCastOperand(compileEnv, compilationContext, pathEnv, lhsReg, ExprEvalPurpose::RValue, lhsType, expr->lhs, lhsType))) {
-									if (auto re = _compileOrCastOperand(compileEnv, compilationContext, pathEnv, rhsReg, ExprEvalPurpose::RValue, u32Type.template castTo<TypeNameNode>(), expr->rhs, rhsType); re) {
+									if (auto re = _compileOrCastOperand(compileEnv, compilationContext, pathEnv, rhsReg, ExprEvalPurpose::RValue, u32Type.castTo<TypeNameNode>(), expr->rhs, rhsType); re) {
 										if (!compileEnv->errors.pushBack(std::move(*e))) {
 											return genOutOfMemoryCompError();
 										}
@@ -1920,7 +1920,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 										return e;
 									}
 								}
-								SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileEnv, compilationContext, pathEnv, rhsReg, ExprEvalPurpose::RValue, u32Type.template castTo<TypeNameNode>(), expr->rhs, rhsType));
+								SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileEnv, compilationContext, pathEnv, rhsReg, ExprEvalPurpose::RValue, u32Type.castTo<TypeNameNode>(), expr->rhs, rhsType));
 								SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
 									sldIndex,
 									slake::Opcode::AT,
@@ -1943,7 +1943,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(rhsReg));
 
 								if ((e = _compileOrCastOperand(compileEnv, compilationContext, pathEnv, lhsReg, ExprEvalPurpose::RValue, lhsType, expr->lhs, lhsType))) {
-									if (auto re = _compileOrCastOperand(compileEnv, compilationContext, pathEnv, rhsReg, ExprEvalPurpose::RValue, u32Type.template castTo<TypeNameNode>(), expr->rhs, rhsType); re) {
+									if (auto re = _compileOrCastOperand(compileEnv, compilationContext, pathEnv, rhsReg, ExprEvalPurpose::RValue, u32Type.castTo<TypeNameNode>(), expr->rhs, rhsType); re) {
 										if (!compileEnv->errors.pushBack(std::move(*e))) {
 											return genOutOfMemoryCompError();
 										}
@@ -1953,7 +1953,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 										return e;
 									}
 								}
-								SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileEnv, compilationContext, pathEnv, rhsReg, ExprEvalPurpose::RValue, u32Type.template castTo<TypeNameNode>(), expr->rhs, rhsType));
+								SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileEnv, compilationContext, pathEnv, rhsReg, ExprEvalPurpose::RValue, u32Type.castTo<TypeNameNode>(), expr->rhs, rhsType));
 
 								uint32_t tmpReg;
 
@@ -2033,7 +2033,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 					case BinaryOp::Cmp: {
 						AstNodePtr<MemberNode> clsNode, operatorSlot;
 
-						SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(compileEnv, decayedLhsType->document->sharedFromThis(), decayedLhsType.template castTo<CustomTypeNameNode>(), clsNode));
+						SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(compileEnv, decayedLhsType->document->sharedFromThis(), decayedLhsType.castTo<CustomTypeNameNode>(), clsNode));
 
 						IdRefEntry e(compileEnv->allocator.get());
 
@@ -2063,7 +2063,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 							return genOutOfMemoryCompError();
 						}
 
-						SLKC_RETURN_IF_COMP_ERROR(determineFnOverloading(compileEnv, operatorSlot.template castTo<FnNode>(), operatorParamTypes.data(), operatorParamTypes.size(), false, matchedOverloadingIndices));
+						SLKC_RETURN_IF_COMP_ERROR(determineFnOverloading(compileEnv, operatorSlot.castTo<FnNode>(), operatorParamTypes.data(), operatorParamTypes.size(), false, matchedOverloadingIndices));
 
 						switch (matchedOverloadingIndices.size()) {
 							case 0:

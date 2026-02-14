@@ -10,7 +10,7 @@ SLKC_API AstNodePtr<AstNode> ClassNode::doDuplicate(peff::Alloc *newAllocator, D
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 
 SLKC_API ClassNode::ClassNode(
@@ -73,7 +73,8 @@ SLKC_API ClassNode::ClassNode(const ClassNode &rhs, peff::Alloc *allocator, Dupl
 	}
 
 	for (const auto &[k, v] : rhs.genericParamIndices) {
-		if (!context.pushTask([this, v, &rhs, allocator, &context]() -> bool {
+		auto capturedV = v;
+		if (!context.pushTask([this, v = capturedV, &rhs, allocator, &context]() -> bool {
 				if (!genericParamIndices.insert(genericParams.at(v)->name, +v)) {
 					return false;
 				}
@@ -128,7 +129,7 @@ SLKC_API AstNodePtr<AstNode> InterfaceNode::doDuplicate(peff::Alloc *newAllocato
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 
 SLKC_API InterfaceNode::InterfaceNode(
@@ -181,7 +182,8 @@ SLKC_API InterfaceNode::InterfaceNode(const InterfaceNode &rhs, peff::Alloc *all
 	}
 
 	for (const auto &[k, v] : rhs.genericParamIndices) {
-		if (!context.pushTask([this, v, &rhs, allocator, &context]() -> bool {
+		auto capturedV = v;
+		if (!context.pushTask([this, v = capturedV, &rhs, allocator, &context]() -> bool {
 				if (!genericParamIndices.insert(genericParams.at(v)->name, +v)) {
 					return false;
 				}
@@ -225,7 +227,7 @@ SLKC_API peff::Option<CompilationError> InterfaceNode::isCyclicInherited(bool &w
 SLKC_API peff::Option<CompilationError> InterfaceNode::updateCyclicInheritedStatus() {
 	peff::Set<AstNodePtr<InterfaceNode>> involvedInterfaces(document->allocator.get());
 
-	if (auto e = collectInvolvedInterfaces(document->sharedFromThis(), sharedFromThis().template castTo<InterfaceNode>(), involvedInterfaces, true); e) {
+	if (auto e = collectInvolvedInterfaces(document->sharedFromThis(), sharedFromThis().castTo<InterfaceNode>(), involvedInterfaces, true); e) {
 		if (e->errorKind == CompilationErrorKind::CyclicInheritedInterface) {
 			isCyclicInheritedFlag = true;
 			isCyclicInheritanceChecked = true;
@@ -252,7 +254,7 @@ SLKC_API AstNodePtr<AstNode> StructNode::doDuplicate(peff::Alloc *newAllocator, 
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 
 SLKC_API StructNode::StructNode(
@@ -305,7 +307,8 @@ SLKC_API StructNode::StructNode(const StructNode &rhs, peff::Alloc *allocator, D
 	}
 
 	for (const auto &[k, v] : rhs.genericParamIndices) {
-		if (!context.pushTask([this, v, &rhs, allocator, &context]() -> bool {
+		auto capturedV = v;
+		if (!context.pushTask([this, v = capturedV, &rhs, allocator, &context]() -> bool {
 				if (!genericParamIndices.insert(genericParams.at(v)->name, +v)) {
 					return false;
 				}
@@ -695,13 +698,13 @@ SLKC_API peff::Option<CompilationError> slkc::isImplementedByClass(
 		}
 
 		AstNodePtr<MemberNode> m;
-		SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(nullptr, document, currentType.template castTo<CustomTypeNameNode>(), m));
+		SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(nullptr, document, currentType.castTo<CustomTypeNameNode>(), m));
 
 		if (m->getAstNodeType() != AstNodeType::Class) {
 			goto malformed;
 		}
 
-		currentClass = m.template castTo<ClassNode>();
+		currentClass = m.castTo<ClassNode>();
 
 		// Make sure that the function will work properly when the class has cyclic inheritance.
 		if (walkedClasses.contains(currentClass)) {
@@ -713,7 +716,7 @@ SLKC_API peff::Option<CompilationError> slkc::isImplementedByClass(
 			AstNodePtr<TypeNameNode> t = derived->implTypes.at(i);
 
 			AstNodePtr<MemberNode> m;
-			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(nullptr, document, t.template castTo<CustomTypeNameNode>(), m));
+			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(nullptr, document, t.castTo<CustomTypeNameNode>(), m));
 
 			if (!m) {
 				goto malformed;
@@ -723,7 +726,7 @@ SLKC_API peff::Option<CompilationError> slkc::isImplementedByClass(
 				goto malformed;
 			}
 
-			AstNodePtr<InterfaceNode> interfaceNode = m.template castTo<InterfaceNode>();
+			AstNodePtr<InterfaceNode> interfaceNode = m.castTo<InterfaceNode>();
 
 			if (interfaceNode == base) {
 				whetherOut = true;
@@ -771,7 +774,7 @@ SLKC_API peff::Option<CompilationError> slkc::isBaseOf(
 		}
 
 		AstNodePtr<MemberNode> m;
-		SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(nullptr, document, currentType.template castTo<CustomTypeNameNode>(), m));
+		SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(nullptr, document, currentType.castTo<CustomTypeNameNode>(), m));
 
 		if (!m) {
 			goto malformed;
@@ -781,7 +784,7 @@ SLKC_API peff::Option<CompilationError> slkc::isBaseOf(
 			goto malformed;
 		}
 
-		currentClass = m.template castTo<ClassNode>();
+		currentClass = m.castTo<ClassNode>();
 
 		// Make sure that the function will work properly when the class has cyclic inheritance.
 		if (walkedClasses.contains(currentClass)) {
@@ -814,7 +817,7 @@ SLKC_API AstNodePtr<AstNode> EnumItemNode::doDuplicate(peff::Alloc *newAllocator
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 
 SLKC_API EnumItemNode::EnumItemNode(
@@ -853,7 +856,7 @@ SLKC_API AstNodePtr<AstNode> ConstEnumNode::doDuplicate(peff::Alloc *newAllocato
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 
 SLKC_API ConstEnumNode::ConstEnumNode(
@@ -890,7 +893,7 @@ SLKC_API AstNodePtr<AstNode> ScopedEnumNode::doDuplicate(peff::Alloc *newAllocat
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 
 SLKC_API ScopedEnumNode::ScopedEnumNode(
@@ -927,7 +930,7 @@ SLKC_API AstNodePtr<AstNode> UnionEnumItemNode::doDuplicate(peff::Alloc *newAllo
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 
 SLKC_API UnionEnumItemNode::UnionEnumItemNode(
@@ -952,7 +955,7 @@ SLKC_API AstNodePtr<AstNode> UnionEnumNode::doDuplicate(peff::Alloc *newAllocato
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 
 SLKC_API UnionEnumNode::UnionEnumNode(
@@ -998,7 +1001,8 @@ SLKC_API UnionEnumNode::UnionEnumNode(const UnionEnumNode &rhs, peff::Alloc *all
 	}
 
 	for (const auto &[k, v] : rhs.genericParamIndices) {
-		if (!context.pushTask([this, v, &rhs, allocator, &context]() -> bool {
+		auto capturedV = v;
+		if (!context.pushTask([this, v = capturedV, &rhs, allocator, &context]() -> bool {
 				if (!genericParamIndices.insert(genericParams.at(v)->name, +v)) {
 					return false;
 				}

@@ -18,7 +18,7 @@ SLKC_API AstNodePtr<AstNode> ExprStmtNode::doDuplicate(peff::Alloc *newAllocator
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 
 SLKC_API ExprStmtNode::ExprStmtNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : StmtNode(StmtKind::Expr, selfAllocator, document) {
@@ -75,7 +75,7 @@ SLKC_API AstNodePtr<AstNode> VarDefStmtNode::doDuplicate(peff::Alloc *newAllocat
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 
 SLKC_API VarDefStmtNode::VarDefStmtNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document, peff::DynArray<VarDefEntryPtr> &&varDefEntries) : StmtNode(StmtKind::VarDef, selfAllocator, document), varDefEntries(std::move(varDefEntries)) {
@@ -108,7 +108,7 @@ SLKC_API AstNodePtr<AstNode> BreakStmtNode::doDuplicate(peff::Alloc *newAllocato
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 
 SLKC_API BreakStmtNode::BreakStmtNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : StmtNode(StmtKind::VarDef, selfAllocator, document) {
@@ -126,7 +126,7 @@ SLKC_API AstNodePtr<AstNode> ContinueStmtNode::doDuplicate(peff::Alloc *newAlloc
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 
 SLKC_API ContinueStmtNode::ContinueStmtNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : StmtNode(StmtKind::VarDef, selfAllocator, document) {
@@ -145,7 +145,7 @@ SLKC_API AstNodePtr<AstNode> ForStmtNode::doDuplicate(peff::Alloc *newAllocator,
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 
 SLKC_API ForStmtNode::ForStmtNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : StmtNode(StmtKind::For, selfAllocator, document), varDefEntries(selfAllocator), cond(cond), step(step), body(body) {
@@ -204,7 +204,7 @@ SLKC_API AstNodePtr<AstNode> ForEachStmtNode::doDuplicate(peff::Alloc *newAlloca
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 
 SLKC_API ForEachStmtNode::ForEachStmtNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document, peff::String &&varName, const AstNodePtr<ExprNode> &cond, const AstNodePtr<StmtNode> &body) : StmtNode(StmtKind::ForEach, selfAllocator, document), varName(std::move(varName)), cond(cond), body(body) {
@@ -247,7 +247,7 @@ SLKC_API AstNodePtr<AstNode> WhileStmtNode::doDuplicate(peff::Alloc *newAllocato
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 
 SLKC_API WhileStmtNode::WhileStmtNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : StmtNode(StmtKind::While, selfAllocator, document) {
@@ -285,7 +285,7 @@ SLKC_API AstNodePtr<AstNode> ReturnStmtNode::doDuplicate(peff::Alloc *newAllocat
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 
 SLKC_API ReturnStmtNode::ReturnStmtNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document, const AstNodePtr<ExprNode> &value) : StmtNode(StmtKind::Return, selfAllocator, document), value(value) {
@@ -314,7 +314,7 @@ SLKC_API AstNodePtr<AstNode> YieldStmtNode::doDuplicate(peff::Alloc *newAllocato
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 
 SLKC_API YieldStmtNode::YieldStmtNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document, const AstNodePtr<ExprNode> &value) : StmtNode(StmtKind::Yield, selfAllocator, document), value(value) {
@@ -343,7 +343,7 @@ SLKC_API AstNodePtr<AstNode> IfStmtNode::doDuplicate(peff::Alloc *newAllocator, 
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 
 SLKC_API IfStmtNode::IfStmtNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : StmtNode(StmtKind::If, selfAllocator, document) {
@@ -414,7 +414,7 @@ SLKC_API AstNodePtr<AstNode> WithStmtNode::doDuplicate(peff::Alloc *newAllocator
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 
 SLKC_API WithStmtNode::WithStmtNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : StmtNode(StmtKind::With, selfAllocator, document), constraints(selfAllocator) {
@@ -464,7 +464,7 @@ SLKC_API AstNodePtr<AstNode> CaseLabelStmtNode::doDuplicate(peff::Alloc *newAllo
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 
 SLKC_API CaseLabelStmtNode::CaseLabelStmtNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : StmtNode(StmtKind::CaseLabel, selfAllocator, document) {
@@ -493,7 +493,7 @@ SLKC_API AstNodePtr<AstNode> SwitchStmtNode::doDuplicate(peff::Alloc *newAllocat
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 
 SLKC_API SwitchStmtNode::SwitchStmtNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : StmtNode(StmtKind::Switch, selfAllocator, document), caseOffsets(selfAllocator), body(selfAllocator) {
@@ -545,7 +545,7 @@ SLKC_API AstNodePtr<AstNode> LabelStmtNode::doDuplicate(peff::Alloc *newAllocato
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 
 SLKC_API LabelStmtNode::LabelStmtNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : StmtNode(StmtKind::Label, selfAllocator, document), name(selfAllocator) {
@@ -570,7 +570,7 @@ SLKC_API AstNodePtr<AstNode> CodeBlockStmtNode::doDuplicate(peff::Alloc *newAllo
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 
 SLKC_API CodeBlockStmtNode::CodeBlockStmtNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : StmtNode(StmtKind::CodeBlock, selfAllocator, document), body(selfAllocator) {
@@ -606,7 +606,7 @@ SLKC_API AstNodePtr<AstNode> BadStmtNode::doDuplicate(peff::Alloc *newAllocator,
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 
 SLKC_API BadStmtNode::BadStmtNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document, const AstNodePtr<StmtNode> &body) : StmtNode(StmtKind::Bad, selfAllocator, document), body(body) {

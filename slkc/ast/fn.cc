@@ -9,7 +9,7 @@ SLKC_API AstNodePtr<AstNode> FnNode::doDuplicate(peff::Alloc *newAllocator, Dupl
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 
 SLKC_API FnNode::FnNode(
@@ -51,7 +51,7 @@ SLKC_API AstNodePtr<AstNode> FnOverloadingNode::doDuplicate(peff::Alloc *newAllo
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 
 SLKC_API FnOverloadingNode::FnOverloadingNode(

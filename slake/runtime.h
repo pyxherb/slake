@@ -195,18 +195,18 @@ namespace slake {
 			bool isInGenericScope;
 		};
 
-		SLAKE_API MinorFrame *Runtime::_fetchMinorFrame(
+		SLAKE_API MinorFrame *_fetchMinorFrame(
 			Context *context,
 			const MajorFrame *majorFrame,
 			size_t stackOffset);
 		SLAKE_API AllocaRecord *_allocAllocaRecord(Context *context, const MajorFrame *frame, uint32_t outputReg);
-		SLAKE_API static Value *Runtime::_fetchArgStack(
+		SLAKE_API static Value *_fetchArgStack(
 			char *dataStack,
 			size_t stackSize,
 			const MajorFrame *majorFrame,
 			size_t stackOffset,
 			size_t nArgs);
-		SLAKE_API AllocaRecord *Runtime::_fetchAllocaRecord(
+		SLAKE_API AllocaRecord *_fetchAllocaRecord(
 			Context *context,
 			const MajorFrame *majorFrame,
 			size_t stackOffset);
@@ -319,7 +319,7 @@ namespace slake {
 			uint32_t nArgs,
 			uint32_t returnValueOut,
 			const Reference *returnStructRef) noexcept;
-		[[nodiscard]] SLAKE_API void _leaveMajorFrame(Context *context) noexcept;
+		SLAKE_API void _leaveMajorFrame(Context *context) noexcept;
 
 		/// @brief Runtime flags.
 		RuntimeFlags runtimeFlags = 0;

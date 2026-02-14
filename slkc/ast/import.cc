@@ -9,7 +9,7 @@ SLKC_API AstNodePtr<AstNode> ImportNode::doDuplicate(peff::Alloc *newAllocator, 
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 
 SLKC_API ImportNode::ImportNode(

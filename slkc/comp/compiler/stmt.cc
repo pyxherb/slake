@@ -301,7 +301,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileForStmt(
 
 		AstNodePtr<TypeNameNode> tn, type;
 
-		if (!(tn = makeAstNode<BoolTypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document).template castTo<TypeNameNode>())) {
+		if (!(tn = makeAstNode<BoolTypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document).castTo<TypeNameNode>())) {
 			return genOutOfMemoryCompError();
 		}
 
@@ -367,9 +367,9 @@ SLKC_API peff::Option<CompilationError> slkc::compileIfStmt(
 
 	AstNodePtr<TypeNameNode> exprType;
 
-	SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileEnv, compilationContext, pathEnv, s->cond, exprType, boolType.template castTo<TypeNameNode>()));
+	SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileEnv, compilationContext, pathEnv, s->cond, exprType, boolType.castTo<TypeNameNode>()));
 
-	SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileEnv, compilationContext, pathEnv, reg, ExprEvalPurpose::RValue, boolType.template castTo<TypeNameNode>(), s->cond, exprType));
+	SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileEnv, compilationContext, pathEnv, reg, ExprEvalPurpose::RValue, boolType.castTo<TypeNameNode>(), s->cond, exprType));
 
 	uint32_t endLabel, trueLabel, falseLabel;
 	SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocLabel(endLabel));
@@ -444,7 +444,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileWhileStmt(
 
 	AstNodePtr<TypeNameNode> tn, type;
 
-	if (!(tn = makeAstNode<BoolTypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document).template castTo<TypeNameNode>())) {
+	if (!(tn = makeAstNode<BoolTypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document).castTo<TypeNameNode>())) {
 		return genOutOfMemoryCompError();
 	}
 
@@ -511,7 +511,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileWithStmt(
 			return CompilationError(tn->tokenRange, CompilationErrorKind::TypeIsNotSubstitutable);
 		}
 
-		if (!involvedGenericParams.pushBack(m.template castTo<GenericParamNode>()))
+		if (!involvedGenericParams.pushBack(m.castTo<GenericParamNode>()))
 			return genOutOfMemoryCompError();
 	}
 
@@ -583,7 +583,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileSwitchStmt(
 		peff::Set<AstNodePtr<ExprNode>> prevCaseConditions(compileEnv->allocator.get());
 
 		for (size_t i = 0; i < s->caseOffsets.size(); ++i) {
-			auto curCase = s->body.at(s->caseOffsets.at(i)).template castTo<CaseLabelStmtNode>();
+			auto curCase = s->body.at(s->caseOffsets.at(i)).castTo<CaseLabelStmtNode>();
 
 			uint32_t evalValueLabel;
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocLabel(evalValueLabel));
@@ -635,13 +635,13 @@ SLKC_API peff::Option<CompilationError> slkc::compileSwitchStmt(
 
 					AstNodePtr<ExprNode> cmpResult;
 
-					SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, ce.template castTo<ExprNode>(), cmpResult));
+					SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, ce.castTo<ExprNode>(), cmpResult));
 
 					assert(cmpResult);
 
 					assert(cmpResult->exprKind == ExprKind::Bool);
 
-					if (cmpResult.template castTo<BoolLiteralExprNode>()->data) {
+					if (cmpResult.castTo<BoolLiteralExprNode>()->data) {
 						return CompilationError(curCase->condition->tokenRange, CompilationErrorKind::DuplicatedSwitchCaseBranch);
 					}
 				}
@@ -656,7 +656,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileSwitchStmt(
 
 				cmpExpr->tokenRange = curCase->condition->tokenRange;
 
-				if (!(cmpExpr->lhs = makeAstNode<RegIndexExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, conditionReg, conditionType).template castTo<ExprNode>())) {
+				if (!(cmpExpr->lhs = makeAstNode<RegIndexExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, conditionReg, conditionType).castTo<ExprNode>())) {
 					return genOutOfMemoryCompError();
 				}
 				cmpExpr->lhs->tokenRange = curCase->condition->tokenRange;
@@ -674,7 +674,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileSwitchStmt(
 
 					SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(cmpResultReg));
 
-					SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, pathEnv, cmpExpr.template castTo<ExprNode>(), ExprEvalPurpose::RValue, boolTypeName.template castTo<TypeNameNode>(), cmpResultReg, cmpExprResult));
+					SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, pathEnv, cmpExpr.castTo<ExprNode>(), ExprEvalPurpose::RValue, boolTypeName.castTo<TypeNameNode>(), cmpResultReg, cmpExprResult));
 				}
 
 				if (!prevCaseConditions.insert(AstNodePtr<ExprNode>(resultExpr)))
@@ -696,7 +696,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileSwitchStmt(
 		}
 	} else {
 		for (size_t i = 0; i < s->caseOffsets.size(); ++i) {
-			auto curCase = s->body.at(s->caseOffsets.at(i)).template castTo<CaseLabelStmtNode>();
+			auto curCase = s->body.at(s->caseOffsets.at(i)).castTo<CaseLabelStmtNode>();
 
 			uint32_t evalValueLabel;
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocLabel(evalValueLabel));
@@ -734,7 +734,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileSwitchStmt(
 
 				cmpExpr->tokenRange = curCase->condition->tokenRange;
 
-				if (!(cmpExpr->lhs = makeAstNode<RegIndexExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, conditionReg, conditionType).template castTo<ExprNode>())) {
+				if (!(cmpExpr->lhs = makeAstNode<RegIndexExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, conditionReg, conditionType).castTo<ExprNode>())) {
 					return genOutOfMemoryCompError();
 				}
 				cmpExpr->lhs->tokenRange = curCase->condition->tokenRange;
@@ -752,7 +752,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileSwitchStmt(
 
 					SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(cmpResultReg));
 
-					SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, pathEnv, cmpExpr.template castTo<ExprNode>(), ExprEvalPurpose::RValue, boolTypeName.template castTo<TypeNameNode>(), cmpResultReg, cmpExprResult));
+					SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, pathEnv, cmpExpr.castTo<ExprNode>(), ExprEvalPurpose::RValue, boolTypeName.castTo<TypeNameNode>(), cmpResultReg, cmpExprResult));
 				}
 
 				uint32_t succeededValueLabel;
@@ -1008,7 +1008,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileStmt(
 		case StmtKind::CaseLabel:
 			return CompilationError(stmt->tokenRange, CompilationErrorKind::InvalidCaseLabelUsage);
 		case StmtKind::CodeBlock: {
-			AstNodePtr<CodeBlockStmtNode> s = stmt.template castTo<CodeBlockStmtNode>();
+			AstNodePtr<CodeBlockStmtNode> s = stmt.castTo<CodeBlockStmtNode>();
 
 			bool hasFrame = false;
 

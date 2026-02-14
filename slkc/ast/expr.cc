@@ -19,7 +19,7 @@ SLKC_API AstNodePtr<AstNode> UnaryExprNode::doDuplicate(peff::Alloc *newAllocato
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 
 SLKC_API UnaryExprNode::UnaryExprNode(
@@ -121,7 +121,7 @@ SLKC_API AstNodePtr<AstNode> BinaryExprNode::doDuplicate(peff::Alloc *newAllocat
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 
 SLKC_API BinaryExprNode::BinaryExprNode(
@@ -163,16 +163,13 @@ SLKC_API AstNodePtr<AstNode> TernaryExprNode::doDuplicate(peff::Alloc *newAlloca
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 
 SLKC_API TernaryExprNode::TernaryExprNode(
 	peff::Alloc *selfAllocator,
 	const peff::SharedPtr<Document> &document)
-	: ExprNode(ExprKind::Ternary, selfAllocator, document),
-	  cond(cond),
-	  lhs(lhs),
-	  rhs(rhs) {
+	: ExprNode(ExprKind::Ternary, selfAllocator, document) {
 }
 
 SLKC_API TernaryExprNode::TernaryExprNode(const TernaryExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut) : ExprNode(rhs, allocator, context) {
@@ -217,7 +214,7 @@ SLKC_API AstNodePtr<AstNode> LooseIdExprNode::doDuplicate(peff::Alloc *newAlloca
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 
 SLKC_API LooseIdExprNode::LooseIdExprNode(
@@ -245,7 +242,7 @@ SLKC_API AstNodePtr<AstNode> IdRefExprNode::doDuplicate(peff::Alloc *newAllocato
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 
 SLKC_API IdRefExprNode::IdRefExprNode(
@@ -273,7 +270,7 @@ SLKC_API AstNodePtr<AstNode> HeadedIdRefExprNode::doDuplicate(peff::Alloc *newAl
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 
 SLKC_API HeadedIdRefExprNode::HeadedIdRefExprNode(
@@ -310,7 +307,7 @@ SLKC_API AstNodePtr<AstNode> I8LiteralExprNode::doDuplicate(peff::Alloc *newAllo
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 
 SLKC_API I8LiteralExprNode::I8LiteralExprNode(
@@ -331,7 +328,7 @@ SLKC_API AstNodePtr<AstNode> I16LiteralExprNode::doDuplicate(peff::Alloc *newAll
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 
 SLKC_API I16LiteralExprNode::I16LiteralExprNode(
@@ -352,7 +349,7 @@ SLKC_API AstNodePtr<AstNode> I32LiteralExprNode::doDuplicate(peff::Alloc *newAll
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 
 SLKC_API I32LiteralExprNode::I32LiteralExprNode(
@@ -373,7 +370,7 @@ SLKC_API AstNodePtr<AstNode> I64LiteralExprNode::doDuplicate(peff::Alloc *newAll
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 
 SLKC_API I64LiteralExprNode::I64LiteralExprNode(
@@ -394,7 +391,7 @@ SLKC_API AstNodePtr<AstNode> U8LiteralExprNode::doDuplicate(peff::Alloc *newAllo
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 
 SLKC_API U8LiteralExprNode::U8LiteralExprNode(
@@ -415,7 +412,7 @@ SLKC_API AstNodePtr<AstNode> U16LiteralExprNode::doDuplicate(peff::Alloc *newAll
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 
 SLKC_API U16LiteralExprNode::U16LiteralExprNode(
@@ -436,7 +433,7 @@ SLKC_API AstNodePtr<AstNode> U32LiteralExprNode::doDuplicate(peff::Alloc *newAll
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 SLKC_API U32LiteralExprNode::U32LiteralExprNode(
 	peff::Alloc *selfAllocator,
@@ -456,7 +453,7 @@ SLKC_API AstNodePtr<AstNode> U64LiteralExprNode::doDuplicate(peff::Alloc *newAll
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 
 SLKC_API U64LiteralExprNode::U64LiteralExprNode(
@@ -477,7 +474,7 @@ SLKC_API AstNodePtr<AstNode> F32LiteralExprNode::doDuplicate(peff::Alloc *newAll
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 
 SLKC_API F32LiteralExprNode::F32LiteralExprNode(
@@ -498,7 +495,7 @@ SLKC_API AstNodePtr<AstNode> F64LiteralExprNode::doDuplicate(peff::Alloc *newAll
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 
 SLKC_API F64LiteralExprNode::F64LiteralExprNode(
@@ -519,7 +516,7 @@ SLKC_API AstNodePtr<AstNode> BoolLiteralExprNode::doDuplicate(peff::Alloc *newAl
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 SLKC_API BoolLiteralExprNode::BoolLiteralExprNode(
 	peff::Alloc *selfAllocator,
@@ -540,7 +537,7 @@ SLKC_API AstNodePtr<AstNode> StringLiteralExprNode::doDuplicate(peff::Alloc *new
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 SLKC_API StringLiteralExprNode::StringLiteralExprNode(
 	peff::Alloc *selfAllocator,
@@ -566,7 +563,7 @@ SLKC_API AstNodePtr<AstNode> NullLiteralExprNode::doDuplicate(peff::Alloc *newAl
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 SLKC_API NullLiteralExprNode::NullLiteralExprNode(
 	peff::Alloc *selfAllocator,
@@ -585,7 +582,7 @@ SLKC_API AstNodePtr<AstNode> InitializerListExprNode::doDuplicate(peff::Alloc *n
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 SLKC_API InitializerListExprNode::InitializerListExprNode(
 	peff::Alloc *selfAllocator,
@@ -623,7 +620,7 @@ SLKC_API AstNodePtr<AstNode> CallExprNode::doDuplicate(peff::Alloc *newAllocator
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 SLKC_API CallExprNode::CallExprNode(
 	peff::Alloc *selfAllocator,
@@ -684,7 +681,7 @@ SLKC_API AstNodePtr<AstNode> NewExprNode::doDuplicate(peff::Alloc *newAllocator,
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 SLKC_API NewExprNode::NewExprNode(
 	peff::Alloc *selfAllocator,
@@ -732,7 +729,7 @@ SLKC_API AstNodePtr<AstNode> AllocaExprNode::doDuplicate(peff::Alloc *newAllocat
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 SLKC_API AllocaExprNode::AllocaExprNode(
 	peff::Alloc *selfAllocator,
@@ -770,7 +767,7 @@ SLKC_API AstNodePtr<AstNode> CastExprNode::doDuplicate(peff::Alloc *newAllocator
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 SLKC_API CastExprNode::CastExprNode(
 	peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document)
@@ -810,7 +807,7 @@ SLKC_API AstNodePtr<AstNode> MatchExprNode::doDuplicate(peff::Alloc *newAllocato
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 SLKC_API MatchExprNode::MatchExprNode(
 	peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document)
@@ -874,7 +871,7 @@ SLKC_API AstNodePtr<AstNode> WrapperExprNode::doDuplicate(peff::Alloc *newAlloca
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 SLKC_API WrapperExprNode::WrapperExprNode(
 	peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document)
@@ -903,7 +900,7 @@ SLKC_API AstNodePtr<AstNode> RegIndexExprNode::doDuplicate(peff::Alloc *newAlloc
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 SLKC_API RegIndexExprNode::RegIndexExprNode(
 	peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document, uint32_t reg, AstNodePtr<TypeNameNode> type)
@@ -927,7 +924,7 @@ SLKC_API AstNodePtr<AstNode> TypeNameExprNode::doDuplicate(peff::Alloc *newAlloc
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 SLKC_API TypeNameExprNode::TypeNameExprNode(
 	peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document, AstNodePtr<TypeNameNode> type)
@@ -949,7 +946,7 @@ SLKC_API AstNodePtr<AstNode> BadExprNode::doDuplicate(peff::Alloc *newAllocator,
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 SLKC_API BadExprNode::BadExprNode(
 	peff::Alloc *selfAllocator,

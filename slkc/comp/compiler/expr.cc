@@ -11,7 +11,7 @@ static peff::Option<CompilationError> _compileLiteralExpr(
 	ExprEvalPurpose evalPurpose,
 	uint32_t resultRegOut,
 	CompileExprResult &resultOut) {
-	peff::SharedPtr<LE> e = expr.template castTo<LE>();
+	peff::SharedPtr<LE> e = expr.castTo<LE>();
 
 	switch (evalPurpose) {
 		case ExprEvalPurpose::EvalType:
@@ -45,7 +45,7 @@ static peff::Option<CompilationError> _compileLiteralExpr(
 			  compileEnv->allocator.get(),
 			  compileEnv->allocator.get(),
 			  compileEnv->document)
-				.castTo<TypeNameNode>())) {
+				.template castTo<TypeNameNode>())) {
 		return genOutOfMemoryCompError();
 	}
 	return {};

@@ -242,15 +242,20 @@ SLKC_API peff::Option<SyntaxError> Parser::parseIdRef(IdRefPtr &idRefOut) {
 		entry.nameTokenIndex = t->index;
 		idRefPtr->tokenRange.endIndex = t->index;
 
-		size_t prevEndIndex = t->index;
-		ParseContext prevParseContext = parseContext;
-		if ((t = peekToken())->tokenId == TokenId::LtOp) {
+		if ((t = peekToken())->tokenId == TokenId::ScopeOp) {
+			nextToken();
+
+			entry.genericScopeTokenIndex = t->index;
+
+			if ((syntaxError = expectToken(t = peekToken(), TokenId::LtOp)))
+				return syntaxError;
+
 			nextToken();
 
 			for (;;) {
 				AstNodePtr<AstNode> genericArg;
 				if ((syntaxError = parseGenericArg(genericArg)))
-					goto genericArgParseFail;
+					return syntaxError;
 
 				if (!entry.genericArgs.pushBack(std::move(genericArg))) {
 					return genOutOfMemorySyntaxError();
@@ -263,24 +268,14 @@ SLKC_API peff::Option<SyntaxError> Parser::parseIdRef(IdRefPtr &idRefOut) {
 				nextToken();
 			}
 
-			if ((t = peekToken())->tokenId != TokenId::GtOp) {
-				goto genericArgParseFail;
-			}
+			if ((syntaxError = expectToken(t = peekToken(), TokenId::GtOp)))
+				return syntaxError;
 
 			idRefPtr->tokenRange.endIndex = t->index;
 
 			nextToken();
 		}
 
-		goto succeeded;
-
-	genericArgParseFail:
-		idRefPtr->tokenRange.endIndex = prevEndIndex;
-		parseContext = prevParseContext;
-
-		entry.genericArgs.clear();
-
-	succeeded:
 		if (!idRefPtr->entries.pushBack(std::move(entry)))
 			return genOutOfMemorySyntaxError();
 

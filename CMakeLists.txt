@@ -29,9 +29,9 @@ endif()
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/")
 
-if (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86_64")
-    enable_language(ASM_NASM)
-endif()
+# if (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86_64")
+#     enable_language(ASM_NASM)
+# endif()
 
 set(SLAKE_BUILD_SLKC TRUE CACHE BOOL "Build SLKC")
 set(SLAKE_BUILD_SLKBCC TRUE CACHE BOOL "Build SLKBCC")

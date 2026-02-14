@@ -773,7 +773,7 @@ int main(int argc, char *argv[]) {
 
 		includeDirs.clear();
 
-		if (!document->externalModuleProviders.pushBack(fsExternalModProvider.template castTo<slkc::ExternalModuleProvider>())) {
+		if (!document->externalModuleProviders.pushBack(fsExternalModProvider.castTo<slkc::ExternalModuleProvider>())) {
 			printError("Out of memory");
 			return ENOMEM;
 		}

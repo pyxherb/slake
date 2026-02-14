@@ -218,8 +218,8 @@ namespace slake {
 		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
 
 		SLAKE_API virtual Reference getMember(const std::string_view &name) const override;
-		[[nodiscard]] SLAKE_API virtual bool addMember(MemberObject *member);
-		[[nodiscard]] SLAKE_API virtual void removeMember(const std::string_view &name);
+		[[nodiscard]] SLAKE_API virtual bool addMember(MemberObject *member) override;
+		SLAKE_API virtual void removeMember(const std::string_view &name) override;
 
 		SLAKE_API static HostObjectRef<UnionEnumObject> alloc(Runtime *rt);
 		SLAKE_API static HostObjectRef<UnionEnumObject> alloc(Duplicator *duplicator, const UnionEnumObject *other);

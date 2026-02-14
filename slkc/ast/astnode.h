@@ -163,7 +163,7 @@ namespace slkc {
 			if (!context.exec())
 				return {};
 
-			return newNode.template castTo<T>();
+			return newNode.castTo<T>();
 		}
 
 		SLAKE_FORCEINLINE AstNodeType getAstNodeType() const noexcept {

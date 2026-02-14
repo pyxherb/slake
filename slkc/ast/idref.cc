@@ -27,6 +27,7 @@ SLKC_API peff::Option<IdRefEntry> slkc::duplicateIdRefEntry(peff::Alloc *selfAll
 	}
 
 	newIdRefEntry.nameTokenIndex = rhs.nameTokenIndex;
+	newIdRefEntry.genericScopeTokenIndex = rhs.genericScopeTokenIndex;
 	newIdRefEntry.leftAngleBracketTokenIndex = rhs.leftAngleBracketTokenIndex;
 	newIdRefEntry.rightAngleBracketTokenIndex = rhs.rightAngleBracketTokenIndex;
 	newIdRefEntry.accessOpTokenIndex = rhs.accessOpTokenIndex;

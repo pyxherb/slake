@@ -136,11 +136,11 @@ public:
 		fclose(fp);
 	}
 
-	virtual bool isEof() noexcept {
+	virtual bool isEof() noexcept override {
 		return feof(fp);
 	}
 
-	virtual loader::ReadResult read(char *buffer, size_t size) noexcept {
+	virtual loader::ReadResult read(char *buffer, size_t size) noexcept override {
 		if (fread(buffer, size, 1, fp) < 1) {
 			return loader::ReadResult::ReadError;
 		}
@@ -218,6 +218,8 @@ int main(int argc, char **argv) {
 
 				LoaderContext loaderContext(peff::getDefaultAlloc());
 				MyReader reader(&peff::g_nullAlloc, fp);
+
+				closeFpGuard.release();
 
 				if (auto e = loader::loadModule(loaderContext, rt.get(), &reader, mod); e) {
 					printf("Error loading main module: %s\n", e->what());

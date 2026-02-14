@@ -9,7 +9,7 @@ SLKC_API AstNodePtr<AstNode> VarNode::doDuplicate(peff::Alloc *newAllocator, Dup
 		return {};
 	}
 
-	return duplicatedNode.template castTo<AstNode>();
+	return duplicatedNode.castTo<AstNode>();
 }
 
 SLKC_API VarNode::VarNode(

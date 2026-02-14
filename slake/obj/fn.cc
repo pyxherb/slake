@@ -109,7 +109,7 @@ SLAKE_API FnOverloadingObject::FnOverloadingObject(
 	  mappedGenericParams(selfAllocator),
 	  mappedGenericArgs(selfAllocator),
 	  paramTypes(selfAllocator),
-	  returnType({ TypeId::Void }) {
+	  returnType(TypeRef{ TypeId::Void }) {
 }
 
 SLAKE_API FnOverloadingObject::FnOverloadingObject(const FnOverloadingObject &other, peff::Alloc *allocator, bool &succeededOut)

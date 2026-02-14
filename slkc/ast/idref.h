@@ -8,7 +8,7 @@ namespace slkc {
 	struct IdRefEntry {
 		peff::String name;
 		peff::DynArray<AstNodePtr<AstNode>> genericArgs;
-		size_t accessOpTokenIndex = SIZE_MAX, nameTokenIndex = SIZE_MAX, leftAngleBracketTokenIndex = SIZE_MAX, rightAngleBracketTokenIndex = SIZE_MAX;
+		size_t accessOpTokenIndex = SIZE_MAX, nameTokenIndex = SIZE_MAX, genericScopeTokenIndex = SIZE_MAX, leftAngleBracketTokenIndex = SIZE_MAX, rightAngleBracketTokenIndex = SIZE_MAX;
 		peff::DynArray<size_t> commaTokenIndices;
 
 		SLAKE_FORCEINLINE IdRefEntry(peff::Alloc *selfAllocator): name(selfAllocator), genericArgs(selfAllocator), commaTokenIndices(selfAllocator) {}

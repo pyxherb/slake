@@ -18,7 +18,7 @@ void *Thread::_threadWrapperProc(void *arg) {
 	return nullptr;
 }
 
-SLAKE_API Thread::Thread(peff::Alloc* selfAllocator, Runnable* runnable): selfAllocator(selfAllocator), nativeThreadHandle(nativeThreadHandle), runnable(runnable) {
+SLAKE_API Thread::Thread(peff::Alloc* selfAllocator, Runnable* runnable): selfAllocator(selfAllocator), nativeThreadHandle((pthread_t)-1), runnable(runnable) {
 }
 
 SLAKE_API Thread::~Thread() {}

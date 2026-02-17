@@ -13,7 +13,7 @@ namespace slkc {
 		return _;                                                  \
 	else
 #define SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(lvar, ...) \
-	if (lvar = (__VA_ARGS__))                          \
+	if ((lvar = (__VA_ARGS__)))                          \
 		return lvar;                                   \
 	else
 

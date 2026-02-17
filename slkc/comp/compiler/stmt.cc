@@ -401,9 +401,9 @@ SLKC_API peff::Option<CompilationError> slkc::compileIfStmt(
 			SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, s->cond, constCondExpr));
 		}
 
-		assert(constCondExpr->exprKind == ExprKind::Bool);
-
 		if (constCondExpr) {
+			assert(constCondExpr->exprKind == ExprKind::Bool);
+
 			if (constCondExpr.castTo<BoolLiteralExprNode>()->data) {
 				// No need to add JMP instruction.
 
@@ -498,6 +498,115 @@ SLKC_API peff::Option<CompilationError> slkc::compileWhileStmt(
 	PathEnv *pathEnv,
 	AstNodePtr<WhileStmtNode> s,
 	uint32_t sldIndex) {
+	AstNodePtr<BoolTypeNameNode> boolType;
+
+	if (!(boolType = makeAstNode<BoolTypeNameNode>(
+			  compileEnv->allocator.get(),
+			  compileEnv->allocator.get(),
+			  compileEnv->document))) {
+		return genOutOfMemoryCompError();
+	}
+
+	uint32_t reg;
+
+	SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(reg));
+
+	CompileExprResult result(compileEnv->allocator.get());
+
+	AstNodePtr<TypeNameNode> exprType;
+
+	SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileEnv, compilationContext, pathEnv, s->cond, exprType, boolType.castTo<TypeNameNode>()));
+
+	PrevBreakPointHolder breakPointHolder(compilationContext);
+	PrevContinuePointHolder continuePointHolder(compilationContext);
+
+	uint32_t conditionReg;
+	SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(conditionReg));
+
+	uint32_t bodyLabel;
+	SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocLabel(bodyLabel));
+
+	uint32_t breakLabel, continueLabel;
+	SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocLabel(breakLabel));
+	SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocLabel(continueLabel));
+
+	bool isSame;
+
+	SLKC_RETURN_IF_COMP_ERROR(isSameType(boolType.castTo<TypeNameNode>(), exprType, isSame));
+
+	AstNodePtr<ExprNode> constCondExpr;
+
+	if (!isSame) {
+		AstNodePtr<CastExprNode> castExpr;
+
+		if (!(castExpr = makeAstNode<CastExprNode>(
+				  compileEnv->allocator.get(),
+				  compileEnv->allocator.get(),
+				  compileEnv->document))) {
+			return genOutOfMemoryCompError();
+		}
+
+		castExpr->source = s->cond;
+		castExpr->targetType = boolType.castTo<TypeNameNode>();
+
+		SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, castExpr.castTo<ExprNode>(), constCondExpr));
+	} else {
+		SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, s->cond, constCondExpr));
+	}
+
+	/*if (constCondExpr) {
+		assert(constCondExpr->exprKind == ExprKind::Bool);
+	} else {
+		pathEnv->execPossibility = PathPossibility::May;
+*/
+		SLKC_RETURN_IF_COMP_ERROR(compilationContext->enterBlock());
+		peff::ScopeGuard popBlockContextGuard([compilationContext]() noexcept {
+			compilationContext->leaveBlock();
+		});
+
+		{
+			compilationContext->setLabelOffset(continueLabel, compilationContext->getCurInsOff());
+
+			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileEnv, compilationContext, pathEnv, conditionReg, ExprEvalPurpose::RValue, boolType.castTo<TypeNameNode>(), s->cond, exprType, result));
+
+			SLKC_RETURN_IF_COMP_ERROR(
+				compilationContext->emitIns(
+					sldIndex, slake::Opcode::BR,
+					UINT32_MAX,
+					{ slake::Value(slake::ValueType::RegIndex, conditionReg),
+						slake::Value(slake::ValueType::Label, bodyLabel),
+						slake::Value(slake::ValueType::Label, breakLabel) }));
+		}
+
+		compilationContext->setLabelOffset(bodyLabel, compilationContext->getCurInsOff());
+
+		// PathEnv bodyPathEnv(compileEnv->allocator.get());
+		SLKC_RETURN_IF_COMP_ERROR(compileStmt(compileEnv, compilationContext, pathEnv, s->body));
+
+		// pathEnv->noReturnPossibility = combinePossibility(pathEnv->noReturnPossibility, bodyPathEnv.noReturnPossibility);
+		// pathEnv->returnPossibility = combinePossibility(pathEnv->returnPossibility, bodyPathEnv.returnPossibility);
+		// pathEnv->breakPossibility = combinePossibility(pathEnv->breakPossibility, bodyPathEnv.breakPossibility);
+
+		SLKC_RETURN_IF_COMP_ERROR(
+			compilationContext->emitIns(
+				sldIndex, slake::Opcode::JMP,
+				UINT32_MAX,
+				{ slake::Value(slake::ValueType::Label, continueLabel) }));
+
+		compilationContext->setLabelOffset(breakLabel, compilationContext->getCurInsOff());
+//	}
+
+	//
+
+	return {};
+}
+
+SLKC_API peff::Option<CompilationError> slkc::compileDoWhileStmt(
+	CompileEnv *compileEnv,
+	CompilationContext *compilationContext,
+	PathEnv *pathEnv,
+	AstNodePtr<DoWhileStmtNode> s,
+	uint32_t sldIndex) {
 	PrevBreakPointHolder breakPointHolder(compilationContext);
 	PrevContinuePointHolder continuePointHolder(compilationContext);
 
@@ -508,13 +617,11 @@ SLKC_API peff::Option<CompilationError> slkc::compileWhileStmt(
 	SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocLabel(breakLabel));
 	SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocLabel(continueLabel));
 
-	if (!s->isDoWhile) {
-		SLKC_RETURN_IF_COMP_ERROR(
-			compilationContext->emitIns(
-				sldIndex, slake::Opcode::JMP,
-				UINT32_MAX,
-				{ slake::Value(slake::ValueType::Label, continueLabel) }));
-	}
+	SLKC_RETURN_IF_COMP_ERROR(
+		compilationContext->emitIns(
+			sldIndex, slake::Opcode::JMP,
+			UINT32_MAX,
+			{ slake::Value(slake::ValueType::Label, continueLabel) }));
 
 	SLKC_RETURN_IF_COMP_ERROR(compilationContext->enterBlock());
 	peff::ScopeGuard popBlockContextGuard([compilationContext]() noexcept {
@@ -1076,6 +1183,10 @@ SLKC_API peff::Option<CompilationError> slkc::compileStmt(
 		}
 		case StmtKind::While: {
 			SLKC_RETURN_IF_COMP_ERROR(compileWhileStmt(compileEnv, compilationContext, pathEnv, stmt.castTo<WhileStmtNode>(), sldIndex));
+			break;
+		}
+		case StmtKind::DoWhile: {
+			SLKC_RETURN_IF_COMP_ERROR(compileDoWhileStmt(compileEnv, compilationContext, pathEnv, stmt.castTo<DoWhileStmtNode>(), sldIndex));
 			break;
 		}
 		case StmtKind::Return: {

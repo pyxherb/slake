@@ -1097,6 +1097,11 @@ SLKC_API peff::Option<CompilationError> slkc::evalConstExpr(
 			AstNodePtr<ExprNode> src;
 			SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, e->source, src));
 
+			if (!src) {
+				exprOut = {};
+				break;
+			}
+
 			switch (e->targetType->typeNameKind) {
 				case TypeNameKind::I8: {
 					peff::SharedPtr<I8LiteralExprNode> l;

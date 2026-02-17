@@ -335,6 +335,14 @@ public async main() -> i32 {
 
 	nonnullable = nullable;
 
+	let c: i32 = 10;
+
+	while (c > 0) {
+		extfns.print("Yielded\n");
+		yield 0;
+		c -= 1;
+	}
+
 	return 114514;
 }
 

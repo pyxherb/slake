@@ -652,6 +652,12 @@ namespace slkc {
 		PathEnv *pathEnv,
 		AstNodePtr<WhileStmtNode> s,
 		uint32_t sldIndex);
+	[[nodiscard]] SLKC_API peff::Option<CompilationError> compileDoWhileStmt(
+		CompileEnv *compileEnv,
+		CompilationContext *compilationContext,
+		PathEnv *pathEnv,
+		AstNodePtr<DoWhileStmtNode> s,
+		uint32_t sldIndex);
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> compileIfStmt(
 		CompileEnv *compileEnv,
 		CompilationContext *compilationContext,

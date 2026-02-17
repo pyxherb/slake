@@ -278,6 +278,44 @@ SLKC_API WhileStmtNode::WhileStmtNode(const WhileStmtNode &rhs, peff::Alloc *all
 SLKC_API WhileStmtNode::~WhileStmtNode() {
 }
 
+SLKC_API AstNodePtr<AstNode> DoWhileStmtNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
+	bool succeeded = false;
+	AstNodePtr<DoWhileStmtNode> duplicatedNode(makeAstNode<DoWhileStmtNode>(newAllocator, *this, newAllocator, context, succeeded));
+	if ((!duplicatedNode) || (!succeeded)) {
+		return {};
+	}
+
+	return duplicatedNode.castTo<AstNode>();
+}
+
+SLKC_API DoWhileStmtNode::DoWhileStmtNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : StmtNode(StmtKind::While, selfAllocator, document) {
+}
+
+SLKC_API DoWhileStmtNode::DoWhileStmtNode(const DoWhileStmtNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut) : StmtNode(rhs, allocator, context) {
+	if (!context.pushTask([this, &rhs, allocator, &context]() -> bool {
+			if (!(cond = rhs.cond->duplicate<ExprNode>(allocator)))
+				return false;
+			return true;
+		})) {
+		succeededOut = false;
+		return;
+	}
+
+	if (!context.pushTask([this, &rhs, allocator, &context]() -> bool {
+			if (!(body = rhs.body->duplicate<StmtNode>(allocator)))
+				return false;
+			return true;
+		})) {
+		succeededOut = false;
+		return;
+	}
+
+	succeededOut = true;
+}
+
+SLKC_API DoWhileStmtNode::~DoWhileStmtNode() {
+}
+
 SLKC_API AstNodePtr<AstNode> ReturnStmtNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
 	bool succeeded = false;
 	AstNodePtr<ReturnStmtNode> duplicatedNode(makeAstNode<ReturnStmtNode>(newAllocator, *this, newAllocator, context, succeeded));

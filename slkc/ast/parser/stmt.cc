@@ -329,9 +329,9 @@ SLKC_API peff::Option<SyntaxError> Parser::parseDoWhileStmt(AstNodePtr<StmtNode>
 
 	nextToken();
 
-	AstNodePtr<WhileStmtNode> whileStmt;
+	AstNodePtr<DoWhileStmtNode> whileStmt;
 
-	if (!(whileStmt = makeAstNode<WhileStmtNode>(
+	if (!(whileStmt = makeAstNode<DoWhileStmtNode>(
 			  resourceAllocator.get(),
 			  resourceAllocator.get(),
 			  document))) {
@@ -339,8 +339,6 @@ SLKC_API peff::Option<SyntaxError> Parser::parseDoWhileStmt(AstNodePtr<StmtNode>
 	}
 
 	stmtOut = whileStmt.castTo<StmtNode>();
-
-	whileStmt->isDoWhile = true;
 
 	if ((syntaxError = parseStmt(whileStmt->body)))
 		return syntaxError;

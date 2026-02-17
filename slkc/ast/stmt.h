@@ -13,6 +13,7 @@ namespace slkc {
 		For,		// For
 		ForEach,	// For each
 		While,		// While
+		DoWhile,	// Do while
 		Return,		// Return
 		Yield,		// Yield
 		If,			// If
@@ -134,11 +135,23 @@ namespace slkc {
 	public:
 		AstNodePtr<ExprNode> cond;
 		AstNodePtr<StmtNode> body;
-		bool isDoWhile = false;
 
 		SLKC_API WhileStmtNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
 		SLKC_API WhileStmtNode(const WhileStmtNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut);
 		SLKC_API virtual ~WhileStmtNode();
+	};
+
+	class DoWhileStmtNode : public StmtNode {
+	protected:
+		SLKC_API virtual AstNodePtr<AstNode> doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const override;
+
+	public:
+		AstNodePtr<ExprNode> cond;
+		AstNodePtr<StmtNode> body;
+
+		SLKC_API DoWhileStmtNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
+		SLKC_API DoWhileStmtNode(const DoWhileStmtNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut);
+		SLKC_API virtual ~DoWhileStmtNode();
 	};
 
 	class ReturnStmtNode : public StmtNode {

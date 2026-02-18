@@ -4,52 +4,12 @@ using namespace slkc;
 
 SLKC_API TokenExtension::~TokenExtension() {}
 
-SLKC_API IntTokenExtension::IntTokenExtension(peff::Alloc *allocator, int data) : allocator(allocator), data(data) {
+SLKC_API IntTokenExtension::IntTokenExtension(peff::Alloc *allocator, IntTokenType tokenType) : allocator(allocator), tokenType(tokenType) {
 }
 SLKC_API IntTokenExtension::~IntTokenExtension() {
 }
 SLKC_API void IntTokenExtension::dealloc() {
-	peff::destroyAndRelease<IntTokenExtension>(allocator.get(), this, sizeof(std::max_align_t));
-}
-
-SLKC_API UIntTokenExtension::UIntTokenExtension(peff::Alloc *allocator, unsigned int data) : allocator(allocator), data(data) {
-}
-SLKC_API UIntTokenExtension::~UIntTokenExtension() {
-}
-SLKC_API void UIntTokenExtension::dealloc() {
-	peff::destroyAndRelease<UIntTokenExtension>(allocator.get(), this, sizeof(std::max_align_t));
-}
-
-SLKC_API LongTokenExtension::LongTokenExtension(peff::Alloc *allocator, long long data) : allocator(allocator), data(data) {
-}
-SLKC_API LongTokenExtension::~LongTokenExtension() {
-}
-SLKC_API void LongTokenExtension::dealloc() {
-	peff::destroyAndRelease<LongTokenExtension>(allocator.get(), this, sizeof(std::max_align_t));
-}
-
-SLKC_API ULongTokenExtension::ULongTokenExtension(peff::Alloc *allocator, unsigned long long data) : allocator(allocator), data(data) {
-}
-SLKC_API ULongTokenExtension::~ULongTokenExtension() {
-}
-SLKC_API void ULongTokenExtension::dealloc() {
-	peff::destroyAndRelease<ULongTokenExtension>(allocator.get(), this, sizeof(std::max_align_t));
-}
-
-SLKC_API F32TokenExtension::F32TokenExtension(peff::Alloc *allocator, float data) : allocator(allocator), data(data) {
-}
-SLKC_API F32TokenExtension::~F32TokenExtension() {
-}
-SLKC_API void F32TokenExtension::dealloc() {
-	peff::destroyAndRelease<F32TokenExtension>(allocator.get(), this, sizeof(std::max_align_t));
-}
-
-SLKC_API F64TokenExtension::F64TokenExtension(peff::Alloc *allocator, double data) : allocator(allocator), data(data) {
-}
-SLKC_API F64TokenExtension::~F64TokenExtension() {
-}
-SLKC_API void F64TokenExtension::dealloc() {
-	peff::destroyAndRelease<F64TokenExtension>(allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroyAndRelease<IntTokenExtension>(allocator.get(), this, alignof(IntTokenExtension));
 }
 
 SLKC_API StringTokenExtension::StringTokenExtension(peff::Alloc *allocator, peff::String &&data) : allocator(allocator), data(std::move(data)) {
@@ -316,14 +276,22 @@ SLKC_API const char *slkc::getTokenName(TokenId tokenId) {
 			return "any";
 		case TokenId::SIMDTypeName:
 			return "simd_t";
-		case TokenId::IntLiteral:
-			return "integer literal";
-		case TokenId::LongLiteral:
-			return "long literal";
-		case TokenId::UIntLiteral:
-			return "unsigned integer literal";
-		case TokenId::ULongLiteral:
-			return "unsigned long literal";
+		case TokenId::I8Literal:
+			return "8-bit integer literal";
+		case TokenId::I16Literal:
+			return "16-bit integer literal";
+		case TokenId::I32Literal:
+			return "32-bit integer literal";
+		case TokenId::I64Literal:
+			return "64-bit integer literal";
+		case TokenId::U8Literal:
+			return "8-bit unsigned integer literal";
+		case TokenId::U16Literal:
+			return "16-bit unsigned integer literal";
+		case TokenId::U32Literal:
+			return "32-bit unsigned integer literal";
+		case TokenId::U64Literal:
+			return "64-bit unsigned integer literal";
 		case TokenId::F32Literal:
 			return "32-bit floating-point number literal";
 		case TokenId::F64Literal:

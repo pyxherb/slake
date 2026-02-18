@@ -196,10 +196,14 @@ namespace slkc {
 		SIMDTypeName,
 		NoReturnTypeName,
 
-		IntLiteral,
-		LongLiteral,
-		UIntLiteral,
-		ULongLiteral,
+		I8Literal,
+		I16Literal,
+		I32Literal,
+		I64Literal,
+		U8Literal,
+		U16Literal,
+		U32Literal,
+		U64Literal,
 		F32Literal,
 		F64Literal,
 		StringLiteral,
@@ -227,68 +231,20 @@ namespace slkc {
 		virtual void dealloc() = 0;
 	};
 
+	enum class IntTokenType {
+		Decimal = 0,
+		Hexadecimal,
+		Octal,
+		Binary,
+	};
+
 	class IntTokenExtension : public TokenExtension {
 	public:
-		int data;
+		IntTokenType tokenType;
 		peff::RcObjectPtr<peff::Alloc> allocator;
 
-		SLKC_API IntTokenExtension(peff::Alloc *allocator, int data);
+		SLKC_API IntTokenExtension(peff::Alloc *allocator, IntTokenType tokenType);
 		SLKC_API virtual ~IntTokenExtension();
-
-		SLKC_API virtual void dealloc() override;
-	};
-
-	class UIntTokenExtension : public TokenExtension {
-	public:
-		unsigned int data;
-		peff::RcObjectPtr<peff::Alloc> allocator;
-
-		SLKC_API UIntTokenExtension(peff::Alloc *allocator, unsigned int data);
-		SLKC_API virtual ~UIntTokenExtension();
-
-		SLKC_API virtual void dealloc() override;
-	};
-
-	class LongTokenExtension : public TokenExtension {
-	public:
-		long long data;
-		peff::RcObjectPtr<peff::Alloc> allocator;
-
-		SLKC_API LongTokenExtension(peff::Alloc *allocator, long long data);
-		SLKC_API virtual ~LongTokenExtension();
-
-		SLKC_API virtual void dealloc() override;
-	};
-
-	class ULongTokenExtension : public TokenExtension {
-	public:
-		unsigned long long data;
-		peff::RcObjectPtr<peff::Alloc> allocator;
-
-		SLKC_API ULongTokenExtension(peff::Alloc *allocator, unsigned long long data);
-		SLKC_API virtual ~ULongTokenExtension();
-
-		SLKC_API virtual void dealloc() override;
-	};
-
-	class F32TokenExtension : public TokenExtension {
-	public:
-		float data;
-		peff::RcObjectPtr<peff::Alloc> allocator;
-
-		SLKC_API F32TokenExtension(peff::Alloc *allocator, float data);
-		SLKC_API virtual ~F32TokenExtension();
-
-		SLKC_API virtual void dealloc() override;
-	};
-
-	class F64TokenExtension : public TokenExtension {
-	public:
-		double data;
-		peff::RcObjectPtr<peff::Alloc> allocator;
-
-		SLKC_API F64TokenExtension(peff::Alloc *allocator, double data);
-		SLKC_API virtual ~F64TokenExtension();
 
 		SLKC_API virtual void dealloc() override;
 	};

@@ -26,7 +26,8 @@ namespace slkc {
 		ExpectingDecl,
 		InvalidMetaTypeName,
 		NoMatchingTokensFound,
-		ConflictingDefinitions
+		ConflictingDefinitions,
+		LiteralOverflowed
 	};
 
 	struct ExpectingSingleTokenErrorExData {
@@ -153,6 +154,12 @@ namespace slkc {
 				return SyntaxError(TokenRange{ document->mainModule, token->index }, std::move(exData));
 			}
 
+			return {};
+		}
+
+		PEFF_FORCEINLINE peff::Option<SyntaxError> pushLiteralOverflowedError(Token *token) noexcept {
+			if (!syntaxErrors.pushBack(SyntaxError(TokenRange{ document->mainModule, token->index }, SyntaxErrorKind::LiteralOverflowed)))
+				return genOutOfMemorySyntaxError();
 			return {};
 		}
 

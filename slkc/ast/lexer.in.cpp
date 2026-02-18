@@ -181,45 +181,69 @@ SLKC_API peff::Option<LexicalError> Lexer::lex(ModuleNode *moduleNode, const std
 					break;
 				}
 
-				<InitialCondition>"0"[0-7]+ {
-					token->tokenId = TokenId::IntLiteral;
+				<InitialCondition>"0"[0-7]+[uU] {
+					token->tokenId = TokenId::U32Literal;
 					token->exData = std::unique_ptr<TokenExtension, peff::DeallocableDeleter<TokenExtension>>(
-						peff::allocAndConstruct<IntTokenExtension>(allocator, sizeof(std::max_align_t), allocator, strtol(prevYYCURSOR, nullptr, 8)));
+						peff::allocAndConstruct<IntTokenExtension>(allocator, alignof(IntTokenExtension), allocator, IntTokenType::Octal));
+					break;
+				}
+
+				<InitialCondition>[0-9]+[uU] {
+					token->tokenId = TokenId::U32Literal;
+					token->exData = std::unique_ptr<TokenExtension, peff::DeallocableDeleter<TokenExtension>>(
+						peff::allocAndConstruct<IntTokenExtension>(allocator, alignof(IntTokenExtension), allocator, IntTokenType::Decimal));
+					break;
+				}
+
+				<InitialCondition>"0"[xX][0-9a-fA-F]+[uU] {
+					token->tokenId = TokenId::U32Literal;
+					token->exData = std::unique_ptr<TokenExtension, peff::DeallocableDeleter<TokenExtension>>(
+						peff::allocAndConstruct<IntTokenExtension>(allocator, alignof(IntTokenExtension), allocator, IntTokenType::Hexadecimal));
+					break;
+				}
+
+				<InitialCondition>"0"[bB][01]+[uU] {
+					token->tokenId = TokenId::U32Literal;
+					token->exData = std::unique_ptr<TokenExtension, peff::DeallocableDeleter<TokenExtension>>(
+						peff::allocAndConstruct<IntTokenExtension>(allocator, alignof(IntTokenExtension), allocator, IntTokenType::Binary));
+					break;
+				}
+
+				<InitialCondition>"0"[0-7]+ {
+					token->tokenId = TokenId::I32Literal;
+					token->exData = std::unique_ptr<TokenExtension, peff::DeallocableDeleter<TokenExtension>>(
+						peff::allocAndConstruct<IntTokenExtension>(allocator, alignof(IntTokenExtension), allocator, IntTokenType::Octal));
 					break;
 				}
 
 				<InitialCondition>[0-9]+ {
-					token->tokenId = TokenId::IntLiteral;
+					token->tokenId = TokenId::I32Literal;
 					token->exData = std::unique_ptr<TokenExtension, peff::DeallocableDeleter<TokenExtension>>(
-						peff::allocAndConstruct<IntTokenExtension>(allocator, sizeof(std::max_align_t), allocator, strtol(prevYYCURSOR, nullptr, 10)));
+						peff::allocAndConstruct<IntTokenExtension>(allocator, alignof(IntTokenExtension), allocator, IntTokenType::Decimal));
 					break;
 				}
 
 				<InitialCondition>"0"[xX][0-9a-fA-F]+ {
-					token->tokenId = TokenId::IntLiteral;
+					token->tokenId = TokenId::I32Literal;
 					token->exData = std::unique_ptr<TokenExtension, peff::DeallocableDeleter<TokenExtension>>(
-						peff::allocAndConstruct<IntTokenExtension>(allocator, sizeof(std::max_align_t), allocator, strtol(prevYYCURSOR, nullptr, 16)));
+						peff::allocAndConstruct<IntTokenExtension>(allocator, alignof(IntTokenExtension), allocator, IntTokenType::Hexadecimal));
 					break;
 				}
 
 				<InitialCondition>"0"[bB][01]+ {
-					token->tokenId = TokenId::IntLiteral;
+					token->tokenId = TokenId::I32Literal;
 					token->exData = std::unique_ptr<TokenExtension, peff::DeallocableDeleter<TokenExtension>>(
-						peff::allocAndConstruct<IntTokenExtension>(allocator, sizeof(std::max_align_t), allocator, strtol(prevYYCURSOR, nullptr, 2)));
+						peff::allocAndConstruct<IntTokenExtension>(allocator, alignof(IntTokenExtension), allocator, IntTokenType::Binary));
 					break;
 				}
 
 				<InitialCondition>[0-9]+"."[0-9]+[fF] {
 					token->tokenId = TokenId::F32Literal;
-					token->exData = std::unique_ptr<TokenExtension, peff::DeallocableDeleter<TokenExtension>>(
-						peff::allocAndConstruct<F32TokenExtension>(allocator, sizeof(std::max_align_t), allocator, strtof(prevYYCURSOR, nullptr)));
 					break;
 				}
 
 				<InitialCondition>[0-9]+"."[0-9]+ {
 					token->tokenId = TokenId::F64Literal;
-					token->exData = std::unique_ptr<TokenExtension, peff::DeallocableDeleter<TokenExtension>>(
-						peff::allocAndConstruct<F64TokenExtension>(allocator, sizeof(std::max_align_t), allocator, strtod(prevYYCURSOR, nullptr)));
 					break;
 				}
 

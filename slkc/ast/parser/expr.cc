@@ -1,6 +1,176 @@
+#define NOMINMAX
 #include "../parser.h"
 
 using namespace slkc;
+
+template <typename T>
+SLAKE_FORCEINLINE peff::Option<SyntaxError> _parseInt(Parser *parser, Token *token, bool isNegative, const std::string_view &bodyView, T &dataOut) {
+	peff::Option<SyntaxError> syntaxError;
+
+	bool overflowWarned = false;
+	char c;
+	T data = 0;
+	size_t i = 0;
+
+	switch (((IntTokenExtension *)token->exData.get())->tokenType) {
+		case IntTokenType::Decimal:
+			while (i < bodyView.size()) {
+				c = bodyView.at(i);
+				if (isNegative) {
+					if ((!overflowWarned) && (std::numeric_limits<T>::min() / 10 > data)) {
+						if ((syntaxError = parser->pushLiteralOverflowedError(token)))
+							return syntaxError;
+						overflowWarned = true;
+					}
+					data *= 10;
+					data -= c - '0';
+				} else {
+					if ((!overflowWarned) && (std::numeric_limits<T>::max() / 10 < data)) {
+						if ((syntaxError = parser->pushLiteralOverflowedError(token)))
+							return syntaxError;
+						overflowWarned = true;
+					}
+					data *= 10;
+					data += c - '0';
+				}
+				++i;
+			}
+			break;
+		case IntTokenType::Hexadecimal:
+			while (i < bodyView.size()) {
+				char c = bodyView.at(i);
+				if (isNegative) {
+					if ((!overflowWarned) && (std::numeric_limits<T>::min() / 16 > data)) {
+						if ((syntaxError = parser->pushLiteralOverflowedError(token)))
+							return syntaxError;
+						overflowWarned = true;
+					}
+					data *= 16;
+					switch (c) {
+						case '0':
+						case '1':
+						case '2':
+						case '3':
+						case '4':
+						case '5':
+						case '6':
+						case '7':
+						case '8':
+						case '9':
+							data -= c - '0';
+							break;
+						case 'a':
+						case 'b':
+						case 'c':
+						case 'd':
+						case 'e':
+						case 'f':
+							data -= c - 'a' + 10;
+							break;
+						case 'A':
+						case 'B':
+						case 'C':
+						case 'D':
+						case 'E':
+						case 'F':
+							data -= c - 'A' + 10;
+							break;
+					}
+				} else {
+					if ((!overflowWarned) && (std::numeric_limits<T>::max() / 10 < data)) {
+						if ((syntaxError = parser->pushLiteralOverflowedError(token)))
+							return syntaxError;
+						overflowWarned = true;
+					}
+					data *= 16;
+					switch (c) {
+						case '0':
+						case '1':
+						case '2':
+						case '3':
+						case '4':
+						case '5':
+						case '6':
+						case '7':
+						case '8':
+						case '9':
+							data += c - '0';
+							break;
+						case 'a':
+						case 'b':
+						case 'c':
+						case 'd':
+						case 'e':
+						case 'f':
+							data += c - 'a' + 10;
+							break;
+						case 'A':
+						case 'B':
+						case 'C':
+						case 'D':
+						case 'E':
+						case 'F':
+							data += c - 'A' + 10;
+							break;
+					}
+				}
+				++i;
+			}
+			break;
+		case IntTokenType::Octal:
+			while (i < bodyView.size()) {
+				c = bodyView.at(i);
+				if (isNegative) {
+					if ((!overflowWarned) && (std::numeric_limits<T>::min() / 8 > data)) {
+						if ((syntaxError = parser->pushLiteralOverflowedError(token)))
+							return syntaxError;
+						overflowWarned = true;
+					}
+					data *= 8;
+					data -= c - '0';
+				} else {
+					if ((!overflowWarned) && (std::numeric_limits<T>::max() / 8 < data)) {
+						if ((syntaxError = parser->pushLiteralOverflowedError(token)))
+							return syntaxError;
+						overflowWarned = true;
+					}
+					data *= 8;
+					data += c - '0';
+				}
+				++i;
+			}
+			break;
+		case IntTokenType::Binary:
+			while (i < bodyView.size()) {
+				c = bodyView.at(i);
+				if (isNegative) {
+					if ((!overflowWarned) && ((std::numeric_limits<T>::min() >> 1) > data)) {
+						if ((syntaxError = parser->pushLiteralOverflowedError(token)))
+							return syntaxError;
+						overflowWarned = true;
+					}
+					data <<= 1;
+					data -= c - '0';
+				} else {
+					if ((!overflowWarned) && ((std::numeric_limits<T>::max() >> 1) < data)) {
+						if ((syntaxError = parser->pushLiteralOverflowedError(token)))
+							return syntaxError;
+						overflowWarned = true;
+					}
+					data <<= 1;
+					data += c - '0';
+				}
+				++i;
+			}
+			break;
+		default:
+			std::terminate();
+	}
+
+	dataOut = data;
+
+	return {};
+}
 
 SLKC_API peff::Option<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr<ExprNode> &exprOut) {
 	Token *prefixToken;
@@ -116,38 +286,170 @@ SLKC_API peff::Option<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr<
 					nextToken();
 					break;
 				}
-				case TokenId::IntLiteral: {
+				case TokenId::I8Literal: {
 					nextToken();
-					if (!(lhs = peff::makeSharedWithControlBlock<I32LiteralExprNode, AstNodeControlBlock<I32LiteralExprNode>>(
+
+					int8_t data = 0;
+					bool isNegative = false;
+
+					if (prefixToken->sourceText.at(0) == '-')
+						isNegative = true;
+
+					std::string_view bodyView = prefixToken->sourceText.substr(isNegative ? 1 : 0, prefixToken->sourceText.size() - (isNegative ? 1 : 0) - (sizeof("i8" - 1)));
+
+					if ((syntaxError = _parseInt<int8_t>(this, prefixToken, isNegative, bodyView, data)))
+						return syntaxError;
+
+					if (!(lhs = makeAstNode<I8LiteralExprNode>(
 							  resourceAllocator.get(), resourceAllocator.get(), document,
-							  ((IntTokenExtension *)prefixToken->exData.get())->data)
+							  data)
 								.castTo<ExprNode>()))
 						return genOutOfMemorySyntaxError();
 					break;
 				}
-				case TokenId::LongLiteral: {
+				case TokenId::I16Literal: {
 					nextToken();
-					if (!(lhs = peff::makeSharedWithControlBlock<I64LiteralExprNode, AstNodeControlBlock<I64LiteralExprNode>>(
+
+					int16_t data = 0;
+					bool isNegative = false;
+
+					if (prefixToken->sourceText.at(0) == '-')
+						isNegative = true;
+
+					std::string_view bodyView = prefixToken->sourceText.substr(isNegative ? 1 : 0, prefixToken->sourceText.size() - (isNegative ? 1 : 0) - (sizeof("i16" - 1)));
+
+					if ((syntaxError = _parseInt<int16_t>(this, prefixToken, isNegative, bodyView, data)))
+						return syntaxError;
+
+					if (!(lhs = makeAstNode<I16LiteralExprNode>(
 							  resourceAllocator.get(), resourceAllocator.get(), document,
-							  ((LongTokenExtension *)prefixToken->exData.get())->data)
+							  data)
 								.castTo<ExprNode>()))
 						return genOutOfMemorySyntaxError();
 					break;
 				}
-				case TokenId::UIntLiteral: {
+				case TokenId::I32Literal: {
 					nextToken();
-					if (!(lhs = peff::makeSharedWithControlBlock<U32LiteralExprNode, AstNodeControlBlock<U32LiteralExprNode>>(
+
+					int32_t data = 0;
+					bool isNegative = false;
+
+					if (prefixToken->sourceText.at(0) == '-')
+						isNegative = true;
+
+					std::string_view bodyView = prefixToken->sourceText.substr(isNegative ? 1 : 0, prefixToken->sourceText.size() - (isNegative ? 1 : 0));
+
+					if ((syntaxError = _parseInt<int32_t>(this, prefixToken, isNegative, bodyView, data)))
+						return syntaxError;
+
+					if (!(lhs = makeAstNode<I32LiteralExprNode>(
 							  resourceAllocator.get(), resourceAllocator.get(), document,
-							  ((UIntTokenExtension *)prefixToken->exData.get())->data)
+							  data)
 								.castTo<ExprNode>()))
 						return genOutOfMemorySyntaxError();
 					break;
 				}
-				case TokenId::ULongLiteral: {
+				case TokenId::I64Literal: {
 					nextToken();
-					if (!(lhs = peff::makeSharedWithControlBlock<U64LiteralExprNode, AstNodeControlBlock<U64LiteralExprNode>>(
+
+					int64_t data = 0;
+					bool isNegative = false;
+
+					if (prefixToken->sourceText.at(0) == '-')
+						isNegative = true;
+
+					std::string_view bodyView = prefixToken->sourceText.substr(isNegative ? 1 : 0, prefixToken->sourceText.size() - (isNegative ? 1 : 0) - (sizeof("L" - 1)));
+
+					if ((syntaxError = _parseInt<int64_t>(this, prefixToken, isNegative, bodyView, data)))
+						return syntaxError;
+
+					if (!(lhs = makeAstNode<I64LiteralExprNode>(
 							  resourceAllocator.get(), resourceAllocator.get(), document,
-							  ((ULongTokenExtension *)prefixToken->exData.get())->data)
+							  data)
+								.castTo<ExprNode>()))
+						return genOutOfMemorySyntaxError();
+					break;
+				}
+				case TokenId::U8Literal: {
+					nextToken();
+
+					uint8_t data = 0;
+					bool isNegative = false;
+
+					if (prefixToken->sourceText.at(0) == '-')
+						isNegative = true;
+
+					std::string_view bodyView = prefixToken->sourceText.substr(isNegative ? 1 : 0, prefixToken->sourceText.size() - (isNegative ? 1 : 0) - (sizeof("Ui8" - 1)));
+
+					if ((syntaxError = _parseInt<uint8_t>(this, prefixToken, isNegative, bodyView, data)))
+						return syntaxError;
+
+					if (!(lhs = makeAstNode<I8LiteralExprNode>(
+							  resourceAllocator.get(), resourceAllocator.get(), document,
+							  data)
+								.castTo<ExprNode>()))
+						return genOutOfMemorySyntaxError();
+					break;
+				}
+				case TokenId::U16Literal: {
+					nextToken();
+
+					uint16_t data = 0;
+					bool isNegative = false;
+
+					if (prefixToken->sourceText.at(0) == '-')
+						isNegative = true;
+
+					std::string_view bodyView = prefixToken->sourceText.substr(isNegative ? 1 : 0, prefixToken->sourceText.size() - (isNegative ? 1 : 0) - (sizeof("Ui16" - 1)));
+
+					if ((syntaxError = _parseInt<uint16_t>(this, prefixToken, isNegative, bodyView, data)))
+						return syntaxError;
+
+					if (!(lhs = makeAstNode<I16LiteralExprNode>(
+							  resourceAllocator.get(), resourceAllocator.get(), document,
+							  data)
+								.castTo<ExprNode>()))
+						return genOutOfMemorySyntaxError();
+					break;
+				}
+				case TokenId::U32Literal: {
+					nextToken();
+
+					uint32_t data = 0;
+					bool isNegative = false;
+
+					if (prefixToken->sourceText.at(0) == '-')
+						isNegative = true;
+
+					std::string_view bodyView = prefixToken->sourceText.substr(isNegative ? 1 : 0, prefixToken->sourceText.size() - (isNegative ? 1 : 0) - (sizeof("U" - 1)));
+
+					if ((syntaxError = _parseInt<uint32_t>(this, prefixToken, isNegative, bodyView, data)))
+						return syntaxError;
+
+					if (!(lhs = makeAstNode<I32LiteralExprNode>(
+							  resourceAllocator.get(), resourceAllocator.get(), document,
+							  data)
+								.castTo<ExprNode>()))
+						return genOutOfMemorySyntaxError();
+					break;
+				}
+				case TokenId::U64Literal: {
+					nextToken();
+
+					uint64_t data = 0;
+					bool isNegative = false;
+
+					if (prefixToken->sourceText.at(0) == '-')
+						isNegative = true;
+
+					std::string_view bodyView = prefixToken->sourceText.substr(isNegative ? 1 : 0, prefixToken->sourceText.size() - (isNegative ? 1 : 0) - (sizeof("UL" - 1)));
+
+					if ((syntaxError = _parseInt<uint64_t>(this, prefixToken, isNegative, bodyView, data)))
+						return syntaxError;
+
+					if (!(lhs = makeAstNode<I64LiteralExprNode>(
+							  resourceAllocator.get(), resourceAllocator.get(), document,
+							  data)
 								.castTo<ExprNode>()))
 						return genOutOfMemorySyntaxError();
 					break;
@@ -169,9 +471,10 @@ SLKC_API peff::Option<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr<
 				}
 				case TokenId::F32Literal: {
 					nextToken();
+
 					if (!(lhs = peff::makeSharedWithControlBlock<F32LiteralExprNode, AstNodeControlBlock<F32LiteralExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document,
-							  ((F32TokenExtension *)prefixToken->exData.get())->data)
+							  strtof(prefixToken->sourceText.data(), nullptr))
 								.castTo<ExprNode>()))
 						return genOutOfMemorySyntaxError();
 					break;
@@ -180,7 +483,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr<
 					nextToken();
 					if (!(lhs = peff::makeSharedWithControlBlock<F64LiteralExprNode, AstNodeControlBlock<F64LiteralExprNode>>(
 							  resourceAllocator.get(), resourceAllocator.get(), document,
-							  ((F64TokenExtension *)prefixToken->exData.get())->data)
+							  strtod(prefixToken->sourceText.data(), nullptr))
 								.castTo<ExprNode>()))
 						return genOutOfMemorySyntaxError();
 					break;

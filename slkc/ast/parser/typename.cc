@@ -8,10 +8,14 @@ SLKC_API peff::Option<SyntaxError> Parser::parseGenericArg(AstNodePtr<AstNode>& 
 	Token *t = peekToken();
 
 	switch (t->tokenId) {
-		case TokenId::IntLiteral:
-		case TokenId::LongLiteral:
-		case TokenId::UIntLiteral:
-		case TokenId::ULongLiteral:
+		case TokenId::I8Literal:
+		case TokenId::I16Literal:
+		case TokenId::I32Literal:
+		case TokenId::I64Literal:
+		case TokenId::U8Literal:
+		case TokenId::U16Literal:
+		case TokenId::U32Literal:
+		case TokenId::U64Literal:
 		case TokenId::F32Literal:
 		case TokenId::F64Literal:
 		case TokenId::StringLiteral: {

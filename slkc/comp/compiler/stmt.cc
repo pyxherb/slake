@@ -401,92 +401,49 @@ SLKC_API peff::Option<CompilationError> slkc::compileIfStmt(
 			SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, s->cond, constCondExpr));
 		}
 
-		if (constCondExpr) {
-			assert(constCondExpr->exprKind == ExprKind::Bool);
+		SLKC_RETURN_IF_COMP_ERROR(
+			compilationContext->emitIns(
+				sldIndex, slake::Opcode::BR,
+				UINT32_MAX,
+				{ slake::Value(slake::ValueType::RegIndex, reg), slake::Value(slake::ValueType::Label, trueLabel), slake::Value(slake::ValueType::Label, falseLabel) }));
 
-			if (constCondExpr.castTo<BoolLiteralExprNode>()->data) {
-				// No need to add JMP instruction.
+		compilationContext->setLabelOffset(trueLabel, compilationContext->getCurInsOff());
 
-				compilationContext->setLabelOffset(trueLabel, compilationContext->getCurInsOff());
+		{
+			PathEnv innerPathEnv(compileEnv->allocator.get());
+			innerPathEnv.execPossibility =
+				constCondExpr
+					? (constCondExpr.castTo<BoolLiteralExprNode>()->data
+							  ? PathPossibility::Must
+							  : PathPossibility::Never)
+					: PathPossibility::May;
+			SLKC_RETURN_IF_COMP_ERROR(compileStmt(compileEnv, compilationContext, &innerPathEnv, s->trueBody));
 
-				SLKC_RETURN_IF_COMP_ERROR(compileStmt(compileEnv, compilationContext, pathEnv, s->trueBody));
-
-				SLKC_RETURN_IF_COMP_ERROR(
-					compilationContext->emitIns(
-						sldIndex, slake::Opcode::JMP,
-						UINT32_MAX,
-						{ slake::Value(slake::ValueType::Label, endLabel) }));
-
-				compilationContext->setLabelOffset(falseLabel, compilationContext->getCurInsOff());
-
-				if (s->falseBody) {
-					PathEnv innerPathEnv(compileEnv->allocator.get());
-					SLKC_RETURN_IF_COMP_ERROR(compileStmt(compileEnv, compilationContext, &innerPathEnv, s->falseBody));
-				}
-
-				compilationContext->setLabelOffset(endLabel, compilationContext->getCurInsOff());
-			} else {
-				pathEnv->execPossibility = PathPossibility::Never;
-
-				SLKC_RETURN_IF_COMP_ERROR(
-					compilationContext->emitIns(
-						sldIndex, slake::Opcode::JMP,
-						UINT32_MAX,
-						{ slake::Value(slake::ValueType::Label, falseLabel) }));
-
-				compilationContext->setLabelOffset(trueLabel, compilationContext->getCurInsOff());
-
-				{
-					PathEnv innerPathEnv(compileEnv->allocator.get());
-					SLKC_RETURN_IF_COMP_ERROR(compileStmt(compileEnv, compilationContext, &innerPathEnv, s->trueBody));
-				}
-
-				compilationContext->setLabelOffset(falseLabel, compilationContext->getCurInsOff());
-
-				if (s->falseBody)
-					SLKC_RETURN_IF_COMP_ERROR(compileStmt(compileEnv, compilationContext, pathEnv, s->falseBody));
-
-				compilationContext->setLabelOffset(endLabel, compilationContext->getCurInsOff());
-			}
-		} else {
-			pathEnv->execPossibility = PathPossibility::May;
-
-			SLKC_RETURN_IF_COMP_ERROR(
-				compilationContext->emitIns(
-					sldIndex, slake::Opcode::BR,
-					UINT32_MAX,
-					{ slake::Value(slake::ValueType::RegIndex, reg), slake::Value(slake::ValueType::Label, trueLabel), slake::Value(slake::ValueType::Label, falseLabel) }));
-
-			compilationContext->setLabelOffset(trueLabel, compilationContext->getCurInsOff());
-
-			{
-				PathEnv innerPathEnv(compileEnv->allocator.get());
-				SLKC_RETURN_IF_COMP_ERROR(compileStmt(compileEnv, compilationContext, &innerPathEnv, s->trueBody));
-
-				pathEnv->noReturnPossibility = combinePossibility(pathEnv->noReturnPossibility, innerPathEnv.noReturnPossibility);
-				pathEnv->returnPossibility = combinePossibility(pathEnv->returnPossibility, innerPathEnv.returnPossibility);
-				pathEnv->breakPossibility = combinePossibility(pathEnv->breakPossibility, innerPathEnv.breakPossibility);
-			}
-
-			SLKC_RETURN_IF_COMP_ERROR(
-				compilationContext->emitIns(
-					sldIndex, slake::Opcode::JMP,
-					UINT32_MAX,
-					{ slake::Value(slake::ValueType::Label, endLabel) }));
-
-			compilationContext->setLabelOffset(falseLabel, compilationContext->getCurInsOff());
-
-			if (s->falseBody) {
-				PathEnv innerPathEnv(compileEnv->allocator.get());
-				SLKC_RETURN_IF_COMP_ERROR(compileStmt(compileEnv, compilationContext, &innerPathEnv, s->falseBody));
-
-				pathEnv->noReturnPossibility = combinePossibility(pathEnv->noReturnPossibility, innerPathEnv.noReturnPossibility);
-				pathEnv->returnPossibility = combinePossibility(pathEnv->returnPossibility, innerPathEnv.returnPossibility);
-				pathEnv->breakPossibility = combinePossibility(pathEnv->breakPossibility, innerPathEnv.breakPossibility);
-			}
-
-			compilationContext->setLabelOffset(endLabel, compilationContext->getCurInsOff());
+			SLKC_RETURN_IF_COMP_ERROR(mergePathEnv(*pathEnv, innerPathEnv));
 		}
+
+		SLKC_RETURN_IF_COMP_ERROR(
+			compilationContext->emitIns(
+				sldIndex, slake::Opcode::JMP,
+				UINT32_MAX,
+				{ slake::Value(slake::ValueType::Label, endLabel) }));
+
+		compilationContext->setLabelOffset(falseLabel, compilationContext->getCurInsOff());
+
+		if (s->falseBody) {
+			PathEnv innerPathEnv(compileEnv->allocator.get());
+			innerPathEnv.execPossibility =
+				constCondExpr
+					? (constCondExpr.castTo<BoolLiteralExprNode>()->data
+							  ? PathPossibility::Never
+							  : PathPossibility::Must)
+					: PathPossibility::May;
+			SLKC_RETURN_IF_COMP_ERROR(compileStmt(compileEnv, compilationContext, &innerPathEnv, s->falseBody));
+
+			SLKC_RETURN_IF_COMP_ERROR(mergePathEnv(*pathEnv, innerPathEnv));
+		}
+
+		compilationContext->setLabelOffset(endLabel, compilationContext->getCurInsOff());
 	}
 
 	return {};
@@ -554,47 +511,47 @@ SLKC_API peff::Option<CompilationError> slkc::compileWhileStmt(
 		SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, s->cond, constCondExpr));
 	}
 
-	/*if (constCondExpr) {
-		assert(constCondExpr->exprKind == ExprKind::Bool);
-	} else {
-		pathEnv->execPossibility = PathPossibility::May;
-*/
-		SLKC_RETURN_IF_COMP_ERROR(compilationContext->enterBlock());
-		peff::ScopeGuard popBlockContextGuard([compilationContext]() noexcept {
-			compilationContext->leaveBlock();
-		});
+	SLKC_RETURN_IF_COMP_ERROR(compilationContext->enterBlock());
+	peff::ScopeGuard popBlockContextGuard([compilationContext]() noexcept {
+		compilationContext->leaveBlock();
+	});
 
-		{
-			compilationContext->setLabelOffset(continueLabel, compilationContext->getCurInsOff());
+	{
+		compilationContext->setLabelOffset(continueLabel, compilationContext->getCurInsOff());
 
-			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileEnv, compilationContext, pathEnv, conditionReg, ExprEvalPurpose::RValue, boolType.castTo<TypeNameNode>(), s->cond, exprType, result));
-
-			SLKC_RETURN_IF_COMP_ERROR(
-				compilationContext->emitIns(
-					sldIndex, slake::Opcode::BR,
-					UINT32_MAX,
-					{ slake::Value(slake::ValueType::RegIndex, conditionReg),
-						slake::Value(slake::ValueType::Label, bodyLabel),
-						slake::Value(slake::ValueType::Label, breakLabel) }));
-		}
-
-		compilationContext->setLabelOffset(bodyLabel, compilationContext->getCurInsOff());
-
-		// PathEnv bodyPathEnv(compileEnv->allocator.get());
-		SLKC_RETURN_IF_COMP_ERROR(compileStmt(compileEnv, compilationContext, pathEnv, s->body));
-
-		// pathEnv->noReturnPossibility = combinePossibility(pathEnv->noReturnPossibility, bodyPathEnv.noReturnPossibility);
-		// pathEnv->returnPossibility = combinePossibility(pathEnv->returnPossibility, bodyPathEnv.returnPossibility);
-		// pathEnv->breakPossibility = combinePossibility(pathEnv->breakPossibility, bodyPathEnv.breakPossibility);
+		SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileEnv, compilationContext, pathEnv, conditionReg, ExprEvalPurpose::RValue, boolType.castTo<TypeNameNode>(), s->cond, exprType, result));
 
 		SLKC_RETURN_IF_COMP_ERROR(
 			compilationContext->emitIns(
-				sldIndex, slake::Opcode::JMP,
+				sldIndex, slake::Opcode::BR,
 				UINT32_MAX,
-				{ slake::Value(slake::ValueType::Label, continueLabel) }));
+				{ slake::Value(slake::ValueType::RegIndex, conditionReg),
+					slake::Value(slake::ValueType::Label, bodyLabel),
+					slake::Value(slake::ValueType::Label, breakLabel) }));
+	}
 
-		compilationContext->setLabelOffset(breakLabel, compilationContext->getCurInsOff());
-//	}
+	compilationContext->setLabelOffset(bodyLabel, compilationContext->getCurInsOff());
+
+	PathEnv bodyPathEnv(compileEnv->allocator.get());
+	bodyPathEnv.execPossibility =
+		constCondExpr
+			? (constCondExpr.castTo<BoolLiteralExprNode>()->data
+					  ? PathPossibility::Must
+					  : PathPossibility::Never)
+			: PathPossibility::May;
+	// TODO: Set noReturnPossibility.
+
+	SLKC_RETURN_IF_COMP_ERROR(compileStmt(compileEnv, compilationContext, &bodyPathEnv, s->body));
+
+	SLKC_RETURN_IF_COMP_ERROR(mergePathEnv(*pathEnv, bodyPathEnv));
+
+	SLKC_RETURN_IF_COMP_ERROR(
+		compilationContext->emitIns(
+			sldIndex, slake::Opcode::JMP,
+			UINT32_MAX,
+			{ slake::Value(slake::ValueType::Label, continueLabel) }));
+
+	compilationContext->setLabelOffset(breakLabel, compilationContext->getCurInsOff());
 
 	//
 

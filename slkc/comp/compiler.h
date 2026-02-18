@@ -47,7 +47,7 @@ namespace slkc {
 
 	struct PathEnv {
 		PathEnv *parent = nullptr;
-		peff::Map<AstNodePtr<VarNode>, NullOverrideType> varNullOverrides;
+		peff::Map<AstNodePtr<VarNode>, NullOverrideType> localVarNullOverrides;
 
 		/// @brief Indicates if the path will be executed at least one times.
 		PathPossibility execPossibility = PathPossibility::Must;
@@ -61,15 +61,17 @@ namespace slkc {
 		/// @brief Indicates if the path will break current control flow (e.g. jump out from current loop).
 		PathPossibility breakPossibility = PathPossibility::Never;
 
-		SLAKE_FORCEINLINE PathEnv(peff::Alloc *allocator) noexcept : varNullOverrides(allocator) {
+		SLAKE_FORCEINLINE PathEnv(peff::Alloc *allocator) noexcept : localVarNullOverrides(allocator) {
 		}
 		PathEnv(PathEnv &&) noexcept = default;
 		SLAKE_FORCEINLINE ~PathEnv() {}
 
 		SLAKE_API peff::Option<NullOverrideType> lookupVarNullOverride(const AstNodePtr<VarNode> &varNode);
-		SLAKE_API peff::Option<CompilationError> setVarNullOverride(AstNodePtr<VarNode> varNode, NullOverrideType type);
+		SLAKE_API peff::Option<CompilationError> setLocalVarNullOverride(AstNodePtr<VarNode> varNode, NullOverrideType type);
 		SLAKE_API void removeVarNullOverride(const AstNodePtr<VarNode> &varNode);
 	};
+
+	SLKC_API peff::Option<CompilationError> mergePathEnv(PathEnv &outer, const PathEnv &inner) noexcept;
 
 	class CompilationContext {
 	public:

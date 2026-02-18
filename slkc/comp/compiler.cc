@@ -38,10 +38,40 @@ SLKC_API PathPossibility slkc::combinePossibility(PathPossibility outer, PathPos
 	std::terminate();
 }
 
+SLKC_API peff::Option<CompilationError> slkc::mergePathEnv(PathEnv &outer, const PathEnv &inner) noexcept {
+	switch (inner.execPossibility) {
+		case PathPossibility::Never:
+			break;
+		case PathPossibility::May: {
+			outer.noReturnPossibility = combinePossibility(outer.noReturnPossibility, combinePossibility(inner.execPossibility, inner.noReturnPossibility));
+			outer.returnPossibility = combinePossibility(outer.returnPossibility, combinePossibility(inner.execPossibility, inner.returnPossibility));
+			outer.breakPossibility = combinePossibility(outer.breakPossibility, combinePossibility(inner.execPossibility, inner.breakPossibility));
+
+			for (auto &i : inner.localVarNullOverrides) {
+				if (i.second == NullOverrideType::Nullify)
+					SLKC_RETURN_IF_COMP_ERROR(outer.setLocalVarNullOverride(i.first, NullOverrideType::Nullify));
+			}
+			break;
+		}
+		case PathPossibility::Must: {
+			outer.noReturnPossibility = combinePossibility(outer.noReturnPossibility, inner.noReturnPossibility);
+			outer.returnPossibility = combinePossibility(outer.returnPossibility, inner.returnPossibility);
+			outer.breakPossibility = combinePossibility(outer.breakPossibility, inner.breakPossibility);
+
+			for (auto &i : inner.localVarNullOverrides) {
+				SLKC_RETURN_IF_COMP_ERROR(outer.setLocalVarNullOverride(i.first, i.second));
+			}
+			break;
+		}
+	}
+
+	return {};
+}
+
 SLAKE_API peff::Option<NullOverrideType> PathEnv::lookupVarNullOverride(const AstNodePtr<VarNode> &varNode) {
 	for (PathEnv *i = this; i; i = i->parent) {
-		if (auto it = i->varNullOverrides.find(varNode);
-			it != i->varNullOverrides.end()) {
+		if (auto it = i->localVarNullOverrides.find(varNode);
+			it != i->localVarNullOverrides.end()) {
 			NullOverrideType v = it.value();
 			return std::move(v);
 		}
@@ -49,14 +79,16 @@ SLAKE_API peff::Option<NullOverrideType> PathEnv::lookupVarNullOverride(const As
 	return {};
 }
 
-SLAKE_API peff::Option<CompilationError> PathEnv::setVarNullOverride(AstNodePtr<VarNode> varNode, NullOverrideType type) {
-	if (!varNullOverrides.insert(std::move(varNode), std::move(type)))
+SLAKE_API peff::Option<CompilationError> PathEnv::setLocalVarNullOverride(AstNodePtr<VarNode> varNode, NullOverrideType type) {
+	if (auto it = localVarNullOverrides.find(varNode); it != localVarNullOverrides.end()) {
+		it.value() = type;
+	} else if (!localVarNullOverrides.insert(std::move(varNode), std::move(type)))
 		return genOutOfMemoryCompError();
 	return {};
 }
 
 SLAKE_API void PathEnv::removeVarNullOverride(const AstNodePtr<VarNode> &varNode) {
-	varNullOverrides.remove(varNode);
+	localVarNullOverrides.remove(varNode);
 }
 
 SLKC_API CompilationContext::CompilationContext(CompilationContext *parent) : parent(parent) {

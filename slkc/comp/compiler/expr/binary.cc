@@ -111,9 +111,9 @@ peff::Option<CompilationError> slkc::_compileSimpleAssignBinaryExpr(
 
 			if (lhsResult.evaluatedFinalMember->getAstNodeType() == AstNodeType::Var) {
 				if (rhsResult.evaluatedType->typeNameKind == TypeNameKind::Null) {
-					SLKC_RETURN_IF_COMP_ERROR(pathEnv->setVarNullOverride(lhsResult.evaluatedFinalMember.castTo<VarNode>(), NullOverrideType::Nullify));
+					SLKC_RETURN_IF_COMP_ERROR(pathEnv->setLocalVarNullOverride(lhsResult.evaluatedFinalMember.castTo<VarNode>(), NullOverrideType::Nullify));
 				} else {
-					SLKC_RETURN_IF_COMP_ERROR(pathEnv->setVarNullOverride(lhsResult.evaluatedFinalMember.castTo<VarNode>(), NullOverrideType::Denullify));
+					SLKC_RETURN_IF_COMP_ERROR(pathEnv->setLocalVarNullOverride(lhsResult.evaluatedFinalMember.castTo<VarNode>(), NullOverrideType::Denullify));
 				}
 			}
 			break;
@@ -153,9 +153,9 @@ peff::Option<CompilationError> slkc::_compileSimpleAssignBinaryExpr(
 
 			if (lhsResult.evaluatedFinalMember->getAstNodeType() == AstNodeType::Var) {
 				if (rhsResult.evaluatedType->typeNameKind == TypeNameKind::Null) {
-					SLKC_RETURN_IF_COMP_ERROR(pathEnv->setVarNullOverride(lhsResult.evaluatedFinalMember.castTo<VarNode>(), NullOverrideType::Nullify));
+					SLKC_RETURN_IF_COMP_ERROR(pathEnv->setLocalVarNullOverride(lhsResult.evaluatedFinalMember.castTo<VarNode>(), NullOverrideType::Nullify));
 				} else {
-					SLKC_RETURN_IF_COMP_ERROR(pathEnv->setVarNullOverride(lhsResult.evaluatedFinalMember.castTo<VarNode>(), NullOverrideType::Denullify));
+					SLKC_RETURN_IF_COMP_ERROR(pathEnv->setLocalVarNullOverride(lhsResult.evaluatedFinalMember.castTo<VarNode>(), NullOverrideType::Denullify));
 				}
 			}
 			break;

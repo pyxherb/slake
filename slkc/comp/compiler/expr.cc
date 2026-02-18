@@ -11,7 +11,7 @@ static peff::Option<CompilationError> _compileLiteralExpr(
 	ExprEvalPurpose evalPurpose,
 	uint32_t resultRegOut,
 	CompileExprResult &resultOut) {
-	peff::SharedPtr<LE> e = expr.castTo<LE>();
+	AstNodePtr<LE> e = expr.castTo<LE>();
 
 	switch (evalPurpose) {
 		case ExprEvalPurpose::EvalType:
@@ -41,7 +41,7 @@ static peff::Option<CompilationError> _compileLiteralExpr(
 		default:
 			std::terminate();
 	}
-	if (!(resultOut.evaluatedType = peff::makeSharedWithControlBlock<TN, AstNodeControlBlock<TN>>(
+	if (!(resultOut.evaluatedType = makeAstNode<TN>(
 			  compileEnv->allocator.get(),
 			  compileEnv->allocator.get(),
 			  compileEnv->document)
@@ -128,7 +128,7 @@ static peff::Option<CompilationError> _loadTheRestOfIdRef(CompileEnv *compileEnv
 
 						SLKC_RETURN_IF_COMP_ERROR(getFullIdRef(compileEnv->allocator.get(), part.member, customOverridenType->idRefPtr));
 
-						customOverridenType->contextNode = fn.castTo<MemberNode>();
+						customOverridenType->contextNode = toWeakPtr(fn.castTo<MemberNode>());
 
 						overridenType = customOverridenType.castTo<TypeNameNode>();
 					}
@@ -351,7 +351,7 @@ static peff::Option<CompilationError> _determineNodeType(CompileEnv *compileEnv,
 			if (!tn) {
 				return genOutOfMemoryCompError();
 			}
-			tn->contextNode = compileEnv->document->rootModule.castTo<MemberNode>();
+			tn->contextNode = toWeakPtr(compileEnv->document->rootModule.castTo<MemberNode>());
 
 			tn->idRefPtr = std::move(fullIdRef);
 
@@ -1503,7 +1503,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 				if (!tn) {
 					return genOutOfMemoryCompError();
 				}
-				tn->contextNode = compileEnv->document->rootModule.castTo<MemberNode>();
+				tn->contextNode = toWeakPtr(compileEnv->document->rootModule.castTo<MemberNode>());
 
 				tn->idRefPtr = std::move(fullIdRef);
 

@@ -69,3 +69,9 @@ Mostly in the same way of the path-based null checker.
 
 Take notice of the initialization completion point, and switch the object type
 using `DCMT` instruction on that time point.
+
+### Cache Manager
+
+We should introduce compilation cache for the language server.
+
+This includes indexer/serializer/deserializer for memory objects.

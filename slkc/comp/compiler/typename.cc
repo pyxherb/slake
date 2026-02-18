@@ -1722,7 +1722,7 @@ SLKC_API peff::Option<CompilationError> slkc::fnToTypeName(
 					if (!thisType) {
 						return genOutOfMemoryCompError();
 					}
-					thisType->contextNode = compileEnv->document->rootModule.castTo<MemberNode>();
+					thisType->contextNode = toWeakPtr(compileEnv->document->rootModule.castTo<MemberNode>());
 
 					thisType->idRefPtr = std::move(fullIdRef);
 

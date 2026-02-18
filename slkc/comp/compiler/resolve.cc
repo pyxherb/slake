@@ -782,7 +782,7 @@ SLKC_API peff::Option<CompilationError> slkc::resolveCustomTypeName(
 
 resolved:
 	if (member) {
-		typeName->cachedResolveResult = peff::WeakPtr<MemberNode>(member);
+		typeName->cachedResolveResult = toWeakPtr(member);
 
 		switch (member->getAstNodeType()) {
 			case AstNodeType::Class:

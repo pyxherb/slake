@@ -654,7 +654,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileWithStmt(
 
 		tn->idRefPtr = std::move(idRefPtr);
 
-		tn->contextNode = compileEnv->thisNode->thisType;
+		tn->contextNode = toWeakPtr(compileEnv->thisNode->thisType);
 
 		SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(compileEnv, compileEnv->document, tn, m));
 

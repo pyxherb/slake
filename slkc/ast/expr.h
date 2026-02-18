@@ -192,13 +192,13 @@ namespace slkc {
 		int8_t data;
 
 		struct GetData {
-			SLAKE_FORCEINLINE int8_t operator()(const peff::SharedPtr<I8LiteralExprNode> &l) const {
+			SLAKE_FORCEINLINE int8_t operator()(const AstNodePtr<I8LiteralExprNode> &l) const {
 				return l->data;
 			}
 		};
 
 		struct SetData {
-			SLAKE_FORCEINLINE void operator()(peff::SharedPtr<I8LiteralExprNode> l, int8_t data) const {
+			SLAKE_FORCEINLINE void operator()(AstNodePtr<I8LiteralExprNode> l, int8_t data) const {
 				l->data = data;
 			}
 		};
@@ -216,13 +216,13 @@ namespace slkc {
 		int16_t data;
 
 		struct GetData {
-			SLAKE_FORCEINLINE int16_t operator()(const peff::SharedPtr<I16LiteralExprNode> &l) const {
+			SLAKE_FORCEINLINE int16_t operator()(const AstNodePtr<I16LiteralExprNode> &l) const {
 				return l->data;
 			}
 		};
 
 		struct SetData {
-			SLAKE_FORCEINLINE void operator()(peff::SharedPtr<I16LiteralExprNode> l, int16_t data) const {
+			SLAKE_FORCEINLINE void operator()(AstNodePtr<I16LiteralExprNode> l, int16_t data) const {
 				l->data = data;
 			}
 		};
@@ -240,13 +240,13 @@ namespace slkc {
 		int32_t data;
 
 		struct GetData {
-			SLAKE_FORCEINLINE int32_t operator()(const peff::SharedPtr<I32LiteralExprNode> &l) const {
+			SLAKE_FORCEINLINE int32_t operator()(const AstNodePtr<I32LiteralExprNode> &l) const {
 				return l->data;
 			}
 		};
 
 		struct SetData {
-			SLAKE_FORCEINLINE void operator()(peff::SharedPtr<I32LiteralExprNode> l, int32_t data) const {
+			SLAKE_FORCEINLINE void operator()(AstNodePtr<I32LiteralExprNode> l, int32_t data) const {
 				l->data = data;
 			}
 		};
@@ -264,13 +264,13 @@ namespace slkc {
 		int64_t data;
 
 		struct GetData {
-			SLAKE_FORCEINLINE int64_t operator()(const peff::SharedPtr<I64LiteralExprNode> &l) const {
+			SLAKE_FORCEINLINE int64_t operator()(const AstNodePtr<I64LiteralExprNode> &l) const {
 				return l->data;
 			}
 		};
 
 		struct SetData {
-			SLAKE_FORCEINLINE void operator()(peff::SharedPtr<I64LiteralExprNode> l, int64_t data) const {
+			SLAKE_FORCEINLINE void operator()(AstNodePtr<I64LiteralExprNode> l, int64_t data) const {
 				l->data = data;
 			}
 		};
@@ -288,13 +288,13 @@ namespace slkc {
 		uint8_t data;
 
 		struct GetData {
-			SLAKE_FORCEINLINE uint8_t operator()(const peff::SharedPtr<U8LiteralExprNode> &l) const {
+			SLAKE_FORCEINLINE uint8_t operator()(const AstNodePtr<U8LiteralExprNode> &l) const {
 				return l->data;
 			}
 		};
 
 		struct SetData {
-			SLAKE_FORCEINLINE void operator()(peff::SharedPtr<U8LiteralExprNode> l, uint8_t data) const {
+			SLAKE_FORCEINLINE void operator()(AstNodePtr<U8LiteralExprNode> l, uint8_t data) const {
 				l->data = data;
 			}
 		};
@@ -312,13 +312,13 @@ namespace slkc {
 		uint16_t data;
 
 		struct GetData {
-			SLAKE_FORCEINLINE uint16_t operator()(const peff::SharedPtr<U16LiteralExprNode> &l) const {
+			SLAKE_FORCEINLINE uint16_t operator()(const AstNodePtr<U16LiteralExprNode> &l) const {
 				return l->data;
 			}
 		};
 
 		struct SetData {
-			SLAKE_FORCEINLINE void operator()(peff::SharedPtr<U16LiteralExprNode> l, uint16_t data) const {
+			SLAKE_FORCEINLINE void operator()(AstNodePtr<U16LiteralExprNode> l, uint16_t data) const {
 				l->data = data;
 			}
 		};
@@ -336,13 +336,13 @@ namespace slkc {
 		uint32_t data;
 
 		struct GetData {
-			SLAKE_FORCEINLINE uint32_t operator()(const peff::SharedPtr<U32LiteralExprNode> &l) const {
+			SLAKE_FORCEINLINE uint32_t operator()(const AstNodePtr<U32LiteralExprNode> &l) const {
 				return l->data;
 			}
 		};
 
 		struct SetData {
-			SLAKE_FORCEINLINE void operator()(peff::SharedPtr<U32LiteralExprNode> l, uint32_t data) const {
+			SLAKE_FORCEINLINE void operator()(AstNodePtr<U32LiteralExprNode> l, uint32_t data) const {
 				l->data = data;
 			}
 		};
@@ -360,13 +360,13 @@ namespace slkc {
 		uint64_t data;
 
 		struct GetData {
-			SLAKE_FORCEINLINE uint64_t operator()(const peff::SharedPtr<U64LiteralExprNode> &l) const {
+			SLAKE_FORCEINLINE uint64_t operator()(const AstNodePtr<U64LiteralExprNode> &l) const {
 				return l->data;
 			}
 		};
 
 		struct SetData {
-			SLAKE_FORCEINLINE void operator()(peff::SharedPtr<U64LiteralExprNode> l, uint64_t data) const {
+			SLAKE_FORCEINLINE void operator()(AstNodePtr<U64LiteralExprNode> l, uint64_t data) const {
 				l->data = data;
 			}
 		};
@@ -384,13 +384,13 @@ namespace slkc {
 		float data;
 
 		struct GetData {
-			SLAKE_FORCEINLINE float operator()(const peff::SharedPtr<F32LiteralExprNode> &l) const {
+			SLAKE_FORCEINLINE float operator()(const AstNodePtr<F32LiteralExprNode> &l) const {
 				return l->data;
 			}
 		};
 
 		struct SetData {
-			SLAKE_FORCEINLINE void operator()(peff::SharedPtr<F32LiteralExprNode> l, float data) const {
+			SLAKE_FORCEINLINE void operator()(AstNodePtr<F32LiteralExprNode> l, float data) const {
 				l->data = data;
 			}
 		};
@@ -408,13 +408,13 @@ namespace slkc {
 		double data;
 
 		struct GetData {
-			SLAKE_FORCEINLINE double operator()(const peff::SharedPtr<F64LiteralExprNode> &l) const {
+			SLAKE_FORCEINLINE double operator()(const AstNodePtr<F64LiteralExprNode> &l) const {
 				return l->data;
 			}
 		};
 
 		struct SetData {
-			SLAKE_FORCEINLINE void operator()(peff::SharedPtr<F64LiteralExprNode> l, double data) const {
+			SLAKE_FORCEINLINE void operator()(AstNodePtr<F64LiteralExprNode> l, double data) const {
 				l->data = data;
 			}
 		};

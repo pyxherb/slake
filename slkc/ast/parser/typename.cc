@@ -419,7 +419,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseTypeName(AstNodePtr<TypeNameNode
 					  document)))
 				return genOutOfMemorySyntaxError();
 
-			tn->contextNode = curParent;
+			tn->contextNode = toWeakPtr(curParent);
 
 			tn->tokenRange = id->tokenRange;
 			tn->idRefPtr = std::move(id);

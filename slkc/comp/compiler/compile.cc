@@ -59,7 +59,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileTypeName(
 			break;
 		case TypeNameKind::BCCustom: {
 			AstNodePtr<bc::BCCustomTypeNameNode> t = typeName.castTo<bc::BCCustomTypeNameNode>();
-			peff::SharedPtr<Document> doc = t->document->sharedFromThis();
+			AstNodePtr<Document> doc = t->document->sharedFromThis();
 
 			slake::HostObjectRef<slake::CustomTypeDefObject> typeDef;
 
@@ -248,7 +248,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileTypeName(
 		}
 		case TypeNameKind::Array: {
 			AstNodePtr<ArrayTypeNameNode> t = typeName.castTo<ArrayTypeNameNode>();
-			peff::SharedPtr<Document> doc = t->document->sharedFromThis();
+			AstNodePtr<Document> doc = t->document->sharedFromThis();
 
 			slake::HostObjectRef<slake::ArrayTypeDefObject> typeDef;
 
@@ -279,7 +279,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileTypeName(
 		}
 		case TypeNameKind::Ref: {
 			AstNodePtr<RefTypeNameNode> t = typeName.castTo<RefTypeNameNode>();
-			peff::SharedPtr<Document> doc = t->document->sharedFromThis();
+			AstNodePtr<Document> doc = t->document->sharedFromThis();
 
 			slake::HostObjectRef<slake::RefTypeDefObject> typeDef;
 
@@ -310,7 +310,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileTypeName(
 		}
 		case TypeNameKind::Tuple: {
 			AstNodePtr<TupleTypeNameNode> t = typeName.castTo<TupleTypeNameNode>();
-			peff::SharedPtr<Document> doc = t->document->sharedFromThis();
+			AstNodePtr<Document> doc = t->document->sharedFromThis();
 
 			slake::HostObjectRef<slake::TupleTypeDefObject> obj;
 
@@ -345,7 +345,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileTypeName(
 		}
 		case TypeNameKind::SIMD: {
 			AstNodePtr<SIMDTypeNameNode> t = typeName.castTo<SIMDTypeNameNode>();
-			peff::SharedPtr<Document> doc = t->document->sharedFromThis();
+			AstNodePtr<Document> doc = t->document->sharedFromThis();
 
 			slake::HostObjectRef<slake::SIMDTypeDefObject> obj;
 
@@ -406,7 +406,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileTypeName(
 		}
 		case TypeNameKind::ParamTypeList: {
 			AstNodePtr<ParamTypeListTypeNameNode> t = typeName.castTo<ParamTypeListTypeNameNode>();
-			peff::SharedPtr<Document> doc = t->document->sharedFromThis();
+			AstNodePtr<Document> doc = t->document->sharedFromThis();
 
 			slake::HostObjectRef<slake::ParamTypeListTypeDefObject> obj;
 
@@ -442,7 +442,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileTypeName(
 		}
 		case TypeNameKind::Unpacking: {
 			AstNodePtr<UnpackingTypeNameNode> t = typeName.castTo<UnpackingTypeNameNode>();
-			peff::SharedPtr<Document> doc = t->document->sharedFromThis();
+			AstNodePtr<Document> doc = t->document->sharedFromThis();
 
 			slake::HostObjectRef<slake::UnpackingTypeDefObject> obj;
 
@@ -590,61 +590,61 @@ SLKC_API peff::Option<CompilationError> slkc::compileValueExpr(
 			break;
 		}
 		case ExprKind::I8: {
-			peff::SharedPtr<I8LiteralExprNode> e = expr.castTo<I8LiteralExprNode>();
+			AstNodePtr<I8LiteralExprNode> e = expr.castTo<I8LiteralExprNode>();
 
 			valueOut = slake::Value((int8_t)e->data);
 			break;
 		}
 		case ExprKind::I16: {
-			peff::SharedPtr<I16LiteralExprNode> e = expr.castTo<I16LiteralExprNode>();
+			AstNodePtr<I16LiteralExprNode> e = expr.castTo<I16LiteralExprNode>();
 
 			valueOut = slake::Value((int16_t)e->data);
 			break;
 		}
 		case ExprKind::I32: {
-			peff::SharedPtr<I32LiteralExprNode> e = expr.castTo<I32LiteralExprNode>();
+			AstNodePtr<I32LiteralExprNode> e = expr.castTo<I32LiteralExprNode>();
 
 			valueOut = slake::Value((int32_t)e->data);
 			break;
 		}
 		case ExprKind::I64: {
-			peff::SharedPtr<I64LiteralExprNode> e = expr.castTo<I64LiteralExprNode>();
+			AstNodePtr<I64LiteralExprNode> e = expr.castTo<I64LiteralExprNode>();
 
 			valueOut = slake::Value((int64_t)e->data);
 			break;
 		}
 		case ExprKind::U8: {
-			peff::SharedPtr<U8LiteralExprNode> e = expr.castTo<U8LiteralExprNode>();
+			AstNodePtr<U8LiteralExprNode> e = expr.castTo<U8LiteralExprNode>();
 
 			valueOut = slake::Value((uint8_t)e->data);
 			break;
 		}
 		case ExprKind::U16: {
-			peff::SharedPtr<U16LiteralExprNode> e = expr.castTo<U16LiteralExprNode>();
+			AstNodePtr<U16LiteralExprNode> e = expr.castTo<U16LiteralExprNode>();
 
 			valueOut = slake::Value((uint16_t)e->data);
 			break;
 		}
 		case ExprKind::U32: {
-			peff::SharedPtr<U32LiteralExprNode> e = expr.castTo<U32LiteralExprNode>();
+			AstNodePtr<U32LiteralExprNode> e = expr.castTo<U32LiteralExprNode>();
 
 			valueOut = slake::Value((uint32_t)e->data);
 			break;
 		}
 		case ExprKind::U64: {
-			peff::SharedPtr<U64LiteralExprNode> e = expr.castTo<U64LiteralExprNode>();
+			AstNodePtr<U64LiteralExprNode> e = expr.castTo<U64LiteralExprNode>();
 
 			valueOut = slake::Value((uint64_t)e->data);
 			break;
 		}
 		case ExprKind::F32: {
-			peff::SharedPtr<F32LiteralExprNode> e = expr.castTo<F32LiteralExprNode>();
+			AstNodePtr<F32LiteralExprNode> e = expr.castTo<F32LiteralExprNode>();
 
 			valueOut = slake::Value(e->data);
 			break;
 		}
 		case ExprKind::F64: {
-			peff::SharedPtr<F64LiteralExprNode> e = expr.castTo<F64LiteralExprNode>();
+			AstNodePtr<F64LiteralExprNode> e = expr.castTo<F64LiteralExprNode>();
 
 			valueOut = slake::Value(e->data);
 			break;

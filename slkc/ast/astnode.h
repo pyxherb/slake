@@ -72,7 +72,103 @@ namespace slkc {
 	typedef void (*AstNodeDestructor)(AstNode *astNode);
 
 	template <typename T>
-	using AstNodePtr = peff::SharedPtr<T>;
+	class AstNodePtr {
+	public:
+		using ThisType = AstNodePtr<T>;
+
+		peff::SharedPtr<T> inMemory;
+		uint32_t cachedIndex = UINT32_MAX;
+
+		SLAKE_FORCEINLINE AstNodePtr() {}
+		SLAKE_FORCEINLINE AstNodePtr(const peff::SharedPtr<T> &inMemory) : inMemory(inMemory) {}
+		SLAKE_FORCEINLINE explicit AstNodePtr(uint32_t cachedIndex) : cachedIndex(cachedIndex) {}
+
+		SLAKE_FORCEINLINE AstNodePtr(const ThisType &) = default;
+		SLAKE_FORCEINLINE AstNodePtr(ThisType &&inMemory) = default;
+
+		SLAKE_FORCEINLINE ThisType &operator=(const ThisType &) = default;
+		SLAKE_FORCEINLINE ThisType &operator=(ThisType &&rhs) noexcept {
+			inMemory = std::move(rhs.inMemory);
+			cachedIndex = rhs.cachedIndex;
+
+			rhs.cachedIndex = UINT32_MAX;
+
+			return *this;
+		}
+
+		SLAKE_FORCEINLINE T *get() const noexcept {
+			assert(inMemory);
+			return inMemory.get();
+		}
+
+		SLAKE_FORCEINLINE T *operator*() const noexcept {
+			assert(inMemory);
+			return inMemory.get();
+		}
+
+		SLAKE_FORCEINLINE T *operator->() const noexcept {
+			assert(inMemory);
+			return inMemory.get();
+		}
+
+		PEFF_FORCEINLINE int comparesTo(const ThisType &rhs) const noexcept {
+			if (!inMemory) {
+				if (rhs.inMemory) {
+					return -1;
+				}
+				if (cachedIndex < rhs.cachedIndex)
+					return -1;
+				if (cachedIndex > rhs.cachedIndex)
+					return 1;
+				return 0;
+			} else {
+				if (!rhs.inMemory) {
+					return 1;
+				}
+				if (inMemory < rhs.inMemory)
+					return -1;
+				if (inMemory > rhs.inMemory)
+					return 1;
+				return 0;
+			}
+		}
+
+		PEFF_FORCEINLINE bool operator<(const ThisType &rhs) const noexcept {
+			return comparesTo(rhs) < 0;
+		}
+
+		PEFF_FORCEINLINE bool operator>(const ThisType &rhs) const noexcept {
+			return comparesTo(rhs) > 0;
+		}
+
+		PEFF_FORCEINLINE bool operator==(const ThisType &rhs) const noexcept {
+			return comparesTo(rhs) == 0;
+		}
+
+		PEFF_FORCEINLINE bool operator!=(const ThisType &rhs) const noexcept {
+			return comparesTo(rhs) != 0;
+		}
+
+		PEFF_FORCEINLINE operator bool() const noexcept {
+			return (bool)inMemory;
+		}
+
+		template <typename T1>
+		PEFF_FORCEINLINE AstNodePtr<T1> castTo() const noexcept {
+			if (!inMemory) {
+				if (cachedIndex != UINT32_MAX) {
+					return AstNodePtr<T1>(cachedIndex);
+				}
+				return {};
+			} else
+				return AstNodePtr<T1>(inMemory.castTo<T1>());
+		}
+	};
+
+	template<typename T>
+	PEFF_FORCEINLINE peff::WeakPtr<T> toWeakPtr(const AstNodePtr<T>& ptr) noexcept {
+		return peff::WeakPtr<T>(ptr.inMemory);
+	}
 
 	struct BaseAstNodeDuplicationTask {
 		peff::RcObjectPtr<peff::Alloc> allocator;
@@ -152,7 +248,7 @@ namespace slkc {
 		SLKC_API virtual ~AstNode();
 
 		template <typename T>
-		SLAKE_FORCEINLINE peff::SharedPtr<T> duplicate(peff::Alloc *newAllocator) const noexcept {
+		SLAKE_FORCEINLINE AstNodePtr<T> duplicate(peff::Alloc *newAllocator) const noexcept {
 			DuplicationContext context(newAllocator);
 
 			auto newNode = doDuplicate(newAllocator, context);

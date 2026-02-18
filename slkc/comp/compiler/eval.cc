@@ -8,66 +8,66 @@ template <typename T, typename E, typename SetData = typename E::SetData>
 peff::Option<CompilationError> _doSimpleIntLiteralCast(
 	CompileEnv *compileEnv,
 	AstNodePtr<ExprNode> src,
-	peff::SharedPtr<E> &exprOut) {
+	AstNodePtr<E> &exprOut) {
 	static SetData _setData;
 
 	switch (src->exprKind) {
 		case ExprKind::I8: {
-			peff::SharedPtr<I8LiteralExprNode> l = src.castTo<I8LiteralExprNode>();
+			AstNodePtr<I8LiteralExprNode> l = src.castTo<I8LiteralExprNode>();
 
 			_setData(exprOut, (T)l->data);
 			break;
 		}
 		case ExprKind::I16: {
-			peff::SharedPtr<I16LiteralExprNode> l = src.castTo<I16LiteralExprNode>();
+			AstNodePtr<I16LiteralExprNode> l = src.castTo<I16LiteralExprNode>();
 
 			_setData(exprOut, (T)l->data);
 			break;
 		}
 		case ExprKind::I32: {
-			peff::SharedPtr<I32LiteralExprNode> l = src.castTo<I32LiteralExprNode>();
+			AstNodePtr<I32LiteralExprNode> l = src.castTo<I32LiteralExprNode>();
 
 			_setData(exprOut, (T)l->data);
 			break;
 		}
 		case ExprKind::I64: {
-			peff::SharedPtr<I64LiteralExprNode> l = src.castTo<I64LiteralExprNode>();
+			AstNodePtr<I64LiteralExprNode> l = src.castTo<I64LiteralExprNode>();
 
 			_setData(exprOut, (T)l->data);
 			break;
 		}
 		case ExprKind::U8: {
-			peff::SharedPtr<U8LiteralExprNode> l = src.castTo<U8LiteralExprNode>();
+			AstNodePtr<U8LiteralExprNode> l = src.castTo<U8LiteralExprNode>();
 
 			_setData(exprOut, (T)l->data);
 			break;
 		}
 		case ExprKind::U16: {
-			peff::SharedPtr<U16LiteralExprNode> l = src.castTo<U16LiteralExprNode>();
+			AstNodePtr<U16LiteralExprNode> l = src.castTo<U16LiteralExprNode>();
 
 			_setData(exprOut, (T)l->data);
 			break;
 		}
 		case ExprKind::U32: {
-			peff::SharedPtr<U32LiteralExprNode> l = src.castTo<U32LiteralExprNode>();
+			AstNodePtr<U32LiteralExprNode> l = src.castTo<U32LiteralExprNode>();
 
 			_setData(exprOut, (T)l->data);
 			break;
 		}
 		case ExprKind::U64: {
-			peff::SharedPtr<U64LiteralExprNode> l = src.castTo<U64LiteralExprNode>();
+			AstNodePtr<U64LiteralExprNode> l = src.castTo<U64LiteralExprNode>();
 
 			_setData(exprOut, (T)l->data);
 			break;
 		}
 		case ExprKind::F32: {
-			peff::SharedPtr<F32LiteralExprNode> l = src.castTo<F32LiteralExprNode>();
+			AstNodePtr<F32LiteralExprNode> l = src.castTo<F32LiteralExprNode>();
 
 			_setData(exprOut, (T)l->data);
 			break;
 		}
 		case ExprKind::F64: {
-			peff::SharedPtr<F64LiteralExprNode> l = src.castTo<F64LiteralExprNode>();
+			AstNodePtr<F64LiteralExprNode> l = src.castTo<F64LiteralExprNode>();
 
 			_setData(exprOut, (T)l->data);
 			break;
@@ -90,9 +90,9 @@ template <typename E, typename R, typename GetData = typename E::GetData, typena
 peff::Option<CompilationError> _doSimpleArithmeticBinaryOp(
 	CompileEnv *compileEnv,
 	BinaryOp binaryOp,
-	peff::SharedPtr<E> lhs,
-	peff::SharedPtr<E> rhs,
-	peff::SharedPtr<R> exprOut) {
+	AstNodePtr<E> lhs,
+	AstNodePtr<E> rhs,
+	AstNodePtr<R> exprOut) {
 	GetData _getData;
 	SetData _setData;
 
@@ -123,9 +123,9 @@ template <typename E, typename R, typename GetData = typename E::GetData, typena
 peff::Option<CompilationError> _doSimpleFloatingPointArithmeticBinaryOp(
 	CompileEnv *compileEnv,
 	BinaryOp binaryOp,
-	peff::SharedPtr<E> lhs,
-	peff::SharedPtr<E> rhs,
-	peff::SharedPtr<R> exprOut) {
+	AstNodePtr<E> lhs,
+	AstNodePtr<E> rhs,
+	AstNodePtr<R> exprOut) {
 	GetData _getData;
 	SetData _setData;
 
@@ -153,9 +153,9 @@ template <typename T, typename E, typename R, typename GetData = typename E::Get
 peff::Option<CompilationError> _doSimpleBitwiseBinaryOp(
 	CompileEnv *compileEnv,
 	BinaryOp binaryOp,
-	peff::SharedPtr<E> lhs,
-	peff::SharedPtr<E> rhs,
-	peff::SharedPtr<R> exprOut) {
+	AstNodePtr<E> lhs,
+	AstNodePtr<E> rhs,
+	AstNodePtr<R> exprOut) {
 	GetData _getData;
 	SetData _setData;
 
@@ -180,8 +180,8 @@ template <typename E, typename GetData = typename E::GetData>
 peff::Option<CompilationError> _doSimpleComparisonBinaryOp(
 	CompileEnv *compileEnv,
 	BinaryOp binaryOp,
-	peff::SharedPtr<E> lhs,
-	peff::SharedPtr<E> rhs,
+	AstNodePtr<E> lhs,
+	AstNodePtr<E> rhs,
 	AstNodePtr<ExprNode> &exprOut) {
 	GetData _getData;
 
@@ -259,7 +259,7 @@ peff::Option<CompilationError> _doSimpleComparisonBinaryOp(
 			break;
 		}
 		case BinaryOp::Cmp: {
-			peff::SharedPtr<I32LiteralExprNode> result;
+			AstNodePtr<I32LiteralExprNode> result;
 
 			auto l = _getData(lhs), r = _getData(rhs);
 
@@ -313,7 +313,7 @@ static peff::Option<CompilationError> _evalSignedIntegralBinaryOp(
 	AstNodePtr<ExprNode> lhs,
 	AstNodePtr<ExprNode> rhs,
 	AstNodePtr<ExprNode> &exprOut) {
-	peff::SharedPtr<LT> ll = lhs.castTo<LT>();
+	AstNodePtr<LT> ll = lhs.castTo<LT>();
 	AstNodePtr<ExprNode> rl;
 
 	switch (e->binaryOp) {
@@ -323,7 +323,7 @@ static peff::Option<CompilationError> _evalSignedIntegralBinaryOp(
 		case BinaryOp::Div:
 		case BinaryOp::Mod: {
 			if (exprKind != rhs->exprKind) {
-				peff::SharedPtr<TN> tn;
+				AstNodePtr<TN> tn;
 
 				if (!(tn = makeAstNode<TN>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
 					return genOutOfMemoryCompError();
@@ -333,7 +333,7 @@ static peff::Option<CompilationError> _evalSignedIntegralBinaryOp(
 			} else
 				rl = rhs;
 
-			peff::SharedPtr<LT> result;
+			AstNodePtr<LT> result;
 
 			if (!(result = makeAstNode<LT>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document->sharedFromThis(), 0))) {
 				return genOutOfMemoryCompError();
@@ -348,7 +348,7 @@ static peff::Option<CompilationError> _evalSignedIntegralBinaryOp(
 		case BinaryOp::Or:
 		case BinaryOp::Xor: {
 			if (exprKind != rhs->exprKind) {
-				peff::SharedPtr<TN> tn;
+				AstNodePtr<TN> tn;
 
 				if (!(tn = makeAstNode<TN>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
 					return genOutOfMemoryCompError();
@@ -358,7 +358,7 @@ static peff::Option<CompilationError> _evalSignedIntegralBinaryOp(
 			} else
 				rl = rhs;
 
-			peff::SharedPtr<LT> result;
+			AstNodePtr<LT> result;
 
 			if (!(result = makeAstNode<LT>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document->sharedFromThis(), 0))) {
 				return genOutOfMemoryCompError();
@@ -371,7 +371,7 @@ static peff::Option<CompilationError> _evalSignedIntegralBinaryOp(
 		}
 		case BinaryOp::LAnd: {
 			if (exprKind != rhs->exprKind) {
-				peff::SharedPtr<TN> tn;
+				AstNodePtr<TN> tn;
 
 				if (!(tn = makeAstNode<TN>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
 					return genOutOfMemoryCompError();
@@ -392,7 +392,7 @@ static peff::Option<CompilationError> _evalSignedIntegralBinaryOp(
 		}
 		case BinaryOp::LOr: {
 			if (exprKind != rhs->exprKind) {
-				peff::SharedPtr<TN> tn;
+				AstNodePtr<TN> tn;
 
 				if (!(tn = makeAstNode<TN>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
 					return genOutOfMemoryCompError();
@@ -413,7 +413,7 @@ static peff::Option<CompilationError> _evalSignedIntegralBinaryOp(
 		}
 		case BinaryOp::Shl: {
 			if (ExprKind::U32 != rhs->exprKind) {
-				peff::SharedPtr<U32TypeNameNode> tn;
+				AstNodePtr<U32TypeNameNode> tn;
 
 				if (!(tn = makeAstNode<U32TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
 					return genOutOfMemoryCompError();
@@ -437,7 +437,7 @@ static peff::Option<CompilationError> _evalSignedIntegralBinaryOp(
 		}
 		case BinaryOp::Shr: {
 			if (ExprKind::U32 != rhs->exprKind) {
-				peff::SharedPtr<U32TypeNameNode> tn;
+				AstNodePtr<U32TypeNameNode> tn;
 
 				if (!(tn = makeAstNode<U32TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
 					return genOutOfMemoryCompError();
@@ -469,7 +469,7 @@ static peff::Option<CompilationError> _evalSignedIntegralBinaryOp(
 		case BinaryOp::GtEq:
 		case BinaryOp::Cmp:
 			if (exprKind != rhs->exprKind) {
-				peff::SharedPtr<TN> tn;
+				AstNodePtr<TN> tn;
 
 				if (!(tn = makeAstNode<TN>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
 					return genOutOfMemoryCompError();
@@ -496,7 +496,7 @@ static peff::Option<CompilationError> _evalUnsignedIntegralBinaryOp(
 	AstNodePtr<ExprNode> lhs,
 	AstNodePtr<ExprNode> rhs,
 	AstNodePtr<ExprNode> &exprOut) {
-	peff::SharedPtr<LT> ll = lhs.castTo<LT>();
+	AstNodePtr<LT> ll = lhs.castTo<LT>();
 	AstNodePtr<ExprNode> rl;
 
 	switch (e->binaryOp) {
@@ -506,7 +506,7 @@ static peff::Option<CompilationError> _evalUnsignedIntegralBinaryOp(
 		case BinaryOp::Div:
 		case BinaryOp::Mod: {
 			if (exprKind != rhs->exprKind) {
-				peff::SharedPtr<TN> tn;
+				AstNodePtr<TN> tn;
 
 				if (!(tn = makeAstNode<TN>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
 					return genOutOfMemoryCompError();
@@ -516,7 +516,7 @@ static peff::Option<CompilationError> _evalUnsignedIntegralBinaryOp(
 			} else
 				rl = rhs;
 
-			peff::SharedPtr<LT> result;
+			AstNodePtr<LT> result;
 
 			if (!(result = makeAstNode<LT>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document->sharedFromThis(), 0))) {
 				return genOutOfMemoryCompError();
@@ -531,7 +531,7 @@ static peff::Option<CompilationError> _evalUnsignedIntegralBinaryOp(
 		case BinaryOp::Or:
 		case BinaryOp::Xor: {
 			if (exprKind != rhs->exprKind) {
-				peff::SharedPtr<TN> tn;
+				AstNodePtr<TN> tn;
 
 				if (!(tn = makeAstNode<TN>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
 					return genOutOfMemoryCompError();
@@ -541,7 +541,7 @@ static peff::Option<CompilationError> _evalUnsignedIntegralBinaryOp(
 			} else
 				rl = rhs;
 
-			peff::SharedPtr<LT> result;
+			AstNodePtr<LT> result;
 
 			if (!(result = makeAstNode<LT>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document->sharedFromThis(), 0))) {
 				return genOutOfMemoryCompError();
@@ -554,7 +554,7 @@ static peff::Option<CompilationError> _evalUnsignedIntegralBinaryOp(
 		}
 		case BinaryOp::LAnd: {
 			if (exprKind != rhs->exprKind) {
-				peff::SharedPtr<TN> tn;
+				AstNodePtr<TN> tn;
 
 				if (!(tn = makeAstNode<TN>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
 					return genOutOfMemoryCompError();
@@ -575,7 +575,7 @@ static peff::Option<CompilationError> _evalUnsignedIntegralBinaryOp(
 		}
 		case BinaryOp::LOr: {
 			if (exprKind != rhs->exprKind) {
-				peff::SharedPtr<TN> tn;
+				AstNodePtr<TN> tn;
 
 				if (!(tn = makeAstNode<TN>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
 					return genOutOfMemoryCompError();
@@ -596,7 +596,7 @@ static peff::Option<CompilationError> _evalUnsignedIntegralBinaryOp(
 		}
 		case BinaryOp::Shl: {
 			if (ExprKind::U32 != rhs->exprKind) {
-				peff::SharedPtr<U32TypeNameNode> tn;
+				AstNodePtr<U32TypeNameNode> tn;
 
 				if (!(tn = makeAstNode<U32TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
 					return genOutOfMemoryCompError();
@@ -618,7 +618,7 @@ static peff::Option<CompilationError> _evalUnsignedIntegralBinaryOp(
 		}
 		case BinaryOp::Shr: {
 			if (ExprKind::U32 != rhs->exprKind) {
-				peff::SharedPtr<U32TypeNameNode> tn;
+				AstNodePtr<U32TypeNameNode> tn;
 
 				if (!(tn = makeAstNode<U32TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
 					return genOutOfMemoryCompError();
@@ -648,7 +648,7 @@ static peff::Option<CompilationError> _evalUnsignedIntegralBinaryOp(
 		case BinaryOp::GtEq:
 		case BinaryOp::Cmp:
 			if (exprKind != rhs->exprKind) {
-				peff::SharedPtr<TN> tn;
+				AstNodePtr<TN> tn;
 
 				if (!(tn = makeAstNode<TN>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
 					return genOutOfMemoryCompError();
@@ -725,7 +725,7 @@ SLKC_API peff::Option<CompilationError> slkc::evalConstExpr(
 					break;
 				}
 				case ExprKind::F32: {
-					peff::SharedPtr<F32LiteralExprNode> ll = lhs.castTo<F32LiteralExprNode>();
+					AstNodePtr<F32LiteralExprNode> ll = lhs.castTo<F32LiteralExprNode>();
 					AstNodePtr<ExprNode> rl;
 
 					switch (e->binaryOp) {
@@ -734,7 +734,7 @@ SLKC_API peff::Option<CompilationError> slkc::evalConstExpr(
 						case BinaryOp::Mul:
 						case BinaryOp::Div: {
 							if (ExprKind::F32 != rhs->exprKind) {
-								peff::SharedPtr<F32TypeNameNode> tn;
+								AstNodePtr<F32TypeNameNode> tn;
 
 								if (!(tn = makeAstNode<F32TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
 									return genOutOfMemoryCompError();
@@ -744,7 +744,7 @@ SLKC_API peff::Option<CompilationError> slkc::evalConstExpr(
 							} else
 								rl = rhs;
 
-							peff::SharedPtr<F32LiteralExprNode> result;
+							AstNodePtr<F32LiteralExprNode> result;
 
 							SLKC_RETURN_IF_COMP_ERROR(_doSimpleFloatingPointArithmeticBinaryOp<F32LiteralExprNode, F32LiteralExprNode>(compileEnv, e->binaryOp, ll, rl.castTo<F32LiteralExprNode>(), result));
 
@@ -753,7 +753,7 @@ SLKC_API peff::Option<CompilationError> slkc::evalConstExpr(
 						}
 						case BinaryOp::Mod: {
 							if (ExprKind::F64 != rhs->exprKind) {
-								peff::SharedPtr<F32TypeNameNode> tn;
+								AstNodePtr<F32TypeNameNode> tn;
 
 								if (!(tn = makeAstNode<F32TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
 									return genOutOfMemoryCompError();
@@ -763,7 +763,7 @@ SLKC_API peff::Option<CompilationError> slkc::evalConstExpr(
 							} else
 								rl = rhs;
 
-							peff::SharedPtr<F32LiteralExprNode> result;
+							AstNodePtr<F32LiteralExprNode> result;
 
 							if (!(result = makeAstNode<F32LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, slake::flib::fmodf(ll->data, rl.castTo<F64LiteralExprNode>()->data)))) {
 								return genOutOfMemoryCompError();
@@ -775,7 +775,7 @@ SLKC_API peff::Option<CompilationError> slkc::evalConstExpr(
 						}
 						case BinaryOp::LAnd: {
 							if (ExprKind::F32 != rhs->exprKind) {
-								peff::SharedPtr<F32TypeNameNode> tn;
+								AstNodePtr<F32TypeNameNode> tn;
 
 								if (!(tn = makeAstNode<F32TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
 									return genOutOfMemoryCompError();
@@ -796,7 +796,7 @@ SLKC_API peff::Option<CompilationError> slkc::evalConstExpr(
 						}
 						case BinaryOp::LOr: {
 							if (ExprKind::F32 != rhs->exprKind) {
-								peff::SharedPtr<F32TypeNameNode> tn;
+								AstNodePtr<F32TypeNameNode> tn;
 
 								if (!(tn = makeAstNode<F32TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
 									return genOutOfMemoryCompError();
@@ -825,7 +825,7 @@ SLKC_API peff::Option<CompilationError> slkc::evalConstExpr(
 						case BinaryOp::GtEq:
 						case BinaryOp::Cmp:
 							if (ExprKind::F32 != rhs->exprKind) {
-								peff::SharedPtr<F32TypeNameNode> tn;
+								AstNodePtr<F32TypeNameNode> tn;
 
 								if (!(tn = makeAstNode<F32TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
 									return genOutOfMemoryCompError();
@@ -844,7 +844,7 @@ SLKC_API peff::Option<CompilationError> slkc::evalConstExpr(
 					break;
 				}
 				case ExprKind::F64: {
-					peff::SharedPtr<F64LiteralExprNode> ll = lhs.castTo<F64LiteralExprNode>();
+					AstNodePtr<F64LiteralExprNode> ll = lhs.castTo<F64LiteralExprNode>();
 					AstNodePtr<ExprNode> rl;
 
 					switch (e->binaryOp) {
@@ -853,7 +853,7 @@ SLKC_API peff::Option<CompilationError> slkc::evalConstExpr(
 						case BinaryOp::Mul:
 						case BinaryOp::Div: {
 							if (ExprKind::F64 != rhs->exprKind) {
-								peff::SharedPtr<F64TypeNameNode> tn;
+								AstNodePtr<F64TypeNameNode> tn;
 
 								if (!(tn = makeAstNode<F64TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
 									return genOutOfMemoryCompError();
@@ -863,7 +863,7 @@ SLKC_API peff::Option<CompilationError> slkc::evalConstExpr(
 							} else
 								rl = rhs;
 
-							peff::SharedPtr<F64LiteralExprNode> result;
+							AstNodePtr<F64LiteralExprNode> result;
 
 							SLKC_RETURN_IF_COMP_ERROR(_doSimpleFloatingPointArithmeticBinaryOp<F64LiteralExprNode, F64LiteralExprNode>(compileEnv, e->binaryOp, ll, rl.castTo<F64LiteralExprNode>(), result));
 
@@ -872,7 +872,7 @@ SLKC_API peff::Option<CompilationError> slkc::evalConstExpr(
 						}
 						case BinaryOp::Mod: {
 							if (ExprKind::F64 != rhs->exprKind) {
-								peff::SharedPtr<F64TypeNameNode> tn;
+								AstNodePtr<F64TypeNameNode> tn;
 
 								if (!(tn = makeAstNode<F64TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
 									return genOutOfMemoryCompError();
@@ -882,7 +882,7 @@ SLKC_API peff::Option<CompilationError> slkc::evalConstExpr(
 							} else
 								rl = rhs;
 
-							peff::SharedPtr<F64LiteralExprNode> result;
+							AstNodePtr<F64LiteralExprNode> result;
 
 							if (!(result = makeAstNode<F64LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, slake::flib::fmod(ll->data, rl.castTo<F64LiteralExprNode>()->data)))) {
 								return genOutOfMemoryCompError();
@@ -894,7 +894,7 @@ SLKC_API peff::Option<CompilationError> slkc::evalConstExpr(
 						}
 						case BinaryOp::LAnd: {
 							if (ExprKind::F64 != rhs->exprKind) {
-								peff::SharedPtr<F64TypeNameNode> tn;
+								AstNodePtr<F64TypeNameNode> tn;
 
 								if (!(tn = makeAstNode<F64TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
 									return genOutOfMemoryCompError();
@@ -915,7 +915,7 @@ SLKC_API peff::Option<CompilationError> slkc::evalConstExpr(
 						}
 						case BinaryOp::LOr: {
 							if (ExprKind::F64 != rhs->exprKind) {
-								peff::SharedPtr<F64TypeNameNode> tn;
+								AstNodePtr<F64TypeNameNode> tn;
 
 								if (!(tn = makeAstNode<F64TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
 									return genOutOfMemoryCompError();
@@ -944,7 +944,7 @@ SLKC_API peff::Option<CompilationError> slkc::evalConstExpr(
 						case BinaryOp::GtEq:
 						case BinaryOp::Cmp:
 							if (ExprKind::F64 != rhs->exprKind) {
-								peff::SharedPtr<F64TypeNameNode> tn;
+								AstNodePtr<F64TypeNameNode> tn;
 
 								if (!(tn = makeAstNode<F64TypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
 									return genOutOfMemoryCompError();
@@ -1104,7 +1104,7 @@ SLKC_API peff::Option<CompilationError> slkc::evalConstExpr(
 
 			switch (e->targetType->typeNameKind) {
 				case TypeNameKind::I8: {
-					peff::SharedPtr<I8LiteralExprNode> l;
+					AstNodePtr<I8LiteralExprNode> l;
 
 					if (!(l = makeAstNode<I8LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, 0))) {
 						return genOutOfMemoryCompError();
@@ -1116,7 +1116,7 @@ SLKC_API peff::Option<CompilationError> slkc::evalConstExpr(
 					break;
 				}
 				case TypeNameKind::I16: {
-					peff::SharedPtr<I16LiteralExprNode> l;
+					AstNodePtr<I16LiteralExprNode> l;
 
 					if (!(l = makeAstNode<I16LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, 0))) {
 						return genOutOfMemoryCompError();
@@ -1128,7 +1128,7 @@ SLKC_API peff::Option<CompilationError> slkc::evalConstExpr(
 					break;
 				}
 				case TypeNameKind::I32: {
-					peff::SharedPtr<I32LiteralExprNode> l;
+					AstNodePtr<I32LiteralExprNode> l;
 
 					if (!(l = makeAstNode<I32LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, 0))) {
 						return genOutOfMemoryCompError();
@@ -1140,7 +1140,7 @@ SLKC_API peff::Option<CompilationError> slkc::evalConstExpr(
 					break;
 				}
 				case TypeNameKind::I64: {
-					peff::SharedPtr<I64LiteralExprNode> l;
+					AstNodePtr<I64LiteralExprNode> l;
 
 					if (!(l = makeAstNode<I64LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, 0))) {
 						return genOutOfMemoryCompError();
@@ -1152,7 +1152,7 @@ SLKC_API peff::Option<CompilationError> slkc::evalConstExpr(
 					break;
 				}
 				case TypeNameKind::U8: {
-					peff::SharedPtr<U8LiteralExprNode> l;
+					AstNodePtr<U8LiteralExprNode> l;
 
 					if (!(l = makeAstNode<U8LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, 0))) {
 						return genOutOfMemoryCompError();
@@ -1164,7 +1164,7 @@ SLKC_API peff::Option<CompilationError> slkc::evalConstExpr(
 					break;
 				}
 				case TypeNameKind::U16: {
-					peff::SharedPtr<U16LiteralExprNode> l;
+					AstNodePtr<U16LiteralExprNode> l;
 
 					if (!(l = makeAstNode<U16LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, 0))) {
 						return genOutOfMemoryCompError();
@@ -1176,7 +1176,7 @@ SLKC_API peff::Option<CompilationError> slkc::evalConstExpr(
 					break;
 				}
 				case TypeNameKind::U32: {
-					peff::SharedPtr<U32LiteralExprNode> l;
+					AstNodePtr<U32LiteralExprNode> l;
 
 					if (!(l = makeAstNode<U32LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, 0))) {
 						return genOutOfMemoryCompError();
@@ -1188,7 +1188,7 @@ SLKC_API peff::Option<CompilationError> slkc::evalConstExpr(
 					break;
 				}
 				case TypeNameKind::U64: {
-					peff::SharedPtr<U64LiteralExprNode> l;
+					AstNodePtr<U64LiteralExprNode> l;
 
 					if (!(l = makeAstNode<U64LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, 0))) {
 						return genOutOfMemoryCompError();
@@ -1200,7 +1200,7 @@ SLKC_API peff::Option<CompilationError> slkc::evalConstExpr(
 					break;
 				}
 				case TypeNameKind::F32: {
-					peff::SharedPtr<F32LiteralExprNode> l;
+					AstNodePtr<F32LiteralExprNode> l;
 
 					if (!(l = makeAstNode<F32LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, 0))) {
 						return genOutOfMemoryCompError();
@@ -1212,7 +1212,7 @@ SLKC_API peff::Option<CompilationError> slkc::evalConstExpr(
 					break;
 				}
 				case TypeNameKind::F64: {
-					peff::SharedPtr<F64LiteralExprNode> l;
+					AstNodePtr<F64LiteralExprNode> l;
 
 					if (!(l = makeAstNode<F64LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, 0))) {
 						return genOutOfMemoryCompError();

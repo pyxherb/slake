@@ -38,7 +38,7 @@ SLKC_API PathPossibility slkc::combinePossibility(PathPossibility outer, PathPos
 	std::terminate();
 }
 
-SLKC_API peff::Option<CompilationError> slkc::mergePathEnv(PathEnv &outer, const PathEnv &inner) noexcept {
+SLKC_API peff::Option<CompilationError> slkc::combinePathEnv(PathEnv &outer, const PathEnv &inner) noexcept {
 	switch (inner.execPossibility) {
 		case PathPossibility::Never:
 			break;

@@ -71,7 +71,7 @@ namespace slkc {
 		SLAKE_API void removeVarNullOverride(const AstNodePtr<VarNode> &varNode);
 	};
 
-	SLKC_API peff::Option<CompilationError> mergePathEnv(PathEnv &outer, const PathEnv &inner) noexcept;
+	SLKC_API peff::Option<CompilationError> combinePathEnv(PathEnv &outer, const PathEnv &inner) noexcept;
 
 	class CompilationContext {
 	public:

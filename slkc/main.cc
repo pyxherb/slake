@@ -923,7 +923,7 @@ int main(int argc, char *argv[]) {
 			ANSIDumpWriter dumpWriter;
 			slkc::Decompiler decompiler;
 
-			decompiler.dumpCfg = true;
+			// decompiler.dumpCfg = true;
 
 			if (!decompiler.decompileModule(peff::getDefaultAlloc(), &dumpWriter, modObj.get())) {
 				puts("Error dumping compiled module!");

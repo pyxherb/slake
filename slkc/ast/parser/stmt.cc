@@ -235,6 +235,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseForStmt(AstNodePtr<StmtNode> &st
 
 			if ((syntaxError = expectToken((varDefSeparatorToken = peekToken()), TokenId::Semicolon)))
 				return syntaxError;
+			nextToken();
 		} else {
 			nextToken();
 		}
@@ -248,6 +249,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseForStmt(AstNodePtr<StmtNode> &st
 
 			if ((syntaxError = expectToken((condSeparatorToken = peekToken()), TokenId::Semicolon)))
 				return syntaxError;
+			nextToken();
 		} else {
 			nextToken();
 		}
@@ -261,12 +263,11 @@ SLKC_API peff::Option<SyntaxError> Parser::parseForStmt(AstNodePtr<StmtNode> &st
 
 			if ((syntaxError = expectToken((rParentheseToken = peekToken()), TokenId::RParenthese)))
 				return syntaxError;
+			nextToken();
 		} else {
 			nextToken();
 		}
 	}
-
-	nextToken();
 
 	if ((syntaxError = parseStmt(forStmt->body)))
 		return syntaxError;

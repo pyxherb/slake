@@ -321,7 +321,7 @@ SLKC_API peff::Option<CompilationError> slkc::evalExprType(
 
 	CompileExprResult result(compileEnv->allocator.get());
 
-	SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, &tmpContext, pathEnv, expr, ExprEvalPurpose::EvalType, desiredType, UINT32_MAX, result));
+	SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, &tmpContext, pathEnv, expr, ExprEvalPurpose::EvalType, desiredType, result));
 
 	typeOut = result.evaluatedType;
 	return {};

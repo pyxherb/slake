@@ -294,9 +294,18 @@ namespace slkc {
 		// For parameter name query, etc, if exists.
 		AstNodePtr<FnNode> callTargetFnSlot;
 		peff::DynArray<AstNodePtr<FnOverloadingNode>> callTargetMatchedOverloadings;
-		uint32_t idxThisRegOut = UINT32_MAX;
+		uint32_t idxThisRegOut = UINT32_MAX, idxResultRegOut = UINT32_MAX;
 
 		SLAKE_FORCEINLINE CompileExprResult(peff::Alloc *allocator) : callTargetMatchedOverloadings(allocator) {}
+
+		SLAKE_FORCEINLINE void reset() {
+			evaluatedType = {};
+			evaluatedFinalMember = {};
+			callTargetFnSlot = {};
+			callTargetMatchedOverloadings.clear();
+			idxThisRegOut = UINT32_MAX;
+			idxResultRegOut = UINT32_MAX;
+		}
 	};
 
 	struct ResolvedIdRefPart {
@@ -311,7 +320,6 @@ namespace slkc {
 		CompileEnv *compileEnv,
 		CompilationContext *compilationContext,
 		PathEnv *pathEnv,
-		uint32_t regOut,
 		ExprEvalPurpose evalPurpose,
 		AstNodePtr<TypeNameNode> desiredType,
 		AstNodePtr<ExprNode> operand,
@@ -329,7 +337,6 @@ namespace slkc {
 		AstNodePtr<TypeNameNode> rhsType,
 		AstNodePtr<TypeNameNode> desiredRhsType,
 		ExprEvalPurpose rhsEvalPurpose,
-		uint32_t resultRegOut,
 		CompileExprResult &resultOut,
 		slake::Opcode opcode,
 		uint32_t idxSld);
@@ -344,7 +351,6 @@ namespace slkc {
 		AstNodePtr<TypeNameNode> rhsType,
 		AstNodePtr<TypeNameNode> desiredRhsType,
 		ExprEvalPurpose rhsEvalPurpose,
-		uint32_t resultRegOut,
 		CompileExprResult &resultOut,
 		uint32_t idxSld);
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> _compileSimpleLAndBinaryExpr(
@@ -356,7 +362,6 @@ namespace slkc {
 		AstNodePtr<BoolTypeNameNode> boolType,
 		AstNodePtr<TypeNameNode> lhsType,
 		AstNodePtr<TypeNameNode> rhsType,
-		uint32_t resultRegOut,
 		CompileExprResult &resultOut,
 		slake::Opcode opcode,
 		uint32_t idxSld);
@@ -369,7 +374,6 @@ namespace slkc {
 		AstNodePtr<BoolTypeNameNode> boolType,
 		AstNodePtr<TypeNameNode> lhsType,
 		AstNodePtr<TypeNameNode> rhsType,
-		uint32_t resultRegOut,
 		CompileExprResult &resultOut,
 		slake::Opcode opcode,
 		uint32_t idxSld);
@@ -383,7 +387,6 @@ namespace slkc {
 		AstNodePtr<TypeNameNode> rhsType,
 		AstNodePtr<TypeNameNode> desiredRhsType,
 		ExprEvalPurpose rhsEvalPurpose,
-		uint32_t resultRegOut,
 		CompileExprResult &resultOut,
 		slake::Opcode opcode,
 		uint32_t idxSld);
@@ -598,7 +601,6 @@ namespace slkc {
 		PathEnv *pathEnv,
 		AstNodePtr<UnaryExprNode> expr,
 		ExprEvalPurpose evalPurpose,
-		uint32_t resultRegOut,
 		CompileExprResult &resultOut);
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> compileBinaryExpr(
 		CompileEnv *compileEnv,
@@ -606,7 +608,6 @@ namespace slkc {
 		PathEnv *pathEnv,
 		AstNodePtr<BinaryExprNode> expr,
 		ExprEvalPurpose evalPurpose,
-		uint32_t resultRegOut,
 		CompileExprResult &resultOut);
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> compileExpr(
 		CompileEnv *compileEnv,
@@ -615,7 +616,6 @@ namespace slkc {
 		const AstNodePtr<ExprNode> &expr,
 		ExprEvalPurpose evalPurpose,
 		AstNodePtr<TypeNameNode> desiredType,
-		uint32_t resultRegOut,
 		CompileExprResult &resultOut);
 
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> compileExprStmt(

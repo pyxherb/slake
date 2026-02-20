@@ -560,18 +560,6 @@ SLAKE_FORCEINLINE InternalExceptionPointer slake::Runtime::_addLocalVar(Context 
 
 	size_t offOut = context->stackTop;
 
-	{
-		MinorFrame *mf = _fetchMinorFrame(context, frame, frame->resumableContextData->offCurMinorFrame);
-		char *pRecord;
-		if (!(pRecord = context->alignedStackAlloc(sizeof(AllocaRecord), alignof(AllocaRecord))))
-			return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
-		AllocaRecord *record = (AllocaRecord *)pRecord;
-		record->defReg = outputReg;
-		record->offNext = mf->offAllocaRecords;
-		mf->offAllocaRecords = frame->curCoroutine
-								   ? context->stackTop - frame->curCoroutine->offStackTop
-								   : context->stackTop;
-	}
 	if (!_allocAllocaRecord(context, frame, outputReg))
 		return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
 
@@ -1903,17 +1891,15 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 							case ReferenceKind::Invalid:
 								return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
 							case ReferenceKind::LocalVarRef:
-								if (!_allocAllocaRecord(&context->getContext(), curMajorFrame, output))
-									return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
-								outputReg->data.asReference.asLocalVar = value->data.asReference.asLocalVar;
-								outputReg->data.asReference.kind = ReferenceKind::LocalVarRef;
+								//if (value->data.asReference.asLocalVar.stackOff >= curMajorFrame->stackBase)
+									return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
 								break;
-							case ReferenceKind::CoroutineLocalVarRef:
-								if (!_allocAllocaRecord(&context->getContext(), curMajorFrame, output))
-									return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
-								outputReg->data.asReference.asCoroutineLocalVar = value->data.asReference.asCoroutineLocalVar;
-								outputReg->data.asReference.kind = ReferenceKind::CoroutineLocalVarRef;
+							case ReferenceKind::CoroutineLocalVarRef: {
+								//if ((value->data.asReference.asCoroutineLocalVar.stackOff + value->data.asReference.asCoroutineLocalVar.coroutine->offStackTop) >=
+									//(curMajorFrame->curCoroutine ? curMajorFrame->stackBase + curMajorFrame->curCoroutine->offStackTop : curMajorFrame->stackBase))
+									return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
 								break;
+							}
 							default:
 								outputReg->data.asReference = ref;
 								break;
@@ -2004,6 +1990,10 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 				while (offAllocaRecord != SIZE_MAX) {
 					AllocaRecord *ar = _fetchAllocaRecord(&context->getContext(), curMajorFrame, offAllocaRecord);
 
+					if (!_isRegisterValid(curMajorFrame, ar->defReg)) {
+						return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+						// TODO: Use a more proper kind of exception.
+					}
 					_calcRegPtr(dataStack, stackSize, curMajorFrame, ar->defReg)->valueType = ValueType::Invalid;
 
 					offAllocaRecord = ar->offNext;

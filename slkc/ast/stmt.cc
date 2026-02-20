@@ -148,7 +148,7 @@ SLKC_API AstNodePtr<AstNode> ForStmtNode::doDuplicate(peff::Alloc *newAllocator,
 	return duplicatedNode.castTo<AstNode>();
 }
 
-SLKC_API ForStmtNode::ForStmtNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : StmtNode(StmtKind::For, selfAllocator, document), varDefEntries(selfAllocator), cond(cond), step(step), body(body) {
+SLKC_API ForStmtNode::ForStmtNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : StmtNode(StmtKind::For, selfAllocator, document), varDefEntries(selfAllocator) {
 }
 
 SLKC_API ForStmtNode::ForStmtNode(const ForStmtNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut) : StmtNode(rhs, allocator, context), varDefEntries(allocator) {

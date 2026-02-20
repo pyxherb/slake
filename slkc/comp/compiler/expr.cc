@@ -9,7 +9,6 @@ static peff::Option<CompilationError> _compileLiteralExpr(
 	PathEnv *pathEnv,
 	const AstNodePtr<ExprNode> &expr,
 	ExprEvalPurpose evalPurpose,
-	uint32_t resultRegOut,
 	CompileExprResult &resultOut) {
 	AstNodePtr<LE> e = expr.castTo<LE>();
 
@@ -20,16 +19,19 @@ static peff::Option<CompilationError> _compileLiteralExpr(
 			SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushWarning(
 				CompilationWarning(e->tokenRange, CompilationWarningKind::UnusedExprResult)));
 			break;
-		case ExprEvalPurpose::RValue:
-			if (resultRegOut != UINT32_MAX) {
-				SLKC_RETURN_IF_COMP_ERROR(
-					compilationContext->emitIns(
-						expr->tokenRange,
-						slake::Opcode::COPY,
-						resultRegOut,
-						{ slake::Value((DT)e->data) }));
-			}
+		case ExprEvalPurpose::RValue: {
+			uint32_t outputReg;
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(outputReg));
+
+			SLKC_RETURN_IF_COMP_ERROR(
+				compilationContext->emitIns(
+					expr->tokenRange,
+					slake::Opcode::COPY,
+					outputReg,
+					{ slake::Value((DT)e->data) }));
+			resultOut.idxResultRegOut = outputReg;
 			break;
+		}
 		case ExprEvalPurpose::LValue:
 			return CompilationError(expr->tokenRange, CompilationErrorKind::ExpectingLValueExpr);
 			break;
@@ -55,7 +57,6 @@ SLKC_API peff::Option<CompilationError> slkc::_compileOrCastOperand(
 	CompileEnv *compileEnv,
 	CompilationContext *compilationContext,
 	PathEnv *pathEnv,
-	uint32_t regOut,
 	ExprEvalPurpose evalPurpose,
 	AstNodePtr<TypeNameNode> desiredType,
 	AstNodePtr<ExprNode> operand,
@@ -64,7 +65,7 @@ SLKC_API peff::Option<CompilationError> slkc::_compileOrCastOperand(
 	bool whether;
 	SLKC_RETURN_IF_COMP_ERROR(isSameType(desiredType, operandType, whether));
 	if (whether) {
-		SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, pathEnv, operand, evalPurpose, desiredType, regOut, resultOut));
+		SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, pathEnv, operand, evalPurpose, desiredType, resultOut));
 		return {};
 	}
 
@@ -83,7 +84,7 @@ SLKC_API peff::Option<CompilationError> slkc::_compileOrCastOperand(
 		castExpr->targetType = desiredType;
 		castExpr->source = operand;
 
-		SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, pathEnv, castExpr.castTo<ExprNode>(), evalPurpose, desiredType, regOut, resultOut));
+		SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, pathEnv, castExpr.castTo<ExprNode>(), evalPurpose, desiredType, resultOut));
 		return {};
 	}
 
@@ -95,7 +96,7 @@ SLKC_API peff::Option<CompilationError> slkc::_compileOrCastOperand(
 
 static peff::Option<CompilationError> _determineNodeType(CompileEnv *compileEnv, PathEnv *pathEnv, AstNodePtr<MemberNode> node, AstNodePtr<TypeNameNode> &typeNameOut);
 
-static peff::Option<CompilationError> _loadTheRestOfIdRef(CompileEnv *compileEnv, CompilationContext *compilationContext, PathEnv *pathEnv, ExprEvalPurpose evalPurpose, uint32_t resultRegOut, CompileExprResult &resultOut, IdRef *idRef, ResolvedIdRefPartList &parts, uint32_t initialMemberReg, size_t curIdx, AstNodePtr<FnTypeNameNode> extraFnArgs, uint32_t sldIndex) {
+static peff::Option<CompilationError> _loadTheRestOfIdRef(CompileEnv *compileEnv, CompilationContext *compilationContext, PathEnv *pathEnv, ExprEvalPurpose evalPurpose, uint32_t &resultRegOut, CompileExprResult &resultOut, IdRef *idRef, ResolvedIdRefPartList &parts, uint32_t initialMemberReg, size_t curIdx, AstNodePtr<FnTypeNameNode> extraFnArgs, uint32_t sldIndex) {
 	uint32_t idxReg;
 
 	if (initialMemberReg == UINT32_MAX) {
@@ -283,7 +284,7 @@ static peff::Option<CompilationError> _loadTheRestOfIdRef(CompileEnv *compileEnv
 		}
 	}
 
-	SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::COPY, resultRegOut, { slake::Value(slake::ValueType::RegIndex, idxReg) }));
+	resultRegOut = idxReg;
 	return {};
 };
 peff::Option<CompilationError> selectSingleMatchingOverloading(CompileEnv *compileEnv, const TokenRange &tokenRange, AstNodePtr<MemberNode> &finalMember, AstNodePtr<TypeNameNode> desiredType, bool isStatic, CompileExprResult &resultOut) {
@@ -445,7 +446,6 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 	const AstNodePtr<ExprNode> &expr,
 	ExprEvalPurpose evalPurpose,
 	AstNodePtr<TypeNameNode> desiredType,
-	uint32_t resultRegOut,
 	CompileExprResult &resultOut) {
 	peff::Option<CompilationError> compilationError;
 	uint32_t sldIndex;
@@ -454,12 +454,14 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 	else
 		sldIndex = UINT32_MAX;
 
+	resultOut.reset();
+
 	switch (expr->exprKind) {
 		case ExprKind::Unary:
-			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileUnaryExpr(compileEnv, compilationContext, pathEnv, expr.castTo<UnaryExprNode>(), evalPurpose, resultRegOut, resultOut));
+			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileUnaryExpr(compileEnv, compilationContext, pathEnv, expr.castTo<UnaryExprNode>(), evalPurpose, resultOut));
 			break;
 		case ExprKind::Binary:
-			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileBinaryExpr(compileEnv, compilationContext, pathEnv, expr.castTo<BinaryExprNode>(), evalPurpose, resultRegOut, resultOut));
+			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileBinaryExpr(compileEnv, compilationContext, pathEnv, expr.castTo<BinaryExprNode>(), evalPurpose, resultOut));
 			break;
 		case ExprKind::HeadedIdRef: {
 			AstNodePtr<HeadedIdRefExprNode> e = expr.castTo<HeadedIdRefExprNode>();
@@ -467,9 +469,10 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 			CompileExprResult result(compileEnv->allocator.get());
 
 			uint32_t headRegister;
-			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->allocReg(headRegister));
 
-			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, e->head, ExprEvalPurpose::RValue, {}, headRegister, result));
+			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, e->head, ExprEvalPurpose::RValue, {}, result));
+
+			headRegister = result.idxResultRegOut;
 
 			AstNodePtr<MemberNode> initialMember;
 
@@ -599,31 +602,24 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 						return CompilationError(e->idRefPtr->tokenRange, CompilationErrorKind::ExpectingLValueExpr);
 					}
 
-					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
-						compilationContext->emitIns(
-							sldIndex,
-							slake::Opcode::COPY,
-							resultRegOut,
-							{ slake::Value(slake::ValueType::RegIndex, finalRegister) }));
+					resultOut.idxResultRegOut = finalRegister;
 					break;
 				}
 				case ExprEvalPurpose::RValue: {
 					bool b = false;
 					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, isLValueType(resultOut.evaluatedType, b));
 					if ((b) && (initialMember != finalMember)) {
+						uint32_t valueRegOut;
+						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->allocReg(valueRegOut));
 						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
 							compilationContext->emitIns(
 								sldIndex,
 								slake::Opcode::LVALUE,
-								resultRegOut,
+								valueRegOut,
 								{ slake::Value(slake::ValueType::RegIndex, finalRegister) }));
+						resultOut.idxResultRegOut = valueRegOut;
 					} else {
-						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
-							compilationContext->emitIns(
-								sldIndex,
-								slake::Opcode::COPY,
-								resultRegOut,
-								{ slake::Value(slake::ValueType::RegIndex, finalRegister) }));
+						resultOut.idxResultRegOut = finalRegister;
 					}
 					break;
 				}
@@ -639,19 +635,17 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 					bool b = false;
 					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, isLValueType(resultOut.evaluatedType, b));
 					if ((b) && (initialMember != finalMember)) {
+						uint32_t valueRegOut;
+						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->allocReg(valueRegOut));
 						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
 							compilationContext->emitIns(
 								sldIndex,
 								slake::Opcode::LVALUE,
-								resultRegOut,
+								valueRegOut,
 								{ slake::Value(slake::ValueType::RegIndex, finalRegister) }));
+						resultOut.idxResultRegOut = valueRegOut;
 					} else {
-						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
-							compilationContext->emitIns(
-								sldIndex,
-								slake::Opcode::COPY,
-								resultRegOut,
-								{ slake::Value(slake::ValueType::RegIndex, finalRegister) }));
+						resultOut.idxResultRegOut = finalRegister;
 					}
 					break;
 				}
@@ -671,11 +665,9 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 			ExprEvalPurpose initialMemberEvalPurpose;
 
 			uint32_t initialMemberReg;
-			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->allocReg(initialMemberReg));
 			bool isStatic = false;
 
 			uint32_t finalRegister;
-			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->allocReg(finalRegister));
 
 			if (!initialEntry.genericArgs.size()) {
 				if (e->idRefPtr->entries.at(0).name == "this") {
@@ -692,15 +684,17 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 
 					switch (initialMemberEvalPurpose) {
 						case ExprEvalPurpose::EvalType:
-							break;
-						case ExprEvalPurpose::Stmt:
-							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileEnv->pushWarning(
-																					  CompilationWarning(e->tokenRange, CompilationWarningKind::UnusedExprResult)));
+							initialMemberReg = UINT32_MAX;
 							break;
 						case ExprEvalPurpose::LValue:
 							return CompilationError(expr->tokenRange, CompilationErrorKind::ExpectingLValueExpr);
+						case ExprEvalPurpose::Stmt:
+							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileEnv->pushWarning(
+																					  CompilationWarning(e->tokenRange, CompilationWarningKind::UnusedExprResult)));
+							[[fallthrough]];
 						case ExprEvalPurpose::RValue:
 						case ExprEvalPurpose::Call: {
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(initialMemberReg));
 							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->emitIns(sldIndex, slake::Opcode::LTHIS, initialMemberReg, {}));
 							break;
 						}
@@ -723,17 +717,18 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 
 					switch (initialMemberEvalPurpose) {
 						case ExprEvalPurpose::EvalType:
+							initialMemberReg = UINT32_MAX;
 							break;
 						case ExprEvalPurpose::Stmt:
 							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileEnv->pushWarning(
 																					  CompilationWarning(e->tokenRange, CompilationWarningKind::UnusedExprResult)));
+							[[fallthrough]];
+						case ExprEvalPurpose::LValue:
+							initialMemberReg = it->idxReg;
 							break;
-						case ExprEvalPurpose::LValue: {
-							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->emitIns(sldIndex, slake::Opcode::COPY, initialMemberReg, { slake::Value(slake::ValueType::RegIndex, it->idxReg) }));
-							break;
-						}
 						case ExprEvalPurpose::RValue:
 						case ExprEvalPurpose::Call: {
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(initialMemberReg));
 							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->emitIns(sldIndex, slake::Opcode::LVALUE, initialMemberReg, { slake::Value(slake::ValueType::RegIndex, it->idxReg) }));
 							break;
 						}
@@ -756,15 +751,17 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 
 					switch (initialMemberEvalPurpose) {
 						case ExprEvalPurpose::EvalType:
-							break;
-						case ExprEvalPurpose::Stmt:
-							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileEnv->pushWarning(
-																					  CompilationWarning(e->tokenRange, CompilationWarningKind::UnusedExprResult)));
+							initialMemberReg = UINT32_MAX;
 							break;
 						case ExprEvalPurpose::LValue: {
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(initialMemberReg));
 							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->emitIns(sldIndex, slake::Opcode::LARG, initialMemberReg, { slake::Value((uint32_t)it.value()) }));
 							break;
 						}
+						case ExprEvalPurpose::Stmt:
+							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileEnv->pushWarning(
+																					  CompilationWarning(e->tokenRange, CompilationWarningKind::UnusedExprResult)));
+							[[fallthrough]];
 						case ExprEvalPurpose::RValue:
 						case ExprEvalPurpose::Call: {
 							uint32_t tmpReg;
@@ -772,11 +769,14 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->allocReg(tmpReg));
 
 							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->emitIns(sldIndex, slake::Opcode::LARG, tmpReg, { slake::Value((uint32_t)it.value()) }));
+
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(initialMemberReg));
 							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->emitIns(sldIndex, slake::Opcode::LVALUE, initialMemberReg, { slake::Value(slake::ValueType::RegIndex, tmpReg) }));
 
 							break;
 						}
 						case ExprEvalPurpose::Unpacking:
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(initialMemberReg));
 							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->emitIns(sldIndex, slake::Opcode::LAPARG, initialMemberReg, { slake::Value((uint32_t)it.value()) }));
 
 							break;
@@ -835,13 +835,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 					}
 				} else {
 					finalMember = initialMember;
-
-					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
-						compilationContext->emitIns(
-							sldIndex,
-							slake::Opcode::COPY,
-							finalRegister,
-							{ slake::Value(slake::ValueType::RegIndex, initialMemberReg) }));
+					finalRegister = initialMemberReg;
 				}
 			} else {
 				size_t curIdx = 0;
@@ -900,31 +894,24 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 						return CompilationError(e->idRefPtr->tokenRange, CompilationErrorKind::ExpectingLValueExpr);
 					}
 
-					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
-						compilationContext->emitIns(
-							sldIndex,
-							slake::Opcode::COPY,
-							resultRegOut,
-							{ slake::Value(slake::ValueType::RegIndex, finalRegister) }));
+					resultOut.idxResultRegOut = finalRegister;
 					break;
 				}
 				case ExprEvalPurpose::RValue: {
 					bool b = false;
 					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, isLValueType(resultOut.evaluatedType, b));
 					if ((b) && (initialMember != finalMember)) {
+						uint32_t valueRegOut;
+						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->allocReg(valueRegOut));
 						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
 							compilationContext->emitIns(
 								sldIndex,
 								slake::Opcode::LVALUE,
-								resultRegOut,
+								valueRegOut,
 								{ slake::Value(slake::ValueType::RegIndex, finalRegister) }));
+						resultOut.idxResultRegOut = valueRegOut;
 					} else {
-						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
-							compilationContext->emitIns(
-								sldIndex,
-								slake::Opcode::COPY,
-								resultRegOut,
-								{ slake::Value(slake::ValueType::RegIndex, finalRegister) }));
+						resultOut.idxResultRegOut = finalRegister;
 					}
 					break;
 				}
@@ -940,29 +927,22 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 					bool b = false;
 					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, isLValueType(resultOut.evaluatedType, b));
 					if ((b) && (initialMember != finalMember)) {
+						uint32_t valueRegOut;
+						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->allocReg(valueRegOut));
 						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
 							compilationContext->emitIns(
 								sldIndex,
 								slake::Opcode::LVALUE,
-								resultRegOut,
+								valueRegOut,
 								{ slake::Value(slake::ValueType::RegIndex, finalRegister) }));
+						resultOut.idxResultRegOut = valueRegOut;
 					} else {
-						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
-							compilationContext->emitIns(
-								sldIndex,
-								slake::Opcode::COPY,
-								resultRegOut,
-								{ slake::Value(slake::ValueType::RegIndex, finalRegister) }));
+						resultOut.idxResultRegOut = finalRegister;
 					}
 					break;
 				}
 				case ExprEvalPurpose::Unpacking: {
-					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
-						compilationContext->emitIns(
-							sldIndex,
-							slake::Opcode::COPY,
-							resultRegOut,
-							{ slake::Value(slake::ValueType::RegIndex, finalRegister) }));
+					resultOut.idxResultRegOut = finalRegister;
 					break;
 				}
 				default:
@@ -972,37 +952,37 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 			break;
 		}
 		case ExprKind::I8:
-			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, _compileLiteralExpr<I8LiteralExprNode, int8_t, I8TypeNameNode>(compileEnv, compilationContext, pathEnv, expr, evalPurpose, resultRegOut, resultOut));
+			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, _compileLiteralExpr<I8LiteralExprNode, int8_t, I8TypeNameNode>(compileEnv, compilationContext, pathEnv, expr, evalPurpose, resultOut));
 			break;
 		case ExprKind::I16:
-			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, _compileLiteralExpr<I16LiteralExprNode, int16_t, I16TypeNameNode>(compileEnv, compilationContext, pathEnv, expr, evalPurpose, resultRegOut, resultOut));
+			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, _compileLiteralExpr<I16LiteralExprNode, int16_t, I16TypeNameNode>(compileEnv, compilationContext, pathEnv, expr, evalPurpose, resultOut));
 			break;
 		case ExprKind::I32:
-			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, _compileLiteralExpr<I32LiteralExprNode, int32_t, I32TypeNameNode>(compileEnv, compilationContext, pathEnv, expr, evalPurpose, resultRegOut, resultOut));
+			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, _compileLiteralExpr<I32LiteralExprNode, int32_t, I32TypeNameNode>(compileEnv, compilationContext, pathEnv, expr, evalPurpose, resultOut));
 			break;
 		case ExprKind::I64:
-			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, _compileLiteralExpr<I64LiteralExprNode, int64_t, I64TypeNameNode>(compileEnv, compilationContext, pathEnv, expr, evalPurpose, resultRegOut, resultOut));
+			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, _compileLiteralExpr<I64LiteralExprNode, int64_t, I64TypeNameNode>(compileEnv, compilationContext, pathEnv, expr, evalPurpose, resultOut));
 			break;
 		case ExprKind::U8:
-			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, _compileLiteralExpr<U8LiteralExprNode, uint8_t, U8TypeNameNode>(compileEnv, compilationContext, pathEnv, expr, evalPurpose, resultRegOut, resultOut));
+			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, _compileLiteralExpr<U8LiteralExprNode, uint8_t, U8TypeNameNode>(compileEnv, compilationContext, pathEnv, expr, evalPurpose, resultOut));
 			break;
 		case ExprKind::U16:
-			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, _compileLiteralExpr<U16LiteralExprNode, uint16_t, U16TypeNameNode>(compileEnv, compilationContext, pathEnv, expr, evalPurpose, resultRegOut, resultOut));
+			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, _compileLiteralExpr<U16LiteralExprNode, uint16_t, U16TypeNameNode>(compileEnv, compilationContext, pathEnv, expr, evalPurpose, resultOut));
 			break;
 		case ExprKind::U32:
-			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, _compileLiteralExpr<U32LiteralExprNode, uint32_t, U32TypeNameNode>(compileEnv, compilationContext, pathEnv, expr, evalPurpose, resultRegOut, resultOut));
+			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, _compileLiteralExpr<U32LiteralExprNode, uint32_t, U32TypeNameNode>(compileEnv, compilationContext, pathEnv, expr, evalPurpose, resultOut));
 			break;
 		case ExprKind::U64:
-			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, _compileLiteralExpr<U64LiteralExprNode, uint64_t, U64TypeNameNode>(compileEnv, compilationContext, pathEnv, expr, evalPurpose, resultRegOut, resultOut));
+			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, _compileLiteralExpr<U64LiteralExprNode, uint64_t, U64TypeNameNode>(compileEnv, compilationContext, pathEnv, expr, evalPurpose, resultOut));
 			break;
 		case ExprKind::F32:
-			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, _compileLiteralExpr<F32LiteralExprNode, float, F32TypeNameNode>(compileEnv, compilationContext, pathEnv, expr, evalPurpose, resultRegOut, resultOut));
+			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, _compileLiteralExpr<F32LiteralExprNode, float, F32TypeNameNode>(compileEnv, compilationContext, pathEnv, expr, evalPurpose, resultOut));
 			break;
 		case ExprKind::F64:
-			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, _compileLiteralExpr<F64LiteralExprNode, double, F64TypeNameNode>(compileEnv, compilationContext, pathEnv, expr, evalPurpose, resultRegOut, resultOut));
+			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, _compileLiteralExpr<F64LiteralExprNode, double, F64TypeNameNode>(compileEnv, compilationContext, pathEnv, expr, evalPurpose, resultOut));
 			break;
 		case ExprKind::Bool:
-			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, _compileLiteralExpr<BoolLiteralExprNode, bool, BoolTypeNameNode>(compileEnv, compilationContext, pathEnv, expr, evalPurpose, resultRegOut, resultOut));
+			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, _compileLiteralExpr<BoolLiteralExprNode, bool, BoolTypeNameNode>(compileEnv, compilationContext, pathEnv, expr, evalPurpose, resultOut));
 			break;
 		case ExprKind::String: {
 			AstNodePtr<StringLiteralExprNode> e = expr.castTo<StringLiteralExprNode>();
@@ -1027,14 +1007,15 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 						}
 					}
 
-					if (resultRegOut != UINT32_MAX) {
-						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
-							compilationContext->emitIns(
-								sldIndex,
-								slake::Opcode::COPY,
-								resultRegOut,
-								{ slake::Value(slake::Reference(sl.get())) }));
-					}
+					uint32_t valueRegOut;
+					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->allocReg(valueRegOut));
+					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
+						compilationContext->emitIns(
+							sldIndex,
+							slake::Opcode::COPY,
+							valueRegOut,
+							{ slake::Value(slake::Reference(sl.get())) }));
+					resultOut.idxResultRegOut = valueRegOut;
 					break;
 				}
 				case ExprEvalPurpose::LValue:
@@ -1065,16 +1046,18 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileEnv->pushWarning(
 																			  CompilationWarning(e->tokenRange, CompilationWarningKind::UnusedExprResult)));
 					break;
-				case ExprEvalPurpose::RValue:
-					if (resultRegOut != UINT32_MAX) {
-						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
-							compilationContext->emitIns(
-								sldIndex,
-								slake::Opcode::COPY,
-								resultRegOut,
-								{ slake::Value(slake::Reference(nullptr)) }));
-					}
+				case ExprEvalPurpose::RValue: {
+					uint32_t valueRegOut;
+					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->allocReg(valueRegOut));
+					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
+						compilationContext->emitIns(
+							sldIndex,
+							slake::Opcode::COPY,
+							valueRegOut,
+							{ slake::Value(slake::Reference(nullptr)) }));
+					resultOut.idxResultRegOut = valueRegOut;
 					break;
+				}
 				case ExprEvalPurpose::LValue:
 					return CompilationError(expr->tokenRange, CompilationErrorKind::ExpectingLValueExpr);
 					break;
@@ -1143,52 +1126,42 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 																			  CompilationWarning(e->tokenRange, CompilationWarningKind::UnusedExprResult)));
 					break;
 				case ExprEvalPurpose::RValue: {
-					if (resultRegOut != UINT32_MAX) {
-						slake::TypeRef elementType;
+					slake::TypeRef elementType;
 
-						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileTypeName(compileEnv, compilationContext, tn, elementType));
+					uint32_t valueRegOut;
+					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->allocReg(valueRegOut));
+					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileTypeName(compileEnv, compilationContext, tn, elementType));
+					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
+						compilationContext->emitIns(
+							sldIndex,
+							slake::Opcode::ARRNEW,
+							valueRegOut,
+							{ slake::Value(elementType), slake::Value((uint32_t)e->elements.size()) }));
+
+					for (size_t i = 0; i < e->elements.size(); ++i) {
+						uint32_t curElementSlotRegIndex;
+
+						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->allocReg(curElementSlotRegIndex));
+
 						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
 							compilationContext->emitIns(
 								sldIndex,
-								slake::Opcode::ARRNEW,
-								resultRegOut,
-								{ slake::Value(elementType), slake::Value((uint32_t)e->elements.size()) }));
+								slake::Opcode::AT,
+								curElementSlotRegIndex,
+								{ slake::Value(slake::ValueType::RegIndex, valueRegOut), slake::Value((uint32_t)i) }));
 
-						for (size_t i = 0; i < e->elements.size(); ++i) {
-							uint32_t curElementSlotRegIndex;
+						CompileExprResult elementResult(compileEnv->allocator.get());
 
-							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->allocReg(curElementSlotRegIndex));
+						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, e->elements.at(i), ExprEvalPurpose::RValue, tn.castTo<TypeNameNode>(), elementResult));
 
-							uint32_t curElementRegIndex;
-
-							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->allocReg(curElementRegIndex));
-
-							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
-								compilationContext->emitIns(
-									sldIndex,
-									slake::Opcode::AT,
-									curElementSlotRegIndex,
-									{ slake::Value(slake::ValueType::RegIndex, resultRegOut), slake::Value((uint32_t)i) }));
-
-							CompileExprResult result(compileEnv->allocator.get());
-
-							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, e->elements.at(i), ExprEvalPurpose::RValue, tn.castTo<TypeNameNode>(), curElementRegIndex, result));
-
-							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
-								compilationContext->emitIns(
-									sldIndex,
-									slake::Opcode::STORE,
-									UINT32_MAX,
-									{ slake::Value(slake::ValueType::RegIndex, curElementSlotRegIndex), slake::Value(slake::ValueType::RegIndex, curElementRegIndex) }));
-						}
-					} else {
-						// Just simply evaluate each element.
-						for (size_t i = 0; i < e->elements.size(); ++i) {
-							CompileExprResult result(compileEnv->allocator.get());
-
-							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, e->elements.at(i), ExprEvalPurpose::RValue, tn.castTo<TypeNameNode>(), UINT32_MAX, result));
-						}
+						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
+							compilationContext->emitIns(
+								sldIndex,
+								slake::Opcode::STORE,
+								UINT32_MAX,
+								{ slake::Value(slake::ValueType::RegIndex, curElementSlotRegIndex), slake::Value(slake::ValueType::RegIndex, elementResult.idxResultRegOut) }));
 					}
+					resultOut.idxResultRegOut = valueRegOut;
 					break;
 				}
 				case ExprEvalPurpose::LValue:
@@ -1205,8 +1178,6 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 			AstNodePtr<CallExprNode> e = expr.castTo<CallExprNode>();
 
 			uint32_t targetReg;
-
-			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->allocReg(targetReg));
 
 			peff::DynArray<AstNodePtr<TypeNameNode>> argTypes(compileEnv->allocator.get());
 
@@ -1258,12 +1229,16 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 				fnPrototype->paramTypes = std::move(argTypes);
 				fnPrototype->isForAdl = true;
 
-				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, e->target, ExprEvalPurpose::Call, fnPrototype.castTo<TypeNameNode>(), targetReg, result));
+				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, e->target, ExprEvalPurpose::Call, fnPrototype.castTo<TypeNameNode>(), result));
+
+				targetReg = result.idxResultRegOut;
 
 				argTypes = std::move(fnPrototype->paramTypes);
 				fnType = result.evaluatedType;
 			} else {
-				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, e->target, ExprEvalPurpose::Call, {}, targetReg, result));
+				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, e->target, ExprEvalPurpose::Call, {}, result));
+
+				targetReg = result.idxResultRegOut;
 
 				fnType = result.evaluatedType;
 
@@ -1325,17 +1300,14 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 			peff::DynArray<std::pair<AstNodePtr<TypeNameNode>, uint32_t>> argPassingInfo(compileEnv->allocator.get());
 
 			for (size_t i = 0; i < e->args.size(); ++i) {
-				uint32_t reg;
 				CompileExprResult argResult(compileEnv->allocator.get());
-
-				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->allocReg(reg));
 
 				if (i < tn->paramTypes.size()) {
 					bool isSame;
 
 					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, isSameType(argTypes.at(i), tn->paramTypes.at(i), isSame));
 					if (isSame)
-						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, e->args.at(i), ExprEvalPurpose::RValue, {}, reg, argResult));
+						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, e->args.at(i), ExprEvalPurpose::RValue, {}, argResult));
 					else {
 						AstNodePtr<CastExprNode> castExpr;
 
@@ -1350,18 +1322,18 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 							bool b = false;
 							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, isLValueType(tn->paramTypes.at(i), b));
 
-							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, castExpr.castTo<ExprNode>(), b ? ExprEvalPurpose::LValue : ExprEvalPurpose::RValue, tn->paramTypes.at(i), reg, argResult));
+							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, castExpr.castTo<ExprNode>(), b ? ExprEvalPurpose::LValue : ExprEvalPurpose::RValue, tn->paramTypes.at(i), argResult));
 						} else {
-							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, castExpr.castTo<ExprNode>(), ExprEvalPurpose::RValue, {}, reg, argResult));
+							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, castExpr.castTo<ExprNode>(), ExprEvalPurpose::RValue, {}, argResult));
 						}
 					}
 				} else {
-					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, e->args.at(i), ExprEvalPurpose::RValue, {}, reg, argResult));
+					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, e->args.at(i), ExprEvalPurpose::RValue, {}, argResult));
 				}
 
 				AstNodePtr<TypeNameNode> argType = argResult.evaluatedType;
 
-				if (!argPassingInfo.pushBack({ std::move(argType), reg }))
+				if (!argPassingInfo.pushBack({ std::move(argType), argResult.idxResultRegOut }))
 					return genOutOfMemoryCompError();
 
 				// SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, simplifyParamListTypeNameTree(argResult.evaluatedType, compileEnv->allocator.get(), argType));
@@ -1398,9 +1370,9 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 						return CompilationError(expr->tokenRange, CompilationErrorKind::MissingBindingObject);
 					}
 
-					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->allocReg(thisReg));
+					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, e->withObject, ExprEvalPurpose::RValue, fnType.castTo<FnTypeNameNode>()->thisType, result));
 
-					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, e->withObject, ExprEvalPurpose::RValue, fnType.castTo<FnTypeNameNode>()->thisType, thisReg, result));
+					thisReg = result.idxThisRegOut;
 				} else {
 					thisReg = result.idxThisRegOut;
 				}
@@ -1415,7 +1387,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 					break;
 				case ExprEvalPurpose::Stmt:
 					if (thisReg != UINT32_MAX) {
-						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->emitIns(sldIndex, slake::Opcode::MCALL, UINT32_MAX, { slake::Value(slake::ValueType::RegIndex, targetReg), slake::Value(slake::ValueType::RegIndex, result.idxThisRegOut) }));
+						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->emitIns(sldIndex, slake::Opcode::MCALL, UINT32_MAX, { slake::Value(slake::ValueType::RegIndex, targetReg), slake::Value(slake::ValueType::RegIndex, thisReg) }));
 					} else {
 						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->emitIns(sldIndex, slake::Opcode::CALL, UINT32_MAX, { slake::Value(slake::ValueType::RegIndex, targetReg) }));
 					}
@@ -1427,11 +1399,16 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 						return CompilationError(expr->tokenRange, CompilationErrorKind::ExpectingLValueExpr);
 					}
 
+					uint32_t valueRegOut;
+					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->allocReg(valueRegOut));
+
 					if (thisReg != UINT32_MAX) {
-						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->emitIns(sldIndex, slake::Opcode::MCALL, resultRegOut, { slake::Value(slake::ValueType::RegIndex, targetReg), slake::Value(slake::ValueType::RegIndex, result.idxThisRegOut) }));
+						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->emitIns(sldIndex, slake::Opcode::MCALL, valueRegOut, { slake::Value(slake::ValueType::RegIndex, targetReg), slake::Value(slake::ValueType::RegIndex, thisReg) }));
 					} else {
-						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->emitIns(sldIndex, slake::Opcode::CALL, resultRegOut, { slake::Value(slake::ValueType::RegIndex, targetReg) }));
+						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->emitIns(sldIndex, slake::Opcode::CALL, valueRegOut, { slake::Value(slake::ValueType::RegIndex, targetReg) }));
 					}
+
+					resultOut.idxResultRegOut = valueRegOut;
 					break;
 				}
 				case ExprEvalPurpose::RValue:
@@ -1450,13 +1427,23 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->emitIns(sldIndex, slake::Opcode::CALL, tmpRegIndex, { slake::Value(slake::ValueType::RegIndex, targetReg) }));
 						}
 
-						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->emitIns(sldIndex, slake::Opcode::LVALUE, resultRegOut, { slake::Value(slake::ValueType::RegIndex, tmpRegIndex) }));
+						uint32_t valueRegOut;
+						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->allocReg(valueRegOut));
+
+						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->emitIns(sldIndex, slake::Opcode::LVALUE, valueRegOut, { slake::Value(slake::ValueType::RegIndex, tmpRegIndex) }));
+
+						resultOut.idxResultRegOut = valueRegOut;
 					} else {
+						uint32_t valueRegOut;
+						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->allocReg(valueRegOut));
+
 						if (result.idxThisRegOut != UINT32_MAX) {
-							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->emitIns(sldIndex, slake::Opcode::MCALL, resultRegOut, { slake::Value(slake::ValueType::RegIndex, targetReg), slake::Value(slake::ValueType::RegIndex, result.idxThisRegOut) }));
+							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->emitIns(sldIndex, slake::Opcode::MCALL, valueRegOut, { slake::Value(slake::ValueType::RegIndex, targetReg), slake::Value(slake::ValueType::RegIndex, result.idxThisRegOut) }));
 						} else {
-							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->emitIns(sldIndex, slake::Opcode::CALL, resultRegOut, { slake::Value(slake::ValueType::RegIndex, targetReg) }));
+							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->emitIns(sldIndex, slake::Opcode::CALL, valueRegOut, { slake::Value(slake::ValueType::RegIndex, targetReg) }));
 						}
+
+						resultOut.idxResultRegOut = valueRegOut;
 					}
 
 					break;
@@ -1514,7 +1501,11 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 					std::terminate();
 				}*/
 			}
-			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->emitIns(sldIndex, slake::Opcode::NEW, resultRegOut, { slake::Value(type) }));
+
+			uint32_t valueRegOut;
+			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->allocReg(valueRegOut));
+
+			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->emitIns(sldIndex, slake::Opcode::NEW, valueRegOut, { slake::Value(type) }));
 
 			if (auto it = c->memberIndices.find("new"); it != c->memberIndices.end()) {
 				if (c->members.at(it.value())->getAstNodeType() != AstNodeType::Fn) {
@@ -1610,17 +1601,13 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 				for (size_t i = 0; i < e->args.size(); ++i) {
 					CompileExprResult argResult(compileEnv->allocator.get());
 
-					uint32_t reg;
-
-					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->allocReg(reg));
-
 					if (i < overloading->params.size()) {
 						bool b = false;
 						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, isLValueType(overloading->params.at(i)->type, b));
 
-						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, e->args.at(i), b ? ExprEvalPurpose::LValue : ExprEvalPurpose::RValue, overloading->params.at(i)->type, reg, argResult));
+						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, e->args.at(i), b ? ExprEvalPurpose::LValue : ExprEvalPurpose::RValue, overloading->params.at(i)->type, argResult));
 					} else {
-						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, e->args.at(i), ExprEvalPurpose::RValue, {}, reg, argResult));
+						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, e->args.at(i), ExprEvalPurpose::RValue, {}, argResult));
 					}
 
 					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError,
@@ -1628,13 +1615,14 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 							sldIndex,
 							slake::Opcode::PUSHARG,
 							UINT32_MAX,
-							{ slake::Value(slake::ValueType::RegIndex, reg) }));
+							{ slake::Value(slake::ValueType::RegIndex, argResult.idxResultRegOut) }));
 				}
 
-				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->emitIns(sldIndex, slake::Opcode::CTORCALL, UINT32_MAX, { slake::Value(slake::ValueType::RegIndex, ctorCallTarget), slake::Value(slake::ValueType::RegIndex, resultRegOut) }));
+				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->emitIns(sldIndex, slake::Opcode::CTORCALL, UINT32_MAX, { slake::Value(slake::ValueType::RegIndex, ctorCallTarget), slake::Value(slake::ValueType::RegIndex, valueRegOut) }));
 			} else {
 			}
 
+			resultOut.idxResultRegOut = valueRegOut;
 			resultOut.evaluatedType = e->targetType;
 			break;
 		}
@@ -1667,21 +1655,22 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 			bool sameType;
 			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, isSameType(decayedExprType, targetType, sameType));
 			if (!sameType) {
-				uint32_t idxReg;
-
-				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->allocReg(idxReg));
-
 				CompileExprResult result(compileEnv->allocator.get());
 				if (!leftValue) {
-					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, e->source, ExprEvalPurpose::RValue, {}, idxReg, result));
+					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, e->source, ExprEvalPurpose::RValue, {}, result));
 				} else {
-					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, e->source, ExprEvalPurpose::LValue, {}, idxReg, result));
+					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, e->source, ExprEvalPurpose::LValue, {}, result));
 				}
+
+				uint32_t idxReg = result.idxResultRegOut;
 
 				slake::TypeRef type;
 				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileTypeName(compileEnv, compilationContext, targetType, type));
 
-				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->emitIns(sldIndex, slake::Opcode::CAST, resultRegOut, { slake::Value(type), slake::Value(slake::ValueType::RegIndex, idxReg) }));
+				uint32_t valueRegOut;
+				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->allocReg(valueRegOut));
+
+				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->emitIns(sldIndex, slake::Opcode::CAST, valueRegOut, { slake::Value(type), slake::Value(slake::ValueType::RegIndex, idxReg) }));
 
 				resultOut.evaluatedType = targetType;
 
@@ -1692,12 +1681,13 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 						return genOutOfMemoryCompError();
 					resultOut.evaluatedType->isNullable = true;
 				}
+
+				resultOut.idxResultRegOut = valueRegOut;
 			} else {
-				CompileExprResult result(compileEnv->allocator.get());
 				if (!leftValue) {
-					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, e->source, ExprEvalPurpose::RValue, {}, resultRegOut, result));
+					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, e->source, ExprEvalPurpose::RValue, {}, resultOut));
 				} else {
-					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, e->source, ExprEvalPurpose::LValue, {}, resultRegOut, result));
+					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, e->source, ExprEvalPurpose::LValue, {}, resultOut));
 				}
 				resultOut.evaluatedType = targetType;
 			}
@@ -1754,7 +1744,9 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 
 			CompileExprResult result(compileEnv->allocator.get());
 
-			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, e->condition, ExprEvalPurpose::RValue, {}, conditionReg, result));
+			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, e->condition, ExprEvalPurpose::RValue, {}, result));
+
+			conditionReg = result.idxResultRegOut;
 
 			if (!result.evaluatedType)
 				return CompilationError(expr->tokenRange, CompilationErrorKind::ErrorDeducingMatchConditionType);
@@ -1841,7 +1833,9 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 
 							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->allocReg(cmpResultReg));
 
-							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, cmpExpr.castTo<ExprNode>(), ExprEvalPurpose::RValue, boolTypeName.castTo<TypeNameNode>(), cmpResultReg, cmpExprResult));
+							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, cmpExpr.castTo<ExprNode>(), ExprEvalPurpose::RValue, boolTypeName.castTo<TypeNameNode>(), cmpExprResult));
+
+							cmpResultReg = cmpExprResult.idxResultRegOut;
 						}
 
 						uint32_t succeededValueLabel;
@@ -1879,9 +1873,9 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 
 					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->allocReg(exprValueRegister));
 
-					CompileExprResult resultExprResult(compileEnv->allocator.get());
+					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, curCase.second, evalPurpose, returnType, result));
 
-					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, curCase.second, evalPurpose, returnType, exprValueRegister, result));
+					exprValueRegister = result.idxResultRegOut;
 
 					phiRegisterValueMap.at(i) = { compilationContext->getCurInsOff(), exprValueRegister };
 
@@ -1897,9 +1891,9 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 
 					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->allocReg(exprValueRegister));
 
-					CompileExprResult resultExprResult(compileEnv->allocator.get());
+					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, defaultCase.second, evalPurpose, returnType, result));
 
-					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, defaultCase.second, evalPurpose, returnType, exprValueRegister, result));
+					exprValueRegister = result.idxResultRegOut;
 
 					phiRegisterValueMap.at(idxDefaultBranchCase) = { UINT32_MAX, exprValueRegister };
 
@@ -1919,24 +1913,28 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 					operands.at(j + 1) = slake::Value(slake::ValueType::RegIndex, phiRegisterValueMap.at(i).second);
 				}
 
-				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->emitIns(sldIndex, slake::Opcode::PHI, resultRegOut, operands.data(), operands.size()));
+				uint32_t valueRegOut;
+				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->allocReg(valueRegOut));
+
+				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->emitIns(sldIndex, slake::Opcode::PHI, valueRegOut, operands.data(), operands.size()));
+				resultOut.idxResultRegOut = valueRegOut;
 			} else {
+				// ?
 			}
 
 			resultOut.evaluatedType = returnType;
 			break;
 		}
+		case ExprKind::Wrapper:
+			return compileExpr(compileEnv, compilationContext, pathEnv, expr.castTo<WrapperExprNode>()->target, evalPurpose, desiredType, resultOut);
 		case ExprKind::RegIndex: {
 			auto e = expr.castTo<RegIndexExprNode>();
 
-			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->emitIns(sldIndex, slake::Opcode::COPY, resultRegOut, { slake::Value(slake::ValueType::RegIndex, e->reg) }));
-
+			resultOut.idxResultRegOut = e->reg;
 			resultOut.evaluatedType = e->type;
 
 			break;
 		}
-		case ExprKind::Wrapper:
-			return compileExpr(compileEnv, compilationContext, pathEnv, expr.castTo<WrapperExprNode>()->target, evalPurpose, desiredType, resultRegOut, resultOut);
 		default:
 			std::terminate();
 	}

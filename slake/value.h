@@ -65,6 +65,7 @@ namespace slake {
 		Context *context;
 		size_t stackOff;
 
+
 		LocalVarRef() = default;
 		SLAKE_FORCEINLINE LocalVarRef(Context *context, size_t stackOff) : context(context), stackOff(stackOff) {}
 	};

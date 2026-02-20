@@ -597,7 +597,7 @@ SLKC_API bool Decompiler::decompileValue(peff::Alloc *allocator, DumpWriter *wri
 			break;
 		}
 		case slake::ValueType::RegIndex: {
-			char s[19];
+			char s[32];
 			sprintf(s, "%%%u", value.getRegIndex());
 			SLKC_RETURN_IF_FALSE(writer->write(s));
 			break;
@@ -754,7 +754,7 @@ SLKC_API bool Decompiler::decompileModuleMembers(peff::Alloc *allocator, DumpWri
 									}
 
 									{
-										char s[18];
+										char s[36];
 
 										sprintf(s, "block_%u:", (uint32_t)j);
 										SLKC_RETURN_IF_FALSE(writer->write(s));
@@ -773,7 +773,7 @@ SLKC_API bool Decompiler::decompileModuleMembers(peff::Alloc *allocator, DumpWri
 											sld = &ol->sourceLocDescs.at(curIns.offSourceLocDesc);
 
 										if (sld) {
-											char s[33];
+											char s[42];
 
 											sprintf(s, "(%u %u): ", sld->line, sld->column);
 
@@ -781,7 +781,7 @@ SLKC_API bool Decompiler::decompileModuleMembers(peff::Alloc *allocator, DumpWri
 										}
 
 										if (curIns.output != UINT32_MAX) {
-											char s[9];
+											char s[32];
 
 											sprintf(s, "%%%u = ", curIns.output);
 
@@ -794,7 +794,7 @@ SLKC_API bool Decompiler::decompileModuleMembers(peff::Alloc *allocator, DumpWri
 												SLKC_RETURN_IF_FALSE(writer->write(mnemonic));
 												SLKC_RETURN_IF_FALSE(writer->write(" "));
 											} else {
-												char s[6];
+												char s[13];
 
 												sprintf(s, "0x%0.2x ", (int)curIns.opcode);
 
@@ -839,7 +839,7 @@ SLKC_API bool Decompiler::decompileModuleMembers(peff::Alloc *allocator, DumpWri
 										sld = &ol->sourceLocDescs.at(curIns.offSourceLocDesc);
 
 									if (sld) {
-										char s[23];
+										char s[32];
 
 										sprintf(s, "(%u, %u): ", sld->line, sld->column);
 
@@ -847,7 +847,7 @@ SLKC_API bool Decompiler::decompileModuleMembers(peff::Alloc *allocator, DumpWri
 									}
 
 									if (curIns.output != UINT32_MAX) {
-										char s[16];
+										char s[32];
 
 										sprintf(s, "%%%u = ", curIns.output);
 
@@ -860,7 +860,7 @@ SLKC_API bool Decompiler::decompileModuleMembers(peff::Alloc *allocator, DumpWri
 											SLKC_RETURN_IF_FALSE(writer->write(mnemonic));
 											SLKC_RETURN_IF_FALSE(writer->write(" "));
 										} else {
-											char s[6];
+											char s[13];
 
 											sprintf(s, "0x%0.2x ", (int)curIns.opcode);
 

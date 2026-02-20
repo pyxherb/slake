@@ -851,7 +851,7 @@ SLKC_API peff::Option<SyntaxError> BCParser::parseStmt(AstNodePtr<BCStmtNode> &s
 			if (regIdToken->sourceText.at(0) == '-')
 				std::terminate();
 
-			std::string_view bodyView = token->sourceText;
+			std::string_view bodyView = regIdToken->sourceText;
 
 			if ((syntaxError = _parseInt<uint32_t>(this, regIdToken, false, bodyView, data)))
 				return syntaxError;

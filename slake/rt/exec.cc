@@ -395,7 +395,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_createNewMajorFrame(
 	// TODO: Restore resumable context data.
 
 	char *pMajorFrame;
-	if (!(pMajorFrame = context->stackAlloc(sizeof(MajorFrame))))
+	if (!(pMajorFrame = context->alignedStackAlloc(sizeof(MajorFrame), alignof(MajorFrame))))
 		return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
 	peff::constructAt<MajorFrame>((MajorFrame *)pMajorFrame, this);
 	MajorFrame &newMajorFrame = *(MajorFrame *)pMajorFrame;
@@ -1955,7 +1955,8 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 			return InvalidOpcodeError::alloc(getFixedAlloc(), opcode);
 		case Opcode::ENTER: {
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<false, 0>(this, output, nOperands));
-			size_t prevStackTop = context->getContext().stackTop;
+
+			size_t prevStackTop = curMajorFrame->resumableContextData->offCurMinorFrame;
 
 			if (!context->_context.alignedStackAlloc(sizeof(MinorFrame), alignof(MinorFrame)))
 				return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
@@ -1966,7 +1967,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 				mfStackOff -= curMajorFrame->curCoroutine->offStackTop;
 			}
 
-			MinorFrame *mf = _fetchMinorFrame(&context->getContext(), curMajorFrame, context->getContext().stackTop);
+			MinorFrame *mf = _fetchMinorFrame(&context->getContext(), curMajorFrame, mfStackOff);
 
 			peff::constructAt<MinorFrame>(mf);
 

@@ -4,6 +4,11 @@
 #include "lexer.h"
 #include <peff/advutils/shared_ptr.h>
 #include <peff/base/deallocable.h>
+#include <variant>
+
+#if SLKC_WITH_AST_DUMPING
+	#include <wandjson/dump.h>
+#endif
 
 namespace slkc {
 	enum class AstNodeType : uint8_t {
@@ -165,8 +170,8 @@ namespace slkc {
 		}
 	};
 
-	template<typename T>
-	PEFF_FORCEINLINE peff::WeakPtr<T> toWeakPtr(const AstNodePtr<T>& ptr) noexcept {
+	template <typename T>
+	PEFF_FORCEINLINE peff::WeakPtr<T> toWeakPtr(const AstNodePtr<T> &ptr) noexcept {
 		return peff::WeakPtr<T>(ptr.inMemory);
 	}
 
@@ -228,12 +233,54 @@ namespace slkc {
 		}
 	};
 
+#if SLKC_WITH_AST_DUMPING
+	enum class AstDumpingTaskType {
+		ObjectMember = 0,
+		ArrayInsertion,
+	};
+
+	struct ObjectMemberAstDumpingTaskExData {
+		wandjson::ObjectValue *objectValue;
+		std::string_view name;	// The name will always refer to a constant or present string.
+		AstNodePtr<AstNode> astNode;
+
+		SLAKE_FORCEINLINE ObjectMemberAstDumpingTaskExData(wandjson::ObjectValue *objectValue, const std::string_view &name, const AstNodePtr<AstNode> &astNode) : objectValue(objectValue), name(name), astNode(astNode) {}
+	};
+
+	struct ArrayInsertionAstDumpingTaskExData {
+		wandjson::ArrayValue *arrayValue;
+		AstNodePtr<AstNode> astNode;
+
+		SLAKE_FORCEINLINE ArrayInsertionAstDumpingTaskExData(wandjson::ArrayValue *arrayValue, const AstNodePtr<AstNode> &astNode) : arrayValue(arrayValue), astNode(astNode) {}
+	};
+
+	struct AstDumpingTask {
+		std::variant<
+			ObjectMemberAstDumpingTaskExData,
+			ArrayInsertionAstDumpingTaskExData>
+			exData;
+		AstDumpingTaskType taskType;
+
+		SLAKE_FORCEINLINE AstDumpingTask(ObjectMemberAstDumpingTaskExData &&exData) : exData(std::move(exData)), taskType(AstDumpingTaskType::ObjectMember) {}
+		SLAKE_FORCEINLINE AstDumpingTask(ArrayInsertionAstDumpingTaskExData &&exData) : exData(std::move(exData)), taskType(AstDumpingTaskType::ArrayInsertion) {}
+	};
+
+	struct AstDumpingContext {
+		peff::List<AstDumpingTask> dumpingTasks;
+
+		SLAKE_FORCEINLINE AstDumpingContext(peff::Alloc *allocator) : dumpingTasks(allocator) {}
+	};
+#endif
+
 	class AstNode : public peff::SharedFromThis<AstNode> {
 	private:
 		AstNodeType _astNodeType;
 
 	protected:
 		SLKC_API virtual AstNodePtr<AstNode> doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const;
+#if SLKC_WITH_AST_DUMPING
+		SLKC_API virtual wandjson::Value *doDump(peff::Alloc *allocator, AstDumpingContext &context) const;
+#endif
 
 	public:
 		peff::RcObjectPtr<peff::Alloc> selfAllocator;
@@ -261,6 +308,10 @@ namespace slkc {
 
 			return newNode.castTo<T>();
 		}
+
+#if SLKC_WITH_AST_DUMPING
+		SLAKE_API wandjson::Value *dump(peff::Alloc *allocator) const noexcept;
+#endif
 
 		SLAKE_FORCEINLINE AstNodeType getAstNodeType() const noexcept {
 			return _astNodeType;

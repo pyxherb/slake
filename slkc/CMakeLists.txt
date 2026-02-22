@@ -11,6 +11,12 @@ target_link_libraries(slkc PRIVATE slake peff_advutils_static)
 set_property(TARGET slkc PROPERTY CXX_STANDARD 17)
 
 set(SLKC_WITH_LANGUAGE_SERVER TRUE CACHE BOOL "Build SLKC with language server support")
+set(SLKC_WITH_AST_DUMPING TRUE CACHE BOOL "Enable AST dumping for SLKC")
+
+if(SLKC_WITH_AST_DUMPING)
+    find_package(wandjson REQUIRED)
+    target_link_libraries(slkc PRIVATE wandjson_static)
+endif()
 
 configure_file("config.h.in" ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 

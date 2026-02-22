@@ -16,7 +16,7 @@ Value print(Context *context, MajorFrame *curMajorFrame) {
 			if (curMajorFrame->curCoroutine)
 				Runtime::readVar(CoroutineArgRef(curMajorFrame->curCoroutine, i), data);
 			else
-				Runtime::readVar(ArgRef(curMajorFrame, context->dataStack, context->stackSize, i), data);
+				Runtime::readVar(ArgRef(curMajorFrame, i), data);
 
 			switch (data.valueType) {
 				case ValueType::I8:

@@ -87,40 +87,23 @@ SLAKE_API ValueType slake::typeIdToValueType(TypeId typeId) noexcept {
 SLAKE_API Reference slake::extractStructInnerRef(const StructRefData &structRef, ReferenceKind innerReferenceKind) {
 	switch (innerReferenceKind) {
 		case ReferenceKind::StaticFieldRef:
-			return StaticFieldRef(
-				structRef.asStaticField.moduleObject,
-				structRef.asStaticField.index);
+			return structRef.asStaticField;
 			break;
 		case ReferenceKind::ArrayElementRef:
-			return ArrayElementRef(
-				structRef.asArrayElement.arrayObject,
-				structRef.asArrayElement.index);
+			return structRef.asArrayElement;
 			break;
 		case ReferenceKind::ObjectFieldRef:
-			return ObjectFieldRef(
-				structRef.asObjectField.instanceObject,
-				structRef.asObjectField.fieldIndex);
+			return structRef.asObjectField;
 			break;
 		case ReferenceKind::LocalVarRef:
-			return LocalVarRef(
-				structRef.asLocalVar.context,
-				structRef.asLocalVar.stackOff);
-			break;
+			return structRef.asLocalVar;
 		case ReferenceKind::CoroutineLocalVarRef:
-			return CoroutineLocalVarRef(
-				structRef.asCoroutineLocalVar.coroutine,
-				structRef.asCoroutineLocalVar.stackOff);
+			return structRef.asCoroutineLocalVar;
 		case ReferenceKind::ArgRef:
-			return ArgRef(
-				structRef.asArg.majorFrame,
-				structRef.asArg.dataStack,
-				structRef.asArg.stackSize,
-				structRef.asArg.argIndex);
+			return structRef.asArg;
 			break;
 		case ReferenceKind::CoroutineArgRef:
-			return CoroutineLocalVarRef(
-				structRef.asCoroutineArg.coroutine,
-				structRef.asCoroutineArg.argIndex);
+			return structRef.asCoroutineArg;
 			break;
 		default:
 			std::terminate();

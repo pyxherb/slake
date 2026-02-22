@@ -88,12 +88,10 @@ namespace slake {
 
 	struct ArgRef {
 		const MajorFrame *majorFrame;
-		char *dataStack;
-		size_t stackSize;
 		uint32_t argIndex;
 
 		ArgRef() = default;
-		SLAKE_FORCEINLINE ArgRef(const MajorFrame *majorFrame, char *dataStack, size_t stackSize, uint32_t argIndex) : majorFrame(majorFrame), dataStack(dataStack), stackSize(stackSize), argIndex(argIndex) {}
+		SLAKE_FORCEINLINE ArgRef(const MajorFrame *majorFrame, uint32_t argIndex) : majorFrame(majorFrame), argIndex(argIndex) {}
 	};
 
 	struct ArgPackRef {

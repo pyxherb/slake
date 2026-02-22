@@ -312,10 +312,11 @@ namespace slake {
 			uint32_t returnValueOut,
 			const Reference *returnStructRef) noexcept;
 		[[nodiscard]] SLAKE_API InternalExceptionPointer _createNewMajorFrame(
-			Context *context,
+			ContextObject *contextObject,
 			Object *thisObject,
 			const FnOverloadingObject *fn,
 			const Value *args,
+			size_t offArgs,
 			uint32_t nArgs,
 			uint32_t returnValueOut,
 			const Reference *returnStructRef) noexcept;

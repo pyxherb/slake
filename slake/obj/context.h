@@ -52,6 +52,8 @@ namespace slake {
 		SLAKE_API void replaceAllocator(peff::Alloc *allocator) noexcept;
 	};
 
+	class ContextObject;
+
 	/// @brief A major frame represents a single calling frame.
 	struct MajorFrame final {
 		size_t offPrevFrame = SIZE_MAX, offNextFrame = SIZE_MAX;
@@ -59,6 +61,7 @@ namespace slake {
 		Runtime *associatedRuntime;
 
 		const FnOverloadingObject *curFn = nullptr;	 // Current function overloading.
+		ContextObject *curContext = nullptr;
 		CoroutineObject *curCoroutine = nullptr;
 
 		peff::Option<ResumableContextData> resumableContextData;
@@ -77,12 +80,10 @@ namespace slake {
 
 		SLAKE_API void dealloc() noexcept;
 
-		SLAKE_API static MajorFrame *alloc(Runtime *rt, Context *context);
-
 		SLAKE_API void replaceAllocator(peff::Alloc *allocator) noexcept;
 	};
 
-	using MajorFramePtr = std::unique_ptr<MajorFrame, peff::DeallocableDeleter<MajorFrame>>;
+	static_assert(!std::is_polymorphic_v<MajorFrame>);
 
 	using ContextFlags = uint8_t;
 	constexpr static ContextFlags

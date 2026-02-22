@@ -139,10 +139,6 @@ SLAKE_API void slake::ContextObject::dealloc() {
 	peff::destroyAndRelease<ContextObject>(selfAllocator.get(), this, sizeof(std::max_align_t));
 }
 
-SLAKE_API MajorFrame *MajorFrame::alloc(Runtime *rt, Context *context) {
-	return peff::allocAndConstruct<MajorFrame>(rt->getFixedAlloc(), alignof(MajorFrame), rt);
-}
-
 SLAKE_API void MajorFrame::replaceAllocator(peff::Alloc *allocator) noexcept {
 	if (resumableContextData.hasValue())
 		resumableContextData->replaceAllocator(allocator);

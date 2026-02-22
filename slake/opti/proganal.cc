@@ -330,10 +330,8 @@ InternalExceptionPointer slake::opti::analyzeProgramInfoPass(
 	}
 	uint32_t nIns = (uint32_t)fnObject->instructions.size();
 	analyzedInfoOut.contextObject = ContextObject::alloc(runtime, SLAKE_STACK_SIZE_MAX);
-	MajorFramePtr pseudoMajorFrame;
 	{
-		SLAKE_RETURN_IF_EXCEPT(runtime->_createNewMajorFrame(&analyzedInfoOut.contextObject->_context, nullptr, nullptr, nullptr, 0, UINT32_MAX, nullptr));
-		pseudoMajorFrame = MajorFramePtr(MajorFrame::alloc(runtime, &analyzedInfoOut.contextObject->_context));
+		SLAKE_RETURN_IF_EXCEPT(runtime->_createNewMajorFrame(analyzedInfoOut.contextObject.get(), nullptr, nullptr, nullptr, SIZE_MAX, 0, UINT32_MAX, nullptr));
 	}
 
 	ProgramAnalyzeContext analyzeContext = {
@@ -343,9 +341,6 @@ InternalExceptionPointer slake::opti::analyzeProgramInfoPass(
 		analyzedInfoOut,
 		hostRefHolder
 	};
-
-	if (!(pseudoMajorFrame->resumableContextData = ResumableContextData(fnObject->selfAllocator.get())))
-		return OutOfMemoryError::alloc();
 
 	//if (!pseudoMajorFrame->resumableContextData->argStack.resizeUninitialized(fnObject->paramTypes.size()))
 	//	return OutOfMemoryError::alloc();
@@ -738,7 +733,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfoPass(
 						analyzedInfoOut.analyzedRegInfo.at(regIndex).storageType = RegStorageType::ArgRef;
 						analyzedInfoOut.analyzedRegInfo.at(regIndex).storageInfo.asArgRef = {};
 						analyzedInfoOut.analyzedRegInfo.at(regIndex).storageInfo.asArgRef.idxArg = index;
-						setExpectedValue(regIndex, Value(ArgRef(pseudoMajorFrame.get(), /*stub*/nullptr, 0, index)));
+						//setExpectedValue(regIndex, Value(ArgRef(pseudoMajorFrame.get(), /*stub*/nullptr, 0, index)));
 					}
 					break;
 				}
@@ -771,7 +766,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfoPass(
 
 					if (curIns.output != UINT32_MAX) {
 						Reference entityRef;
-						SLAKE_RETURN_IF_EXCEPT(runtime->_addLocalVar(&analyzedInfoOut.contextObject->_context, pseudoMajorFrame.get(), typeName, curIns.output, entityRef));
+						//SLAKE_RETURN_IF_EXCEPT(runtime->_addLocalVar(&analyzedInfoOut.contextObject->_context, pseudoMajorFrame.get(), typeName, curIns.output, entityRef));
 
 						SLAKE_RETURN_IF_EXCEPT(
 							wrapIntoRefType(

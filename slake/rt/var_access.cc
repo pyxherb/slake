@@ -1020,8 +1020,8 @@ SLAKE_API void Runtime::readVarWithType(const Reference &entityRef, const TypeRe
 		}
 		case ReferenceKind::ArgRef: {
 			valueOut = _fetchArgStack(
-				entityRef.asArg.dataStack,
-				entityRef.asArg.stackSize,
+				entityRef.asArg.majorFrame->curContext->getContext().dataStack,
+				entityRef.asArg.majorFrame->curContext->getContext().stackSize,
 				entityRef.asArg.majorFrame,
 				entityRef.asArg.majorFrame->resumableContextData->offArgs,
 				entityRef.asArg.majorFrame->resumableContextData->nArgs)[entityRef.asArg.argIndex];
@@ -1440,8 +1440,8 @@ SLAKE_API void Runtime::writeVarWithType(const Reference &entityRef, const TypeR
 			if (value.isLocal() && !t.isLocal())
 				std::terminate();
 			_fetchArgStack(
-				entityRef.asArg.dataStack,
-				entityRef.asArg.stackSize,
+				entityRef.asArg.majorFrame->curContext->getContext().dataStack,
+				entityRef.asArg.majorFrame->curContext->getContext().stackSize,
 				entityRef.asArg.majorFrame,
 				entityRef.asArg.majorFrame->resumableContextData->offArgs,
 				entityRef.asArg.majorFrame->resumableContextData->nArgs)[entityRef.asArg.argIndex] = value;

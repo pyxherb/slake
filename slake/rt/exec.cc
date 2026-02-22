@@ -168,8 +168,7 @@ SLAKE_API InternalExceptionPointer Runtime::_fillArgs(
 	MajorFrame *newMajorFrame,
 	const FnOverloadingObject *fn,
 	const Value *args,
-	uint32_t nArgs,
-	HostRefHolder &holder) {
+	uint32_t nArgs) {
 	if (nArgs < fn->paramTypes.size()) {
 		return allocOutOfMemoryErrorIfAllocFailed(InvalidArgumentNumberError::alloc(getFixedAlloc(), nArgs));
 	}
@@ -386,9 +385,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_createNewMajorFrame(
 	uint32_t nArgs,
 	uint32_t returnValueOut,
 	const Reference *returnStructRef) noexcept {
-	HostRefHolder holder(getFixedAlloc());
-
-	Context *context = &contextObject->getContext();
+	Context *const context = &contextObject->_context;
 
 	size_t prevStackTop = context->stackTop;
 	peff::ScopeGuard restoreStackTopGuard([context, prevStackTop]() noexcept {
@@ -435,7 +432,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_createNewMajorFrame(
 		newMajorFrame.resumableContextData->thisObject = thisObject;
 
 		if (args)
-			SLAKE_RETURN_IF_EXCEPT(_fillArgs(context, &newMajorFrame, fn, args, nArgs, holder));
+			SLAKE_RETURN_IF_EXCEPT(_fillArgs(context, &newMajorFrame, fn, args, nArgs));
 		else {
 			if (nArgs)
 				newMajorFrame.resumableContextData->offArgs = offArgs;
@@ -1941,7 +1938,13 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 
 			Reference entityRef;
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, larg(&context->getContext(), curMajorFrame, this, operands[0].getU32(), entityRef));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, stackSize, curMajorFrame, output, Value(entityRef)));
+			if (!_isRegisterValid(curMajorFrame, output)) {
+				// The register does not present.
+				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+			}
+			Value *outputReg = _calcRegPtr(dataStack, stackSize, curMajorFrame, output);
+			outputReg->valueType = ValueType::Reference;
+			outputReg->getReference() = entityRef;
 			break;
 		}
 		case Opcode::LAPARG:

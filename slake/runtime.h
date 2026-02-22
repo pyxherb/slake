@@ -304,8 +304,7 @@ namespace slake {
 			MajorFrame *newMajorFrame,
 			const FnOverloadingObject *fn,
 			const Value *args,
-			uint32_t nArgs,
-			HostRefHolder &holder);
+			uint32_t nArgs);
 		[[nodiscard]] SLAKE_API InternalExceptionPointer _createNewCoroutineMajorFrame(
 			Context *context,
 			CoroutineObject *coroutine,

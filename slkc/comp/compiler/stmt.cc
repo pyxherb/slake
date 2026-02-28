@@ -183,8 +183,6 @@ SLKC_API peff::Option<CompilationError> slkc::compileForStmt(
 			if (i->initialValue) {
 				uint32_t initialValueReg;
 
-				SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(initialValueReg));
-
 				CompileExprResult result(compileEnv->allocator.get());
 
 				if (i->type) {
@@ -535,7 +533,6 @@ SLKC_API peff::Option<CompilationError> slkc::compileWhileStmt(
 	PrevContinuePointHolder continuePointHolder(compilationContext);
 
 	uint32_t conditionReg;
-	SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(conditionReg));
 
 	uint32_t bodyLabel;
 	SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocLabel(bodyLabel));
@@ -642,7 +639,6 @@ SLKC_API peff::Option<CompilationError> slkc::compileDoWhileStmt(
 	PrevContinuePointHolder continuePointHolder(compilationContext);
 
 	uint32_t conditionReg;
-	SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(conditionReg));
 
 	uint32_t bodyLabel;
 	SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocLabel(bodyLabel));
@@ -1094,8 +1090,6 @@ SLKC_API peff::Option<CompilationError> slkc::compileYieldStmt(
 	AstNodePtr<YieldStmtNode> s,
 	uint32_t sldIndex) {
 	uint32_t reg;
-
-	SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(reg));
 
 	if (s->value) {
 		CompileExprResult result(compileEnv->allocator.get());

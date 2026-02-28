@@ -1456,10 +1456,6 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 		case ExprKind::New: {
 			AstNodePtr<NewExprNode> e = expr.castTo<NewExprNode>();
 
-			uint32_t targetReg;
-
-			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->allocReg(targetReg));
-
 			if (e->targetType->typeNameKind != TypeNameKind::Custom) {
 				return CompilationError(e->targetType->tokenRange, CompilationErrorKind::TypeIsNotConstructible);
 			}
@@ -1815,8 +1811,6 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 						{
 							CompileExprResult cmpExprResult(compileEnv->allocator.get());
 
-							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->allocReg(cmpResultReg));
-
 							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, cmpExpr.castTo<ExprNode>(), ExprEvalPurpose::RValue, desiredBoolTypeName.castTo<TypeNameNode>(), cmpExprResult));
 
 							cmpResultReg = cmpExprResult.idxResultRegOut;
@@ -1856,8 +1850,6 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 
 				uint32_t exprValueRegister;
 
-				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->allocReg(exprValueRegister));
-
 				{
 					PathEnv bodyPathEnv(compileEnv->allocator.get());
 					bodyPathEnv.execPossibility = PathPossibility::May;	 // TODO: Check if the path will always reached hit after an assignment (if exists).
@@ -1880,8 +1872,6 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 				compilationContext->setLabelOffset(matchValueEvalLabels.at(idxDefaultBranchCase), compilationContext->getCurInsOff());
 
 				uint32_t exprValueRegister;
-
-				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->allocReg(exprValueRegister));
 
 				{
 					PathEnv bodyPathEnv(compileEnv->allocator.get());

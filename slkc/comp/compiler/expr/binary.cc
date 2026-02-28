@@ -91,8 +91,6 @@ peff::Option<CompilationError> slkc::_compileSimpleAssignBinaryExpr(
 
 			uint32_t rhsReg;
 
-			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(rhsReg));
-
 			if ((e = _compileOrCastOperand(compileEnv, compilationContext, pathEnv, ExprEvalPurpose::LValue, desiredLhsType, expr->lhs, lhsType, lhsResult))) {
 				if (auto re = _compileOrCastOperand(compileEnv, compilationContext, pathEnv, rhsEvalPurpose, desiredRhsType, expr->rhs, rhsType, rhsResult); re) {
 					if (!compileEnv->errors.pushBack(std::move(*e))) {
@@ -128,9 +126,6 @@ peff::Option<CompilationError> slkc::_compileSimpleAssignBinaryExpr(
 
 			uint32_t lhsReg,
 				rhsReg;
-
-			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(lhsReg));
-			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(rhsReg));
 
 			if ((e = _compileOrCastOperand(compileEnv, compilationContext, pathEnv, ExprEvalPurpose::LValue, desiredLhsType, expr->lhs, lhsType, lhsResult))) {
 				if (auto re = _compileOrCastOperand(compileEnv, compilationContext, pathEnv, rhsEvalPurpose, desiredRhsType, expr->rhs, rhsType, rhsResult); re) {
@@ -196,8 +191,6 @@ peff::Option<CompilationError> slkc::_compileSimpleLAndBinaryExpr(
 				rhsReg,
 				tmpResultReg;
 
-			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(lhsReg));
-			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(rhsReg));
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(tmpResultReg));
 
 			uint32_t cmpEndLabelId;
@@ -290,8 +283,6 @@ peff::Option<CompilationError> slkc::_compileSimpleLOrBinaryExpr(
 				rhsReg,
 				tmpResultReg;
 
-			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(lhsReg));
-			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(rhsReg));
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(tmpResultReg));
 
 			uint32_t cmpEndLabelId;
@@ -381,9 +372,7 @@ SLKC_API peff::Option<CompilationError> slkc::_compileSimpleBinaryAssignOpExpr(
 				rhsReg,
 				resultValueReg;
 
-			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(lhsReg));
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(lhsValueReg));
-			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(rhsReg));
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(resultValueReg));
 
 			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileEnv, compilationContext, pathEnv, ExprEvalPurpose::LValue, lhsType, expr->lhs, lhsType, result));
@@ -423,9 +412,7 @@ SLKC_API peff::Option<CompilationError> slkc::_compileSimpleBinaryAssignOpExpr(
 				rhsReg,
 				resultValueReg;
 
-			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(lhsReg));
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(lhsValueReg));
-			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(rhsReg));
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(resultValueReg));
 
 			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileEnv, compilationContext, pathEnv, ExprEvalPurpose::LValue, lhsType, expr->lhs, lhsType, result));
@@ -622,7 +609,6 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 						CompilationErrorKind::MemberIsNotAccessible);
 
 				uint32_t rhsReg;
-				SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(rhsReg));
 				{
 					CompileExprResult argResult(compileEnv->allocator.get());
 
@@ -687,7 +673,6 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 				}
 
 				uint32_t reg;
-				SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(reg));
 				{
 					CompileExprResult argResult(compileEnv->allocator.get());
 
@@ -2049,7 +2034,6 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								CompilationErrorKind::MemberIsNotAccessible);
 
 						uint32_t lhsReg;
-						SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(lhsReg));
 						{
 							CompileExprResult argResult(compileEnv->allocator.get());
 
@@ -2190,9 +2174,6 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								uint32_t lhsReg,
 									rhsReg;
 
-								SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(lhsReg));
-								SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(rhsReg));
-
 								peff::Option<CompilationError> e;
 
 								if ((e = _compileOrCastOperand(compileEnv, compilationContext, pathEnv, ExprEvalPurpose::RValue, decayedLhsType, expr->lhs, lhsType, result))) {
@@ -2240,9 +2221,6 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 
 								uint32_t lhsReg,
 									rhsReg;
-
-								SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(lhsReg));
-								SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(rhsReg));
 
 								peff::Option<CompilationError> e;
 

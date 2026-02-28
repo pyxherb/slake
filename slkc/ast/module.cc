@@ -154,6 +154,9 @@ SLKC_API ModuleNode::~ModuleNode() {
 SLKC_API size_t ModuleNode::pushMember(AstNodePtr<MemberNode> memberNode) noexcept {
 	size_t n = members.size();
 
+	if (!members.shrinkToFit())
+		return false;
+
 	if (!members.pushBack(std::move(memberNode))) {
 		return SIZE_MAX;
 	}

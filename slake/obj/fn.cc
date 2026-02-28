@@ -243,7 +243,6 @@ SLAKE_API RegularFnOverloadingObject::RegularFnOverloadingObject(const RegularFn
 }
 
 SLAKE_API RegularFnOverloadingObject::~RegularFnOverloadingObject() {
-	instructions.clear();
 }
 
 SLAKE_API Object *slake::RegularFnOverloadingObject::duplicate(Duplicator *duplicator) const {

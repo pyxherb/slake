@@ -302,7 +302,7 @@ namespace slkc {
 			evaluatedType = {};
 			evaluatedFinalMember = {};
 			callTargetFnSlot = {};
-			callTargetMatchedOverloadings.clear();
+			callTargetMatchedOverloadings.clearAndShrink();
 			idxThisRegOut = UINT32_MAX;
 			idxResultRegOut = UINT32_MAX;
 		}

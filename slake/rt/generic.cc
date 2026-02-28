@@ -133,7 +133,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateModuleFields(Gene
 	tmpMod->fieldRecords = std::move(mod->fieldRecords);
 	tmpMod->localFieldStorage = std::move(mod->localFieldStorage);
 
-	mod->fieldRecordIndices.clear();
+	mod->fieldRecordIndices.clearAndShrink();
 
 	for (size_t i = 0; i < nRecords; ++i) {
 		const FieldRecord &curOldFieldRecord = tmpMod->fieldRecords.at(i);

@@ -44,7 +44,7 @@ static peff::Option<CompilationError> _determineWithCurrentSlot(
 		}
 
 		if (exactlyMatched) {
-			matchedOverloadings.clear();
+			matchedOverloadings.clearAndShrink();
 
 			if (!matchedOverloadings.pushBack(AstNodePtr<FnOverloadingNode>(currentOverloading))) {
 				return genOutOfMemoryCompError();

@@ -1085,12 +1085,12 @@ SLKC_API peff::Option<CompilationError> slkc::compileModuleLikeNode(
 					for (size_t i = 0; i < compContext.generatedInstructions.size(); ++i) {
 						fnObject->instructions.at(i) = std::move(compContext.generatedInstructions.at(i));
 					}
-					compContext.generatedInstructions.clear();
+					compContext.generatedInstructions.clearAndShrink();
 
 					if (!fnObject->sourceLocDescs.resize(compContext.sourceLocDescs.size()))
 						return genOutOfMemoryCompError();
 					memcpy(fnObject->sourceLocDescs.data(), compContext.sourceLocDescs.data(), compContext.sourceLocDescs.size() * sizeof(slake::slxfmt::SourceLocDesc));
-					compContext.sourceLocDescs.clear();
+					compContext.sourceLocDescs.clearAndShrink();
 					compContext.sourceLocDescsMap.clear();
 
 					for (auto &j : fnObject->instructions) {
@@ -1950,12 +1950,12 @@ SLKC_API peff::Option<CompilationError> slkc::compileModuleLikeNode(
 						for (size_t i = 0; i < compContext.generatedInstructions.size(); ++i) {
 							fnObject->instructions.at(i) = std::move(compContext.generatedInstructions.at(i));
 						}
-						compContext.generatedInstructions.clear();
+						compContext.generatedInstructions.clearAndShrink();
 
 						if (!fnObject->sourceLocDescs.resize(compContext.sourceLocDescs.size()))
 							return genOutOfMemoryCompError();
 						memcpy(fnObject->sourceLocDescs.data(), compContext.sourceLocDescs.data(), compContext.sourceLocDescs.size() * sizeof(slake::slxfmt::SourceLocDesc));
-						compContext.sourceLocDescs.clear();
+						compContext.sourceLocDescs.clearAndShrink();
 						compContext.sourceLocDescsMap.clear();
 
 						for (auto &j : fnObject->instructions) {

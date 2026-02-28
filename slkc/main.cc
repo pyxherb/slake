@@ -771,7 +771,7 @@ int main(int argc, char *argv[]) {
 			}
 		}
 
-		includeDirs.clear();
+		includeDirs.clearAndShrink();
 
 		if (!document->externalModuleProviders.pushBack(fsExternalModProvider.castTo<slkc::ExternalModuleProvider>())) {
 			printError("Out of memory");
@@ -931,7 +931,7 @@ int main(int argc, char *argv[]) {
 
 			document->rootModule = {};
 			document->genericCacheDir.clear();
-			document->externalModuleProviders.clear();
+			document->externalModuleProviders.clearAndShrink();
 		}
 	}
 

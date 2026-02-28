@@ -4,7 +4,7 @@ using namespace slake;
 
 SLAKE_API bool slake::StringObject::_setData(const char *str, size_t size) {
 	if (!size)
-		data.clear();
+		data.clearAndShrink();
 	else {
 		peff::String s(selfAllocator.get());
 

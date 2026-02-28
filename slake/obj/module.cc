@@ -74,10 +74,16 @@ SLAKE_API Reference BasicModuleObject::getMember(const std::string_view &name) c
 }
 
 SLAKE_API bool BasicModuleObject::addMember(MemberObject *member) {
+	if (!members.shrinkBuckets())
+		return false;
 	if (!members.insert(member->getName(), +member))
 		return false;
 	member->setParent(this);
 	return true;
+}
+
+[[nodiscard]] SLAKE_API bool BasicModuleObject::shrinkMemberStorage() {
+	return members.shrinkBuckets();
 }
 
 SLAKE_API void BasicModuleObject::removeMember(const std::string_view &name) {
@@ -105,7 +111,7 @@ SLAKE_API bool BasicModuleObject::appendFieldRecord(FieldRecord &&fieldRecord) {
 	return true;
 }
 
-SLAKE_API InternalExceptionPointer BasicModuleObject::appendFieldRecordWithValue(FieldRecord&& fieldRecord, const Value& value) {
+SLAKE_API InternalExceptionPointer BasicModuleObject::appendFieldRecordWithValue(FieldRecord &&fieldRecord, const Value &value) {
 	if (!fieldRecords.pushBack(std::move(fieldRecord))) {
 		return OutOfMemoryError::alloc();
 	}
@@ -171,9 +177,13 @@ SLAKE_API bool BasicModuleObject::reallocFieldSpaces() noexcept {
 		if (char *p = appendTypedFieldSpace(i.type); p) {
 			i.offset = p - localFieldStorage.data();
 		} else {
-			localFieldStorage.clear();
+			localFieldStorage.clearAndShrink();
 			return false;
 		}
+	}
+	if (!localFieldStorage.shrinkToFit()) {
+		localFieldStorage.clearAndShrink();
+		return false;
 	}
 	return true;
 }

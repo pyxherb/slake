@@ -430,7 +430,7 @@ SLKC_API peff::Option<CompilationError> slkc::resolveIdRef(
 		if (!curMember) {
 			memberOut = {};
 			if (resolvedPartListOut) {
-				resolvedPartListOut->clear();
+				resolvedPartListOut->clearAndShrink();
 			}
 			return {};
 		}

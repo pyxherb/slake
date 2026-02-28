@@ -47,7 +47,7 @@ SLKC_API peff::Option<CompilationError> slkc::combinePathEnv(PathEnv &outer, con
 			outer.returnPossibility = combinePossibility(outer.returnPossibility, combinePossibility(inner.execPossibility, inner.returnPossibility));
 			outer.breakPossibility = combinePossibility(outer.breakPossibility, combinePossibility(inner.execPossibility, inner.breakPossibility));
 
-			for (auto &i : inner.localVarNullOverrides) {
+			for (auto i : inner.localVarNullOverrides) {
 				if (i.second == NullOverrideType::Nullify)
 					SLKC_RETURN_IF_COMP_ERROR(outer.setLocalVarNullOverride(i.first, NullOverrideType::Nullify));
 			}
@@ -58,7 +58,7 @@ SLKC_API peff::Option<CompilationError> slkc::combinePathEnv(PathEnv &outer, con
 			outer.returnPossibility = combinePossibility(outer.returnPossibility, inner.returnPossibility);
 			outer.breakPossibility = combinePossibility(outer.breakPossibility, inner.breakPossibility);
 
-			for (auto &i : inner.localVarNullOverrides) {
+			for (auto i : inner.localVarNullOverrides) {
 				SLKC_RETURN_IF_COMP_ERROR(outer.setLocalVarNullOverride(i.first, i.second));
 			}
 			break;

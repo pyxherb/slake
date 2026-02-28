@@ -166,7 +166,7 @@ namespace slkc {
 				}
 				return {};
 			} else
-				return AstNodePtr<T1>(inMemory.castTo<T1>());
+				return AstNodePtr<T1>(inMemory.template castTo<T1>());
 		}
 	};
 

@@ -279,7 +279,7 @@ SLKC_API peff::Option<SyntaxError> BCParser::parseIdRef(IdRefPtr &idRefOut) {
 		idRefPtr->tokenRange.endIndex = prevEndIndex;
 		parseContext = prevParseContext;
 
-		entry.genericArgs.clear();
+		entry.genericArgs.clearAndShrink();
 
 	succeeded:
 		if (!idRefPtr->entries.pushBack(std::move(entry)))

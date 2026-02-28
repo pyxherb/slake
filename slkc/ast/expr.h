@@ -549,7 +549,6 @@ namespace slkc {
 
 	public:
 		AstNodePtr<ExprNode> condition;
-		bool isConst = false;
 		AstNodePtr<TypeNameNode> returnType;
 		peff::DynArray<std::pair<AstNodePtr<ExprNode>, AstNodePtr<ExprNode>>> cases;
 

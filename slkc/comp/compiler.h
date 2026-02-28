@@ -788,6 +788,11 @@ namespace slkc {
 		CompileEnv *compileEnv,
 		AstNodePtr<ModuleNode> mod);
 
+	[[nodiscard]] SLKC_API peff::Option<CompilationError> genBinaryOpExpr(CompileEnv *compileEnv, BinaryOp binaryOp, AstNodePtr<ExprNode> lhs, AstNodePtr<ExprNode> rhs, TokenRange tokenRange, AstNodePtr<BinaryExprNode> &resultOut);
+	[[nodiscard]] SLKC_API peff::Option<CompilationError> evalConstBinaryOpExpr(CompileEnv *compileEnv, CompilationContext *compilationContext, BinaryOp binaryOp, AstNodePtr<ExprNode> lhs, AstNodePtr<ExprNode> rhs, AstNodePtr<ExprNode> &resultOut);
+	[[nodiscard]] SLKC_API peff::Option<CompilationError> genImplicitCastExpr(CompileEnv *compileEnv, AstNodePtr<ExprNode> source, AstNodePtr<TypeNameNode> destType, AstNodePtr<CastExprNode> &resultOut);
+	[[nodiscard]] SLKC_API peff::Option<CompilationError> implicitConvertConstExpr(CompileEnv *compileEnv, CompilationContext *compilationContext, AstNodePtr<ExprNode> source, AstNodePtr<TypeNameNode> destType, AstNodePtr<ExprNode> &resultOut);
+
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> isFnSignatureSame(AstNodePtr<VarNode> *lParams, AstNodePtr<VarNode> *rParams, size_t nParams, AstNodePtr<TypeNameNode> lOverridenType, AstNodePtr<TypeNameNode> rOverridenType, bool &whetherOut);
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> isFnSignatureDuplicated(AstNodePtr<FnOverloadingNode> lhs, AstNodePtr<FnOverloadingNode> rhs, bool &whetherOut);
 

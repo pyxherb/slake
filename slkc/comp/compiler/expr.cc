@@ -73,16 +73,11 @@ SLKC_API peff::Option<CompilationError> slkc::_compileOrCastOperand(
 	if (whether) {
 		AstNodePtr<CastExprNode> castExpr;
 
-		if (!(castExpr = makeAstNode<CastExprNode>(
-				  compileEnv->allocator.get(),
-				  compileEnv->allocator.get(),
-				  compileEnv->document))) {
-			return genOutOfMemoryCompError();
-		}
-
-		castExpr->tokenRange = operand->tokenRange;
-		castExpr->targetType = desiredType;
-		castExpr->source = operand;
+		SLKC_RETURN_IF_COMP_ERROR(genImplicitCastExpr(
+			compileEnv,
+			operand,
+			desiredType,
+			castExpr));
 
 		SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, compilationContext, pathEnv, castExpr.castTo<ExprNode>(), evalPurpose, desiredType, resultOut));
 		return {};
@@ -1311,12 +1306,11 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 					else {
 						AstNodePtr<CastExprNode> castExpr;
 
-						if (!(castExpr = makeAstNode<CastExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document)))
-							return genOutOfMemoryCompError();
-
-						castExpr->tokenRange = e->args.at(i)->tokenRange;
-						castExpr->source = e->args.at(i);
-						castExpr->targetType = tn->paramTypes.at(i);
+						SLKC_RETURN_IF_COMP_ERROR(genImplicitCastExpr(
+							compileEnv,
+							e->args.at(i),
+							tn->paramTypes.at(i),
+							castExpr));
 
 						if (i < tn->paramTypes.size()) {
 							bool b = false;
@@ -1699,6 +1693,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 
 			AstNodePtr<TypeNameNode> returnType = e->returnType;
 
+			// Infer common return type from the cases.
 			if (!returnType) {
 				if (desiredType)
 					returnType = desiredType;
@@ -1725,34 +1720,33 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 				}
 			}
 
+			// Check if the return value requires a L-Value expression.
 			bool isLValue;
-
 			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, isLValueType(returnType, isLValue));
-
 			switch (evalPurpose) {
 				case ExprEvalPurpose::LValue:
 					if (!isLValue)
 						return CompilationError(expr->tokenRange, CompilationErrorKind::ExpectingLValueExpr);
 					break;
+				case ExprEvalPurpose::EvalType:
+					resultOut.evaluatedType = returnType;
+					return {};
 				default:
 					break;
 			}
 
+			// Compile the match condition.
 			uint32_t conditionReg;
 
-			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->allocReg(conditionReg));
-
 			CompileExprResult result(compileEnv->allocator.get());
-
 			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, e->condition, ExprEvalPurpose::RValue, {}, result));
-
 			conditionReg = result.idxResultRegOut;
-
 			if (!result.evaluatedType)
 				return CompilationError(expr->tokenRange, CompilationErrorKind::ErrorDeducingMatchConditionType);
 
-			AstNodePtr<TypeNameNode> conditionType = result.evaluatedType;
+			AstNodePtr<TypeNameNode> condType = result.evaluatedType;
 
+			// Allocate the end label.
 			uint32_t endLabel;
 			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->allocLabel(endLabel));
 
@@ -1760,167 +1754,169 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 
 			bool isDefaultSet = false;
 
-			if (e->isConst) {
-				// Key = jump source, value = value register
-				peff::DynArray<uint32_t> matchValueEvalLabels(compileEnv->allocator.get());
-				peff::DynArray<std::pair<uint32_t, uint32_t>> phiRegisterValueMap(compileEnv->allocator.get());
+			// Key = jump source, value = value register
+			peff::DynArray<uint32_t> matchValueEvalLabels(compileEnv->allocator.get());
+			peff::DynArray<std::pair<uint32_t, uint32_t>> phiRegisterValueMap(compileEnv->allocator.get());
 
-				if (!matchValueEvalLabels.resize(e->cases.size())) {
-					return genOutOfMemoryCompError();
-				}
+			if (!matchValueEvalLabels.resize(e->cases.size())) {
+				return genOutOfMemoryCompError();
+			}
 
-				if (!phiRegisterValueMap.resize(e->cases.size())) {
-					return genOutOfMemoryCompError();
-				}
+			if (!phiRegisterValueMap.resize(e->cases.size())) {
+				return genOutOfMemoryCompError();
+			}
 
-				size_t idxDefaultBranchCase;
+			size_t idxDefaultBranchCase;
 
-				for (size_t i = 0; i < e->cases.size(); ++i) {
-					auto &curCase = e->cases.at(i);
+			// Check and prepare for each case.
+			for (size_t i = 0; i < e->cases.size(); ++i) {
+				auto &curCase = e->cases.at(i);
 
-					uint32_t evalValueLabel;
-					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->allocLabel(evalValueLabel));
+				uint32_t evalValueLabel;
+				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->allocLabel(evalValueLabel));
 
-					if (curCase.first) {
-						AstNodePtr<ExprNode> resultExpr;
+				if (curCase.first) {
+					// Evaluate the case conition as a comptime expression.
+					AstNodePtr<ExprNode> evaluatedCaseCondExpr;
+					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, evalConstExpr(compileEnv, compilationContext, curCase.first, evaluatedCaseCondExpr));
+					if (!evaluatedCaseCondExpr) {
+						return CompilationError(curCase.first->tokenRange, CompilationErrorKind::ErrorEvaluatingConstMatchCaseCondition);
+					}
 
-						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, evalConstExpr(compileEnv, compilationContext, curCase.first, resultExpr));
+					// Try to infer the case condition's type.
+					AstNodePtr<TypeNameNode> caseCondExprType;
+					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, evalExprType(compileEnv, compilationContext, pathEnv, evaluatedCaseCondExpr, caseCondExprType));
+					if (!caseCondExprType) {
+						return CompilationError(curCase.first->tokenRange, CompilationErrorKind::MismatchedMatchCaseConditionType);
+					}
 
-						if (!resultExpr) {
-							return CompilationError(curCase.first->tokenRange, CompilationErrorKind::ErrorEvaluatingConstMatchCaseCondition);
-						}
+					// Check if the case condition's type matches the match condition's type.
+					bool b;
+					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, isSameType(condType, caseCondExprType, b));
+					if (!b)
+						return CompilationError(curCase.first->tokenRange, CompilationErrorKind::MismatchedMatchCaseConditionType);
 
-						AstNodePtr<TypeNameNode> resultExprType;
-
-						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, evalExprType(compileEnv, compilationContext, pathEnv, resultExpr, resultExprType));
-
-						if (!resultExprType) {
-							return CompilationError(curCase.first->tokenRange, CompilationErrorKind::MismatchedMatchCaseConditionType);
-						}
-
-						bool b;
-
-						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, isSameType(conditionType, resultExprType, b));
-
-						if (!b)
-							return CompilationError(curCase.first->tokenRange, CompilationErrorKind::MismatchedMatchCaseConditionType);
-
+					uint32_t cmpResultReg;
+					{
 						AstNodePtr<BinaryExprNode> cmpExpr;
 
-						if (!(cmpExpr = makeAstNode<BinaryExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
+						AstNodePtr<RegIndexExprNode> regIndexExpr;
+						if (!(regIndexExpr = makeAstNode<RegIndexExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, conditionReg, condType))) {
 							return genOutOfMemoryCompError();
 						}
+						regIndexExpr->tokenRange = curCase.first->tokenRange;
 
-						cmpExpr->binaryOp = BinaryOp::Eq;
-
-						cmpExpr->tokenRange = curCase.first->tokenRange;
-
-						if (!(cmpExpr->lhs = makeAstNode<RegIndexExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, conditionReg, conditionType).castTo<ExprNode>())) {
-							return genOutOfMemoryCompError();
-						}
-
-						cmpExpr->lhs->tokenRange = curCase.first->tokenRange;
-						cmpExpr->rhs = curCase.first;
-
-						AstNodePtr<BoolTypeNameNode> boolTypeName;
-
-						if (!(boolTypeName = makeAstNode<BoolTypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document)))
+						AstNodePtr<BoolTypeNameNode> desiredBoolTypeName;
+						if (!(desiredBoolTypeName = makeAstNode<BoolTypeNameNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document)))
 							return genOutOfMemoryCompError();
 
-						uint32_t cmpResultReg;
+						SLKC_RETURN_IF_COMP_ERROR(genBinaryOpExpr(compileEnv, BinaryOp::Eq, regIndexExpr.castTo<ExprNode>(), curCase.first, curCase.first->tokenRange, cmpExpr));
+
 						{
 							CompileExprResult cmpExprResult(compileEnv->allocator.get());
 
 							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->allocReg(cmpResultReg));
 
-							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, cmpExpr.castTo<ExprNode>(), ExprEvalPurpose::RValue, boolTypeName.castTo<TypeNameNode>(), cmpExprResult));
+							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, cmpExpr.castTo<ExprNode>(), ExprEvalPurpose::RValue, desiredBoolTypeName.castTo<TypeNameNode>(), cmpExprResult));
 
 							cmpResultReg = cmpExprResult.idxResultRegOut;
 						}
-
-						uint32_t succeededValueLabel;
-						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->allocLabel(succeededValueLabel));
-
-						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->emitIns(sldIndex, slake::Opcode::BR, UINT32_MAX, { slake::Value(slake::ValueType::RegIndex, cmpResultReg), slake::Value(slake::ValueType::Label, evalValueLabel), slake::Value(slake::ValueType::Label, succeededValueLabel) }));
-
-						compilationContext->setLabelOffset(succeededValueLabel, compilationContext->getCurInsOff());
-					} else {
-						if (isDefaultSet)
-							return CompilationError(curCase.first->tokenRange, CompilationErrorKind::DuplicatedMatchCaseBranch);
-
-						defaultLabel = evalValueLabel;
-
-						idxDefaultBranchCase = i;
-
-						isDefaultSet = true;
 					}
 
-					matchValueEvalLabels.at(i) = evalValueLabel;
+					uint32_t succeededValueLabel;
+					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->allocLabel(succeededValueLabel));
+
+					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->emitIns(sldIndex, slake::Opcode::BR, UINT32_MAX, { slake::Value(slake::ValueType::RegIndex, cmpResultReg), slake::Value(slake::ValueType::Label, evalValueLabel), slake::Value(slake::ValueType::Label, succeededValueLabel) }));
+
+					compilationContext->setLabelOffset(succeededValueLabel, compilationContext->getCurInsOff());
+				} else {
+					if (isDefaultSet)
+						return CompilationError(curCase.first->tokenRange, CompilationErrorKind::DuplicatedMatchCaseBranch);
+
+					defaultLabel = evalValueLabel;
+
+					idxDefaultBranchCase = i;
+
+					isDefaultSet = true;
 				}
 
-				if (!isDefaultSet)
-					return CompilationError(e->tokenRange, CompilationErrorKind::MissingDefaultMatchCaseBranch);
+				matchValueEvalLabels.at(i) = evalValueLabel;
+			}
 
-				for (size_t i = 0; i < e->cases.size(); ++i) {
-					if (defaultLabel == matchValueEvalLabels.at(i))
-						continue;
+			if (!isDefaultSet)
+				return CompilationError(e->tokenRange, CompilationErrorKind::MissingDefaultMatchCaseBranch);
 
-					auto &curCase = e->cases.at(i);
+			for (size_t i = 0; i < e->cases.size(); ++i) {
+				if (defaultLabel == matchValueEvalLabels.at(i))
+					continue;
 
-					compilationContext->setLabelOffset(matchValueEvalLabels.at(i), compilationContext->getCurInsOff());
+				auto &curCase = e->cases.at(i);
 
-					uint32_t exprValueRegister;
+				compilationContext->setLabelOffset(matchValueEvalLabels.at(i), compilationContext->getCurInsOff());
 
-					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->allocReg(exprValueRegister));
+				uint32_t exprValueRegister;
 
-					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, curCase.second, evalPurpose, returnType, result));
-
-					exprValueRegister = result.idxResultRegOut;
-
-					phiRegisterValueMap.at(i) = { compilationContext->getCurInsOff(), exprValueRegister };
-
-					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->emitIns(sldIndex, slake::Opcode::JMP, UINT32_MAX, { slake::Value(slake::ValueType::Label, endLabel) }));
-				}
+				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->allocReg(exprValueRegister));
 
 				{
-					auto &defaultCase = e->cases.at(idxDefaultBranchCase);
-
-					compilationContext->setLabelOffset(matchValueEvalLabels.at(idxDefaultBranchCase), compilationContext->getCurInsOff());
-
-					uint32_t exprValueRegister;
-
-					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->allocReg(exprValueRegister));
-
-					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, defaultCase.second, evalPurpose, returnType, result));
-
-					exprValueRegister = result.idxResultRegOut;
-
-					phiRegisterValueMap.at(idxDefaultBranchCase) = { UINT32_MAX, exprValueRegister };
-
-					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->emitIns(sldIndex, slake::Opcode::JMP, UINT32_MAX, { slake::Value(slake::ValueType::Label, endLabel) }));
+					PathEnv bodyPathEnv(compileEnv->allocator.get());
+					bodyPathEnv.execPossibility = PathPossibility::May;	 // TODO: Check if the path will always reached hit after an assignment (if exists).
+					bodyPathEnv.noReturnPossibility = PathPossibility::May;
+					bodyPathEnv.breakPossibility = PathPossibility::Never;
+					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, curCase.second, evalPurpose, returnType, result));
+					SLKC_RETURN_IF_COMP_ERROR(combinePathEnv(*pathEnv, bodyPathEnv));
 				}
 
-				compilationContext->setLabelOffset(endLabel, compilationContext->getCurInsOff());
+				exprValueRegister = result.idxResultRegOut;
 
-				peff::DynArray<slake::Value> operands(compileEnv->allocator.get());
+				phiRegisterValueMap.at(i) = { compilationContext->getCurInsOff(), exprValueRegister };
 
-				if (!operands.resize(phiRegisterValueMap.size() * 2)) {
-					return genOutOfMemoryCompError();
-				}
-
-				for (size_t i = 0, j = 0; i < phiRegisterValueMap.size(); ++i, j += 2) {
-					operands.at(j) = phiRegisterValueMap.at(i).first;
-					operands.at(j + 1) = slake::Value(slake::ValueType::RegIndex, phiRegisterValueMap.at(i).second);
-				}
-
-				uint32_t valueRegOut;
-				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->allocReg(valueRegOut));
-
-				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->emitIns(sldIndex, slake::Opcode::PHI, valueRegOut, operands.data(), operands.size()));
-				resultOut.idxResultRegOut = valueRegOut;
-			} else {
-				// ?
+				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->emitIns(sldIndex, slake::Opcode::JMP, UINT32_MAX, { slake::Value(slake::ValueType::Label, endLabel) }));
 			}
+
+			{
+				auto &defaultCase = e->cases.at(idxDefaultBranchCase);
+
+				compilationContext->setLabelOffset(matchValueEvalLabels.at(idxDefaultBranchCase), compilationContext->getCurInsOff());
+
+				uint32_t exprValueRegister;
+
+				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->allocReg(exprValueRegister));
+
+				{
+					PathEnv bodyPathEnv(compileEnv->allocator.get());
+					bodyPathEnv.execPossibility = PathPossibility::May;	 // TODO: See above
+					bodyPathEnv.noReturnPossibility = PathPossibility::May;
+					bodyPathEnv.breakPossibility = PathPossibility::Never;
+					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, defaultCase.second, evalPurpose, returnType, result));
+					SLKC_RETURN_IF_COMP_ERROR(combinePathEnv(*pathEnv, bodyPathEnv));
+				}
+
+				exprValueRegister = result.idxResultRegOut;
+
+				phiRegisterValueMap.at(idxDefaultBranchCase) = { UINT32_MAX, exprValueRegister };
+
+				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->emitIns(sldIndex, slake::Opcode::JMP, UINT32_MAX, { slake::Value(slake::ValueType::Label, endLabel) }));
+			}
+
+			compilationContext->setLabelOffset(endLabel, compilationContext->getCurInsOff());
+
+			peff::DynArray<slake::Value> operands(compileEnv->allocator.get());
+
+			if (!operands.resize(phiRegisterValueMap.size() * 2)) {
+				return genOutOfMemoryCompError();
+			}
+
+			for (size_t i = 0, j = 0; i < phiRegisterValueMap.size(); ++i, j += 2) {
+				operands.at(j) = phiRegisterValueMap.at(i).first;
+				operands.at(j + 1) = slake::Value(slake::ValueType::RegIndex, phiRegisterValueMap.at(i).second);
+			}
+
+			uint32_t valueRegOut;
+			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->allocReg(valueRegOut));
+
+			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->emitIns(sldIndex, slake::Opcode::PHI, valueRegOut, operands.data(), operands.size()));
+			resultOut.idxResultRegOut = valueRegOut;
 
 			resultOut.evaluatedType = returnType;
 			break;

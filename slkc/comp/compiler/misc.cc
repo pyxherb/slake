@@ -3,11 +3,11 @@
 using namespace slkc;
 
 SLKC_API peff::Option<CompilationError> slkc::getSucceedingEnumValue(
-	CompileEnv* compileEnv,
-	CompilationContext* compilationContext,
+	CompileEnv *compileEnv,
+	CompilationContext *compilationContext,
 	AstNodePtr<TypeNameNode> baseType,
 	AstNodePtr<ExprNode> lastValue,
-	AstNodePtr<ExprNode>& valueOut) {
+	AstNodePtr<ExprNode> &valueOut) {
 	if (lastValue) {
 		switch (baseType->typeNameKind) {
 			case TypeNameKind::I8:
@@ -355,6 +355,68 @@ SLKC_API peff::Option<CompilationError> slkc::normalizeModuleVarDefStmts(
 	SLKC_RETURN_IF_COMP_ERROR(renormalizeModuleVarDefStmts(compileEnv, mod));
 
 	mod->isVarDefStmtsNormalized = true;
+	return {};
+}
+
+SLKC_API peff::Option<CompilationError> slkc::genBinaryOpExpr(CompileEnv *compileEnv, BinaryOp binaryOp, AstNodePtr<ExprNode> lhs, AstNodePtr<ExprNode> rhs, TokenRange tokenRange, AstNodePtr<BinaryExprNode> &resultOut) {
+	AstNodePtr<BinaryExprNode> expr;
+
+	if (!(expr = makeAstNode<BinaryExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
+		return genOutOfMemoryCompError();
+	}
+
+	expr->binaryOp = binaryOp;
+	expr->lhs = lhs;
+	expr->rhs = rhs;
+
+	expr->tokenRange = tokenRange;
+
+	resultOut = expr;
+
+	return {};
+}
+
+SLKC_API peff::Option<CompilationError> slkc::evalConstBinaryOpExpr(CompileEnv *compileEnv, CompilationContext *compilationContext, BinaryOp binaryOp, AstNodePtr<ExprNode> lhs, AstNodePtr<ExprNode> rhs, AstNodePtr<ExprNode> &resultOut) {
+	AstNodePtr<BinaryExprNode> expr;
+
+	if (!(expr = makeAstNode<BinaryExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document)))
+		return genOutOfMemoryCompError();
+
+	expr->binaryOp = binaryOp;
+	expr->lhs = lhs;
+	expr->rhs = rhs;
+
+	SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, expr.castTo<ExprNode>(), resultOut));
+
+	return {};
+}
+
+SLKC_API peff::Option<CompilationError> slkc::genImplicitCastExpr(CompileEnv *compileEnv, AstNodePtr<ExprNode> source, AstNodePtr<TypeNameNode> destType, AstNodePtr<CastExprNode> &resultOut) {
+	AstNodePtr<CastExprNode> castExpr;
+
+	if (!(castExpr = makeAstNode<CastExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document)))
+		return genOutOfMemoryCompError();
+
+	castExpr->source = source;
+	castExpr->targetType = destType;
+	castExpr->tokenRange = source->tokenRange;
+
+	resultOut = castExpr;
+
+	return {};
+}
+
+SLKC_API peff::Option<CompilationError> slkc::implicitConvertConstExpr(CompileEnv *compileEnv, CompilationContext *compilationContext, AstNodePtr<ExprNode> source, AstNodePtr<TypeNameNode> destType, AstNodePtr<ExprNode> &resultOut) {
+	AstNodePtr<CastExprNode> castExpr;
+
+	if (!(castExpr = makeAstNode<CastExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document)))
+		return genOutOfMemoryCompError();
+
+	castExpr->source = source;
+	castExpr->targetType = destType;
+
+	SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, castExpr.castTo<ExprNode>(), resultOut));
+
 	return {};
 }
 

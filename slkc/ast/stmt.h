@@ -229,6 +229,10 @@ namespace slkc {
 		SLKC_API CaseLabelStmtNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
 		SLKC_API CaseLabelStmtNode(const CaseLabelStmtNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut);
 		SLKC_API virtual ~CaseLabelStmtNode();
+
+		SLAKE_FORCEINLINE bool isDefaultCase() const noexcept {
+			return !condition;
+		}
 	};
 
 	class SwitchStmtNode : public StmtNode {
@@ -239,7 +243,6 @@ namespace slkc {
 		AstNodePtr<ExprNode> condition;
 		peff::DynArray<size_t> caseOffsets;
 		peff::DynArray<AstNodePtr<StmtNode>> body;
-		bool isConst = false;
 
 		SLKC_API SwitchStmtNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
 		SLKC_API SwitchStmtNode(const SwitchStmtNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut);

@@ -650,11 +650,6 @@ SLKC_API peff::Option<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr<
 
 					lhs = expr.castTo<ExprNode>();
 
-					if (peekToken()->tokenId == TokenId::ConstKeyword) {
-						expr->isConst = true;
-						nextToken();
-					}
-
 					Token *lParentheseToken;
 
 					if ((syntaxError = expectToken((lParentheseToken = peekToken()), TokenId::LParenthese)))

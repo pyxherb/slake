@@ -37,7 +37,7 @@ SLAKE_API bool MemberObject::setName(const std::string_view &name) noexcept {
 }
 
 SLAKE_API bool MemberObject::resizeName(size_t size) noexcept {
-	return _name.resize(size);
+	return _name.resizeAndShrink(size);
 }
 
 SLAKE_API char *MemberObject::getNameRawPtr() noexcept {

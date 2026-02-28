@@ -736,7 +736,8 @@ SLKC_API peff::Option<CompilationError> Document::instantiateGenericObject(
 							if (unpackingType->innerTypeName->typeNameKind == TypeNameKind::ParamTypeList) {
 								AstNodePtr<ParamTypeListTypeNameNode> innerTypeName = unpackingType->innerTypeName.castTo<ParamTypeListTypeNameNode>();
 
-								fnSlot->params.eraseRange(i, i + 1);
+								if (!fnSlot->params.eraseRangeAndShrink(i, i + 1))
+									return genOutOfMemoryCompError();
 
 								if (!fnSlot->params.insertRangeInitialized(i, innerTypeName->paramTypes.size())) {
 									return genOutOfMemoryCompError();

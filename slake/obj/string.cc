@@ -8,7 +8,7 @@ SLAKE_API bool slake::StringObject::_setData(const char *str, size_t size) {
 	else {
 		peff::String s(selfAllocator.get());
 
-		if (!s.resize(size))
+		if (!s.resizeAndShrink(size))
 			return false;
 
 		memcpy(s.data(), str, size);

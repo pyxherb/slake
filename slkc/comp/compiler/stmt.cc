@@ -468,17 +468,18 @@ SLKC_API peff::Option<CompilationError> slkc::compileIfStmt(
 
 		compilationContext->setLabelOffset(trueLabel, compilationContext->getCurInsOff());
 
+		PathEnv innerPathEnv[2] = {
+			PathEnv(compileEnv->allocator.get()),
+			PathEnv(compileEnv->allocator.get())
+		};
 		{
-			PathEnv innerPathEnv(compileEnv->allocator.get());
-			innerPathEnv.execPossibility =
+			innerPathEnv[0].execPossibility =
 				constCondExpr
 					? (constCondExpr.castTo<BoolLiteralExprNode>()->data
 							  ? PathPossibility::Must
 							  : PathPossibility::Never)
 					: PathPossibility::May;
-			SLKC_RETURN_IF_COMP_ERROR(compileStmt(compileEnv, compilationContext, &innerPathEnv, s->trueBody));
-
-			SLKC_RETURN_IF_COMP_ERROR(combinePathEnv(*pathEnv, innerPathEnv));
+			SLKC_RETURN_IF_COMP_ERROR(compileStmt(compileEnv, compilationContext, &innerPathEnv[0], s->trueBody));
 		}
 
 		SLKC_RETURN_IF_COMP_ERROR(
@@ -490,17 +491,16 @@ SLKC_API peff::Option<CompilationError> slkc::compileIfStmt(
 		compilationContext->setLabelOffset(falseLabel, compilationContext->getCurInsOff());
 
 		if (s->falseBody) {
-			PathEnv innerPathEnv(compileEnv->allocator.get());
-			innerPathEnv.execPossibility =
+			innerPathEnv[1].execPossibility =
 				constCondExpr
 					? (constCondExpr.castTo<BoolLiteralExprNode>()->data
 							  ? PathPossibility::Never
 							  : PathPossibility::Must)
 					: PathPossibility::May;
-			SLKC_RETURN_IF_COMP_ERROR(compileStmt(compileEnv, compilationContext, &innerPathEnv, s->falseBody));
-
-			SLKC_RETURN_IF_COMP_ERROR(combinePathEnv(*pathEnv, innerPathEnv));
+			SLKC_RETURN_IF_COMP_ERROR(compileStmt(compileEnv, compilationContext, &innerPathEnv[1], s->falseBody));
 		}
+
+		SLKC_RETURN_IF_COMP_ERROR(combineParallelPathEnv(compileEnv->allocator.get(), *pathEnv, innerPathEnv, 2));
 
 		compilationContext->setLabelOffset(endLabel, compilationContext->getCurInsOff());
 	}

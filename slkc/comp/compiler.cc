@@ -94,7 +94,10 @@ SLKC_API peff::Option<CompilationError> slkc::combineParallelPathEnv(peff::Alloc
 				outer.breakPossibility = combinePossibility(outer.breakPossibility, inner.breakPossibility);
 
 				for (auto i : inner.localVarNullOverrides) {
-					SLKC_RETURN_IF_COMP_ERROR(outer.setLocalVarNullOverride(i.first, i.second));
+					if (i.second == NullOverrideType::Invalidate) {
+						outer.removeVarNullOverride(i.first);
+					} else
+						SLKC_RETURN_IF_COMP_ERROR(outer.setLocalVarNullOverride(i.first, i.second));
 				}
 				break;
 			}

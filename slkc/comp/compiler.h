@@ -34,7 +34,8 @@ namespace slkc {
 
 	enum class NullOverrideType : uint8_t {
 		Nullify = 0,
-		Denullify
+		Denullify,
+		Invalidate
 	};
 
 	enum class PathPossibility : uint8_t {
@@ -72,6 +73,7 @@ namespace slkc {
 	};
 
 	SLKC_API peff::Option<CompilationError> combinePathEnv(PathEnv &outer, const PathEnv &inner) noexcept;
+	SLKC_API peff::Option<CompilationError> combineParallelPathEnv(peff::Alloc *allocator, PathEnv &outer, const PathEnv *inners, size_t nInners) noexcept;
 
 	class CompilationContext {
 	public:

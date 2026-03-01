@@ -383,6 +383,8 @@ static peff::Option<CompilationError> _determineNodeType(CompileEnv *compileEnv,
 								return genOutOfMemoryCompError();
 							t->referencedType->isNullable = false;
 							break;
+						case NullOverrideType::Invalidate:
+							break;
 					}
 				}
 
@@ -403,6 +405,8 @@ static peff::Option<CompilationError> _determineNodeType(CompileEnv *compileEnv,
 							if (!(typeNameOut = typeNameOut->duplicate<TypeNameNode>(compileEnv->allocator.get())))
 								return genOutOfMemoryCompError();
 							typeNameOut->isNullable = false;
+							break;
+						case NullOverrideType::Invalidate:
 							break;
 					}
 				}
@@ -1840,10 +1844,15 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 			if (!isDefaultSet)
 				return CompilationError(e->tokenRange, CompilationErrorKind::MissingDefaultMatchCaseBranch);
 
-			for (size_t i = 0; i < e->cases.size(); ++i) {
-				if (defaultLabel == matchValueEvalLabels.at(i))
-					continue;
+			peff::DynArray<PathEnv> bodyPathEnvs(compileEnv->allocator.get());
 
+			if (!bodyPathEnvs.resizeUninitialized(e->cases.size()))
+				return genOutOfMemoryCompError();
+
+			for (size_t i = 0; i < bodyPathEnvs.size(); ++i)
+				peff::constructAt<PathEnv>(&bodyPathEnvs.at(i), compileEnv->allocator.get());
+
+			for (size_t i = 0; i < e->cases.size(); ++i) {
 				auto &curCase = e->cases.at(i);
 
 				compilationContext->setLabelOffset(matchValueEvalLabels.at(i), compilationContext->getCurInsOff());
@@ -1851,43 +1860,24 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 				uint32_t exprValueRegister;
 
 				{
-					PathEnv bodyPathEnv(compileEnv->allocator.get());
+					PathEnv &bodyPathEnv = bodyPathEnvs.at(i);
 					bodyPathEnv.execPossibility = PathPossibility::May;	 // TODO: Check if the path will always reached hit after an assignment (if exists).
 					bodyPathEnv.noReturnPossibility = PathPossibility::May;
 					bodyPathEnv.breakPossibility = PathPossibility::Never;
-					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, curCase.second, evalPurpose, returnType, result));
-					SLKC_RETURN_IF_COMP_ERROR(combinePathEnv(*pathEnv, bodyPathEnv));
+					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, &bodyPathEnv, curCase.second, evalPurpose, returnType, result));
 				}
 
 				exprValueRegister = result.idxResultRegOut;
 
-				phiRegisterValueMap.at(i) = { compilationContext->getCurInsOff(), exprValueRegister };
+				if (i == idxDefaultBranchCase)
+					phiRegisterValueMap.at(idxDefaultBranchCase) = { UINT32_MAX, exprValueRegister };
+				else
+					phiRegisterValueMap.at(i) = { compilationContext->getCurInsOff(), exprValueRegister };
 
 				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->emitIns(sldIndex, slake::Opcode::JMP, UINT32_MAX, { slake::Value(slake::ValueType::Label, endLabel) }));
 			}
 
-			{
-				auto &defaultCase = e->cases.at(idxDefaultBranchCase);
-
-				compilationContext->setLabelOffset(matchValueEvalLabels.at(idxDefaultBranchCase), compilationContext->getCurInsOff());
-
-				uint32_t exprValueRegister;
-
-				{
-					PathEnv bodyPathEnv(compileEnv->allocator.get());
-					bodyPathEnv.execPossibility = PathPossibility::May;	 // TODO: See above
-					bodyPathEnv.noReturnPossibility = PathPossibility::May;
-					bodyPathEnv.breakPossibility = PathPossibility::Never;
-					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, defaultCase.second, evalPurpose, returnType, result));
-					SLKC_RETURN_IF_COMP_ERROR(combinePathEnv(*pathEnv, bodyPathEnv));
-				}
-
-				exprValueRegister = result.idxResultRegOut;
-
-				phiRegisterValueMap.at(idxDefaultBranchCase) = { UINT32_MAX, exprValueRegister };
-
-				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->emitIns(sldIndex, slake::Opcode::JMP, UINT32_MAX, { slake::Value(slake::ValueType::Label, endLabel) }));
-			}
+			SLKC_RETURN_IF_COMP_ERROR(combineParallelPathEnv(compileEnv->allocator.get(), *pathEnv, bodyPathEnvs.data(), bodyPathEnvs.size()));
 
 			compilationContext->setLabelOffset(endLabel, compilationContext->getCurInsOff());
 

@@ -335,6 +335,16 @@ public async main() -> i32 {
 		yield 0;
 	}
 
+	let ax: i32?;
+
+	match (123) {
+		123: ((ax = 123) + 123),
+		456: ((ax = 456) + 456),
+		default: ((ax = 789) + 789)
+	};
+
+	nonnullable = ax;
+
 	return 114514;
 }
 

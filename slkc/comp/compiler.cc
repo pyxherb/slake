@@ -48,7 +48,9 @@ SLKC_API peff::Option<CompilationError> slkc::combinePathEnv(PathEnv &outer, con
 			outer.breakPossibility = combinePossibility(outer.breakPossibility, combinePossibility(inner.execPossibility, inner.breakPossibility));
 
 			for (auto i : inner.localVarNullOverrides) {
-				if (i.second == NullOverrideType::Nullify)
+				if (i.second == NullOverrideType::Invalidate) {
+					outer.removeVarNullOverride(i.first);
+				} else if (i.second == NullOverrideType::Nullify)
 					SLKC_RETURN_IF_COMP_ERROR(outer.setLocalVarNullOverride(i.first, NullOverrideType::Nullify));
 			}
 			break;
@@ -59,9 +61,86 @@ SLKC_API peff::Option<CompilationError> slkc::combinePathEnv(PathEnv &outer, con
 			outer.breakPossibility = combinePossibility(outer.breakPossibility, inner.breakPossibility);
 
 			for (auto i : inner.localVarNullOverrides) {
-				SLKC_RETURN_IF_COMP_ERROR(outer.setLocalVarNullOverride(i.first, i.second));
+				if (i.second == NullOverrideType::Invalidate) {
+					outer.removeVarNullOverride(i.first);
+				} else
+					SLKC_RETURN_IF_COMP_ERROR(outer.setLocalVarNullOverride(i.first, i.second));
 			}
 			break;
+		}
+	}
+
+	return {};
+}
+
+SLKC_API peff::Option<CompilationError> slkc::combineParallelPathEnv(peff::Alloc *allocator, PathEnv &outer, const PathEnv *inners, size_t nInners) noexcept {
+	peff::Map<AstNodePtr<VarNode>, NullOverrideType> localVarNullOverrides(allocator);
+	peff::Set<size_t> idxMayPaths(allocator);
+
+	for (size_t i = 0; i < nInners; ++i) {
+		const PathEnv &inner = inners[i];
+
+		switch (inner.execPossibility) {
+			case PathPossibility::Never:
+				break;
+			case PathPossibility::May: {
+				if (!idxMayPaths.insert(+i))
+					return genOutOfMemoryCompError();
+				break;
+			}
+			case PathPossibility::Must: {
+				outer.noReturnPossibility = combinePossibility(outer.noReturnPossibility, inner.noReturnPossibility);
+				outer.returnPossibility = combinePossibility(outer.returnPossibility, inner.returnPossibility);
+				outer.breakPossibility = combinePossibility(outer.breakPossibility, inner.breakPossibility);
+
+				for (auto i : inner.localVarNullOverrides) {
+					SLKC_RETURN_IF_COMP_ERROR(outer.setLocalVarNullOverride(i.first, i.second));
+				}
+				break;
+			}
+		}
+	}
+
+	peff::Map<AstNodePtr<VarNode>, NullOverrideType> commonLocalVarNullOverrides(allocator);
+
+	// Find common local variable null overrides.
+	{
+		peff::Set<AstNodePtr<VarNode>> nonunifiableNullOverrideVars(allocator);
+		for (auto it = idxMayPaths.begin(); it != idxMayPaths.end(); ++it) {
+			const PathEnv &inner = inners[*it];
+
+			for (auto curOverride : inner.localVarNullOverrides) {
+				if (!nonunifiableNullOverrideVars.contains(curOverride.first)) {
+					if (auto prevOverride = commonLocalVarNullOverrides.find(curOverride.first); prevOverride != commonLocalVarNullOverrides.end()) {
+						if (prevOverride.value() != curOverride.second) {
+							if (!nonunifiableNullOverrideVars.insert(AstNodePtr<VarNode>(prevOverride.key())))
+								return genOutOfMemoryCompError();
+						}
+					} else {
+						auto copiedOverrideType = curOverride.second;
+						if (!commonLocalVarNullOverrides.insert(AstNodePtr<VarNode>(curOverride.first), std::move(copiedOverrideType)))
+							return genOutOfMemoryCompError();
+					}
+				}
+			}
+		}
+
+		for (auto i : nonunifiableNullOverrideVars)
+			SLKC_RETURN_IF_COMP_ERROR(outer.setLocalVarNullOverride(i, NullOverrideType::Invalidate));
+	}
+
+	for (auto i : commonLocalVarNullOverrides) {
+		SLKC_RETURN_IF_COMP_ERROR(outer.setLocalVarNullOverride(i.first, i.second));
+	}
+
+	// Filter out the common local variable null overrides that are not always happen.
+	for (auto it = idxMayPaths.begin(); it != idxMayPaths.end(); ++it) {
+		const PathEnv &inner = inners[*it];
+
+		for (auto i : commonLocalVarNullOverrides) {
+			// If a local variable null override is not always happen, its original assumption should be cancelled.
+			if (!inner.localVarNullOverrides.contains(i.first))
+				SLKC_RETURN_IF_COMP_ERROR(outer.setLocalVarNullOverride(i.first, NullOverrideType::Invalidate));
 		}
 	}
 

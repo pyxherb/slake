@@ -531,7 +531,7 @@ SLKC_API peff::Option<SyntaxError> BCParser::parseComptimeExpr(AstNodePtr<ExprNo
 			if (token->sourceText.at(0) == '-')
 				isNegative = true;
 
-			std::string_view bodyView = token->sourceText.substr(isNegative ? 1 : 0, token->sourceText.size() - (isNegative ? 1 : 0) - (sizeof("i8" - 1)));
+			std::string_view bodyView = token->sourceText.substr(isNegative ? 1 : 0, token->sourceText.size() - (isNegative ? 1 : 0) - (sizeof("i8") - 1));
 
 			if ((syntaxError = _parseInt<int8_t>(this, token, isNegative, bodyView, data)))
 				return syntaxError;
@@ -552,7 +552,7 @@ SLKC_API peff::Option<SyntaxError> BCParser::parseComptimeExpr(AstNodePtr<ExprNo
 			if (token->sourceText.at(0) == '-')
 				isNegative = true;
 
-			std::string_view bodyView = token->sourceText.substr(isNegative ? 1 : 0, token->sourceText.size() - (isNegative ? 1 : 0) - (sizeof("i16" - 1)));
+			std::string_view bodyView = token->sourceText.substr(isNegative ? 1 : 0, token->sourceText.size() - (isNegative ? 1 : 0) - (sizeof("i16") - 1));
 
 			if ((syntaxError = _parseInt<int16_t>(this, token, isNegative, bodyView, data)))
 				return syntaxError;
@@ -594,7 +594,7 @@ SLKC_API peff::Option<SyntaxError> BCParser::parseComptimeExpr(AstNodePtr<ExprNo
 			if (token->sourceText.at(0) == '-')
 				isNegative = true;
 
-			std::string_view bodyView = token->sourceText.substr(isNegative ? 1 : 0, token->sourceText.size() - (isNegative ? 1 : 0) - (sizeof("L" - 1)));
+			std::string_view bodyView = token->sourceText.substr(isNegative ? 1 : 0, token->sourceText.size() - (isNegative ? 1 : 0) - (sizeof("L") - 1));
 
 			if ((syntaxError = _parseInt<int64_t>(this, token, isNegative, bodyView, data)))
 				return syntaxError;
@@ -615,7 +615,7 @@ SLKC_API peff::Option<SyntaxError> BCParser::parseComptimeExpr(AstNodePtr<ExprNo
 			if (token->sourceText.at(0) == '-')
 				isNegative = true;
 
-			std::string_view bodyView = token->sourceText.substr(isNegative ? 1 : 0, token->sourceText.size() - (isNegative ? 1 : 0) - (sizeof("Ui8" - 1)));
+			std::string_view bodyView = token->sourceText.substr(isNegative ? 1 : 0, token->sourceText.size() - (isNegative ? 1 : 0) - (sizeof("Ui8") - 1));
 
 			if ((syntaxError = _parseInt<uint8_t>(this, token, isNegative, bodyView, data)))
 				return syntaxError;
@@ -636,7 +636,7 @@ SLKC_API peff::Option<SyntaxError> BCParser::parseComptimeExpr(AstNodePtr<ExprNo
 			if (token->sourceText.at(0) == '-')
 				isNegative = true;
 
-			std::string_view bodyView = token->sourceText.substr(isNegative ? 1 : 0, token->sourceText.size() - (isNegative ? 1 : 0) - (sizeof("Ui16" - 1)));
+			std::string_view bodyView = token->sourceText.substr(isNegative ? 1 : 0, token->sourceText.size() - (isNegative ? 1 : 0) - (sizeof("Ui16") - 1));
 
 			if ((syntaxError = _parseInt<uint16_t>(this, token, isNegative, bodyView, data)))
 				return syntaxError;
@@ -657,7 +657,7 @@ SLKC_API peff::Option<SyntaxError> BCParser::parseComptimeExpr(AstNodePtr<ExprNo
 			if (token->sourceText.at(0) == '-')
 				isNegative = true;
 
-			std::string_view bodyView = token->sourceText.substr(isNegative ? 1 : 0, token->sourceText.size() - (isNegative ? 1 : 0) - (sizeof("U" - 1)));
+			std::string_view bodyView = token->sourceText.substr(isNegative ? 1 : 0, token->sourceText.size() - (isNegative ? 1 : 0) - (sizeof("U") - 1));
 
 			if ((syntaxError = _parseInt<uint32_t>(this, token, isNegative, bodyView, data)))
 				return syntaxError;
@@ -678,7 +678,7 @@ SLKC_API peff::Option<SyntaxError> BCParser::parseComptimeExpr(AstNodePtr<ExprNo
 			if (token->sourceText.at(0) == '-')
 				isNegative = true;
 
-			std::string_view bodyView = token->sourceText.substr(isNegative ? 1 : 0, token->sourceText.size() - (isNegative ? 1 : 0) - (sizeof("UL" - 1)));
+			std::string_view bodyView = token->sourceText.substr(isNegative ? 1 : 0, token->sourceText.size() - (isNegative ? 1 : 0) - (sizeof("UL") - 1));
 
 			if ((syntaxError = _parseInt<uint64_t>(this, token, isNegative, bodyView, data)))
 				return syntaxError;

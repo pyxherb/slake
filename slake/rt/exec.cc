@@ -585,7 +585,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer larg(Context *context, MajorFrame *ma
 	return {};
 }
 
-SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *const context, MajorFrame *const curMajorFrame, const Opcode opcode, const size_t output, const size_t nOperands, const Value *const operands, bool &isContextChangedOut) noexcept {
+InternalExceptionPointer Runtime::_execIns(ContextObject *const context, MajorFrame *const curMajorFrame, const Opcode opcode, const size_t output, const size_t nOperands, const Value *const operands, bool &isContextChangedOut) noexcept {
 	InternalExceptionPointer exceptPtr;
 	char *const dataStack = context->_context.dataStack;
 	const size_t stackSize = context->_context.stackSize;
@@ -602,6 +602,20 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 				// The register does not present.
 				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
 			readVar(dest->getReference(), *_calcRegPtr(dataStack, stackSize, curMajorFrame, output));
+
+			break;
+		}
+		case Opcode::LARGV: {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 1>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::U32>(this, operands[0]));
+
+			Reference ref;
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, larg(&context->getContext(), curMajorFrame, this, operands[0].getU32(), ref));
+
+			if (!_isRegisterValid(curMajorFrame, output))
+				// The register does not present.
+				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+			readVar(ref, *_calcRegPtr(dataStack, stackSize, curMajorFrame, output));
 
 			break;
 		}
@@ -1820,6 +1834,193 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 			}
 			break;
 		}
+		case Opcode::COPYI8: {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 1>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::I8>(this, operands[0]));
+
+			if (output != UINT32_MAX) {
+				if (!_isRegisterValid(curMajorFrame, output)) {
+					// The register does not present.
+					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+				}
+				*_calcRegPtr(dataStack, stackSize, curMajorFrame, output) = operands[0].getI8();
+			}
+			break;
+		}
+		case Opcode::COPYI16: {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 1>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::I16>(this, operands[0]));
+
+			if (output != UINT32_MAX) {
+				if (!_isRegisterValid(curMajorFrame, output)) {
+					// The register does not present.
+					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+				}
+				*_calcRegPtr(dataStack, stackSize, curMajorFrame, output) = operands[0].getI16();
+			}
+			break;
+		}
+		case Opcode::COPYI32: {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 1>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::I32>(this, operands[0]));
+
+			if (output != UINT32_MAX) {
+				if (!_isRegisterValid(curMajorFrame, output)) {
+					// The register does not present.
+					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+				}
+				*_calcRegPtr(dataStack, stackSize, curMajorFrame, output) = operands[0].getI32();
+			}
+			break;
+		}
+		case Opcode::COPYI64: {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 1>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::I64>(this, operands[0]));
+
+			if (output != UINT32_MAX) {
+				if (!_isRegisterValid(curMajorFrame, output)) {
+					// The register does not present.
+					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+				}
+				*_calcRegPtr(dataStack, stackSize, curMajorFrame, output) = operands[0].getI64();
+			}
+			break;
+		}
+		case Opcode::COPYISIZE: {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 1>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::ISize>(this, operands[0]));
+
+			if (output != UINT32_MAX) {
+				if (!_isRegisterValid(curMajorFrame, output)) {
+					// The register does not present.
+					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+				}
+				Value *const val = _calcRegPtr(dataStack, stackSize, curMajorFrame, output);
+				val->data.asUSize = operands[0].getISize();
+				val->valueType = ValueType::ISize;
+				val->valueFlags = 0;
+			}
+			break;
+		}
+		case Opcode::COPYU8: {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 1>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::U8>(this, operands[0]));
+
+			if (output != UINT32_MAX) {
+				if (!_isRegisterValid(curMajorFrame, output)) {
+					// The register does not present.
+					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+				}
+				*_calcRegPtr(dataStack, stackSize, curMajorFrame, output) = operands[0].getU8();
+			}
+			break;
+		}
+		case Opcode::COPYU16: {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 1>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::U16>(this, operands[0]));
+
+			if (output != UINT32_MAX) {
+				if (!_isRegisterValid(curMajorFrame, output)) {
+					// The register does not present.
+					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+				}
+				*_calcRegPtr(dataStack, stackSize, curMajorFrame, output) = operands[0].getU16();
+			}
+			break;
+		}
+		case Opcode::COPYU32: {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 1>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::U32>(this, operands[0]));
+
+			if (output != UINT32_MAX) {
+				if (!_isRegisterValid(curMajorFrame, output)) {
+					// The register does not present.
+					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+				}
+				*_calcRegPtr(dataStack, stackSize, curMajorFrame, output) = operands[0].getU32();
+			}
+			break;
+		}
+		case Opcode::COPYU64: {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 1>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::U64>(this, operands[0]));
+
+			if (output != UINT32_MAX) {
+				if (!_isRegisterValid(curMajorFrame, output)) {
+					// The register does not present.
+					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+				}
+				*_calcRegPtr(dataStack, stackSize, curMajorFrame, output) = operands[0].getU64();
+			}
+			break;
+		}
+		case Opcode::COPYUSIZE: {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 1>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::USize>(this, operands[0]));
+
+			if (output != UINT32_MAX) {
+				if (!_isRegisterValid(curMajorFrame, output)) {
+					// The register does not present.
+					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+				}
+				Value *const val = _calcRegPtr(dataStack, stackSize, curMajorFrame, output);
+				val->data.asUSize = operands[0].getUSize();
+				val->valueType = ValueType::USize;
+				val->valueFlags = 0;
+			}
+			break;
+		}
+		case Opcode::COPYF32: {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 1>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::F32>(this, operands[0]));
+
+			if (output != UINT32_MAX) {
+				if (!_isRegisterValid(curMajorFrame, output)) {
+					// The register does not present.
+					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+				}
+				*_calcRegPtr(dataStack, stackSize, curMajorFrame, output) = operands[0].getF32();
+			}
+			break;
+		}
+		case Opcode::COPYF64: {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 1>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::F64>(this, operands[0]));
+
+			if (output != UINT32_MAX) {
+				if (!_isRegisterValid(curMajorFrame, output)) {
+					// The register does not present.
+					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+				}
+				*_calcRegPtr(dataStack, stackSize, curMajorFrame, output) = operands[0].getF64();
+			}
+			break;
+		}
+		case Opcode::COPYBOOL: {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 1>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::Bool>(this, operands[0]));
+
+			if (output != UINT32_MAX) {
+				if (!_isRegisterValid(curMajorFrame, output)) {
+					// The register does not present.
+					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+				}
+				*_calcRegPtr(dataStack, stackSize, curMajorFrame, output) = operands[0].getBool();
+			}
+			break;
+		}
+		case Opcode::COPYNULL: {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 0>(this, output, nOperands));
+
+			if (output != UINT32_MAX) {
+				if (!_isRegisterValid(curMajorFrame, output)) {
+					// The register does not present.
+					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+				}
+				*_calcRegPtr(dataStack, stackSize, curMajorFrame, output) = nullptr;
+			}
+			break;
+		}
 		case Opcode::COPY: {
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 1>(this, output, nOperands));
 
@@ -1832,6 +2033,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cons
 					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
 				}
 				Value *outputReg = _calcRegPtr(dataStack, stackSize, curMajorFrame, output);
+				outputReg->valueFlags = value->valueFlags;
 				switch (value->valueType) {
 					case ValueType::I8:
 						outputReg->data.asI8 = value->getI8();

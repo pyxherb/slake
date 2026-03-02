@@ -18,6 +18,8 @@ namespace slake {
 
 		PHI,  // Phi
 
+		LARGV,	// Load value of an argument
+
 		ADD,   // Add
 		SUB,   // Subtract
 		MUL,   // Multiply
@@ -48,6 +50,21 @@ namespace slake {
 		RLOAD,	// Access and load corresponding member with an existing value.
 
 		LCURFN,	 // Load current function.
+
+		COPYI8,		// Fast copy for i8 literals
+		COPYI16,	// Fast copy for i16 literals
+		COPYI32,	// Fast copy for i32 literals
+		COPYI64,	// Fast copy for i64 literals
+		COPYISIZE,	// Fast copy for isize literals
+		COPYU8,		// Fast copy for u8 literals
+		COPYU16,	// Fast copy for u16 literals
+		COPYU32,	// Fast copy for u32 literals
+		COPYU64,	// Fast copy for u64 literals
+		COPYUSIZE,	// Fast copy for usize literals
+		COPYF32,	// Fast copy for f32 literals
+		COPYF64,	// Fast copy for f64 literals
+		COPYBOOL,	// Fast copy for bool literals
+		COPYNULL,	// Fast copy for null literals
 
 		COPY,  // Copy values between registers
 

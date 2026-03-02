@@ -21,25 +21,17 @@ SLAKE_API char *Context::stackAlloc(size_t size) noexcept {
 }
 
 SLAKE_API char *Context::alignStack(size_t alignment) noexcept {
-	if (size_t diff = alignment - (uintptr_t)(calcStackAddr(dataStack, stackSize, stackTop)) % alignment; (diff != alignment) && diff)
-		return stackAlloc(alignment - diff);
+	const size_t addrDiff = (uintptr_t)(calcStackAddr(dataStack, stackSize, stackTop)) % alignment;
+	if (addrDiff)
+		return stackAlloc(alignment - addrDiff);
 	return dataStack + stackSize - stackTop;
 }
 
 SLAKE_API char *Context::alignedStackAlloc(size_t size, size_t alignment) noexcept {
-	size_t originalStackTop = stackTop;
-
-	if (size_t diff = alignment - (uintptr_t)(calcStackAddr(dataStack, stackSize, stackTop)) % alignment; (diff != alignment) && diff) {
-		if (!stackAlloc(alignment - diff))
-			return nullptr;
-	}
-
-	char *p = stackAlloc(size);
-
-	if (!p)
-		stackTop = originalStackTop;
-
-	return p;
+	const size_t addrDiff = (uintptr_t)(calcStackAddr(dataStack, stackSize, stackTop)) % alignment;
+	if (addrDiff)
+		return stackAlloc(size + (alignment - addrDiff));
+	return stackAlloc(size);
 }
 
 SLAKE_API Context::Context(Runtime *runtime, peff::Alloc *selfAllocator) : runtime(runtime), selfAllocator(selfAllocator) {

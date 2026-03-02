@@ -35,7 +35,7 @@ namespace slkc {
 	enum class NullOverrideType : uint8_t {
 		Nullify = 0,
 		Denullify,
-		Invalidate
+		Uncertain
 	};
 
 	enum class PathPossibility : uint8_t {

@@ -48,9 +48,9 @@ SLKC_API peff::Option<CompilationError> slkc::combinePathEnv(PathEnv &outer, con
 			outer.breakPossibility = combinePossibility(outer.breakPossibility, combinePossibility(inner.execPossibility, inner.breakPossibility));
 
 			for (auto i : inner.localVarNullOverrides) {
-				if (i.second == NullOverrideType::Invalidate) {
-					outer.removeVarNullOverride(i.first);
-				} else if (i.second == NullOverrideType::Nullify)
+				if (i.second == NullOverrideType::Uncertain)
+					SLKC_RETURN_IF_COMP_ERROR(outer.setLocalVarNullOverride(i.first, NullOverrideType::Uncertain));
+				else if (i.second == NullOverrideType::Nullify)
 					SLKC_RETURN_IF_COMP_ERROR(outer.setLocalVarNullOverride(i.first, NullOverrideType::Nullify));
 			}
 			break;
@@ -61,8 +61,8 @@ SLKC_API peff::Option<CompilationError> slkc::combinePathEnv(PathEnv &outer, con
 			outer.breakPossibility = combinePossibility(outer.breakPossibility, inner.breakPossibility);
 
 			for (auto i : inner.localVarNullOverrides) {
-				if (i.second == NullOverrideType::Invalidate) {
-					outer.removeVarNullOverride(i.first);
+				if (i.second == NullOverrideType::Uncertain) {
+					SLKC_RETURN_IF_COMP_ERROR(outer.setLocalVarNullOverride(i.first, NullOverrideType::Uncertain));
 				} else
 					SLKC_RETURN_IF_COMP_ERROR(outer.setLocalVarNullOverride(i.first, i.second));
 			}
@@ -94,8 +94,8 @@ SLKC_API peff::Option<CompilationError> slkc::combineParallelPathEnv(peff::Alloc
 				outer.breakPossibility = combinePossibility(outer.breakPossibility, inner.breakPossibility);
 
 				for (auto i : inner.localVarNullOverrides) {
-					if (i.second == NullOverrideType::Invalidate) {
-						outer.removeVarNullOverride(i.first);
+					if (i.second == NullOverrideType::Uncertain) {
+						SLKC_RETURN_IF_COMP_ERROR(outer.setLocalVarNullOverride(i.first, NullOverrideType::Uncertain));
 					} else
 						SLKC_RETURN_IF_COMP_ERROR(outer.setLocalVarNullOverride(i.first, i.second));
 				}
@@ -129,7 +129,7 @@ SLKC_API peff::Option<CompilationError> slkc::combineParallelPathEnv(peff::Alloc
 		}
 
 		for (auto i : nonunifiableNullOverrideVars)
-			SLKC_RETURN_IF_COMP_ERROR(outer.setLocalVarNullOverride(i, NullOverrideType::Invalidate));
+			SLKC_RETURN_IF_COMP_ERROR(outer.setLocalVarNullOverride(i, NullOverrideType::Uncertain));
 	}
 
 	for (auto i : commonLocalVarNullOverrides) {
@@ -143,7 +143,7 @@ SLKC_API peff::Option<CompilationError> slkc::combineParallelPathEnv(peff::Alloc
 		for (auto i : commonLocalVarNullOverrides) {
 			// If a local variable null override is not always happen, its original assumption should be cancelled.
 			if (!inner.localVarNullOverrides.contains(i.first))
-				SLKC_RETURN_IF_COMP_ERROR(outer.setLocalVarNullOverride(i.first, NullOverrideType::Invalidate));
+				SLKC_RETURN_IF_COMP_ERROR(outer.setLocalVarNullOverride(i.first, NullOverrideType::Uncertain));
 		}
 	}
 

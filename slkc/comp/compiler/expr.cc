@@ -383,7 +383,7 @@ static peff::Option<CompilationError> _determineNodeType(CompileEnv *compileEnv,
 								return genOutOfMemoryCompError();
 							t->referencedType->isNullable = false;
 							break;
-						case NullOverrideType::Invalidate:
+						case NullOverrideType::Uncertain:
 							break;
 					}
 				}
@@ -406,7 +406,7 @@ static peff::Option<CompilationError> _determineNodeType(CompileEnv *compileEnv,
 								return genOutOfMemoryCompError();
 							typeNameOut->isNullable = false;
 							break;
-						case NullOverrideType::Invalidate:
+						case NullOverrideType::Uncertain:
 							break;
 					}
 				}

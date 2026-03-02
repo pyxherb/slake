@@ -1023,8 +1023,7 @@ SLAKE_API void Runtime::readVarWithType(const Reference &entityRef, const TypeRe
 				entityRef.asArg.majorFrame->curContext->getContext().dataStack,
 				entityRef.asArg.majorFrame->curContext->getContext().stackSize,
 				entityRef.asArg.majorFrame,
-				entityRef.asArg.majorFrame->resumableContextData->offArgs,
-				entityRef.asArg.majorFrame->resumableContextData->nArgs)[entityRef.asArg.argIndex];
+				entityRef.asArg.majorFrame->resumableContextData.offArgs)[entityRef.asArg.argIndex];
 
 			if (t.isLocal())
 				valueOut.setLocal();
@@ -1037,8 +1036,7 @@ SLAKE_API void Runtime::readVarWithType(const Reference &entityRef, const TypeRe
 					entityRef.asCoroutineArg.coroutine->curContext->dataStack,
 					entityRef.asCoroutineArg.coroutine->curContext->stackSize,
 					mf,
-					mf->resumableContextData->offArgs,
-					mf->resumableContextData->nArgs)[entityRef.asCoroutineArg.argIndex];
+					mf->resumableContextData.offArgs)[entityRef.asCoroutineArg.argIndex];
 
 				if (t.isLocal())
 					valueOut.setLocal();
@@ -1433,6 +1431,8 @@ SLAKE_API void Runtime::writeVarWithType(const Reference &entityRef, const TypeR
 					((Object **)entityRef.asArrayElement.arrayObject->data)[entityRef.asArrayElement.index] = value.getReference().asObject;
 					break;
 				}
+				default:
+					std::terminate();
 			}
 			break;
 		}
@@ -1443,8 +1443,7 @@ SLAKE_API void Runtime::writeVarWithType(const Reference &entityRef, const TypeR
 				entityRef.asArg.majorFrame->curContext->getContext().dataStack,
 				entityRef.asArg.majorFrame->curContext->getContext().stackSize,
 				entityRef.asArg.majorFrame,
-				entityRef.asArg.majorFrame->resumableContextData->offArgs,
-				entityRef.asArg.majorFrame->resumableContextData->nArgs)[entityRef.asArg.argIndex] = value;
+				entityRef.asArg.majorFrame->resumableContextData.offArgs)[entityRef.asArg.argIndex] = value;
 			break;
 		}
 		case ReferenceKind::CoroutineArgRef: {
@@ -1456,8 +1455,7 @@ SLAKE_API void Runtime::writeVarWithType(const Reference &entityRef, const TypeR
 					entityRef.asCoroutineArg.coroutine->curContext->dataStack,
 					entityRef.asCoroutineArg.coroutine->curContext->stackSize,
 					mf,
-					mf->resumableContextData->offArgs,
-					mf->resumableContextData->nArgs)[entityRef.asCoroutineArg.argIndex] = value;
+					mf->resumableContextData.offArgs)[entityRef.asCoroutineArg.argIndex] = value;
 			} else {
 				// TODO: Implement it.
 				std::terminate();

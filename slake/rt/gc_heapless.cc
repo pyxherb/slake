@@ -110,18 +110,18 @@ SLAKE_API void GCWalkContext::removeFromDestructibleList(Object *v) {
 SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, char *stackTop, size_t szStack, ResumableContextData &value) {
 	context->pushObject(value.thisObject);
 	{
-		Value *argStack = _fetchArgStack(stackTop, szStack, nullptr, value.offArgs, value.nArgs);
+		Value *argStack = _fetchArgStack(stackTop, szStack, nullptr, value.offArgs);
 		for (size_t i = 0; i < value.nArgs; ++i)
 			_gcWalk(context, argStack[i]);
 	}
 	{
-		Value *argStack = _fetchArgStack(stackTop, szStack, nullptr, value.offNextArgs, value.nNextArgs);
+		Value *argStack = _fetchArgStack(stackTop, szStack, nullptr, value.offNextArgs);
 		for (size_t i = 0; i < value.nNextArgs; ++i)
 			_gcWalk(context, argStack[i]);
 	};
 	char *const stackBase = stackTop + szStack;
-	for (auto k = value.offCurMinorFrame; k != SIZE_MAX; ) {
-		MinorFrame *mjf = (MinorFrame*)(stackBase - k);
+	for (auto k = value.offCurMinorFrame; k != SIZE_MAX;) {
+		MinorFrame *mjf = (MinorFrame *)(stackBase - k);
 		for (auto l = mjf->offExceptHandler; l != SIZE_MAX;) {
 			ExceptHandler *eh = (ExceptHandler *)(stackBase - l);
 
@@ -500,13 +500,11 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, char *dataStack, size_t 
 	if (majorFrame->curCoroutine)
 		context->pushObject(majorFrame->curCoroutine);
 
-	if (majorFrame->resumableContextData.hasValue()) {
-		_gcWalk(context, dataStack, stackSize, majorFrame->resumableContextData.value());
+	_gcWalk(context, dataStack, stackSize, majorFrame->resumableContextData);
 
-		size_t nRegs = majorFrame->resumableContextData->nRegs;
-		for (size_t i = 0; i < nRegs; ++i)
-			_gcWalk(context, calcStackAddr(dataStack, stackSize, (majorFrame->offRegs + sizeof(Value) * i)));
-	}
+	size_t nRegs = majorFrame->resumableContextData.nRegs;
+	for (size_t i = 0; i < nRegs; ++i)
+		_gcWalk(context, calcStackAddr(dataStack, stackSize, (majorFrame->offRegs + sizeof(Value) * i)));
 }
 
 SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Context &ctxt) {

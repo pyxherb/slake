@@ -2,15 +2,6 @@
 
 using namespace slake;
 
-SLAKE_API void ResumableContextData::replaceAllocator(peff::Alloc *allocator) noexcept {
-}
-
-SLAKE_API ResumableContextData::ResumableContextData(peff::Alloc *allocator) noexcept {
-}
-
-SLAKE_API ResumableContextData::~ResumableContextData() {
-}
-
 SLAKE_API MajorFrame::MajorFrame(Runtime *rt) noexcept
 	: associatedRuntime(rt) {
 }
@@ -140,8 +131,6 @@ SLAKE_API void slake::ContextObject::dealloc() {
 }
 
 SLAKE_API void MajorFrame::replaceAllocator(peff::Alloc *allocator) noexcept {
-	if (resumableContextData.hasValue())
-		resumableContextData->replaceAllocator(allocator);
 }
 
 SLAKE_API InternalExceptionPointer ContextObject::resume(HostRefHolder *hostRefHolder) {

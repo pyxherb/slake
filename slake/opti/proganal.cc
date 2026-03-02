@@ -342,10 +342,10 @@ InternalExceptionPointer slake::opti::analyzeProgramInfoPass(
 		hostRefHolder
 	};
 
-	//if (!pseudoMajorFrame->resumableContextData->argStack.resizeUninitialized(fnObject->paramTypes.size()))
+	//if (!pseudoMajorFrame->resumableContextData.argStack.resizeUninitialized(fnObject->paramTypes.size()))
 	//	return OutOfMemoryError::alloc();
 	//for (size_t i = 0; i < fnObject->paramTypes.size(); ++i)
-	//	pseudoMajorFrame->resumableContextData->argStack.at(i) = Value();
+	//	pseudoMajorFrame->resumableContextData.argStack.at(i) = Value();
 
 	// Analyze lifetime of virtual registers.
 	bool newExpectableRegFound;

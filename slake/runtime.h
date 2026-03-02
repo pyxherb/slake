@@ -204,8 +204,7 @@ namespace slake {
 			char *dataStack,
 			size_t stackSize,
 			const MajorFrame *majorFrame,
-			size_t stackOffset,
-			size_t nArgs);
+			size_t stackOffset);
 		SLAKE_API AllocaRecord *_fetchAllocaRecord(
 			Context *context,
 			const MajorFrame *majorFrame,

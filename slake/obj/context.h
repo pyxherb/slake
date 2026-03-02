@@ -44,12 +44,6 @@ namespace slake {
 		size_t offCurMinorFrame = SIZE_MAX;
 		size_t nRegs = 0;
 		Object *thisObject = nullptr;
-
-		SLAKE_API ResumableContextData(peff::Alloc *allocator) noexcept;
-		ResumableContextData(ResumableContextData &&) noexcept = default;
-		SLAKE_API ~ResumableContextData();
-
-		SLAKE_API void replaceAllocator(peff::Alloc *allocator) noexcept;
 	};
 
 	class ContextObject;
@@ -64,7 +58,7 @@ namespace slake {
 		ContextObject *curContext = nullptr;
 		CoroutineObject *curCoroutine = nullptr;
 
-		peff::Option<ResumableContextData> resumableContextData;
+		ResumableContextData resumableContextData;
 
 		uint32_t returnValueOutReg = UINT32_MAX;
 		Reference returnStructRef;

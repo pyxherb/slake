@@ -8,10 +8,10 @@
 using namespace slake;
 
 Value print(Context *context, MajorFrame *curMajorFrame) {
-	if (curMajorFrame->resumableContextData->nArgs < 1)
+	if (curMajorFrame->resumableContextData.nArgs < 1)
 		putchar('\n');
 	else {
-		for (uint8_t i = 0; i < curMajorFrame->resumableContextData->nArgs; ++i) {
+		for (uint8_t i = 0; i < curMajorFrame->resumableContextData.nArgs; ++i) {
 			Value data;
 			if (curMajorFrame->curCoroutine)
 				Runtime::readVar(CoroutineArgRef(curMajorFrame->curCoroutine, i), data);
@@ -116,7 +116,7 @@ void printTraceback(Runtime *rt, ContextObject *context) {
 			}
 		}
 
-		printf("\t%s: %u", name.c_str(), i->resumableContextData->curIns);
+		printf("\t%s: %u", name.c_str(), i->resumableContextData.curIns);
 		putchar('\n');
 
 		return true;

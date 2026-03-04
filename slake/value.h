@@ -27,12 +27,18 @@ namespace slake {
 		ArrayElementRef,
 		ArgRef,
 		CoroutineArgRef,
-		StructFieldRef,
 
 		ObjectRef,
 		ArgPackRef,
 		AotPtrRef,
-		StructRef,
+
+		StaticFieldStructFieldRef = StaticFieldRef | 0x80,
+		LocalVarStructFieldRef = LocalVarRef | 0x80,
+		CoroutineLocalVarStructFieldRef = CoroutineLocalVarRef | 0x80,
+		ObjectFieldStructFieldRef = ObjectFieldRef | 0x80,
+		ArrayElementStructFieldRef = ArrayElementRef | 0x80,
+		ArgStructFieldRef = ArgRef | 0x80,
+		CoroutineArgStructFieldRef = CoroutineArgRef | 0x80,
 	};
 
 	class StructObject;
@@ -64,7 +70,6 @@ namespace slake {
 	struct LocalVarRef {
 		Context *context;
 		size_t stackOff;
-
 
 		LocalVarRef() = default;
 		SLAKE_FORCEINLINE LocalVarRef(Context *context, size_t stackOff) : context(context), stackOff(stackOff) {}
@@ -110,58 +115,6 @@ namespace slake {
 		SLAKE_FORCEINLINE CoroutineArgRef(CoroutineObject *coroutine, uint32_t argIndex) : coroutine(coroutine), argIndex(argIndex) {}
 	};
 
-	// Because struct is a value type,
-	// destroying the parent container will make the entire struct
-	// inaccessible, thus any reference to it should be a temporary reference.
-	// Passing temporary reference out of current scope is invalid, so we don't
-	// care about the structure's parent scope, just walking the structure
-	// itself.
-	struct StructRefData {
-		union {
-			StaticFieldRef asStaticField;
-			ArrayElementRef asArrayElement;
-			ObjectFieldRef asObjectField;
-			LocalVarRef asLocalVar;
-			CoroutineLocalVarRef asCoroutineLocalVar;
-			ArgRef asArg;
-			CoroutineArgRef asCoroutineArg;
-		};
-
-		StructRefData() = default;
-		SLAKE_FORCEINLINE StructRefData(const StaticFieldRef &innerReference) : asStaticField(innerReference) {}
-		SLAKE_FORCEINLINE StructRefData(const ArrayElementRef &innerReference) : asArrayElement(innerReference) {}
-		SLAKE_FORCEINLINE StructRefData(const ObjectFieldRef &innerReference) : asObjectField(innerReference) {}
-		SLAKE_FORCEINLINE StructRefData(const LocalVarRef &innerReference) : asLocalVar(innerReference) {}
-		SLAKE_FORCEINLINE StructRefData(const CoroutineLocalVarRef &innerReference) : asCoroutineLocalVar(innerReference) {}
-		SLAKE_FORCEINLINE StructRefData(const ArgRef &innerReference) : asArg(innerReference) {}
-		SLAKE_FORCEINLINE StructRefData(const CoroutineArgRef &innerReference) : asCoroutineArg(innerReference) {}
-	};
-
-	struct StructFieldRef {
-		StructRefData structRef;
-		uint32_t idxField;
-		ReferenceKind innerReferenceKind;
-
-		StructFieldRef() = default;
-		StructFieldRef(const StructRefData &structRef,
-			uint32_t idxField,
-			ReferenceKind innerReferenceKind)
-			: structRef(structRef),
-			  idxField(idxField),
-			  innerReferenceKind(innerReferenceKind) {}
-	};
-
-	struct StructRef {
-		StructRefData structRef;
-		ReferenceKind innerReferenceKind;
-
-		StructRef() = default;
-		StructRef(const StructRefData &structRef,
-			ReferenceKind innerReferenceKind)
-			: structRef(structRef),
-			  innerReferenceKind(innerReferenceKind) {}
-	};
-
 	struct Reference {
 		union {
 			StaticFieldRef asStaticField;
@@ -173,10 +126,9 @@ namespace slake {
 			ArgRef asArg;
 			ArgPackRef asArgPack;
 			CoroutineArgRef asCoroutineArg;
-			StructRef asStruct;
-			StructFieldRef asStructField;
 			void *asAotPtr;
 		};
+		uint32_t structFieldIndex;
 		ReferenceKind kind;
 
 		SLAKE_FORCEINLINE Reference() noexcept = default;
@@ -193,8 +145,6 @@ namespace slake {
 		SLAKE_FORCEINLINE Reference(const ArgRef &ref) noexcept : kind(ReferenceKind::ArgRef), asArg(ref) {}
 		SLAKE_FORCEINLINE Reference(const ArgPackRef &ref) noexcept : kind(ReferenceKind::ArgPackRef), asArgPack(ref) {}
 		SLAKE_FORCEINLINE Reference(const CoroutineArgRef &ref) noexcept : kind(ReferenceKind::CoroutineArgRef), asCoroutineArg(ref) {}
-		SLAKE_FORCEINLINE Reference(const StructRef &ref) noexcept : kind(ReferenceKind::StructRef), asStruct(ref) {}
-		SLAKE_FORCEINLINE Reference(const StructFieldRef &ref) noexcept : kind(ReferenceKind::StructFieldRef), asStructField(ref) {}
 
 		Reference &operator=(const Reference &) noexcept = default;
 
@@ -256,18 +206,6 @@ namespace slake {
 			return *this;
 		}
 
-		SLAKE_FORCEINLINE Reference &operator=(const StructRef &ref) noexcept {
-			kind = ReferenceKind::StructRef;
-			asStruct = ref;
-			return *this;
-		}
-
-		SLAKE_FORCEINLINE Reference &operator=(const StructFieldRef &ref) noexcept {
-			kind = ReferenceKind::StructFieldRef;
-			asStructField = ref;
-			return *this;
-		}
-
 		SLAKE_FORCEINLINE bool isInvalid() const noexcept {
 			return kind == ReferenceKind::Invalid;
 		}
@@ -305,7 +243,8 @@ namespace slake {
 		}
 
 		SLAKE_FORCEINLINE bool isStructFieldRef() const noexcept {
-			return kind == ReferenceKind::StructFieldRef;
+			return (((uint8_t)kind) >= (uint8_t)ReferenceKind::StaticFieldStructFieldRef) &&
+				   (((uint8_t)kind) <= (uint8_t)ReferenceKind::CoroutineArgStructFieldRef);
 		}
 
 		SLAKE_FORCEINLINE bool isArgPackRef() const noexcept {
@@ -314,10 +253,6 @@ namespace slake {
 
 		SLAKE_FORCEINLINE bool isAotPtrRef() const noexcept {
 			return kind == ReferenceKind::AotPtrRef;
-		}
-
-		SLAKE_FORCEINLINE bool isStructRef() const noexcept {
-			return kind == ReferenceKind::StructRef;
 		}
 
 		SLAKE_FORCEINLINE const StaticFieldRef &getStaticFieldRef() const noexcept {
@@ -420,26 +355,6 @@ namespace slake {
 			return asAotPtr;
 		}
 
-		SLAKE_FORCEINLINE const StructRef &getStructRef() const noexcept {
-			assert(kind == ReferenceKind::StructRef);
-			return asStruct;
-		}
-
-		SLAKE_FORCEINLINE StructRef &getStructRef() noexcept {
-			assert(kind == ReferenceKind::StructRef);
-			return asStruct;
-		}
-
-		SLAKE_FORCEINLINE const StructFieldRef &getStructFieldRef() const noexcept {
-			assert(kind == ReferenceKind::StructRef);
-			return asStructField;
-		}
-
-		SLAKE_FORCEINLINE StructFieldRef &getStructFieldRef() noexcept {
-			assert(kind == ReferenceKind::StructRef);
-			return asStructField;
-		}
-
 		SLAKE_FORCEINLINE bool isValid() const noexcept {
 			return kind != ReferenceKind::Invalid;
 		}
@@ -464,77 +379,27 @@ namespace slake {
 		TypeRef type;
 	};
 
-	union ValueData {
-		int8_t asI8;
-		int16_t asI16;
-		int32_t asI32;
-		int64_t asI64;
-		ssize_t asISize;
-		uint8_t asU8;
-		uint16_t asU16;
-		uint32_t asU32;
-		uint64_t asU64;
-		size_t asUSize;
-		float asF32;
-		double asF64;
-		bool asBool;
-		TypeRef asType;
-		Reference asReference;
-		TypelessScopedEnumValue asTypelessScopedEnum;
-
-		ValueData() noexcept = default;
-		SLAKE_FORCEINLINE constexpr ValueData(const ValueData &other) noexcept = default;
-		SLAKE_FORCEINLINE constexpr ValueData(ValueData &&other) noexcept = default;
-
-		SLAKE_FORCEINLINE constexpr ValueData &operator=(const ValueData &other) noexcept = default;
-		SLAKE_FORCEINLINE constexpr ValueData &operator=(ValueData &&other) noexcept = default;
-
-		SLAKE_FORCEINLINE constexpr ValueData(int8_t data) noexcept : asI8(data) {
-		}
-
-		SLAKE_FORCEINLINE constexpr ValueData(int16_t data) noexcept : asI16(data) {
-		}
-
-		SLAKE_FORCEINLINE constexpr ValueData(int32_t data) noexcept : asI32(data) {
-		}
-
-		SLAKE_FORCEINLINE constexpr ValueData(int64_t data) noexcept : asI64(data) {
-		}
-
-		SLAKE_FORCEINLINE constexpr ValueData(SizeTypeMarker marker, ssize_t data) noexcept : asISize(data) {
-			SLAKE_REFERENCED_PARAM(marker);
-		}
-
-		SLAKE_FORCEINLINE constexpr ValueData(uint8_t data) noexcept : asU8(data) {
-		}
-
-		SLAKE_FORCEINLINE constexpr ValueData(uint16_t data) noexcept : asU16(data) {
-		}
-
-		SLAKE_FORCEINLINE constexpr ValueData(uint32_t data) noexcept : asU32(data) {
-		}
-
-		SLAKE_FORCEINLINE constexpr ValueData(uint64_t data) noexcept : asU64(data) {
-		}
-
-		SLAKE_FORCEINLINE constexpr ValueData(SizeTypeMarker marker, size_t data) noexcept : asUSize(data) {
-			SLAKE_REFERENCED_PARAM(marker);
-		}
-
-		SLAKE_FORCEINLINE constexpr ValueData(float data) noexcept : asF32(data) {
-		}
-
-		SLAKE_FORCEINLINE constexpr ValueData(double data) noexcept : asF64(data) {
-		}
-
-		SLAKE_FORCEINLINE constexpr ValueData(bool data) noexcept : asBool(data) {
-		}
-	};
-
 	using ValueFlags = uint8_t;
 	constexpr ValueFlags VALUE_LOCAL = 0x01;
 	struct Value {
-		ValueData data;
+		union {
+			int8_t asI8;
+			int16_t asI16;
+			int32_t asI32;
+			int64_t asI64;
+			ssize_t asISize;
+			uint8_t asU8;
+			uint16_t asU16;
+			uint32_t asU32;
+			uint64_t asU64;
+			size_t asUSize;
+			float asF32;
+			double asF64;
+			bool asBool;
+			TypeRef asType;
+			Reference asReference;
+			TypelessScopedEnumValue asTypelessScopedEnum;
+		};
 
 		ValueType valueType;
 		ValueFlags valueFlags;
@@ -542,49 +407,47 @@ namespace slake {
 		SLAKE_FORCEINLINE Value() noexcept = default;
 		SLAKE_API Value(const Value &other) noexcept = default;
 		SLAKE_FORCEINLINE Value(Value &&other) noexcept = default;
-		SLAKE_FORCEINLINE constexpr Value(int8_t data) noexcept : valueType(ValueType::I8), data(data), valueFlags(0) {
+		SLAKE_FORCEINLINE constexpr Value(int8_t data) noexcept : valueType(ValueType::I8), asI8(data), valueFlags(0) {
 		}
-		SLAKE_FORCEINLINE constexpr Value(int16_t data) noexcept : valueType(ValueType::I16), data(data), valueFlags(0) {
+		SLAKE_FORCEINLINE constexpr Value(int16_t data) noexcept : valueType(ValueType::I16), asI16(data), valueFlags(0) {
 		}
-		SLAKE_FORCEINLINE constexpr Value(int32_t data) noexcept : valueType(ValueType::I32), data(data), valueFlags(0) {
+		SLAKE_FORCEINLINE constexpr Value(int32_t data) noexcept : valueType(ValueType::I32), asI32(data), valueFlags(0) {
 		}
-		SLAKE_FORCEINLINE constexpr Value(int64_t data) noexcept : valueType(ValueType::I64), data(data), valueFlags(0) {
+		SLAKE_FORCEINLINE constexpr Value(int64_t data) noexcept : valueType(ValueType::I64), asI64(data), valueFlags(0) {
 		}
-		SLAKE_FORCEINLINE constexpr Value(SizeTypeMarker marker, ssize_t data) noexcept : valueType(ValueType::ISize), data(data), valueFlags(0) {
+		SLAKE_FORCEINLINE constexpr Value(SizeTypeMarker marker, ssize_t data) noexcept : valueType(ValueType::ISize), asISize(data), valueFlags(0) {
 			SLAKE_REFERENCED_PARAM(marker);
 		}
-		SLAKE_FORCEINLINE constexpr Value(uint8_t data) noexcept : valueType(ValueType::U8), data(data), valueFlags(0) {
+		SLAKE_FORCEINLINE constexpr Value(uint8_t data) noexcept : valueType(ValueType::U8), asU8(data), valueFlags(0) {
 		}
-		SLAKE_FORCEINLINE constexpr Value(uint16_t data) noexcept : valueType(ValueType::U16), data(data), valueFlags(0) {
+		SLAKE_FORCEINLINE constexpr Value(uint16_t data) noexcept : valueType(ValueType::U16), asU16(data), valueFlags(0) {
 		}
-		SLAKE_FORCEINLINE constexpr Value(uint32_t data) noexcept : valueType(ValueType::U32), data(data), valueFlags(0) {
+		SLAKE_FORCEINLINE constexpr Value(uint32_t data) noexcept : valueType(ValueType::U32), asU32(data), valueFlags(0) {
 		}
-		SLAKE_FORCEINLINE constexpr Value(uint64_t data) noexcept : valueType(ValueType::U64), data(data), valueFlags(0) {
+		SLAKE_FORCEINLINE constexpr Value(uint64_t data) noexcept : valueType(ValueType::U64), asU64(data), valueFlags(0) {
 		}
-		SLAKE_FORCEINLINE constexpr Value(SizeTypeMarker marker, size_t data) noexcept : valueType(ValueType::USize), data(data), valueFlags(0) {
+		SLAKE_FORCEINLINE constexpr Value(SizeTypeMarker marker, size_t data) noexcept : valueType(ValueType::USize), asUSize(data), valueFlags(0) {
 			SLAKE_REFERENCED_PARAM(marker);
 		}
-		SLAKE_FORCEINLINE constexpr Value(float data) noexcept : valueType(ValueType::F32), data(data), valueFlags(0) {
+		SLAKE_FORCEINLINE constexpr Value(float data) noexcept : valueType(ValueType::F32), asF32(data), valueFlags(0) {
 		}
-		SLAKE_FORCEINLINE constexpr Value(double data) noexcept : valueType(ValueType::F64), data(data), valueFlags(0) {
+		SLAKE_FORCEINLINE constexpr Value(double data) noexcept : valueType(ValueType::F64), asF64(data), valueFlags(0) {
 		}
-		SLAKE_FORCEINLINE constexpr Value(bool data) noexcept : valueType(ValueType::Bool), data(data), valueFlags(0) {
+		SLAKE_FORCEINLINE constexpr explicit Value(bool data) noexcept : valueType(ValueType::Bool), asBool(data), valueFlags(0) {
 		}
-		SLAKE_FORCEINLINE Value(const Reference &entityRef) noexcept : valueType(ValueType::Reference), valueFlags(0) {
-			this->data.asReference = entityRef;
+		SLAKE_FORCEINLINE Value(const Reference &reference) noexcept : valueType(ValueType::Reference), asReference(reference), valueFlags(0) {
+			if(reference.kind == ReferenceKind::Invalid)
+			std::terminate();
 		}
-		SLAKE_FORCEINLINE Value(std::nullptr_t) noexcept : valueType(ValueType::Reference), valueFlags(0) {
-			this->data.asReference = nullptr;
+		SLAKE_FORCEINLINE Value(std::nullptr_t) noexcept : valueType(ValueType::Reference), asReference(nullptr), valueFlags(0) {
 		}
-		SLAKE_FORCEINLINE Value(const TypelessScopedEnumValue &v) noexcept : valueType(ValueType::TypelessScopedEnum), valueFlags(0) {
-			this->data.asTypelessScopedEnum = v;
+		SLAKE_FORCEINLINE Value(const TypelessScopedEnumValue &v) noexcept : valueType(ValueType::TypelessScopedEnum), asTypelessScopedEnum(v), valueFlags(0) {
 		}
-		SLAKE_FORCEINLINE Value(ValueType vt) noexcept : valueType(vt), data(/*Uninitialized*/), valueFlags(0) {
+		SLAKE_FORCEINLINE Value(ValueType vt) noexcept : valueType(vt), valueFlags(0) {
 		}
-		SLAKE_FORCEINLINE constexpr Value(ValueType vt, uint32_t index) noexcept : valueType(vt), data(index), valueFlags(0) {
+		SLAKE_FORCEINLINE constexpr Value(ValueType vt, uint32_t index) noexcept : valueType(vt), asU32(index), valueFlags(0) {
 		}
-		SLAKE_FORCEINLINE Value(const TypeRef &type) noexcept : valueType(ValueType::TypeName), valueFlags(0) {
-			data.asType = type;
+		SLAKE_FORCEINLINE Value(const TypeRef &type) noexcept : valueType(ValueType::TypeName), asType(type), valueFlags(0) {
 		}
 
 		SLAKE_FORCEINLINE constexpr Value &operator=(ValueType data) noexcept {
@@ -594,194 +457,194 @@ namespace slake {
 		}
 		SLAKE_FORCEINLINE constexpr Value &operator=(int8_t data) noexcept {
 			valueType = ValueType::I8;
-			this->data.asI8 = data;
+			this->asI8 = data;
 			this->valueFlags = 0;
 			return *this;
 		}
 		SLAKE_FORCEINLINE constexpr Value &operator=(int16_t data) noexcept {
 			valueType = ValueType::I16;
-			this->data.asI16 = data;
+			this->asI16 = data;
 			this->valueFlags = 0;
 			return *this;
 		}
 		SLAKE_FORCEINLINE constexpr Value &operator=(int32_t data) noexcept {
 			valueType = ValueType::I32;
-			this->data.asI32 = data;
+			this->asI32 = data;
 			this->valueFlags = 0;
 			return *this;
 		}
 		SLAKE_FORCEINLINE constexpr Value &operator=(int64_t data) noexcept {
 			valueType = ValueType::I64;
-			this->data.asI64 = data;
+			this->asI64 = data;
 			this->valueFlags = 0;
 			return *this;
 		}
 		SLAKE_FORCEINLINE constexpr Value &operator=(uint8_t data) noexcept {
 			valueType = ValueType::U8;
-			this->data.asU8 = data;
+			this->asU8 = data;
 			this->valueFlags = 0;
 			return *this;
 		}
 		SLAKE_FORCEINLINE constexpr Value &operator=(uint16_t data) noexcept {
 			valueType = ValueType::U16;
-			this->data.asU16 = data;
+			this->asU16 = data;
 			this->valueFlags = 0;
 			return *this;
 		}
 		SLAKE_FORCEINLINE constexpr Value &operator=(uint32_t data) noexcept {
 			valueType = ValueType::U32;
-			this->data.asU32 = data;
+			this->asU32 = data;
 			this->valueFlags = 0;
 			return *this;
 		}
 		SLAKE_FORCEINLINE constexpr Value &operator=(uint64_t data) noexcept {
 			valueType = ValueType::U64;
-			this->data.asU64 = data;
+			this->asU64 = data;
 			this->valueFlags = 0;
 			return *this;
 		}
 		SLAKE_FORCEINLINE constexpr Value &operator=(float data) noexcept {
 			valueType = ValueType::F32;
-			this->data.asF32 = data;
+			this->asF32 = data;
 			this->valueFlags = 0;
 			return *this;
 		}
 		SLAKE_FORCEINLINE constexpr Value &operator=(double data) noexcept {
 			valueType = ValueType::F64;
-			this->data.asF64 = data;
+			this->asF64 = data;
 			this->valueFlags = 0;
 			return *this;
 		}
 		SLAKE_FORCEINLINE constexpr Value &operator=(bool data) noexcept {
 			valueType = ValueType::Bool;
-			this->data.asBool = data;
+			this->asBool = data;
 			this->valueFlags = 0;
 			return *this;
 		}
 		SLAKE_FORCEINLINE Value &operator=(const Reference &entityRef) noexcept {
 			valueType = ValueType::Reference;
-			this->data.asReference = entityRef;
+			this->asReference = entityRef;
 			this->valueFlags = 0;
 			return *this;
 		}
 		SLAKE_FORCEINLINE Value &operator=(std::nullptr_t entityRef) noexcept {
 			valueType = ValueType::Reference;
-			this->data.asReference = entityRef;
+			this->asReference = entityRef;
 			this->valueFlags = 0;
 			return *this;
 		}
 		SLAKE_FORCEINLINE Value &operator=(const TypelessScopedEnumValue &data) noexcept {
 			valueType = ValueType::TypelessScopedEnum;
-			this->data.asTypelessScopedEnum = data;
+			this->asTypelessScopedEnum = data;
 			this->valueFlags = 0;
 			return *this;
 		}
 		SLAKE_FORCEINLINE Value &operator=(const TypeRef &type) noexcept {
 			valueType = ValueType::TypeName;
-			data.asType = type;
+			asType = type;
 			this->valueFlags = 0;
 			return *this;
 		}
 
 		SLAKE_FORCEINLINE int8_t getI8() const noexcept {
 			assert(valueType == ValueType::I8);
-			return data.asI8;
+			return asI8;
 		}
 
 		SLAKE_FORCEINLINE int16_t getI16() const noexcept {
 			assert(valueType == ValueType::I16);
-			return data.asI16;
+			return asI16;
 		}
 
 		SLAKE_FORCEINLINE int32_t getI32() const noexcept {
 			assert(valueType == ValueType::I32);
-			return data.asI32;
+			return asI32;
 		}
 
 		SLAKE_FORCEINLINE int64_t getI64() const noexcept {
 			assert(valueType == ValueType::I64);
-			return data.asI64;
+			return asI64;
 		}
 
 		SLAKE_FORCEINLINE ssize_t getISize() const noexcept {
 			assert(valueType == ValueType::ISize);
-			return data.asISize;
+			return asISize;
 		}
 
 		SLAKE_FORCEINLINE uint8_t getU8() const noexcept {
 			assert(valueType == ValueType::U8);
-			return data.asU8;
+			return asU8;
 		}
 
 		SLAKE_FORCEINLINE uint16_t getU16() const noexcept {
 			assert(valueType == ValueType::U16);
-			return data.asU16;
+			return asU16;
 		}
 
 		SLAKE_FORCEINLINE uint32_t getU32() const noexcept {
 			assert(valueType == ValueType::U32);
-			return data.asU32;
+			return asU32;
 		}
 
 		SLAKE_FORCEINLINE uint64_t getU64() const noexcept {
 			assert(valueType == ValueType::U64);
-			return data.asU64;
+			return asU64;
 		}
 
 		SLAKE_FORCEINLINE size_t getUSize() const noexcept {
 			assert(valueType == ValueType::USize);
-			return data.asUSize;
+			return asUSize;
 		}
 
 		SLAKE_FORCEINLINE float getF32() const noexcept {
 			assert(valueType == ValueType::F32);
-			return data.asF32;
+			return asF32;
 		}
 
 		SLAKE_FORCEINLINE double getF64() const noexcept {
 			assert(valueType == ValueType::F64);
-			return data.asF64;
+			return asF64;
 		}
 
 		SLAKE_FORCEINLINE bool getBool() const noexcept {
 			assert(valueType == ValueType::Bool);
-			return data.asBool;
+			return asBool;
 		}
 
 		SLAKE_FORCEINLINE uint32_t getRegIndex() const noexcept {
 			assert(valueType == ValueType::RegIndex);
-			return data.asU32;
+			return asU32;
 		}
 
 		SLAKE_FORCEINLINE uint32_t getLabel() const noexcept {
 			assert(valueType == ValueType::Label);
-			return data.asU32;
+			return asU32;
 		}
 
 		SLAKE_FORCEINLINE TypeRef &getTypeName() noexcept {
 			assert(valueType == ValueType::TypeName);
-			return data.asType;
+			return asType;
 		}
 		SLAKE_FORCEINLINE const TypeRef &getTypeName() const noexcept {
 			assert(valueType == ValueType::TypeName);
-			return data.asType;
+			return asType;
 		}
 
 		SLAKE_FORCEINLINE Reference &getReference() noexcept {
 			assert(valueType == ValueType::Reference);
-			return data.asReference;
+			return asReference;
 		}
 		SLAKE_FORCEINLINE const Reference &getReference() const noexcept {
 			assert(valueType == ValueType::Reference);
-			return data.asReference;
+			return asReference;
 		}
 		SLAKE_FORCEINLINE TypelessScopedEnumValue &getTypelessScopedEnum() noexcept {
 			assert(valueType == ValueType::TypelessScopedEnum);
-			return data.asTypelessScopedEnum;
+			return asTypelessScopedEnum;
 		}
 		SLAKE_FORCEINLINE const TypelessScopedEnumValue &getTypelessScopedEnum() const noexcept {
 			assert(valueType == ValueType::TypelessScopedEnum);
-			return data.asTypelessScopedEnum;
+			return asTypelessScopedEnum;
 		}
 
 		//
@@ -856,7 +719,7 @@ namespace slake {
 			return valueType == ValueType::Reference;
 		}
 		SLAKE_FORCEINLINE bool isNull() const noexcept {
-			return (valueType == ValueType::Reference) && (data.asReference.kind == ReferenceKind::ObjectRef) && (!data.asReference.asObject);
+			return (valueType == ValueType::Reference) && (asReference.kind == ReferenceKind::ObjectRef) && (!asReference.asObject);
 		}
 		SLAKE_FORCEINLINE bool isTypelessScopedEnum() const noexcept {
 			return valueType == ValueType::TypelessScopedEnum;
@@ -886,7 +749,6 @@ namespace slake {
 		SLAKE_API bool operator>(const Value &rhs) const noexcept;
 	};
 
-	SLAKE_API Reference extractStructInnerRef(const StructRefData &structRef, ReferenceKind innerReferenceKind);
 	SLAKE_API bool isCompatible(const TypeRef &type, const Value &value) noexcept;
 }
 

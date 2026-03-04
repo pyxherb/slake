@@ -504,7 +504,7 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, char *dataStack, size_t 
 
 	size_t nRegs = majorFrame->resumableContextData.nRegs;
 	for (size_t i = 0; i < nRegs; ++i)
-		_gcWalk(context, calcStackAddr(dataStack, stackSize, (majorFrame->offRegs + sizeof(Value) * i)));
+		_gcWalk(context, *calcStackAddr(dataStack, stackSize, (majorFrame->offRegs + sizeof(Value) * i)));
 }
 
 SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Context &ctxt) {

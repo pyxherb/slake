@@ -9,8 +9,8 @@ namespace slake {
 			SLAKE_FORCEINLINE DiscreteInstruction emitRawIns(size_t szIns, const uint8_t *buffer) {
 				DiscreteInstruction ins;
 
-				ins.data.asRawInsData.szIns = szIns;
-				memcpy(ins.data.asRawInsData.buffer, buffer, szIns);
+				ins.asRawInsData.szIns = szIns;
+				memcpy(ins.asRawInsData.buffer, buffer, szIns);
 				ins.insType = DiscreteInstructionType::Raw;
 
 				return ins;
@@ -19,21 +19,21 @@ namespace slake {
 			SLAKE_FORCEINLINE DiscreteInstruction emitJumpIns(void *dest, DiscreteInstructionType type = DiscreteInstructionType::Jump) {
 				DiscreteInstruction ins;
 				ins.insType = type;
-				ins.data.asJumpInsData.dest = dest;
+				ins.asJumpInsData.dest = dest;
 				return ins;
 			}
 
 			SLAKE_FORCEINLINE DiscreteInstruction emitLabelledJumpIns(const char *dest, DiscreteInstructionType type = DiscreteInstructionType::JumpLabelled) {
 				DiscreteInstruction ins;
 				ins.insType = type;
-				ins.data.asLabelledJumpInsData.dest = dest;
+				ins.asLabelledJumpInsData.dest = dest;
 				return ins;
 			}
 
 			SLAKE_FORCEINLINE DiscreteInstruction emitCallIns(void *dest) {
 				DiscreteInstruction ins;
 				ins.insType = DiscreteInstructionType::Call;
-				ins.data.asJumpInsData.dest = dest;
+				ins.asJumpInsData.dest = dest;
 				return ins;
 			}
 		}

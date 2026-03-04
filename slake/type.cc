@@ -84,32 +84,6 @@ SLAKE_API ValueType slake::typeIdToValueType(TypeId typeId) noexcept {
 	std::terminate();
 }
 
-SLAKE_API Reference slake::extractStructInnerRef(const StructRefData &structRef, ReferenceKind innerReferenceKind) {
-	switch (innerReferenceKind) {
-		case ReferenceKind::StaticFieldRef:
-			return structRef.asStaticField;
-			break;
-		case ReferenceKind::ArrayElementRef:
-			return structRef.asArrayElement;
-			break;
-		case ReferenceKind::ObjectFieldRef:
-			return structRef.asObjectField;
-			break;
-		case ReferenceKind::LocalVarRef:
-			return structRef.asLocalVar;
-		case ReferenceKind::CoroutineLocalVarRef:
-			return structRef.asCoroutineLocalVar;
-		case ReferenceKind::ArgRef:
-			return structRef.asArg;
-			break;
-		case ReferenceKind::CoroutineArgRef:
-			return structRef.asCoroutineArg;
-			break;
-		default:
-			std::terminate();
-	}
-}
-
 SLAKE_API bool Reference::operator==(const Reference &rhs) const {
 	if (kind != rhs.kind)
 		return false;

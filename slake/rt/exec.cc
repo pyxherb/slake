@@ -86,11 +86,11 @@ static SLAKE_FORCEINLINE Value *_calcRegPtr(
 	const Value &value,
 	Value &valueOut) noexcept {
 	if (value.valueType == ValueType::RegIndex) {
-		if (value.data.asU32 >= curMajorFrame->resumableContextData.nRegs) {
+		if (value.asU32 >= curMajorFrame->resumableContextData.nRegs) {
 			// The register does not present.
 			return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(runtime->getFixedAlloc()));
 		}
-		valueOut = *(Value *)calcStackAddr(stackData, stackSize, curMajorFrame->offRegs + sizeof(Value) * (value.data.asU32 + 1));
+		valueOut = *(Value *)calcStackAddr(stackData, stackSize, curMajorFrame->offRegs + sizeof(Value) * (value.asU32 + 1));
 		return {};
 	}
 	valueOut = value;
@@ -105,11 +105,11 @@ static SLAKE_FORCEINLINE Value *_calcRegPtr(
 	const Value &value,
 	const Value *&valueOut) noexcept {
 	if (value.valueType == ValueType::RegIndex) {
-		if (value.data.asU32 >= curMajorFrame->resumableContextData.nRegs) {
+		if (value.asU32 >= curMajorFrame->resumableContextData.nRegs) {
 			// The register does not present.
 			return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(runtime->getFixedAlloc()));
 		}
-		valueOut = (Value *)calcStackAddr(stackData, stackSize, curMajorFrame->offRegs + sizeof(Value) * (((size_t)value.data.asU32) + 1));
+		valueOut = (Value *)calcStackAddr(stackData, stackSize, curMajorFrame->offRegs + sizeof(Value) * (((size_t)value.asU32) + 1));
 		return {};
 	}
 	valueOut = &value;
@@ -1543,7 +1543,7 @@ InternalExceptionPointer Runtime::_execIns(ContextObject *const context, MajorFr
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[0], x));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[1], y));
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::U32>(this, y));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::U32>(this, *y));
 
 			uint32_t rhs = y->getU32();
 
@@ -1750,6 +1750,10 @@ InternalExceptionPointer Runtime::_execIns(ContextObject *const context, MajorFr
 
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, resolveIdRef((IdRefObject *)refPtr.asObject, entityRef));
 
+			if (entityRef.kind == ReferenceKind::Invalid)
+				// TODO: Use a proper one instead.
+				return allocOutOfMemoryErrorIfAllocFailed(ReferencedMemberNotFoundError::alloc(getFixedAlloc(), (IdRefObject*)refPtr.asObject));
+
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, stackSize, curMajorFrame, output, Value(entityRef)));
 			break;
 		}
@@ -1787,23 +1791,35 @@ InternalExceptionPointer Runtime::_execIns(ContextObject *const context, MajorFr
 			Reference entityRef;
 
 			switch (lhsEntityRef.kind) {
-				case ReferenceKind::StructRef: {
-					StructObject *structObject = (StructObject *)(((CustomTypeDefObject *)typeofVar(lhsEntityRef).typeDef)->typeObject);
-					IdRefEntry &curName = idRef->entries.at(0);
+				case ReferenceKind::StaticFieldRef:
+				case ReferenceKind::LocalVarRef:
+				case ReferenceKind::CoroutineLocalVarRef:
+				case ReferenceKind::ObjectFieldRef:
+				case ReferenceKind::ArrayElementRef:
+				case ReferenceKind::ArgRef:
+				case ReferenceKind::CoroutineArgRef: {
+					TypeRef type = typeofVar(lhsEntityRef);
 
-					if (auto it = structObject->cachedObjectLayout->fieldNameMap.find(curName.name); it != structObject->cachedObjectLayout->fieldNameMap.end()) {
-						entityRef = StructFieldRef(lhsEntityRef.asStruct.structRef, it.value(), lhsEntityRef.asStruct.innerReferenceKind);
-					} else {
-						entityRef = structObject->getMember(curName.name);
+					if (type.typeId == TypeId::StructInstance) {
+						StructObject *structObject = (StructObject *)(((CustomTypeDefObject *)type.typeDef)->typeObject);
+						IdRefEntry &curName = idRef->entries.at(0);
 
-						if (curName.genericArgs.size()) {
-							peff::NullAlloc nullAlloc;
-							GenericInstantiationContext genericInstantiationContext(&nullAlloc, getFixedAlloc());
+						if (auto it = structObject->cachedObjectLayout->fieldNameMap.find(curName.name); it != structObject->cachedObjectLayout->fieldNameMap.end()) {
+							entityRef = lhsEntityRef;
+							((uint8_t &)entityRef.kind) |= 0x80;
+							entityRef.structFieldIndex = it.value();
+						} else {
+							entityRef = structObject->getMember(curName.name);
 
-							genericInstantiationContext.genericArgs = &curName.genericArgs;
-							MemberObject *m;
-							SLAKE_RETURN_IF_EXCEPT(instantiateGenericObject((MemberObject *)entityRef.asObject, m, &genericInstantiationContext));
-							entityRef = Reference(m);
+							if (curName.genericArgs.size()) {
+								peff::NullAlloc nullAlloc;
+								GenericInstantiationContext genericInstantiationContext(&nullAlloc, getFixedAlloc());
+
+								genericInstantiationContext.genericArgs = &curName.genericArgs;
+								MemberObject *m;
+								SLAKE_RETURN_IF_EXCEPT(instantiateGenericObject((MemberObject *)entityRef.asObject, m, &genericInstantiationContext));
+								entityRef = Reference(m);
+							}
 						}
 					}
 
@@ -1896,7 +1912,7 @@ InternalExceptionPointer Runtime::_execIns(ContextObject *const context, MajorFr
 					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
 				}
 				Value *const val = _calcRegPtr(dataStack, stackSize, curMajorFrame, output);
-				val->data.asUSize = operands[0].getISize();
+				val->asUSize = operands[0].getISize();
 				val->valueType = ValueType::ISize;
 				val->valueFlags = 0;
 			}
@@ -1964,7 +1980,7 @@ InternalExceptionPointer Runtime::_execIns(ContextObject *const context, MajorFr
 					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
 				}
 				Value *const val = _calcRegPtr(dataStack, stackSize, curMajorFrame, output);
-				val->data.asUSize = operands[0].getUSize();
+				val->asUSize = operands[0].getUSize();
 				val->valueType = ValueType::USize;
 				val->valueFlags = 0;
 			}
@@ -2036,55 +2052,55 @@ InternalExceptionPointer Runtime::_execIns(ContextObject *const context, MajorFr
 				outputReg->valueFlags = value->valueFlags;
 				switch (value->valueType) {
 					case ValueType::I8:
-						outputReg->data.asI8 = value->getI8();
+						outputReg->asI8 = value->getI8();
 						outputReg->valueType = ValueType::I8;
 						break;
 					case ValueType::I16:
-						outputReg->data.asI16 = value->getI16();
+						outputReg->asI16 = value->getI16();
 						outputReg->valueType = ValueType::I16;
 						break;
 					case ValueType::I32:
-						outputReg->data.asI32 = value->getI32();
+						outputReg->asI32 = value->getI32();
 						outputReg->valueType = ValueType::I32;
 						break;
 					case ValueType::I64:
-						outputReg->data.asI64 = value->getI64();
+						outputReg->asI64 = value->getI64();
 						outputReg->valueType = ValueType::I64;
 						break;
 					case ValueType::ISize:
-						outputReg->data.asISize = value->getISize();
+						outputReg->asISize = value->getISize();
 						outputReg->valueType = ValueType::ISize;
 						break;
 					case ValueType::U8:
-						outputReg->data.asU8 = value->getU8();
+						outputReg->asU8 = value->getU8();
 						outputReg->valueType = ValueType::U8;
 						break;
 					case ValueType::U16:
-						outputReg->data.asU16 = value->getU16();
+						outputReg->asU16 = value->getU16();
 						outputReg->valueType = ValueType::U16;
 						break;
 					case ValueType::U32:
-						outputReg->data.asU32 = value->getU32();
+						outputReg->asU32 = value->getU32();
 						outputReg->valueType = ValueType::U32;
 						break;
 					case ValueType::U64:
-						outputReg->data.asU64 = value->getU64();
+						outputReg->asU64 = value->getU64();
 						outputReg->valueType = ValueType::U64;
 						break;
 					case ValueType::USize:
-						outputReg->data.asUSize = value->getUSize();
+						outputReg->asUSize = value->getUSize();
 						outputReg->valueType = ValueType::USize;
 						break;
 					case ValueType::F32:
-						outputReg->data.asF32 = value->getF32();
+						outputReg->asF32 = value->getF32();
 						outputReg->valueType = ValueType::F32;
 						break;
 					case ValueType::F64:
-						outputReg->data.asF64 = value->getF64();
+						outputReg->asF64 = value->getF64();
 						outputReg->valueType = ValueType::F64;
 						break;
 					case ValueType::Bool:
-						outputReg->data.asBool = value->getBool();
+						outputReg->asBool = value->getBool();
 						outputReg->valueType = ValueType::Bool;
 						break;
 					case ValueType::Reference: {
@@ -2093,36 +2109,36 @@ InternalExceptionPointer Runtime::_execIns(ContextObject *const context, MajorFr
 							case ReferenceKind::Invalid:
 								return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
 							case ReferenceKind::LocalVarRef:
-								// if (value->data.asReference.asLocalVar.stackOff >= curMajorFrame->stackBase)
+								// if (value->asReference.asLocalVar.stackOff >= curMajorFrame->stackBase)
 								return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
 								break;
 							case ReferenceKind::CoroutineLocalVarRef: {
-								// if ((value->data.asReference.asCoroutineLocalVar.stackOff + value->data.asReference.asCoroutineLocalVar.coroutine->offStackTop) >=
+								// if ((value->asReference.asCoroutineLocalVar.stackOff + value->asReference.asCoroutineLocalVar.coroutine->offStackTop) >=
 								//(curMajorFrame->curCoroutine ? curMajorFrame->stackBase + curMajorFrame->curCoroutine->offStackTop : curMajorFrame->stackBase))
 								return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
 								break;
 							}
 							default:
-								outputReg->data.asReference = ref;
+								outputReg->asReference = ref;
 								break;
 						}
 						outputReg->valueType = ValueType::Reference;
 						break;
 					}
 					case ValueType::TypelessScopedEnum:
-						outputReg->data.asTypelessScopedEnum = value->getTypelessScopedEnum();
+						outputReg->asTypelessScopedEnum = value->getTypelessScopedEnum();
 						outputReg->valueType = ValueType::Bool;
 						break;
 					case ValueType::RegIndex:
-						outputReg->data.asU32 = value->getRegIndex();
+						outputReg->asU32 = value->getRegIndex();
 						outputReg->valueType = ValueType::RegIndex;
 						break;
 					case ValueType::TypeName:
-						outputReg->data.asU32 = value->getRegIndex();
+						outputReg->asU32 = value->getRegIndex();
 						outputReg->valueType = ValueType::TypeName;
 						break;
 					case ValueType::Label:
-						outputReg->data.asU32 = value->getLabel();
+						outputReg->asU32 = value->getLabel();
 						outputReg->valueType = ValueType::Label;
 						break;
 					default:
@@ -2209,7 +2225,9 @@ InternalExceptionPointer Runtime::_execIns(ContextObject *const context, MajorFr
 				}
 
 				size_t stackTop = mf->offLastMinorFrame;
-				context->_context.stackTop = mf->stackBase;
+				context->_context.stackTop = curMajorFrame->curCoroutine
+												 ? curMajorFrame->curCoroutine->offStackTop + mf->stackBase
+												 : mf->stackBase;
 				curMajorFrame->resumableContextData.offCurMinorFrame = stackTop;
 			}
 			break;
@@ -2254,8 +2272,8 @@ InternalExceptionPointer Runtime::_execIns(ContextObject *const context, MajorFr
 
 					const Value *thisObjectValue;
 					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[1], thisObjectValue));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::Reference>(this, *thisObjectValue));
 					const Reference &thisObjectRef = thisObjectValue->getReference();
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::Reference>(this, thisObjectValue));
 					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkObjectRefOperandType<ReferenceKind::ObjectRef>(this, thisObjectRef));
 					thisObject = thisObjectRef.asObject;
 					break;

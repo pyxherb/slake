@@ -262,14 +262,8 @@ int main(int argc, char **argv) {
 					throw std::bad_alloc();
 				fnObject->setName("print");
 
-				((ModuleObject *)((ModuleObject *)rt->getRootObject()->getMember("hostext").asObject)
-						->getMember("extfns")
-						.asObject)
-					->removeMember("print");
-				if (!((ModuleObject *)((ModuleObject *)rt->getRootObject()->getMember("hostext").asObject)
-							->getMember("extfns")
-							.asObject)
-						->addMember(fnObject.get()))
+				modObjectHostext->removeMember("print");
+				if (!modObjectExtfns->addMember(fnObject.get()))
 					throw std::bad_alloc();
 
 				auto fn = (FnObject *)mod->getMember("main").asObject;
@@ -326,6 +320,28 @@ int main(int argc, char **argv) {
 						if (auto e = rt->resumeCoroutine(context.get(), co.get(), result);
 							e) {
 							printf("Internal exception: %s\n", e->what());
+							switch (e->kind) {
+								case ErrorKind::RuntimeExecError: {
+									RuntimeExecError *rte = (RuntimeExecError *)e.get();
+									switch (rte->errorCode) {
+										case slake::RuntimeExecErrorCode::ReferencedMemberNotFound: {
+											ReferencedMemberNotFoundError *err = (ReferencedMemberNotFoundError *)rte;
+											printf("Referenced member not found: ");
+											for (const auto &i : err->idRef->entries) {
+												if (&i != &err->idRef->entries.data()[0])
+													printf(".");
+												printf("%s", i.name.data());
+												if (i.genericArgs.size()) {
+													printf("<");
+													printf(">");
+												}
+											}
+											puts("");
+											break;
+										}
+									}
+								}
+							}
 							printTraceback(rt.get(), context.get());
 							e.reset();
 							goto end;

@@ -266,7 +266,7 @@ namespace slake {
 		}
 
 		SLAKE_FORCEINLINE Object *&getObjectRef() noexcept {
-			assert(kind == ReferenceKind::ArrayElementRef);
+			assert(kind == ReferenceKind::ObjectRef);
 			return asObject;
 		}
 

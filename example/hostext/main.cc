@@ -231,13 +231,19 @@ int main(int argc, char **argv) {
 			{
 				HostRefHolder hostRefHolder(rt->getFixedAlloc());
 
-				HostObjectRef<ModuleObject> modObjectHostext = mod;
-				HostObjectRef<ModuleObject> modObjectExtfns = ModuleObject::alloc(rt.get());
+				HostObjectRef<ModuleObject> modObjectHostext;
+
+				modObjectHostext = (ModuleObject *)rt->getRootObject()->getMember("hostext").getObjectRef();
+				if ((!modObjectHostext) || (modObjectHostext->getName() != "hostext"))
+					std::terminate();
 
 				/*
 				if (!modObjectHostext->setName("hostext")) {
 					std::terminate();
 				}*/
+				HostObjectRef<ModuleObject> modObjectExtfns = ModuleObject::alloc(rt.get());
+				if (!modObjectExtfns)
+					std::terminate();
 				if (!modObjectExtfns->setName("extfns")) {
 					std::terminate();
 				}
@@ -245,9 +251,13 @@ int main(int argc, char **argv) {
 				if (!modObjectHostext->addMember(modObjectExtfns.get())) {
 					std::terminate();
 				}
-				if (!rt->getRootObject()->addMember(modObjectHostext.get())) {
-					std::terminate();
+
+				for (auto i : modObjectHostext->getMembers()) {
+					printf("%s: %p\n", i.first.data(), i.second);
 				}
+				modObjectExtfns = (ModuleObject *)modObjectHostext->getMember("extfns").getObjectRef();
+				if ((!modObjectExtfns) || (modObjectExtfns->getName() != "extfns"))
+					std::terminate();
 
 				HostObjectRef<FnObject> fnObject = FnObject::alloc(rt.get());
 
@@ -262,7 +272,7 @@ int main(int argc, char **argv) {
 					throw std::bad_alloc();
 				fnObject->setName("print");
 
-				modObjectHostext->removeMember("print");
+				modObjectExtfns->removeMember("print");
 				if (!modObjectExtfns->addMember(fnObject.get()))
 					throw std::bad_alloc();
 

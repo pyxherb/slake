@@ -30,7 +30,7 @@ SLAKE_API std::string_view MemberObject::getName() const noexcept {
 }
 
 SLAKE_API bool MemberObject::setName(const std::string_view &name) noexcept {
-	if (!_name.build(name)) {
+	if (!_name.buildAndShrink(name)) {
 		return false;
 	}
 	return true;

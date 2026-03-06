@@ -620,7 +620,7 @@ SLKC_API peff::Option<SyntaxError> BCParser::parseComptimeExpr(AstNodePtr<ExprNo
 			if ((syntaxError = _parseInt<uint8_t>(this, token, isNegative, bodyView, data)))
 				return syntaxError;
 
-			if (!(exprOut = makeAstNode<I8LiteralExprNode>(
+			if (!(exprOut = makeAstNode<U8LiteralExprNode>(
 					  resourceAllocator.get(), resourceAllocator.get(), document,
 					  data)
 						.castTo<ExprNode>()))
@@ -641,7 +641,7 @@ SLKC_API peff::Option<SyntaxError> BCParser::parseComptimeExpr(AstNodePtr<ExprNo
 			if ((syntaxError = _parseInt<uint16_t>(this, token, isNegative, bodyView, data)))
 				return syntaxError;
 
-			if (!(exprOut = makeAstNode<I16LiteralExprNode>(
+			if (!(exprOut = makeAstNode<U16LiteralExprNode>(
 					  resourceAllocator.get(), resourceAllocator.get(), document,
 					  data)
 						.castTo<ExprNode>()))
@@ -662,7 +662,7 @@ SLKC_API peff::Option<SyntaxError> BCParser::parseComptimeExpr(AstNodePtr<ExprNo
 			if ((syntaxError = _parseInt<uint32_t>(this, token, isNegative, bodyView, data)))
 				return syntaxError;
 
-			if (!(exprOut = makeAstNode<I32LiteralExprNode>(
+			if (!(exprOut = makeAstNode<U32LiteralExprNode>(
 					  resourceAllocator.get(), resourceAllocator.get(), document,
 					  data)
 						.castTo<ExprNode>()))
@@ -683,7 +683,7 @@ SLKC_API peff::Option<SyntaxError> BCParser::parseComptimeExpr(AstNodePtr<ExprNo
 			if ((syntaxError = _parseInt<uint64_t>(this, token, isNegative, bodyView, data)))
 				return syntaxError;
 
-			if (!(exprOut = makeAstNode<I64LiteralExprNode>(
+			if (!(exprOut = makeAstNode<U64LiteralExprNode>(
 					  resourceAllocator.get(), resourceAllocator.get(), document,
 					  data)
 						.castTo<ExprNode>()))

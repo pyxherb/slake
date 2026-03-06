@@ -384,7 +384,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr<
 					if ((syntaxError = _parseInt<uint8_t>(this, prefixToken, isNegative, bodyView, data)))
 						return syntaxError;
 
-					if (!(lhs = makeAstNode<I8LiteralExprNode>(
+					if (!(lhs = makeAstNode<U8LiteralExprNode>(
 							  resourceAllocator.get(), resourceAllocator.get(), document,
 							  data)
 								.castTo<ExprNode>()))
@@ -405,7 +405,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr<
 					if ((syntaxError = _parseInt<uint16_t>(this, prefixToken, isNegative, bodyView, data)))
 						return syntaxError;
 
-					if (!(lhs = makeAstNode<I16LiteralExprNode>(
+					if (!(lhs = makeAstNode<U16LiteralExprNode>(
 							  resourceAllocator.get(), resourceAllocator.get(), document,
 							  data)
 								.castTo<ExprNode>()))
@@ -426,7 +426,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr<
 					if ((syntaxError = _parseInt<uint32_t>(this, prefixToken, isNegative, bodyView, data)))
 						return syntaxError;
 
-					if (!(lhs = makeAstNode<I32LiteralExprNode>(
+					if (!(lhs = makeAstNode<U32LiteralExprNode>(
 							  resourceAllocator.get(), resourceAllocator.get(), document,
 							  data)
 								.castTo<ExprNode>()))
@@ -447,7 +447,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr<
 					if ((syntaxError = _parseInt<uint64_t>(this, prefixToken, isNegative, bodyView, data)))
 						return syntaxError;
 
-					if (!(lhs = makeAstNode<I64LiteralExprNode>(
+					if (!(lhs = makeAstNode<U64LiteralExprNode>(
 							  resourceAllocator.get(), resourceAllocator.get(), document,
 							  data)
 								.castTo<ExprNode>()))

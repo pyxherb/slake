@@ -17,9 +17,6 @@ namespace slkc {
 		Unpacking,	// For unpacking, note that it is used for notifying the expression compiler to prepare the expression to be unpacked, not actually to unpack it.
 	};
 
-	struct StmtCompileEnvironment {
-	};
-
 	struct LocalVarRegistry {
 		AstNodePtr<VarNode> varNode;
 		uint32_t idxReg;

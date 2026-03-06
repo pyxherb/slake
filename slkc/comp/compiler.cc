@@ -613,7 +613,7 @@ SLKC_API peff::Option<CompilationError> FileSystemExternalModuleProvider::loadMo
 					return genOutOfMemoryCompError();
 				}
 
-				peff::Uninitialized<slkc::TokenList> tokenList;
+				slkc::TokenList tokenList(compileEnv->allocator.get());
 				{
 					slkc::Lexer lexer(compileEnv->allocator.get());
 
@@ -625,11 +625,11 @@ SLKC_API peff::Option<CompilationError> FileSystemExternalModuleProvider::loadMo
 						return std::move(ce);
 					}
 
-					tokenList.moveFrom(std::move(lexer.tokenList));
+					tokenList = std::move(lexer.tokenList);
 				}
 
 				peff::SharedPtr<slkc::Parser> parser;
-				if (!(parser = peff::makeShared<slkc::Parser>(compileEnv->allocator.get(), compileEnv->document, tokenList.release(), compileEnv->allocator.get()))) {
+				if (!(parser = peff::makeShared<slkc::Parser>(compileEnv->allocator.get(), compileEnv->document, std::move(tokenList), compileEnv->allocator.get()))) {
 					return genOutOfMemoryCompError();
 				}
 

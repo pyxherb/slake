@@ -181,6 +181,34 @@ SLKC_API peff::Option<LexicalError> Lexer::lex(ModuleNode *moduleNode, const std
 					break;
 				}
 
+				<InitialCondition>"0"[0-7]+[uU][lL] {
+					token->tokenId = TokenId::U64Literal;
+					token->exData = std::unique_ptr<TokenExtension, peff::DeallocableDeleter<TokenExtension>>(
+						peff::allocAndConstruct<IntTokenExtension>(allocator, alignof(IntTokenExtension), allocator, IntTokenType::Octal));
+					break;
+				}
+
+				<InitialCondition>[0-9]+[uU][lL] {
+					token->tokenId = TokenId::U64Literal;
+					token->exData = std::unique_ptr<TokenExtension, peff::DeallocableDeleter<TokenExtension>>(
+						peff::allocAndConstruct<IntTokenExtension>(allocator, alignof(IntTokenExtension), allocator, IntTokenType::Decimal));
+					break;
+				}
+
+				<InitialCondition>"0"[xX][0-9a-fA-F]+[uU][lL] {
+					token->tokenId = TokenId::U64Literal;
+					token->exData = std::unique_ptr<TokenExtension, peff::DeallocableDeleter<TokenExtension>>(
+						peff::allocAndConstruct<IntTokenExtension>(allocator, alignof(IntTokenExtension), allocator, IntTokenType::Hexadecimal));
+					break;
+				}
+
+				<InitialCondition>"0"[bB][01]+[uU][lL] {
+					token->tokenId = TokenId::U64Literal;
+					token->exData = std::unique_ptr<TokenExtension, peff::DeallocableDeleter<TokenExtension>>(
+						peff::allocAndConstruct<IntTokenExtension>(allocator, alignof(IntTokenExtension), allocator, IntTokenType::Binary));
+					break;
+				}
+
 				<InitialCondition>"0"[0-7]+[uU] {
 					token->tokenId = TokenId::U32Literal;
 					token->exData = std::unique_ptr<TokenExtension, peff::DeallocableDeleter<TokenExtension>>(

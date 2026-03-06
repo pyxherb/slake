@@ -349,11 +349,11 @@ public async main() -> i32 {
 }
 
 /*public fn fib(n: u64) -> u64 {
-	if (n < 1)
-		return 0 as u64;
-	else if (n < 3)
-		return 1 as u64;
-	return fib(n - 1) + fib(n - 2);
+	if (n < 1UL)
+		return 0UL;
+	else if (n < 3UL)
+		return 1UL;
+	return fib(n - 1UL) + fib(n - 2UL);
 }
 
 public async main() -> i32 {

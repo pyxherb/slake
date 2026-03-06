@@ -786,7 +786,7 @@ int main(int argc, char *argv[]) {
 
 		document->mainModule = mod.get();
 
-		peff::Uninitialized<slkc::TokenList> tokenList;
+		slkc::TokenList tokenList(peff::getDefaultAlloc());
 		{
 			slkc::Lexer lexer(peff::getDefaultAlloc());
 
@@ -797,7 +797,7 @@ int main(int argc, char *argv[]) {
 				return -1;
 			}
 
-			tokenList.moveFrom(std::move(lexer.tokenList));
+			tokenList = std::move(lexer.tokenList);
 		}
 
 		std::unique_ptr<slake::Runtime, peff::DeallocableDeleter<slake::Runtime>> runtime(
@@ -813,12 +813,12 @@ int main(int argc, char *argv[]) {
 
 			peff::SharedPtr<slkc::Parser> parser;
 			if (isBCMode) {
-				if (!(parser = peff::makeShared<slkc::bc::BCParser>(peff::getDefaultAlloc(), document, tokenList.release(), peff::getDefaultAlloc()).castTo<slkc::Parser>())) {
+				if (!(parser = peff::makeShared<slkc::bc::BCParser>(peff::getDefaultAlloc(), document, std::move(tokenList), peff::getDefaultAlloc()).castTo<slkc::Parser>())) {
 					printError("Error allocating memory for the parser");
 					return ENOMEM;
 				}
 			} else {
-				if (!(parser = peff::makeShared<slkc::Parser>(peff::getDefaultAlloc(), document, tokenList.release(), peff::getDefaultAlloc()))) {
+				if (!(parser = peff::makeShared<slkc::Parser>(peff::getDefaultAlloc(), document, std::move(tokenList), peff::getDefaultAlloc()))) {
 					printError("Error allocating memory for the parser");
 					return ENOMEM;
 				}
@@ -923,7 +923,7 @@ int main(int argc, char *argv[]) {
 			ANSIDumpWriter dumpWriter;
 			slkc::Decompiler decompiler;
 
-			// decompiler.dumpCfg = true;
+			decompiler.dumpCfg = true;
 
 			if (!decompiler.decompileModule(peff::getDefaultAlloc(), &dumpWriter, modObj.get())) {
 				puts("Error dumping compiled module!");

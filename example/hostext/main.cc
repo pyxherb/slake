@@ -252,9 +252,6 @@ int main(int argc, char **argv) {
 					std::terminate();
 				}
 
-				for (auto i : modObjectHostext->getMembers()) {
-					printf("%s: %p\n", i.first.data(), i.second);
-				}
 				modObjectExtfns = (ModuleObject *)modObjectHostext->getMember("extfns").getObjectRef();
 				if ((!modObjectExtfns) || (modObjectExtfns->getName() != "extfns"))
 					std::terminate();

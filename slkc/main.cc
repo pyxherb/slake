@@ -440,7 +440,7 @@ void dumpCompilationError(peff::SharedPtr<slkc::Parser> parser, const slkc::Comp
 		case slkc::CompilationErrorKind::MismatchedGenericArgNumber:
 			printf("Mismatched generic argument number\n");
 			break;
-		case slkc::CompilationErrorKind::DoesNotReferToATypeName:
+		case slkc::CompilationErrorKind::ExpectingTypeName:
 			printf("Expecting a type name\n");
 			break;
 		case slkc::CompilationErrorKind::ExpectingClassName:

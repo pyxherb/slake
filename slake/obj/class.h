@@ -190,6 +190,8 @@ namespace slake {
 
 	class UnionEnumItemObject : public BasicModuleObject {
 	public:
+		ObjectLayout *cachedObjectLayout = nullptr;
+
 		SLAKE_API UnionEnumItemObject(Runtime *rt, peff::Alloc *selfAllocator);
 		SLAKE_API UnionEnumItemObject(Duplicator *duplicator, const UnionEnumItemObject &x, peff::Alloc *allocator, bool &succeededOut);
 		SLAKE_API virtual ~UnionEnumItemObject();
@@ -210,6 +212,8 @@ namespace slake {
 
 		GenericParamList genericParams;
 		peff::HashMap<std::string_view, size_t> mappedGenericParams;
+
+		size_t cachedMaxSize = 0, cachedMaxAlign = 0;
 
 		SLAKE_API UnionEnumObject(Runtime *rt, peff::Alloc *selfAllocator);
 		SLAKE_API UnionEnumObject(Duplicator *duplicator, const UnionEnumObject &x, peff::Alloc *allocator, bool &succeededOut);

@@ -411,11 +411,17 @@ namespace slake {
 		SLAKE_API void gc();
 
 		[[nodiscard]] SLAKE_API InternalExceptionPointer initMethodTableForClass(ClassObject *cls, ClassObject *parentClass);
+
 		[[nodiscard]] SLAKE_API InternalExceptionPointer initObjectLayoutForModule(BasicModuleObject *mod, ObjectLayout *objectLayout);
 		[[nodiscard]] SLAKE_API InternalExceptionPointer initObjectLayoutForClass(ClassObject *cls, ClassObject *parentClass);
 		[[nodiscard]] SLAKE_API InternalExceptionPointer initObjectLayoutForStruct(StructObject *s);
+		[[nodiscard]] SLAKE_API InternalExceptionPointer initObjectLayoutForUnionEnumItem(UnionEnumItemObject *s);
+
 		[[nodiscard]] SLAKE_API InternalExceptionPointer prepareClassForInstantiation(ClassObject *cls);
 		[[nodiscard]] SLAKE_API InternalExceptionPointer prepareStructForInstantiation(StructObject *cls);
+		[[nodiscard]] SLAKE_API InternalExceptionPointer prepareUnionEnumForInstantiation(UnionEnumObject *cls);
+		[[nodiscard]] SLAKE_API InternalExceptionPointer prepareUnionEnumItemForInstantiation(UnionEnumItemObject *cls);
+
 		SLAKE_API HostObjectRef<InstanceObject> newClassInstance(ClassObject *cls, NewClassInstanceFlags flags);
 		SLAKE_API HostObjectRef<ArrayObject> newArrayInstance(Runtime *rt, const TypeRef &type, size_t length);
 

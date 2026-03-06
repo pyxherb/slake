@@ -416,6 +416,7 @@ SLKC_API peff::Option<CompilationError> slkc::dumpModuleMembers(
 	peff::DynArray<slake::FnObject *> collectedFns(allocator);
 	peff::DynArray<slake::StructObject *> collectedStructs(allocator);
 	peff::DynArray<slake::ScopedEnumObject *> collectedScopedEnums(allocator);
+	peff::DynArray<slake::UnionEnumObject *> collectedUnionEnums(allocator);
 
 	for (auto [k, v] : mod->getMembers()) {
 		switch (v->getObjectKind()) {
@@ -439,6 +440,12 @@ SLKC_API peff::Option<CompilationError> slkc::dumpModuleMembers(
 			}
 			case slake::ObjectKind::ScopedEnum: {
 				if (!collectedScopedEnums.pushBack((slake::ScopedEnumObject *)v)) {
+					return genOutOfMemoryCompError();
+				}
+				break;
+			}
+			case slake::ObjectKind::UnionEnum: {
+				if (!collectedUnionEnums.pushBack((slake::UnionEnumObject *)v)) {
 					return genOutOfMemoryCompError();
 				}
 				break;
@@ -562,7 +569,7 @@ SLKC_API peff::Option<CompilationError> slkc::dumpModuleMembers(
 
 		SLKC_RETURN_IF_COMP_ERROR(writer->writeU32(i->getNumberOfFields()));
 
-		if(i->baseType != slake::TypeId::Invalid) {
+		if (i->baseType != slake::TypeId::Invalid) {
 			SLKC_RETURN_IF_COMP_ERROR(dumpTypeName(allocator, writer, i->baseType));
 
 			size_t j = 0;
@@ -585,6 +592,45 @@ SLKC_API peff::Option<CompilationError> slkc::dumpModuleMembers(
 				SLKC_RETURN_IF_COMP_ERROR(writer->write((char *)&eid, sizeof(eid)));
 				SLKC_RETURN_IF_COMP_ERROR(writer->write(record.name.data(), record.name.size()));
 				++j;
+			}
+		}
+	}
+
+	SLKC_RETURN_IF_COMP_ERROR(writer->writeU32(collectedUnionEnums.size()));
+	for (auto i : collectedUnionEnums) {
+		slake::slxfmt::UnionEnumTypeDesc desc = {};
+
+		slake::AccessModifier accessModifier = i->getAccess();
+		if (accessModifier & slake::ACCESS_PUBLIC) {
+			desc.flags |= slake::slxfmt::UETD_PUB;
+		}
+		desc.nGenericParams = i->genericParams.size();
+		desc.lenName = i->getName().size();
+
+		SLKC_RETURN_IF_COMP_ERROR(writer->write((char *)&desc, sizeof(desc)));
+
+		SLKC_RETURN_IF_COMP_ERROR(writer->write(i->getName().data(), i->getName().size()));
+
+		for (auto &j : i->genericParams) {
+			SLKC_RETURN_IF_COMP_ERROR(dumpGenericParam(allocator, writer, j));
+		}
+
+		assert(i->getMembers().size() <= UINT32_MAX);
+		SLKC_RETURN_IF_COMP_ERROR(writer->writeU32((uint32_t)i->getMembers().size()));
+
+		for (auto j : i->getMembers()) {
+			SLKC_RETURN_IF_COMP_ERROR(writer->writeU32((uint32_t)j.first.size()));
+			SLKC_RETURN_IF_COMP_ERROR(writer->write(j.first.data(), j.first.size()));
+
+			assert(j.second->getObjectKind() == slake::ObjectKind::UnionEnumItem);
+
+			slake::UnionEnumItemObject *uei = (slake::UnionEnumItemObject *)j.second;
+			SLKC_RETURN_IF_COMP_ERROR(writer->writeU32((uint32_t)uei->getFieldRecords().size()));
+			for (const auto &k : uei->getFieldRecords()) {
+				SLKC_RETURN_IF_COMP_ERROR(writer->writeU32((uint32_t)k.name.size()));
+				SLKC_RETURN_IF_COMP_ERROR(writer->write(k.name.data(), k.name.size()));
+
+				SLKC_RETURN_IF_COMP_ERROR(dumpTypeName(allocator, writer, k.type));
 			}
 		}
 	}

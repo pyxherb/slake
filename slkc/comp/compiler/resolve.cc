@@ -94,6 +94,15 @@ SLKC_API peff::Option<CompilationError> slkc::resolveStaticMember(
 
 			break;
 		}
+		case AstNodeType::UnionEnum: {
+			AstNodePtr<UnionEnumNode> cls = memberNode.castTo<UnionEnumNode>();
+
+			if (auto it = cls->memberIndices.find(name.name); it != cls->memberIndices.end()) {
+				result = cls->members.at(it.value());
+			}
+
+			break;
+		}
 		default:
 			result = {};
 	}
@@ -219,6 +228,24 @@ SLKC_API peff::Option<CompilationError> slkc::resolveInstanceMember(
 		}
 		case AstNodeType::Struct: {
 			AstNodePtr<StructNode> m = memberNode.castTo<StructNode>();
+
+			if (auto it = m->memberIndices.find(name.name); it != m->memberIndices.end()) {
+				result = m->members.at(it.value());
+			}
+
+			break;
+		}
+		case AstNodeType::UnionEnumItem: {
+			AstNodePtr<UnionEnumItemNode> m = memberNode.castTo<UnionEnumItemNode>();
+
+			if (auto it = m->memberIndices.find(name.name); it != m->memberIndices.end()) {
+				result = m->members.at(it.value());
+			}
+
+			break;
+		}
+		case AstNodeType::UnionEnum: {
+			AstNodePtr<UnionEnumNode> m = memberNode.castTo<UnionEnumNode>();
 
 			if (auto it = m->memberIndices.find(name.name); it != m->memberIndices.end()) {
 				result = m->members.at(it.value());
@@ -548,6 +575,19 @@ SLKC_API peff::Option<CompilationError> slkc::resolveIdRefWithScopeNode(
 					}
 					break;
 				}
+				case AstNodeType::UnionEnum: {
+					AstNodePtr<UnionEnumNode> m = curScope.castTo<UnionEnumNode>();
+
+					if (auto it = m->genericParamIndices.find(initialEntry.name); it != m->genericParamIndices.end()) {
+						memberOut = m->genericParams.at(it.value()).castTo<MemberNode>();
+						return {};
+					}
+					if (m->parent) {
+						curScope = m->parent->sharedFromThis().castTo<MemberNode>();
+						goto reresolveWithNewScope;
+					}
+					break;
+				}
 				case AstNodeType::FnOverloading: {
 					AstNodePtr<FnOverloadingNode> m = curScope.castTo<FnOverloadingNode>();
 
@@ -667,31 +707,9 @@ SLKC_API peff::Option<CompilationError> slkc::resolveIdRefWithScopeNode(
 				}
 				break;
 			}
-			case AstNodeType::Struct: {
-				AstNodePtr<StructNode> m = resolveScope.castTo<StructNode>();
-
-				if (!walkedNodes.insert(m.castTo<MemberNode>())) {
-					return genOutOfMemoryCompError();
-				}
-
-				if (m->parent && (!isSealed)) {
-					AstNodePtr<MemberNode> p = m->parent->sharedFromThis().castTo<MemberNode>();
-
-					switch (p->getAstNodeType()) {
-						case AstNodeType::Class:
-						case AstNodeType::Interface:
-						case AstNodeType::Struct:
-						case AstNodeType::Module:
-							SLKC_RETURN_IF_COMP_ERROR(resolveIdRefWithScopeNode(compileEnv, document, walkedNodes, p, idRef, nEntries, memberOut, resolvedPartListOut, isStatic));
-
-							if (memberOut) {
-								return {};
-							}
-							break;
-					}
-				}
-				break;
-			}
+			case AstNodeType::Struct:
+			case AstNodeType::UnionEnum:
+			case AstNodeType::UnionEnumItem:
 			case AstNodeType::Module: {
 				AstNodePtr<ModuleNode> m = resolveScope.castTo<ModuleNode>();
 
@@ -699,7 +717,7 @@ SLKC_API peff::Option<CompilationError> slkc::resolveIdRefWithScopeNode(
 					return genOutOfMemoryCompError();
 				}
 
-				if (m->parent) {
+				if (m->parent && (!isSealed)) {
 					AstNodePtr<MemberNode> p = m->parent->sharedFromThis().castTo<MemberNode>();
 
 					switch (p->getAstNodeType()) {

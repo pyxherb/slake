@@ -504,6 +504,16 @@ SLAKE_FORCEINLINE InternalExceptionPointer slake::Runtime::_addLocalVar(Context 
 			SLAKE_RETURN_IF_EXCEPT(prepareStructForInstantiation((StructObject *)type.getCustomTypeDef()->typeObject));
 			break;
 		}
+		case TypeId::UnionEnum: {
+			assert(type.getCustomTypeDef()->typeObject->getObjectKind() == ObjectKind::UnionEnum);
+			SLAKE_RETURN_IF_EXCEPT(prepareUnionEnumForInstantiation((UnionEnumObject *)type.getCustomTypeDef()->typeObject));
+			break;
+		}
+		case TypeId::UnionEnumItem: {
+			assert(type.getCustomTypeDef()->typeObject->getObjectKind() == ObjectKind::UnionEnumItem);
+			SLAKE_RETURN_IF_EXCEPT(prepareUnionEnumItemForInstantiation((UnionEnumItemObject *)type.getCustomTypeDef()->typeObject));
+			break;
+		}
 		default:
 			break;
 	}
@@ -545,7 +555,23 @@ SLAKE_FORCEINLINE InternalExceptionPointer slake::Runtime::_addLocalVar(Context 
 			*typeInfo = type.typeDef;
 			break;
 		}
-		case TypeId::StructInstance: {
+		case TypeId::ScopedEnum: {
+			TypeDefObject **typeInfo = (TypeDefObject **)context->stackAlloc(sizeof(void *));
+			if (!typeInfo)
+				return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
+			memcpy(typeInfo, &type.typeDef, sizeof(void *));
+			break;
+		}
+		case TypeId::TypelessScopedEnum: {
+			TypeDefObject **typeInfo = (TypeDefObject **)context->stackAlloc(sizeof(void *));
+			if (!typeInfo)
+				return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
+			memcpy(typeInfo, &type.typeDef, sizeof(void *));
+			break;
+		}
+		case TypeId::StructInstance:
+		case TypeId::UnionEnum:
+		case TypeId::UnionEnumItem: {
 			TypeDefObject **typeInfo = (TypeDefObject **)context->stackAlloc(sizeof(void *));
 			if (!typeInfo)
 				return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));

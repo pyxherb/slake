@@ -88,7 +88,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileTypeName(
 			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(compileEnv, doc, t, m));
 
 			if (!m) {
-				return CompilationError(typeName->tokenRange, CompilationErrorKind::DoesNotReferToATypeName);
+				return CompilationError(typeName->tokenRange, CompilationErrorKind::ExpectingTypeName);
 			}
 
 			switch (m->getAstNodeType()) {
@@ -241,7 +241,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileTypeName(
 					break;
 				}
 				default:
-					return CompilationError(typeName->tokenRange, CompilationErrorKind::DoesNotReferToATypeName);
+					return CompilationError(typeName->tokenRange, CompilationErrorKind::ExpectingTypeName);
 			}
 
 			break;

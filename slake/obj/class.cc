@@ -932,7 +932,11 @@ SLAKE_API void UnionEnumObject::dealloc() {
 }
 
 SLAKE_API void UnionEnumObject::replaceAllocator(peff::Alloc *allocator) noexcept {
-	this->MemberObject::replaceAllocator(allocator);
+	this->BasicModuleObject::replaceAllocator(allocator);
 
-	members.replaceAllocator(allocator);
+	genericArgs.replaceAllocator(allocator);
+	mappedGenericArgs.replaceAllocator(allocator);
+
+	genericParams.replaceAllocator(allocator);
+	mappedGenericParams.replaceAllocator(allocator);
 }

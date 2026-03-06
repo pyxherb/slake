@@ -11,6 +11,8 @@ SLAKE_API LoaderContext::LoaderContext(peff::Alloc *allocator)
 	  loadedStructs(allocator),
 	  loadedClasses(allocator),
 	  loadedScopedEnums(allocator),
+	  loadedUnionEnums(allocator),
+	  loadedUnionEnumItems(allocator),
 	  loadedFns(allocator),
 	  loadedModules(allocator),
 	  initVarData(allocator),
@@ -144,6 +146,94 @@ SLAKE_API InternalExceptionPointer loader::loadType(LoaderContext &context, Runt
 				typeOut = TypeRef(TypeId::StructInstance, td);
 			} else {
 				typeOut = TypeRef(TypeId::StructInstance, typeDef.get());
+				if (!context.loadedCustomTypeDefs.insert(typeDef.get()))
+					return OutOfMemoryError::alloc();
+				SLAKE_RETURN_IF_EXCEPT(runtime->registerTypeDef(typeDef.get()));
+			}
+			break;
+		}
+		case slake::slxfmt::TypeId::ScopedEnum: {
+			HostObjectRef<CustomTypeDefObject> typeDef;
+
+			if (!(typeDef = CustomTypeDefObject::alloc(runtime))) {
+				return OutOfMemoryError::alloc();
+			}
+			HostObjectRef<IdRefObject> idRef;
+
+			SLAKE_RETURN_IF_EXCEPT(loadIdRef(context, runtime, reader, member, idRef));
+
+			typeDef->typeObject = idRef.get();
+
+			if (auto td = runtime->getEqualTypeDef(typeDef.get()); td) {
+				typeOut = TypeRef(TypeId::ScopedEnum, td);
+			} else {
+				typeOut = TypeRef(TypeId::ScopedEnum, typeDef.get());
+				if (!context.loadedCustomTypeDefs.insert(typeDef.get()))
+					return OutOfMemoryError::alloc();
+				SLAKE_RETURN_IF_EXCEPT(runtime->registerTypeDef(typeDef.get()));
+			}
+			break;
+		}
+		case slake::slxfmt::TypeId::TypelessScopedEnum: {
+			HostObjectRef<CustomTypeDefObject> typeDef;
+
+			if (!(typeDef = CustomTypeDefObject::alloc(runtime))) {
+				return OutOfMemoryError::alloc();
+			}
+			HostObjectRef<IdRefObject> idRef;
+
+			SLAKE_RETURN_IF_EXCEPT(loadIdRef(context, runtime, reader, member, idRef));
+
+			typeDef->typeObject = idRef.get();
+
+			if (auto td = runtime->getEqualTypeDef(typeDef.get()); td) {
+				typeOut = TypeRef(TypeId::TypelessScopedEnum, td);
+			} else {
+				typeOut = TypeRef(TypeId::TypelessScopedEnum, typeDef.get());
+				if (!context.loadedCustomTypeDefs.insert(typeDef.get()))
+					return OutOfMemoryError::alloc();
+				SLAKE_RETURN_IF_EXCEPT(runtime->registerTypeDef(typeDef.get()));
+			}
+			break;
+		}
+		case slake::slxfmt::TypeId::UnionEnum: {
+			HostObjectRef<CustomTypeDefObject> typeDef;
+
+			if (!(typeDef = CustomTypeDefObject::alloc(runtime))) {
+				return OutOfMemoryError::alloc();
+			}
+			HostObjectRef<IdRefObject> idRef;
+
+			SLAKE_RETURN_IF_EXCEPT(loadIdRef(context, runtime, reader, member, idRef));
+
+			typeDef->typeObject = idRef.get();
+
+			if (auto td = runtime->getEqualTypeDef(typeDef.get()); td) {
+				typeOut = TypeRef(TypeId::UnionEnum, td);
+			} else {
+				typeOut = TypeRef(TypeId::UnionEnum, typeDef.get());
+				if (!context.loadedCustomTypeDefs.insert(typeDef.get()))
+					return OutOfMemoryError::alloc();
+				SLAKE_RETURN_IF_EXCEPT(runtime->registerTypeDef(typeDef.get()));
+			}
+			break;
+		}
+		case slake::slxfmt::TypeId::UnionEnumItem: {
+			HostObjectRef<CustomTypeDefObject> typeDef;
+
+			if (!(typeDef = CustomTypeDefObject::alloc(runtime))) {
+				return OutOfMemoryError::alloc();
+			}
+			HostObjectRef<IdRefObject> idRef;
+
+			SLAKE_RETURN_IF_EXCEPT(loadIdRef(context, runtime, reader, member, idRef));
+
+			typeDef->typeObject = idRef.get();
+
+			if (auto td = runtime->getEqualTypeDef(typeDef.get()); td) {
+				typeOut = TypeRef(TypeId::UnionEnumItem, td);
+			} else {
+				typeOut = TypeRef(TypeId::UnionEnumItem, typeDef.get());
 				if (!context.loadedCustomTypeDefs.insert(typeDef.get()))
 					return OutOfMemoryError::alloc();
 				SLAKE_RETURN_IF_EXCEPT(runtime->registerTypeDef(typeDef.get()));
@@ -598,8 +688,6 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(LoaderContext &cont
 				return OutOfMemoryError::alloc();
 			}
 
-			clsObject->setParent(moduleObject);
-
 			if (!moduleObject->addMember(clsObject.get())) {
 				return OutOfMemoryError::alloc();
 			}
@@ -657,8 +745,6 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(LoaderContext &cont
 				return OutOfMemoryError::alloc();
 			}
 
-			interfaceObject->setParent(moduleObject);
-
 			if (!moduleObject->addMember(interfaceObject.get())) {
 				return OutOfMemoryError::alloc();
 			}
@@ -708,8 +794,6 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(LoaderContext &cont
 			if (!context.loadedStructs.insert(structObject.get())) {
 				return OutOfMemoryError::alloc();
 			}
-
-			structObject->setParent(moduleObject);
 
 			if (!moduleObject->addMember(structObject.get())) {
 				return OutOfMemoryError::alloc();
@@ -802,7 +886,90 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(LoaderContext &cont
 				return OutOfMemoryError::alloc();
 			}
 
-			enumObject->setParent(moduleObject);
+			if (!moduleObject->addMember(enumObject.get())) {
+				return OutOfMemoryError::alloc();
+			}
+		}
+	}
+
+	{
+		uint32_t nUnionEnums;
+
+		SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->readU32(nUnionEnums)));
+		for (size_t i = 0; i < nUnionEnums; ++i) {
+			slake::slxfmt::UnionEnumTypeDesc desc;
+
+			SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read((char *)&desc, sizeof(desc))));
+
+			HostObjectRef<UnionEnumObject> enumObject;
+
+			if (!(enumObject = UnionEnumObject::alloc(runtime))) {
+				return OutOfMemoryError::alloc();
+			}
+
+			AccessModifier access = 0;
+
+			if (desc.flags & slxfmt::UETD_PUB) {
+				access |= ACCESS_PUBLIC;
+			}
+
+			if (!enumObject->resizeName(desc.lenName)) {
+				return OutOfMemoryError::alloc();
+			}
+			SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read(enumObject->getNameRawPtr(), desc.lenName)));
+
+			// TODO: Implement it.
+			uint32_t nItems;
+			SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->readU32(nItems)));
+			for (uint32_t j = 0; j < nItems; ++j) {
+				HostObjectRef<UnionEnumItemObject> itemObject;
+
+				if (!(itemObject = UnionEnumItemObject::alloc(runtime))) {
+					return OutOfMemoryError::alloc();
+				}
+
+				uint32_t lenItemName;
+				SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->readU32(lenItemName)));
+
+				if (!itemObject->resizeName(lenItemName)) {
+					return OutOfMemoryError::alloc();
+				}
+
+				SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read(itemObject->getNameRawPtr(), lenItemName)));
+
+				uint32_t nFields;
+
+				SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->readU32(nFields)));
+				for (uint32_t k = 0; k < nFields; ++k) {
+					uint32_t lenFieldName;
+					SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->readU32(lenFieldName)));
+
+					FieldRecord fr(moduleObject->selfAllocator.get());
+
+					if (!fr.name.resize(lenFieldName)) {
+						return OutOfMemoryError::alloc();
+					}
+					SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read(fr.name.data(), lenFieldName)));
+
+					SLAKE_RETURN_IF_EXCEPT(loadType(context, runtime, reader, enumObject.get(), fr.type));
+
+					if (!itemObject->appendFieldRecordWithoutAlloc(std::move(fr))) {
+						return OutOfMemoryError::alloc();
+					}
+				}
+
+				if (!context.loadedUnionEnumItems.insert(itemObject.get())) {
+					return OutOfMemoryError::alloc();
+				}
+
+				if (!enumObject->addMember(itemObject.get())) {
+					return OutOfMemoryError::alloc();
+				}
+			}
+
+			if (!context.loadedUnionEnums.insert(enumObject.get())) {
+				return OutOfMemoryError::alloc();
+			}
 
 			if (!moduleObject->addMember(enumObject.get())) {
 				return OutOfMemoryError::alloc();
@@ -933,8 +1100,6 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(LoaderContext &cont
 
 			if (!context.loadedFns.insert(fnObject.get()))
 				return OutOfMemoryError::alloc();
-
-			fnObject->setParent(moduleObject);
 
 			if (!moduleObject->addMember(fnObject.get())) {
 				return OutOfMemoryError::alloc();
@@ -1160,6 +1325,15 @@ loadDependencies:
 	for (auto i : context.loadedClasses) {
 		if (!i->reallocFieldSpaces())
 			return OutOfMemoryError::alloc();
+	}
+
+	for (auto i : context.loadedUnionEnumItems) {
+		if (!i->reallocFieldSpaces())
+			return OutOfMemoryError::alloc();
+	}
+
+	for (auto i : context.loadedUnionEnums) {
+		// ...
 	}
 
 	for (auto i : context.loadedModules) {

@@ -346,6 +346,44 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 
 					break;
 				}
+				case ObjectKind::UnionEnum: {
+					UnionEnumObject *value = (UnionEnumObject *)v;
+
+					for (auto i = value->members.begin(); i != value->members.end(); ++i) {
+						context->pushObject(i.value());
+					}
+					context->pushObject(value->getParent());
+
+					for (auto &i : value->genericParams) {
+						// i.baseType.loadDeferredType(this);
+						_gcWalk(context, i.baseType);
+						for (auto &j : i.interfaces) {
+							// j.loadDeferredType(this);
+							_gcWalk(context, j);
+						}
+					}
+					for (auto &i : value->genericArgs) {
+						// i.loadDeferredType(this);
+						_gcWalk(context, i);
+					}
+
+					_gcWalk(context, value->genericParams);
+
+					break;
+				}
+				case ObjectKind::UnionEnumItem: {
+					UnionEnumItemObject *value = (UnionEnumItemObject *)v;
+
+					context->pushObject(value->getParent());
+
+					Value data;
+					for (size_t i = 0; i < value->fieldRecords.size(); ++i) {
+						_gcWalk(context, value->fieldRecords.at(i).type);
+						readVar(StaticFieldRef(value, i), data);
+						_gcWalk(context, data);
+					}
+					break;
+				}
 				case ObjectKind::Interface: {
 					// TODO: Walk generic parameters.
 					for (auto i = ((InterfaceObject *)v)->members.begin(); i != ((InterfaceObject *)v)->members.end(); ++i) {

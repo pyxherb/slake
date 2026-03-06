@@ -30,7 +30,6 @@ namespace slkc {
 		OperatorNotFound,
 		AmbiguousOperatorCall,
 		MismatchedGenericArgNumber,
-		DoesNotReferToATypeName,
 		ExpectingTypeName,
 		ExpectingClassName,
 		ExpectingInterfaceName,

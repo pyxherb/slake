@@ -169,8 +169,7 @@ namespace slake {
 			uint32_t lenName;
 		};
 		constexpr static uint8_t
-			UETD_PUB = 0x01,  // Public
-			UETD_BASE = 0x80;
+			UETD_PUB = 0x01;
 
 		/// @brief Function Descriptor (FND)
 		struct FnDesc final {

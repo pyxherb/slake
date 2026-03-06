@@ -49,9 +49,6 @@ namespace slake {
 		/// @brief Stack frame pointer exceeds the frame boundary (usually an underflow).
 		FrameBoundaryExceeded,
 
-		/// @brief Invalid local variable index.
-		InvalidLocalVarIndex,
-
 		/// @brief Invalid argument index.
 		InvalidArgumentIndex,
 
@@ -67,8 +64,13 @@ namespace slake {
 		/// @breif Malformed class structure.
 		MalformedClassStructure,
 
-		/// @brief An error occurred during the generic instantiation of a member.
-		GenericInstantiationError,
+		MismatchedGenericArgumentNumber,
+
+		GenericParameterNotFound,
+
+		GenericArgTypeError,
+
+		DuplicatedOverloadingError,
 	};
 
 	enum class LoaderErrorCode : uint8_t {
@@ -254,23 +256,6 @@ namespace slake {
 		SLAKE_API static MalformedClassStructureError *alloc(
 			peff::Alloc *selfAllocator,
 			ClassObject *classObject);
-	};
-
-	enum class GenericInstantiationErrorCode : uint8_t {
-		MismatchedGenericArgumentNumber = 0,
-		GenericParameterNotFound,
-		GenericArgTypeError,
-		DuplicatedOverloadingError,
-	};
-
-	class GenericInstantiationError : public RuntimeExecError {
-	public:
-		GenericInstantiationErrorCode instantiationErrorCode;
-
-		SLAKE_API GenericInstantiationError(
-			peff::Alloc *selfAllocator,
-			GenericInstantiationErrorCode instantiationErrorCode);
-		SLAKE_API virtual ~GenericInstantiationError();
 	};
 
 	class MismatchedGenericArgumentNumberError : public RuntimeExecError {

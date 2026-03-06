@@ -75,7 +75,7 @@ SLAKE_API bool CountablePoolAlloc::isReplaceable(const peff::Alloc *rhs) const n
 SLAKE_API size_t GenerationalPoolAlloc::incRef(size_t globalRc) noexcept {
 	++refCount;
 
-	//if (globalRc == 1868)
+	// if (globalRc == 1868)
 	//	puts("");
 #ifndef NDEBUG
 	#if SLAKE_DEBUG_ALLOCATOR
@@ -205,8 +205,32 @@ SLAKE_API size_t Runtime::sizeofType(const TypeRef &type) {
 
 			return so->cachedObjectLayout->totalSize + (type.typeModifier & TYPE_NULLABLE ? 1 : 0);
 		}
+		case TypeId::ScopedEnum:{
+			assert(type.getCustomTypeDef()->typeObject->getObjectKind() == ObjectKind::ScopedEnum);
+			auto so = static_cast<ScopedEnumObject *>(type.getCustomTypeDef()->typeObject);
+
+			return sizeofType(so->baseType) + (type.typeModifier & TYPE_NULLABLE ? 1 : 0);
+		}
 		case TypeId::TypelessScopedEnum:
 			return sizeof(uint32_t) + (type.typeModifier & TYPE_NULLABLE ? 1 : 0);
+		case TypeId::UnionEnum: {
+			assert(type.getCustomTypeDef()->typeObject->getObjectKind() == ObjectKind::UnionEnum);
+			auto so = static_cast<UnionEnumObject *>(type.getCustomTypeDef()->typeObject);
+
+			if (!so->cachedMaxSize)
+				std::terminate();
+
+			return so->cachedMaxSize + (type.typeModifier & TYPE_NULLABLE ? 1 : 0);
+		}
+		case TypeId::UnionEnumItem: {
+			assert(type.getCustomTypeDef()->typeObject->getObjectKind() == ObjectKind::UnionEnumItem);
+			auto so = static_cast<UnionEnumItemObject *>(type.getCustomTypeDef()->typeObject);
+
+			if (!so->cachedObjectLayout)
+				std::terminate();
+
+			return so->cachedObjectLayout->totalSize + (type.typeModifier & TYPE_NULLABLE ? 1 : 0);
+		}
 		case TypeId::Array:
 			return sizeof(void *);
 		case TypeId::Any:
@@ -254,8 +278,32 @@ SLAKE_API size_t Runtime::alignofType(const TypeRef &type) {
 
 			return so->cachedObjectLayout->alignment;
 		}
+		case TypeId::ScopedEnum:{
+			assert(type.getCustomTypeDef()->typeObject->getObjectKind() == ObjectKind::ScopedEnum);
+			auto so = static_cast<ScopedEnumObject *>(type.getCustomTypeDef()->typeObject);
+
+			return alignofType(so->baseType);
+		}
 		case TypeId::TypelessScopedEnum:
 			return alignof(uint32_t);
+		case TypeId::UnionEnum: {
+			assert(type.getCustomTypeDef()->typeObject->getObjectKind() == ObjectKind::UnionEnum);
+			auto so = static_cast<UnionEnumObject *>(type.getCustomTypeDef()->typeObject);
+
+			if (!so->cachedMaxAlign)
+				std::terminate();
+
+			return so->cachedMaxAlign;
+		}
+		case TypeId::UnionEnumItem: {
+			assert(type.getCustomTypeDef()->typeObject->getObjectKind() == ObjectKind::UnionEnumItem);
+			auto so = static_cast<UnionEnumItemObject *>(type.getCustomTypeDef()->typeObject);
+
+			if (!so->cachedObjectLayout)
+				std::terminate();
+
+			return so->cachedObjectLayout->alignment;
+		}
 		case TypeId::Array:
 			return alignof(void *);
 		case TypeId::TempRef:
@@ -314,7 +362,7 @@ SLAKE_API InternalExceptionPointer Runtime::loadDeferredCustomTypeDef(CustomType
 	SLAKE_RETURN_IF_EXCEPT(resolveIdRef(idRefObject, entityRef));
 
 	if (!entityRef)
-		std::terminate();
+		return ReferencedMemberNotFoundError::alloc(getFixedAlloc(), idRefObject);
 
 	if (entityRef.kind != ReferenceKind::ObjectRef)
 		std::terminate();
@@ -401,7 +449,7 @@ SLAKE_API bool Runtime::addObject(Object *object) noexcept {
 	return true;
 }
 
-SLAKE_API void Runtime::removeObject(Object* object) noexcept {
+SLAKE_API void Runtime::removeObject(Object *object) noexcept {
 	if (youngObjectList == object) {
 		youngObjectList = object->prevSameGenObject ? object->prevSameGenObject : object->nextSameGenObject;
 	}

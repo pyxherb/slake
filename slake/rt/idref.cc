@@ -34,6 +34,8 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 				case ObjectKind::Class:
 				case ObjectKind::Interface:
 				case ObjectKind::Fn:
+				case ObjectKind::ScopedEnum:
+				case ObjectKind::UnionEnum:
 					if (curName.genericArgs.size()) {
 						peff::NullAlloc nullAlloc;
 						GenericInstantiationContext genericInstantiationContext(&nullAlloc, getFixedAlloc());

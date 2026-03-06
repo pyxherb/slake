@@ -1,5 +1,6 @@
 #include <slake/runtime.h>
 #include <peff/base/scope_guard.h>
+#include <variant>
 
 using namespace slake;
 
@@ -160,6 +161,21 @@ SLAKE_API InternalExceptionPointer Runtime::initObjectLayoutForStruct(StructObje
 	return {};
 }
 
+SLAKE_API InternalExceptionPointer Runtime::initObjectLayoutForUnionEnumItem(UnionEnumItemObject *s) {
+	assert(!s->cachedObjectLayout);
+	std::unique_ptr<ObjectLayout, peff::DeallocableDeleter<ObjectLayout>> objectLayout(ObjectLayout::alloc(s->selfAllocator.get()));
+
+	if (!objectLayout)
+		return OutOfMemoryError::alloc();
+
+	SLAKE_RETURN_IF_EXCEPT(initObjectLayoutForModule(s, objectLayout.get()));
+
+	// cls->cachedFieldInitVars.shrink_to_fit();
+	s->cachedObjectLayout = objectLayout.release();
+
+	return {};
+}
+
 SLAKE_API InternalExceptionPointer Runtime::prepareClassForInstantiation(ClassObject *cls) {
 	peff::List<ClassObject *> unpreparedClasses(getFixedAlloc());
 	{
@@ -200,9 +216,17 @@ SLAKE_API InternalExceptionPointer Runtime::prepareClassForInstantiation(ClassOb
 	return {};
 }
 
+struct FieldsOpStructPreparationFrameExData {
+	size_t index;
+};
+
+struct MembersOpStructPreparationFrameExData {
+	BasicModuleObject::MembersMap::ConstIterator iter;
+};
+
 struct StructPreparationFrame {
 	Object *structObject;
-	size_t index;
+	std::variant<std::monostate, FieldsOpStructPreparationFrameExData, MembersOpStructPreparationFrameExData> exData;
 };
 
 struct StructPreparationContext {
@@ -215,38 +239,108 @@ SLAKE_FORCEINLINE InternalExceptionPointer _prepareStructForInstantiation(Struct
 	while (context.frames.size()) {
 		StructPreparationFrame &curFrame = context.frames.back();
 
+		auto pushFieldRecordCorrespondingTypeObject = [&context](const FieldRecord &curRecord) -> InternalExceptionPointer {
+			TypeRef typeRef = curRecord.type;
+			switch (curRecord.type.typeId) {
+				case TypeId::StructInstance: {
+					CustomTypeDefObject *td = typeRef.getCustomTypeDef();
+					assert(td->typeObject->getObjectKind() == ObjectKind::Struct);
+					if (!context.frames.pushBack(
+							{ (StructObject *)td->typeObject,
+								FieldsOpStructPreparationFrameExData{ 0 } }))
+						return OutOfMemoryError::alloc();
+					break;
+				}
+				case TypeId::UnionEnum: {
+					CustomTypeDefObject *td = typeRef.getCustomTypeDef();
+					assert(td->typeObject->getObjectKind() == ObjectKind::UnionEnum);
+					if (!context.frames.pushBack(
+							{ (UnionEnumObject *)td->typeObject,
+								MembersOpStructPreparationFrameExData{ ((UnionEnumObject *)td->typeObject)->getMembers().beginConst() } }))
+						return OutOfMemoryError::alloc();
+					break;
+				}
+				case TypeId::UnionEnumItem: {
+					CustomTypeDefObject *td = typeRef.getCustomTypeDef();
+					assert(td->typeObject->getObjectKind() == ObjectKind::UnionEnumItem);
+					if (!context.frames.pushBack(
+							{ (UnionEnumItemObject *)td->typeObject,
+								FieldsOpStructPreparationFrameExData{ 0 } }))
+						return OutOfMemoryError::alloc();
+					break;
+				}
+			}
+			return {};
+		};
+
 		switch (curFrame.structObject->getObjectKind()) {
 			case ObjectKind::Struct: {
 				StructObject *structObject = (StructObject *)curFrame.structObject;
+				FieldsOpStructPreparationFrameExData &exData = std::get<FieldsOpStructPreparationFrameExData>(curFrame.exData);
+
 				auto &fieldRecords = structObject->getFieldRecords();
-				if (curFrame.index >= fieldRecords.size()) {
+
+				if (exData.index >= fieldRecords.size()) {
 					if (!structObject->cachedObjectLayout)
 						SLAKE_RETURN_IF_EXCEPT(structObject->associatedRuntime->initObjectLayoutForStruct(structObject));
 					context.frames.popBack();
 					continue;
 				}
 
-				auto &curRecord = fieldRecords.at(curFrame.index);
+				auto &curRecord = fieldRecords.at(exData.index);
 
-				TypeRef typeRef = curRecord.type;
-				switch (curRecord.type.typeId) {
-					case TypeId::StructInstance: {
-						CustomTypeDefObject *td = typeRef.getCustomTypeDef();
-						assert(td->typeObject->getObjectKind() == ObjectKind::Struct);
-						if (!context.frames.pushBack({ (StructObject *)td->typeObject, 0 }))
-							return OutOfMemoryError::alloc();
-						break;
+				SLAKE_RETURN_IF_EXCEPT(pushFieldRecordCorrespondingTypeObject(curRecord));
+
+				++exData.index;
+				break;
+			}
+			case ObjectKind::UnionEnum: {
+				UnionEnumObject *enumObject = (UnionEnumObject *)curFrame.structObject;
+				MembersOpStructPreparationFrameExData &exData = std::get<MembersOpStructPreparationFrameExData>(curFrame.exData);
+				auto &fieldRecords = enumObject->getMembers();
+				if (exData.iter == enumObject->getMembers().endConst()) {
+					// TODO: Find out the maximum alignment and the maximum size.
+					size_t maxAlignment = 0, maxSize = 0;
+					for (auto i : enumObject->getMembers()) {
+						if (i.second->getObjectKind() == ObjectKind::UnionEnumItem) {
+							UnionEnumItemObject *item = (UnionEnumItemObject *)i.second;
+							maxAlignment = (std::max)(item->cachedObjectLayout->alignment, maxAlignment);
+							maxSize = (std::max)(item->cachedObjectLayout->totalSize, maxSize);
+						}
 					}
-					case TypeId::UnionEnum: {
-						CustomTypeDefObject *td = typeRef.getCustomTypeDef();
-						assert(td->typeObject->getObjectKind() == ObjectKind::UnionEnum);
-						if (!context.frames.pushBack({ (UnionEnumObject *)td->typeObject, 0 }))
-							return OutOfMemoryError::alloc();
-						break;
-					}
+					enumObject->cachedMaxAlign = maxAlignment;
+					enumObject->cachedMaxSize = maxSize;
+					context.frames.popBack();
+					continue;
 				}
 
-				++curFrame.index;
+				Object *m = exData.iter.value();
+
+				assert(m->getObjectKind() == ObjectKind::UnionEnumItem);
+
+				if (!context.frames.pushBack({ (UnionEnumItemObject *)m, FieldsOpStructPreparationFrameExData{ 0 } }))
+					return OutOfMemoryError::alloc();
+
+				++exData.iter;
+				break;
+			}
+			case ObjectKind::UnionEnumItem: {
+				UnionEnumItemObject *itemObject = (UnionEnumItemObject *)curFrame.structObject;
+				FieldsOpStructPreparationFrameExData &exData = std::get<FieldsOpStructPreparationFrameExData>(curFrame.exData);
+
+				auto &fieldRecords = itemObject->getFieldRecords();
+				if (exData.index >= fieldRecords.size()) {
+					if (!itemObject->cachedObjectLayout)
+						SLAKE_RETURN_IF_EXCEPT(itemObject->associatedRuntime->initObjectLayoutForUnionEnumItem(itemObject));
+					context.frames.popBack();
+					continue;
+				}
+
+				auto &curRecord = fieldRecords.at(exData.index);
+
+				SLAKE_RETURN_IF_EXCEPT(pushFieldRecordCorrespondingTypeObject(curRecord));
+
+				++exData.index;
 				break;
 			}
 		}
@@ -258,7 +352,29 @@ SLAKE_FORCEINLINE InternalExceptionPointer _prepareStructForInstantiation(Struct
 SLAKE_API InternalExceptionPointer Runtime::prepareStructForInstantiation(StructObject *cls) {
 	StructPreparationContext context(getFixedAlloc());
 
-	if (!context.frames.pushBack({ cls, 0 }))
+	if (!context.frames.pushBack({ cls, FieldsOpStructPreparationFrameExData{ 0 } }))
+		return OutOfMemoryError::alloc();
+
+	SLAKE_RETURN_IF_EXCEPT(_prepareStructForInstantiation(context));
+
+	return {};
+}
+
+SLAKE_API InternalExceptionPointer Runtime::prepareUnionEnumForInstantiation(UnionEnumObject *cls) {
+	StructPreparationContext context(getFixedAlloc());
+
+	if (!context.frames.pushBack({ cls, MembersOpStructPreparationFrameExData{ cls->members.beginConst() } }))
+		return OutOfMemoryError::alloc();
+
+	SLAKE_RETURN_IF_EXCEPT(_prepareStructForInstantiation(context));
+
+	return {};
+}
+
+SLAKE_API InternalExceptionPointer Runtime::prepareUnionEnumItemForInstantiation(UnionEnumItemObject *cls) {
+	StructPreparationContext context(getFixedAlloc());
+
+	if (!context.frames.pushBack({ cls, FieldsOpStructPreparationFrameExData{ 0 } }))
 		return OutOfMemoryError::alloc();
 
 	SLAKE_RETURN_IF_EXCEPT(_prepareStructForInstantiation(context));

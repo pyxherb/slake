@@ -94,23 +94,6 @@ SLAKE_API InvalidOperandsError *InvalidOperandsError::alloc(peff::Alloc *selfAll
 	return peff::allocAndConstruct<InvalidOperandsError>(selfAllocator, sizeof(std::max_align_t), selfAllocator);
 }
 
-SLAKE_API InvalidLocalVarIndexError::InvalidLocalVarIndexError(
-	peff::Alloc *selfAllocator,
-	uint32_t index) : RuntimeExecError(selfAllocator, RuntimeExecErrorCode::InvalidLocalVarIndex), index(index) {}
-SLAKE_API InvalidLocalVarIndexError::~InvalidLocalVarIndexError() {}
-
-SLAKE_API const char *InvalidLocalVarIndexError::what() const {
-	return "Invalid local variable index";
-}
-
-SLAKE_API void InvalidLocalVarIndexError::dealloc() {
-	peff::destroyAndRelease<InvalidLocalVarIndexError>(selfAllocator.get(), this, sizeof(std::max_align_t));
-}
-
-SLAKE_API InvalidLocalVarIndexError *InvalidLocalVarIndexError::alloc(peff::Alloc *selfAllocator, uint32_t index) {
-	return peff::allocAndConstruct<InvalidLocalVarIndexError>(selfAllocator, sizeof(std::max_align_t), selfAllocator, index);
-}
-
 SLAKE_API InvalidArrayIndexError::InvalidArrayIndexError(
 	peff::Alloc *selfAllocator,
 	size_t index) : RuntimeExecError(selfAllocator, RuntimeExecErrorCode::InvalidArrayIndex), index(index) {}
@@ -231,16 +214,6 @@ SLAKE_API MalformedClassStructureError *MalformedClassStructureError::alloc(
 	peff::Alloc *selfAllocator,
 	ClassObject *classObject) {
 	return peff::allocAndConstruct<MalformedClassStructureError>(selfAllocator, sizeof(std::max_align_t), selfAllocator, classObject);
-}
-
-SLAKE_API GenericInstantiationError::GenericInstantiationError(
-	peff::Alloc *selfAllocator,
-	GenericInstantiationErrorCode instantiationErrorCode)
-	: RuntimeExecError(selfAllocator, RuntimeExecErrorCode::GenericInstantiationError),
-	  instantiationErrorCode(instantiationErrorCode) {
-}
-
-SLAKE_API GenericInstantiationError::~GenericInstantiationError() {
 }
 
 SLAKE_API MismatchedGenericArgumentNumberError::MismatchedGenericArgumentNumberError(

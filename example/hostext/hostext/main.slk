@@ -247,7 +247,7 @@ enum ScopedTypedEnum(i32) {
 }
 
 public async main() -> i32 {
-	//let se: UnionEnum, sce: ScopedEnum, scte: ScopedTypedEnum;
+	let ue: UnionEnum, uea: UnionEnum.A, se: ScopedEnum, ste: ScopedTypedEnum;
 	//a() with 123;
 
 	let s: SA;

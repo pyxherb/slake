@@ -15,6 +15,8 @@ namespace slake {
 			peff::Set<ClassObject *> loadedClasses;
 			peff::Set<StructObject *> loadedStructs;
 			peff::Set<ScopedEnumObject *> loadedScopedEnums;
+			peff::Set<UnionEnumObject *> loadedUnionEnums;
+			peff::Set<UnionEnumItemObject *> loadedUnionEnumItems;
 			peff::Set<FnObject *> loadedFns;
 			peff::Set<ModuleObject *> loadedModules;
 			peff::List<std::pair<Reference, Value>> initVarData;

@@ -192,9 +192,697 @@ public:
 	}
 };
 
+class DumpWriter {
+public:
+	SLAKE_API virtual ~DumpWriter() {
+	}
+	[[nodiscard]] virtual bool write(const char *data, size_t len) = 0;
+
+	SLAKE_FORCEINLINE bool write(const std::string_view &s) {
+		return write(s.data(), s.size());
+	}
+};
+
+[[nodiscard]] SLAKE_API bool dumpTypeName(peff::Alloc *allocator, DumpWriter *writer, const slake::TypeRef &type);
+[[nodiscard]] SLAKE_API bool dumpValue(peff::Alloc *allocator, DumpWriter *writer, const slake::Value &value);
+[[nodiscard]] SLAKE_API bool dumpIdRefEntries(peff::Alloc *allocator, DumpWriter *writer, const peff::DynArray<slake::IdRefEntry> &idRefIn);
+[[nodiscard]] SLAKE_API bool dumpIdRef(peff::Alloc *allocator, DumpWriter *writer, slake::IdRefObject *idRefIn);
+
+#define SLAKE_RETURN_IF_FALSE(e) \
+	if (!e) return false
+
+SLAKE_API bool dumpValue(peff::Alloc *allocator, DumpWriter *writer, const slake::Value &value) {
+	switch (value.valueType) {
+		case slake::ValueType::I8: {
+			char s[8];
+			sprintf(s, "%hd", (int16_t)value.getI8());
+			SLAKE_RETURN_IF_FALSE(writer->write(s));
+			break;
+		}
+		case slake::ValueType::I16: {
+			char s[16];
+			sprintf(s, "%hd", (int16_t)value.getI16());
+			SLAKE_RETURN_IF_FALSE(writer->write(s));
+			break;
+		}
+		case slake::ValueType::I32: {
+			char s[32];
+			sprintf(s, "%d", value.getI32());
+			SLAKE_RETURN_IF_FALSE(writer->write(s));
+			break;
+		}
+		case slake::ValueType::I64: {
+			char s[48];
+			sprintf(s, "%lld", value.getI64());
+			SLAKE_RETURN_IF_FALSE(writer->write(s));
+			break;
+		}
+		case slake::ValueType::U8: {
+			char s[4];
+			sprintf(s, "%hu", (uint16_t)value.getU8());
+			SLAKE_RETURN_IF_FALSE(writer->write(s));
+			break;
+		}
+		case slake::ValueType::U16: {
+			char s[8];
+			sprintf(s, "%hu", (uint16_t)value.getU16());
+			SLAKE_RETURN_IF_FALSE(writer->write(s));
+			break;
+		}
+		case slake::ValueType::U32: {
+			char s[16];
+			sprintf(s, "%u", value.getU32());
+			SLAKE_RETURN_IF_FALSE(writer->write(s));
+			break;
+		}
+		case slake::ValueType::U64: {
+			char s[32];
+			sprintf(s, "%llu", value.getU64());
+			SLAKE_RETURN_IF_FALSE(writer->write(s));
+			break;
+		}
+		case slake::ValueType::F32: {
+			char s[16];
+			sprintf(s, "%f", value.getF32());
+			SLAKE_RETURN_IF_FALSE(writer->write(s));
+			break;
+		}
+		case slake::ValueType::F64: {
+			char s[32];
+			sprintf(s, "%f", value.getF64());
+			SLAKE_RETURN_IF_FALSE(writer->write(s));
+			break;
+		}
+		case slake::ValueType::Bool:
+			SLAKE_RETURN_IF_FALSE(writer->write(value.getBool() ? "true" : "false"));
+			break;
+		case slake::ValueType::Reference: {
+			const slake::Reference &er = value.getReference();
+
+			switch (er.kind) {
+				case slake::ReferenceKind::ObjectRef: {
+					slake::Object *obj = er.asObject;
+
+					if (!obj) {
+						SLAKE_RETURN_IF_FALSE(writer->write("null"));
+						break;
+					}
+
+					switch (obj->getObjectKind()) {
+						case slake::ObjectKind::String: {
+							SLAKE_RETURN_IF_FALSE(writer->write("\""));
+
+							slake::StringObject *s = (slake::StringObject *)obj;
+
+							const char *data = s->data.data();
+							size_t len = s->data.size();
+							char c;
+
+							size_t idxCharSinceLastEsc = 0;
+
+							for (size_t i = 0; i < len; ++i) {
+								switch ((c = data[i])) {
+									case '\n':
+									case '\t':
+									case '\v':
+									case '\f':
+									case '\a':
+									case '\b':
+									case '\r':
+									case '"':
+									case '\\':
+										SLAKE_RETURN_IF_FALSE(writer->write(std::string_view(data + idxCharSinceLastEsc, i - idxCharSinceLastEsc)));
+
+										switch (c) {
+											case '\0':
+												SLAKE_RETURN_IF_FALSE(writer->write("\\0"));
+												break;
+											case '\n':
+												SLAKE_RETURN_IF_FALSE(writer->write("\\n"));
+												break;
+											case '\t':
+												SLAKE_RETURN_IF_FALSE(writer->write("\\t"));
+												break;
+											case '\v':
+												SLAKE_RETURN_IF_FALSE(writer->write("\\v"));
+												break;
+											case '\f':
+												SLAKE_RETURN_IF_FALSE(writer->write("\\f"));
+												break;
+											case '\a':
+												SLAKE_RETURN_IF_FALSE(writer->write("\\a"));
+												break;
+											case '\b':
+												SLAKE_RETURN_IF_FALSE(writer->write("\\b"));
+												break;
+											case '\r':
+												SLAKE_RETURN_IF_FALSE(writer->write("\\r"));
+												break;
+											case '"':
+												SLAKE_RETURN_IF_FALSE(writer->write("\\\""));
+												break;
+											case '\\':
+												SLAKE_RETURN_IF_FALSE(writer->write("\\\\"));
+												break;
+										}
+
+										idxCharSinceLastEsc = i + 1;
+										break;
+
+									default:
+
+										break;
+								}
+							}
+
+							if (idxCharSinceLastEsc < len)
+								SLAKE_RETURN_IF_FALSE(writer->write(std::string_view(data + idxCharSinceLastEsc, len - idxCharSinceLastEsc)));
+
+							SLAKE_RETURN_IF_FALSE(writer->write("\""));
+							break;
+						}
+						case slake::ObjectKind::IdRef: {
+							SLAKE_RETURN_IF_FALSE(dumpIdRef(allocator, writer, (slake::IdRefObject *)obj));
+							break;
+						}
+						case slake::ObjectKind::Array: {
+							slake::ArrayObject *a = (slake::ArrayObject *)obj;
+
+							SLAKE_RETURN_IF_FALSE(writer->write("{ "));
+
+							for (size_t i = 0; i < a->length; ++i) {
+								if (i) {
+									SLAKE_RETURN_IF_FALSE(writer->write(", "));
+								}
+
+								slake::Reference rer = slake::ArrayElementRef(a, i);
+								slake::Value data;
+
+								slake::Runtime::readVar(rer, data);
+
+								SLAKE_RETURN_IF_FALSE(dumpValue(allocator, writer, data));
+							}
+
+							SLAKE_RETURN_IF_FALSE(writer->write(" }"));
+						}
+						default:
+							std::terminate();
+					}
+					break;
+				}
+				default:
+					std::terminate();
+			}
+			break;
+		}
+		case slake::ValueType::RegIndex: {
+			char s[32];
+			sprintf(s, "%%%u", value.getRegIndex());
+			SLAKE_RETURN_IF_FALSE(writer->write(s));
+			break;
+		}
+		case slake::ValueType::TypeName: {
+			SLAKE_RETURN_IF_FALSE(dumpTypeName(allocator, writer, value.getTypeName()));
+			break;
+		}
+		default:
+			std::terminate();
+	}
+
+	return true;
+}
+
+SLAKE_API bool dumpIdRefEntries(peff::Alloc *allocator, DumpWriter *writer, const peff::DynArray<slake::IdRefEntry> &idRefIn) {
+	for (size_t i = 0; i < idRefIn.size(); ++i) {
+		if (i) {
+			SLAKE_RETURN_IF_FALSE(writer->write("."));
+		}
+
+		auto &curEntry = idRefIn.at(i);
+
+		SLAKE_RETURN_IF_FALSE(writer->write(curEntry.name));
+
+		if (curEntry.genericArgs.size()) {
+			SLAKE_RETURN_IF_FALSE(writer->write("<"));
+			for (size_t j = 0; j < curEntry.genericArgs.size(); ++j) {
+				if (j) {
+					SLAKE_RETURN_IF_FALSE(writer->write(","));
+				}
+				SLAKE_RETURN_IF_FALSE(dumpValue(allocator, writer, curEntry.genericArgs.at(j)));
+			}
+			SLAKE_RETURN_IF_FALSE(writer->write(">"));
+		}
+	}
+
+	return true;
+}
+
+SLAKE_API bool dumpIdRef(peff::Alloc *allocator, DumpWriter *writer, slake::IdRefObject *idRefIn) {
+	SLAKE_RETURN_IF_FALSE(dumpIdRefEntries(allocator, writer, idRefIn->entries));
+
+	if (idRefIn->paramTypes.hasValue()) {
+		auto &paramTypes = *idRefIn->paramTypes;
+
+		if (paramTypes.size()) {
+			SLAKE_RETURN_IF_FALSE(writer->write("("));
+
+			for (size_t i = 0; i < paramTypes.size(); ++i) {
+				if (i) {
+					SLAKE_RETURN_IF_FALSE(writer->write(", "));
+				}
+
+				SLAKE_RETURN_IF_FALSE(dumpTypeName(allocator, writer, paramTypes.at(i)));
+			}
+
+			if (idRefIn->hasVarArgs) {
+				SLAKE_RETURN_IF_FALSE(writer->write(", ..."));
+			}
+
+			SLAKE_RETURN_IF_FALSE(writer->write(")"));
+		} else {
+			if (idRefIn->hasVarArgs) {
+				SLAKE_RETURN_IF_FALSE(writer->write("(...)"));
+			} else {
+				SLAKE_RETURN_IF_FALSE(writer->write("()"));
+			}
+		}
+	} else {
+		if (idRefIn->hasVarArgs) {
+			SLAKE_RETURN_IF_FALSE(writer->write("(...)"));
+		}
+	}
+
+	if (idRefIn->overridenType) {
+		SLAKE_RETURN_IF_FALSE(writer->write(" override "));
+		SLAKE_RETURN_IF_FALSE(dumpTypeName(allocator, writer, idRefIn->overridenType));
+	}
+
+	return true;
+}
+
+SLAKE_API bool dumpTypeName(peff::Alloc *allocator, DumpWriter *writer, const slake::TypeRef &type) {
+	switch (type.typeId) {
+		case slake::TypeId::Invalid:
+			SLAKE_RETURN_IF_FALSE(writer->write("/* Invalid type */"));
+			break;
+		case slake::TypeId::Void:
+			SLAKE_RETURN_IF_FALSE(writer->write("void"));
+			break;
+		case slake::TypeId::I8:
+			SLAKE_RETURN_IF_FALSE(writer->write("i8"));
+			break;
+		case slake::TypeId::I16:
+			SLAKE_RETURN_IF_FALSE(writer->write("i16"));
+			break;
+		case slake::TypeId::I32:
+			SLAKE_RETURN_IF_FALSE(writer->write("i32"));
+			break;
+		case slake::TypeId::I64:
+			SLAKE_RETURN_IF_FALSE(writer->write("i64"));
+			break;
+		case slake::TypeId::U8:
+			SLAKE_RETURN_IF_FALSE(writer->write("u8"));
+			break;
+		case slake::TypeId::U16:
+			SLAKE_RETURN_IF_FALSE(writer->write("u16"));
+			break;
+		case slake::TypeId::U32:
+			SLAKE_RETURN_IF_FALSE(writer->write("u32"));
+			break;
+		case slake::TypeId::U64:
+			SLAKE_RETURN_IF_FALSE(writer->write("u64"));
+			break;
+		case slake::TypeId::F32:
+			SLAKE_RETURN_IF_FALSE(writer->write("f32"));
+			break;
+		case slake::TypeId::F64:
+			SLAKE_RETURN_IF_FALSE(writer->write("f64"));
+			break;
+		case slake::TypeId::Bool:
+			SLAKE_RETURN_IF_FALSE(writer->write("bool"));
+			break;
+		case slake::TypeId::String:
+			SLAKE_RETURN_IF_FALSE(writer->write("string"));
+			break;
+		case slake::TypeId::Instance: {
+			auto obj = type.getCustomTypeDef();
+
+			slake::Runtime *runtime = obj->associatedRuntime;
+
+			switch (obj->typeObject->getObjectKind()) {
+				case slake::ObjectKind::Class:
+				case slake::ObjectKind::Interface: {
+					SLAKE_RETURN_IF_FALSE(writer->write("@"));
+
+					peff::DynArray<slake::IdRefEntry> moduleFullName(allocator);
+
+					if (!runtime->getFullRef(allocator, (slake::MemberObject *)obj->typeObject, moduleFullName))
+						return false;
+
+					break;
+				}
+				case slake::ObjectKind::IdRef: {
+					SLAKE_RETURN_IF_FALSE(writer->write("@"));
+					SLAKE_RETURN_IF_FALSE(dumpIdRef(allocator, writer, (slake::IdRefObject *)obj->typeObject));
+					break;
+				}
+				default:
+					std::terminate();
+			}
+			break;
+		}
+		case slake::TypeId::StructInstance: {
+			auto obj = type.getCustomTypeDef();
+
+			slake::Runtime *runtime = obj->associatedRuntime;
+
+			switch (obj->typeObject->getObjectKind()) {
+				case slake::ObjectKind::Struct: {
+					SLAKE_RETURN_IF_FALSE(writer->write("struct "));
+
+					peff::DynArray<slake::IdRefEntry> moduleFullName(allocator);
+
+					if (!runtime->getFullRef(allocator, (slake::MemberObject *)obj->typeObject, moduleFullName))
+						return false;
+
+					break;
+				}
+				case slake::ObjectKind::IdRef: {
+					SLAKE_RETURN_IF_FALSE(writer->write("struct "));
+					SLAKE_RETURN_IF_FALSE(dumpIdRef(allocator, writer, (slake::IdRefObject *)obj->typeObject));
+					break;
+				}
+				default:
+					std::terminate();
+			}
+			break;
+		}
+		case slake::TypeId::ScopedEnum: {
+			auto obj = type.getCustomTypeDef();
+
+			slake::Runtime *runtime = obj->associatedRuntime;
+
+			switch (obj->typeObject->getObjectKind()) {
+				case slake::ObjectKind::Struct: {
+					SLAKE_RETURN_IF_FALSE(writer->write("enum base "));
+
+					peff::DynArray<slake::IdRefEntry> moduleFullName(allocator);
+
+					if (!runtime->getFullRef(allocator, (slake::MemberObject *)obj->typeObject, moduleFullName))
+						return false;
+
+					break;
+				}
+				case slake::ObjectKind::IdRef: {
+					SLAKE_RETURN_IF_FALSE(writer->write("enum base "));
+					SLAKE_RETURN_IF_FALSE(dumpIdRef(allocator, writer, (slake::IdRefObject *)obj->typeObject));
+					break;
+				}
+				default:
+					std::terminate();
+			}
+			break;
+		}
+		case slake::TypeId::TypelessScopedEnum: {
+			auto obj = type.getCustomTypeDef();
+
+			slake::Runtime *runtime = obj->associatedRuntime;
+
+			switch (obj->typeObject->getObjectKind()) {
+				case slake::ObjectKind::Struct: {
+					SLAKE_RETURN_IF_FALSE(writer->write("enum "));
+
+					peff::DynArray<slake::IdRefEntry> moduleFullName(allocator);
+
+					if (!runtime->getFullRef(allocator, (slake::MemberObject *)obj->typeObject, moduleFullName))
+						return false;
+
+					break;
+				}
+				case slake::ObjectKind::IdRef: {
+					SLAKE_RETURN_IF_FALSE(writer->write("enum "));
+					SLAKE_RETURN_IF_FALSE(dumpIdRef(allocator, writer, (slake::IdRefObject *)obj->typeObject));
+					break;
+				}
+				default:
+					std::terminate();
+			}
+			break;
+		}
+		case slake::TypeId::UnionEnum: {
+			auto obj = type.getCustomTypeDef();
+
+			slake::Runtime *runtime = obj->associatedRuntime;
+
+			switch (obj->typeObject->getObjectKind()) {
+				case slake::ObjectKind::Struct: {
+					SLAKE_RETURN_IF_FALSE(writer->write("enum union "));
+
+					peff::DynArray<slake::IdRefEntry> moduleFullName(allocator);
+
+					if (!runtime->getFullRef(allocator, (slake::MemberObject *)obj->typeObject, moduleFullName))
+						return false;
+
+					break;
+				}
+				case slake::ObjectKind::IdRef: {
+					SLAKE_RETURN_IF_FALSE(writer->write("enum union "));
+					SLAKE_RETURN_IF_FALSE(dumpIdRef(allocator, writer, (slake::IdRefObject *)obj->typeObject));
+					break;
+				}
+				default:
+					std::terminate();
+			}
+			break;
+		}
+		case slake::TypeId::UnionEnumItem: {
+			auto obj = type.getCustomTypeDef();
+
+			slake::Runtime *runtime = obj->associatedRuntime;
+
+			switch (obj->typeObject->getObjectKind()) {
+				case slake::ObjectKind::Struct: {
+					SLAKE_RETURN_IF_FALSE(writer->write("enum struct "));
+
+					peff::DynArray<slake::IdRefEntry> moduleFullName(allocator);
+
+					if (!runtime->getFullRef(allocator, (slake::MemberObject *)obj->typeObject, moduleFullName))
+						return false;
+
+					break;
+				}
+				case slake::ObjectKind::IdRef: {
+					SLAKE_RETURN_IF_FALSE(writer->write("enum struct "));
+					SLAKE_RETURN_IF_FALSE(dumpIdRef(allocator, writer, (slake::IdRefObject *)obj->typeObject));
+					break;
+				}
+				default:
+					std::terminate();
+			}
+			break;
+		}
+		case slake::TypeId::GenericArg: {
+			auto obj = type.getGenericArgTypeDef();
+
+			slake::Runtime *runtime = obj->associatedRuntime;
+
+			SLAKE_RETURN_IF_FALSE(writer->write("@!"));
+			SLAKE_RETURN_IF_FALSE(writer->write(obj->nameObject->data.data(), obj->nameObject->data.size()));
+			break;
+		}
+		case slake::TypeId::Array: {
+			auto obj = type.getArrayTypeDef();
+
+			slake::Runtime *runtime = obj->associatedRuntime;
+
+			SLAKE_RETURN_IF_FALSE(dumpTypeName(allocator, writer, obj->elementType->typeRef));
+			SLAKE_RETURN_IF_FALSE(writer->write("[]"));
+			break;
+		}
+		case slake::TypeId::Ref: {
+			auto obj = type.getRefTypeDef();
+
+			slake::Runtime *runtime = obj->associatedRuntime;
+
+			SLAKE_RETURN_IF_FALSE(dumpTypeName(allocator, writer, obj->referencedType->typeRef));
+			SLAKE_RETURN_IF_FALSE(writer->write("&"));
+			break;
+		}
+		case slake::TypeId::Fn: {
+			SLAKE_RETURN_IF_FALSE(writer->write("(fn delegate, not implemented yet)"));
+			break;
+		}
+		case slake::TypeId::Any:
+			SLAKE_RETURN_IF_FALSE(writer->write("any"));
+			break;
+		case slake::TypeId::ParamTypeList: {
+			auto obj = type.getParamTypeListTypeDef();
+
+			SLAKE_RETURN_IF_FALSE(writer->write("("));
+
+			for (size_t i = 0; i < obj->paramTypes.size(); ++i) {
+				if (i) {
+					SLAKE_RETURN_IF_FALSE(writer->write(", "));
+				}
+
+				SLAKE_RETURN_IF_FALSE(dumpTypeName(allocator, writer, obj->paramTypes.at(i)->typeRef));
+			}
+
+			SLAKE_RETURN_IF_FALSE(writer->write(")"));
+			break;
+		}
+		case slake::TypeId::Tuple: {
+			auto obj = type.getTupleTypeDef();
+
+			SLAKE_RETURN_IF_FALSE(writer->write("["));
+
+			for (size_t i = 0; i < obj->elementTypes.size(); ++i) {
+				if (i) {
+					SLAKE_RETURN_IF_FALSE(writer->write(", "));
+				}
+
+				SLAKE_RETURN_IF_FALSE(dumpTypeName(allocator, writer, obj->elementTypes.at(i)->typeRef));
+			}
+
+			SLAKE_RETURN_IF_FALSE(writer->write("]"));
+			break;
+		}
+		case slake::TypeId::SIMD: {
+			auto obj = type.getSIMDTypeDef();
+
+			SLAKE_RETURN_IF_FALSE(writer->write("simd_t<"));
+
+			SLAKE_RETURN_IF_FALSE(dumpTypeName(allocator, writer, obj->type->typeRef));
+
+			SLAKE_RETURN_IF_FALSE(writer->write(", "));
+
+			char s[16];
+			sprintf(s, "%u", obj->width);
+			SLAKE_RETURN_IF_FALSE(writer->write(s));
+
+			SLAKE_RETURN_IF_FALSE(writer->write(">"));
+			break;
+		}
+		case slake::TypeId::Unpacking: {
+			auto obj = type.getUnpackingTypeDef();
+			SLAKE_RETURN_IF_FALSE(writer->write("@..."));
+			SLAKE_RETURN_IF_FALSE(dumpTypeName(allocator, writer, obj->type->typeRef));
+			break;
+		}
+		default:
+			std::terminate();
+	}
+
+	if (type.isNullable())
+		SLAKE_RETURN_IF_FALSE(writer->write("?"));
+	return true;
+}
+
+bool dumpExceptionInfo(peff::Alloc *allocator, DumpWriter *writer, slake::InternalException *e) {
+	SLAKE_RETURN_IF_FALSE(writer->write(e->what()));
+	SLAKE_RETURN_IF_FALSE(writer->write("\n"));
+	auto writeDetailsHeader = [writer]() -> bool {
+		SLAKE_RETURN_IF_FALSE(writer->write("Details:\n"));
+		return true;
+	};
+	switch (e->kind) {
+		case ErrorKind::OutOfMemoryError:
+			break;
+		case ErrorKind::RuntimeExecError: {
+			RuntimeExecError *rte = (RuntimeExecError *)e;
+			switch (rte->errorCode) {
+				case slake::RuntimeExecErrorCode::MismatchedVarType: {
+					MismatchedVarTypeError *err = (MismatchedVarTypeError *)rte;
+					SLAKE_RETURN_IF_FALSE(writeDetailsHeader());
+					SLAKE_RETURN_IF_FALSE(writer->write("Mismatched variable type"));
+					break;
+				}
+				case slake::RuntimeExecErrorCode::ReferencedMemberNotFound: {
+					ReferencedMemberNotFoundError *err = (ReferencedMemberNotFoundError *)rte;
+					SLAKE_RETURN_IF_FALSE(writeDetailsHeader());
+					SLAKE_RETURN_IF_FALSE(writer->write("Referenced member not found: "));
+					SLAKE_RETURN_IF_FALSE(dumpIdRef(allocator, writer, err->idRef.get()));
+					break;
+				}
+				case slake::RuntimeExecErrorCode::UncaughtException: {
+					UncaughtExceptionError *err = (UncaughtExceptionError *)rte;
+					SLAKE_RETURN_IF_FALSE(writeDetailsHeader());
+					SLAKE_RETURN_IF_FALSE(writer->write("Uncaught exception: "));
+					SLAKE_RETURN_IF_FALSE(dumpValue(allocator, writer, err->exceptionValue));
+					break;
+				}
+				case slake::RuntimeExecErrorCode::FrameBoundaryExceeded: {
+					FrameBoundaryExceededError *err = (FrameBoundaryExceededError *)rte;
+					SLAKE_RETURN_IF_FALSE(writeDetailsHeader());
+					SLAKE_RETURN_IF_FALSE(writer->write("Frame boundary exceeded"));
+					break;
+				}
+				case slake::RuntimeExecErrorCode::InvalidArgumentNumber: {
+					InvalidArgumentNumberError *err = (InvalidArgumentNumberError *)rte;
+					SLAKE_RETURN_IF_FALSE(writeDetailsHeader());
+					SLAKE_RETURN_IF_FALSE(writer->write("Invalid argument number, "));
+					{
+						char n[13];
+						sprintf(n, "%u", err->nArgs);
+						SLAKE_RETURN_IF_FALSE(writer->write(n));
+					}
+					SLAKE_RETURN_IF_FALSE(writer->write(" arguments does not match"));
+					break;
+				}
+				case slake::RuntimeExecErrorCode::InvalidArrayIndex: {
+					InvalidArrayIndexError *err = (InvalidArrayIndexError *)rte;
+					SLAKE_RETURN_IF_FALSE(writeDetailsHeader());
+					SLAKE_RETURN_IF_FALSE(writer->write("Invalid array index, "));
+					{
+						char n[26];
+						sprintf(n, "%zu", err->index);
+						SLAKE_RETURN_IF_FALSE(writer->write(n));
+					}
+					SLAKE_RETURN_IF_FALSE(writer->write(" is out of index range"));
+					break;
+				}
+				case slake::RuntimeExecErrorCode::StackOverflow: {
+					StackOverflowError *err = (StackOverflowError *)rte;
+					SLAKE_RETURN_IF_FALSE(writeDetailsHeader());
+					SLAKE_RETURN_IF_FALSE(writer->write("Stack overflowed"));
+					break;
+				}
+				case slake::RuntimeExecErrorCode::MalformedClassStructure: {
+					MalformedClassStructureError *err = (MalformedClassStructureError *)rte;
+					SLAKE_RETURN_IF_FALSE(writeDetailsHeader());
+					SLAKE_RETURN_IF_FALSE(writer->write("Malformed class structure"));
+					break;
+				}
+					// TODO: Implement them all.
+			}
+		}
+	}
+
+	puts("");
+
+	return true;
+}
+
+class StdDumpWriter : public DumpWriter {
+public:
+	FILE *stream;
+	StdDumpWriter(FILE *stream) : stream(stream) {
+		assert((stream == stdout) || (stream == stdin) || (stream == stderr));
+	}
+
+	SLAKE_API virtual ~StdDumpWriter() {
+	}
+
+	virtual bool write(const char *src, size_t size) override {
+		fwrite(src, size, 1, stream);
+		return true;
+	}
+};
+
 int main(int argc, char **argv) {
 	util::setupMemoryLeakDetector();
 
+	StdDumpWriter stderrWriter(stderr);
 	{
 		std::unique_ptr<Runtime, peff::DeallocableDeleter<Runtime>> rt = std::unique_ptr<Runtime, peff::DeallocableDeleter<Runtime>>(
 			Runtime::alloc(
@@ -222,7 +910,9 @@ int main(int argc, char **argv) {
 				closeFpGuard.release();
 
 				if (auto e = loader::loadModule(loaderContext, rt.get(), &reader, mod); e) {
-					printf("Error loading main module: %s\n", e->what());
+					printf("Error loading main module:\n");
+					if (!dumpExceptionInfo(peff::getDefaultAlloc(), &stderrWriter, e.get()))
+						abort();
 					e.reset();
 					return -1;
 				}
@@ -327,28 +1017,10 @@ int main(int argc, char **argv) {
 						if (auto e = rt->resumeCoroutine(context.get(), co.get(), result);
 							e) {
 							printf("Internal exception: %s\n", e->what());
-							switch (e->kind) {
-								case ErrorKind::RuntimeExecError: {
-									RuntimeExecError *rte = (RuntimeExecError *)e.get();
-									switch (rte->errorCode) {
-										case slake::RuntimeExecErrorCode::ReferencedMemberNotFound: {
-											ReferencedMemberNotFoundError *err = (ReferencedMemberNotFoundError *)rte;
-											printf("Referenced member not found: ");
-											for (const auto &i : err->idRef->entries) {
-												if (&i != &err->idRef->entries.data()[0])
-													printf(".");
-												printf("%s", i.name.data());
-												if (i.genericArgs.size()) {
-													printf("<");
-													printf(">");
-												}
-											}
-											puts("");
-											break;
-										}
-									}
-								}
-							}
+
+							if (!dumpExceptionInfo(peff::getDefaultAlloc(), &stderrWriter, e.get()))
+								abort();
+
 							printTraceback(rt.get(), context.get());
 							e.reset();
 							goto end;

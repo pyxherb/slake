@@ -150,25 +150,17 @@ SLAKE_API TypeRef Runtime::typeofVar(const Reference &entityRef) noexcept {
 			TypeRef t = TypeRef(*(TypeId *)(rawDataPtr - (sizeof(TypeModifier) + sizeof(TypeId))), *(TypeModifier *)(rawDataPtr - sizeof(TypeModifier)));
 
 			switch (t.typeId) {
-				case TypeId::I8:
-				case TypeId::I16:
-				case TypeId::I32:
-				case TypeId::I64:
-				case TypeId::U8:
-				case TypeId::U16:
-				case TypeId::U32:
-				case TypeId::U64:
-				case TypeId::F32:
-				case TypeId::F64:
-				case TypeId::Bool:
-				case TypeId::String:
-					break;
 				case TypeId::Instance:
 				case TypeId::Array:
 				case TypeId::Fn:
 					t.typeDef = *((TypeDefObject **)rawDataPtr);
 					break;
 				case TypeId::StructInstance:
+				case TypeId::UnionEnum:
+				case TypeId::UnionEnumItem:
+					t.typeDef = *((TypeDefObject **)rawDataPtr);
+					break;
+				case TypeId::TypelessScopedEnum:
 					t.typeDef = *((TypeDefObject **)rawDataPtr);
 					break;
 				case TypeId::Ref:
@@ -195,6 +187,11 @@ SLAKE_API TypeRef Runtime::typeofVar(const Reference &entityRef) noexcept {
 					t.typeDef = *((TypeDefObject **)rawDataPtr);
 					break;
 				case TypeId::StructInstance:
+				case TypeId::UnionEnum:
+				case TypeId::UnionEnumItem:
+					t.typeDef = *((TypeDefObject **)rawDataPtr);
+					break;
+				case TypeId::TypelessScopedEnum:
 					t.typeDef = *((TypeDefObject **)rawDataPtr);
 					break;
 				case TypeId::Ref:

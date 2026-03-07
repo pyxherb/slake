@@ -4,6 +4,8 @@
 #include "fn.h"
 #include "module.h"
 #include "var.h"
+#include <peff/advutils/unique_ptr.h>
+#include <peff/base/deallocable.h>
 
 namespace slake {
 	class InterfaceObject;
@@ -69,8 +71,8 @@ namespace slake {
 		TypeRef baseType = TypeId::Invalid;
 		peff::DynArray<TypeRef> implTypes;	// Implemented interfaces
 
-		MethodTable *cachedInstantiatedMethodTable = nullptr;
-		ObjectLayout *cachedObjectLayout = nullptr;
+		peff::UniquePtr<MethodTable, peff::DeallocableDeleter<MethodTable>> cachedInstantiatedMethodTable;
+		peff::UniquePtr<ObjectLayout, peff::DeallocableDeleter<ObjectLayout>> cachedObjectLayout;
 
 		mutable ClassFlags classFlags = 0;
 
@@ -150,7 +152,7 @@ namespace slake {
 
 		peff::DynArray<TypeRef> implTypes;	// Implemented interfaces
 
-		ObjectLayout *cachedObjectLayout = nullptr;
+		peff::UniquePtr<ObjectLayout, peff::DeallocableDeleter<ObjectLayout>> cachedObjectLayout;
 
 		mutable StructFlags structFlags = 0;
 
@@ -190,7 +192,7 @@ namespace slake {
 
 	class UnionEnumItemObject : public BasicModuleObject {
 	public:
-		ObjectLayout *cachedObjectLayout = nullptr;
+		peff::UniquePtr<ObjectLayout, peff::DeallocableDeleter<ObjectLayout>> cachedObjectLayout;
 
 		SLAKE_API UnionEnumItemObject(Runtime *rt, peff::Alloc *selfAllocator);
 		SLAKE_API UnionEnumItemObject(Duplicator *duplicator, const UnionEnumItemObject &x, peff::Alloc *allocator, bool &succeededOut);

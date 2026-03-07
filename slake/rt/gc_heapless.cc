@@ -260,7 +260,7 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 
 					ClassObject *value = (ClassObject *)v;
 
-					if (auto mt = value->cachedInstantiatedMethodTable; mt) {
+					if (auto mt = value->cachedInstantiatedMethodTable.get(); mt) {
 						_gcWalk(context, mt);
 					}
 

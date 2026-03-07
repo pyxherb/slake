@@ -26,8 +26,6 @@ namespace slake {
 		/// @brief A null reference was detected while the runtime requires a non-null one.
 		NullRef = 0,
 
-		NoMatchingOverloading,
-
 		/// @brief The execution ran out from the function body.
 		OutOfFnBody,
 

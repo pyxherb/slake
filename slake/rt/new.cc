@@ -6,7 +6,7 @@ using namespace slake;
 
 SLAKE_API InternalExceptionPointer Runtime::initMethodTableForClass(ClassObject *cls, ClassObject *parentClass) {
 	assert(!cls->cachedInstantiatedMethodTable);
-	MethodTable *parentMt = parentClass ? parentClass->cachedInstantiatedMethodTable : nullptr;
+	MethodTable *parentMt = parentClass ? parentClass->cachedInstantiatedMethodTable.get() : nullptr;
 	std::unique_ptr<MethodTable, peff::DeallocableDeleter<MethodTable>> methodTable(MethodTable::alloc(cls->selfAllocator.get()));
 
 	if (parentMt) {

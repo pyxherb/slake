@@ -191,10 +191,6 @@ SLAKE_API ClassObject::ClassObject(Duplicator *duplicator, const ClassObject &x,
 }
 
 SLAKE_API ClassObject::~ClassObject() {
-	if (cachedInstantiatedMethodTable)
-		cachedInstantiatedMethodTable->dealloc();
-	if (cachedObjectLayout)
-		cachedObjectLayout->dealloc();
 }
 
 SLAKE_API bool ClassObject::hasImplemented(InterfaceObject *pInterface) const {
@@ -684,8 +680,6 @@ SLAKE_API StructObject::StructObject(Duplicator *duplicator, const StructObject 
 }
 
 SLAKE_API StructObject::~StructObject() {
-	if (cachedObjectLayout)
-		cachedObjectLayout->dealloc();
 }
 
 SLAKE_API HostObjectRef<StructObject> slake::StructObject::alloc(Duplicator *duplicator, const StructObject *other) {

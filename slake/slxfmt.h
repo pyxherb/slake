@@ -117,9 +117,8 @@ namespace slake {
 			uint32_t nImpls;
 		};
 		constexpr static uint8_t
-			CTD_PUB = 0x01,		// Public
-			CTD_FINAL = 0x02,	// Final
-			CTD_DERIVED = 0x40	// Is a derived type
+			CTD_FINAL = 0x01,	// Final
+			CTD_DERIVED = 0x02	// Is a derived type
 			;
 
 		/// @brief Interface Type Descriptor (ITD)
@@ -130,9 +129,6 @@ namespace slake {
 			uint32_t lenName;
 			uint32_t nParents;
 		};
-		constexpr static uint8_t
-			ITD_PUB = 0x01	// Public
-			;
 
 		/// @brief Structure Type Descriptor (STD)
 		struct StructTypeDesc final {
@@ -142,9 +138,6 @@ namespace slake {
 			uint32_t lenName;
 			uint32_t nImpls;
 		};
-		constexpr static uint8_t
-			STD_PUB = 0x01	// Public
-			;
 
 		/// @brief Scoped Enumeration Type Descriptor (SETD)
 		struct ScopedEnumTypeDesc final {
@@ -153,8 +146,7 @@ namespace slake {
 			uint32_t lenName;
 		};
 		constexpr static uint8_t
-			SETD_PUB = 0x01,  // Public
-			SETD_BASE = 0x80;
+			SETD_BASE = 0x01;
 
 		/// @brief Enumeration Item Descriptor (EID)
 		struct EnumItemDesc final {
@@ -168,8 +160,6 @@ namespace slake {
 			uint32_t nGenericParams;
 			uint32_t lenName;
 		};
-		constexpr static uint8_t
-			UETD_PUB = 0x01;
 
 		/// @brief Function Descriptor (FND)
 		struct FnDesc final {
@@ -182,15 +172,12 @@ namespace slake {
 			uint32_t nConstObjects;	   // Number of constant objects
 		};
 		constexpr static uint16_t
-			FND_PUB = 0x0001,		 // Public
-			FND_FINAL = 0x0002,		 // Final
-			FND_OVERRIDE = 0x0004,	 // Override
-			FND_STATIC = 0x0008,	 // Static
-			FND_NATIVE = 0x0010,	 // Native
-			FND_DBG = 0x0040,		 // With debugging information
-			FND_VARG = 0x0080,		 // Varidic arguments
-			FND_GENERATOR = 0x0100,	 // Generator
-			FND_VIRTUAL = 0x200		 // Virtual
+			FND_FINAL = 0x0001,		 // Final
+			FND_OVERRIDE = 0x0002,	 // Override
+			FND_DBG = 0x0004,		 // With debugging information
+			FND_VARG = 0x0008,		 // Varidic arguments
+			FND_GENERATOR = 0x0010,	 // Generator
+			FND_VIRTUAL = 0x0020	 // Virtual
 			;
 
 		struct SrcInfoEntry {
@@ -206,12 +193,6 @@ namespace slake {
 			uint8_t lenName;
 			uint8_t flags;
 		};
-		constexpr static uint8_t
-			VAD_PUB = 0x01,		// Public
-			VAD_FINAL = 0x02,	// Final
-			VAD_STATIC = 0x04,	// Static
-			VAD_NATIVE = 0x08	// Native
-			;
 
 		struct IdRefHeader final {
 			uint8_t nEntries;

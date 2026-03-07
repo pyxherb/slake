@@ -2393,13 +2393,13 @@ InternalExceptionPointer Runtime::_execIns(ContextObject *const context, MajorFr
 		case Opcode::RET: {
 			const uint32_t returnValueOutReg = curMajorFrame->returnValueOutReg;
 
-			Value returnValue = Value(ValueType::Invalid);
+			const Value *returnValue;
 
 			switch (nOperands) {
 				case 0:
 					break;
 				case 1:
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, operands[0], returnValue));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[0], returnValue));
 					break;
 				default:
 					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
@@ -2408,14 +2408,14 @@ InternalExceptionPointer Runtime::_execIns(ContextObject *const context, MajorFr
 			if (CoroutineObject *co = curMajorFrame->curCoroutine; co) {
 				co->resumable = std::move(curMajorFrame->resumableContextData);
 				// TODO: Implement returning structure.
-				if (returnValue != ValueType::Invalid)
+				if (returnValue->valueType != ValueType::Invalid)
 					co->finalResult = returnValue;
 				co->setDone();
 			}
 
 			TypeRef returnType = curMajorFrame->curFn->returnType;
 
-			if (returnValue.valueType == ValueType::Invalid) {
+			if ((!returnValue) || returnValue->valueType == ValueType::Invalid) {
 				if (returnType.typeId != TypeId::Void)
 					// TODO: Handle this.
 					std::terminate();
@@ -2423,14 +2423,14 @@ InternalExceptionPointer Runtime::_execIns(ContextObject *const context, MajorFr
 					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
 				_leaveMajorFrame(&context->getContext());
 			} else {
-				if (!isCompatible(returnType, returnValue))
+				if (!isCompatible(returnType, *returnValue))
 					// TODO: Handle this.
 					std::terminate();
 				_leaveMajorFrame(&context->getContext());
 				if (returnType.typeId == TypeId::StructInstance) {
-					writeVar(curMajorFrame->returnStructRef, returnValue);
+					writeVar(curMajorFrame->returnStructRef, *returnValue);
 				} else if (returnValueOutReg != UINT32_MAX) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, stackSize, _fetchMajorFrame(&context->getContext(), curMajorFrame->offPrevFrame), returnValueOutReg, returnValue));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, stackSize, _fetchMajorFrame(&context->getContext(), curMajorFrame->offPrevFrame), returnValueOutReg, *returnValue));
 				}
 			}
 

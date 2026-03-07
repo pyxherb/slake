@@ -465,13 +465,6 @@ SLKC_API peff::Option<CompilationError> slkc::dumpModuleMembers(
 	for (auto i : collectedClasses) {
 		slake::slxfmt::ClassTypeDesc desc = {};
 
-		slake::AccessModifier access = i->getAccess();
-		if (access & slake::ACCESS_PUBLIC) {
-			desc.flags |= slake::slxfmt::CTD_PUB;
-		}
-		if (access & slake::ACCESS_FINAL) {
-			desc.flags |= slake::slxfmt::CTD_FINAL;
-		}
 		if (i->baseType) {
 			desc.flags |= slake::slxfmt::CTD_DERIVED;
 		}
@@ -482,6 +475,9 @@ SLKC_API peff::Option<CompilationError> slkc::dumpModuleMembers(
 		SLKC_RETURN_IF_COMP_ERROR(writer->write((char *)&desc, sizeof(desc)));
 
 		SLKC_RETURN_IF_COMP_ERROR(writer->write(i->getName().data(), i->getName().size()));
+
+		slake::AccessModifier access = i->getAccess();
+		SLKC_RETURN_IF_COMP_ERROR(writer->writeU8(access));
 
 		for (auto &j : i->genericParams) {
 			SLKC_RETURN_IF_COMP_ERROR(dumpGenericParam(allocator, writer, j));
@@ -501,10 +497,6 @@ SLKC_API peff::Option<CompilationError> slkc::dumpModuleMembers(
 	for (auto i : collectedInterfaces) {
 		slake::slxfmt::InterfaceTypeDesc desc = {};
 
-		slake::AccessModifier accessModifier = i->getAccess();
-		if (accessModifier & slake::ACCESS_PUBLIC) {
-			desc.flags |= slake::slxfmt::ITD_PUB;
-		}
 		desc.nGenericParams = i->genericParams.size();
 		desc.lenName = i->getName().size();
 		desc.nParents = i->implTypes.size();
@@ -512,6 +504,10 @@ SLKC_API peff::Option<CompilationError> slkc::dumpModuleMembers(
 		SLKC_RETURN_IF_COMP_ERROR(writer->write((char *)&desc, sizeof(desc)));
 
 		SLKC_RETURN_IF_COMP_ERROR(writer->write(i->getName().data(), i->getName().size()));
+
+		slake::AccessModifier accessModifier = i->getAccess();
+		assert(slake::isValidAccessModifier(accessModifier));
+		SLKC_RETURN_IF_COMP_ERROR(writer->writeU8(accessModifier));
 
 		for (auto &j : i->genericParams) {
 			SLKC_RETURN_IF_COMP_ERROR(dumpGenericParam(allocator, writer, j));
@@ -528,10 +524,6 @@ SLKC_API peff::Option<CompilationError> slkc::dumpModuleMembers(
 	for (auto i : collectedStructs) {
 		slake::slxfmt::StructTypeDesc desc = {};
 
-		slake::AccessModifier accessModifier = i->getAccess();
-		if (accessModifier & slake::ACCESS_PUBLIC) {
-			desc.flags |= slake::slxfmt::STD_PUB;
-		}
 		desc.nGenericParams = i->genericParams.size();
 		desc.lenName = i->getName().size();
 		desc.nImpls = i->implTypes.size();
@@ -539,6 +531,10 @@ SLKC_API peff::Option<CompilationError> slkc::dumpModuleMembers(
 		SLKC_RETURN_IF_COMP_ERROR(writer->write((char *)&desc, sizeof(desc)));
 
 		SLKC_RETURN_IF_COMP_ERROR(writer->write(i->getName().data(), i->getName().size()));
+
+		slake::AccessModifier accessModifier = i->getAccess();
+		assert(slake::isValidAccessModifier(accessModifier));
+		SLKC_RETURN_IF_COMP_ERROR(writer->writeU8(accessModifier));
 
 		for (auto &j : i->genericParams) {
 			SLKC_RETURN_IF_COMP_ERROR(dumpGenericParam(allocator, writer, j));
@@ -555,10 +551,6 @@ SLKC_API peff::Option<CompilationError> slkc::dumpModuleMembers(
 	for (auto i : collectedScopedEnums) {
 		slake::slxfmt::ScopedEnumTypeDesc desc = {};
 
-		slake::AccessModifier accessModifier = i->getAccess();
-		if (accessModifier & slake::ACCESS_PUBLIC) {
-			desc.flags |= slake::slxfmt::SETD_PUB;
-		}
 		if (i->baseType != slake::TypeId::Invalid)
 			desc.flags |= slake::slxfmt::SETD_BASE;
 		desc.lenName = i->getName().size();
@@ -566,6 +558,10 @@ SLKC_API peff::Option<CompilationError> slkc::dumpModuleMembers(
 		SLKC_RETURN_IF_COMP_ERROR(writer->write((char *)&desc, sizeof(desc)));
 
 		SLKC_RETURN_IF_COMP_ERROR(writer->write(i->getName().data(), i->getName().size()));
+
+		slake::AccessModifier accessModifier = i->getAccess();
+		assert(slake::isValidAccessModifier(accessModifier));
+		SLKC_RETURN_IF_COMP_ERROR(writer->writeU8(accessModifier));
 
 		SLKC_RETURN_IF_COMP_ERROR(writer->writeU32(i->getNumberOfFields()));
 
@@ -600,16 +596,16 @@ SLKC_API peff::Option<CompilationError> slkc::dumpModuleMembers(
 	for (auto i : collectedUnionEnums) {
 		slake::slxfmt::UnionEnumTypeDesc desc = {};
 
-		slake::AccessModifier accessModifier = i->getAccess();
-		if (accessModifier & slake::ACCESS_PUBLIC) {
-			desc.flags |= slake::slxfmt::UETD_PUB;
-		}
 		desc.nGenericParams = i->genericParams.size();
 		desc.lenName = i->getName().size();
 
 		SLKC_RETURN_IF_COMP_ERROR(writer->write((char *)&desc, sizeof(desc)));
 
 		SLKC_RETURN_IF_COMP_ERROR(writer->write(i->getName().data(), i->getName().size()));
+
+		slake::AccessModifier accessModifier = i->getAccess();
+		assert(slake::isValidAccessModifier(accessModifier));
+		SLKC_RETURN_IF_COMP_ERROR(writer->writeU8(accessModifier));
 
 		for (auto &j : i->genericParams) {
 			SLKC_RETURN_IF_COMP_ERROR(dumpGenericParam(allocator, writer, j));
@@ -640,6 +636,7 @@ SLKC_API peff::Option<CompilationError> slkc::dumpModuleMembers(
 		SLKC_RETURN_IF_COMP_ERROR(writer->writeU32(i->getName().size()));
 		SLKC_RETURN_IF_COMP_ERROR(writer->write(i->getName().data(), i->getName().size()));
 
+		assert(i->overloadings.size() <= UINT32_MAX);
 		SLKC_RETURN_IF_COMP_ERROR(writer->writeU32(i->overloadings.size()));
 		for (auto j : i->overloadings) {
 			if (j.second->overloadingKind != slake::FnOverloadingKind::Regular) {
@@ -651,18 +648,6 @@ SLKC_API peff::Option<CompilationError> slkc::dumpModuleMembers(
 
 			slake::slxfmt::FnDesc fnd = {};
 
-			if (ol->access & slake::ACCESS_PUBLIC) {
-				fnd.flags |= slake::slxfmt::FND_PUB;
-			}
-			if (ol->access & slake::ACCESS_FINAL) {
-				fnd.flags |= slake::slxfmt::FND_FINAL;
-			}
-			if (ol->access & slake::ACCESS_STATIC) {
-				fnd.flags |= slake::slxfmt::FND_STATIC;
-			}
-			if (ol->access & slake::ACCESS_NATIVE) {
-				fnd.flags |= slake::slxfmt::FND_NATIVE;
-			}
 			if (ol->overloadingFlags & slake::OL_VARG) {
 				fnd.flags |= slake::slxfmt::FND_VARG;
 			}
@@ -678,6 +663,8 @@ SLKC_API peff::Option<CompilationError> slkc::dumpModuleMembers(
 			fnd.lenBody = ol->instructions.size();
 
 			SLKC_RETURN_IF_COMP_ERROR(writer->write((char *)&fnd, sizeof(fnd)));
+
+			SLKC_RETURN_IF_COMP_ERROR(writer->writeU8(ol->access));
 
 			for (auto &k : j.second->genericParams) {
 				SLKC_RETURN_IF_COMP_ERROR(dumpGenericParam(allocator, writer, k));
@@ -707,26 +694,13 @@ SLKC_API peff::Option<CompilationError> slkc::dumpModuleMembers(
 
 		slake::slxfmt::VarDesc vad = {};
 
-		if (curRecord.accessModifier & slake::ACCESS_PUBLIC) {
-			vad.flags |= slake::slxfmt::VAD_PUB;
-		}
-
-		if (curRecord.accessModifier & slake::ACCESS_FINAL) {
-			vad.flags |= slake::slxfmt::VAD_FINAL;
-		}
-
-		if (curRecord.accessModifier & slake::ACCESS_STATIC) {
-			vad.flags |= slake::slxfmt::VAD_STATIC;
-		}
-
-		if (curRecord.accessModifier & slake::ACCESS_NATIVE) {
-			vad.flags |= slake::slxfmt::VAD_NATIVE;
-		}
-
 		vad.lenName = curRecord.name.size();
 		SLKC_RETURN_IF_COMP_ERROR(writer->write((char *)&vad, sizeof(vad)));
 
 		SLKC_RETURN_IF_COMP_ERROR(writer->write(curRecord.name.data(), curRecord.name.size()));
+
+		assert(slake::isValidAccessModifier(curRecord.accessModifier));
+		SLKC_RETURN_IF_COMP_ERROR(writer->writeU8(curRecord.accessModifier));
 
 		SLKC_RETURN_IF_COMP_ERROR(dumpTypeName(allocator, writer, curRecord.type));
 		switch (curRecord.type.typeId) {

@@ -646,19 +646,16 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(LoaderContext &cont
 				return OutOfMemoryError::alloc();
 			}
 
-			AccessModifier access = 0;
-
-			if (desc.flags & slxfmt::CTD_PUB) {
-				access |= ACCESS_PUBLIC;
-			}
-			if (desc.flags & slxfmt::CTD_FINAL) {
-				access |= ACCESS_FINAL;
-			}
-
 			if (!clsObject->resizeName(desc.lenName)) {
 				return OutOfMemoryError::alloc();
 			}
 			SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read(clsObject->getNameRawPtr(), desc.lenName)));
+
+			AccessModifier access = 0;
+			SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->readU8(access)));
+			if (!isValidAccessModifier(access))
+				abort();
+			clsObject->setAccess(access);
 
 			for (size_t j = 0; j < desc.nGenericParams; ++j) {
 				GenericParam gp(clsObject->selfAllocator.get());
@@ -709,16 +706,16 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(LoaderContext &cont
 				return OutOfMemoryError::alloc();
 			}
 
-			AccessModifier access = 0;
-
-			if (desc.flags & slxfmt::ITD_PUB) {
-				access |= ACCESS_PUBLIC;
-			}
-
 			if (!interfaceObject->resizeName(desc.lenName)) {
 				return OutOfMemoryError::alloc();
 			}
 			SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read(interfaceObject->getNameRawPtr(), desc.lenName)));
+
+			AccessModifier access = 0;
+			SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->readU8(access)));
+			if (!isValidAccessModifier(access))
+				abort();
+			interfaceObject->setAccess(access);
 
 			for (size_t j = 0; j < desc.nGenericParams; ++j) {
 				GenericParam gp(interfaceObject->selfAllocator.get());
@@ -766,16 +763,16 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(LoaderContext &cont
 				return OutOfMemoryError::alloc();
 			}
 
-			AccessModifier access = 0;
-
-			if (desc.flags & slxfmt::STD_PUB) {
-				access |= ACCESS_PUBLIC;
-			}
-
 			if (!structObject->resizeName(desc.lenName)) {
 				return OutOfMemoryError::alloc();
 			}
 			SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read(structObject->getNameRawPtr(), desc.lenName)));
+
+			AccessModifier access = 0;
+			SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->readU8(access)));
+			if (!isValidAccessModifier(access))
+				abort();
+			structObject->setAccess(access);
 
 			for (size_t j = 0; j < desc.nGenericParams; ++j) {
 				GenericParam gp(structObject->selfAllocator.get());
@@ -816,16 +813,16 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(LoaderContext &cont
 				return OutOfMemoryError::alloc();
 			}
 
-			AccessModifier access = 0;
-
-			if (desc.flags & slxfmt::SETD_PUB) {
-				access |= ACCESS_PUBLIC;
-			}
-
 			if (!enumObject->resizeName(desc.lenName)) {
 				return OutOfMemoryError::alloc();
 			}
 			SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read(enumObject->getNameRawPtr(), desc.lenName)));
+
+			AccessModifier access = 0;
+			SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->readU8(access)));
+			if (!isValidAccessModifier(access))
+				abort();
+			enumObject->setAccess(access);
 
 			// TODO: Implement it.
 			uint32_t nFields;
@@ -907,16 +904,16 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(LoaderContext &cont
 				return OutOfMemoryError::alloc();
 			}
 
-			AccessModifier access = 0;
-
-			if (desc.flags & slxfmt::UETD_PUB) {
-				access |= ACCESS_PUBLIC;
-			}
-
 			if (!enumObject->resizeName(desc.lenName)) {
 				return OutOfMemoryError::alloc();
 			}
 			SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read(enumObject->getNameRawPtr(), desc.lenName)));
+
+			AccessModifier access = 0;
+			SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->readU8(access)));
+			if (!isValidAccessModifier(access))
+				abort();
+			enumObject->setAccess(access);
 
 			// TODO: Implement it.
 			uint32_t nItems;
@@ -1009,18 +1006,11 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(LoaderContext &cont
 
 				SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read((char *)&fnd, sizeof(fnd))));
 
-				if (fnd.flags & slxfmt::FND_PUB) {
-					fnOverloadingObject->access |= ACCESS_PUBLIC;
-				}
-				if (fnd.flags & slxfmt::FND_FINAL) {
-					fnOverloadingObject->access |= ACCESS_FINAL;
-				}
-				if (fnd.flags & slxfmt::FND_STATIC) {
-					fnOverloadingObject->access |= ACCESS_STATIC;
-				}
-				if (fnd.flags & slxfmt::FND_NATIVE) {
-					fnOverloadingObject->access |= ACCESS_NATIVE;
-				}
+				AccessModifier access;
+				SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->readU8(access)));
+				if (!isValidAccessModifier(access))
+					abort();
+				fnOverloadingObject->setAccess(access);
 
 				if (fnd.flags & slxfmt::FND_VARG) {
 					fnOverloadingObject->setVarArgs();
@@ -1119,30 +1109,17 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(LoaderContext &cont
 
 			FieldRecord fr(moduleObject->selfAllocator.get());
 
-			AccessModifier access = 0;
-
-			if (vad.flags & slxfmt::VAD_PUB) {
-				access |= ACCESS_PUBLIC;
-			}
-
-			if (vad.flags & slxfmt::VAD_FINAL) {
-				access |= ACCESS_FINAL;
-			}
-
-			if (vad.flags & slxfmt::VAD_STATIC) {
-				access |= ACCESS_STATIC;
-			}
-
-			if (vad.flags & slxfmt::VAD_NATIVE) {
-				access |= ACCESS_NATIVE;
-			}
-
-			fr.accessModifier = access;
-
 			if (!fr.name.resize(vad.lenName)) {
 				return OutOfMemoryError::alloc();
 			}
 			SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read(fr.name.data(), vad.lenName)));
+
+			AccessModifier access = 0;
+			SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->readU8(access)));
+			if (!isValidAccessModifier(access))
+				abort();
+			fr.accessModifier = access;
+
 			SLAKE_RETURN_IF_EXCEPT(loadType(context, runtime, reader, moduleObject, fr.type));
 
 			switch (fr.type.typeId) {

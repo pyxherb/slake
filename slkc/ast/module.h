@@ -33,10 +33,6 @@ namespace slkc {
 		SLAKE_FORCEINLINE bool isNative() const noexcept {
 			return accessModifier & slake::ACCESS_NATIVE;
 		}
-
-		SLAKE_FORCEINLINE bool isFinal() const noexcept {
-			return accessModifier & slake::ACCESS_FINAL;
-		}
 	};
 
 	class ImportNode;

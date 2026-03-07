@@ -21,7 +21,10 @@ namespace slake {
 		uint32_t offHandler;
 	};
 
+	constexpr uint32_t MINOR_FRAME_MAGIC = 0xeffec7ed;
+
 	struct MinorFrame {
+		uint32_t magic = MINOR_FRAME_MAGIC;
 		size_t offLastMinorFrame = SIZE_MAX;
 		size_t offExceptHandler = SIZE_MAX;
 		size_t offAllocaRecords = SIZE_MAX;
@@ -30,6 +33,7 @@ namespace slake {
 
 	/// @brief Alloca record, used for invalidating references in the registers, etc.
 	/// @note Do not forget to add GC scan codes when you adding anything new into this structure!
+	constexpr uint32_t ALLOCA_RECORD_MAGIC = 0xacce55ed;
 	struct AllocaRecord {
 		size_t offNext;
 		uint32_t defReg;
@@ -38,7 +42,7 @@ namespace slake {
 	struct ResumableContextData {
 		uint32_t curIns = 0;
 		uint32_t lastJumpSrc = UINT32_MAX;
-		size_t offArgs = SIZE_MAX, offNextArgs = SIZE_MAX;
+		size_t offArgs = SIZE_MAX, offNextArgs = SIZE_MAX, offNextArgsBegin = SIZE_MAX;
 		size_t nArgs = 0, nNextArgs = 0;
 		/// @brief Offset of current minor frame, note that it is context-dependent offset.
 		size_t offCurMinorFrame = SIZE_MAX;
@@ -48,8 +52,11 @@ namespace slake {
 
 	class ContextObject;
 
+	constexpr uint32_t MAJOR_FRAME_MAGIC = 0xacce55ed;
+
 	/// @brief A major frame represents a single calling frame.
 	struct MajorFrame final {
+		uint32_t magic = MAJOR_FRAME_MAGIC;
 		size_t offPrevFrame = SIZE_MAX, offNextFrame = SIZE_MAX;
 
 		Runtime *associatedRuntime;
@@ -63,7 +70,7 @@ namespace slake {
 		uint32_t returnValueOutReg = UINT32_MAX;
 		Reference returnStructRef;
 
-		size_t stackBase = 0;
+		size_t prevStackTop = 0;
 		size_t offRegs = UINT32_MAX;
 
 		Value curExcept = Value();	// Current exception.
@@ -93,7 +100,6 @@ namespace slake {
 		size_t offCurMajorFrame = SIZE_MAX;	 // Offset of current major frame
 		ContextFlags flags = 0;				 // Flags
 		char *dataStack = nullptr;			 // Data stack
-		char *dataStackTopPtr = nullptr;	 // Data stack top pointer
 		size_t stackTop = 0;				 // Stack top
 		size_t stackSize;
 

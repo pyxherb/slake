@@ -842,11 +842,19 @@ SLKC_API bool Decompiler::decompileModuleMembers(peff::Alloc *allocator, DumpWri
 							} else {
 								SLKC_RETURN_IF_FALSE(writer->write(" {\n"));
 
+								size_t blockDepth = 0;
 								for (size_t j = 0; j < ol->instructions.size(); ++j) {
 									auto &curIns = ol->instructions.at(j);
-									for (size_t k = 0; k < indentLevel + 1; ++k) {
+
+									if((curIns.opcode == slake::Opcode::LEAVE) && blockDepth)
+										--blockDepth;
+
+									for (size_t k = 0; k < indentLevel + 1 + blockDepth; ++k) {
 										SLKC_RETURN_IF_FALSE(writer->write("\t"));
 									}
+
+									if(curIns.opcode == slake::Opcode::ENTER)
+										++blockDepth;
 
 									slake::slxfmt::SourceLocDesc *sld = nullptr;
 
@@ -1074,7 +1082,7 @@ SLKC_API bool Decompiler::decompileModuleMembers(peff::Alloc *allocator, DumpWri
 				SLKC_RETURN_IF_FALSE(writer->write(" {\n"));
 
 				size_t k = 0;
-				for (auto& j : obj->getFieldRecords()) {
+				for (auto &j : obj->getFieldRecords()) {
 					for (size_t l = 0; l < indentLevel + 1; ++l) {
 						SLKC_RETURN_IF_FALSE(writer->write("\t"));
 					}

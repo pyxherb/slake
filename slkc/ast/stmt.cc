@@ -111,7 +111,7 @@ SLKC_API AstNodePtr<AstNode> BreakStmtNode::doDuplicate(peff::Alloc *newAllocato
 	return duplicatedNode.castTo<AstNode>();
 }
 
-SLKC_API BreakStmtNode::BreakStmtNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : StmtNode(StmtKind::VarDef, selfAllocator, document) {
+SLKC_API BreakStmtNode::BreakStmtNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : StmtNode(StmtKind::Break, selfAllocator, document) {
 }
 
 SLKC_API BreakStmtNode::BreakStmtNode(const BreakStmtNode &rhs, peff::Alloc *allocator, DuplicationContext &context) : StmtNode(rhs, allocator, context) {
@@ -129,7 +129,7 @@ SLKC_API AstNodePtr<AstNode> ContinueStmtNode::doDuplicate(peff::Alloc *newAlloc
 	return duplicatedNode.castTo<AstNode>();
 }
 
-SLKC_API ContinueStmtNode::ContinueStmtNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : StmtNode(StmtKind::VarDef, selfAllocator, document) {
+SLKC_API ContinueStmtNode::ContinueStmtNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : StmtNode(StmtKind::Continue, selfAllocator, document) {
 }
 
 SLKC_API ContinueStmtNode::ContinueStmtNode(const ContinueStmtNode &rhs, peff::Alloc *allocator, DuplicationContext &context) : StmtNode(rhs, allocator, context) {

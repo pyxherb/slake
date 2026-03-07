@@ -436,8 +436,8 @@ namespace slake {
 		SLAKE_FORCEINLINE constexpr explicit Value(bool data) noexcept : valueType(ValueType::Bool), asBool(data), valueFlags(0) {
 		}
 		SLAKE_FORCEINLINE Value(const Reference &reference) noexcept : valueType(ValueType::Reference), asReference(reference), valueFlags(0) {
-			if(reference.kind == ReferenceKind::Invalid)
-			std::terminate();
+			if (reference.kind == ReferenceKind::Invalid)
+				std::terminate();
 		}
 		SLAKE_FORCEINLINE Value(std::nullptr_t) noexcept : valueType(ValueType::Reference), asReference(nullptr), valueFlags(0) {
 		}
@@ -723,6 +723,9 @@ namespace slake {
 		}
 		SLAKE_FORCEINLINE bool isTypelessScopedEnum() const noexcept {
 			return valueType == ValueType::TypelessScopedEnum;
+		}
+		SLAKE_FORCEINLINE bool isInvalid() const noexcept {
+			return valueType == ValueType::Invalid;
 		}
 
 		SLAKE_FORCEINLINE bool isLocal() const noexcept {

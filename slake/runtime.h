@@ -194,6 +194,10 @@ namespace slake {
 			bool isInGenericScope;
 		};
 
+		SLAKE_API MinorFrame *_fetchMinorFrameUnchecked(
+			Context *context,
+			const MajorFrame *majorFrame,
+			size_t stackOffset);
 		SLAKE_API MinorFrame *_fetchMinorFrame(
 			Context *context,
 			const MajorFrame *majorFrame,
@@ -207,6 +211,9 @@ namespace slake {
 		SLAKE_API AllocaRecord *_fetchAllocaRecord(
 			Context *context,
 			const MajorFrame *majorFrame,
+			size_t stackOffset);
+		SLAKE_API static MajorFrame *_fetchMajorFrameUnchecked(
+			Context *context,
 			size_t stackOffset);
 		SLAKE_API static MajorFrame *_fetchMajorFrame(
 			Context *context,

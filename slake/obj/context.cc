@@ -105,8 +105,6 @@ SLAKE_API HostObjectRef<ContextObject> slake::ContextObject::alloc(Runtime *rt, 
 	if (!(ptr->_context.dataStack = (char *)curGenerationAllocator->alloc(stackSize, sizeof(std::max_align_t))))
 		return nullptr;
 
-	ptr->_context.dataStackTopPtr = ptr->_context.dataStack + stackSize;
-
 	ptr->_context.stackSize = stackSize;
 
 	if (!rt->addObject(ptr.get()))

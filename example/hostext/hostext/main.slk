@@ -345,6 +345,28 @@ public async main() -> i32 {
 
 	nonnullable = ax;
 
+	for(i: i32 = 0; i < 100; i += 1) {
+		let x: i32 = 0;
+		hostext.extfns.print("i = ", i, "\n");
+		while (x < 100) {
+			let y: i32 = 1;
+			x += y;
+			hostext.extfns.print("\tx = ", x, "\n");
+		}
+		hostext.extfns.print("i = ", i, "\n");
+		while (x > 0) {
+			let y: i32 = 1;
+			x -= y;
+			if (x < 50)
+				break;
+			hostext.extfns.print("\tx = ", x, "\n");
+		}
+		if(i == 80)
+			continue;
+		if(i == 90)
+			break;
+	}
+
 	return 114514;
 }
 

@@ -3,7 +3,7 @@
 /// @author CodesBuilder (codesbuilder@163.com)
 /// @brief Definitions for Slake Executable (SLX) format.
 ///
-/// @copyright Copyright (c) 2022-2023 Slake Contributors
+/// @copyright Copyright (c) 2022 Slake Contributors
 ///
 #ifndef _SLAKE_SLXFMT_H_
 #define _SLAKE_SLXFMT_H_

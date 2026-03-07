@@ -161,7 +161,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileForStmt(
 	uint32_t bodyLabel;
 	SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocLabel(bodyLabel));
 
-	uint32_t breakLabel, condLabel, stepLabel;
+	uint32_t normalExitLabel, breakLabel, condLabel, stepLabel;
+	SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocLabel(normalExitLabel));
 	SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocLabel(breakLabel));
 	compilationContext->setBreakLabel(breakLabel, compilationContext->getBlockLevel());
 	SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocLabel(condLabel));
@@ -325,7 +326,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileForStmt(
 			compilationContext->emitIns(
 				sldIndex, slake::Opcode::BR,
 				UINT32_MAX,
-				{ slake::Value(slake::ValueType::RegIndex, conditionReg), slake::Value(slake::ValueType::Label, bodyLabel), slake::Value(slake::ValueType::Label, breakLabel) }));
+				{ slake::Value(slake::ValueType::RegIndex, conditionReg), slake::Value(slake::ValueType::Label, bodyLabel), slake::Value(slake::ValueType::Label, normalExitLabel) }));
 
 		compilationContext->setLabelOffset(bodyLabel, compilationContext->getCurInsOff());
 
@@ -396,13 +397,15 @@ SLKC_API peff::Option<CompilationError> slkc::compileForStmt(
 				{ slake::Value(slake::ValueType::Label, condLabel) }));
 	}
 
-	compilationContext->setLabelOffset(breakLabel, compilationContext->getCurInsOff());
+	compilationContext->setLabelOffset(normalExitLabel, compilationContext->getCurInsOff());
 
 	SLKC_RETURN_IF_COMP_ERROR(
 		compilationContext->emitIns(
 			sldIndex, slake::Opcode::LEAVE,
 			UINT32_MAX,
 			{ slake::Value((uint32_t)1) }));
+
+	compilationContext->setLabelOffset(breakLabel, compilationContext->getCurInsOff());
 
 	return {};
 }
@@ -537,9 +540,12 @@ SLKC_API peff::Option<CompilationError> slkc::compileWhileStmt(
 	uint32_t bodyLabel;
 	SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocLabel(bodyLabel));
 
-	uint32_t breakLabel, continueLabel;
+	uint32_t normalExitLabel, breakLabel, continueLabel;
+	SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocLabel(normalExitLabel));
 	SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocLabel(breakLabel));
+	compilationContext->setBreakLabel(breakLabel, compilationContext->getBlockLevel());
 	SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocLabel(continueLabel));
+	compilationContext->setContinueLabel(continueLabel, compilationContext->getBlockLevel());
 
 	bool isSame;
 
@@ -561,6 +567,11 @@ SLKC_API peff::Option<CompilationError> slkc::compileWhileStmt(
 		SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, s->cond, constCondExpr));
 	}
 
+	SLKC_RETURN_IF_COMP_ERROR(
+		compilationContext->emitIns(
+			sldIndex, slake::Opcode::ENTER,
+			UINT32_MAX,
+			{}));
 	SLKC_RETURN_IF_COMP_ERROR(compilationContext->enterBlock());
 	peff::ScopeGuard popBlockContextGuard([compilationContext]() noexcept {
 		compilationContext->leaveBlock();
@@ -579,29 +590,31 @@ SLKC_API peff::Option<CompilationError> slkc::compileWhileStmt(
 				UINT32_MAX,
 				{ slake::Value(slake::ValueType::RegIndex, conditionReg),
 					slake::Value(slake::ValueType::Label, bodyLabel),
-					slake::Value(slake::ValueType::Label, breakLabel) }));
+					slake::Value(slake::ValueType::Label, normalExitLabel) }));
 	}
 
 	compilationContext->setLabelOffset(bodyLabel, compilationContext->getCurInsOff());
 
-	PathEnv bodyPathEnv(compileEnv->allocator.get());
-	bodyPathEnv.execPossibility =
-		constCondExpr
-			? (constCondExpr.castTo<BoolLiteralExprNode>()->data
-					  ? PathPossibility::Must
-					  : PathPossibility::Never)
-			: PathPossibility::May;
-	bodyPathEnv.noReturnPossibility =
-		constCondExpr
-			? (constCondExpr.castTo<BoolLiteralExprNode>()->data
-					  ? PathPossibility::Must
-					  : PathPossibility::Never)
-			: PathPossibility::May;
-	bodyPathEnv.breakPossibility = PathPossibility::May;
+	{
+		PathEnv bodyPathEnv(compileEnv->allocator.get());
+		bodyPathEnv.execPossibility =
+			constCondExpr
+				? (constCondExpr.castTo<BoolLiteralExprNode>()->data
+						  ? PathPossibility::Must
+						  : PathPossibility::Never)
+				: PathPossibility::May;
+		bodyPathEnv.noReturnPossibility =
+			constCondExpr
+				? (constCondExpr.castTo<BoolLiteralExprNode>()->data
+						  ? PathPossibility::Must
+						  : PathPossibility::Never)
+				: PathPossibility::May;
+		bodyPathEnv.breakPossibility = PathPossibility::May;
 
-	SLKC_RETURN_IF_COMP_ERROR(compileStmt(compileEnv, compilationContext, &bodyPathEnv, s->body));
+		SLKC_RETURN_IF_COMP_ERROR(compileStmt(compileEnv, compilationContext, &bodyPathEnv, s->body));
 
-	SLKC_RETURN_IF_COMP_ERROR(combinePathEnv(*pathEnv, bodyPathEnv));
+		SLKC_RETURN_IF_COMP_ERROR(combinePathEnv(*pathEnv, bodyPathEnv));
+	}
 
 	SLKC_RETURN_IF_COMP_ERROR(
 		compilationContext->emitIns(
@@ -609,6 +622,12 @@ SLKC_API peff::Option<CompilationError> slkc::compileWhileStmt(
 			UINT32_MAX,
 			{ slake::Value(slake::ValueType::Label, continueLabel) }));
 
+	compilationContext->setLabelOffset(normalExitLabel, compilationContext->getCurInsOff());
+	SLKC_RETURN_IF_COMP_ERROR(
+		compilationContext->emitIns(
+			sldIndex, slake::Opcode::LEAVE,
+			UINT32_MAX,
+			{ slake::Value((uint32_t)1) }));
 	compilationContext->setLabelOffset(breakLabel, compilationContext->getCurInsOff());
 
 	return {};
@@ -643,9 +662,12 @@ SLKC_API peff::Option<CompilationError> slkc::compileDoWhileStmt(
 	uint32_t bodyLabel;
 	SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocLabel(bodyLabel));
 
-	uint32_t breakLabel, continueLabel;
+	uint32_t normalExitLabel, breakLabel, continueLabel;
+	SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocLabel(normalExitLabel));
 	SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocLabel(breakLabel));
+	compilationContext->setBreakLabel(breakLabel, compilationContext->getBlockLevel());
 	SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocLabel(continueLabel));
+	compilationContext->setContinueLabel(continueLabel, compilationContext->getBlockLevel());
 
 	bool isSame;
 
@@ -667,6 +689,11 @@ SLKC_API peff::Option<CompilationError> slkc::compileDoWhileStmt(
 		SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, s->cond, constCondExpr));
 	}
 
+	SLKC_RETURN_IF_COMP_ERROR(
+		compilationContext->emitIns(
+			sldIndex, slake::Opcode::ENTER,
+			UINT32_MAX,
+			{}));
 	SLKC_RETURN_IF_COMP_ERROR(compilationContext->enterBlock());
 	peff::ScopeGuard popBlockContextGuard([compilationContext]() noexcept {
 		compilationContext->leaveBlock();
@@ -701,6 +728,12 @@ SLKC_API peff::Option<CompilationError> slkc::compileDoWhileStmt(
 				slake::Value(slake::ValueType::Label, bodyLabel),
 				slake::Value(slake::ValueType::Label, breakLabel) }));
 
+	compilationContext->setLabelOffset(normalExitLabel, compilationContext->getCurInsOff());
+	SLKC_RETURN_IF_COMP_ERROR(
+		compilationContext->emitIns(
+			sldIndex, slake::Opcode::LEAVE,
+			UINT32_MAX,
+			{ slake::Value((uint32_t)1) }));
 	compilationContext->setLabelOffset(breakLabel, compilationContext->getCurInsOff());
 
 	return {};
@@ -984,7 +1017,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBreakStmt(
 			compilationContext->emitIns(
 				sldIndex, slake::Opcode::LEAVE,
 				UINT32_MAX,
-				{ slake::Value(curLevel - level) }));
+				{ slake::Value((uint32_t)(curLevel - level)) }));
 	}
 	SLKC_RETURN_IF_COMP_ERROR(
 		compilationContext->emitIns(
@@ -1172,20 +1205,11 @@ SLKC_API peff::Option<CompilationError> slkc::compileStmt(
 		case StmtKind::CodeBlock: {
 			AstNodePtr<CodeBlockStmtNode> s = stmt.castTo<CodeBlockStmtNode>();
 
-			bool hasFrame = false;
-
-			for (auto i : s->body) {
-				if (i->stmtKind == StmtKind::VarDef) {
-					hasFrame = true;
-				}
-			}
-
-			if (hasFrame)
-				SLKC_RETURN_IF_COMP_ERROR(
-					compilationContext->emitIns(
-						sldIndex, slake::Opcode::ENTER,
-						UINT32_MAX,
-						{}));
+			SLKC_RETURN_IF_COMP_ERROR(
+				compilationContext->emitIns(
+					sldIndex, slake::Opcode::ENTER,
+					UINT32_MAX,
+					{}));
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->enterBlock());
 			peff::ScopeGuard popBlockContextGuard([compilationContext]() noexcept {
 				compilationContext->leaveBlock();
@@ -1195,12 +1219,11 @@ SLKC_API peff::Option<CompilationError> slkc::compileStmt(
 				SLKC_RETURN_IF_COMP_ERROR(compileStmt(compileEnv, compilationContext, pathEnv, s->body.at(i)));
 			}
 
-			if (hasFrame)
-				SLKC_RETURN_IF_COMP_ERROR(
-					compilationContext->emitIns(
-						sldIndex, slake::Opcode::LEAVE,
-						UINT32_MAX,
-						{ slake::Value((uint32_t)1) }));
+			SLKC_RETURN_IF_COMP_ERROR(
+				compilationContext->emitIns(
+					sldIndex, slake::Opcode::LEAVE,
+					UINT32_MAX,
+					{ slake::Value((uint32_t)1) }));
 			break;
 		}
 		case StmtKind::Goto:

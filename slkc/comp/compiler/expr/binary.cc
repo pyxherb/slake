@@ -745,28 +745,39 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 	}
 
 	{
-		AstNodePtr<TypeNameNode> commonTypeName, denullifiedCommonTypeName;
+		AstNodePtr<TypeNameNode> mainOperationType, denullifiedMainOperationType;
 
-		{
-			// If the both conversions of sides are viable, choose their common type.
-			// If only one side is viable, choose the viable side.
-			// Or else, choose the left side to generate the error message.
-			bool lhsToRhsViability, rhsToLhsViability;
-			SLKC_RETURN_IF_COMP_ERROR(isConvertible(decayedLhsType, decayedRhsType, true, lhsToRhsViability));
-			SLKC_RETURN_IF_COMP_ERROR(isConvertible(decayedRhsType, decayedLhsType, true, rhsToLhsViability));
-			if (lhsToRhsViability && rhsToLhsViability) {
-				SLKC_RETURN_IF_COMP_ERROR(deduceCommonType(decayedLhsType, decayedRhsType, commonTypeName));
-			} else {
-				if (lhsToRhsViability)
-					commonTypeName = decayedRhsType;
-				else
-					commonTypeName = decayedLhsType;
+		switch (expr->binaryOp) {
+			case BinaryOp::Assign:
+			case BinaryOp::Shl:
+			case BinaryOp::Shr:
+			case BinaryOp::ShlAssign:
+			case BinaryOp::ShrAssign:
+			case BinaryOp::Subscript:
+				mainOperationType = decayedLhsType;
+				break;
+			default: {
+				// If the both conversions of sides are viable, choose their common type.
+				// If only one side is viable, choose the viable side.
+				// Or else, choose the left side to generate the error message.
+				bool lhsToRhsViability, rhsToLhsViability;
+				SLKC_RETURN_IF_COMP_ERROR(isConvertible(decayedLhsType, decayedRhsType, true, lhsToRhsViability));
+				SLKC_RETURN_IF_COMP_ERROR(isConvertible(decayedRhsType, decayedLhsType, true, rhsToLhsViability));
+				if (lhsToRhsViability && rhsToLhsViability) {
+					SLKC_RETURN_IF_COMP_ERROR(deduceCommonType(decayedLhsType, decayedRhsType, mainOperationType));
+				}
+				if (!mainOperationType) {
+					if (lhsToRhsViability)
+						mainOperationType = decayedRhsType;
+					else
+						mainOperationType = decayedLhsType;
+				}
+				SLKC_RETURN_IF_COMP_ERROR(
+					removeNullableOfType(mainOperationType, denullifiedMainOperationType));
 			}
-			SLKC_RETURN_IF_COMP_ERROR(
-				removeNullableOfType(commonTypeName, denullifiedCommonTypeName));
 		}
 
-		switch (commonTypeName->typeNameKind) {
+		switch (mainOperationType->typeNameKind) {
 			case TypeNameKind::I8:
 			case TypeNameKind::I16:
 			case TypeNameKind::I32:
@@ -784,8 +795,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								pathEnv,
 								expr,
 								evalPurpose,
-								decayedLhsType, commonTypeName, ExprEvalPurpose::RValue,
-								decayedRhsType, commonTypeName, ExprEvalPurpose::RValue,
+								decayedLhsType, mainOperationType, ExprEvalPurpose::RValue,
+								decayedRhsType, mainOperationType, ExprEvalPurpose::RValue,
 								resultOut,
 								slake::Opcode::ADD,
 								sldIndex));
@@ -799,8 +810,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								pathEnv,
 								expr,
 								evalPurpose,
-								decayedLhsType, commonTypeName, ExprEvalPurpose::RValue,
-								decayedRhsType, commonTypeName, ExprEvalPurpose::RValue,
+								decayedLhsType, mainOperationType, ExprEvalPurpose::RValue,
+								decayedRhsType, mainOperationType, ExprEvalPurpose::RValue,
 								resultOut,
 								slake::Opcode::SUB,
 								sldIndex));
@@ -814,8 +825,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								pathEnv,
 								expr,
 								evalPurpose,
-								decayedLhsType, commonTypeName, ExprEvalPurpose::RValue,
-								decayedRhsType, commonTypeName, ExprEvalPurpose::RValue,
+								decayedLhsType, mainOperationType, ExprEvalPurpose::RValue,
+								decayedRhsType, mainOperationType, ExprEvalPurpose::RValue,
 								resultOut,
 								slake::Opcode::MUL,
 								sldIndex));
@@ -829,8 +840,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								pathEnv,
 								expr,
 								evalPurpose,
-								decayedLhsType, commonTypeName, ExprEvalPurpose::RValue,
-								decayedRhsType, commonTypeName, ExprEvalPurpose::RValue,
+								decayedLhsType, mainOperationType, ExprEvalPurpose::RValue,
+								decayedRhsType, mainOperationType, ExprEvalPurpose::RValue,
 								resultOut,
 								slake::Opcode::DIV,
 								sldIndex));
@@ -844,8 +855,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								pathEnv,
 								expr,
 								evalPurpose,
-								decayedLhsType, commonTypeName, ExprEvalPurpose::RValue,
-								decayedRhsType, commonTypeName, ExprEvalPurpose::RValue,
+								decayedLhsType, mainOperationType, ExprEvalPurpose::RValue,
+								decayedRhsType, mainOperationType, ExprEvalPurpose::RValue,
 								resultOut,
 								slake::Opcode::MOD,
 								sldIndex));
@@ -859,8 +870,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								pathEnv,
 								expr,
 								evalPurpose,
-								decayedLhsType, commonTypeName, ExprEvalPurpose::RValue,
-								decayedRhsType, commonTypeName, ExprEvalPurpose::RValue,
+								decayedLhsType, mainOperationType, ExprEvalPurpose::RValue,
+								decayedRhsType, mainOperationType, ExprEvalPurpose::RValue,
 								resultOut,
 								slake::Opcode::AND,
 								sldIndex));
@@ -874,8 +885,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								pathEnv,
 								expr,
 								evalPurpose,
-								decayedLhsType, commonTypeName, ExprEvalPurpose::RValue,
-								decayedRhsType, commonTypeName, ExprEvalPurpose::RValue,
+								decayedLhsType, mainOperationType, ExprEvalPurpose::RValue,
+								decayedRhsType, mainOperationType, ExprEvalPurpose::RValue,
 								resultOut,
 								slake::Opcode::OR,
 								sldIndex));
@@ -889,8 +900,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								pathEnv,
 								expr,
 								evalPurpose,
-								decayedLhsType, commonTypeName, ExprEvalPurpose::RValue,
-								decayedRhsType, commonTypeName, ExprEvalPurpose::RValue,
+								decayedLhsType, mainOperationType, ExprEvalPurpose::RValue,
+								decayedRhsType, mainOperationType, ExprEvalPurpose::RValue,
 								resultOut,
 								slake::Opcode::XOR,
 								sldIndex));
@@ -920,7 +931,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								pathEnv,
 								expr,
 								evalPurpose,
-								decayedLhsType, commonTypeName, ExprEvalPurpose::RValue,
+								decayedLhsType, mainOperationType, ExprEvalPurpose::RValue,
 								decayedRhsType,
 								u32Type.castTo<TypeNameNode>(),
 								ExprEvalPurpose::RValue,
@@ -937,7 +948,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								pathEnv,
 								expr,
 								evalPurpose,
-								decayedLhsType, commonTypeName, ExprEvalPurpose::RValue,
+								decayedLhsType, mainOperationType, ExprEvalPurpose::RValue,
 								decayedRhsType,
 								u32Type.castTo<TypeNameNode>(),
 								ExprEvalPurpose::RValue,
@@ -974,7 +985,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								expr,
 								evalPurpose,
 								lhsType,
-								decayedRhsType, commonTypeName, ExprEvalPurpose::RValue,
+								decayedRhsType, mainOperationType, ExprEvalPurpose::RValue,
 								resultOut,
 								slake::Opcode::ADD,
 								sldIndex));
@@ -989,7 +1000,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								expr,
 								evalPurpose,
 								lhsType,
-								decayedRhsType, commonTypeName, ExprEvalPurpose::RValue,
+								decayedRhsType, mainOperationType, ExprEvalPurpose::RValue,
 								resultOut,
 								slake::Opcode::SUB,
 								sldIndex));
@@ -1004,7 +1015,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								expr,
 								evalPurpose,
 								lhsType,
-								decayedRhsType, commonTypeName, ExprEvalPurpose::RValue,
+								decayedRhsType, mainOperationType, ExprEvalPurpose::RValue,
 								resultOut,
 								slake::Opcode::MUL,
 								sldIndex));
@@ -1019,7 +1030,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								expr,
 								evalPurpose,
 								lhsType,
-								decayedRhsType, commonTypeName, ExprEvalPurpose::RValue,
+								decayedRhsType, mainOperationType, ExprEvalPurpose::RValue,
 								resultOut,
 								slake::Opcode::DIV,
 								sldIndex));
@@ -1034,7 +1045,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								expr,
 								evalPurpose,
 								lhsType,
-								decayedRhsType, commonTypeName, ExprEvalPurpose::RValue,
+								decayedRhsType, mainOperationType, ExprEvalPurpose::RValue,
 								resultOut,
 								slake::Opcode::MOD,
 								sldIndex));
@@ -1049,7 +1060,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								expr,
 								evalPurpose,
 								lhsType,
-								decayedRhsType, commonTypeName, ExprEvalPurpose::RValue,
+								decayedRhsType, mainOperationType, ExprEvalPurpose::RValue,
 								resultOut,
 								slake::Opcode::AND,
 								sldIndex));
@@ -1064,7 +1075,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								expr,
 								evalPurpose,
 								lhsType,
-								decayedRhsType, commonTypeName, ExprEvalPurpose::RValue,
+								decayedRhsType, mainOperationType, ExprEvalPurpose::RValue,
 								resultOut,
 								slake::Opcode::OR,
 								sldIndex));
@@ -1079,7 +1090,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								expr,
 								evalPurpose,
 								lhsType,
-								decayedRhsType, commonTypeName, ExprEvalPurpose::RValue,
+								decayedRhsType, mainOperationType, ExprEvalPurpose::RValue,
 								resultOut,
 								slake::Opcode::XOR,
 								sldIndex));
@@ -1136,8 +1147,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								pathEnv,
 								expr,
 								evalPurpose,
-								decayedLhsType, commonTypeName, ExprEvalPurpose::RValue,
-								decayedRhsType, commonTypeName, ExprEvalPurpose::RValue,
+								decayedLhsType, mainOperationType, ExprEvalPurpose::RValue,
+								decayedRhsType, mainOperationType, ExprEvalPurpose::RValue,
 								resultOut,
 								slake::Opcode::EQ,
 								sldIndex));
@@ -1152,8 +1163,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								pathEnv,
 								expr,
 								evalPurpose,
-								decayedLhsType, commonTypeName, ExprEvalPurpose::RValue,
-								decayedRhsType, commonTypeName, ExprEvalPurpose::RValue,
+								decayedLhsType, mainOperationType, ExprEvalPurpose::RValue,
+								decayedRhsType, mainOperationType, ExprEvalPurpose::RValue,
 								resultOut,
 								slake::Opcode::NEQ,
 								sldIndex));
@@ -1167,8 +1178,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								pathEnv,
 								expr,
 								evalPurpose,
-								decayedLhsType, commonTypeName, ExprEvalPurpose::RValue,
-								decayedRhsType, commonTypeName, ExprEvalPurpose::RValue,
+								decayedLhsType, mainOperationType, ExprEvalPurpose::RValue,
+								decayedRhsType, mainOperationType, ExprEvalPurpose::RValue,
 								resultOut,
 								slake::Opcode::LT,
 								sldIndex));
@@ -1182,8 +1193,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								pathEnv,
 								expr,
 								evalPurpose,
-								decayedLhsType, commonTypeName, ExprEvalPurpose::RValue,
-								decayedRhsType, commonTypeName, ExprEvalPurpose::RValue,
+								decayedLhsType, mainOperationType, ExprEvalPurpose::RValue,
+								decayedRhsType, mainOperationType, ExprEvalPurpose::RValue,
 								resultOut,
 								slake::Opcode::GT,
 								sldIndex));
@@ -1197,8 +1208,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								pathEnv,
 								expr,
 								evalPurpose,
-								decayedLhsType, commonTypeName, ExprEvalPurpose::RValue,
-								decayedRhsType, commonTypeName, ExprEvalPurpose::RValue,
+								decayedLhsType, mainOperationType, ExprEvalPurpose::RValue,
+								decayedRhsType, mainOperationType, ExprEvalPurpose::RValue,
 								resultOut,
 								slake::Opcode::LTEQ,
 								sldIndex));
@@ -1212,8 +1223,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								pathEnv,
 								expr,
 								evalPurpose,
-								decayedLhsType, commonTypeName, ExprEvalPurpose::RValue,
-								decayedRhsType, commonTypeName, ExprEvalPurpose::RValue,
+								decayedLhsType, mainOperationType, ExprEvalPurpose::RValue,
+								decayedRhsType, mainOperationType, ExprEvalPurpose::RValue,
 								resultOut,
 								slake::Opcode::GTEQ,
 								sldIndex));
@@ -1227,8 +1238,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								pathEnv,
 								expr,
 								evalPurpose,
-								decayedLhsType, commonTypeName, ExprEvalPurpose::RValue,
-								decayedRhsType, commonTypeName, ExprEvalPurpose::RValue,
+								decayedLhsType, mainOperationType, ExprEvalPurpose::RValue,
+								decayedRhsType, mainOperationType, ExprEvalPurpose::RValue,
 								resultOut,
 								slake::Opcode::CMP,
 								sldIndex));
@@ -1250,8 +1261,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								pathEnv,
 								expr,
 								evalPurpose,
-								decayedLhsType, commonTypeName, ExprEvalPurpose::RValue,
-								decayedRhsType, commonTypeName, ExprEvalPurpose::RValue,
+								decayedLhsType, mainOperationType, ExprEvalPurpose::RValue,
+								decayedRhsType, mainOperationType, ExprEvalPurpose::RValue,
 								resultOut,
 								slake::Opcode::ADD,
 								sldIndex));
@@ -1265,8 +1276,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								pathEnv,
 								expr,
 								evalPurpose,
-								decayedLhsType, commonTypeName, ExprEvalPurpose::RValue,
-								decayedRhsType, commonTypeName, ExprEvalPurpose::RValue,
+								decayedLhsType, mainOperationType, ExprEvalPurpose::RValue,
+								decayedRhsType, mainOperationType, ExprEvalPurpose::RValue,
 								resultOut,
 								slake::Opcode::SUB,
 								sldIndex));
@@ -1280,8 +1291,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								pathEnv,
 								expr,
 								evalPurpose,
-								decayedLhsType, commonTypeName, ExprEvalPurpose::RValue,
-								decayedRhsType, commonTypeName, ExprEvalPurpose::RValue,
+								decayedLhsType, mainOperationType, ExprEvalPurpose::RValue,
+								decayedRhsType, mainOperationType, ExprEvalPurpose::RValue,
 								resultOut,
 								slake::Opcode::MUL,
 								sldIndex));
@@ -1295,8 +1306,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								pathEnv,
 								expr,
 								evalPurpose,
-								decayedLhsType, commonTypeName, ExprEvalPurpose::RValue,
-								decayedRhsType, commonTypeName, ExprEvalPurpose::RValue,
+								decayedLhsType, mainOperationType, ExprEvalPurpose::RValue,
+								decayedRhsType, mainOperationType, ExprEvalPurpose::RValue,
 								resultOut,
 								slake::Opcode::DIV,
 								sldIndex));
@@ -1310,8 +1321,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								pathEnv,
 								expr,
 								evalPurpose,
-								decayedLhsType, commonTypeName, ExprEvalPurpose::RValue,
-								decayedRhsType, commonTypeName, ExprEvalPurpose::RValue,
+								decayedLhsType, mainOperationType, ExprEvalPurpose::RValue,
+								decayedRhsType, mainOperationType, ExprEvalPurpose::RValue,
 								resultOut,
 								slake::Opcode::MOD,
 								sldIndex));
@@ -1360,7 +1371,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								expr,
 								evalPurpose,
 								lhsType,
-								decayedRhsType, commonTypeName, ExprEvalPurpose::RValue,
+								decayedRhsType, mainOperationType, ExprEvalPurpose::RValue,
 								resultOut,
 								slake::Opcode::ADD,
 								sldIndex));
@@ -1375,7 +1386,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								expr,
 								evalPurpose,
 								lhsType,
-								decayedRhsType, commonTypeName, ExprEvalPurpose::RValue,
+								decayedRhsType, mainOperationType, ExprEvalPurpose::RValue,
 								resultOut,
 								slake::Opcode::SUB,
 								sldIndex));
@@ -1390,7 +1401,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								expr,
 								evalPurpose,
 								lhsType,
-								decayedRhsType, commonTypeName, ExprEvalPurpose::RValue,
+								decayedRhsType, mainOperationType, ExprEvalPurpose::RValue,
 								resultOut,
 								slake::Opcode::MUL,
 								sldIndex));
@@ -1405,7 +1416,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								expr,
 								evalPurpose,
 								lhsType,
-								decayedRhsType, commonTypeName, ExprEvalPurpose::RValue,
+								decayedRhsType, mainOperationType, ExprEvalPurpose::RValue,
 								resultOut,
 								slake::Opcode::DIV,
 								sldIndex));
@@ -1420,7 +1431,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								expr,
 								evalPurpose,
 								lhsType,
-								decayedRhsType, commonTypeName, ExprEvalPurpose::RValue,
+								decayedRhsType, mainOperationType, ExprEvalPurpose::RValue,
 								resultOut,
 								slake::Opcode::MOD,
 								sldIndex));
@@ -1477,8 +1488,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								pathEnv,
 								expr,
 								evalPurpose,
-								decayedLhsType, commonTypeName, ExprEvalPurpose::RValue,
-								decayedRhsType, commonTypeName, ExprEvalPurpose::RValue,
+								decayedLhsType, mainOperationType, ExprEvalPurpose::RValue,
+								decayedRhsType, mainOperationType, ExprEvalPurpose::RValue,
 								resultOut,
 								slake::Opcode::EQ,
 								sldIndex));
@@ -1493,8 +1504,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								pathEnv,
 								expr,
 								evalPurpose,
-								decayedLhsType, commonTypeName, ExprEvalPurpose::RValue,
-								decayedRhsType, commonTypeName, ExprEvalPurpose::RValue,
+								decayedLhsType, mainOperationType, ExprEvalPurpose::RValue,
+								decayedRhsType, mainOperationType, ExprEvalPurpose::RValue,
 								resultOut,
 								slake::Opcode::NEQ,
 								sldIndex));
@@ -1508,8 +1519,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								pathEnv,
 								expr,
 								evalPurpose,
-								decayedLhsType, commonTypeName, ExprEvalPurpose::RValue,
-								decayedRhsType, commonTypeName, ExprEvalPurpose::RValue,
+								decayedLhsType, mainOperationType, ExprEvalPurpose::RValue,
+								decayedRhsType, mainOperationType, ExprEvalPurpose::RValue,
 								resultOut,
 								slake::Opcode::LT,
 								sldIndex));
@@ -1523,8 +1534,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								pathEnv,
 								expr,
 								evalPurpose,
-								decayedLhsType, commonTypeName, ExprEvalPurpose::RValue,
-								decayedRhsType, commonTypeName, ExprEvalPurpose::RValue,
+								decayedLhsType, mainOperationType, ExprEvalPurpose::RValue,
+								decayedRhsType, mainOperationType, ExprEvalPurpose::RValue,
 								resultOut,
 								slake::Opcode::GT,
 								sldIndex));
@@ -1538,8 +1549,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								pathEnv,
 								expr,
 								evalPurpose,
-								decayedLhsType, commonTypeName, ExprEvalPurpose::RValue,
-								decayedRhsType, commonTypeName, ExprEvalPurpose::RValue,
+								decayedLhsType, mainOperationType, ExprEvalPurpose::RValue,
+								decayedRhsType, mainOperationType, ExprEvalPurpose::RValue,
 								resultOut,
 								slake::Opcode::LTEQ,
 								sldIndex));
@@ -1553,8 +1564,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								pathEnv,
 								expr,
 								evalPurpose,
-								decayedLhsType, commonTypeName, ExprEvalPurpose::RValue,
-								decayedRhsType, commonTypeName, ExprEvalPurpose::RValue,
+								decayedLhsType, mainOperationType, ExprEvalPurpose::RValue,
+								decayedRhsType, mainOperationType, ExprEvalPurpose::RValue,
 								resultOut,
 								slake::Opcode::GTEQ,
 								sldIndex));
@@ -1568,8 +1579,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								pathEnv,
 								expr,
 								evalPurpose,
-								decayedLhsType, commonTypeName, ExprEvalPurpose::RValue,
-								decayedRhsType, commonTypeName, ExprEvalPurpose::RValue,
+								decayedLhsType, mainOperationType, ExprEvalPurpose::RValue,
+								decayedRhsType, mainOperationType, ExprEvalPurpose::RValue,
 								resultOut,
 								slake::Opcode::CMP,
 								sldIndex));
@@ -1590,8 +1601,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								pathEnv,
 								expr,
 								evalPurpose,
-								decayedLhsType, commonTypeName, ExprEvalPurpose::RValue,
-								decayedRhsType, commonTypeName, ExprEvalPurpose::RValue,
+								decayedLhsType, mainOperationType, ExprEvalPurpose::RValue,
+								decayedRhsType, mainOperationType, ExprEvalPurpose::RValue,
 								resultOut,
 								slake::Opcode::AND,
 								sldIndex));
@@ -1605,8 +1616,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								pathEnv,
 								expr,
 								evalPurpose,
-								decayedLhsType, commonTypeName, ExprEvalPurpose::RValue,
-								decayedRhsType, commonTypeName, ExprEvalPurpose::RValue,
+								decayedLhsType, mainOperationType, ExprEvalPurpose::RValue,
+								decayedRhsType, mainOperationType, ExprEvalPurpose::RValue,
 								resultOut,
 								slake::Opcode::OR,
 								sldIndex));
@@ -1620,8 +1631,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								pathEnv,
 								expr,
 								evalPurpose,
-								decayedLhsType, commonTypeName, ExprEvalPurpose::RValue,
-								decayedRhsType, commonTypeName, ExprEvalPurpose::RValue,
+								decayedLhsType, mainOperationType, ExprEvalPurpose::RValue,
+								decayedRhsType, mainOperationType, ExprEvalPurpose::RValue,
 								resultOut,
 								slake::Opcode::XOR,
 								sldIndex));
@@ -1686,7 +1697,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								expr,
 								evalPurpose,
 								lhsType,
-								decayedRhsType, commonTypeName, ExprEvalPurpose::RValue,
+								decayedRhsType, mainOperationType, ExprEvalPurpose::RValue,
 								resultOut,
 								slake::Opcode::AND,
 								sldIndex));
@@ -1701,7 +1712,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								expr,
 								evalPurpose,
 								lhsType,
-								decayedRhsType, commonTypeName, ExprEvalPurpose::RValue,
+								decayedRhsType, mainOperationType, ExprEvalPurpose::RValue,
 								resultOut,
 								slake::Opcode::OR,
 								sldIndex));
@@ -1716,7 +1727,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								expr,
 								evalPurpose,
 								lhsType,
-								decayedRhsType, commonTypeName, ExprEvalPurpose::RValue,
+								decayedRhsType, mainOperationType, ExprEvalPurpose::RValue,
 								resultOut,
 								slake::Opcode::XOR,
 								sldIndex));
@@ -1731,8 +1742,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								pathEnv,
 								expr,
 								evalPurpose,
-								decayedLhsType, commonTypeName, ExprEvalPurpose::RValue,
-								decayedRhsType, commonTypeName, ExprEvalPurpose::RValue,
+								decayedLhsType, mainOperationType, ExprEvalPurpose::RValue,
+								decayedRhsType, mainOperationType, ExprEvalPurpose::RValue,
 								resultOut,
 								slake::Opcode::EQ,
 								sldIndex));
@@ -1747,8 +1758,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								pathEnv,
 								expr,
 								evalPurpose,
-								decayedLhsType, commonTypeName, ExprEvalPurpose::RValue,
-								decayedRhsType, commonTypeName, ExprEvalPurpose::RValue,
+								decayedLhsType, mainOperationType, ExprEvalPurpose::RValue,
+								decayedRhsType, mainOperationType, ExprEvalPurpose::RValue,
 								resultOut,
 								slake::Opcode::NEQ,
 								sldIndex));
@@ -1769,8 +1780,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								pathEnv,
 								expr,
 								evalPurpose,
-								decayedLhsType, commonTypeName, ExprEvalPurpose::RValue,
-								decayedRhsType, commonTypeName, ExprEvalPurpose::RValue,
+								decayedLhsType, mainOperationType, ExprEvalPurpose::RValue,
+								decayedRhsType, mainOperationType, ExprEvalPurpose::RValue,
 								resultOut,
 								slake::Opcode::EQ,
 								sldIndex));
@@ -1784,8 +1795,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								pathEnv,
 								expr,
 								evalPurpose,
-								decayedLhsType, commonTypeName, ExprEvalPurpose::RValue,
-								decayedRhsType, commonTypeName, ExprEvalPurpose::RValue,
+								decayedLhsType, mainOperationType, ExprEvalPurpose::RValue,
+								decayedRhsType, mainOperationType, ExprEvalPurpose::RValue,
 								resultOut,
 								slake::Opcode::NEQ,
 								sldIndex));
@@ -1806,8 +1817,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								pathEnv,
 								expr,
 								evalPurpose,
-								decayedLhsType, commonTypeName, ExprEvalPurpose::RValue,
-								decayedRhsType, commonTypeName, ExprEvalPurpose::RValue,
+								decayedLhsType, mainOperationType, ExprEvalPurpose::RValue,
+								decayedRhsType, mainOperationType, ExprEvalPurpose::RValue,
 								resultOut,
 								slake::Opcode::EQ,
 								sldIndex));
@@ -1821,8 +1832,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								pathEnv,
 								expr,
 								evalPurpose,
-								decayedLhsType, commonTypeName, ExprEvalPurpose::RValue,
-								decayedRhsType, commonTypeName, ExprEvalPurpose::RValue,
+								decayedLhsType, mainOperationType, ExprEvalPurpose::RValue,
+								decayedRhsType, mainOperationType, ExprEvalPurpose::RValue,
 								resultOut,
 								slake::Opcode::NEQ,
 								sldIndex));

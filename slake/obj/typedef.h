@@ -1,10 +1,8 @@
 #ifndef _SLAKE_OBJ_TYPEDEF_H_
 #define _SLAKE_OBJ_TYPEDEF_H_
 
-#include <unordered_map>
-#include <deque>
-
 #include "object.h"
+#include <peff/containers/dynarray.h>
 
 namespace slake {
 	enum class TypeDefKind : uint8_t {

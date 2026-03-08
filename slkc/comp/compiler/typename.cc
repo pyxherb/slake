@@ -19,6 +19,23 @@ SLKC_API peff::Option<CompilationError> slkc::removeRefOfType(
 	return {};
 }
 
+[[nodiscard]] SLKC_API peff::Option<CompilationError> slkc::removeNullableOfType(
+	AstNodePtr<TypeNameNode> src,
+	AstNodePtr<TypeNameNode> &typeNameOut) {
+	SLKC_RETURN_IF_COMP_ERROR(unwrapFacadeTypeName(src, src));
+
+	if (src->isNullable) {
+		auto newNode = src->duplicate<TypeNameNode>(src->selfAllocator.get());
+		if (!newNode)
+			return genOutOfMemoryCompError();
+		newNode->isNullable = false;
+		typeNameOut = newNode;
+	} else
+		typeNameOut = src;
+
+	return {};
+}
+
 SLKC_API peff::Option<CompilationError> slkc::isLValueType(
 	AstNodePtr<TypeNameNode> src,
 	bool &whetherOut) {
@@ -1303,6 +1320,9 @@ recheck:
 				case TypeNameKind::Ref:
 					SLKC_RETURN_IF_COMP_ERROR(removeRefOfType(src, src));
 					goto recheck;
+				case TypeNameKind::Null:
+					resultOut = dest->isNullable;
+					break;
 				default:
 					resultOut = false;
 					break;
@@ -1329,6 +1349,9 @@ recheck:
 				case TypeNameKind::Ref:
 					SLKC_RETURN_IF_COMP_ERROR(removeRefOfType(src, src));
 					goto recheck;
+				case TypeNameKind::Null:
+					resultOut = dest->isNullable;
+					break;
 				default:
 					resultOut = false;
 					break;
@@ -1353,6 +1376,9 @@ recheck:
 				case TypeNameKind::Ref:
 					SLKC_RETURN_IF_COMP_ERROR(removeRefOfType(src, src));
 					goto recheck;
+				case TypeNameKind::Null:
+					resultOut = dest->isNullable;
+					break;
 				default:
 					resultOut = false;
 					break;

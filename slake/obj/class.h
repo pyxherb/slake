@@ -60,6 +60,8 @@ namespace slake {
 
 	using ClassFlags = uint16_t;
 
+	typedef void (*ClassNativeDestructor)(InstanceObject *instanceObject);
+
 	class ClassObject : public BasicModuleObject {
 	public:
 		peff::DynArray<Value> genericArgs;

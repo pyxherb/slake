@@ -2,11 +2,11 @@
 #define _SLAKE_OBJ_OBJECT_H_
 
 #include "../value.h"
-#include "scope.h"
 #include <atomic>
 #include <string>
 #include <memory_resource>
 #include <peff/containers/set.h>
+#include <peff/containers/list.h>
 #include <slake/plat/thread.h>
 
 namespace slake {

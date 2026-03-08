@@ -1106,133 +1106,157 @@ SLKC_API peff::Option<CompilationError> slkc::evalConstExpr(
 				case TypeNameKind::I8: {
 					AstNodePtr<I8LiteralExprNode> l;
 
-					if (!(l = makeAstNode<I8LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, 0))) {
-						return genOutOfMemoryCompError();
+					if ((e->targetType->isNullable) && (e->source->exprKind == ExprKind::Null)) {
+						exprOut = e->source;
+					} else {
+						if (!(l = makeAstNode<I8LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, 0))) {
+							return genOutOfMemoryCompError();
+						}
+						SLKC_RETURN_IF_COMP_ERROR(_doSimpleIntLiteralCast<int8_t, I8LiteralExprNode>(compileEnv, src, l));
+						exprOut = l.castTo<ExprNode>();
 					}
 
-					SLKC_RETURN_IF_COMP_ERROR(_doSimpleIntLiteralCast<int8_t, I8LiteralExprNode>(compileEnv, src, l));
-
-					exprOut = l.castTo<ExprNode>();
 					break;
 				}
 				case TypeNameKind::I16: {
 					AstNodePtr<I16LiteralExprNode> l;
 
-					if (!(l = makeAstNode<I16LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, 0))) {
-						return genOutOfMemoryCompError();
+					if ((e->targetType->isNullable) && (e->source->exprKind == ExprKind::Null)) {
+						exprOut = e->source;
+					} else {
+						if (!(l = makeAstNode<I16LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, 0))) {
+							return genOutOfMemoryCompError();
+						}
+						SLKC_RETURN_IF_COMP_ERROR(_doSimpleIntLiteralCast<int16_t, I16LiteralExprNode>(compileEnv, src, l));
+						exprOut = l.castTo<ExprNode>();
 					}
 
-					SLKC_RETURN_IF_COMP_ERROR(_doSimpleIntLiteralCast<int16_t, I16LiteralExprNode>(compileEnv, src, l));
-
-					exprOut = l.castTo<ExprNode>();
 					break;
 				}
 				case TypeNameKind::I32: {
 					AstNodePtr<I32LiteralExprNode> l;
 
-					if (!(l = makeAstNode<I32LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, 0))) {
-						return genOutOfMemoryCompError();
+					if ((e->targetType->isNullable) && (e->source->exprKind == ExprKind::Null)) {
+						exprOut = e->source;
+					} else {
+						if (!(l = makeAstNode<I32LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, 0))) {
+							return genOutOfMemoryCompError();
+						}
+						SLKC_RETURN_IF_COMP_ERROR(_doSimpleIntLiteralCast<int32_t, I32LiteralExprNode>(compileEnv, src, l));
+						exprOut = l.castTo<ExprNode>();
 					}
-
-					SLKC_RETURN_IF_COMP_ERROR(_doSimpleIntLiteralCast<int32_t, I32LiteralExprNode>(compileEnv, src, l));
-
-					exprOut = l.castTo<ExprNode>();
 					break;
 				}
 				case TypeNameKind::I64: {
 					AstNodePtr<I64LiteralExprNode> l;
 
-					if (!(l = makeAstNode<I64LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, 0))) {
-						return genOutOfMemoryCompError();
+					if ((e->targetType->isNullable) && (e->source->exprKind == ExprKind::Null)) {
+						exprOut = e->source;
+					} else {
+						if (!(l = makeAstNode<I64LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, 0))) {
+							return genOutOfMemoryCompError();
+						}
+						SLKC_RETURN_IF_COMP_ERROR(_doSimpleIntLiteralCast<int64_t, I64LiteralExprNode>(compileEnv, src, l));
+						exprOut = l.castTo<ExprNode>();
 					}
-
-					SLKC_RETURN_IF_COMP_ERROR(_doSimpleIntLiteralCast<int64_t, I64LiteralExprNode>(compileEnv, src, l));
-
-					exprOut = l.castTo<ExprNode>();
 					break;
 				}
 				case TypeNameKind::U8: {
 					AstNodePtr<U8LiteralExprNode> l;
 
-					if (!(l = makeAstNode<U8LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, 0))) {
-						return genOutOfMemoryCompError();
+					if ((e->targetType->isNullable) && (e->source->exprKind == ExprKind::Null)) {
+						exprOut = e->source;
+					} else {
+						if (!(l = makeAstNode<U8LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, 0))) {
+							return genOutOfMemoryCompError();
+						}
+						SLKC_RETURN_IF_COMP_ERROR(_doSimpleIntLiteralCast<int8_t, U8LiteralExprNode>(compileEnv, src, l));
+						exprOut = l.castTo<ExprNode>();
 					}
-
-					SLKC_RETURN_IF_COMP_ERROR(_doSimpleIntLiteralCast<int8_t, U8LiteralExprNode>(compileEnv, src, l));
-
-					exprOut = l.castTo<ExprNode>();
 					break;
 				}
 				case TypeNameKind::U16: {
 					AstNodePtr<U16LiteralExprNode> l;
 
-					if (!(l = makeAstNode<U16LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, 0))) {
-						return genOutOfMemoryCompError();
+					if ((e->targetType->isNullable) && (e->source->exprKind == ExprKind::Null)) {
+						exprOut = e->source;
+					} else {
+						if (!(l = makeAstNode<U16LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, 0))) {
+							return genOutOfMemoryCompError();
+						}
+						SLKC_RETURN_IF_COMP_ERROR(_doSimpleIntLiteralCast<int16_t, U16LiteralExprNode>(compileEnv, src, l));
+						exprOut = l.castTo<ExprNode>();
 					}
-
-					SLKC_RETURN_IF_COMP_ERROR(_doSimpleIntLiteralCast<int16_t, U16LiteralExprNode>(compileEnv, src, l));
-
-					exprOut = l.castTo<ExprNode>();
 					break;
 				}
 				case TypeNameKind::U32: {
 					AstNodePtr<U32LiteralExprNode> l;
 
-					if (!(l = makeAstNode<U32LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, 0))) {
-						return genOutOfMemoryCompError();
+					if ((e->targetType->isNullable) && (e->source->exprKind == ExprKind::Null)) {
+						exprOut = e->source;
+					} else {
+						if (!(l = makeAstNode<U32LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, 0))) {
+							return genOutOfMemoryCompError();
+						}
+						SLKC_RETURN_IF_COMP_ERROR(_doSimpleIntLiteralCast<int32_t, U32LiteralExprNode>(compileEnv, src, l));
+						exprOut = l.castTo<ExprNode>();
 					}
-
-					SLKC_RETURN_IF_COMP_ERROR(_doSimpleIntLiteralCast<int32_t, U32LiteralExprNode>(compileEnv, src, l));
-
-					exprOut = l.castTo<ExprNode>();
 					break;
 				}
 				case TypeNameKind::U64: {
 					AstNodePtr<U64LiteralExprNode> l;
 
-					if (!(l = makeAstNode<U64LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, 0))) {
-						return genOutOfMemoryCompError();
+					if ((e->targetType->isNullable) && (e->source->exprKind == ExprKind::Null)) {
+						exprOut = e->source;
+					} else {
+						if (!(l = makeAstNode<U64LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, 0))) {
+							return genOutOfMemoryCompError();
+						}
+						SLKC_RETURN_IF_COMP_ERROR(_doSimpleIntLiteralCast<int64_t, U64LiteralExprNode>(compileEnv, src, l));
+						exprOut = l.castTo<ExprNode>();
 					}
-
-					SLKC_RETURN_IF_COMP_ERROR(_doSimpleIntLiteralCast<int64_t, U64LiteralExprNode>(compileEnv, src, l));
-
-					exprOut = l.castTo<ExprNode>();
 					break;
 				}
 				case TypeNameKind::F32: {
 					AstNodePtr<F32LiteralExprNode> l;
 
-					if (!(l = makeAstNode<F32LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, 0))) {
-						return genOutOfMemoryCompError();
+					if ((e->targetType->isNullable) && (e->source->exprKind == ExprKind::Null)) {
+						exprOut = e->source;
+					} else {
+						if (!(l = makeAstNode<F32LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, 0))) {
+							return genOutOfMemoryCompError();
+						}
+						SLKC_RETURN_IF_COMP_ERROR(_doSimpleIntLiteralCast<float, F32LiteralExprNode>(compileEnv, src, l));
+						exprOut = l.castTo<ExprNode>();
 					}
-
-					SLKC_RETURN_IF_COMP_ERROR(_doSimpleIntLiteralCast<float, F32LiteralExprNode>(compileEnv, src, l));
-
-					exprOut = l.castTo<ExprNode>();
 					break;
 				}
 				case TypeNameKind::F64: {
 					AstNodePtr<F64LiteralExprNode> l;
 
-					if (!(l = makeAstNode<F64LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, 0))) {
-						return genOutOfMemoryCompError();
+					if ((e->targetType->isNullable) && (e->source->exprKind == ExprKind::Null)) {
+						exprOut = e->source;
+					} else {
+						if (!(l = makeAstNode<F64LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, 0))) {
+							return genOutOfMemoryCompError();
+						}
+						SLKC_RETURN_IF_COMP_ERROR(_doSimpleIntLiteralCast<double, F64LiteralExprNode>(compileEnv, src, l));
+						exprOut = l.castTo<ExprNode>();
 					}
-
-					SLKC_RETURN_IF_COMP_ERROR(_doSimpleIntLiteralCast<double, F64LiteralExprNode>(compileEnv, src, l));
-
-					exprOut = l.castTo<ExprNode>();
 					break;
 				}
 				case TypeNameKind::Bool: {
 					AstNodePtr<BoolLiteralExprNode> l;
 
-					if (!(l = makeAstNode<BoolLiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, 0))) {
-						return genOutOfMemoryCompError();
+					if ((e->targetType->isNullable) && (e->source->exprKind == ExprKind::Null)) {
+						exprOut = e->source;
+					} else {
+						if (!(l = makeAstNode<BoolLiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, 0))) {
+							return genOutOfMemoryCompError();
+						}
+						SLKC_RETURN_IF_COMP_ERROR(_doSimpleIntLiteralCast<double, BoolLiteralExprNode>(compileEnv, src, l));
+						exprOut = l.castTo<ExprNode>();
 					}
-
-					SLKC_RETURN_IF_COMP_ERROR(_doSimpleIntLiteralCast<double, BoolLiteralExprNode>(compileEnv, src, l));
-
-					exprOut = l.castTo<ExprNode>();
 					break;
 				}
 				case TypeNameKind::String: {

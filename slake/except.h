@@ -304,6 +304,8 @@ namespace slake {
 			peff::String &&name);
 	};
 
+	class FnObject;
+
 	class GenericDuplicatedFnOverloadingError : public RuntimeExecError {
 	public:
 		FnObject *originalFn;

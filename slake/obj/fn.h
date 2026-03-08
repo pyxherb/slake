@@ -5,14 +5,12 @@
 #include <slake/slxfmt.h>
 
 #include <functional>
-#include <deque>
-#include <vector>
-#include <memory>
 
 #include "member.h"
 #include "generic.h"
 
 #include <peff/containers/map.h>
+#include <peff/containers/hashmap.h>
 
 namespace slake {
 	struct Context;

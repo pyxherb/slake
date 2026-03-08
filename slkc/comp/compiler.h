@@ -64,6 +64,9 @@ namespace slkc {
 		PathEnv(PathEnv &&) noexcept = default;
 		SLAKE_FORCEINLINE ~PathEnv() {}
 
+		SLAKE_FORCEINLINE void setParentEnv(PathEnv *parent) noexcept {
+			this->parent = parent;
+		}
 		SLAKE_API peff::Option<NullOverrideType> lookupVarNullOverride(const AstNodePtr<VarNode> &varNode);
 		SLAKE_API peff::Option<CompilationError> setLocalVarNullOverride(AstNodePtr<VarNode> varNode, NullOverrideType type);
 		SLAKE_API void removeVarNullOverride(const AstNodePtr<VarNode> &varNode);
@@ -515,6 +518,9 @@ namespace slkc {
 		bool &whetherOut);
 
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> removeRefOfType(
+		AstNodePtr<TypeNameNode> src,
+		AstNodePtr<TypeNameNode> &typeNameOut);
+	[[nodiscard]] SLKC_API peff::Option<CompilationError> removeNullableOfType(
 		AstNodePtr<TypeNameNode> src,
 		AstNodePtr<TypeNameNode> &typeNameOut);
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> isLValueType(

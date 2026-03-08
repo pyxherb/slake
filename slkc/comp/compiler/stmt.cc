@@ -433,7 +433,15 @@ SLKC_API peff::Option<CompilationError> slkc::compileIfStmt(
 
 	SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileEnv, compilationContext, pathEnv, s->cond, exprType, boolType.castTo<TypeNameNode>()));
 
-	SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileEnv, compilationContext, pathEnv, ExprEvalPurpose::RValue, boolType.castTo<TypeNameNode>(), s->cond, exprType, result));
+	PathEnv condEnv(compileEnv->allocator.get());
+	condEnv.setParentEnv(pathEnv);
+
+	PathEnv innerPathEnv[2] = {
+		PathEnv(compileEnv->allocator.get()),
+		PathEnv(compileEnv->allocator.get())
+	};
+
+	SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileEnv, compilationContext, &condEnv, ExprEvalPurpose::RValue, boolType.castTo<TypeNameNode>(), s->cond, exprType, result));
 
 	conditionReg = result.idxResultRegOut;
 
@@ -471,11 +479,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileIfStmt(
 
 		compilationContext->setLabelOffset(trueLabel, compilationContext->getCurInsOff());
 
-		PathEnv innerPathEnv[2] = {
-			PathEnv(compileEnv->allocator.get()),
-			PathEnv(compileEnv->allocator.get())
-		};
 		{
+			innerPathEnv[0].setParentEnv(&condEnv);
 			innerPathEnv[0].execPossibility =
 				constCondExpr
 					? (constCondExpr.castTo<BoolLiteralExprNode>()->data
@@ -494,6 +499,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileIfStmt(
 		compilationContext->setLabelOffset(falseLabel, compilationContext->getCurInsOff());
 
 		if (s->falseBody) {
+			innerPathEnv[1].setParentEnv(pathEnv);
 			innerPathEnv[1].execPossibility =
 				constCondExpr
 					? (constCondExpr.castTo<BoolLiteralExprNode>()->data
@@ -503,9 +509,11 @@ SLKC_API peff::Option<CompilationError> slkc::compileIfStmt(
 			SLKC_RETURN_IF_COMP_ERROR(compileStmt(compileEnv, compilationContext, &innerPathEnv[1], s->falseBody));
 		}
 
-		SLKC_RETURN_IF_COMP_ERROR(combineParallelPathEnv(compileEnv->allocator.get(), *pathEnv, innerPathEnv, 2));
+		SLKC_RETURN_IF_COMP_ERROR(combineParallelPathEnv(compileEnv->allocator.get(), condEnv, innerPathEnv, 2));
 
 		compilationContext->setLabelOffset(endLabel, compilationContext->getCurInsOff());
+
+		SLKC_RETURN_IF_COMP_ERROR(combinePathEnv(*pathEnv, condEnv));
 	}
 
 	return {};

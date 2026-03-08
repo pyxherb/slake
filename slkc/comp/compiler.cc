@@ -118,6 +118,7 @@ SLKC_API peff::Option<CompilationError> slkc::combineParallelPathEnv(peff::Alloc
 						if (prevOverride.value() != curOverride.second) {
 							if (!nonunifiableNullOverrideVars.insert(AstNodePtr<VarNode>(prevOverride.key())))
 								return genOutOfMemoryCompError();
+							commonLocalVarNullOverrides.remove(prevOverride);
 						}
 					} else {
 						auto copiedOverrideType = curOverride.second;

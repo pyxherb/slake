@@ -321,34 +321,38 @@ public async main() -> i32 {
 	hostext.extfns.print(s.b, "\n");
 	hostext.extfns.print(s.c, "\n");
 
-	let nullable: i32?;
+	{
+		let nullable: i32?;
 
-	if (true)
-		nullable = 123;
+		if (true)
+			nullable = 123;
+		else
+			nullable = null;
 
-	let nonnullable: i32;
+		let nonnullable: i32;
 
-	nonnullable = nullable;
+		nonnullable = nullable;
+
+		let ax: i32?;
+
+		match (123) {
+			123: ((ax = 123) + 123),
+			456: ((ax = 456) + 456),
+			default: ((ax = 789) + 789)
+		};
+
+		nonnullable = ax;
+	}
 
 	for(c: i32 = 10; c > 0; c -= 1) {
 		extfns.print("Yielded\n");
 		yield 0;
 	}
 
-	let ax: i32?;
-
-	match (123) {
-		123: ((ax = 123) + 123),
-		456: ((ax = 456) + 456),
-		default: ((ax = 789) + 789)
-	};
-
-	nonnullable = ax;
-
-	for(i: i32 = 0; i < 100; i += 1) {
+	for(i: i32 = 0; i < 10; i += 1) {
 		let x: i32 = 0;
 		hostext.extfns.print("i = ", i, "\n");
-		while (x < 100) {
+		while (x < 10) {
 			let y: i32 = 1;
 			x += y;
 			hostext.extfns.print("\tx = ", x, "\n");
@@ -357,13 +361,13 @@ public async main() -> i32 {
 		while (x > 0) {
 			let y: i32 = 1;
 			x -= y;
-			if (x < 50)
+			if (x < 2)
 				break;
 			hostext.extfns.print("\tx = ", x, "\n");
 		}
-		if(i == 80)
+		if(i == 8)
 			continue;
-		if(i == 90)
+		if(i == 9)
 			break;
 	}
 

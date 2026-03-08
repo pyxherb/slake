@@ -103,6 +103,12 @@ peff::Option<CompilationError> slkc::_compileSimpleAssignBinaryExpr(
 				}
 			}
 			resultOut.idxResultRegOut = lhsResult.idxResultRegOut;
+
+			if(!(rhsType->isNullable) && (desiredRhsType->isNullable)) {
+				SLKC_RETURN_IF_COMP_ERROR(
+					removeNullableOfType(desiredRhsType, desiredRhsType));
+			}
+
 			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileEnv, compilationContext, pathEnv, rhsEvalPurpose, desiredRhsType, expr->rhs, rhsType, rhsResult));
 			rhsReg = rhsResult.idxResultRegOut;
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
@@ -111,11 +117,21 @@ peff::Option<CompilationError> slkc::_compileSimpleAssignBinaryExpr(
 				UINT32_MAX,
 				{ slake::Value(slake::ValueType::RegIndex, resultOut.idxResultRegOut), slake::Value(slake::ValueType::RegIndex, rhsReg) }));
 
-			if (lhsResult.evaluatedFinalMember->getAstNodeType() == AstNodeType::Var) {
-				if ((rhsResult.evaluatedType->typeNameKind == TypeNameKind::Null) || (rhsResult.evaluatedType->isNullable)) {
+			if (lhsResult.evaluatedFinalMember && (lhsResult.evaluatedFinalMember->getAstNodeType() == AstNodeType::Var)) {
+				if (rhsResult.evaluatedType->typeNameKind == TypeNameKind::Null) {
 					SLKC_RETURN_IF_COMP_ERROR(pathEnv->setLocalVarNullOverride(lhsResult.evaluatedFinalMember.castTo<VarNode>(), NullOverrideType::Nullify));
 				} else {
-					SLKC_RETURN_IF_COMP_ERROR(pathEnv->setLocalVarNullOverride(lhsResult.evaluatedFinalMember.castTo<VarNode>(), NullOverrideType::Denullify));
+					if (rhsResult.evaluatedType->isNullable) {
+						if (rhsResult.evaluatedFinalMember && (rhsResult.evaluatedFinalMember->getAstNodeType() == AstNodeType::Var)) {
+							if (auto od = pathEnv->lookupVarNullOverride(rhsResult.evaluatedFinalMember.castTo<VarNode>()); od.hasValue()) {
+								SLKC_RETURN_IF_COMP_ERROR(pathEnv->setLocalVarNullOverride(lhsResult.evaluatedFinalMember.castTo<VarNode>(), od.value()));
+							} else
+								SLKC_RETURN_IF_COMP_ERROR(pathEnv->setLocalVarNullOverride(lhsResult.evaluatedFinalMember.castTo<VarNode>(), NullOverrideType::Uncertain));
+						} else {
+							SLKC_RETURN_IF_COMP_ERROR(pathEnv->setLocalVarNullOverride(lhsResult.evaluatedFinalMember.castTo<VarNode>(), NullOverrideType::Uncertain));
+						}
+					} else
+						SLKC_RETURN_IF_COMP_ERROR(pathEnv->setLocalVarNullOverride(lhsResult.evaluatedFinalMember.castTo<VarNode>(), NullOverrideType::Denullify));
 				}
 			}
 			break;
@@ -139,6 +155,12 @@ peff::Option<CompilationError> slkc::_compileSimpleAssignBinaryExpr(
 				}
 			}
 			lhsReg = lhsResult.idxResultRegOut;
+
+			if(!(rhsType->isNullable) && (desiredRhsType->isNullable)) {
+				SLKC_RETURN_IF_COMP_ERROR(
+					removeNullableOfType(desiredRhsType, desiredRhsType));
+			}
+
 			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileEnv, compilationContext, pathEnv, rhsEvalPurpose, desiredRhsType, expr->rhs, rhsType, rhsResult));
 			rhsReg = rhsResult.idxResultRegOut;
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
@@ -148,11 +170,21 @@ peff::Option<CompilationError> slkc::_compileSimpleAssignBinaryExpr(
 				{ slake::Value(slake::ValueType::RegIndex, lhsReg), slake::Value(slake::ValueType::RegIndex, rhsReg) }));
 			resultOut.idxResultRegOut = rhsReg;
 
-			if (lhsResult.evaluatedFinalMember->getAstNodeType() == AstNodeType::Var) {
-				if ((rhsResult.evaluatedType->typeNameKind == TypeNameKind::Null) || (rhsResult.evaluatedType->isNullable)) {
+			if (lhsResult.evaluatedFinalMember && (lhsResult.evaluatedFinalMember->getAstNodeType() == AstNodeType::Var)) {
+				if (rhsResult.evaluatedType->typeNameKind == TypeNameKind::Null) {
 					SLKC_RETURN_IF_COMP_ERROR(pathEnv->setLocalVarNullOverride(lhsResult.evaluatedFinalMember.castTo<VarNode>(), NullOverrideType::Nullify));
 				} else {
-					SLKC_RETURN_IF_COMP_ERROR(pathEnv->setLocalVarNullOverride(lhsResult.evaluatedFinalMember.castTo<VarNode>(), NullOverrideType::Denullify));
+					if (rhsResult.evaluatedType->isNullable) {
+						if (rhsResult.evaluatedFinalMember && (rhsResult.evaluatedFinalMember->getAstNodeType() == AstNodeType::Var)) {
+							if (auto od = pathEnv->lookupVarNullOverride(rhsResult.evaluatedFinalMember.castTo<VarNode>()); od.hasValue()) {
+								SLKC_RETURN_IF_COMP_ERROR(pathEnv->setLocalVarNullOverride(lhsResult.evaluatedFinalMember.castTo<VarNode>(), od.value()));
+							} else
+								SLKC_RETURN_IF_COMP_ERROR(pathEnv->setLocalVarNullOverride(lhsResult.evaluatedFinalMember.castTo<VarNode>(), NullOverrideType::Uncertain));
+						} else {
+							SLKC_RETURN_IF_COMP_ERROR(pathEnv->setLocalVarNullOverride(lhsResult.evaluatedFinalMember.castTo<VarNode>(), NullOverrideType::Uncertain));
+						}
+					} else
+						SLKC_RETURN_IF_COMP_ERROR(pathEnv->setLocalVarNullOverride(lhsResult.evaluatedFinalMember.castTo<VarNode>(), NullOverrideType::Denullify));
 				}
 			}
 			break;
@@ -745,7 +777,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 	}
 
 	{
-		AstNodePtr<TypeNameNode> mainOperationType, denullifiedMainOperationType;
+		AstNodePtr<TypeNameNode> mainOperationType;
 
 		switch (expr->binaryOp) {
 			case BinaryOp::Assign:
@@ -772,8 +804,6 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 					else
 						mainOperationType = decayedLhsType;
 				}
-				SLKC_RETURN_IF_COMP_ERROR(
-					removeNullableOfType(mainOperationType, denullifiedMainOperationType));
 			}
 		}
 

@@ -1622,11 +1622,9 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 		case ExprKind::Cast: {
 			AstNodePtr<CastExprNode> e = expr.castTo<CastExprNode>();
 
-			AstNodePtr<TypeNameNode> exprType, targetType = e->targetType, denullifiedTargetType;
+			AstNodePtr<TypeNameNode> exprType, targetType = e->targetType;
 
 			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, evalExprType(compileEnv, compilationContext, pathEnv, e->source, exprType, targetType));
-
-			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, removeNullableOfType(targetType, denullifiedTargetType));
 
 			bool b;
 			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, isConvertible(exprType, targetType, false, b));
@@ -1650,46 +1648,34 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 			bool sameType;
 			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, isSameType(decayedExprType, targetType, sameType));
 			if (!sameType) {
-				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, isSameType(decayedExprType, denullifiedTargetType, sameType));
-
-				if (sameType) {
-					// T to T? is allowed and should return T as the result type.
-					if (!leftValue) {
-						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, e->source, ExprEvalPurpose::RValue, {}, resultOut));
-					} else {
-						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, e->source, ExprEvalPurpose::LValue, {}, resultOut));
-					}
-					resultOut.evaluatedType = denullifiedTargetType;
+				CompileExprResult result(compileEnv->allocator.get());
+				if (!leftValue) {
+					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, e->source, ExprEvalPurpose::RValue, {}, result));
 				} else {
-					CompileExprResult result(compileEnv->allocator.get());
-					if (!leftValue) {
-						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, e->source, ExprEvalPurpose::RValue, {}, result));
-					} else {
-						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, e->source, ExprEvalPurpose::LValue, {}, result));
-					}
-
-					uint32_t idxReg = result.idxResultRegOut;
-
-					slake::TypeRef type;
-					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileTypeName(compileEnv, compilationContext, targetType, type));
-
-					uint32_t valueRegOut;
-					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->allocReg(valueRegOut));
-
-					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->emitIns(sldIndex, slake::Opcode::CAST, valueRegOut, { slake::Value(type), slake::Value(slake::ValueType::RegIndex, idxReg) }));
-
-					resultOut.evaluatedType = targetType;
-
-					// Convert to subtypes may fail.
-					bool subtype;
-					if (isSubtypeOf(targetType, decayedExprType, subtype)) {
-						if (!(resultOut.evaluatedType = resultOut.evaluatedType->duplicate<TypeNameNode>(compileEnv->allocator.get())))
-							return genOutOfMemoryCompError();
-						resultOut.evaluatedType->isNullable = true;
-					}
-
-					resultOut.idxResultRegOut = valueRegOut;
+					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, e->source, ExprEvalPurpose::LValue, {}, result));
 				}
+
+				uint32_t idxReg = result.idxResultRegOut;
+
+				slake::TypeRef type;
+				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileTypeName(compileEnv, compilationContext, targetType, type));
+
+				uint32_t valueRegOut;
+				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->allocReg(valueRegOut));
+
+				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->emitIns(sldIndex, slake::Opcode::CAST, valueRegOut, { slake::Value(type), slake::Value(slake::ValueType::RegIndex, idxReg) }));
+
+				resultOut.evaluatedType = targetType;
+
+				// Convert to subtypes may fail.
+				bool subtype;
+				if (isSubtypeOf(targetType, decayedExprType, subtype)) {
+					if (!(resultOut.evaluatedType = resultOut.evaluatedType->duplicate<TypeNameNode>(compileEnv->allocator.get())))
+						return genOutOfMemoryCompError();
+					resultOut.evaluatedType->isNullable = true;
+				}
+
+				resultOut.idxResultRegOut = valueRegOut;
 			} else {
 				if (!leftValue) {
 					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileExpr(compileEnv, compilationContext, pathEnv, e->source, ExprEvalPurpose::RValue, {}, resultOut));

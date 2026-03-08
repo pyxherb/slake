@@ -312,9 +312,9 @@ SLKC_API peff::Option<CompilationError> slkc::compileForStmt(
 				boolType.castTo<TypeNameNode>(),
 				castExpr));
 
-			SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, castExpr.castTo<ExprNode>(), constCondExpr));
+			SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, pathEnv, castExpr.castTo<ExprNode>(), constCondExpr));
 		} else {
-			SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, s->cond, constCondExpr));
+			SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, pathEnv, s->cond, constCondExpr));
 		}
 
 		compilationContext->setLabelOffset(condLabel, compilationContext->getCurInsOff());
@@ -466,9 +466,9 @@ SLKC_API peff::Option<CompilationError> slkc::compileIfStmt(
 				compileEnv->curOverloading->returnType,
 				castExpr));
 
-			SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, castExpr.castTo<ExprNode>(), constCondExpr));
+			SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, pathEnv, castExpr.castTo<ExprNode>(), constCondExpr));
 		} else {
-			SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, s->cond, constCondExpr));
+			SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, pathEnv, s->cond, constCondExpr));
 		}
 
 		SLKC_RETURN_IF_COMP_ERROR(
@@ -509,7 +509,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileIfStmt(
 			SLKC_RETURN_IF_COMP_ERROR(compileStmt(compileEnv, compilationContext, &innerPathEnv[1], s->falseBody));
 		}
 
-		SLKC_RETURN_IF_COMP_ERROR(combineParallelPathEnv(compileEnv->allocator.get(), condEnv, innerPathEnv, 2));
+		SLKC_RETURN_IF_COMP_ERROR(combineParallelPathEnv(compileEnv->allocator.get(), compileEnv, compilationContext, condEnv, innerPathEnv, 2));
 
 		compilationContext->setLabelOffset(endLabel, compilationContext->getCurInsOff());
 
@@ -570,9 +570,9 @@ SLKC_API peff::Option<CompilationError> slkc::compileWhileStmt(
 			compileEnv->curOverloading->returnType,
 			castExpr));
 
-		SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, castExpr.castTo<ExprNode>(), constCondExpr));
+		SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, pathEnv, castExpr.castTo<ExprNode>(), constCondExpr));
 	} else {
-		SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, s->cond, constCondExpr));
+		SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, pathEnv, s->cond, constCondExpr));
 	}
 
 	SLKC_RETURN_IF_COMP_ERROR(
@@ -692,9 +692,9 @@ SLKC_API peff::Option<CompilationError> slkc::compileDoWhileStmt(
 			compileEnv->curOverloading->returnType,
 			castExpr));
 
-		SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, castExpr.castTo<ExprNode>(), constCondExpr));
+		SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, pathEnv, castExpr.castTo<ExprNode>(), constCondExpr));
 	} else {
-		SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, s->cond, constCondExpr));
+		SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, pathEnv, s->cond, constCondExpr));
 	}
 
 	SLKC_RETURN_IF_COMP_ERROR(
@@ -882,7 +882,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileSwitchStmt(
 		} else {
 			AstNodePtr<ExprNode> resultExpr;
 
-			SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, curCase->condition, resultExpr));
+			SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, pathEnv, curCase->condition, resultExpr));
 
 			if (!resultExpr) {
 				return CompilationError(curCase->condition->tokenRange, CompilationErrorKind::ErrorEvaluatingConstSwitchCaseCondition);
@@ -919,7 +919,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileSwitchStmt(
 
 				AstNodePtr<ExprNode> cmpResult;
 
-				SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, ce.castTo<ExprNode>(), cmpResult));
+				SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, pathEnv, ce.castTo<ExprNode>(), cmpResult));
 
 				assert(cmpResult);
 

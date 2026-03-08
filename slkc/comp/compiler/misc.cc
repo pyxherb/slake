@@ -240,7 +240,10 @@ SLKC_API peff::Option<CompilationError> slkc::fillScopedEnum(
 
 			AstNodePtr<TypeNameNode> tn;
 
-			SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, item->enumValue, fillValue));
+			{
+				PathEnv pathEnv(compileEnv->allocator.get());
+				SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, &pathEnv, item->enumValue, fillValue));
+			}
 			if (!fillValue)
 				return CompilationError(item->enumValue->tokenRange, CompilationErrorKind::RequiresCompTimeExpr);
 
@@ -261,7 +264,10 @@ SLKC_API peff::Option<CompilationError> slkc::fillScopedEnum(
 				castExpr->source = fillValue;
 				castExpr->targetType = enumNode->baseType;
 
-				SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, castExpr.castTo<ExprNode>(), fillValue));
+				{
+					PathEnv pathEnv(compileEnv->allocator.get());
+					SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, &pathEnv, castExpr.castTo<ExprNode>(), fillValue));
+				}
 
 				if (!fillValue)
 					return CompilationError(item->enumValue->tokenRange, CompilationErrorKind::IncompatibleInitialValueType);
@@ -376,7 +382,7 @@ SLKC_API peff::Option<CompilationError> slkc::genBinaryOpExpr(CompileEnv *compil
 	return {};
 }
 
-SLKC_API peff::Option<CompilationError> slkc::evalConstBinaryOpExpr(CompileEnv *compileEnv, CompilationContext *compilationContext, BinaryOp binaryOp, AstNodePtr<ExprNode> lhs, AstNodePtr<ExprNode> rhs, AstNodePtr<ExprNode> &resultOut) {
+SLKC_API peff::Option<CompilationError> slkc::evalConstBinaryOpExpr(CompileEnv *compileEnv, CompilationContext *compilationContext, PathEnv *pathEnv, BinaryOp binaryOp, AstNodePtr<ExprNode> lhs, AstNodePtr<ExprNode> rhs, AstNodePtr<ExprNode> &resultOut) {
 	AstNodePtr<BinaryExprNode> expr;
 
 	if (!(expr = makeAstNode<BinaryExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document)))
@@ -386,7 +392,7 @@ SLKC_API peff::Option<CompilationError> slkc::evalConstBinaryOpExpr(CompileEnv *
 	expr->lhs = lhs;
 	expr->rhs = rhs;
 
-	SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, expr.castTo<ExprNode>(), resultOut));
+	SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, pathEnv, expr.castTo<ExprNode>(), resultOut));
 
 	return {};
 }
@@ -406,7 +412,7 @@ SLKC_API peff::Option<CompilationError> slkc::genImplicitCastExpr(CompileEnv *co
 	return {};
 }
 
-SLKC_API peff::Option<CompilationError> slkc::implicitConvertConstExpr(CompileEnv *compileEnv, CompilationContext *compilationContext, AstNodePtr<ExprNode> source, AstNodePtr<TypeNameNode> destType, AstNodePtr<ExprNode> &resultOut) {
+SLKC_API peff::Option<CompilationError> slkc::implicitConvertConstExpr(CompileEnv *compileEnv, CompilationContext *compilationContext, PathEnv *pathEnv, AstNodePtr<ExprNode> source, AstNodePtr<TypeNameNode> destType, AstNodePtr<ExprNode> &resultOut) {
 	AstNodePtr<CastExprNode> castExpr;
 
 	if (!(castExpr = makeAstNode<CastExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document)))
@@ -415,7 +421,7 @@ SLKC_API peff::Option<CompilationError> slkc::implicitConvertConstExpr(CompileEn
 	castExpr->source = source;
 	castExpr->targetType = destType;
 
-	SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, castExpr.castTo<ExprNode>(), resultOut));
+	SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, pathEnv, castExpr.castTo<ExprNode>(), resultOut));
 
 	return {};
 }

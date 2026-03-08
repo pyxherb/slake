@@ -2,7 +2,7 @@
 
 using namespace slkc;
 
-SLKC_API Document::Document(peff::Alloc *allocator): allocator(allocator), externalModuleProviders(allocator), genericCacheDir(allocator) {
+SLKC_API Document::Document(peff::Alloc *allocator) : allocator(allocator), externalModuleProviders(allocator), genericCacheDir(allocator) {
 }
 
 SLKC_API Document::~Document() {
@@ -26,7 +26,7 @@ SLKC_API void Document::_doClearDeferredDestructibleAstNodes() {
 SLAKE_API GenericArgListCmp::GenericArgListCmp(Document *document, CompileEnv *compileEnv) : document(document), compileEnv(compileEnv) {
 }
 
-SLAKE_API GenericArgListCmp::GenericArgListCmp(const GenericArgListCmp &r): document(r.document), compileEnv(r.compileEnv) {
+SLAKE_API GenericArgListCmp::GenericArgListCmp(const GenericArgListCmp &r) : document(r.document), compileEnv(r.compileEnv) {
 }
 
 SLAKE_API GenericArgListCmp::GenericArgListCmp::~GenericArgListCmp() {
@@ -48,17 +48,23 @@ SLAKE_API peff::Option<int> GenericArgListCmp::operator()(const peff::DynArray<A
 			case AstNodeType::Expr: {
 				NormalCompilationContext compilationContext(compileEnv.get(), nullptr);
 				AstNodePtr<ExprNode> le, re;
-				if (auto e = evalConstExpr(compileEnv.get(), &compilationContext, l.castTo<ExprNode>(), le); e) {
-					storedError = std::move(e);
-					return {};
+				{
+					PathEnv pathEnv(compileEnv->allocator.get());
+					if (auto e = evalConstExpr(compileEnv.get(), &compilationContext, &pathEnv, l.castTo<ExprNode>(), le); e) {
+						storedError = std::move(e);
+						return {};
+					}
 				}
 				if (!le) {
 					storedError = CompilationError(l->tokenRange, CompilationErrorKind::RequiresCompTimeExpr);
 					return {};
 				}
-				if (auto e = evalConstExpr(compileEnv.get(), &compilationContext, r.castTo<ExprNode>(), re); e) {
-					storedError = std::move(e);
-					return {};
+				{
+					PathEnv pathEnv(compileEnv->allocator.get());
+					if (auto e = evalConstExpr(compileEnv.get(), &compilationContext, &pathEnv, r.castTo<ExprNode>(), re); e) {
+						storedError = std::move(e);
+						return {};
+					}
 				}
 				if (!re) {
 					storedError = CompilationError(l->tokenRange, CompilationErrorKind::RequiresCompTimeExpr);
@@ -71,7 +77,7 @@ SLAKE_API peff::Option<int> GenericArgListCmp::operator()(const peff::DynArray<A
 				switch (le->exprKind) {
 					case ExprKind::I8: {
 						int8_t ld = le.castTo<I8LiteralExprNode>()->data, rd = re.castTo<I8LiteralExprNode>()->data;
-						if(ld < rd)
+						if (ld < rd)
 							return -1;
 						if (ld > rd)
 							return 1;
@@ -186,7 +192,6 @@ SLAKE_API peff::Option<int> GenericArgListCmp::operator()(const peff::DynArray<A
 			default:
 				std::terminate();
 		}
-
 	}
 
 	std::terminate();

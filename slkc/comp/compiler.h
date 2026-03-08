@@ -9,12 +9,13 @@ namespace slkc {
 	SLKC_API peff::Option<slkc::CompilationError> typeNameListCmp(const peff::DynArray<AstNodePtr<TypeNameNode>> &lhs, const peff::DynArray<AstNodePtr<TypeNameNode>> &rhs, int &out) noexcept;
 
 	enum class ExprEvalPurpose : uint8_t {
-		EvalType,	// None
-		Stmt,		// As a statement
-		LValue,		// As a lvalue
-		RValue,		// As a rvalue
-		Call,		// As target of a calling expression
-		Unpacking,	// For unpacking, note that it is used for notifying the expression compiler to prepare the expression to be unpacked, not actually to unpack it.
+		EvalTypeActual,	 // Evaluate type only, as lvalue
+		EvalType,	 // Evaluate type only, as rvalue
+		Stmt,			 // As a statement
+		LValue,			 // As a lvalue
+		RValue,			 // As a rvalue
+		Call,			 // As target of a calling expression
+		Unpacking,		 // For unpacking, note that it is used for notifying the expression compiler to prepare the expression to be unpacked, not actually to unpack it.
 	};
 
 	struct LocalVarRegistry {
@@ -44,8 +45,9 @@ namespace slkc {
 	SLKC_API PathPossibility combinePossibility(PathPossibility outer, PathPossibility inner) noexcept;
 
 	struct PathEnv {
-		PathEnv *parent = nullptr;
+		const PathEnv *parent = nullptr;
 		peff::Map<AstNodePtr<VarNode>, NullOverrideType> localVarNullOverrides;
+		peff::Map<AstNodePtr<VarNode>, AstNodePtr<ExprNode>> localVarValueOverrides;
 
 		/// @brief Indicates if the path will be executed at least one times.
 		PathPossibility execPossibility = PathPossibility::Must;
@@ -59,8 +61,7 @@ namespace slkc {
 		/// @brief Indicates if the path will break current control flow (e.g. jump out from current loop).
 		PathPossibility breakPossibility = PathPossibility::Never;
 
-		SLAKE_FORCEINLINE PathEnv(peff::Alloc *allocator) noexcept : localVarNullOverrides(allocator) {
-		}
+		PathEnv(peff::Alloc *allocator) noexcept;
 		PathEnv(PathEnv &&) noexcept = default;
 		SLAKE_FORCEINLINE ~PathEnv() {}
 
@@ -69,11 +70,15 @@ namespace slkc {
 		}
 		SLAKE_API peff::Option<NullOverrideType> lookupVarNullOverride(const AstNodePtr<VarNode> &varNode);
 		SLAKE_API peff::Option<CompilationError> setLocalVarNullOverride(AstNodePtr<VarNode> varNode, NullOverrideType type);
+		SLAKE_API AstNodePtr<ExprNode> lookupVarValueOverride(const AstNodePtr<VarNode> &varNode);
+		SLAKE_API peff::Option<CompilationError> setLocalVarValueOverride(AstNodePtr<VarNode> varNode, AstNodePtr<ExprNode> expr);
 		SLAKE_API void removeVarNullOverride(const AstNodePtr<VarNode> &varNode);
 	};
 
+	class CompilationContext;
+
 	SLKC_API peff::Option<CompilationError> combinePathEnv(PathEnv &outer, const PathEnv &inner) noexcept;
-	SLKC_API peff::Option<CompilationError> combineParallelPathEnv(peff::Alloc *allocator, PathEnv &outer, const PathEnv *inners, size_t nInners) noexcept;
+	SLKC_API peff::Option<CompilationError> combineParallelPathEnv(peff::Alloc *allocator, CompileEnv *compileEnv, CompilationContext *compilationContext, PathEnv &outer, const PathEnv *inners, size_t nInners) noexcept;
 
 	class CompilationContext {
 	public:
@@ -707,12 +712,21 @@ namespace slkc {
 		const AstNodePtr<ExprNode> &expr,
 		AstNodePtr<TypeNameNode> &typeOut,
 		AstNodePtr<TypeNameNode> desiredType = {});
+	[[nodiscard]] SLKC_API peff::Option<CompilationError> evalActualExprType(
+		CompileEnv *compileEnv,
+		CompilationContext *compilationContext,
+		PathEnv *pathEnv,
+		const AstNodePtr<ExprNode> &expr,
+		AstNodePtr<TypeNameNode> &typeOut,
+		AstNodePtr<TypeNameNode> desiredType = {});
 
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> evalConstExpr(
 		CompileEnv *compileEnv,
 		CompilationContext *compilationContext,
+		PathEnv *pathEnv,
 		AstNodePtr<ExprNode> expr,
-		AstNodePtr<ExprNode> &exprOut);
+		AstNodePtr<ExprNode> &exprOut,
+		bool *sideEffectsAppliedOut = nullptr);
 
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> getFullIdRef(peff::Alloc *allocator, AstNodePtr<MemberNode> m, IdRefPtr &idRefOut);
 
@@ -794,9 +808,9 @@ namespace slkc {
 		AstNodePtr<ModuleNode> mod);
 
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> genBinaryOpExpr(CompileEnv *compileEnv, BinaryOp binaryOp, AstNodePtr<ExprNode> lhs, AstNodePtr<ExprNode> rhs, TokenRange tokenRange, AstNodePtr<BinaryExprNode> &resultOut);
-	[[nodiscard]] SLKC_API peff::Option<CompilationError> evalConstBinaryOpExpr(CompileEnv *compileEnv, CompilationContext *compilationContext, BinaryOp binaryOp, AstNodePtr<ExprNode> lhs, AstNodePtr<ExprNode> rhs, AstNodePtr<ExprNode> &resultOut);
+	[[nodiscard]] SLKC_API peff::Option<CompilationError> evalConstBinaryOpExpr(CompileEnv *compileEnv, CompilationContext *compilationContext, PathEnv *pathEnv, BinaryOp binaryOp, AstNodePtr<ExprNode> lhs, AstNodePtr<ExprNode> rhs, AstNodePtr<ExprNode> &resultOut);
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> genImplicitCastExpr(CompileEnv *compileEnv, AstNodePtr<ExprNode> source, AstNodePtr<TypeNameNode> destType, AstNodePtr<CastExprNode> &resultOut);
-	[[nodiscard]] SLKC_API peff::Option<CompilationError> implicitConvertConstExpr(CompileEnv *compileEnv, CompilationContext *compilationContext, AstNodePtr<ExprNode> source, AstNodePtr<TypeNameNode> destType, AstNodePtr<ExprNode> &resultOut);
+	[[nodiscard]] SLKC_API peff::Option<CompilationError> implicitConvertConstExpr(CompileEnv *compileEnv, CompilationContext *compilationContext, PathEnv *pathEnv, AstNodePtr<ExprNode> source, AstNodePtr<TypeNameNode> destType, AstNodePtr<ExprNode> &resultOut);
 
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> isFnSignatureSame(AstNodePtr<VarNode> *lParams, AstNodePtr<VarNode> *rParams, size_t nParams, AstNodePtr<TypeNameNode> lOverridenType, AstNodePtr<TypeNameNode> rOverridenType, bool &whetherOut);
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> isFnSignatureDuplicated(AstNodePtr<FnOverloadingNode> lhs, AstNodePtr<FnOverloadingNode> rhs, bool &whetherOut);

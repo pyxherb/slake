@@ -21,6 +21,7 @@ peff::Option<CompilationError> slkc::_compileSimpleBinaryExpr(
 
 	switch (evalPurpose) {
 		case ExprEvalPurpose::EvalType:
+		case ExprEvalPurpose::EvalTypeActual:
 			break;
 		case ExprEvalPurpose::LValue:
 			return CompilationError(expr->tokenRange, CompilationErrorKind::ExpectingLValueExpr);
@@ -29,13 +30,13 @@ peff::Option<CompilationError> slkc::_compileSimpleBinaryExpr(
 				CompilationWarning(expr->tokenRange, CompilationWarningKind::UnusedExprResult)));
 			[[fallthrough]];
 		case ExprEvalPurpose::RValue: {
-			CompileExprResult result(compileEnv->allocator.get());
+			CompileExprResult lhsResult(compileEnv->allocator.get()), rhsResult(compileEnv->allocator.get());
 
 			uint32_t lhsReg,
 				rhsReg;
 
-			if ((e = _compileOrCastOperand(compileEnv, compilationContext, pathEnv, lhsEvalPurpose, desiredLhsType, expr->lhs, lhsType, result))) {
-				if (auto re = _compileOrCastOperand(compileEnv, compilationContext, pathEnv, rhsEvalPurpose, desiredRhsType, expr->rhs, rhsType, result); re) {
+			if ((e = _compileOrCastOperand(compileEnv, compilationContext, pathEnv, lhsEvalPurpose, desiredLhsType, expr->lhs, lhsType, lhsResult))) {
+				if (auto re = _compileOrCastOperand(compileEnv, compilationContext, pathEnv, rhsEvalPurpose, desiredRhsType, expr->rhs, rhsType, rhsResult); re) {
 					if (!compileEnv->errors.pushBack(std::move(*e))) {
 						return genOutOfMemoryCompError();
 					}
@@ -45,9 +46,9 @@ peff::Option<CompilationError> slkc::_compileSimpleBinaryExpr(
 					return e;
 				}
 			}
-			lhsReg = result.idxResultRegOut;
-			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileEnv, compilationContext, pathEnv, rhsEvalPurpose, desiredRhsType, expr->rhs, rhsType, result));
-			rhsReg = result.idxResultRegOut;
+			lhsReg = lhsResult.idxResultRegOut;
+			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileEnv, compilationContext, pathEnv, rhsEvalPurpose, desiredRhsType, expr->rhs, rhsType, rhsResult));
+			rhsReg = rhsResult.idxResultRegOut;
 
 			uint32_t outputReg;
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(outputReg));
@@ -85,6 +86,7 @@ peff::Option<CompilationError> slkc::_compileSimpleAssignBinaryExpr(
 
 	switch (evalPurpose) {
 		case ExprEvalPurpose::EvalType:
+		case ExprEvalPurpose::EvalTypeActual:
 			break;
 		case ExprEvalPurpose::LValue: {
 			CompileExprResult lhsResult(compileEnv->allocator.get()), rhsResult(compileEnv->allocator.get());
@@ -104,7 +106,7 @@ peff::Option<CompilationError> slkc::_compileSimpleAssignBinaryExpr(
 			}
 			resultOut.idxResultRegOut = lhsResult.idxResultRegOut;
 
-			if(!(rhsType->isNullable) && (desiredRhsType->isNullable)) {
+			if (!(rhsType->isNullable) && (desiredRhsType->isNullable)) {
 				SLKC_RETURN_IF_COMP_ERROR(
 					removeNullableOfType(desiredRhsType, desiredRhsType));
 			}
@@ -123,8 +125,8 @@ peff::Option<CompilationError> slkc::_compileSimpleAssignBinaryExpr(
 				} else {
 					if (rhsResult.evaluatedType->isNullable) {
 						if (rhsResult.evaluatedFinalMember && (rhsResult.evaluatedFinalMember->getAstNodeType() == AstNodeType::Var)) {
-							if (auto od = pathEnv->lookupVarNullOverride(rhsResult.evaluatedFinalMember.castTo<VarNode>()); od.hasValue()) {
-								SLKC_RETURN_IF_COMP_ERROR(pathEnv->setLocalVarNullOverride(lhsResult.evaluatedFinalMember.castTo<VarNode>(), od.value()));
+							if (auto overrideType = pathEnv->lookupVarNullOverride(rhsResult.evaluatedFinalMember.castTo<VarNode>()); overrideType.hasValue()) {
+								SLKC_RETURN_IF_COMP_ERROR(pathEnv->setLocalVarNullOverride(lhsResult.evaluatedFinalMember.castTo<VarNode>(), overrideType.value()));
 							} else
 								SLKC_RETURN_IF_COMP_ERROR(pathEnv->setLocalVarNullOverride(lhsResult.evaluatedFinalMember.castTo<VarNode>(), NullOverrideType::Uncertain));
 						} else {
@@ -156,7 +158,7 @@ peff::Option<CompilationError> slkc::_compileSimpleAssignBinaryExpr(
 			}
 			lhsReg = lhsResult.idxResultRegOut;
 
-			if(!(rhsType->isNullable) && (desiredRhsType->isNullable)) {
+			if (!(rhsType->isNullable) && (desiredRhsType->isNullable)) {
 				SLKC_RETURN_IF_COMP_ERROR(
 					removeNullableOfType(desiredRhsType, desiredRhsType));
 			}
@@ -176,8 +178,8 @@ peff::Option<CompilationError> slkc::_compileSimpleAssignBinaryExpr(
 				} else {
 					if (rhsResult.evaluatedType->isNullable) {
 						if (rhsResult.evaluatedFinalMember && (rhsResult.evaluatedFinalMember->getAstNodeType() == AstNodeType::Var)) {
-							if (auto od = pathEnv->lookupVarNullOverride(rhsResult.evaluatedFinalMember.castTo<VarNode>()); od.hasValue()) {
-								SLKC_RETURN_IF_COMP_ERROR(pathEnv->setLocalVarNullOverride(lhsResult.evaluatedFinalMember.castTo<VarNode>(), od.value()));
+							if (auto overrideType = pathEnv->lookupVarNullOverride(rhsResult.evaluatedFinalMember.castTo<VarNode>()); overrideType.hasValue()) {
+								SLKC_RETURN_IF_COMP_ERROR(pathEnv->setLocalVarNullOverride(lhsResult.evaluatedFinalMember.castTo<VarNode>(), overrideType.value()));
 							} else
 								SLKC_RETURN_IF_COMP_ERROR(pathEnv->setLocalVarNullOverride(lhsResult.evaluatedFinalMember.castTo<VarNode>(), NullOverrideType::Uncertain));
 						} else {
@@ -212,6 +214,7 @@ peff::Option<CompilationError> slkc::_compileSimpleLAndBinaryExpr(
 
 	switch (evalPurpose) {
 		case ExprEvalPurpose::EvalType:
+		case ExprEvalPurpose::EvalTypeActual:
 			break;
 		case ExprEvalPurpose::LValue:
 			return CompilationError(expr->tokenRange, CompilationErrorKind::ExpectingLValueExpr);
@@ -304,6 +307,7 @@ peff::Option<CompilationError> slkc::_compileSimpleLOrBinaryExpr(
 
 	switch (evalPurpose) {
 		case ExprEvalPurpose::EvalType:
+		case ExprEvalPurpose::EvalTypeActual:
 			break;
 		case ExprEvalPurpose::LValue:
 			return CompilationError(expr->tokenRange, CompilationErrorKind::ExpectingLValueExpr);
@@ -395,6 +399,7 @@ SLKC_API peff::Option<CompilationError> slkc::_compileSimpleBinaryAssignOpExpr(
 	uint32_t idxSld) {
 	switch (evalPurpose) {
 		case ExprEvalPurpose::EvalType:
+		case ExprEvalPurpose::EvalTypeActual:
 			break;
 		case ExprEvalPurpose::LValue: {
 			CompileExprResult result(compileEnv->allocator.get());
@@ -485,7 +490,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 	AstNodePtr<BinaryExprNode> expr,
 	ExprEvalPurpose evalPurpose,
 	CompileExprResult &resultOut) {
-	AstNodePtr<TypeNameNode> lhsType, rhsType, decayedLhsType, decayedRhsType, denullifiedLhsType, denullifiedRhsType;
+	AstNodePtr<TypeNameNode> lhsType, rhsType, decayedLhsType, decayedRhsType,
+		actualLhsType, actualRhsType, decayedActualLhsType, decayedActualRhsType;
 
 	if (auto e = evalExprType(compileEnv, compilationContext, pathEnv, expr->lhs, lhsType); e) {
 		if (auto re = evalExprType(compileEnv, compilationContext, pathEnv, expr->rhs, rhsType); re) {
@@ -503,10 +509,6 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 		removeRefOfType(lhsType, decayedLhsType));
 	SLKC_RETURN_IF_COMP_ERROR(
 		removeRefOfType(rhsType, decayedRhsType));
-	SLKC_RETURN_IF_COMP_ERROR(
-		removeRefOfType(decayedLhsType, denullifiedLhsType));
-	SLKC_RETURN_IF_COMP_ERROR(
-		removeRefOfType(decayedRhsType, denullifiedRhsType));
 
 	uint32_t sldIndex;
 	SLKC_RETURN_IF_COMP_ERROR(compilationContext->registerSourceLocDesc(tokenRangeToSld(expr->tokenRange), sldIndex));
@@ -723,6 +725,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 
 				switch (evalPurpose) {
 					case ExprEvalPurpose::EvalType:
+					case ExprEvalPurpose::EvalTypeActual:
 						break;
 					case ExprEvalPurpose::Stmt:
 						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::MCALL, UINT32_MAX, { slake::Value(slake::ValueType::RegIndex, operatorReg), slake::Value(slake::ValueType::RegIndex, rhsReg) }));
@@ -781,6 +784,16 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 
 		switch (expr->binaryOp) {
 			case BinaryOp::Assign:
+				SLKC_RETURN_IF_COMP_ERROR(
+					evalActualExprType(compileEnv, compilationContext, pathEnv, expr->lhs, actualLhsType));
+				SLKC_RETURN_IF_COMP_ERROR(
+					evalActualExprType(compileEnv, compilationContext, pathEnv, expr->rhs, actualRhsType));
+				SLKC_RETURN_IF_COMP_ERROR(
+					removeRefOfType(actualLhsType, decayedActualLhsType));
+				SLKC_RETURN_IF_COMP_ERROR(
+					removeRefOfType(actualRhsType, decayedActualRhsType));
+				mainOperationType = decayedLhsType;
+				break;
 			case BinaryOp::Shl:
 			case BinaryOp::Shr:
 			case BinaryOp::ShlAssign:
@@ -995,12 +1008,9 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								pathEnv,
 								expr,
 								evalPurpose,
-								lhsType, lhsType,
-								decayedRhsType,
-								/*decayedRhsType->isNullable
-									? denullifiedCommonTypeName
-									:*/
-								decayedLhsType,
+								actualLhsType, actualLhsType,
+								rhsType,
+								decayedActualLhsType,
 								ExprEvalPurpose::RValue,
 								resultOut,
 								sldIndex));
@@ -1382,12 +1392,10 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								pathEnv,
 								expr,
 								evalPurpose,
-								lhsType, lhsType,
-								decayedRhsType,
-								/*decayedRhsType->isNullable
-									? denullifiedCommonTypeName
-									:*/
-								decayedLhsType, ExprEvalPurpose::RValue,
+								actualLhsType, actualLhsType,
+								rhsType,
+								decayedActualLhsType,
+								ExprEvalPurpose::RValue,
 								resultOut,
 								sldIndex));
 						resultOut.evaluatedType = lhsType;
@@ -1708,12 +1716,10 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								pathEnv,
 								expr,
 								evalPurpose,
-								lhsType, lhsType,
-								decayedRhsType,
-								/*decayedRhsType->isNullable
-									? denullifiedCommonTypeName
-									:*/
-								decayedLhsType, ExprEvalPurpose::RValue,
+								actualLhsType, actualLhsType,
+								rhsType,
+								decayedActualLhsType,
+								ExprEvalPurpose::RValue,
 								resultOut,
 								sldIndex));
 						resultOut.evaluatedType = lhsType;
@@ -1883,6 +1889,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 
 						switch (evalPurpose) {
 							case ExprEvalPurpose::EvalType:
+							case ExprEvalPurpose::EvalTypeActual:
 								break;
 							case ExprEvalPurpose::LValue: {
 								CompileExprResult result(compileEnv->allocator.get());
@@ -1985,12 +1992,10 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								pathEnv,
 								expr,
 								evalPurpose,
-								lhsType, lhsType,
-								decayedRhsType,
-								/*decayedRhsType->isNullable
-									? denullifiedLhsType
-									:*/
-								decayedLhsType, ExprEvalPurpose::RValue,
+								actualLhsType, actualLhsType,
+								rhsType,
+								decayedActualLhsType,
+								ExprEvalPurpose::RValue,
 								resultOut,
 								sldIndex));
 						resultOut.evaluatedType = lhsType;
@@ -2160,6 +2165,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 
 						switch (evalPurpose) {
 							case ExprEvalPurpose::EvalType:
+							case ExprEvalPurpose::EvalTypeActual:
 								break;
 							case ExprEvalPurpose::Stmt:
 								SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(sldIndex, slake::Opcode::MCALL, UINT32_MAX, { slake::Value(slake::ValueType::RegIndex, operatorReg), slake::Value(slake::ValueType::RegIndex, lhsReg) }));
@@ -2208,6 +2214,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 					case BinaryOp::StrictEq:
 						switch (evalPurpose) {
 							case ExprEvalPurpose::EvalType:
+							case ExprEvalPurpose::EvalTypeActual:
 								break;
 							case ExprEvalPurpose::LValue:
 								return CompilationError(expr->tokenRange, CompilationErrorKind::ExpectingLValueExpr);
@@ -2256,6 +2263,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 					case BinaryOp::StrictNeq:
 						switch (evalPurpose) {
 							case ExprEvalPurpose::EvalType:
+							case ExprEvalPurpose::EvalTypeActual:
 								break;
 							case ExprEvalPurpose::LValue:
 								return CompilationError(expr->tokenRange, CompilationErrorKind::ExpectingLValueExpr);

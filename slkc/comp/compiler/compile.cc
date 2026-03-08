@@ -365,7 +365,9 @@ SLKC_API peff::Option<CompilationError> slkc::compileTypeName(
 
 			AstNodePtr<ExprNode> width;
 
-			SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, t->width, width));
+			PathEnv pathEnv(compileEnv->allocator.get());
+
+			SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, &pathEnv, t->width, width));
 
 			if (!width) {
 				return CompilationError(t->width->tokenRange, CompilationErrorKind::RequiresCompTimeExpr);
@@ -387,7 +389,9 @@ SLKC_API peff::Option<CompilationError> slkc::compileTypeName(
 				ce->source = width;
 				ce->targetType = u32Type.castTo<TypeNameNode>();
 
-				SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, ce.castTo<ExprNode>(), width));
+				PathEnv pathEnv(compileEnv->allocator.get());
+
+				SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, &pathEnv, ce.castTo<ExprNode>(), width));
 
 				if (!width) {
 					return CompilationError(t->width->tokenRange, CompilationErrorKind::TypeArgTypeMismatched);
@@ -936,7 +940,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileModuleLikeNode(
 		}
 	}
 
-	//SLKC_RETURN_IF_COMP_ERROR(indexModuleVarMembers(compileEnv, compileEnv->document->rootModule));
+	// SLKC_RETURN_IF_COMP_ERROR(indexModuleVarMembers(compileEnv, compileEnv->document->rootModule));
 
 	for (auto [k, v] : mod->memberIndices) {
 		AstNodePtr<MemberNode> m = mod->members.at(v);
@@ -1583,11 +1587,17 @@ SLKC_API peff::Option<CompilationError> slkc::compileModuleLikeNode(
 
 								assert(itemNode->filledValue);
 
-								SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, &compilationContext, itemNode->filledValue, enumValue));
+								{
+									PathEnv pathEnv(compileEnv->allocator.get());
+									SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, &compilationContext, &pathEnv, itemNode->filledValue, enumValue));
+								}
 
 								if (!enumValue)
 									return CompilationError(itemNode->tokenRange, CompilationErrorKind::RequiresCompTimeExpr);
-								SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, &compilationContext, itemNode->filledValue, enumValue));
+								{
+									PathEnv pathEnv(compileEnv->allocator.get());
+									SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, &compilationContext, &pathEnv, itemNode->filledValue, enumValue));
+								}
 
 								{
 									PathEnv rootPathEnv(compileEnv->allocator.get());
@@ -1607,7 +1617,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileModuleLikeNode(
 									castExpr->source = enumValue;
 									castExpr->tokenRange = itemNode->filledValue->tokenRange;
 
-									SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, &compilationContext, castExpr.castTo<ExprNode>(), enumValue));
+									PathEnv pathEnv(compileEnv->allocator.get());
+									SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, &compilationContext, &pathEnv, castExpr.castTo<ExprNode>(), enumValue));
 									if (!enumValue)
 										SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(
 											CompilationError(

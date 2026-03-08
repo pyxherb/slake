@@ -324,7 +324,7 @@ public async main() -> i32 {
 	{
 		let nullable: i32?;
 
-		if (true)
+		if ((nullable = 123) != null)
 			nullable = 123;
 		else
 			nullable = null;
@@ -332,6 +332,8 @@ public async main() -> i32 {
 		let nonnullable: i32;
 
 		nonnullable = nullable;
+
+		nullable = null;
 
 		let ax: i32?;
 

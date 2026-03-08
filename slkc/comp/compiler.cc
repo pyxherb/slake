@@ -73,7 +73,7 @@ SLKC_API peff::Option<CompilationError> slkc::combinePathEnv(PathEnv &outer, con
 	return {};
 }
 
-SLKC_API peff::Option<CompilationError> slkc::combineParallelPathEnv(peff::Alloc *allocator, PathEnv &outer, const PathEnv *inners, size_t nInners) noexcept {
+SLKC_API peff::Option<CompilationError> slkc::combineParallelPathEnv(peff::Alloc *allocator, CompileEnv *compileEnv, CompilationContext *compilationContext, PathEnv &outer, const PathEnv *inners, size_t nInners) noexcept {
 	peff::Map<AstNodePtr<VarNode>, NullOverrideType> localVarNullOverrides(allocator);
 	peff::Set<size_t> idxMayPaths(allocator);
 
@@ -104,55 +104,109 @@ SLKC_API peff::Option<CompilationError> slkc::combineParallelPathEnv(peff::Alloc
 		}
 	}
 
-	peff::Map<AstNodePtr<VarNode>, NullOverrideType> commonLocalVarNullOverrides(allocator);
-
-	// Find common local variable null overrides.
 	{
-		peff::Set<AstNodePtr<VarNode>> nonunifiableNullOverrideVars(allocator);
-		for (auto it = idxMayPaths.begin(); it != idxMayPaths.end(); ++it) {
-			const PathEnv &inner = inners[*it];
+		peff::Map<AstNodePtr<VarNode>, NullOverrideType> commonLocalVarNullOverrides(allocator);
 
-			for (auto curOverride : inner.localVarNullOverrides) {
-				if (!nonunifiableNullOverrideVars.contains(curOverride.first)) {
-					if (auto prevOverride = commonLocalVarNullOverrides.find(curOverride.first); prevOverride != commonLocalVarNullOverrides.end()) {
-						if (prevOverride.value() != curOverride.second) {
-							if (!nonunifiableNullOverrideVars.insert(AstNodePtr<VarNode>(prevOverride.key())))
+		// Find common local variable null overrides.
+		{
+			peff::Set<AstNodePtr<VarNode>> nonunifiableNullOverrideVars(allocator);
+			for (auto it = idxMayPaths.begin(); it != idxMayPaths.end(); ++it) {
+				const PathEnv &inner = inners[*it];
+
+				for (auto curOverride : inner.localVarNullOverrides) {
+					if (!nonunifiableNullOverrideVars.contains(curOverride.first)) {
+						if (auto prevOverride = commonLocalVarNullOverrides.find(curOverride.first); prevOverride != commonLocalVarNullOverrides.end()) {
+							if (prevOverride.value() != curOverride.second) {
+								if (!nonunifiableNullOverrideVars.insert(AstNodePtr<VarNode>(prevOverride.key())))
+									return genOutOfMemoryCompError();
+								commonLocalVarNullOverrides.remove(prevOverride);
+							}
+						} else {
+							auto copiedOverrideType = curOverride.second;
+							if (!commonLocalVarNullOverrides.insert(AstNodePtr<VarNode>(curOverride.first), std::move(copiedOverrideType)))
 								return genOutOfMemoryCompError();
-							commonLocalVarNullOverrides.remove(prevOverride);
 						}
-					} else {
-						auto copiedOverrideType = curOverride.second;
-						if (!commonLocalVarNullOverrides.insert(AstNodePtr<VarNode>(curOverride.first), std::move(copiedOverrideType)))
-							return genOutOfMemoryCompError();
 					}
 				}
 			}
+
+			for (auto i : nonunifiableNullOverrideVars)
+				SLKC_RETURN_IF_COMP_ERROR(outer.setLocalVarNullOverride(i, NullOverrideType::Uncertain));
 		}
 
-		for (auto i : nonunifiableNullOverrideVars)
-			SLKC_RETURN_IF_COMP_ERROR(outer.setLocalVarNullOverride(i, NullOverrideType::Uncertain));
-	}
-
-	for (auto i : commonLocalVarNullOverrides) {
-		SLKC_RETURN_IF_COMP_ERROR(outer.setLocalVarNullOverride(i.first, i.second));
-	}
-
-	// Filter out the common local variable null overrides that are not always happen.
-	for (auto it = idxMayPaths.begin(); it != idxMayPaths.end(); ++it) {
-		const PathEnv &inner = inners[*it];
-
 		for (auto i : commonLocalVarNullOverrides) {
-			// If a local variable null override is not always happen, its original assumption should be cancelled.
-			if (!inner.localVarNullOverrides.contains(i.first))
-				SLKC_RETURN_IF_COMP_ERROR(outer.setLocalVarNullOverride(i.first, NullOverrideType::Uncertain));
+			SLKC_RETURN_IF_COMP_ERROR(outer.setLocalVarNullOverride(i.first, i.second));
+		}
+
+		// Filter out the common local variable null overrides that are not always happen.
+		for (auto it = idxMayPaths.begin(); it != idxMayPaths.end(); ++it) {
+			const PathEnv &inner = inners[*it];
+
+			for (auto i : commonLocalVarNullOverrides) {
+				// If a local variable null override is not always happen, its original assumption should be cancelled.
+				if (!inner.localVarNullOverrides.contains(i.first))
+					SLKC_RETURN_IF_COMP_ERROR(outer.setLocalVarNullOverride(i.first, NullOverrideType::Uncertain));
+			}
+		}
+	}
+
+	{
+		peff::Map<AstNodePtr<VarNode>, AstNodePtr<ExprNode>> commonLocalVarValueOverrides(allocator);
+
+		// Find common local variable null overrides.
+		{
+			peff::Set<AstNodePtr<VarNode>> nonunifiableValueOverrideVars(allocator);
+			for (auto it = idxMayPaths.begin(); it != idxMayPaths.end(); ++it) {
+				const PathEnv &inner = inners[*it];
+
+				for (auto curOverride : inner.localVarValueOverrides) {
+					if (!nonunifiableValueOverrideVars.contains(curOverride.first)) {
+						if (auto prevOverride = commonLocalVarValueOverrides.find(curOverride.first); prevOverride != commonLocalVarValueOverrides.end()) {
+							AstNodePtr<ExprNode> cmpResult;
+							PathEnv evalPathEnv(allocator);
+							evalPathEnv.parent = &inner;
+							SLKC_RETURN_IF_COMP_ERROR(evalConstBinaryOpExpr(compileEnv, compilationContext, &evalPathEnv, BinaryOp::Eq, prevOverride.value(), curOverride.second, cmpResult));
+							if ((!cmpResult) || (!cmpResult.castTo<BoolLiteralExprNode>()->data)) {
+								if (!nonunifiableValueOverrideVars.insert(AstNodePtr<VarNode>(prevOverride.key())))
+									return genOutOfMemoryCompError();
+								commonLocalVarValueOverrides.remove(prevOverride);
+							}
+						} else {
+							if (!commonLocalVarValueOverrides.insert(AstNodePtr<VarNode>(curOverride.first), AstNodePtr<ExprNode>(curOverride.second)))
+								return genOutOfMemoryCompError();
+						}
+					}
+				}
+			}
+
+			for (auto i : nonunifiableValueOverrideVars)
+				SLKC_RETURN_IF_COMP_ERROR(outer.setLocalVarNullOverride(i, NullOverrideType::Uncertain));
+		}
+
+		for (auto i : commonLocalVarValueOverrides) {
+			SLKC_RETURN_IF_COMP_ERROR(outer.setLocalVarValueOverride(i.first, i.second));
+		}
+
+		// Filter out the common local variable value overrides that are not always happen.
+		for (auto it = idxMayPaths.begin(); it != idxMayPaths.end(); ++it) {
+			const PathEnv &inner = inners[*it];
+
+			for (auto i : commonLocalVarValueOverrides) {
+				// If a local variable null override is not always happen, its original assumption should be cancelled.
+				if (!inner.localVarValueOverrides.contains(i.first))
+					SLKC_RETURN_IF_COMP_ERROR(outer.setLocalVarValueOverride(i.first, {}));
+			}
 		}
 	}
 
 	return {};
 }
 
+SLKC_API PathEnv::PathEnv(peff::Alloc *allocator) noexcept : localVarNullOverrides(allocator), localVarValueOverrides(allocator) {
+}
+
 SLAKE_API peff::Option<NullOverrideType> PathEnv::lookupVarNullOverride(const AstNodePtr<VarNode> &varNode) {
-	for (PathEnv *i = this; i; i = i->parent) {
+	for (const PathEnv *i = this; i; i = i->parent) {
 		if (auto it = i->localVarNullOverrides.find(varNode);
 			it != i->localVarNullOverrides.end()) {
 			NullOverrideType v = it.value();
@@ -166,6 +220,24 @@ SLAKE_API peff::Option<CompilationError> PathEnv::setLocalVarNullOverride(AstNod
 	if (auto it = localVarNullOverrides.find(varNode); it != localVarNullOverrides.end()) {
 		it.value() = type;
 	} else if (!localVarNullOverrides.insert(std::move(varNode), std::move(type)))
+		return genOutOfMemoryCompError();
+	return {};
+}
+
+SLAKE_API AstNodePtr<ExprNode> PathEnv::lookupVarValueOverride(const AstNodePtr<VarNode> &varNode) {
+	for (const PathEnv *i = this; i; i = i->parent) {
+		if (auto it = i->localVarValueOverrides.find(varNode);
+			it != i->localVarValueOverrides.end()) {
+			return it.value();
+		}
+	}
+	return {};
+}
+
+SLAKE_API peff::Option<CompilationError> PathEnv::setLocalVarValueOverride(AstNodePtr<VarNode> varNode, AstNodePtr<ExprNode> expr) {
+	if (auto it = localVarValueOverrides.find(varNode); it != localVarValueOverrides.end()) {
+		it.value() = expr;
+	} else if (!localVarValueOverrides.insert(std::move(varNode), std::move(expr)))
 		return genOutOfMemoryCompError();
 	return {};
 }
@@ -405,6 +477,25 @@ SLKC_API peff::Option<CompilationError> slkc::evalExprType(
 	CompileExprResult result(compileEnv->allocator.get());
 
 	SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, &tmpContext, pathEnv, expr, ExprEvalPurpose::EvalType, desiredType, result));
+
+	typeOut = result.evaluatedType;
+	return {};
+}
+
+SLKC_API peff::Option<CompilationError> slkc::evalActualExprType(
+	CompileEnv *compileEnv,
+	CompilationContext *compilationContext,
+	PathEnv *pathEnv,
+	const AstNodePtr<ExprNode> &expr,
+	AstNodePtr<TypeNameNode> &typeOut,
+	AstNodePtr<TypeNameNode> desiredType) {
+	NormalCompilationContext tmpContext(compileEnv, compilationContext);
+
+	CompileExprResult result(compileEnv->allocator.get());
+
+	ExprEvalPurpose evalPurpose;
+
+	SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, &tmpContext, pathEnv, expr, ExprEvalPurpose::EvalTypeActual, desiredType, result));
 
 	typeOut = result.evaluatedType;
 	return {};

@@ -145,7 +145,8 @@ SLKC_API peff::Option<CompilationError> Document::instantiateGenericObject(
 
 			if (curArg->getAstNodeType() == AstNodeType::Expr) {
 				AstNodePtr<ExprNode> evaluatedArg;
-				SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, &compilationContext, curArg.castTo<ExprNode>(), evaluatedArg));
+				PathEnv pathEnv(compileEnv->allocator.get());
+				SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, &compilationContext, &pathEnv, curArg.castTo<ExprNode>(), evaluatedArg));
 				if (!evaluatedArg)
 					return CompilationError(
 						curArg->tokenRange,

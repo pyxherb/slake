@@ -15,6 +15,7 @@ static peff::Option<CompilationError> _compileLiteralExpr(
 
 	switch (evalPurpose) {
 		case ExprEvalPurpose::EvalType:
+		case ExprEvalPurpose::EvalTypeActual:
 			break;
 		case ExprEvalPurpose::Stmt:
 			SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushWarning(
@@ -90,7 +91,7 @@ SLKC_API peff::Option<CompilationError> slkc::_compileOrCastOperand(
 	return CompilationError(operand->tokenRange, std::move(exData));
 }
 
-static peff::Option<CompilationError> _determineNodeType(CompileEnv *compileEnv, PathEnv *pathEnv, AstNodePtr<MemberNode> node, AstNodePtr<TypeNameNode> &typeNameOut);
+static peff::Option<CompilationError> _determineNodeType(CompileEnv *compileEnv, PathEnv *pathEnv, ExprEvalPurpose evalPurpose, AstNodePtr<MemberNode> node, AstNodePtr<TypeNameNode> &typeNameOut);
 
 static peff::Option<CompilationError> _loadTheRestOfIdRef(CompileEnv *compileEnv, CompilationContext *compilationContext, PathEnv *pathEnv, ExprEvalPurpose evalPurpose, uint32_t &resultRegOut, CompileExprResult &resultOut, IdRef *idRef, ResolvedIdRefPartList &parts, uint32_t initialMemberReg, size_t curIdx, AstNodePtr<FnTypeNameNode> extraFnArgs, uint32_t sldIndex) {
 	uint32_t idxReg;
@@ -334,7 +335,7 @@ peff::Option<CompilationError> selectSingleMatchingOverloading(CompileEnv *compi
 	return {};
 };
 
-static peff::Option<CompilationError> _determineNodeType(CompileEnv *compileEnv, PathEnv *pathEnv, AstNodePtr<MemberNode> node, AstNodePtr<TypeNameNode> &typeNameOut) {
+static peff::Option<CompilationError> _determineNodeType(CompileEnv *compileEnv, PathEnv *pathEnv, ExprEvalPurpose evalPurpose, AstNodePtr<MemberNode> node, AstNodePtr<TypeNameNode> &typeNameOut) {
 	switch (node->getAstNodeType()) {
 		case AstNodeType::This: {
 			auto m = node.castTo<ThisNode>()->thisType;
@@ -370,22 +371,25 @@ static peff::Option<CompilationError> _determineNodeType(CompileEnv *compileEnv,
 				}
 				t->referencedType = node.castTo<VarNode>()->type;
 
-				auto nullOverride = pathEnv->lookupVarNullOverride(node.castTo<VarNode>());
+				if ((evalPurpose != ExprEvalPurpose::LValue) &&
+					(evalPurpose != ExprEvalPurpose::EvalTypeActual)) {
+					auto nullOverride = pathEnv->lookupVarNullOverride(node.castTo<VarNode>());
 
-				if (nullOverride.hasValue()) {
-					switch (*nullOverride) {
-						case NullOverrideType::Nullify:
-							if (!(t->referencedType = t->referencedType->duplicate<TypeNameNode>(compileEnv->allocator.get())))
-								return genOutOfMemoryCompError();
-							t->referencedType->isNullable = true;
-							break;
-						case NullOverrideType::Denullify:
-							if (!(t->referencedType = t->referencedType->duplicate<TypeNameNode>(compileEnv->allocator.get())))
-								return genOutOfMemoryCompError();
-							t->referencedType->isNullable = false;
-							break;
-						case NullOverrideType::Uncertain:
-							break;
+					if (nullOverride.hasValue()) {
+						switch (*nullOverride) {
+							case NullOverrideType::Nullify:
+								if (!(t->referencedType = t->referencedType->duplicate<TypeNameNode>(compileEnv->allocator.get())))
+									return genOutOfMemoryCompError();
+								t->referencedType->isNullable = true;
+								break;
+							case NullOverrideType::Denullify:
+								if (!(t->referencedType = t->referencedType->duplicate<TypeNameNode>(compileEnv->allocator.get())))
+									return genOutOfMemoryCompError();
+								t->referencedType->isNullable = false;
+								break;
+							case NullOverrideType::Uncertain:
+								break;
+						}
 					}
 				}
 
@@ -393,22 +397,25 @@ static peff::Option<CompilationError> _determineNodeType(CompileEnv *compileEnv,
 			} else {
 				typeNameOut = originalType;
 
-				auto nullOverride = pathEnv->lookupVarNullOverride(node.castTo<VarNode>());
+				if ((evalPurpose != ExprEvalPurpose::LValue) &&
+					(evalPurpose != ExprEvalPurpose::EvalTypeActual)) {
+					auto nullOverride = pathEnv->lookupVarNullOverride(node.castTo<VarNode>());
 
-				if (nullOverride.hasValue()) {
-					switch (*nullOverride) {
-						case NullOverrideType::Nullify:
-							if (!(typeNameOut = typeNameOut->duplicate<TypeNameNode>(compileEnv->allocator.get())))
-								return genOutOfMemoryCompError();
-							typeNameOut->isNullable = true;
-							break;
-						case NullOverrideType::Denullify:
-							if (!(typeNameOut = typeNameOut->duplicate<TypeNameNode>(compileEnv->allocator.get())))
-								return genOutOfMemoryCompError();
-							typeNameOut->isNullable = false;
-							break;
-						case NullOverrideType::Uncertain:
-							break;
+					if (nullOverride.hasValue()) {
+						switch (*nullOverride) {
+							case NullOverrideType::Nullify:
+								if (!(typeNameOut = typeNameOut->duplicate<TypeNameNode>(compileEnv->allocator.get())))
+									return genOutOfMemoryCompError();
+								typeNameOut->isNullable = true;
+								break;
+							case NullOverrideType::Denullify:
+								if (!(typeNameOut = typeNameOut->duplicate<TypeNameNode>(compileEnv->allocator.get())))
+									return genOutOfMemoryCompError();
+								typeNameOut->isNullable = false;
+								break;
+							case NullOverrideType::Uncertain:
+								break;
+						}
 					}
 				}
 			}
@@ -449,7 +456,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 	CompileExprResult &resultOut) {
 	peff::Option<CompilationError> compilationError;
 	uint32_t sldIndex;
-	if (evalPurpose != ExprEvalPurpose::EvalType)
+	if ((evalPurpose != ExprEvalPurpose::EvalTypeActual) &&
+		(evalPurpose != ExprEvalPurpose::EvalType))
 		SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->registerSourceLocDesc(tokenRangeToSld(expr->tokenRange), sldIndex));
 	else
 		sldIndex = UINT32_MAX;
@@ -581,12 +589,13 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 					TokenRange{ compileEnv->document->mainModule, e->idRefPtr->entries.back().nameTokenIndex },
 					CompilationErrorKind::MemberIsNotAccessible);
 
-			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, _determineNodeType(compileEnv, pathEnv, finalMember, resultOut.evaluatedType));
+			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, _determineNodeType(compileEnv, pathEnv, evalPurpose, finalMember, resultOut.evaluatedType));
 			resultOut.evaluatedFinalMember = finalMember;
 			// TODO: Check if there is this usage while the members are not all initialized.
 
 			switch (evalPurpose) {
 				case ExprEvalPurpose::EvalType:
+				case ExprEvalPurpose::EvalTypeActual:
 					if (!resultOut.evaluatedType) {
 						return CompilationError(e->idRefPtr->tokenRange, CompilationErrorKind::ExpectingId);
 					}
@@ -684,6 +693,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 
 					switch (initialMemberEvalPurpose) {
 						case ExprEvalPurpose::EvalType:
+						case ExprEvalPurpose::EvalTypeActual:
 							initialMemberReg = UINT32_MAX;
 							break;
 						case ExprEvalPurpose::LValue:
@@ -717,6 +727,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 
 					switch (initialMemberEvalPurpose) {
 						case ExprEvalPurpose::EvalType:
+						case ExprEvalPurpose::EvalTypeActual:
 							initialMemberReg = UINT32_MAX;
 							break;
 						case ExprEvalPurpose::Stmt:
@@ -751,6 +762,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 
 					switch (initialMemberEvalPurpose) {
 						case ExprEvalPurpose::EvalType:
+						case ExprEvalPurpose::EvalTypeActual:
 							initialMemberReg = UINT32_MAX;
 							break;
 						case ExprEvalPurpose::LValue: {
@@ -871,12 +883,13 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 				}
 			}
 
-			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, _determineNodeType(compileEnv, pathEnv, finalMember, resultOut.evaluatedType));
+			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, _determineNodeType(compileEnv, pathEnv, evalPurpose, finalMember, resultOut.evaluatedType));
 			resultOut.evaluatedFinalMember = finalMember;
 			// TODO: Check if there is this usage while the members are not all initialized.
 
 			switch (evalPurpose) {
 				case ExprEvalPurpose::EvalType:
+				case ExprEvalPurpose::EvalTypeActual:
 					if (!resultOut.evaluatedType) {
 						return CompilationError(e->idRefPtr->tokenRange, CompilationErrorKind::ExpectingId);
 					}
@@ -987,6 +1000,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 
 			switch (evalPurpose) {
 				case ExprEvalPurpose::EvalType:
+				case ExprEvalPurpose::EvalTypeActual:
 					break;
 				case ExprEvalPurpose::Stmt:
 					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileEnv->pushWarning(
@@ -1039,6 +1053,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 
 			switch (evalPurpose) {
 				case ExprEvalPurpose::EvalType:
+				case ExprEvalPurpose::EvalTypeActual:
 					break;
 				case ExprEvalPurpose::Stmt:
 					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileEnv->pushWarning(
@@ -1118,6 +1133,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 
 			switch (evalPurpose) {
 				case ExprEvalPurpose::EvalType:
+				case ExprEvalPurpose::EvalTypeActual:
 					break;
 				case ExprEvalPurpose::Stmt:
 					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compileEnv->pushWarning(
@@ -1381,6 +1397,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 
 			switch (evalPurpose) {
 				case ExprEvalPurpose::EvalType:
+				case ExprEvalPurpose::EvalTypeActual:
 					break;
 				case ExprEvalPurpose::Stmt:
 					if (thisReg != UINT32_MAX) {
@@ -1728,6 +1745,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 						return CompilationError(expr->tokenRange, CompilationErrorKind::ExpectingLValueExpr);
 					break;
 				case ExprEvalPurpose::EvalType:
+				case ExprEvalPurpose::EvalTypeActual:
 					resultOut.evaluatedType = returnType;
 					return {};
 				default:
@@ -1777,7 +1795,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 				if (curCase.first) {
 					// Evaluate the case conition as a comptime expression.
 					AstNodePtr<ExprNode> evaluatedCaseCondExpr;
-					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, evalConstExpr(compileEnv, compilationContext, curCase.first, evaluatedCaseCondExpr));
+					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, evalConstExpr(compileEnv, compilationContext, pathEnv, curCase.first, evaluatedCaseCondExpr));
 					if (!evaluatedCaseCondExpr) {
 						return CompilationError(curCase.first->tokenRange, CompilationErrorKind::ErrorEvaluatingConstMatchCaseCondition);
 					}
@@ -1876,7 +1894,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, compilationContext->emitIns(sldIndex, slake::Opcode::JMP, UINT32_MAX, { slake::Value(slake::ValueType::Label, endLabel) }));
 			}
 
-			SLKC_RETURN_IF_COMP_ERROR(combineParallelPathEnv(compileEnv->allocator.get(), *pathEnv, bodyPathEnvs.data(), bodyPathEnvs.size()));
+			SLKC_RETURN_IF_COMP_ERROR(combineParallelPathEnv(compileEnv->allocator.get(), compileEnv, compilationContext, *pathEnv, bodyPathEnvs.data(), bodyPathEnvs.size()));
 
 			compilationContext->setLabelOffset(endLabel, compilationContext->getCurInsOff());
 

@@ -14,6 +14,7 @@ static peff::Option<CompilationError> _compileSimpleRValueUnaryExpr(
 	uint32_t idxSld) {
 	switch (evalPurpose) {
 		case ExprEvalPurpose::EvalType:
+		case ExprEvalPurpose::EvalTypeActual:
 			break;
 		case ExprEvalPurpose::Stmt:
 			SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushWarning(
@@ -123,7 +124,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileUnaryExpr(
 			switch (expr->unaryOp) {
 				case UnaryOp::Unpacking:
 					switch (evalPurpose) {
-						case ExprEvalPurpose::EvalType: {
+						case ExprEvalPurpose::EvalType:
+						case ExprEvalPurpose::EvalTypeActual: {
 							AstNodePtr<TypeNameNode> unpackedType;
 
 							SLKC_RETURN_IF_COMP_ERROR(getUnpackedTypeOf(decayedOperandType, unpackedType));

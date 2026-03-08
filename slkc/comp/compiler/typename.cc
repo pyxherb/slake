@@ -1268,6 +1268,7 @@ SLKC_API peff::Option<CompilationError> slkc::isConvertible(
 	SLKC_RETURN_IF_COMP_ERROR(unwrapFacadeTypeName(src, src));
 	SLKC_RETURN_IF_COMP_ERROR(unwrapFacadeTypeName(dest, dest));
 
+recheck:
 	if (!dest->isNullable) {
 		if (src->isNullable) {
 			// T? to T should be eliminated by null check expressions.
@@ -1285,7 +1286,8 @@ SLKC_API peff::Option<CompilationError> slkc::isConvertible(
 	if (dest->isFinal)
 		isSealed = true;
 
-recheck:
+	// We only allow T to T? or null to T? below.
+	// T? to T is handled above.
 	switch (dest->typeNameKind) {
 		case TypeNameKind::Void:
 			resultOut = false;
@@ -1300,88 +1302,92 @@ recheck:
 		case TypeNameKind::U32:
 		case TypeNameKind::U64:
 		case TypeNameKind::USize:
-			switch (src->typeNameKind) {
-				case TypeNameKind::I8:
-				case TypeNameKind::I16:
-				case TypeNameKind::I32:
-				case TypeNameKind::I64:
-				case TypeNameKind::ISize:
-				case TypeNameKind::U8:
-				case TypeNameKind::U16:
-				case TypeNameKind::U32:
-				case TypeNameKind::U64:
-				case TypeNameKind::USize:
-				case TypeNameKind::F32:
-				case TypeNameKind::F64:
-				case TypeNameKind::Bool:
-				case TypeNameKind::Any:
-					resultOut = true;
-					break;
-				case TypeNameKind::Ref:
-					SLKC_RETURN_IF_COMP_ERROR(removeRefOfType(src, src));
-					goto recheck;
-				case TypeNameKind::Null:
-					resultOut = dest->isNullable;
-					break;
-				default:
-					resultOut = false;
-					break;
+			if (dest->isNullable) {
+				resultOut = (src->typeNameKind == TypeNameKind::Null) || (src->typeNameKind == dest->typeNameKind);
+			} else {
+				assert(!src->isNullable);
+				switch (src->typeNameKind) {
+					case TypeNameKind::I8:
+					case TypeNameKind::I16:
+					case TypeNameKind::I32:
+					case TypeNameKind::I64:
+					case TypeNameKind::ISize:
+					case TypeNameKind::U8:
+					case TypeNameKind::U16:
+					case TypeNameKind::U32:
+					case TypeNameKind::U64:
+					case TypeNameKind::USize:
+					case TypeNameKind::F32:
+					case TypeNameKind::F64:
+					case TypeNameKind::Bool:
+					case TypeNameKind::Any:
+						resultOut = true;
+						break;
+					case TypeNameKind::Ref:
+						SLKC_RETURN_IF_COMP_ERROR(removeRefOfType(src, src));
+						goto recheck;
+					default:
+						resultOut = false;
+						break;
+				}
 			}
 			return {};
 		case TypeNameKind::F32:
 		case TypeNameKind::F64:
-			switch (src->typeNameKind) {
-				case TypeNameKind::I8:
-				case TypeNameKind::I16:
-				case TypeNameKind::I32:
-				case TypeNameKind::I64:
-				case TypeNameKind::ISize:
-				case TypeNameKind::U8:
-				case TypeNameKind::U16:
-				case TypeNameKind::U32:
-				case TypeNameKind::U64:
-				case TypeNameKind::USize:
-				case TypeNameKind::F32:
-				case TypeNameKind::F64:
-				case TypeNameKind::Any:
-					resultOut = true;
-					break;
-				case TypeNameKind::Ref:
-					SLKC_RETURN_IF_COMP_ERROR(removeRefOfType(src, src));
-					goto recheck;
-				case TypeNameKind::Null:
-					resultOut = dest->isNullable;
-					break;
-				default:
-					resultOut = false;
-					break;
+			if (dest->isNullable) {
+				resultOut = (src->typeNameKind == TypeNameKind::Null) || (src->typeNameKind == dest->typeNameKind);
+			} else {
+				switch (src->typeNameKind) {
+					case TypeNameKind::I8:
+					case TypeNameKind::I16:
+					case TypeNameKind::I32:
+					case TypeNameKind::I64:
+					case TypeNameKind::ISize:
+					case TypeNameKind::U8:
+					case TypeNameKind::U16:
+					case TypeNameKind::U32:
+					case TypeNameKind::U64:
+					case TypeNameKind::USize:
+					case TypeNameKind::F32:
+					case TypeNameKind::F64:
+					case TypeNameKind::Any:
+						resultOut = true;
+						break;
+					case TypeNameKind::Ref:
+						SLKC_RETURN_IF_COMP_ERROR(removeRefOfType(src, src));
+						goto recheck;
+					default:
+						resultOut = false;
+						break;
+				}
 			}
 			return {};
 		case TypeNameKind::Bool:
-			switch (src->typeNameKind) {
-				case TypeNameKind::I8:
-				case TypeNameKind::I16:
-				case TypeNameKind::I32:
-				case TypeNameKind::I64:
-				case TypeNameKind::ISize:
-				case TypeNameKind::U8:
-				case TypeNameKind::U16:
-				case TypeNameKind::U32:
-				case TypeNameKind::U64:
-				case TypeNameKind::USize:
-				case TypeNameKind::Bool:
-				case TypeNameKind::Any:
-					resultOut = true;
-					break;
-				case TypeNameKind::Ref:
-					SLKC_RETURN_IF_COMP_ERROR(removeRefOfType(src, src));
-					goto recheck;
-				case TypeNameKind::Null:
-					resultOut = dest->isNullable;
-					break;
-				default:
-					resultOut = false;
-					break;
+			if (dest->isNullable) {
+				resultOut = (src->typeNameKind == TypeNameKind::Null) || (src->typeNameKind == dest->typeNameKind);
+			} else {
+				switch (src->typeNameKind) {
+					case TypeNameKind::I8:
+					case TypeNameKind::I16:
+					case TypeNameKind::I32:
+					case TypeNameKind::I64:
+					case TypeNameKind::ISize:
+					case TypeNameKind::U8:
+					case TypeNameKind::U16:
+					case TypeNameKind::U32:
+					case TypeNameKind::U64:
+					case TypeNameKind::USize:
+					case TypeNameKind::Bool:
+					case TypeNameKind::Any:
+						resultOut = true;
+						break;
+					case TypeNameKind::Ref:
+						SLKC_RETURN_IF_COMP_ERROR(removeRefOfType(src, src));
+						goto recheck;
+					default:
+						resultOut = false;
+						break;
+				}
 			}
 			return {};
 		case TypeNameKind::Any:

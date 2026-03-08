@@ -1102,6 +1102,7 @@ SLKC_API peff::Option<CompilationError> slkc::evalConstExpr(
 				break;
 			}
 
+			// The type may be nullable, but the value will still be non-nullable.
 			switch (e->targetType->typeNameKind) {
 				case TypeNameKind::I8: {
 					AstNodePtr<I8LiteralExprNode> l;

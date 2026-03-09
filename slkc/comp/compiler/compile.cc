@@ -886,7 +886,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileModuleLikeNode(
 	CompileEnv *compileEnv,
 	AstNodePtr<ModuleNode> mod,
 	slake::BasicModuleObject *modOut) {
-	peff::OneshotScopeGuard restoreCurParentAccessNodeGuard([compileEnv, oldNode = compileEnv->curParentAccessNode]() noexcept {
+	peff::Deferred restoreCurParentAccessNodeGuard([compileEnv, oldNode = compileEnv->curParentAccessNode]() noexcept {
 		compileEnv->curParentAccessNode = oldNode;
 	});
 	compileEnv->curParentAccessNode = mod;

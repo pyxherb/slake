@@ -49,6 +49,17 @@ SLAKE_API void *CountablePoolAlloc::realloc(void *ptr, size_t size, size_t align
 	return p;
 }
 
+SLAKE_API void *CountablePoolAlloc::reallocInPlace(void *ptr, size_t size, size_t alignment, size_t newSize, size_t newAlignment) noexcept {
+	void *p = upstream->reallocInPlace(ptr, size, alignment, newSize, newAlignment);
+	if (!p)
+		return nullptr;
+
+	szAllocated -= size;
+	szAllocated += newSize;
+
+	return p;
+}
+
 SLAKE_API void CountablePoolAlloc::release(void *p, size_t size, size_t alignment) noexcept {
 	assert(size <= szAllocated);
 
@@ -132,6 +143,17 @@ SLAKE_API void *GenerationalPoolAlloc::alloc(size_t size, size_t alignment) noex
 
 SLAKE_API void *GenerationalPoolAlloc::realloc(void *ptr, size_t size, size_t alignment, size_t newSize, size_t newAlignment) noexcept {
 	void *p = upstream->realloc(ptr, size, alignment, newSize, newAlignment);
+	if (!p)
+		return nullptr;
+
+	szAllocated -= size;
+	szAllocated += newSize;
+
+	return p;
+}
+
+SLAKE_API void *GenerationalPoolAlloc::reallocInPlace(void *ptr, size_t size, size_t alignment, size_t newSize, size_t newAlignment) noexcept {
+	void *p = upstream->reallocInPlace(ptr, size, alignment, newSize, newAlignment);
 	if (!p)
 		return nullptr;
 

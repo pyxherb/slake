@@ -474,7 +474,7 @@ SLKC_API peff::Option<SyntaxError> BCParser::parseComptimeExpr(AstNodePtr<ExprNo
 	peff::Option<SyntaxError> syntaxError;
 	Token *token = peekToken();
 
-	peff::OneshotScopeGuard setTokenRangeGuard([this, &exprOut, token]() noexcept {
+	peff::Deferred setTokenRangeGuard([this, &exprOut, token]() noexcept {
 		if (exprOut)
 			exprOut->tokenRange = TokenRange{ document->mainModule, token->index, parseContext.idxPrevToken };
 	});
@@ -867,7 +867,7 @@ SLKC_API peff::Option<SyntaxError> BCParser::parseStmt(AstNodePtr<BCStmtNode> &s
 		case TokenId::Id: {
 			Token *mnemonicToken = nextToken();
 
-			peff::OneshotScopeGuard setTokenRangeGuard([this, &stmtOut, lParentheseToken, token]() noexcept {
+			peff::Deferred setTokenRangeGuard([this, &stmtOut, lParentheseToken, token]() noexcept {
 				if (stmtOut)
 					stmtOut->tokenRange = TokenRange{ document->mainModule, lParentheseToken ? lParentheseToken->index : token->index, parseContext.idxPrevToken };
 			});

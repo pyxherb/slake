@@ -126,7 +126,7 @@ static SLAKE_FORCEINLINE const Value *_calcRegPtr(
 }
 
 template <typename LT>
-static void _castToLiteralValue(const Value &x, Value &valueOut) noexcept {
+static void _castToLiteralValue(bool nullable, const Value &x, Value &valueOut) noexcept {
 	switch (x.valueType) {
 		case ValueType::I8:
 			valueOut = ((LT)(x.getI8()));
@@ -166,6 +166,14 @@ static void _castToLiteralValue(const Value &x, Value &valueOut) noexcept {
 			break;
 		case ValueType::Bool:
 			valueOut = ((LT)(x.getBool()));
+			break;
+		case ValueType::Reference:
+			if (nullable) {
+				if (x.isNull())
+					valueOut = nullptr;
+				else
+					std::terminate();
+			}
 			break;
 		default:
 			std::terminate();
@@ -1179,45 +1187,48 @@ InternalExceptionPointer Runtime::_execIns(ContextObject *const context, MajorFr
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[0], x));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[1], y));
 			if (x->valueType != y->valueType) {
-				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
-			}
-
-			switch (x->valueType) {
-				case ValueType::I8:
-					valueOut = (bool)(x->getI8() == y->getI8());
-					break;
-				case ValueType::I16:
-					valueOut = (bool)(x->getI16() == y->getI16());
-					break;
-				case ValueType::I32:
-					valueOut = (bool)(x->getI32() == y->getI32());
-					break;
-				case ValueType::I64:
-					valueOut = (bool)(x->getI64() == y->getI64());
-					break;
-				case ValueType::U8:
-					valueOut = (bool)(x->getU8() == y->getU8());
-					break;
-				case ValueType::U16:
-					valueOut = (bool)(x->getU16() == y->getU16());
-					break;
-				case ValueType::U32:
-					valueOut = (bool)(x->getU32() == y->getU32());
-					break;
-				case ValueType::U64:
-					valueOut = (bool)(x->getU64() == y->getU64());
-					break;
-				case ValueType::F32:
-					valueOut = (bool)(x->getF32() == y->getF32());
-					break;
-				case ValueType::F64:
-					valueOut = (bool)(x->getF64() == y->getF64());
-					break;
-				case ValueType::Bool:
-					valueOut = (bool)(x->getBool() == y->getBool());
-					break;
-				default:
+				if ((!x->isNull()) || (!y->isNull()))
+					valueOut = false;
+				else
 					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+			} else {
+				switch (x->valueType) {
+					case ValueType::I8:
+						valueOut = (bool)(x->getI8() == y->getI8());
+						break;
+					case ValueType::I16:
+						valueOut = (bool)(x->getI16() == y->getI16());
+						break;
+					case ValueType::I32:
+						valueOut = (bool)(x->getI32() == y->getI32());
+						break;
+					case ValueType::I64:
+						valueOut = (bool)(x->getI64() == y->getI64());
+						break;
+					case ValueType::U8:
+						valueOut = (bool)(x->getU8() == y->getU8());
+						break;
+					case ValueType::U16:
+						valueOut = (bool)(x->getU16() == y->getU16());
+						break;
+					case ValueType::U32:
+						valueOut = (bool)(x->getU32() == y->getU32());
+						break;
+					case ValueType::U64:
+						valueOut = (bool)(x->getU64() == y->getU64());
+						break;
+					case ValueType::F32:
+						valueOut = (bool)(x->getF32() == y->getF32());
+						break;
+					case ValueType::F64:
+						valueOut = (bool)(x->getF64() == y->getF64());
+						break;
+					case ValueType::Bool:
+						valueOut = (bool)(x->getBool() == y->getBool());
+						break;
+					default:
+						return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+				}
 			}
 			break;
 		}
@@ -1234,45 +1245,48 @@ InternalExceptionPointer Runtime::_execIns(ContextObject *const context, MajorFr
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[0], x));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[1], y));
 			if (x->valueType != y->valueType) {
-				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
-			}
-
-			switch (x->valueType) {
-				case ValueType::I8:
-					valueOut = (bool)(x->getI8() != y->getI8());
-					break;
-				case ValueType::I16:
-					valueOut = (bool)(x->getI16() != y->getI16());
-					break;
-				case ValueType::I32:
-					valueOut = (bool)(x->getI32() != y->getI32());
-					break;
-				case ValueType::I64:
-					valueOut = (bool)(x->getI64() != y->getI64());
-					break;
-				case ValueType::U8:
-					valueOut = (bool)(x->getU8() != y->getU8());
-					break;
-				case ValueType::U16:
-					valueOut = (bool)(x->getU16() != y->getU16());
-					break;
-				case ValueType::U32:
-					valueOut = (bool)(x->getU32() != y->getU32());
-					break;
-				case ValueType::U64:
-					valueOut = (bool)(x->getU64() != y->getU64());
-					break;
-				case ValueType::F32:
-					valueOut = (bool)(x->getF32() != y->getF32());
-					break;
-				case ValueType::F64:
-					valueOut = (bool)(x->getF64() != y->getF64());
-					break;
-				case ValueType::Bool:
-					valueOut = (bool)(x->getBool() != y->getBool());
-					break;
-				default:
+				if ((!x->isNull()) || (!y->isNull()))
+					valueOut = true;
+				else
 					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+			} else {
+				switch (x->valueType) {
+					case ValueType::I8:
+						valueOut = (bool)(x->getI8() != y->getI8());
+						break;
+					case ValueType::I16:
+						valueOut = (bool)(x->getI16() != y->getI16());
+						break;
+					case ValueType::I32:
+						valueOut = (bool)(x->getI32() != y->getI32());
+						break;
+					case ValueType::I64:
+						valueOut = (bool)(x->getI64() != y->getI64());
+						break;
+					case ValueType::U8:
+						valueOut = (bool)(x->getU8() != y->getU8());
+						break;
+					case ValueType::U16:
+						valueOut = (bool)(x->getU16() != y->getU16());
+						break;
+					case ValueType::U32:
+						valueOut = (bool)(x->getU32() != y->getU32());
+						break;
+					case ValueType::U64:
+						valueOut = (bool)(x->getU64() != y->getU64());
+						break;
+					case ValueType::F32:
+						valueOut = (bool)(x->getF32() != y->getF32());
+						break;
+					case ValueType::F64:
+						valueOut = (bool)(x->getF64() != y->getF64());
+						break;
+					case ValueType::Bool:
+						valueOut = (bool)(x->getBool() != y->getBool());
+						break;
+					default:
+						return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+				}
 			}
 			break;
 		}
@@ -2712,48 +2726,49 @@ InternalExceptionPointer Runtime::_execIns(ContextObject *const context, MajorFr
 				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
 			}
 
-			Value v;
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, operands[1], v));
+			const Value *v;
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[1], v));
 
 			auto t = operands[0].getTypeName();
 			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
 
 			switch (t.typeId) {
 				case TypeId::I8:
-					_castToLiteralValue<int8_t>(v, valueOut);
+					_castToLiteralValue<int8_t>(t.isNullable(), *v, valueOut);
 					break;
 				case TypeId::I16:
-					_castToLiteralValue<int16_t>(v, valueOut);
+					_castToLiteralValue<int16_t>(t.isNullable(), *v, valueOut);
 					break;
 				case TypeId::I32:
-					_castToLiteralValue<int32_t>(v, valueOut);
+					_castToLiteralValue<int32_t>(t.isNullable(), *v, valueOut);
 					break;
 				case TypeId::I64:
-					_castToLiteralValue<int64_t>(v, valueOut);
+					_castToLiteralValue<int64_t>(t.isNullable(), *v, valueOut);
 					break;
 				case TypeId::U8:
-					_castToLiteralValue<uint8_t>(v, valueOut);
+					_castToLiteralValue<uint8_t>(t.isNullable(), *v, valueOut);
 					break;
 				case TypeId::U16:
-					_castToLiteralValue<uint16_t>(v, valueOut);
+					_castToLiteralValue<uint16_t>(t.isNullable(), *v, valueOut);
 					break;
 				case TypeId::U32:
-					_castToLiteralValue<uint32_t>(v, valueOut);
+					_castToLiteralValue<uint32_t>(t.isNullable(), *v, valueOut);
 					break;
 				case TypeId::U64:
-					_castToLiteralValue<uint64_t>(v, valueOut);
+					_castToLiteralValue<uint64_t>(t.isNullable(), *v, valueOut);
 					break;
 				case TypeId::Bool:
-					_castToLiteralValue<bool>(v, valueOut);
+					_castToLiteralValue<bool>(t.isNullable(), *v, valueOut);
 					break;
 				case TypeId::F32:
-					_castToLiteralValue<float>(v, valueOut);
+					_castToLiteralValue<float>(t.isNullable(), *v, valueOut);
 					break;
 				case TypeId::F64:
-					_castToLiteralValue<double>(v, valueOut);
+					_castToLiteralValue<double>(t.isNullable(), *v, valueOut);
 					break;
 				case TypeId::Instance:
-					valueOut = v;
+					valueOut.asReference = v->getReference();
+					valueOut.valueType = ValueType::Reference;
 					break;
 				default:
 					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));

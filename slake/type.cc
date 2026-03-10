@@ -253,7 +253,7 @@ SLAKE_API TypeRef TypeRef::duplicate(bool &succeededOut) const {
 }
 
 SLAKE_API bool slake::isCompatible(const TypeRef &type, const Value &value) noexcept {
-	if ((!type.isNullable()) && (value.isNull()))
+	if (type.isNullable() && (value.isNull()))
 		return true;
 	switch (type.typeId) {
 		case TypeId::I8:

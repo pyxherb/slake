@@ -153,7 +153,7 @@ SLKC_API peff::Option<CompilationError> slkc::combineParallelPathEnv(peff::Alloc
 	{
 		peff::Map<AstNodePtr<VarNode>, AstNodePtr<ExprNode>> commonLocalVarValueOverrides(allocator);
 
-		// Find common local variable null overrides.
+		// Find common local variable value overrides.
 		{
 			peff::Set<AstNodePtr<VarNode>> nonunifiableValueOverrideVars(allocator);
 			for (auto it = idxMayPaths.begin(); it != idxMayPaths.end(); ++it) {
@@ -180,7 +180,7 @@ SLKC_API peff::Option<CompilationError> slkc::combineParallelPathEnv(peff::Alloc
 			}
 
 			for (auto i : nonunifiableValueOverrideVars)
-				SLKC_RETURN_IF_COMP_ERROR(outer.setLocalVarNullOverride(i, NullOverrideType::Uncertain));
+				SLKC_RETURN_IF_COMP_ERROR(outer.setLocalVarValueOverride(i, {}));
 		}
 
 		for (auto i : commonLocalVarValueOverrides) {

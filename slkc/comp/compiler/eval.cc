@@ -1192,22 +1192,9 @@ reeval:
 						if (auto it = context.varValueOverrides.find(result.evaluatedFinalMember.castTo<VarNode>()); it != context.varValueOverrides.end()) {
 							exprOut = it.value();
 						} else {
-							if (auto overrideType = pathEnv->lookupVarNullOverride(result.evaluatedFinalMember.castTo<VarNode>());
-								overrideType.hasValue()) {
-								switch (*overrideType) {
-									case NullOverrideType::Nullify:
-										if (!(exprOut = makeAstNode<NullLiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document).castTo<ExprNode>())) {
-											return genOutOfMemoryCompError();
-										}
-									case NullOverrideType::Denullify:
-										exprOut = {};
-										*sideEffectAppliedOut = true;
-									case NullOverrideType::Uncertain:
-										if (!(exprOut = makeAstNode<NullLiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document).castTo<ExprNode>())) {
-											return genOutOfMemoryCompError();
-										}
-										*sideEffectAppliedOut = true;
-								}
+							if (auto valueOverride = pathEnv->lookupVarValueOverride(result.evaluatedFinalMember.castTo<VarNode>());
+								valueOverride) {
+								exprOut = valueOverride;
 							} else {
 								if (result.evaluatedFinalMember.castTo<VarNode>()->type->isNullable) {
 									if (!(exprOut = makeAstNode<NullLiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document).castTo<ExprNode>())) {
@@ -1462,6 +1449,7 @@ reeval:
 		case ExprKind::Wrapper:
 			expr = expr.castTo<WrapperExprNode>()->target;
 			goto reeval;
+		case ExprKind::Call:
 		case ExprKind::Bad: {
 			exprOut = {};
 			break;

@@ -134,18 +134,14 @@ SLKC_API peff::Option<SyntaxError> Parser::parseOperatorName(std::string_view &n
 		case TokenId::LParenthese:
 			nextToken();
 
-			if ((syntaxError = expectToken(peekToken(), TokenId::RParenthese))) {
-				return syntaxError;
-			}
+			SLKC_RETURN_IF_PARSE_ERROR((expectToken(peekToken(), TokenId::RParenthese)));
 
 			nameOut = "()";
 			break;
 		case TokenId::LBracket:
 			nextToken();
 
-			if ((syntaxError = expectToken(peekToken(), TokenId::RBracket))) {
-				return syntaxError;
-			}
+			SLKC_RETURN_IF_PARSE_ERROR((expectToken(peekToken(), TokenId::RBracket)));
 
 			nameOut = "[]";
 			break;
@@ -227,9 +223,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseIdRef(IdRefPtr &idRefOut) {
 	}
 
 	for (;;) {
-		if ((syntaxError = expectToken(t = peekToken(), TokenId::Id)))
-			return syntaxError;
-
+		SLKC_RETURN_IF_PARSE_ERROR(expectToken(t = peekToken(), TokenId::Id));
 		nextToken();
 
 		IdRefEntry entry(resourceAllocator.get());
@@ -247,16 +241,12 @@ SLKC_API peff::Option<SyntaxError> Parser::parseIdRef(IdRefPtr &idRefOut) {
 
 			entry.genericScopeTokenIndex = t->index;
 
-			if ((syntaxError = expectToken(t = peekToken(), TokenId::LtOp)))
-				return syntaxError;
-
+			SLKC_RETURN_IF_PARSE_ERROR(expectToken(t = peekToken(), TokenId::LtOp));
 			nextToken();
 
 			for (;;) {
 				AstNodePtr<AstNode> genericArg;
-				if ((syntaxError = parseGenericArg(genericArg)))
-					return syntaxError;
-
+				SLKC_RETURN_IF_PARSE_ERROR(parseGenericArg(genericArg));
 				if (!entry.genericArgs.pushBack(std::move(genericArg))) {
 					return genOutOfMemorySyntaxError();
 				}
@@ -268,9 +258,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseIdRef(IdRefPtr &idRefOut) {
 				nextToken();
 			}
 
-			if ((syntaxError = expectToken(t = peekToken(), TokenId::GtOp)))
-				return syntaxError;
-
+			SLKC_RETURN_IF_PARSE_ERROR(expectToken(t = peekToken(), TokenId::GtOp));
 			idRefPtr->tokenRange.endIndex = t->index;
 
 			nextToken();
@@ -303,8 +291,7 @@ end:
 
 		AstNodePtr<ExprNode> arg;
 
-		if (auto e = parseExpr(0, arg); e)
-			return e;
+		SLKC_RETURN_IF_PARSE_ERROR(parseExpr(0, arg));
 
 		if (!argsOut.pushBack(std::move(arg)))
 			return genOutOfMemorySyntaxError();
@@ -339,9 +326,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseFn(AstNodePtr<FnOverloadingNode>
 
 			fnNodeOut->overloadingKind = FnOverloadingKind::Regular;
 
-			if ((syntaxError = parseIdName(name))) {
-				return syntaxError;
-			}
+			SLKC_RETURN_IF_PARSE_ERROR(parseIdName(name));
 			break;
 		}
 		case TokenId::AsyncKeyword: {
@@ -349,9 +334,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseFn(AstNodePtr<FnOverloadingNode>
 
 			fnNodeOut->overloadingKind = FnOverloadingKind::Coroutine;
 
-			if ((syntaxError = parseIdName(name))) {
-				return syntaxError;
-			}
+			SLKC_RETURN_IF_PARSE_ERROR(parseIdName(name));
 			break;
 		}
 		case TokenId::OperatorKeyword: {
@@ -366,9 +349,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseFn(AstNodePtr<FnOverloadingNode>
 			}
 
 			std::string_view operatorName;
-			if ((syntaxError = parseOperatorName(operatorName))) {
-				return syntaxError;
-			}
+			SLKC_RETURN_IF_PARSE_ERROR(parseOperatorName(operatorName));
 
 			if (!name.build(operatorName)) {
 				return genOutOfMemorySyntaxError();
@@ -385,9 +366,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseFn(AstNodePtr<FnOverloadingNode>
 
 			fnNodeOut->overloadingKind = FnOverloadingKind::Pure;
 
-			if ((syntaxError = parseIdName(name))) {
-				return syntaxError;
-			}
+			SLKC_RETURN_IF_PARSE_ERROR(parseIdName(name));
 			break;
 		}
 		default:
@@ -414,9 +393,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseFn(AstNodePtr<FnOverloadingNode>
 
 	fnNodeOut->name = std::move(name);
 
-	if ((syntaxError = parseGenericParams(fnNodeOut->genericParams, fnNodeOut->idxGenericParamCommaTokens, fnNodeOut->lAngleBracketIndex, fnNodeOut->rAngleBracketIndex))) {
-		return syntaxError;
-	}
+	SLKC_RETURN_IF_PARSE_ERROR(parseGenericParams(fnNodeOut->genericParams, fnNodeOut->idxGenericParamCommaTokens, fnNodeOut->lAngleBracketIndex, fnNodeOut->rAngleBracketIndex));
 	for (size_t i = 0; i < fnNodeOut->genericParams.size(); ++i) {
 		auto gp = fnNodeOut->genericParams.at(i);
 		if (fnNodeOut->genericParamIndices.contains(gp->name)) {
@@ -435,9 +412,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseFn(AstNodePtr<FnOverloadingNode>
 	}
 
 	bool hasVarArg = false;
-	if ((syntaxError = parseParams(fnNodeOut->params, hasVarArg, fnNodeOut->idxParamCommaTokens, fnNodeOut->lParentheseIndex, fnNodeOut->rParentheseIndex))) {
-		return syntaxError;
-	}
+	SLKC_RETURN_IF_PARSE_ERROR(parseParams(fnNodeOut->params, hasVarArg, fnNodeOut->idxParamCommaTokens, fnNodeOut->lParentheseIndex, fnNodeOut->rParentheseIndex));
 	if (hasVarArg) {
 		fnNodeOut->fnFlags |= FN_VARG;
 	}
@@ -479,9 +454,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseFn(AstNodePtr<FnOverloadingNode>
 			case TokenId::LBrace:
 				break;
 			default:
-				if ((syntaxError = parseTypeName(fnNodeOut->overridenType))) {
-					return syntaxError;
-				}
+				SLKC_RETURN_IF_PARSE_ERROR(parseTypeName(fnNodeOut->overridenType));
 				break;
 		}
 	}
@@ -489,9 +462,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseFn(AstNodePtr<FnOverloadingNode>
 	Token *returnTypeToken;
 	if ((returnTypeToken = peekToken())->tokenId == TokenId::ReturnTypeOp) {
 		nextToken();
-		if ((syntaxError = parseTypeName(fnNodeOut->returnType))) {
-			return syntaxError;
-		}
+		SLKC_RETURN_IF_PARSE_ERROR(parseTypeName(fnNodeOut->returnType));
 	} else {
 		if (!(fnNodeOut->returnType = makeAstNode<VoidTypeNameNode>(resourceAllocator.get(), resourceAllocator.get(), document).castTo<TypeNameNode>())) {
 			return genOutOfMemorySyntaxError();
@@ -516,9 +487,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseFn(AstNodePtr<FnOverloadingNode>
 			}
 
 			while (true) {
-				if ((syntaxError = expectToken(peekToken()))) {
-					return syntaxError;
-				}
+				SLKC_RETURN_IF_PARSE_ERROR(expectToken(peekToken()));
 
 				if (peekToken()->tokenId == TokenId::RBrace) {
 					break;
@@ -538,9 +507,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseFn(AstNodePtr<FnOverloadingNode>
 
 			Token *rBraceToken;
 
-			if ((syntaxError = expectToken((rBraceToken = peekToken()), TokenId::RBrace))) {
-				return syntaxError;
-			}
+			SLKC_RETURN_IF_PARSE_ERROR((expectToken((rBraceToken = peekToken()), TokenId::RBrace)));
 
 			nextToken();
 			break;
@@ -558,9 +525,8 @@ SLKC_API peff::Option<SyntaxError> Parser::parseUnionEnumItem(AstNodePtr<ModuleN
 	peff::Option<SyntaxError> syntaxError;
 
 	Token *nameToken;
-	if ((syntaxError = expectToken((nameToken = peekToken()), TokenId::Id))) {
-		return syntaxError;
-	}
+	SLKC_RETURN_IF_PARSE_ERROR((expectToken((nameToken = peekToken()), TokenId::Id)));
+
 	nextToken();
 
 	switch (Token *token = peekToken(); token->tokenId) {
@@ -598,22 +564,19 @@ SLKC_API peff::Option<SyntaxError> Parser::parseUnionEnumItem(AstNodePtr<ModuleN
 						}
 
 						Token *entryNameToken;
-						if ((syntaxError = expectToken((entryNameToken = peekToken()), TokenId::Id))) {
-							return syntaxError;
-						}
+						SLKC_RETURN_IF_PARSE_ERROR((expectToken((entryNameToken = peekToken()), TokenId::Id)));
+
 						nextToken();
 
 						if (!enumItemEntry->name.build(entryNameToken->sourceText))
 							return genOutOfMemorySyntaxError();
 
 						Token *colonToken;
-						if ((syntaxError = expectToken((colonToken = peekToken()), TokenId::Colon))) {
-							return syntaxError;
-						}
+						SLKC_RETURN_IF_PARSE_ERROR((expectToken((colonToken = peekToken()), TokenId::Colon)));
+
 						nextToken();
 
-						if ((syntaxError = parseTypeName(enumItemEntry->type)))
-							return syntaxError;
+						SLKC_RETURN_IF_PARSE_ERROR(parseTypeName(enumItemEntry->type));
 					}
 
 					if (auto it = enumItem->memberIndices.find(enumItemEntry->name); it != enumItem->memberIndices.end()) {
@@ -638,8 +601,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseUnionEnumItem(AstNodePtr<ModuleN
 				}
 			}
 			Token *rBraceToken;
-			if ((syntaxError = expectToken((rBraceToken = peekToken()), TokenId::RParenthese)))
-				return syntaxError;
+			SLKC_RETURN_IF_PARSE_ERROR(expectToken((rBraceToken = peekToken()), TokenId::RParenthese));
 			nextToken();
 
 			if (auto it = enumOut->memberIndices.find(enumItem->name); it != enumOut->memberIndices.end()) {
@@ -684,9 +646,8 @@ SLKC_API peff::Option<SyntaxError> Parser::parseEnumItem(AstNodePtr<ModuleNode> 
 		}
 
 		Token *nameToken;
-		if ((syntaxError = expectToken((nameToken = peekToken()), TokenId::Id))) {
-			return syntaxError;
-		}
+		SLKC_RETURN_IF_PARSE_ERROR((expectToken((nameToken = peekToken()), TokenId::Id)));
+
 		nextToken();
 
 		if (!enumItem->name.build(nameToken->sourceText))
@@ -694,8 +655,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseEnumItem(AstNodePtr<ModuleNode> 
 
 		if (Token *token = peekToken(); token->tokenId == TokenId::AssignOp) {
 			nextToken();
-			if ((syntaxError = parseExpr(0, enumItem->enumValue)))
-				return syntaxError;
+			SLKC_RETURN_IF_PARSE_ERROR(parseExpr(0, enumItem->enumValue));
 		}
 	}
 
@@ -723,9 +683,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseProgramStmt() {
 
 	peff::DynArray<AstNodePtr<AttributeNode>> attributes(resourceAllocator.get());
 
-	if ((syntaxError = parseAttributes(attributes))) {
-		return syntaxError;
-	}
+	SLKC_RETURN_IF_PARSE_ERROR(parseAttributes(attributes));
 
 	slake::AccessModifier access = 0;
 	Token *currentToken;
@@ -774,9 +732,8 @@ accessModifierParseEnd:
 					});
 
 					Token *nameToken;
-					if ((syntaxError = expectToken((nameToken = peekToken()), TokenId::Id))) {
-						return syntaxError;
-					}
+					SLKC_RETURN_IF_PARSE_ERROR((expectToken((nameToken = peekToken()), TokenId::Id)));
+
 					nextToken();
 
 					size_t idxMember;
@@ -789,9 +746,8 @@ accessModifierParseEnd:
 					}
 
 					Token *lBraceToken;
-					if ((syntaxError = expectToken((lBraceToken = peekToken()), TokenId::LBrace))) {
-						return syntaxError;
-					}
+					SLKC_RETURN_IF_PARSE_ERROR((expectToken((lBraceToken = peekToken()), TokenId::LBrace)));
+
 					nextToken();
 
 					while (true) {
@@ -811,9 +767,8 @@ accessModifierParseEnd:
 					}
 
 					Token *rBraceToken;
-					if ((syntaxError = expectToken((rBraceToken = peekToken()), TokenId::RBrace))) {
-						return syntaxError;
-					}
+					SLKC_RETURN_IF_PARSE_ERROR((expectToken((rBraceToken = peekToken()), TokenId::RBrace)));
+
 					nextToken();
 
 					if (auto it = p->memberIndices.find(enumNode->name); it != p->memberIndices.end()) {
@@ -845,9 +800,8 @@ accessModifierParseEnd:
 					});
 
 					Token *nameToken;
-					if ((syntaxError = expectToken((nameToken = peekToken()), TokenId::Id))) {
-						return syntaxError;
-					}
+					SLKC_RETURN_IF_PARSE_ERROR((expectToken((nameToken = peekToken()), TokenId::Id)));
+
 					nextToken();
 
 					size_t idxMember;
@@ -862,21 +816,17 @@ accessModifierParseEnd:
 					if (Token *lParentheseToken = peekToken(); lParentheseToken->tokenId == TokenId::LParenthese) {
 						nextToken();
 
-						if ((syntaxError = parseTypeName(enumNode->baseType))) {
-							return syntaxError;
-						}
+						SLKC_RETURN_IF_PARSE_ERROR(parseTypeName(enumNode->baseType));
 
 						Token *rParentheseToken;
-						if ((syntaxError = expectToken((rParentheseToken = peekToken()), TokenId::RParenthese))) {
-							return syntaxError;
-						}
+						SLKC_RETURN_IF_PARSE_ERROR((expectToken((rParentheseToken = peekToken()), TokenId::RParenthese)));
+
 						nextToken();
 					}
 
 					Token *lBraceToken;
-					if ((syntaxError = expectToken((lBraceToken = peekToken()), TokenId::LBrace))) {
-						return syntaxError;
-					}
+					SLKC_RETURN_IF_PARSE_ERROR((expectToken((lBraceToken = peekToken()), TokenId::LBrace)));
+
 					nextToken();
 
 					while (true) {
@@ -896,9 +846,8 @@ accessModifierParseEnd:
 					}
 
 					Token *rBraceToken;
-					if ((syntaxError = expectToken((rBraceToken = peekToken()), TokenId::RBrace))) {
-						return syntaxError;
-					}
+					SLKC_RETURN_IF_PARSE_ERROR((expectToken((rBraceToken = peekToken()), TokenId::RBrace)));
+
 					nextToken();
 
 					if (auto it = p->memberIndices.find(enumNode->name); it != p->memberIndices.end()) {
@@ -941,22 +890,18 @@ accessModifierParseEnd:
 						if (Token *lParentheseToken = peekToken(); lParentheseToken->tokenId == TokenId::LParenthese) {
 							nextToken();
 
-							if ((syntaxError = parseTypeName(enumNode->baseType))) {
-								return syntaxError;
-							}
+							SLKC_RETURN_IF_PARSE_ERROR(parseTypeName(enumNode->baseType));
 
 							Token *rParentheseToken;
-							if ((syntaxError = expectToken((rParentheseToken = peekToken()), TokenId::RParenthese))) {
-								return syntaxError;
-							}
+							SLKC_RETURN_IF_PARSE_ERROR((expectToken((rParentheseToken = peekToken()), TokenId::RParenthese)));
+
 							nextToken();
 						}
 					}
 
 					Token *lBraceToken;
-					if ((syntaxError = expectToken((lBraceToken = peekToken()), TokenId::LBrace))) {
-						return syntaxError;
-					}
+					SLKC_RETURN_IF_PARSE_ERROR((expectToken((lBraceToken = peekToken()), TokenId::LBrace)));
+
 					nextToken();
 
 					while (true) {
@@ -976,9 +921,8 @@ accessModifierParseEnd:
 					}
 
 					Token *rBraceToken;
-					if ((syntaxError = expectToken((rBraceToken = peekToken()), TokenId::RBrace))) {
-						return syntaxError;
-					}
+					SLKC_RETURN_IF_PARSE_ERROR((expectToken((rBraceToken = peekToken()), TokenId::RBrace)));
+
 					nextToken();
 
 					if (auto it = p->memberIndices.find(enumNode->name); it != p->memberIndices.end()) {
@@ -1017,9 +961,8 @@ accessModifierParseEnd:
 
 			Token *nameToken;
 
-			if ((syntaxError = expectToken((nameToken = peekToken()), TokenId::Id))) {
-				return syntaxError;
-			}
+			SLKC_RETURN_IF_PARSE_ERROR((expectToken((nameToken = peekToken()), TokenId::Id)));
+
 			nextToken();
 
 			size_t idxMember;
@@ -1045,17 +988,14 @@ accessModifierParseEnd:
 
 				Token *lBraceToken;
 
-				if ((syntaxError = expectToken((lBraceToken = peekToken()), TokenId::LBrace))) {
-					return syntaxError;
-				}
+				SLKC_RETURN_IF_PARSE_ERROR((expectToken((lBraceToken = peekToken()), TokenId::LBrace)));
 
 				nextToken();
 
 				Token *currentToken;
 				while (true) {
-					if ((syntaxError = expectToken(currentToken = peekToken()))) {
-						return syntaxError;
-					}
+					SLKC_RETURN_IF_PARSE_ERROR(expectToken(currentToken = peekToken()));
+
 					if (currentToken->tokenId == TokenId::RBrace) {
 						break;
 					}
@@ -1071,9 +1011,7 @@ accessModifierParseEnd:
 
 				Token *rBraceToken;
 
-				if ((syntaxError = expectToken((rBraceToken = peekToken()), TokenId::RBrace))) {
-					return syntaxError;
-				}
+				SLKC_RETURN_IF_PARSE_ERROR((expectToken((rBraceToken = peekToken()), TokenId::RBrace)));
 
 				nextToken();
 			}
@@ -1103,9 +1041,7 @@ accessModifierParseEnd:
 			// Function.
 			AstNodePtr<FnOverloadingNode> fn;
 
-			if ((syntaxError = parseFn(fn))) {
-				return syntaxError;
-			}
+			SLKC_RETURN_IF_PARSE_ERROR(parseFn(fn));
 
 			fn->accessModifier = access;
 
@@ -1163,9 +1099,8 @@ accessModifierParseEnd:
 
 			Token *nameToken;
 
-			if ((syntaxError = expectToken((nameToken = peekToken()), TokenId::Id))) {
-				return syntaxError;
-			}
+			SLKC_RETURN_IF_PARSE_ERROR((expectToken((nameToken = peekToken()), TokenId::Id)));
+
 			nextToken();
 
 			if (!classNode->name.build(nameToken->sourceText)) {
@@ -1189,9 +1124,7 @@ accessModifierParseEnd:
 				});
 				curParent = classNode.castTo<MemberNode>();
 
-				if ((syntaxError = parseGenericParams(classNode->genericParams, classNode->idxGenericParamCommaTokens, classNode->idxLAngleBracketToken, classNode->idxRAngleBracketToken))) {
-					return syntaxError;
-				}
+				SLKC_RETURN_IF_PARSE_ERROR(parseGenericParams(classNode->genericParams, classNode->idxGenericParamCommaTokens, classNode->idxLAngleBracketToken, classNode->idxRAngleBracketToken));
 				for (size_t i = 0; i < classNode->genericParams.size(); ++i) {
 					auto gp = classNode->genericParams.at(i);
 					if (classNode->genericParamIndices.contains(gp->name)) {
@@ -1212,14 +1145,11 @@ accessModifierParseEnd:
 				if (Token *lParentheseToken = peekToken(); lParentheseToken->tokenId == TokenId::LParenthese) {
 					nextToken();
 
-					if ((syntaxError = parseTypeName(classNode->baseType))) {
-						return syntaxError;
-					}
+					SLKC_RETURN_IF_PARSE_ERROR(parseTypeName(classNode->baseType));
 
 					Token *rParentheseToken;
-					if ((syntaxError = expectToken((rParentheseToken = peekToken()), TokenId::RParenthese))) {
-						return syntaxError;
-					}
+					SLKC_RETURN_IF_PARSE_ERROR((expectToken((rParentheseToken = peekToken()), TokenId::RParenthese)));
+
 					nextToken();
 				}
 
@@ -1229,9 +1159,7 @@ accessModifierParseEnd:
 					while (true) {
 						AstNodePtr<TypeNameNode> tn;
 
-						if ((syntaxError = parseTypeName(tn))) {
-							return syntaxError;
-						}
+						SLKC_RETURN_IF_PARSE_ERROR(parseTypeName(tn));
 
 						if (!classNode->implTypes.pushBack(std::move(tn))) {
 							return genOutOfMemorySyntaxError();
@@ -1247,17 +1175,14 @@ accessModifierParseEnd:
 
 				Token *lBraceToken;
 
-				if ((syntaxError = expectToken((lBraceToken = peekToken()), TokenId::LBrace))) {
-					return syntaxError;
-				}
+				SLKC_RETURN_IF_PARSE_ERROR((expectToken((lBraceToken = peekToken()), TokenId::LBrace)));
 
 				nextToken();
 
 				Token *currentToken;
 				while (true) {
-					if ((syntaxError = expectToken(currentToken = peekToken()))) {
-						return syntaxError;
-					}
+					SLKC_RETURN_IF_PARSE_ERROR(expectToken(currentToken = peekToken()));
+
 					if (currentToken->tokenId == TokenId::RBrace) {
 						break;
 					}
@@ -1273,9 +1198,7 @@ accessModifierParseEnd:
 
 				Token *rBraceToken;
 
-				if ((syntaxError = expectToken((rBraceToken = peekToken()), TokenId::RBrace))) {
-					return syntaxError;
-				}
+				SLKC_RETURN_IF_PARSE_ERROR((expectToken((rBraceToken = peekToken()), TokenId::RBrace)));
 
 				nextToken();
 			}
@@ -1312,9 +1235,8 @@ accessModifierParseEnd:
 
 			Token *nameToken;
 
-			if ((syntaxError = expectToken((nameToken = peekToken()), TokenId::Id))) {
-				return syntaxError;
-			}
+			SLKC_RETURN_IF_PARSE_ERROR((expectToken((nameToken = peekToken()), TokenId::Id)));
+
 			nextToken();
 
 			if (!structNode->name.build(nameToken->sourceText)) {
@@ -1338,9 +1260,7 @@ accessModifierParseEnd:
 				});
 				curParent = structNode.castTo<MemberNode>();
 
-				if ((syntaxError = parseGenericParams(structNode->genericParams, structNode->idxGenericParamCommaTokens, structNode->idxLAngleBracketToken, structNode->idxRAngleBracketToken))) {
-					return syntaxError;
-				}
+				SLKC_RETURN_IF_PARSE_ERROR(parseGenericParams(structNode->genericParams, structNode->idxGenericParamCommaTokens, structNode->idxLAngleBracketToken, structNode->idxRAngleBracketToken));
 				for (size_t i = 0; i < structNode->genericParams.size(); ++i) {
 					auto gp = structNode->genericParams.at(i);
 					if (structNode->genericParamIndices.contains(gp->name)) {
@@ -1364,9 +1284,7 @@ accessModifierParseEnd:
 					while (true) {
 						AstNodePtr<TypeNameNode> tn;
 
-						if ((syntaxError = parseTypeName(tn))) {
-							return syntaxError;
-						}
+						SLKC_RETURN_IF_PARSE_ERROR(parseTypeName(tn));
 
 						if (!structNode->implTypes.pushBack(std::move(tn))) {
 							return genOutOfMemorySyntaxError();
@@ -1382,17 +1300,14 @@ accessModifierParseEnd:
 
 				Token *lBraceToken;
 
-				if ((syntaxError = expectToken((lBraceToken = peekToken()), TokenId::LBrace))) {
-					return syntaxError;
-				}
+				SLKC_RETURN_IF_PARSE_ERROR((expectToken((lBraceToken = peekToken()), TokenId::LBrace)));
 
 				nextToken();
 
 				Token *currentToken;
 				while (true) {
-					if ((syntaxError = expectToken(currentToken = peekToken()))) {
-						return syntaxError;
-					}
+					SLKC_RETURN_IF_PARSE_ERROR(expectToken(currentToken = peekToken()));
+
 					if (currentToken->tokenId == TokenId::RBrace) {
 						break;
 					}
@@ -1408,9 +1323,7 @@ accessModifierParseEnd:
 
 				Token *rBraceToken;
 
-				if ((syntaxError = expectToken((rBraceToken = peekToken()), TokenId::RBrace))) {
-					return syntaxError;
-				}
+				SLKC_RETURN_IF_PARSE_ERROR((expectToken((rBraceToken = peekToken()), TokenId::RBrace)));
 
 				nextToken();
 			}
@@ -1447,9 +1360,8 @@ accessModifierParseEnd:
 
 			Token *nameToken;
 
-			if ((syntaxError = expectToken((nameToken = peekToken()), TokenId::Id))) {
-				return syntaxError;
-			}
+			SLKC_RETURN_IF_PARSE_ERROR((expectToken((nameToken = peekToken()), TokenId::Id)));
+
 			nextToken();
 
 			if (!interfaceNode->name.build(nameToken->sourceText)) {
@@ -1475,9 +1387,7 @@ accessModifierParseEnd:
 				});
 				curParent = interfaceNode.castTo<MemberNode>();
 
-				if ((syntaxError = parseGenericParams(interfaceNode->genericParams, interfaceNode->idxGenericParamCommaTokens, interfaceNode->idxLAngleBracketToken, interfaceNode->idxRAngleBracketToken))) {
-					return syntaxError;
-				}
+				SLKC_RETURN_IF_PARSE_ERROR(parseGenericParams(interfaceNode->genericParams, interfaceNode->idxGenericParamCommaTokens, interfaceNode->idxLAngleBracketToken, interfaceNode->idxRAngleBracketToken));
 				for (size_t i = 0; i < interfaceNode->genericParams.size(); ++i) {
 					auto gp = interfaceNode->genericParams.at(i);
 					if (interfaceNode->genericParamIndices.contains(gp->name)) {
@@ -1501,9 +1411,7 @@ accessModifierParseEnd:
 					while (true) {
 						AstNodePtr<TypeNameNode> tn;
 
-						if ((syntaxError = parseTypeName(tn))) {
-							return syntaxError;
-						}
+						SLKC_RETURN_IF_PARSE_ERROR(parseTypeName(tn));
 
 						if (!interfaceNode->implTypes.pushBack(std::move(tn))) {
 							return genOutOfMemorySyntaxError();
@@ -1519,17 +1427,14 @@ accessModifierParseEnd:
 
 				Token *lBraceToken;
 
-				if ((syntaxError = expectToken((lBraceToken = peekToken()), TokenId::LBrace))) {
-					return syntaxError;
-				}
+				SLKC_RETURN_IF_PARSE_ERROR((expectToken((lBraceToken = peekToken()), TokenId::LBrace)));
 
 				nextToken();
 
 				Token *currentToken;
 				while (true) {
-					if ((syntaxError = expectToken(currentToken = peekToken()))) {
-						return syntaxError;
-					}
+					SLKC_RETURN_IF_PARSE_ERROR(expectToken(currentToken = peekToken()));
+
 					if (currentToken->tokenId == TokenId::RBrace) {
 						break;
 					}
@@ -1545,9 +1450,7 @@ accessModifierParseEnd:
 
 				Token *rBraceToken;
 
-				if ((syntaxError = expectToken((rBraceToken = peekToken()), TokenId::RBrace))) {
-					return syntaxError;
-				}
+				SLKC_RETURN_IF_PARSE_ERROR((expectToken((rBraceToken = peekToken()), TokenId::RBrace)));
 
 				nextToken();
 			}
@@ -1580,9 +1483,7 @@ accessModifierParseEnd:
 				return genOutOfMemorySyntaxError();
 			}
 
-			if ((syntaxError = parseIdRef(importNode->idRef)))
-				return syntaxError;
-
+			SLKC_RETURN_IF_PARSE_ERROR(parseIdRef(importNode->idRef));
 			size_t idxMember;
 			if ((idxMember = p->pushMember(importNode.castTo<MemberNode>())) == SIZE_MAX) {
 				return genOutOfMemorySyntaxError();
@@ -1593,9 +1494,7 @@ accessModifierParseEnd:
 
 				Token *nameToken;
 
-				if ((syntaxError = expectToken((nameToken = peekToken()), TokenId::Id))) {
-					return syntaxError;
-				}
+				SLKC_RETURN_IF_PARSE_ERROR((expectToken((nameToken = peekToken()), TokenId::Id)));
 
 				if (!importNode->name.build(nameToken->sourceText)) {
 					return genOutOfMemorySyntaxError();
@@ -1612,9 +1511,7 @@ accessModifierParseEnd:
 
 			Token *semicolonToken;
 
-			if ((syntaxError = expectToken((semicolonToken = peekToken()), TokenId::Semicolon))) {
-				return syntaxError;
-			}
+			SLKC_RETURN_IF_PARSE_ERROR((expectToken((semicolonToken = peekToken()), TokenId::Semicolon)));
 
 			nextToken();
 
@@ -1644,15 +1541,11 @@ accessModifierParseEnd:
 				stmt->tokenRange = TokenRange{ document->mainModule, token->index, parseContext.idxPrevToken };
 			});
 
-			if ((syntaxError = parseVarDefs(stmt->varDefEntries))) {
-				return syntaxError;
-			}
+			SLKC_RETURN_IF_PARSE_ERROR(parseVarDefs(stmt->varDefEntries));
 
 			Token *semicolonToken;
 
-			if ((syntaxError = expectToken((semicolonToken = peekToken()), TokenId::Semicolon))) {
-				return syntaxError;
-			}
+			SLKC_RETURN_IF_PARSE_ERROR((expectToken((semicolonToken = peekToken()), TokenId::Semicolon)));
 
 			nextToken();
 
@@ -1716,9 +1609,8 @@ SLKC_API peff::Option<SyntaxError> Parser::parseProgram(const AstNodePtr<ModuleN
 		}
 
 		Token *semicolonToken;
-		if ((syntaxError = expectToken((semicolonToken = peekToken()), TokenId::Semicolon))) {
-			return syntaxError;
-		}
+		SLKC_RETURN_IF_PARSE_ERROR((expectToken((semicolonToken = peekToken()), TokenId::Semicolon)));
+
 		nextToken();
 
 		moduleNameOut = std::move(moduleName);

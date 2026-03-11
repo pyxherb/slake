@@ -218,6 +218,11 @@ namespace slkc {
 		/// @note Don't forget that there still may be syntax errors emitted even the parse progress is not interrupted.
 		[[nodiscard]] SLKC_API virtual peff::Option<SyntaxError> parseProgram(const AstNodePtr<ModuleNode> &initialMod, IdRefPtr &moduleNameOut);
 	};
+
+#define SLKC_RETURN_IF_PARSE_ERROR(expr)         \
+	if (peff::Option<SyntaxError> _ = (expr); _) \
+		return _;                                \
+	else
 }
 
 #endif

@@ -14,9 +14,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseParams(
 
 	lAngleBracketIndexOut = lParentheseToken->index;
 
-	if ((syntaxError = expectToken((lParentheseToken = peekToken()), TokenId::LParenthese))) {
-		return syntaxError;
-	}
+	SLKC_RETURN_IF_PARSE_ERROR(expectToken((lParentheseToken = peekToken()), TokenId::LParenthese));
 
 	nextToken();
 
@@ -33,9 +31,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseParams(
 
 		Token *nameToken;
 
-		if ((syntaxError = expectToken((nameToken = peekToken()), TokenId::Id))) {
-			return syntaxError;
-		}
+		SLKC_RETURN_IF_PARSE_ERROR(expectToken((nameToken = peekToken()), TokenId::Id));
 
 		if (!paramNode->name.build(nameToken->sourceText))
 			return genOutOfMemorySyntaxError();
@@ -45,9 +41,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseParams(
 		if (peekToken()->tokenId == TokenId::Colon) {
 			Token *colonToken = nextToken();
 
-			if ((syntaxError = parseTypeName(paramNode->type))) {
-				return syntaxError;
-			}
+			SLKC_RETURN_IF_PARSE_ERROR(parseTypeName(paramNode->type));
 		}
 
 		if (!paramsOut.pushBack(std::move(paramNode)))
@@ -71,9 +65,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseParams(
 
 	Token *rParentheseToken;
 
-	if ((syntaxError = expectToken((rParentheseToken = peekToken()), TokenId::RParenthese))) {
-		return syntaxError;
-	}
+	SLKC_RETURN_IF_PARSE_ERROR(expectToken((rParentheseToken = peekToken()), TokenId::RParenthese));
 
 	nextToken();
 

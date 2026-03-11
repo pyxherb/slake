@@ -554,8 +554,9 @@ SLKC_API peff::Option<CompilationError> slkc::compileIdRef(
 
 	id->overridenType = slake::TypeId::Void;
 
-	if (overridenType)
+	if (overridenType) {
 		SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileEnv, compilationContext, overridenType, id->overridenType));
+	}
 
 	idRefOut = id;
 
@@ -1619,11 +1620,12 @@ SLKC_API peff::Option<CompilationError> slkc::compileModuleLikeNode(
 
 									PathEnv pathEnv(compileEnv->allocator.get());
 									SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, &compilationContext, &pathEnv, castExpr.castTo<ExprNode>(), enumValue));
-									if (!enumValue)
+									if (!enumValue) {
 										SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(
 											CompilationError(
 												itemNode->filledValue->tokenRange,
 												CompilationErrorKind::IncompatibleInitialValueType)));
+									}
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(compileValueExpr(compileEnv, &compilationContext, enumValue, itemValue));
@@ -1655,11 +1657,12 @@ SLKC_API peff::Option<CompilationError> slkc::compileModuleLikeNode(
 
 								fr.type = baseType;
 
-								if (itemNode->filledValue)
+								if (itemNode->filledValue) {
 									SLKC_RETURN_IF_COMP_ERROR(compileEnv->pushError(
 										CompilationError(
 											itemNode->tokenRange,
 											CompilationErrorKind::EnumItemIsNotAssignable)));
+								}
 								if (!cls->appendFieldRecordWithoutAlloc(std::move(fr))) {
 									return genOutOfRuntimeMemoryCompError();
 								}

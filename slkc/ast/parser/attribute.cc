@@ -13,9 +13,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseAttribute(AstNodePtr<AttributeNo
 
 	attributeOut = attribute;
 
-	if ((syntaxError = parseIdRef(attribute->attributeName))) {
-		return syntaxError;
-	}
+	SLKC_RETURN_IF_PARSE_ERROR(parseIdRef(attribute->attributeName));
 
 	{
 		Token *lParentheseToken;
@@ -31,13 +29,11 @@ SLKC_API peff::Option<SyntaxError> Parser::parseAttribute(AstNodePtr<AttributeNo
 				AstNodePtr<ExprNode> arg;
 
 				Token *nameToken;
-				if ((syntaxError = expectToken((nameToken = peekToken()), TokenId::Id)))
-					return syntaxError;
+				SLKC_RETURN_IF_PARSE_ERROR(expectToken((nameToken = peekToken()), TokenId::Id));
 				nextToken();
 
 				Token *assignToken;
-				if ((syntaxError = expectToken((assignToken = peekToken()), TokenId::AssignOp)))
-					return syntaxError;
+				SLKC_RETURN_IF_PARSE_ERROR(expectToken((assignToken = peekToken()), TokenId::AssignOp));
 				nextToken();
 
 				if (auto e = parseExpr(0, arg); e)
@@ -57,24 +53,21 @@ SLKC_API peff::Option<SyntaxError> Parser::parseAttribute(AstNodePtr<AttributeNo
 
 			Token *rParentheseToken;
 
-			if ((syntaxError = expectToken((rParentheseToken = peekToken()), TokenId::RParenthese)))
-				return syntaxError;
+			SLKC_RETURN_IF_PARSE_ERROR(expectToken((rParentheseToken = peekToken()), TokenId::RParenthese));
 
 			nextToken();
 		}
 	}
 
 	Token *rDBracketToken;
-	if ((syntaxError = expectToken((rDBracketToken = peekToken()), TokenId::RDBracket)))
-		return syntaxError;
+	SLKC_RETURN_IF_PARSE_ERROR(expectToken((rDBracketToken = peekToken()), TokenId::RDBracket));
 
 	nextToken();
 
 	if (Token *forToken = peekToken(); forToken->tokenId == TokenId::ForKeyword) {
 		nextToken();
 
-		if ((syntaxError = parseTypeName(attributeOut->appliedFor)))
-			return syntaxError;
+		SLKC_RETURN_IF_PARSE_ERROR(parseTypeName(attributeOut->appliedFor));
 	}
 
 	return {};
@@ -93,8 +86,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseAttributes(peff::DynArray<AstNod
 
 		AstNodePtr<AttributeNode> attribute;
 
-		if ((syntaxError = parseAttribute(attribute)))
-			return syntaxError;
+		SLKC_RETURN_IF_PARSE_ERROR(parseAttribute(attribute));
 
 		if (!attributesOut.pushBack(std::move(attribute)))
 			return genOutOfMemorySyntaxError();

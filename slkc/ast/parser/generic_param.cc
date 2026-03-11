@@ -14,14 +14,10 @@ SLKC_API peff::Option<SyntaxError> Parser::parseGenericConstraint(GenericConstra
 	if (Token *lParentheseToken = peekToken(); lParentheseToken->tokenId == TokenId::LParenthese) {
 		nextToken();
 
-		if ((syntaxError = parseTypeName(constraint->baseType))) {
-			return syntaxError;
-		}
+		SLKC_RETURN_IF_PARSE_ERROR(parseTypeName(constraint->baseType));
 
 		Token *rParentheseToken;
-		if ((syntaxError = expectToken((rParentheseToken = peekToken()), TokenId::RParenthese))) {
-			return syntaxError;
-		}
+		SLKC_RETURN_IF_PARSE_ERROR(expectToken((rParentheseToken = peekToken()), TokenId::RParenthese));
 		nextToken();
 	}
 
@@ -31,9 +27,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseGenericConstraint(GenericConstra
 		while (true) {
 			AstNodePtr<TypeNameNode> tn;
 
-			if ((syntaxError = parseTypeName(tn))) {
-				return syntaxError;
-			}
+			SLKC_RETURN_IF_PARSE_ERROR(parseTypeName(tn));
 
 			if (!constraint->implTypes.pushBack(std::move(tn))) {
 				return genOutOfMemorySyntaxError();
@@ -75,9 +69,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseParamTypeListGenericConstraint(P
 				break;
 			}
 
-			if ((syntaxError = parseTypeName(tn))) {
-				return syntaxError;
-			}
+			SLKC_RETURN_IF_PARSE_ERROR(parseTypeName(tn));
 
 			if (!constraint->argTypes.pushBack(std::move(tn))) {
 				return genOutOfMemorySyntaxError();
@@ -91,9 +83,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseParamTypeListGenericConstraint(P
 		}
 
 		Token *rParentheseToken;
-		if ((syntaxError = expectToken((rParentheseToken = peekToken()), TokenId::RParenthese))) {
-			return syntaxError;
-		}
+		SLKC_RETURN_IF_PARSE_ERROR(expectToken((rParentheseToken = peekToken()), TokenId::RParenthese));
 		nextToken();
 	}
 
@@ -140,18 +130,14 @@ SLKC_API peff::Option<SyntaxError> Parser::parseGenericParams(
 
 				Token *nameToken;
 
-				if ((syntaxError = expectToken((nameToken = peekToken()), TokenId::Id))) {
-					return syntaxError;
-				};
+				SLKC_RETURN_IF_PARSE_ERROR(expectToken((nameToken = peekToken()), TokenId::Id));;
 
 				if (!genericParamNode->name.build(nameToken->sourceText))
 					return genOutOfMemorySyntaxError();
 
 				nextToken();
 
-				if ((syntaxError = parseParamTypeListGenericConstraint(genericParamNode->paramTypeListGenericConstraint))) {
-					return syntaxError;
-				}
+				SLKC_RETURN_IF_PARSE_ERROR(parseParamTypeListGenericConstraint(genericParamNode->paramTypeListGenericConstraint));
 			} else if (Token *token = peekToken(); token->tokenId == TokenId::ConstKeyword) {
 				nextToken();
 
@@ -163,9 +149,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseGenericParams(
 
 				Token *nameToken;
 
-				if ((syntaxError = expectToken((nameToken = peekToken()), TokenId::Id))) {
-					return syntaxError;
-				};
+				SLKC_RETURN_IF_PARSE_ERROR(expectToken((nameToken = peekToken()), TokenId::Id));;
 
 				if (!genericParamNode->name.build(nameToken->sourceText))
 					return genOutOfMemorySyntaxError();
@@ -173,21 +157,15 @@ SLKC_API peff::Option<SyntaxError> Parser::parseGenericParams(
 				nextToken();
 
 				Token *colonToken;
-				if ((syntaxError = expectToken((colonToken = peekToken()), TokenId::Colon))) {
-					return syntaxError;
-				};
+				SLKC_RETURN_IF_PARSE_ERROR(expectToken((colonToken = peekToken()), TokenId::Colon));;
 
 				nextToken();
 
-				if ((syntaxError = parseTypeName(genericParamNode->inputType))) {
-					return syntaxError;
-				}
+				SLKC_RETURN_IF_PARSE_ERROR(parseTypeName(genericParamNode->inputType));
 			} else {
 				Token *nameToken;
 
-				if ((syntaxError = expectToken((nameToken = peekToken()), TokenId::Id))) {
-					return syntaxError;
-				};
+				SLKC_RETURN_IF_PARSE_ERROR(expectToken((nameToken = peekToken()), TokenId::Id));;
 
 				peff::ScopeGuard setTokenRangeGuard([this, nameToken, &genericParamNode]() noexcept {
 					if (genericParamNode) {
@@ -200,9 +178,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseGenericParams(
 
 				nextToken();
 
-				if ((syntaxError = parseGenericConstraint(genericParamNode->genericConstraint))) {
-					return syntaxError;
-				}
+				SLKC_RETURN_IF_PARSE_ERROR(parseGenericConstraint(genericParamNode->genericConstraint));
 			}
 
 			if (peekToken()->tokenId != TokenId::Comma) {
@@ -217,9 +193,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseGenericParams(
 
 		Token *rAngleBracketToken;
 
-		if ((syntaxError = expectToken((rAngleBracketToken = peekToken()), TokenId::GtOp))) {
-			return syntaxError;
-		}
+		SLKC_RETURN_IF_PARSE_ERROR(expectToken((rAngleBracketToken = peekToken()), TokenId::GtOp));
 
 		nextToken();
 

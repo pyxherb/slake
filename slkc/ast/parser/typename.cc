@@ -27,8 +27,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseGenericArg(AstNodePtr<AstNode>& 
 		}
 		case TokenId::LParenthese: {
 			AstNodePtr<ExprNode> e;
-			if ((syntaxError = parseExpr(INT_MAX, e)))
-				return syntaxError;
+			SLKC_RETURN_IF_PARSE_ERROR(parseExpr(INT_MAX, e));
 			argOut = e.castTo<AstNode>();
 			break;
 		}
@@ -37,8 +36,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseGenericArg(AstNodePtr<AstNode>& 
 			[[fallthrough]];
 		default: {
 			AstNodePtr<TypeNameNode> t;
-			if ((syntaxError = parseTypeName(t)))
-				return syntaxError;
+			SLKC_RETURN_IF_PARSE_ERROR(parseTypeName(t));
 			argOut = t.castTo<AstNode>();
 			break;
 		}
@@ -61,8 +59,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseTypeName(AstNodePtr<TypeNameNode
 			typeNameOut->tokenRange = TokenRange{ document->mainModule, t->index };
 			nextToken();
 
-			if ((syntaxError = parseTypeName(typeNameOut.castTo<UnpackingTypeNameNode>()->innerTypeName, true)))
-				return syntaxError;
+			SLKC_RETURN_IF_PARSE_ERROR(parseTypeName(typeNameOut.castTo<UnpackingTypeNameNode>()->innerTypeName, true));
 			break;
 		case TokenId::VoidTypeName:
 			if (!(typeNameOut = makeAstNode<VoidTypeNameNode>(
@@ -412,8 +409,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseTypeName(AstNodePtr<TypeNameNode
 		}
 		case TokenId::Id: {
 			IdRefPtr id;
-			if ((syntaxError = parseIdRef(id)))
-				return syntaxError;
+			SLKC_RETURN_IF_PARSE_ERROR(parseIdRef(id));
 
 			AstNodePtr<CustomTypeNameNode> tn;
 

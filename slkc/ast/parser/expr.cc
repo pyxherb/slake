@@ -670,9 +670,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr<
 					Token *returnTypeToken;
 					if ((returnTypeToken = peekToken())->tokenId == TokenId::ReturnTypeOp) {
 						nextToken();
-						if ((syntaxError = parseTypeName(expr->returnType))) {
-							return syntaxError;
-						}
+						SLKC_RETURN_IF_PARSE_ERROR((parseTypeName(expr->returnType)));
 					}
 
 					Token *lBraceToken = peekToken();

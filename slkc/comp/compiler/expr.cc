@@ -659,7 +659,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 					break;
 				}
 				case ExprEvalPurpose::Unpacking:
-					return CompilationError(e->idRefPtr->tokenRange, CompilationErrorKind::TargetIsNotCallable);
+					return CompilationError(e->idRefPtr->tokenRange, CompilationErrorKind::TargetIsNotUnpackable);
 				default:
 					std::terminate();
 			}

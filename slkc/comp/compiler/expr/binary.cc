@@ -64,6 +64,8 @@ peff::Option<CompilationError> slkc::_compileSimpleBinaryExpr(
 		}
 		case ExprEvalPurpose::Call:
 			return CompilationError(expr->tokenRange, CompilationErrorKind::TargetIsNotCallable);
+		case ExprEvalPurpose::Unpacking:
+			return CompilationError(expr->tokenRange, CompilationErrorKind::TargetIsNotUnpackable);
 	}
 
 	return {};
@@ -215,6 +217,8 @@ peff::Option<CompilationError> slkc::_compileSimpleAssignExpr(
 		}
 		case ExprEvalPurpose::Call:
 			return CompilationError(expr->tokenRange, CompilationErrorKind::TargetIsNotCallable);
+		case ExprEvalPurpose::Unpacking:
+			return CompilationError(expr->tokenRange, CompilationErrorKind::TargetIsNotUnpackable);
 	}
 
 	return {};
@@ -309,6 +313,8 @@ peff::Option<CompilationError> slkc::_compileSimpleLAndBinaryExpr(
 		}
 		case ExprEvalPurpose::Call:
 			return CompilationError(expr->tokenRange, CompilationErrorKind::TargetIsNotCallable);
+		case ExprEvalPurpose::Unpacking:
+			return CompilationError(expr->tokenRange, CompilationErrorKind::TargetIsNotUnpackable);
 	}
 
 	return {};
@@ -403,6 +409,8 @@ peff::Option<CompilationError> slkc::_compileSimpleLOrBinaryExpr(
 		}
 		case ExprEvalPurpose::Call:
 			return CompilationError(expr->tokenRange, CompilationErrorKind::TargetIsNotCallable);
+		case ExprEvalPurpose::Unpacking:
+			return CompilationError(expr->tokenRange, CompilationErrorKind::TargetIsNotUnpackable);
 	}
 
 	return {};
@@ -502,6 +510,8 @@ SLKC_API peff::Option<CompilationError> slkc::_compileSimpleCompoundAssignExpr(
 		}
 		case ExprEvalPurpose::Call:
 			return CompilationError(expr->tokenRange, CompilationErrorKind::TargetIsNotCallable);
+		case ExprEvalPurpose::Unpacking:
+			return CompilationError(expr->tokenRange, CompilationErrorKind::TargetIsNotUnpackable);
 	}
 
 	return {};
@@ -794,6 +804,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 
 						break;
 					}
+					case ExprEvalPurpose::Unpacking:
+						return CompilationError(expr->tokenRange, CompilationErrorKind::TargetIsNotUnpackable);
 				}
 
 				goto rhsToLhsCustomOpExprResolved;
@@ -2012,6 +2024,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 							}
 							case ExprEvalPurpose::Call:
 								return CompilationError(expr->tokenRange, CompilationErrorKind::TargetIsNotCallable);
+							case ExprEvalPurpose::Unpacking:
+								return CompilationError(expr->tokenRange, CompilationErrorKind::TargetIsNotUnpackable);
 						}
 
 						resultOut.evaluatedType = evaluatedType;
@@ -2247,6 +2261,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 
 								break;
 							}
+							case ExprEvalPurpose::Unpacking:
+			return CompilationError(expr->tokenRange, CompilationErrorKind::TargetIsNotUnpackable);
 						}
 						resultOut.evaluatedType = matchedOverloading->returnType;
 						break;
@@ -2298,6 +2314,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 							}
 							case ExprEvalPurpose::Call:
 								return CompilationError(expr->tokenRange, CompilationErrorKind::TargetIsNotCallable);
+								case ExprEvalPurpose::Unpacking:
+			return CompilationError(expr->tokenRange, CompilationErrorKind::TargetIsNotUnpackable);
 						}
 						break;
 					case BinaryOp::StrictNeq:
@@ -2347,6 +2365,8 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 							}
 							case ExprEvalPurpose::Call:
 								return CompilationError(expr->tokenRange, CompilationErrorKind::TargetIsNotCallable);
+								case ExprEvalPurpose::Unpacking:
+			return CompilationError(expr->tokenRange, CompilationErrorKind::TargetIsNotUnpackable);
 						}
 						break;
 					default:

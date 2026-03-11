@@ -332,6 +332,9 @@ public async main() -> i32 {
 		if ((nullable = 123) != 123)
 			nullable = null;
 
+		if ((nullable = 0) && (nullable = 123))
+			nullable = null;
+
 		let nonnullable: i32;
 
 		nonnullable = nullable;

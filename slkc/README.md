@@ -70,6 +70,11 @@ Mostly in the same way of the path-based null checker.
 Take notice of the initialization completion point, and switch the object type
 using `DCMT` instruction on that time point.
 
+### Variable Nullity/Estimated Value Validity Restriction
+
+We should restrict the variable's nullity and estimated value validity to local
+variables or synchronized variables.
+
 ### Cache Manager
 
 We should introduce compilation cache for the language server.

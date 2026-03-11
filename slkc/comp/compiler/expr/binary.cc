@@ -127,7 +127,7 @@ peff::Option<CompilationError> slkc::_compileSimpleAssignExpr(
 				AstNodePtr<ExprNode> evaledRhs;
 				SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, pathEnv, rhsWithCast.castTo<ExprNode>(), evaledRhs));
 
-				if(evaledRhs) {
+				if (evaledRhs) {
 					SLKC_RETURN_IF_COMP_ERROR(pathEnv->setLocalVarValueOverride(lhsResult.evaluatedFinalMember.castTo<VarNode>(), evaledRhs));
 				}
 
@@ -191,7 +191,7 @@ peff::Option<CompilationError> slkc::_compileSimpleAssignExpr(
 				AstNodePtr<ExprNode> evaledRhs;
 				SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, pathEnv, rhsWithCast.castTo<ExprNode>(), evaledRhs));
 
-				if(evaledRhs) {
+				if (evaledRhs) {
 					SLKC_RETURN_IF_COMP_ERROR(pathEnv->setLocalVarValueOverride(lhsResult.evaluatedFinalMember.castTo<VarNode>(), evaledRhs));
 				}
 
@@ -303,6 +303,7 @@ peff::Option<CompilationError> slkc::_compileSimpleLAndBinaryExpr(
 				tmpResultReg,
 				{ slake::Value((uint32_t)postBranchPhiSrcOff), slake::Value(slake::ValueType::RegIndex, lhsReg),
 					slake::Value((uint32_t)cmpEndPhiSrcOff), slake::Value(slake::ValueType::RegIndex, tmpResultReg) }));
+			resultOut.idxResultRegOut = tmpResultReg;
 
 			break;
 		}
@@ -396,6 +397,7 @@ peff::Option<CompilationError> slkc::_compileSimpleLOrBinaryExpr(
 				tmpResultReg,
 				{ slake::Value((uint32_t)postBranchPhiSrcOff), slake::Value(slake::ValueType::RegIndex, lhsReg),
 					slake::Value((uint32_t)cmpEndPhiSrcOff), slake::Value(slake::ValueType::RegIndex, tmpResultReg) }));
+			resultOut.idxResultRegOut = tmpResultReg;
 
 			break;
 		}
@@ -971,6 +973,22 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 								slake::Opcode::XOR,
 								sldIndex));
 						resultOut.evaluatedType = decayedLhsType;
+						break;
+					case BinaryOp::LAnd:
+						SLKC_RETURN_IF_COMP_ERROR(
+							_compileSimpleLAndBinaryExpr(
+								compileEnv,
+								compilationContext,
+								pathEnv,
+								expr,
+								evalPurpose,
+								boolType,
+								decayedLhsType,
+								decayedRhsType,
+								resultOut,
+								slake::Opcode::LAND,
+								sldIndex));
+						resultOut.evaluatedType = boolType.castTo<TypeNameNode>();
 						break;
 					case BinaryOp::LOr:
 						SLKC_RETURN_IF_COMP_ERROR(

@@ -19,6 +19,10 @@ namespace slkc {
 		SLKC_API VarNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
 		SLKC_API VarNode(const VarNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut);
 		SLKC_API virtual ~VarNode();
+
+		SLAKE_FORCEINLINE bool isLocalVar() const {
+			return !parent;
+		}
 	};
 }
 

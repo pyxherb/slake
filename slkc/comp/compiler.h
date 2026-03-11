@@ -10,7 +10,7 @@ namespace slkc {
 
 	enum class ExprEvalPurpose : uint8_t {
 		EvalTypeActual,	 // Evaluate type only, as lvalue
-		EvalType,	 // Evaluate type only, as rvalue
+		EvalType,		 // Evaluate type only, as rvalue
 		Stmt,			 // As a statement
 		LValue,			 // As a lvalue
 		RValue,			 // As a rvalue
@@ -719,6 +719,29 @@ namespace slkc {
 		const AstNodePtr<ExprNode> &expr,
 		AstNodePtr<TypeNameNode> &typeOut,
 		AstNodePtr<TypeNameNode> desiredType = {});
+
+	struct EvalConstExprContext {
+		///
+		/// @brief Variable value overrides for variable value evaluation, note that we have to make sure the value is a comptime value.
+		///
+		peff::Map<AstNodePtr<VarNode>, AstNodePtr<ExprNode>> varValueOverrides;
+
+		SLKC_API EvalConstExprContext(peff::Alloc *allocator);
+	};
+
+	struct EvalConstExprResult {
+		AstNodePtr<MemberNode> correspondingMember;
+	};
+
+	[[nodiscard]] SLAKE_API peff::Option<CompilationError> _doEvalConstExpr(
+		CompileEnv *compileEnv,
+		CompilationContext *compilationContext,
+		PathEnv *pathEnv,
+		AstNodePtr<ExprNode> expr,
+		AstNodePtr<ExprNode> &exprOut,
+		bool *sideEffectAppliedOut,
+		EvalConstExprContext &context,
+		EvalConstExprResult &resultOut);
 
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> evalConstExpr(
 		CompileEnv *compileEnv,

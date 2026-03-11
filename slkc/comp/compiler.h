@@ -347,7 +347,7 @@ namespace slkc {
 		CompileExprResult &resultOut,
 		slake::Opcode opcode,
 		uint32_t idxSld);
-	peff::Option<CompilationError> _compileSimpleAssignBinaryExpr(
+	peff::Option<CompilationError> _compileSimpleAssignExpr(
 		CompileEnv *compileEnv,
 		CompilationContext *compilationContext,
 		PathEnv *pathEnv,
@@ -384,7 +384,7 @@ namespace slkc {
 		CompileExprResult &resultOut,
 		slake::Opcode opcode,
 		uint32_t idxSld);
-	[[nodiscard]] SLKC_API peff::Option<CompilationError> _compileSimpleBinaryAssignOpExpr(
+	[[nodiscard]] SLKC_API peff::Option<CompilationError> _compileSimpleCompoundAssignExpr(
 		CompileEnv *compileEnv,
 		CompilationContext *compilationContext,
 		PathEnv *pathEnv,

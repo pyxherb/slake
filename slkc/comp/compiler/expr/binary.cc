@@ -69,7 +69,7 @@ peff::Option<CompilationError> slkc::_compileSimpleBinaryExpr(
 	return {};
 }
 
-peff::Option<CompilationError> slkc::_compileSimpleAssignBinaryExpr(
+peff::Option<CompilationError> slkc::_compileSimpleAssignExpr(
 	CompileEnv *compileEnv,
 	CompilationContext *compilationContext,
 	PathEnv *pathEnv,
@@ -120,8 +120,12 @@ peff::Option<CompilationError> slkc::_compileSimpleAssignBinaryExpr(
 				{ slake::Value(slake::ValueType::RegIndex, resultOut.idxResultRegOut), slake::Value(slake::ValueType::RegIndex, rhsReg) }));
 
 			if (lhsResult.evaluatedFinalMember && (lhsResult.evaluatedFinalMember->getAstNodeType() == AstNodeType::Var)) {
+				AstNodePtr<CastExprNode> rhsWithCast;
+
+				SLKC_RETURN_IF_COMP_ERROR(genImplicitCastExpr(compileEnv, expr->rhs, desiredRhsType, rhsWithCast));
+
 				AstNodePtr<ExprNode> evaledRhs;
-				SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, pathEnv, expr->rhs, evaledRhs));
+				SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, pathEnv, rhsWithCast.castTo<ExprNode>(), evaledRhs));
 
 				if(evaledRhs) {
 					SLKC_RETURN_IF_COMP_ERROR(pathEnv->setLocalVarValueOverride(lhsResult.evaluatedFinalMember.castTo<VarNode>(), evaledRhs));
@@ -180,8 +184,12 @@ peff::Option<CompilationError> slkc::_compileSimpleAssignBinaryExpr(
 			resultOut.idxResultRegOut = rhsReg;
 
 			if (lhsResult.evaluatedFinalMember && (lhsResult.evaluatedFinalMember->getAstNodeType() == AstNodeType::Var)) {
+				AstNodePtr<CastExprNode> rhsWithCast;
+
+				SLKC_RETURN_IF_COMP_ERROR(genImplicitCastExpr(compileEnv, expr->rhs, desiredRhsType, rhsWithCast));
+
 				AstNodePtr<ExprNode> evaledRhs;
-				SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, pathEnv, expr->rhs, evaledRhs));
+				SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, pathEnv, rhsWithCast.castTo<ExprNode>(), evaledRhs));
 
 				if(evaledRhs) {
 					SLKC_RETURN_IF_COMP_ERROR(pathEnv->setLocalVarValueOverride(lhsResult.evaluatedFinalMember.castTo<VarNode>(), evaledRhs));
@@ -398,7 +406,7 @@ peff::Option<CompilationError> slkc::_compileSimpleLOrBinaryExpr(
 	return {};
 }
 
-SLKC_API peff::Option<CompilationError> slkc::_compileSimpleBinaryAssignOpExpr(
+SLKC_API peff::Option<CompilationError> slkc::_compileSimpleCompoundAssignExpr(
 	CompileEnv *compileEnv,
 	CompilationContext *compilationContext,
 	PathEnv *pathEnv,
@@ -1016,7 +1024,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 						break;
 					case BinaryOp::Assign:
 						SLKC_RETURN_IF_COMP_ERROR(
-							_compileSimpleAssignBinaryExpr(
+							_compileSimpleAssignExpr(
 								compileEnv,
 								compilationContext,
 								pathEnv,
@@ -1032,7 +1040,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 						break;
 					case BinaryOp::AddAssign:
 						SLKC_RETURN_IF_COMP_ERROR(
-							_compileSimpleBinaryAssignOpExpr(
+							_compileSimpleCompoundAssignExpr(
 								compileEnv,
 								compilationContext,
 								pathEnv,
@@ -1047,7 +1055,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 						break;
 					case BinaryOp::SubAssign:
 						SLKC_RETURN_IF_COMP_ERROR(
-							_compileSimpleBinaryAssignOpExpr(
+							_compileSimpleCompoundAssignExpr(
 								compileEnv,
 								compilationContext,
 								pathEnv,
@@ -1062,7 +1070,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 						break;
 					case BinaryOp::MulAssign:
 						SLKC_RETURN_IF_COMP_ERROR(
-							_compileSimpleBinaryAssignOpExpr(
+							_compileSimpleCompoundAssignExpr(
 								compileEnv,
 								compilationContext,
 								pathEnv,
@@ -1077,7 +1085,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 						break;
 					case BinaryOp::DivAssign:
 						SLKC_RETURN_IF_COMP_ERROR(
-							_compileSimpleBinaryAssignOpExpr(
+							_compileSimpleCompoundAssignExpr(
 								compileEnv,
 								compilationContext,
 								pathEnv,
@@ -1092,7 +1100,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 						break;
 					case BinaryOp::ModAssign:
 						SLKC_RETURN_IF_COMP_ERROR(
-							_compileSimpleBinaryAssignOpExpr(
+							_compileSimpleCompoundAssignExpr(
 								compileEnv,
 								compilationContext,
 								pathEnv,
@@ -1107,7 +1115,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 						break;
 					case BinaryOp::AndAssign:
 						SLKC_RETURN_IF_COMP_ERROR(
-							_compileSimpleBinaryAssignOpExpr(
+							_compileSimpleCompoundAssignExpr(
 								compileEnv,
 								compilationContext,
 								pathEnv,
@@ -1122,7 +1130,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 						break;
 					case BinaryOp::OrAssign:
 						SLKC_RETURN_IF_COMP_ERROR(
-							_compileSimpleBinaryAssignOpExpr(
+							_compileSimpleCompoundAssignExpr(
 								compileEnv,
 								compilationContext,
 								pathEnv,
@@ -1137,7 +1145,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 						break;
 					case BinaryOp::XorAssign:
 						SLKC_RETURN_IF_COMP_ERROR(
-							_compileSimpleBinaryAssignOpExpr(
+							_compileSimpleCompoundAssignExpr(
 								compileEnv,
 								compilationContext,
 								pathEnv,
@@ -1152,7 +1160,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 						break;
 					case BinaryOp::ShlAssign:
 						SLKC_RETURN_IF_COMP_ERROR(
-							_compileSimpleBinaryAssignOpExpr(
+							_compileSimpleCompoundAssignExpr(
 								compileEnv,
 								compilationContext,
 								pathEnv,
@@ -1173,7 +1181,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 						break;
 					case BinaryOp::ShrAssign:
 						SLKC_RETURN_IF_COMP_ERROR(
-							_compileSimpleBinaryAssignOpExpr(
+							_compileSimpleCompoundAssignExpr(
 								compileEnv,
 								compilationContext,
 								pathEnv,
@@ -1400,7 +1408,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 						break;
 					case BinaryOp::Assign:
 						SLKC_RETURN_IF_COMP_ERROR(
-							_compileSimpleAssignBinaryExpr(
+							_compileSimpleAssignExpr(
 								compileEnv,
 								compilationContext,
 								pathEnv,
@@ -1416,7 +1424,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 						break;
 					case BinaryOp::AddAssign:
 						SLKC_RETURN_IF_COMP_ERROR(
-							_compileSimpleBinaryAssignOpExpr(
+							_compileSimpleCompoundAssignExpr(
 								compileEnv,
 								compilationContext,
 								pathEnv,
@@ -1431,7 +1439,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 						break;
 					case BinaryOp::SubAssign:
 						SLKC_RETURN_IF_COMP_ERROR(
-							_compileSimpleBinaryAssignOpExpr(
+							_compileSimpleCompoundAssignExpr(
 								compileEnv,
 								compilationContext,
 								pathEnv,
@@ -1446,7 +1454,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 						break;
 					case BinaryOp::MulAssign:
 						SLKC_RETURN_IF_COMP_ERROR(
-							_compileSimpleBinaryAssignOpExpr(
+							_compileSimpleCompoundAssignExpr(
 								compileEnv,
 								compilationContext,
 								pathEnv,
@@ -1461,7 +1469,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 						break;
 					case BinaryOp::DivAssign:
 						SLKC_RETURN_IF_COMP_ERROR(
-							_compileSimpleBinaryAssignOpExpr(
+							_compileSimpleCompoundAssignExpr(
 								compileEnv,
 								compilationContext,
 								pathEnv,
@@ -1476,7 +1484,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 						break;
 					case BinaryOp::ModAssign:
 						SLKC_RETURN_IF_COMP_ERROR(
-							_compileSimpleBinaryAssignOpExpr(
+							_compileSimpleCompoundAssignExpr(
 								compileEnv,
 								compilationContext,
 								pathEnv,
@@ -1491,7 +1499,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 						break;
 					case BinaryOp::ShlAssign:
 						SLKC_RETURN_IF_COMP_ERROR(
-							_compileSimpleBinaryAssignOpExpr(
+							_compileSimpleCompoundAssignExpr(
 								compileEnv,
 								compilationContext,
 								pathEnv,
@@ -1512,7 +1520,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 						break;
 					case BinaryOp::ShrAssign:
 						SLKC_RETURN_IF_COMP_ERROR(
-							_compileSimpleBinaryAssignOpExpr(
+							_compileSimpleCompoundAssignExpr(
 								compileEnv,
 								compilationContext,
 								pathEnv,
@@ -1724,7 +1732,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 						break;
 					case BinaryOp::Assign:
 						SLKC_RETURN_IF_COMP_ERROR(
-							_compileSimpleAssignBinaryExpr(
+							_compileSimpleAssignExpr(
 								compileEnv,
 								compilationContext,
 								pathEnv,
@@ -1740,7 +1748,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 						break;
 					case BinaryOp::AndAssign:
 						SLKC_RETURN_IF_COMP_ERROR(
-							_compileSimpleBinaryAssignOpExpr(
+							_compileSimpleCompoundAssignExpr(
 								compileEnv,
 								compilationContext,
 								pathEnv,
@@ -1755,7 +1763,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 						break;
 					case BinaryOp::OrAssign:
 						SLKC_RETURN_IF_COMP_ERROR(
-							_compileSimpleBinaryAssignOpExpr(
+							_compileSimpleCompoundAssignExpr(
 								compileEnv,
 								compilationContext,
 								pathEnv,
@@ -1770,7 +1778,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 						break;
 					case BinaryOp::XorAssign:
 						SLKC_RETURN_IF_COMP_ERROR(
-							_compileSimpleBinaryAssignOpExpr(
+							_compileSimpleCompoundAssignExpr(
 								compileEnv,
 								compilationContext,
 								pathEnv,
@@ -2000,7 +2008,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileBinaryExpr(
 				switch (expr->binaryOp) {
 					case BinaryOp::Assign:
 						SLKC_RETURN_IF_COMP_ERROR(
-							_compileSimpleAssignBinaryExpr(
+							_compileSimpleAssignExpr(
 								compileEnv,
 								compilationContext,
 								pathEnv,

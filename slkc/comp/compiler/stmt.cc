@@ -605,6 +605,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileWhileStmt(
 
 	{
 		PathEnv bodyPathEnv(compileEnv->allocator.get());
+		bodyPathEnv.setParentEnv(pathEnv);
 		bodyPathEnv.execPossibility =
 			constCondExpr
 				? (constCondExpr.castTo<BoolLiteralExprNode>()->data
@@ -619,6 +620,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileWhileStmt(
 				: PathPossibility::May;
 		bodyPathEnv.breakPossibility = PathPossibility::May;
 
+		SLKC_RETURN_IF_COMP_ERROR(tryCompileStmt(compileEnv, compilationContext, &bodyPathEnv, s->body));
 		SLKC_RETURN_IF_COMP_ERROR(compileStmt(compileEnv, compilationContext, &bodyPathEnv, s->body));
 
 		SLKC_RETURN_IF_COMP_ERROR(combinePathEnv(*pathEnv, bodyPathEnv));
@@ -1243,4 +1245,13 @@ SLKC_API peff::Option<CompilationError> slkc::compileStmt(
 	}
 
 	return {};
+}
+
+[[nodiscard]] SLKC_API peff::Option<CompilationError> slkc::tryCompileStmt(
+	CompileEnv *compileEnv,
+	CompilationContext *parentCompilationContext,
+	PathEnv *pathEnv,
+	const AstNodePtr<StmtNode> &stmt) {
+	NormalCompilationContext tmpCtxt(compileEnv, parentCompilationContext);
+	return compileStmt(compileEnv, &tmpCtxt, pathEnv, stmt);
 }

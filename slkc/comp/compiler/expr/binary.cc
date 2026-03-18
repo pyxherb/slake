@@ -122,17 +122,6 @@ peff::Option<CompilationError> slkc::_compileSimpleAssignExpr(
 				{ slake::Value(slake::ValueType::RegIndex, resultOut.idxResultRegOut), slake::Value(slake::ValueType::RegIndex, rhsReg) }));
 
 			if (lhsResult.evaluatedFinalMember && (lhsResult.evaluatedFinalMember->getAstNodeType() == AstNodeType::Var)) {
-				AstNodePtr<CastExprNode> rhsWithCast;
-
-				SLKC_RETURN_IF_COMP_ERROR(genImplicitCastExpr(compileEnv, expr->rhs, desiredRhsType, rhsWithCast));
-
-				AstNodePtr<ExprNode> evaledRhs;
-				SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, pathEnv, rhsWithCast.castTo<ExprNode>(), evaledRhs));
-
-				if (evaledRhs) {
-					SLKC_RETURN_IF_COMP_ERROR(pathEnv->setLocalVarValueOverride(lhsResult.evaluatedFinalMember.castTo<VarNode>(), evaledRhs));
-				}
-
 				if (rhsResult.evaluatedType->typeNameKind == TypeNameKind::Null) {
 					SLKC_RETURN_IF_COMP_ERROR(pathEnv->setLocalVarNullOverride(lhsResult.evaluatedFinalMember.castTo<VarNode>(), NullOverrideType::Nullify));
 				} else {
@@ -186,17 +175,6 @@ peff::Option<CompilationError> slkc::_compileSimpleAssignExpr(
 			resultOut.idxResultRegOut = rhsReg;
 
 			if (lhsResult.evaluatedFinalMember && (lhsResult.evaluatedFinalMember->getAstNodeType() == AstNodeType::Var)) {
-				AstNodePtr<CastExprNode> rhsWithCast;
-
-				SLKC_RETURN_IF_COMP_ERROR(genImplicitCastExpr(compileEnv, expr->rhs, desiredRhsType, rhsWithCast));
-
-				AstNodePtr<ExprNode> evaledRhs;
-				SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileEnv, compilationContext, pathEnv, rhsWithCast.castTo<ExprNode>(), evaledRhs));
-
-				if (evaledRhs) {
-					SLKC_RETURN_IF_COMP_ERROR(pathEnv->setLocalVarValueOverride(lhsResult.evaluatedFinalMember.castTo<VarNode>(), evaledRhs));
-				}
-
 				if (rhsResult.evaluatedType->typeNameKind == TypeNameKind::Null) {
 					SLKC_RETURN_IF_COMP_ERROR(pathEnv->setLocalVarNullOverride(lhsResult.evaluatedFinalMember.castTo<VarNode>(), NullOverrideType::Nullify));
 				} else {

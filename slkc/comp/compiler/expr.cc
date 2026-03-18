@@ -93,7 +93,7 @@ SLKC_API peff::Option<CompilationError> slkc::_compileOrCastOperand(
 
 static peff::Option<CompilationError> _determineNodeType(CompileEnv *compileEnv, PathEnv *pathEnv, ExprEvalPurpose evalPurpose, AstNodePtr<MemberNode> node, AstNodePtr<TypeNameNode> &typeNameOut);
 
-static peff::Option<CompilationError> _loadTheRestOfIdRef(CompileEnv *compileEnv, CompilationContext *compilationContext, PathEnv *pathEnv, ExprEvalPurpose evalPurpose, uint32_t &resultRegOut, CompileExprResult &resultOut, IdRef *idRef, ResolvedIdRefPartList &parts, uint32_t initialMemberReg, size_t curIdx, AstNodePtr<FnTypeNameNode> extraFnArgs, uint32_t sldIndex) {
+static peff::Option<CompilationError> _loadRestOfIdRef(CompileEnv *compileEnv, CompilationContext *compilationContext, PathEnv *pathEnv, ExprEvalPurpose evalPurpose, uint32_t &resultRegOut, CompileExprResult &resultOut, IdRef *idRef, ResolvedIdRefPartList &parts, uint32_t initialMemberReg, size_t curIdx, AstNodePtr<FnTypeNameNode> extraFnArgs, uint32_t sldIndex) {
 	uint32_t idxReg;
 
 	if (initialMemberReg == UINT32_MAX) {
@@ -577,9 +577,9 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 
 				parts.back().member = finalMember;
 
-				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, _loadTheRestOfIdRef(compileEnv, compilationContext, pathEnv, evalPurpose, finalRegister, resultOut, e->idRefPtr.get(), parts, headRegister, 0, fnType, sldIndex));
+				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, _loadRestOfIdRef(compileEnv, compilationContext, pathEnv, evalPurpose, finalRegister, resultOut, e->idRefPtr.get(), parts, headRegister, 0, fnType, sldIndex));
 			} else {
-				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, _loadTheRestOfIdRef(compileEnv, compilationContext, pathEnv, evalPurpose, finalRegister, resultOut, e->idRefPtr.get(), parts, headRegister, 0, {}, sldIndex));
+				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, _loadRestOfIdRef(compileEnv, compilationContext, pathEnv, evalPurpose, finalRegister, resultOut, e->idRefPtr.get(), parts, headRegister, 0, {}, sldIndex));
 			}
 
 			bool accessible;
@@ -839,9 +839,9 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 
 						parts.back().member = finalMember;
 
-						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, _loadTheRestOfIdRef(compileEnv, compilationContext, pathEnv, evalPurpose, finalRegister, resultOut, e->idRefPtr.get(), parts, initialMemberReg, 1, fnType, sldIndex));
+						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, _loadRestOfIdRef(compileEnv, compilationContext, pathEnv, evalPurpose, finalRegister, resultOut, e->idRefPtr.get(), parts, initialMemberReg, 1, fnType, sldIndex));
 					} else {
-						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, _loadTheRestOfIdRef(compileEnv, compilationContext, pathEnv, evalPurpose, finalRegister, resultOut, e->idRefPtr.get(), parts, initialMemberReg, 1, {}, sldIndex));
+						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, _loadRestOfIdRef(compileEnv, compilationContext, pathEnv, evalPurpose, finalRegister, resultOut, e->idRefPtr.get(), parts, initialMemberReg, 1, {}, sldIndex));
 					}
 				} else {
 					finalMember = initialMember;
@@ -877,9 +877,9 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 
 					parts.back().member = finalMember;
 
-					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, _loadTheRestOfIdRef(compileEnv, compilationContext, pathEnv, evalPurpose, finalRegister, resultOut, e->idRefPtr.get(), parts, UINT32_MAX, 0, fnType, sldIndex));
+					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, _loadRestOfIdRef(compileEnv, compilationContext, pathEnv, evalPurpose, finalRegister, resultOut, e->idRefPtr.get(), parts, UINT32_MAX, 0, fnType, sldIndex));
 				} else {
-					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, _loadTheRestOfIdRef(compileEnv, compilationContext, pathEnv, evalPurpose, finalRegister, resultOut, e->idRefPtr.get(), parts, UINT32_MAX, 0, {}, sldIndex));
+					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilationError, _loadRestOfIdRef(compileEnv, compilationContext, pathEnv, evalPurpose, finalRegister, resultOut, e->idRefPtr.get(), parts, UINT32_MAX, 0, {}, sldIndex));
 				}
 			}
 
@@ -1878,6 +1878,7 @@ SLKC_API peff::Option<CompilationError> slkc::compileExpr(
 
 				{
 					PathEnv &bodyPathEnv = bodyPathEnvs.at(i);
+					bodyPathEnv.setParentEnv(pathEnv);
 					bodyPathEnv.execPossibility = PathPossibility::May;	 // TODO: Check if the path will always reached hit after an assignment (if exists).
 					bodyPathEnv.noReturnPossibility = PathPossibility::May;
 					bodyPathEnv.breakPossibility = PathPossibility::Never;

@@ -152,60 +152,10 @@ SLKC_API peff::Option<CompilationError> slkc::combineParallelPathEnv(peff::Alloc
 		}
 	}
 
-	{
-		peff::Map<AstNodePtr<VarNode>, AstNodePtr<ExprNode>> commonLocalVarValueOverrides(allocator);
-
-		// Find common local variable value overrides.
-		{
-			peff::Set<AstNodePtr<VarNode>> nonunifiableValueOverrideVars(allocator);
-			for (auto it = idxMayPaths.begin(); it != idxMayPaths.end(); ++it) {
-				const PathEnv &inner = inners[*it];
-
-				for (auto curOverride : inner.localVarValueOverrides) {
-					if (!nonunifiableValueOverrideVars.contains(curOverride.first)) {
-						if (auto prevOverride = commonLocalVarValueOverrides.find(curOverride.first); prevOverride != commonLocalVarValueOverrides.end()) {
-							AstNodePtr<ExprNode> cmpResult;
-							PathEnv evalPathEnv(allocator);
-							evalPathEnv.parent = &inner;
-							SLKC_RETURN_IF_COMP_ERROR(evalConstBinaryOpExpr(compileEnv, compilationContext, &evalPathEnv, BinaryOp::Eq, prevOverride.value(), curOverride.second, cmpResult));
-							if ((!cmpResult) || (!cmpResult.castTo<BoolLiteralExprNode>()->data)) {
-								if (!nonunifiableValueOverrideVars.insert(AstNodePtr<VarNode>(prevOverride.key())))
-									return genOutOfMemoryCompError();
-								commonLocalVarValueOverrides.remove(prevOverride);
-							}
-						} else {
-							if (!commonLocalVarValueOverrides.insert(AstNodePtr<VarNode>(curOverride.first), AstNodePtr<ExprNode>(curOverride.second)))
-								return genOutOfMemoryCompError();
-						}
-					}
-				}
-			}
-
-			for (auto i : nonunifiableValueOverrideVars)
-				SLKC_RETURN_IF_COMP_ERROR(outer.setLocalVarValueOverride(i, {}));
-		}
-
-		for (auto i : commonLocalVarValueOverrides) {
-			SLKC_RETURN_IF_COMP_ERROR(outer.setLocalVarValueOverride(i.first, i.second));
-		}
-
-		// Filter out the common local variable value overrides that are not always happen.
-		for (auto it = idxMayPaths.begin(); it != idxMayPaths.end(); ++it) {
-			const PathEnv &inner = inners[*it];
-
-			for (auto i : commonLocalVarValueOverrides) {
-				// If a local variable null override is not always happen, its original assumption should be cancelled.
-				if (!inner.localVarValueOverrides.contains(i.first)) {
-					SLKC_RETURN_IF_COMP_ERROR(outer.setLocalVarValueOverride(i.first, {}));
-				}
-			}
-		}
-	}
-
 	return {};
 }
 
-SLKC_API PathEnv::PathEnv(peff::Alloc *allocator) noexcept : localVarNullOverrides(allocator), localVarValueOverrides(allocator) {
+SLKC_API PathEnv::PathEnv(peff::Alloc *allocator) noexcept : localVarNullOverrides(allocator) {
 }
 
 SLAKE_API peff::Option<NullOverrideType> PathEnv::lookupVarNullOverride(const AstNodePtr<VarNode> &varNode) {
@@ -227,24 +177,6 @@ SLAKE_API peff::Option<CompilationError> PathEnv::setLocalVarNullOverride(AstNod
 	return {};
 }
 
-SLAKE_API AstNodePtr<ExprNode> PathEnv::lookupVarValueOverride(const AstNodePtr<VarNode> &varNode) {
-	for (const PathEnv *i = this; i; i = i->parent) {
-		if (auto it = i->localVarValueOverrides.find(varNode);
-			it != i->localVarValueOverrides.end()) {
-			return it.value();
-		}
-	}
-	return {};
-}
-
-SLAKE_API peff::Option<CompilationError> PathEnv::setLocalVarValueOverride(AstNodePtr<VarNode> varNode, AstNodePtr<ExprNode> expr) {
-	if (auto it = localVarValueOverrides.find(varNode); it != localVarValueOverrides.end()) {
-		it.value() = expr;
-	} else if (!localVarValueOverrides.insert(std::move(varNode), std::move(expr)))
-		return genOutOfMemoryCompError();
-	return {};
-}
-
 SLAKE_API void PathEnv::removeVarNullOverride(const AstNodePtr<VarNode> &varNode) {
 	localVarNullOverrides.remove(varNode);
 }
@@ -252,6 +184,36 @@ SLAKE_API void PathEnv::removeVarNullOverride(const AstNodePtr<VarNode> &varNode
 SLKC_API CompilationContext::CompilationContext(CompilationContext *parent) : parent(parent) {
 }
 SLKC_API CompilationContext::~CompilationContext() {
+}
+
+SLKC_API uint32_t CompilationContext::getBreakLabel() const {
+	for (const CompilationContext *i = this; i; i = i->parent) {
+		if (uint32_t l = i->doGetBreakLabel(); l != UINT32_MAX)
+			return l;
+	}
+	return UINT32_MAX;
+}
+SLKC_API uint32_t CompilationContext::getContinueLabel() const {
+	for (const CompilationContext *i = this; i; i = i->parent) {
+		if (uint32_t l = i->doGetContinueLabel(); l != UINT32_MAX)
+			return l;
+	}
+	return UINT32_MAX;
+}
+
+SLKC_API uint32_t CompilationContext::getBreakLabelBlockLevel() const {
+	for (const CompilationContext *i = this; i; i = i->parent) {
+		if (i->doGetBreakLabel() != UINT32_MAX)
+			return i->doGetBreakLabelBlockLevel();
+	}
+	return 0;
+}
+SLKC_API uint32_t CompilationContext::getContinueLabelBlockLevel() const {
+	for (const CompilationContext *i = this; i; i = i->parent) {
+		if (i->doGetContinueLabel() != UINT32_MAX)
+			return i->doGetContinueLabelBlockLevel();
+	}
+	return 0;
 }
 
 SLKC_API AstNodePtr<VarNode> CompilationContext::lookupLocalVar(const std::string_view &name) const {
@@ -411,18 +373,18 @@ SLKC_API void NormalCompilationContext::setContinueLabel(uint32_t labelId, uint3
 	continueStmtBlockLevel = blockLevel;
 }
 
-SLKC_API uint32_t NormalCompilationContext::getBreakLabel() const {
+SLKC_API uint32_t NormalCompilationContext::doGetBreakLabel() const {
 	return breakStmtJumpDestLabel;
 }
-SLKC_API uint32_t NormalCompilationContext::getContinueLabel() const {
+SLKC_API uint32_t NormalCompilationContext::doGetContinueLabel() const {
 	return continueStmtJumpDestLabel;
 }
 
-SLKC_API uint32_t NormalCompilationContext::getBreakLabelBlockLevel() const {
+SLKC_API uint32_t NormalCompilationContext::doGetBreakLabelBlockLevel() const {
 	return breakStmtBlockLevel;
 }
 
-SLKC_API uint32_t NormalCompilationContext::getContinueLabelBlockLevel() const {
+SLKC_API uint32_t NormalCompilationContext::doGetContinueLabelBlockLevel() const {
 	return continueStmtBlockLevel;
 }
 

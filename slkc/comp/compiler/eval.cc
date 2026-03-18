@@ -92,10 +92,7 @@ peff::Option<CompilationError> _castConstExpr(
 	PathEnv *pathEnv,
 	AstNodePtr<ExprNode> expr,
 	AstNodePtr<TypeNameNode> type,
-	AstNodePtr<ExprNode> &exprOut,
-	bool *sideEffectAppliedOut,
-	EvalConstExprContext &context,
-	EvalConstExprResult &resultOut) {
+	AstNodePtr<ExprNode> &exprOut) {
 	AstNodePtr<CastExprNode> castExpr;
 
 	if (!(castExpr = makeAstNode<CastExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
@@ -107,9 +104,7 @@ peff::Option<CompilationError> _castConstExpr(
 
 	bool sideEffectApplied;
 
-	SLKC_RETURN_IF_COMP_ERROR(_doEvalConstExpr(compileEnv, compilationContext, pathEnv, castExpr.castTo<ExprNode>(), exprOut, &sideEffectApplied, context, resultOut));
-
-	*sideEffectAppliedOut |= sideEffectApplied;
+	SLKC_RETURN_IF_COMP_ERROR(_doEvalConstExpr(compileEnv, compilationContext, pathEnv, castExpr.castTo<ExprNode>(), exprOut));
 
 	return {};
 }
@@ -119,16 +114,11 @@ static peff::Option<CompilationError> evalBinaryOpExprOperand(
 	CompilationContext *compilationContext,
 	PathEnv *pathEnv,
 	AstNodePtr<ExprNode> operandIn,
-	AstNodePtr<ExprNode> &operandOut,
-	bool *sideEffectAppliedOut,
-	EvalConstExprContext &context,
-	EvalConstExprResult &resultOut) {
-	bool sideEffectApplied;
-	SLKC_RETURN_IF_COMP_ERROR(_doEvalConstExpr(compileEnv, compilationContext, pathEnv, operandIn, operandOut, &sideEffectApplied, context, resultOut));
+	AstNodePtr<ExprNode> &operandOut) {
+	SLKC_RETURN_IF_COMP_ERROR(_doEvalConstExpr(compileEnv, compilationContext, pathEnv, operandIn, operandOut));
 	if (!operandOut) {
 		return {};
 	}
-	*sideEffectAppliedOut |= sideEffectApplied;
 	return {};
 }
 
@@ -143,14 +133,9 @@ static peff::Option<CompilationError> evalIntegralBinaryOpExpr(
 	AstNodePtr<TypeNameNode> lhsType,
 	AstNodePtr<ExprNode> rhsIn,
 	AstNodePtr<TypeNameNode> rhsType,
-	AstNodePtr<ExprNode> &exprOut,
-	bool *sideEffectAppliedOut,
-	EvalConstExprContext &context,
-	EvalConstExprResult &resultOut) {
+	AstNodePtr<ExprNode> &exprOut) {
 	AstNodePtr<ExprNode> lhs;
 	AstNodePtr<ExprNode> rhs;
-	EvalConstExprResult lhsResult;
-	EvalConstExprResult rhsResult;
 
 	switch (binaryOp) {
 		case BinaryOp::LAnd:
@@ -161,10 +146,7 @@ static peff::Option<CompilationError> evalIntegralBinaryOpExpr(
 				compileEnv,
 				compilationContext,
 				pathEnv,
-				lhsIn, lhs,
-				sideEffectAppliedOut,
-				context,
-				lhsResult));
+				lhsIn, lhs));
 			if (!lhs) {
 				exprOut = {};
 				return {};
@@ -173,10 +155,7 @@ static peff::Option<CompilationError> evalIntegralBinaryOpExpr(
 				compileEnv,
 				compilationContext,
 				pathEnv,
-				rhsIn, rhs,
-				sideEffectAppliedOut,
-				context,
-				rhsResult));
+				rhsIn, rhs));
 			if (!rhs) {
 				exprOut = {};
 				return {};
@@ -185,8 +164,8 @@ static peff::Option<CompilationError> evalIntegralBinaryOpExpr(
 
 	switch (binaryOp) {
 		case BinaryOp::Add: {
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs, sideEffectAppliedOut, context, resultOut));
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs, sideEffectAppliedOut, context, resultOut));
+			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs));
+			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs));
 
 			if ((!lhs) || (!rhs)) {
 				exprOut = {};
@@ -206,8 +185,8 @@ static peff::Option<CompilationError> evalIntegralBinaryOpExpr(
 				exprOut = {};
 				return {};
 			}
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs, sideEffectAppliedOut, context, resultOut));
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs, sideEffectAppliedOut, context, resultOut));
+			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs));
+			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs));
 
 			if ((!lhs) || (!rhs)) {
 				exprOut = {};
@@ -227,8 +206,8 @@ static peff::Option<CompilationError> evalIntegralBinaryOpExpr(
 				exprOut = {};
 				return {};
 			}
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs, sideEffectAppliedOut, context, resultOut));
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs, sideEffectAppliedOut, context, resultOut));
+			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs));
+			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs));
 
 			if ((!lhs) || (!rhs)) {
 				exprOut = {};
@@ -248,8 +227,8 @@ static peff::Option<CompilationError> evalIntegralBinaryOpExpr(
 				exprOut = {};
 				return {};
 			}
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs, sideEffectAppliedOut, context, resultOut));
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs, sideEffectAppliedOut, context, resultOut));
+			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs));
+			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs));
 
 			if ((!lhs) || (!rhs)) {
 				exprOut = {};
@@ -269,8 +248,8 @@ static peff::Option<CompilationError> evalIntegralBinaryOpExpr(
 				exprOut = {};
 				return {};
 			}
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs, sideEffectAppliedOut, context, resultOut));
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs, sideEffectAppliedOut, context, resultOut));
+			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs));
+			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs));
 
 			if ((!lhs) || (!rhs)) {
 				exprOut = {};
@@ -290,8 +269,8 @@ static peff::Option<CompilationError> evalIntegralBinaryOpExpr(
 				exprOut = {};
 				return {};
 			}
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs, sideEffectAppliedOut, context, resultOut));
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs, sideEffectAppliedOut, context, resultOut));
+			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs));
+			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs));
 
 			if ((!lhs) || (!rhs)) {
 				exprOut = {};
@@ -311,8 +290,8 @@ static peff::Option<CompilationError> evalIntegralBinaryOpExpr(
 				exprOut = {};
 				return {};
 			}
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs, sideEffectAppliedOut, context, resultOut));
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs, sideEffectAppliedOut, context, resultOut));
+			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs));
+			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs));
 
 			if ((!lhs) || (!rhs)) {
 				exprOut = {};
@@ -332,8 +311,8 @@ static peff::Option<CompilationError> evalIntegralBinaryOpExpr(
 				exprOut = {};
 				return {};
 			}
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs, sideEffectAppliedOut, context, resultOut));
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs, sideEffectAppliedOut, context, resultOut));
+			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs));
+			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs));
 
 			if ((!lhs) || (!rhs)) {
 				exprOut = {};
@@ -359,15 +338,12 @@ static peff::Option<CompilationError> evalIntegralBinaryOpExpr(
 				compileEnv,
 				compilationContext,
 				pathEnv,
-				lhsIn, lhs,
-				sideEffectAppliedOut,
-				context,
-				lhsResult));
+				lhsIn, lhs));
 			if (!lhsIn) {
 				exprOut = {};
 				return {};
 			}
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, boolType.castTo<TypeNameNode>(), lhs, sideEffectAppliedOut, context, resultOut));
+			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, boolType.castTo<TypeNameNode>(), lhs));
 			if (!lhs) {
 				exprOut = {};
 				return {};
@@ -382,15 +358,12 @@ static peff::Option<CompilationError> evalIntegralBinaryOpExpr(
 				compileEnv,
 				compilationContext,
 				pathEnv,
-				rhsIn, rhs,
-				sideEffectAppliedOut,
-				context,
-				lhsResult));
+				rhsIn, rhs));
 			if (!rhsIn) {
 				exprOut = {};
 				return {};
 			}
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, boolType.castTo<TypeNameNode>(), rhs, sideEffectAppliedOut, context, resultOut));
+			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, boolType.castTo<TypeNameNode>(), rhs));
 			if (!rhs) {
 				exprOut = {};
 				return {};
@@ -413,15 +386,12 @@ static peff::Option<CompilationError> evalIntegralBinaryOpExpr(
 				compileEnv,
 				compilationContext,
 				pathEnv,
-				lhsIn, lhs,
-				sideEffectAppliedOut,
-				context,
-				lhsResult));
+				lhsIn, lhs));
 			if (!lhsIn) {
 				exprOut = {};
 				return {};
 			}
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, boolType.castTo<TypeNameNode>(), lhs, sideEffectAppliedOut, context, resultOut));
+			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, boolType.castTo<TypeNameNode>(), lhs));
 			if (!lhs) {
 				exprOut = {};
 				return {};
@@ -436,15 +406,12 @@ static peff::Option<CompilationError> evalIntegralBinaryOpExpr(
 				compileEnv,
 				compilationContext,
 				pathEnv,
-				rhsIn, rhs,
-				sideEffectAppliedOut,
-				context,
-				lhsResult));
+				rhsIn, rhs));
 			if (!rhsIn) {
 				exprOut = {};
 				return {};
 			}
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, boolType.castTo<TypeNameNode>(), rhs, sideEffectAppliedOut, context, resultOut));
+			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, boolType.castTo<TypeNameNode>(), rhs));
 			if (!rhs) {
 				exprOut = {};
 				return {};
@@ -467,7 +434,7 @@ static peff::Option<CompilationError> evalIntegralBinaryOpExpr(
 					  compileEnv->allocator.get(),
 					  compileEnv->allocator.get(), compileEnv->document)))
 				return genOutOfMemoryCompError();
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, u32Type.castTo<TypeNameNode>(), rhs, sideEffectAppliedOut, context, resultOut));
+			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, u32Type.castTo<TypeNameNode>(), rhs));
 
 			if ((!lhs) || (!rhs)) {
 				exprOut = {};
@@ -494,7 +461,7 @@ static peff::Option<CompilationError> evalIntegralBinaryOpExpr(
 					  compileEnv->allocator.get(),
 					  compileEnv->allocator.get(), compileEnv->document)))
 				return genOutOfMemoryCompError();
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, u32Type.castTo<TypeNameNode>(), rhs, sideEffectAppliedOut, context, resultOut));
+			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, u32Type.castTo<TypeNameNode>(), rhs));
 
 			if ((!lhs) || (!rhs)) {
 				exprOut = {};
@@ -510,37 +477,10 @@ static peff::Option<CompilationError> evalIntegralBinaryOpExpr(
 				return genOutOfMemoryCompError();
 			break;
 		}
-		case BinaryOp::Assign: {
-			if ((!lhsType->isNullable) && (rhsType->isNullable)) {
-				exprOut = {};
-				return {};
-			}
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs, sideEffectAppliedOut, context, resultOut));
-
-			if ((!lhs) || (!rhs)) {
-				exprOut = {};
-				return {};
-			}
-
-			// Because the lhs and rhs must be a comptime value expression, we can safely assign them to the overrides.
-			if (lhsResult.correspondingMember && (lhsResult.correspondingMember->getAstNodeType() == AstNodeType::Var)) {
-				AstNodePtr<VarNode> v = lhsResult.correspondingMember.castTo<VarNode>();
-				if (v->isLocalVar())
-					if (!context.varValueOverrides.insert(
-							std::move(v),
-							AstNodePtr<ExprNode>(rhs))) {
-						return genOutOfMemoryCompError();
-					}
-			}
-
-			exprOut = rhs;
-			*sideEffectAppliedOut = true;
-			break;
-		}
 		case BinaryOp::Eq:
 		case BinaryOp::StrictEq: {
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs, sideEffectAppliedOut, context, resultOut));
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs, sideEffectAppliedOut, context, resultOut));
+			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs));
+			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs));
 
 			if ((!lhs) || (!rhs)) {
 				exprOut = {};
@@ -584,8 +524,8 @@ static peff::Option<CompilationError> evalIntegralBinaryOpExpr(
 		}
 		case BinaryOp::Neq:
 		case BinaryOp::StrictNeq: {
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs, sideEffectAppliedOut, context, resultOut));
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs, sideEffectAppliedOut, context, resultOut));
+			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs));
+			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs));
 
 			if ((!lhs) || (!rhs)) {
 				exprOut = {};
@@ -632,8 +572,8 @@ static peff::Option<CompilationError> evalIntegralBinaryOpExpr(
 				exprOut = {};
 				return {};
 			}
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs, sideEffectAppliedOut, context, resultOut));
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs, sideEffectAppliedOut, context, resultOut));
+			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs));
+			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs));
 
 			if ((!lhs) || (!rhs)) {
 				exprOut = {};
@@ -653,8 +593,8 @@ static peff::Option<CompilationError> evalIntegralBinaryOpExpr(
 				exprOut = {};
 				return {};
 			}
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs, sideEffectAppliedOut, context, resultOut));
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs, sideEffectAppliedOut, context, resultOut));
+			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs));
+			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs));
 
 			if ((!lhs) || (!rhs)) {
 				exprOut = {};
@@ -674,8 +614,8 @@ static peff::Option<CompilationError> evalIntegralBinaryOpExpr(
 				exprOut = {};
 				return {};
 			}
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs, sideEffectAppliedOut, context, resultOut));
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs, sideEffectAppliedOut, context, resultOut));
+			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs));
+			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs));
 
 			if ((!lhs) || (!rhs)) {
 				exprOut = {};
@@ -695,8 +635,8 @@ static peff::Option<CompilationError> evalIntegralBinaryOpExpr(
 				exprOut = {};
 				return {};
 			}
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs, sideEffectAppliedOut, context, resultOut));
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs, sideEffectAppliedOut, context, resultOut));
+			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs));
+			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs));
 
 			if ((!lhs) || (!rhs)) {
 				exprOut = {};
@@ -731,14 +671,9 @@ static peff::Option<CompilationError> evalFloatingPointBinaryOpExpr(
 	AstNodePtr<TypeNameNode> lhsType,
 	AstNodePtr<ExprNode> rhsIn,
 	AstNodePtr<TypeNameNode> rhsType,
-	AstNodePtr<ExprNode> &exprOut,
-	bool *sideEffectAppliedOut,
-	EvalConstExprContext &context,
-	EvalConstExprResult &resultOut) {
+	AstNodePtr<ExprNode> &exprOut) {
 	AstNodePtr<ExprNode> lhs;
 	AstNodePtr<ExprNode> rhs;
-	EvalConstExprResult lhsResult;
-	EvalConstExprResult rhsResult;
 
 	switch (binaryOp) {
 		case BinaryOp::LAnd:
@@ -749,10 +684,7 @@ static peff::Option<CompilationError> evalFloatingPointBinaryOpExpr(
 				compileEnv,
 				compilationContext,
 				pathEnv,
-				lhsIn, lhs,
-				sideEffectAppliedOut,
-				context,
-				lhsResult));
+				lhsIn, lhs));
 			if (!lhs) {
 				exprOut = {};
 				return {};
@@ -761,10 +693,7 @@ static peff::Option<CompilationError> evalFloatingPointBinaryOpExpr(
 				compileEnv,
 				compilationContext,
 				pathEnv,
-				rhsIn, rhs,
-				sideEffectAppliedOut,
-				context,
-				rhsResult));
+				rhsIn, rhs));
 			if (!rhs) {
 				exprOut = {};
 				return {};
@@ -773,8 +702,8 @@ static peff::Option<CompilationError> evalFloatingPointBinaryOpExpr(
 
 	switch (binaryOp) {
 		case BinaryOp::Add: {
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs, sideEffectAppliedOut, context, resultOut));
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs, sideEffectAppliedOut, context, resultOut));
+			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs));
+			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs));
 
 			if ((!lhs) || (!rhs)) {
 				exprOut = {};
@@ -794,8 +723,8 @@ static peff::Option<CompilationError> evalFloatingPointBinaryOpExpr(
 				exprOut = {};
 				return {};
 			}
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs, sideEffectAppliedOut, context, resultOut));
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs, sideEffectAppliedOut, context, resultOut));
+			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs));
+			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs));
 
 			if ((!lhs) || (!rhs)) {
 				exprOut = {};
@@ -815,8 +744,8 @@ static peff::Option<CompilationError> evalFloatingPointBinaryOpExpr(
 				exprOut = {};
 				return {};
 			}
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs, sideEffectAppliedOut, context, resultOut));
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs, sideEffectAppliedOut, context, resultOut));
+			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs));
+			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs));
 
 			if ((!lhs) || (!rhs)) {
 				exprOut = {};
@@ -836,8 +765,8 @@ static peff::Option<CompilationError> evalFloatingPointBinaryOpExpr(
 				exprOut = {};
 				return {};
 			}
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs, sideEffectAppliedOut, context, resultOut));
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs, sideEffectAppliedOut, context, resultOut));
+			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs));
+			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs));
 
 			if ((!lhs) || (!rhs)) {
 				exprOut = {};
@@ -857,8 +786,8 @@ static peff::Option<CompilationError> evalFloatingPointBinaryOpExpr(
 				exprOut = {};
 				return {};
 			}
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs, sideEffectAppliedOut, context, resultOut));
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs, sideEffectAppliedOut, context, resultOut));
+			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs));
+			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs));
 
 			if ((!lhs) || (!rhs)) {
 				exprOut = {};
@@ -882,37 +811,10 @@ static peff::Option<CompilationError> evalFloatingPointBinaryOpExpr(
 			}
 			break;
 		}
-		case BinaryOp::Assign: {
-			if ((!lhsType->isNullable) && (rhsType->isNullable)) {
-				exprOut = {};
-				return {};
-			}
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs, sideEffectAppliedOut, context, resultOut));
-
-			if ((!lhs) || (!rhs)) {
-				exprOut = {};
-				return {};
-			}
-
-			// Because the lhs and rhs must be a comptime value expression, we can safely assign them to the overrides.
-			if (lhsResult.correspondingMember && (lhsResult.correspondingMember->getAstNodeType() == AstNodeType::Var)) {
-				AstNodePtr<VarNode> v = lhsResult.correspondingMember.castTo<VarNode>();
-				if (v->isLocalVar())
-					if (!context.varValueOverrides.insert(
-							std::move(v),
-							AstNodePtr<ExprNode>(rhs))) {
-						return genOutOfMemoryCompError();
-					}
-			}
-
-			exprOut = rhs;
-			*sideEffectAppliedOut = true;
-			break;
-		}
 		case BinaryOp::Eq:
 		case BinaryOp::StrictEq: {
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs, sideEffectAppliedOut, context, resultOut));
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs, sideEffectAppliedOut, context, resultOut));
+			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs));
+			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs));
 
 			if ((!lhs) || (!rhs)) {
 				exprOut = {};
@@ -956,8 +858,8 @@ static peff::Option<CompilationError> evalFloatingPointBinaryOpExpr(
 		}
 		case BinaryOp::Neq:
 		case BinaryOp::StrictNeq: {
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs, sideEffectAppliedOut, context, resultOut));
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs, sideEffectAppliedOut, context, resultOut));
+			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs));
+			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs));
 
 			if ((!lhs) || (!rhs)) {
 				exprOut = {};
@@ -1004,8 +906,8 @@ static peff::Option<CompilationError> evalFloatingPointBinaryOpExpr(
 				exprOut = {};
 				return {};
 			}
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs, sideEffectAppliedOut, context, resultOut));
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs, sideEffectAppliedOut, context, resultOut));
+			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs));
+			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs));
 
 			if ((!lhs) || (!rhs)) {
 				exprOut = {};
@@ -1025,8 +927,8 @@ static peff::Option<CompilationError> evalFloatingPointBinaryOpExpr(
 				exprOut = {};
 				return {};
 			}
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs, sideEffectAppliedOut, context, resultOut));
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs, sideEffectAppliedOut, context, resultOut));
+			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs));
+			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs));
 
 			if ((!lhs) || (!rhs)) {
 				exprOut = {};
@@ -1046,8 +948,8 @@ static peff::Option<CompilationError> evalFloatingPointBinaryOpExpr(
 				exprOut = {};
 				return {};
 			}
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs, sideEffectAppliedOut, context, resultOut));
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs, sideEffectAppliedOut, context, resultOut));
+			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs));
+			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs));
 
 			if ((!lhs) || (!rhs)) {
 				exprOut = {};
@@ -1067,8 +969,8 @@ static peff::Option<CompilationError> evalFloatingPointBinaryOpExpr(
 				exprOut = {};
 				return {};
 			}
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs, sideEffectAppliedOut, context, resultOut));
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs, sideEffectAppliedOut, context, resultOut));
+			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs));
+			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs));
 
 			if ((!lhs) || (!rhs)) {
 				exprOut = {};
@@ -1097,11 +999,7 @@ SLAKE_API peff::Option<CompilationError> slkc::_doEvalConstExpr(
 	CompilationContext *compilationContext,
 	PathEnv *pathEnv,
 	AstNodePtr<ExprNode> expr,
-	AstNodePtr<ExprNode> &exprOut,
-	bool *sideEffectAppliedOut,
-	EvalConstExprContext &context,
-	EvalConstExprResult &resultOut) {
-	*sideEffectAppliedOut = false;
+	AstNodePtr<ExprNode> &exprOut) {
 reeval:
 
 	switch (expr->exprKind) {
@@ -1160,8 +1058,7 @@ reeval:
 						e->binaryOp,
 						e->lhs, decayedLhsType,
 						e->rhs, decayedRhsType,
-						exprOut,
-						sideEffectAppliedOut, context, resultOut));
+						exprOut));
 					break;
 				case TypeNameKind::I16:
 					SLKC_RETURN_IF_COMP_ERROR(evalIntegralBinaryOpExpr<I16LiteralExprNode>(
@@ -1170,8 +1067,7 @@ reeval:
 						e->binaryOp,
 						e->lhs, decayedLhsType,
 						e->rhs, decayedRhsType,
-						exprOut,
-						sideEffectAppliedOut, context, resultOut));
+						exprOut));
 					break;
 				case TypeNameKind::I32:
 					SLKC_RETURN_IF_COMP_ERROR(evalIntegralBinaryOpExpr<I32LiteralExprNode>(
@@ -1180,8 +1076,7 @@ reeval:
 						e->binaryOp,
 						e->lhs, decayedLhsType,
 						e->rhs, decayedRhsType,
-						exprOut,
-						sideEffectAppliedOut, context, resultOut));
+						exprOut));
 					break;
 				case TypeNameKind::I64:
 					SLKC_RETURN_IF_COMP_ERROR(evalIntegralBinaryOpExpr<I64LiteralExprNode>(
@@ -1190,8 +1085,7 @@ reeval:
 						e->binaryOp,
 						e->lhs, decayedLhsType,
 						e->rhs, decayedRhsType,
-						exprOut,
-						sideEffectAppliedOut, context, resultOut));
+						exprOut));
 					break;
 				case TypeNameKind::U8:
 					SLKC_RETURN_IF_COMP_ERROR(evalIntegralBinaryOpExpr<U8LiteralExprNode>(
@@ -1200,8 +1094,7 @@ reeval:
 						e->binaryOp,
 						e->lhs, decayedLhsType,
 						e->rhs, decayedRhsType,
-						exprOut,
-						sideEffectAppliedOut, context, resultOut));
+						exprOut));
 					break;
 				case TypeNameKind::U16:
 					SLKC_RETURN_IF_COMP_ERROR(evalIntegralBinaryOpExpr<U16LiteralExprNode>(
@@ -1210,8 +1103,7 @@ reeval:
 						e->binaryOp,
 						e->lhs, decayedLhsType,
 						e->rhs, decayedRhsType,
-						exprOut,
-						sideEffectAppliedOut, context, resultOut));
+						exprOut));
 					break;
 				case TypeNameKind::U32:
 					SLKC_RETURN_IF_COMP_ERROR(evalIntegralBinaryOpExpr<U32LiteralExprNode>(
@@ -1220,8 +1112,7 @@ reeval:
 						e->binaryOp,
 						e->lhs, decayedLhsType,
 						e->rhs, decayedRhsType,
-						exprOut,
-						sideEffectAppliedOut, context, resultOut));
+						exprOut));
 					break;
 				case TypeNameKind::U64:
 					SLKC_RETURN_IF_COMP_ERROR(evalIntegralBinaryOpExpr<U64LiteralExprNode>(
@@ -1230,8 +1121,7 @@ reeval:
 						e->binaryOp,
 						e->lhs, decayedLhsType,
 						e->rhs, decayedRhsType,
-						exprOut,
-						sideEffectAppliedOut, context, resultOut));
+						exprOut));
 					break;
 				case TypeNameKind::F32:
 					SLKC_RETURN_IF_COMP_ERROR(evalFloatingPointBinaryOpExpr<F32LiteralExprNode>(
@@ -1240,8 +1130,7 @@ reeval:
 						e->binaryOp,
 						e->lhs, decayedLhsType,
 						e->rhs, decayedRhsType,
-						exprOut,
-						sideEffectAppliedOut, context, resultOut));
+						exprOut));
 					break;
 				case TypeNameKind::F64:
 					SLKC_RETURN_IF_COMP_ERROR(evalFloatingPointBinaryOpExpr<F64LiteralExprNode>(
@@ -1250,8 +1139,7 @@ reeval:
 						e->binaryOp,
 						e->lhs, decayedLhsType,
 						e->rhs, decayedRhsType,
-						exprOut,
-						sideEffectAppliedOut, context, resultOut));
+						exprOut));
 					break;
 				default:
 					exprOut = {};
@@ -1263,48 +1151,8 @@ reeval:
 			exprOut = {};
 			break;
 		}
-		case ExprKind::IdRef: {
-			CompileExprResult result(compileEnv->allocator.get());
-
-			NormalCompilationContext compCtxt(compileEnv, compilationContext);
-			if (auto e = compileExpr(compileEnv, compilationContext, pathEnv, expr, ExprEvalPurpose::RValue, {}, result); e) {
-				switch (e->errorKind) {
-					case CompilationErrorKind::OutOfMemory:
-					case CompilationErrorKind::OutOfRuntimeMemory:
-					case CompilationErrorKind::StackOverflow:
-						return e;
-					default:
-						exprOut = {};
-				}
-			} else {
-				if (result.evaluatedFinalMember) {
-					if (result.evaluatedFinalMember->getAstNodeType() == AstNodeType::Var) {
-						if (auto it = context.varValueOverrides.find(result.evaluatedFinalMember.castTo<VarNode>()); it != context.varValueOverrides.end()) {
-							exprOut = it.value();
-						} else {
-							if (auto valueOverride = pathEnv->lookupVarValueOverride(result.evaluatedFinalMember.castTo<VarNode>());
-								valueOverride) {
-								exprOut = valueOverride;
-							} else {
-								if (result.evaluatedFinalMember.castTo<VarNode>()->type->isNullable) {
-									if (!(exprOut = makeAstNode<NullLiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document).castTo<ExprNode>())) {
-										return genOutOfMemoryCompError();
-									}
-									*sideEffectAppliedOut = true;
-								} else {
-									exprOut = {};
-									*sideEffectAppliedOut = true;
-								}
-							}
-						}
-					}
-				} else {
-					exprOut = {};
-					*sideEffectAppliedOut = true;
-				}
-			}
+		case ExprKind::IdRef:
 			break;
-		}
 		case ExprKind::I8:
 		case ExprKind::I16:
 		case ExprKind::I32:
@@ -1324,7 +1172,7 @@ reeval:
 		case ExprKind::Cast: {
 			AstNodePtr<CastExprNode> e = expr.castTo<CastExprNode>();
 			AstNodePtr<ExprNode> src;
-			SLKC_RETURN_IF_COMP_ERROR(_doEvalConstExpr(compileEnv, compilationContext, pathEnv, e->source, src, sideEffectAppliedOut, context, resultOut));
+			SLKC_RETURN_IF_COMP_ERROR(_doEvalConstExpr(compileEnv, compilationContext, pathEnv, e->source, src));
 
 			if (!src) {
 				exprOut = {};
@@ -1551,26 +1399,14 @@ reeval:
 	return {};
 }
 
-SLKC_API EvalConstExprContext::EvalConstExprContext(peff::Alloc *allocator) : varValueOverrides(allocator) {
-}
-
 SLKC_API peff::Option<CompilationError> slkc::evalConstExpr(
 	CompileEnv *compileEnv,
 	CompilationContext *compilationContext,
 	PathEnv *pathEnv,
 	AstNodePtr<ExprNode> expr,
-	AstNodePtr<ExprNode> &exprOut,
-	bool *sideEffectsAppliedOut) {
-	bool sideEffectsAppliedPlaceholder;
-
-	if (!sideEffectsAppliedOut)
-		sideEffectsAppliedOut = &sideEffectsAppliedPlaceholder;
-
-	EvalConstExprContext context(compileEnv->allocator.get());
-	EvalConstExprResult result;
-
+	AstNodePtr<ExprNode> &exprOut) {
 	PathEnv pe(compileEnv->allocator.get());
 	pe.parent = pathEnv;
 
-	return _doEvalConstExpr(compileEnv, compilationContext, &pe, expr, exprOut, sideEffectsAppliedOut, context, result);
+	return _doEvalConstExpr(compileEnv, compilationContext, &pe, expr, exprOut);
 }

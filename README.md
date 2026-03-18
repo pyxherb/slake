@@ -48,7 +48,8 @@ It supports:
   * Scoped Enumeration 🕓
   * Union Enumeration (ADT-like) 🕓
     * Type Recursion Checker ✅
-  * Trait Interface Constraint 🕓
+  * Base Class and Interface Generic Constraint ✅
+  * Trait Interface Generic Constraint 🕓
   * Tuple Type 🕓
   * Parameter Pack 🕓
     * Unpacking as Parameters ✅

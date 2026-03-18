@@ -324,20 +324,16 @@ public async main() -> i32 {
 	{
 		let nullable: i32?;
 
-		if ((nullable = 123) != null)
-			nullable = 123;
-		else
-			nullable = null;
-
-		if ((nullable = 123) != 123)
-			nullable = null;
-
-		if ((nullable = 0) && (nullable = 123))
-			nullable = null;
+		nullable = 123;
 
 		let nonnullable: i32;
 
 		nonnullable = nullable;
+
+		while (nonnullable < 300) {
+			nonnullable = nullable;
+			nonnullable += 1;
+		}
 
 		nullable = null;
 

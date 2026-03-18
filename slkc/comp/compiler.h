@@ -47,7 +47,6 @@ namespace slkc {
 	struct PathEnv {
 		const PathEnv *parent = nullptr;
 		peff::Map<AstNodePtr<VarNode>, NullOverrideType> localVarNullOverrides;
-		peff::Map<AstNodePtr<VarNode>, AstNodePtr<ExprNode>> localVarValueOverrides;
 
 		/// @brief Indicates if the path will be executed at least one times.
 		PathPossibility execPossibility = PathPossibility::Must;
@@ -70,8 +69,6 @@ namespace slkc {
 		}
 		SLAKE_API peff::Option<NullOverrideType> lookupVarNullOverride(const AstNodePtr<VarNode> &varNode);
 		SLAKE_API peff::Option<CompilationError> setLocalVarNullOverride(AstNodePtr<VarNode> varNode, NullOverrideType type);
-		SLAKE_API AstNodePtr<ExprNode> lookupVarValueOverride(const AstNodePtr<VarNode> &varNode);
-		SLAKE_API peff::Option<CompilationError> setLocalVarValueOverride(AstNodePtr<VarNode> varNode, AstNodePtr<ExprNode> expr);
 		SLAKE_API void removeVarNullOverride(const AstNodePtr<VarNode> &varNode);
 	};
 
@@ -81,6 +78,13 @@ namespace slkc {
 	SLKC_API peff::Option<CompilationError> combineParallelPathEnv(peff::Alloc *allocator, CompileEnv *compileEnv, CompilationContext *compilationContext, PathEnv &outer, const PathEnv *inners, size_t nInners) noexcept;
 
 	class CompilationContext {
+	protected:
+		virtual uint32_t doGetBreakLabel() const = 0;
+		virtual uint32_t doGetContinueLabel() const = 0;
+
+		virtual uint32_t doGetBreakLabelBlockLevel() const = 0;
+		virtual uint32_t doGetContinueLabelBlockLevel() const = 0;
+
 	public:
 		CompilationContext *parent = nullptr;
 
@@ -105,11 +109,11 @@ namespace slkc {
 		virtual void setBreakLabel(uint32_t labelId, uint32_t blockLevel) = 0;
 		virtual void setContinueLabel(uint32_t labelId, uint32_t blockLevel) = 0;
 
-		virtual uint32_t getBreakLabel() const = 0;
-		virtual uint32_t getContinueLabel() const = 0;
+		uint32_t getBreakLabel() const;
+		uint32_t getContinueLabel() const;
 
-		virtual uint32_t getBreakLabelBlockLevel() const = 0;
-		virtual uint32_t getContinueLabelBlockLevel() const = 0;
+		uint32_t getBreakLabelBlockLevel() const;
+		virtual uint32_t getContinueLabelBlockLevel() const;
 
 		virtual uint32_t getCurInsOff() const = 0;
 
@@ -126,6 +130,13 @@ namespace slkc {
 	struct CompileEnv;
 
 	class NormalCompilationContext : public CompilationContext {
+	protected:
+		SLKC_API virtual uint32_t doGetBreakLabel() const override;
+		SLKC_API virtual uint32_t doGetContinueLabel() const override;
+
+		SLKC_API virtual uint32_t doGetBreakLabelBlockLevel() const override;
+		SLKC_API virtual uint32_t doGetContinueLabelBlockLevel() const override;
+
 	public:
 		struct BlockLayer {
 			peff::HashMap<std::string_view, AstNodePtr<VarNode>> localVars;
@@ -186,12 +197,6 @@ namespace slkc {
 
 		SLKC_API virtual void setBreakLabel(uint32_t labelId, uint32_t blockLevel) override;
 		SLKC_API virtual void setContinueLabel(uint32_t labelId, uint32_t blockLevel) override;
-
-		SLKC_API virtual uint32_t getBreakLabel() const override;
-		SLKC_API virtual uint32_t getContinueLabel() const override;
-
-		SLKC_API virtual uint32_t getBreakLabelBlockLevel() const override;
-		SLKC_API virtual uint32_t getContinueLabelBlockLevel() const override;
 
 		SLKC_API virtual uint32_t getCurInsOff() const override;
 
@@ -705,6 +710,20 @@ namespace slkc {
 		CompilationContext *compilationContext,
 		PathEnv *pathEnv,
 		const AstNodePtr<StmtNode> &stmt);
+	///
+	/// @brief Try compiling a statement. Won't affect the compilation context but path environment.
+	///
+	/// @param compileEnv Compile environment for the compilation.
+	/// @param parnetCompilationContext Parent of the temporary compilation context.
+	/// @param pathEnv Path environment for compilation.
+	/// @param stmt Statement to be compiled.
+	/// @return Any fatal error occurred during compilation.
+	///
+	[[nodiscard]] SLKC_API peff::Option<CompilationError> tryCompileStmt(
+		CompileEnv *compileEnv,
+		CompilationContext *parentCompilationContext,
+		PathEnv *pathEnv,
+		const AstNodePtr<StmtNode> &stmt);
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> evalExprType(
 		CompileEnv *compileEnv,
 		CompilationContext *compilationContext,
@@ -720,36 +739,19 @@ namespace slkc {
 		AstNodePtr<TypeNameNode> &typeOut,
 		AstNodePtr<TypeNameNode> desiredType = {});
 
-	struct EvalConstExprContext {
-		///
-		/// @brief Variable value overrides for variable value evaluation, note that we have to make sure the value is a comptime value.
-		///
-		peff::Map<AstNodePtr<VarNode>, AstNodePtr<ExprNode>> varValueOverrides;
-
-		SLKC_API EvalConstExprContext(peff::Alloc *allocator);
-	};
-
-	struct EvalConstExprResult {
-		AstNodePtr<MemberNode> correspondingMember;
-	};
-
 	[[nodiscard]] SLAKE_API peff::Option<CompilationError> _doEvalConstExpr(
 		CompileEnv *compileEnv,
 		CompilationContext *compilationContext,
 		PathEnv *pathEnv,
 		AstNodePtr<ExprNode> expr,
-		AstNodePtr<ExprNode> &exprOut,
-		bool *sideEffectAppliedOut,
-		EvalConstExprContext &context,
-		EvalConstExprResult &resultOut);
+		AstNodePtr<ExprNode> &exprOut);
 
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> evalConstExpr(
 		CompileEnv *compileEnv,
 		CompilationContext *compilationContext,
 		PathEnv *pathEnv,
 		AstNodePtr<ExprNode> expr,
-		AstNodePtr<ExprNode> &exprOut,
-		bool *sideEffectsAppliedOut = nullptr);
+		AstNodePtr<ExprNode> &exprOut);
 
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> getFullIdRef(peff::Alloc *allocator, AstNodePtr<MemberNode> m, IdRefPtr &idRefOut);
 

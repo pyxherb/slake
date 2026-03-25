@@ -104,9 +104,9 @@ SLKC_API Token *Parser::peekToken(bool keepNewLine, bool keepWhitespace, bool ke
 	return tokenList.back().get();
 }
 
-SLKC_API peff::Option<SyntaxError> Parser::splitRshOpToken() {
+SLKC_API peff::Option<SyntaxError> Parser::splitShrOpToken() {
 	switch (Token *token = peekToken(); token->tokenId) {
-		case TokenId::RshOp: {
+		case TokenId::ShrOp: {
 			token->tokenId = TokenId::GtOp;
 			token->sourceText = token->sourceText.substr(0, 1);
 			token->sourceLocation.endPosition.column -= 1;

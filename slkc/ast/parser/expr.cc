@@ -960,7 +960,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr<
 					break;
 				}
 
-				case TokenId::LshOp: {
+				case TokenId::ShlOp: {
 					if (precedence > 100)
 						goto end;
 					nextToken();
@@ -981,7 +981,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr<
 
 					break;
 				}
-				case TokenId::RshOp: {
+				case TokenId::ShrOp: {
 					if (precedence > 100)
 						goto end;
 					nextToken();
@@ -1505,7 +1505,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr<
 
 					break;
 				}
-				case TokenId::LshAssignOp: {
+				case TokenId::ShlAssignOp: {
 					if (precedence > 1)
 						goto end;
 					nextToken();
@@ -1526,7 +1526,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr<
 
 					break;
 				}
-				case TokenId::RshAssignOp: {
+				case TokenId::ShrAssignOp: {
 					if (precedence > 1)
 						goto end;
 					nextToken();

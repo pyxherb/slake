@@ -75,6 +75,11 @@ using `DCMT` instruction on that time point.
 We should restrict the variable's nullity and estimated value validity to local
 variables or synchronized variables.
 
+### Behaviors of `as` Operator and New `as?` Operator
+
+We changed the `as` operator's behavior and introduced a new `as` operator in
+the specification, modify them to follow the specification.
+
 ### Cache Manager
 
 We should introduce compilation cache for the language server.

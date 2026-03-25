@@ -98,9 +98,9 @@ SLKC_API const char *slkc::getTokenName(TokenId tokenId) {
 			return "|=";
 		case TokenId::XorAssignOp:
 			return "^=";
-		case TokenId::LshAssignOp:
+		case TokenId::ShlAssignOp:
 			return "<<=";
-		case TokenId::RshAssignOp:
+		case TokenId::ShrAssignOp:
 			return ">>=";
 		case TokenId::StrictEqOp:
 			return "===";
@@ -110,9 +110,9 @@ SLKC_API const char *slkc::getTokenName(TokenId tokenId) {
 			return "==";
 		case TokenId::NeqOp:
 			return "!=";
-		case TokenId::LshOp:
+		case TokenId::ShlOp:
 			return "<<";
-		case TokenId::RshOp:
+		case TokenId::ShrOp:
 			return ">>";
 		case TokenId::LtOp:
 			return "<";

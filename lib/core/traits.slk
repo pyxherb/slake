@@ -40,11 +40,11 @@ public interface ILogicalOr<T, Result> {
 	operator ||(rhs: T) -> Result;
 }
 
-public interface ILsh<T, Result> {
+public interface IShl<T, Result> {
 	operator <<(rhs: T) -> Result;
 }
 
-public interface IRsh<T, Result> {
+public interface IShr<T, Result> {
 	operator >>(rhs: T) -> Result;
 }
 

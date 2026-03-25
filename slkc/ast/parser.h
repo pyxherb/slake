@@ -163,7 +163,7 @@ namespace slkc {
 			return {};
 		}
 
-		[[nodiscard]] SLKC_API peff::Option<SyntaxError> splitRshOpToken();
+		[[nodiscard]] SLKC_API peff::Option<SyntaxError> splitShrOpToken();
 		[[nodiscard]] SLKC_API peff::Option<SyntaxError> splitRDBracketsToken();
 
 	private:

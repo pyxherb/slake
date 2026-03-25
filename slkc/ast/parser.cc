@@ -95,11 +95,11 @@ SLKC_API peff::Option<SyntaxError> Parser::parseOperatorName(std::string_view &n
 			nameOut = "^=";
 			nextToken();
 			break;
-		case TokenId::LshAssignOp:
+		case TokenId::ShlAssignOp:
 			nameOut = "<<=";
 			nextToken();
 			break;
-		case TokenId::RshAssignOp:
+		case TokenId::ShrAssignOp:
 			nameOut = ">>=";
 			nextToken();
 			break;
@@ -111,11 +111,11 @@ SLKC_API peff::Option<SyntaxError> Parser::parseOperatorName(std::string_view &n
 			nameOut = "!=";
 			nextToken();
 			break;
-		case TokenId::LshOp:
+		case TokenId::ShlOp:
 			nameOut = "<<";
 			nextToken();
 			break;
-		case TokenId::RshOp:
+		case TokenId::ShrOp:
 			nameOut = ">>";
 			nextToken();
 			break;

@@ -65,14 +65,14 @@ SLKC_API peff::Option<LexicalError> Lexer::lex(ModuleNode *moduleNode, const std
 				<InitialCondition>"&="		{ token->tokenId = TokenId::AndAssignOp; break; }
 				<InitialCondition>"|="		{ token->tokenId = TokenId::OrAssignOp; break; }
 				<InitialCondition>"^="		{ token->tokenId = TokenId::XorAssignOp; break; }
-				<InitialCondition>"<<="		{ token->tokenId = TokenId::LshAssignOp; break; }
-				<InitialCondition>">>="		{ token->tokenId = TokenId::RshAssignOp; break; }
+				<InitialCondition>"<<="		{ token->tokenId = TokenId::ShlAssignOp; break; }
+				<InitialCondition>">>="		{ token->tokenId = TokenId::ShrAssignOp; break; }
 				<InitialCondition>"==="		{ token->tokenId = TokenId::StrictEqOp; break; }
 				<InitialCondition>"!=="		{ token->tokenId = TokenId::StrictNeqOp; break; }
 				<InitialCondition>"=="		{ token->tokenId = TokenId::EqOp; break; }
 				<InitialCondition>"!="		{ token->tokenId = TokenId::NeqOp; break; }
-				<InitialCondition>"<<"		{ token->tokenId = TokenId::LshOp; break; }
-				<InitialCondition>">>"		{ token->tokenId = TokenId::RshOp; break; }
+				<InitialCondition>"<<"		{ token->tokenId = TokenId::ShlOp; break; }
+				<InitialCondition>">>"		{ token->tokenId = TokenId::ShrOp; break; }
 				<InitialCondition>"<=>"		{ token->tokenId = TokenId::CmpOp; break; }
 				<InitialCondition>"<="		{ token->tokenId = TokenId::LtEqOp; break; }
 				<InitialCondition>">="		{ token->tokenId = TokenId::GtEqOp; break; }

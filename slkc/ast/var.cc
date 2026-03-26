@@ -2,49 +2,49 @@
 
 using namespace slkc;
 
-SLKC_API AstNodePtr<AstNode> VarNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
+SLKC_API AstNodePtr<AstNode> VarNode::do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const {
 	bool succeeded = false;
-	AstNodePtr<VarNode> duplicatedNode(makeAstNode<VarNode>(newAllocator, *this, newAllocator, context, succeeded));
-	if ((!duplicatedNode) || (!succeeded)) {
+	AstNodePtr<VarNode> duplicated_node(make_ast_node<VarNode>(new_allocator, *this, new_allocator, context, succeeded));
+	if ((!duplicated_node) || (!succeeded)) {
 		return {};
 	}
 
-	return duplicatedNode.castTo<AstNode>();
+	return duplicated_node.cast_to<AstNode>();
 }
 
 SLKC_API VarNode::VarNode(
-	peff::Alloc *selfAllocator,
+	peff::Alloc *self_allocator,
 	const peff::SharedPtr<Document> &document)
-	: MemberNode(AstNodeType::Var, selfAllocator, document) {
+	: MemberNode(AstNodeType::Var, self_allocator, document) {
 }
 
-SLKC_API VarNode::VarNode(const VarNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut) : MemberNode(rhs, allocator, context, succeededOut) {
-	if (!succeededOut) {
+SLKC_API VarNode::VarNode(const VarNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeeded_out) : MemberNode(rhs, allocator, context, succeeded_out) {
+	if (!succeeded_out) {
 		return;
 	}
 
-	if (!context.pushTask([this, &rhs, allocator, &context]() -> bool {
+	if (!context.push_task([this, &rhs, allocator, &context]() -> bool {
 			if (rhs.type && !(type = rhs.type->duplicate<TypeNameNode>(allocator)))
 				return false;
 			return true;
 		})) {
-		succeededOut = false;
+		succeeded_out = false;
 		return;
 	}
 
-	if (!context.pushTask([this, &rhs, allocator, &context]() -> bool {
-			if (rhs.initialValue && !(initialValue = rhs.initialValue->duplicate<ExprNode>(allocator)))
+	if (!context.push_task([this, &rhs, allocator, &context]() -> bool {
+			if (rhs.initial_value && !(initial_value = rhs.initial_value->duplicate<ExprNode>(allocator)))
 				return false;
 			return true;
 		})) {
-		succeededOut = false;
+		succeeded_out = false;
 		return;
 	}
 
-	isTypeDeducedFromInitialValue = rhs.isTypeDeducedFromInitialValue;
-	idxReg = rhs.idxReg;
+	is_type_deduced_from_initial_value = rhs.is_type_deduced_from_initial_value;
+	idx_reg = rhs.idx_reg;
 
-	succeededOut = true;
+	succeeded_out = true;
 }
 
 SLKC_API VarNode::~VarNode() {

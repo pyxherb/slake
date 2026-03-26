@@ -2,78 +2,78 @@
 
 using namespace slake;
 
-DWORD WINAPI Thread::_threadWrapperProc(LPVOID lpThreadParameter) {
-	Thread *self = ((Thread *)lpThreadParameter);
+DWORD WINAPI Thread::_thread_wrapper_proc(LPVOID lp_thread_parameter) {
+	Thread *self = ((Thread *)lp_thread_parameter);
 
-	self->_initialRunMutex.lock();
-	self->_initialRunMutex.unlock();
+	self->_initial_run_mutex.lock();
+	self->_initial_run_mutex.unlock();
 
 	self->runnable->run();
 
 	return 0;
 }
 
-SLAKE_API Thread::Thread(peff::Alloc *selfAllocator, Runnable *runnable) : selfAllocator(selfAllocator), nativeThreadHandle(nativeThreadHandle), runnable(runnable) {
+SLAKE_API Thread::Thread(peff::Alloc *self_allocator, Runnable *runnable) : self_allocator(self_allocator), native_thread_handle(native_thread_handle), runnable(runnable) {
 }
 
 SLAKE_API Thread::~Thread() {}
 
 SLAKE_API void Thread::start() {
-	_initialRunMutex.unlock();
+	_initial_run_mutex.unlock();
 }
 
 SLAKE_API void Thread::join() {
 	start();
-	WaitForSingleObject(nativeThreadHandle, INFINITE);
+	WaitForSingleObject(native_thread_handle, INFINITE);
 }
 
 SLAKE_API void Thread::dealloc() {
-	peff::destroyAndRelease<Thread>(selfAllocator.get(), this, alignof(Thread));
+	peff::destroy_and_release<Thread>(self_allocator.get(), this, alignof(Thread));
 }
 
-SLAKE_API Thread *Thread::alloc(peff::Alloc *selfAllocator, Runnable *runnable, size_t stackSize) {
+SLAKE_API Thread *Thread::alloc(peff::Alloc *self_allocator, Runnable *runnable, size_t stack_size) {
 	std::unique_ptr<Thread, peff::DeallocableDeleter<Thread>>
-		executionThread(peff::allocAndConstruct<Thread>(selfAllocator, alignof(Thread), selfAllocator, runnable));
+		execution_thread(peff::alloc_and_construct<Thread>(self_allocator, alignof(Thread), self_allocator, runnable));
 
-	if (!executionThread) {
+	if (!execution_thread) {
 		return nullptr;
 	}
 
-	executionThread->_initialRunMutex.lock();
+	execution_thread->_initial_run_mutex.lock();
 
-	if ((executionThread->nativeThreadHandle = CreateThread(
+	if ((execution_thread->native_thread_handle = CreateThread(
 			 nullptr,
-			 stackSize,
-			 _threadWrapperProc,
-			 (LPVOID)executionThread.get(),
+			 stack_size,
+			 _thread_wrapper_proc,
+			 (LPVOID)execution_thread.get(),
 			 0,
 			 0)) == NULL) {
 		return nullptr;
 	}
 
-	return executionThread.release();
+	return execution_thread.release();
 }
 
-NativeThreadHandle slake::currentThreadHandle() {
+NativeThreadHandle slake::current_thread_handle() {
 	return GetCurrentThread();
 }
 
-void slake::yieldCurrentThread() {
+void slake::yield_current_thread() {
 	SwitchToThread();
 }
 
-void slake::getCurrentThreadStackBounds(void *&baseOut, size_t &sizeOut) {
+void slake::get_current_thread_stack_bounds(void *&base_out, size_t &size_out) {
 #if _WIN32_WINNT >= 0x0602
 	ULONG_PTR low;
 	ULONG_PTR high;
 	GetCurrentThreadStackLimits(&low, &high);
-	baseOut = (void *)low;
-	sizeOut = (size_t)high - low;
+	base_out = (void *)low;
+	size_out = (size_t)high - low;
 #else
-	MEMORY_BASIC_INFORMATION memInfo;
-	VirtualQuery(&memInfo, &memInfo, sizeof(memInfo));
+	MEMORY_BASIC_INFORMATION mem_info;
+	VirtualQuery(&mem_info, &mem_info, sizeof(mem_info));
 
-	baseOut = memInfo.AllocationBase;
-	sizeOut = (size_t)((NT_TIB *)NtCurrentTeb())->StackBase - (size_t)memInfo.AllocationBase;
+	base_out = mem_info.AllocationBase;
+	size_out = (size_t)((NT_TIB *)NtCurrentTeb())->StackBase - (size_t)mem_info.AllocationBase;
 #endif
 }

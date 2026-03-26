@@ -3,20 +3,20 @@
 using namespace slake;
 
 SLAKE_API Mutex::Mutex() {
-	InitializeCriticalSection(&nativeHandle);
+	InitializeCriticalSection(&native_handle);
 }
 SLAKE_API Mutex::~Mutex() {
-	DeleteCriticalSection(&nativeHandle);
+	DeleteCriticalSection(&native_handle);
 }
 
 SLAKE_API void Mutex::lock() {
-	EnterCriticalSection(&nativeHandle);
+	EnterCriticalSection(&native_handle);
 }
 
-SLAKE_API bool Mutex::tryLock() {
-	return TryEnterCriticalSection(&nativeHandle);
+SLAKE_API bool Mutex::try_lock() {
+	return TryEnterCriticalSection(&native_handle);
 }
 
 SLAKE_API void Mutex::unlock() {
-	LeaveCriticalSection(&nativeHandle);
+	LeaveCriticalSection(&native_handle);
 }

@@ -4,12 +4,12 @@ using namespace slkc;
 
 SLKC_API TokenExtension::~TokenExtension() {}
 
-SLKC_API IntTokenExtension::IntTokenExtension(peff::Alloc *allocator, IntTokenType tokenType) : allocator(allocator), tokenType(tokenType) {
+SLKC_API IntTokenExtension::IntTokenExtension(peff::Alloc *allocator, IntTokenType token_type) : allocator(allocator), token_type(token_type) {
 }
 SLKC_API IntTokenExtension::~IntTokenExtension() {
 }
 SLKC_API void IntTokenExtension::dealloc() {
-	peff::destroyAndRelease<IntTokenExtension>(allocator.get(), this, alignof(IntTokenExtension));
+	peff::destroy_and_release<IntTokenExtension>(allocator.get(), this, alignof(IntTokenExtension));
 }
 
 SLKC_API StringTokenExtension::StringTokenExtension(peff::Alloc *allocator, peff::String &&data) : allocator(allocator), data(std::move(data)) {
@@ -17,7 +17,7 @@ SLKC_API StringTokenExtension::StringTokenExtension(peff::Alloc *allocator, peff
 SLKC_API StringTokenExtension::~StringTokenExtension() {
 }
 SLKC_API void StringTokenExtension::dealloc() {
-	peff::destroyAndRelease<StringTokenExtension>(allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroy_and_release<StringTokenExtension>(allocator.get(), this, sizeof(std::max_align_t));
 }
 
 SLKC_API Token::Token(peff::Alloc *allocator, const peff::WeakPtr<Document> &document) : allocator(allocator), document(document) {
@@ -25,11 +25,11 @@ SLKC_API Token::Token(peff::Alloc *allocator, const peff::WeakPtr<Document> &doc
 SLKC_API Token::~Token() {
 }
 SLKC_API void Token::dealloc() {
-	peff::destroyAndRelease<Token>(allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroy_and_release<Token>(allocator.get(), this, sizeof(std::max_align_t));
 }
 
-SLKC_API const char *slkc::getTokenName(TokenId tokenId) {
-	switch (tokenId) {
+SLKC_API const char *slkc::get_token_name(TokenId token_id) {
+	switch (token_id) {
 		case TokenId::End:
 			return "end of file";
 		case TokenId::Comma:

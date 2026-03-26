@@ -2,35 +2,35 @@
 
 using namespace slake;
 
-SLAKE_API DuplicationTask DuplicationTask::makeNormal(Object **dest, Object *src) {
+SLAKE_API DuplicationTask DuplicationTask::make_normal(Object **dest, Object *src) {
 	DuplicationTask task;
 
-	task.taskType = DuplicationTaskType::Normal;
+	task.task_type = DuplicationTaskType::Normal;
 
-	task.asNormal.src = src;
-	task.asNormal.dest = dest;
+	task.as_normal.src = src;
+	task.as_normal.dest = dest;
 
 	return task;
 }
 
-SLAKE_API DuplicationTask DuplicationTask::makeModuleMember(BasicModuleObject *mod, MemberObject *src) {
+SLAKE_API DuplicationTask DuplicationTask::make_module_member(BasicModuleObject *mod, MemberObject *src) {
 	DuplicationTask task;
 
-	task.taskType = DuplicationTaskType::ModuleMember;
+	task.task_type = DuplicationTaskType::ModuleMember;
 
-	task.asModuleMember.mod = mod;
-	task.asModuleMember.src = src;
+	task.as_module_member.mod = mod;
+	task.as_module_member.src = src;
 
 	return task;
 }
 
-SLAKE_API DuplicationTask DuplicationTask::makeType(TypeRef *type, const TypeRef &src) {
+SLAKE_API DuplicationTask DuplicationTask::make_type(TypeRef *type, const TypeRef &src) {
 	DuplicationTask task;
 
-	task.taskType = DuplicationTaskType::Type;
+	task.task_type = DuplicationTaskType::Type;
 
-	task.asType.type = type;
-	task.asType.src = src;
+	task.as_type.type = type;
+	task.as_type.src = src;
 
 	return task;
 }
@@ -38,8 +38,8 @@ SLAKE_API DuplicationTask DuplicationTask::makeType(TypeRef *type, const TypeRef
 SLAKE_API Duplicator::Duplicator(Runtime *runtime, peff::Alloc *allocator) : runtime(runtime), tasks(allocator) {
 }
 
-SLAKE_API bool Duplicator::insertTask(DuplicationTask &&task) {
-	return tasks.pushBack(std::move(task));
+SLAKE_API bool Duplicator::insert_task(DuplicationTask &&task) {
+	return tasks.push_back(std::move(task));
 }
 
 SLAKE_API bool Duplicator::exec() {
@@ -48,25 +48,25 @@ SLAKE_API bool Duplicator::exec() {
 	this->tasks = peff::List<DuplicationTask>(tasks.allocator());
 
 	for (auto &i : tasks) {
-		switch (i.taskType) {
+		switch (i.task_type) {
 			case DuplicationTaskType::Normal:
-				if (!(*i.asNormal.dest = i.asNormal.src->duplicate(this))) {
+				if (!(*i.as_normal.dest = i.as_normal.src->duplicate(this))) {
 					return false;
 				}
 				break;
 			case DuplicationTaskType::ModuleMember: {
-				MemberObject *object = (MemberObject *)i.asModuleMember.src->duplicate(this);
+				MemberObject *object = (MemberObject *)i.as_module_member.src->duplicate(this);
 				if (!object) {
 					return false;
 				}
-				if (!(i.asModuleMember.mod->addMember(object))) {
+				if (!(i.as_module_member.mod->add_member(object))) {
 					return false;
 				}
 				break;
 			}
 			case DuplicationTaskType::Type: {
 				bool succeeded;
-				(*i.asType.type) = i.asType.src.duplicate(succeeded);
+				(*i.as_type.type) = i.as_type.src.duplicate(succeeded);
 
 				if (!succeeded) {
 					return false;
@@ -79,14 +79,14 @@ SLAKE_API bool Duplicator::exec() {
 	return true;
 }
 
-SLAKE_API Object::Object(Runtime *rt, peff::Alloc *selfAllocator, ObjectKind objectKind) : associatedRuntime(rt), selfAllocator(selfAllocator), _objectKind(objectKind) {
+SLAKE_API Object::Object(Runtime *rt, peff::Alloc *self_allocator, ObjectKind object_kind) : associated_runtime(rt), self_allocator(self_allocator), _object_kind(object_kind) {
 }
 
 SLAKE_API Object::Object(const Object &x, peff::Alloc *allocator) {
-	associatedRuntime = x.associatedRuntime;
-	selfAllocator = allocator;
-	_objectKind = x._objectKind;
-	objectFlags = x.objectFlags & ~VF_WALKED;
+	associated_runtime = x.associated_runtime;
+	self_allocator = allocator;
+	_object_kind = x._object_kind;
+	object_flags = x.object_flags & ~VF_WALKED;
 }
 
 SLAKE_API Object::~Object() {
@@ -98,35 +98,35 @@ SLAKE_API Object *Object::duplicate(Duplicator *duplicator) const {
 	std::terminate();
 }
 
-SLAKE_API void Object::replaceAllocator(peff::Alloc *allocator) noexcept {
-	peff::verifyReplaceable(selfAllocator.get(), allocator);
-	selfAllocator = allocator;
+SLAKE_API void Object::replace_allocator(peff::Alloc *allocator) noexcept {
+	peff::verify_replaceable(self_allocator.get(), allocator);
+	self_allocator = allocator;
 }
 
-SLAKE_API Reference Object::getMember(const std::string_view &name) const {
+SLAKE_API Reference Object::get_member(const std::string_view &name) const {
 	return ReferenceKind::Invalid;
 }
 
-SLAKE_API HostRefHolder::HostRefHolder(peff::Alloc *selfAllocator)
-	: holdedObjects(selfAllocator) {
+SLAKE_API HostRefHolder::HostRefHolder(peff::Alloc *self_allocator)
+	: holded_objects(self_allocator) {
 }
 
 SLAKE_API HostRefHolder::~HostRefHolder() {
-	for (auto i : holdedObjects)
-		--i->hostRefCount;
+	for (auto i : holded_objects)
+		--i->host_ref_count;
 }
 
-SLAKE_API bool HostRefHolder::addObject(Object *object) {
-	if (!holdedObjects.contains(object)) {
-		if (!holdedObjects.insert(+object))
+SLAKE_API bool HostRefHolder::add_object(Object *object) {
+	if (!holded_objects.contains(object)) {
+		if (!holded_objects.insert(+object))
 			return false;
-		++object->hostRefCount;
+		++object->host_ref_count;
 	}
 	return true;
 }
 
-SLAKE_API void HostRefHolder::removeObject(Object *object) noexcept {
-	assert(holdedObjects.contains(object));
-	holdedObjects.remove(object);
-	--object->hostRefCount;
+SLAKE_API void HostRefHolder::remove_object(Object *object) noexcept {
+	assert(holded_objects.contains(object));
+	holded_objects.remove(object);
+	--object->host_ref_count;
 }

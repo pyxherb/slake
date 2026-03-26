@@ -3,111 +3,111 @@
 using namespace slake;
 
 SLAKE_API MajorFrame::MajorFrame(Runtime *rt) noexcept
-	: associatedRuntime(rt) {
+	: associated_runtime(rt) {
 }
 
 SLAKE_API void MajorFrame::dealloc() noexcept {
-	peff::destroyAndRelease<MajorFrame>(associatedRuntime->getFixedAlloc(), this, alignof(MajorFrame));
+	peff::destroy_and_release<MajorFrame>(associated_runtime->get_fixed_alloc(), this, alignof(MajorFrame));
 }
 
-SLAKE_API char *Context::stackAlloc(size_t size) noexcept {
-	if (size_t newStackTop = stackTop + size;
-		newStackTop > stackSize) {
+SLAKE_API char *Context::stack_alloc(size_t size) noexcept {
+	if (size_t new_stack_top = stack_top + size;
+		new_stack_top > stack_size) {
 		return nullptr;
 	} else
-		stackTop = newStackTop;
+		stack_top = new_stack_top;
 
-	return dataStack + stackSize - stackTop;
+	return data_stack + stack_size - stack_top;
 }
 
-SLAKE_API char *Context::alignStack(size_t alignment) noexcept {
-	const size_t addrDiff = (uintptr_t)(calcStackAddr(dataStack, stackSize, stackTop)) % alignment;
-	if (addrDiff)
-		return stackAlloc(addrDiff);
-	return dataStack + stackSize - stackTop;
+SLAKE_API char *Context::align_stack(size_t alignment) noexcept {
+	const size_t addr_diff = (uintptr_t)(calc_stack_addr(data_stack, stack_size, stack_top)) % alignment;
+	if (addr_diff)
+		return stack_alloc(addr_diff);
+	return data_stack + stack_size - stack_top;
 }
 
-SLAKE_API char *Context::alignedStackAlloc(size_t size, size_t alignment) noexcept {
-	const size_t addrDiff = (uintptr_t)(calcStackAddr(dataStack, stackSize, stackTop)) % alignment;
-	if (addrDiff)
-		return stackAlloc(size + (addrDiff));
-	return stackAlloc(size);
+SLAKE_API char *Context::aligned_stack_alloc(size_t size, size_t alignment) noexcept {
+	const size_t addr_diff = (uintptr_t)(calc_stack_addr(data_stack, stack_size, stack_top)) % alignment;
+	if (addr_diff)
+		return stack_alloc(size + (addr_diff));
+	return stack_alloc(size);
 }
 
-SLAKE_API Context::Context(Runtime *runtime, peff::Alloc *selfAllocator) : runtime(runtime), selfAllocator(selfAllocator) {
+SLAKE_API Context::Context(Runtime *runtime, peff::Alloc *self_allocator) : runtime(runtime), self_allocator(self_allocator) {
 }
 
 SLAKE_API Context::~Context() {
 	{
-		MajorFrame *curMajorFrame;
-		size_t offCurMajorFrame = this->offCurMajorFrame;
+		MajorFrame *cur_major_frame;
+		size_t off_cur_major_frame = this->off_cur_major_frame;
 
-		if (offCurMajorFrame != SIZE_MAX)
+		if (off_cur_major_frame != SIZE_MAX)
 			do {
-				curMajorFrame = this->runtime->_fetchMajorFrame(this, offCurMajorFrame);
-				offCurMajorFrame = curMajorFrame->offPrevFrame;
-				std::destroy_at(curMajorFrame);
-			} while (offCurMajorFrame != SIZE_MAX);
+				cur_major_frame = this->runtime->_fetch_major_frame(this, off_cur_major_frame);
+				off_cur_major_frame = cur_major_frame->off_prev_frame;
+				std::destroy_at(cur_major_frame);
+			} while (off_cur_major_frame != SIZE_MAX);
 	}
 
-	if (dataStack) {
-		selfAllocator->release(dataStack, stackSize, sizeof(std::max_align_t));
+	if (data_stack) {
+		self_allocator->release(data_stack, stack_size, sizeof(std::max_align_t));
 	}
 }
 
-SLAKE_API void Context::replaceAllocator(peff::Alloc *allocator) noexcept {
-	peff::verifyReplaceable(selfAllocator.get(), allocator);
+SLAKE_API void Context::replace_allocator(peff::Alloc *allocator) noexcept {
+	peff::verify_replaceable(self_allocator.get(), allocator);
 
-	selfAllocator = allocator;
+	self_allocator = allocator;
 
-	MajorFrame *curMajorFrame;
-	size_t offCurMajorFrame = this->offCurMajorFrame;
+	MajorFrame *cur_major_frame;
+	size_t off_cur_major_frame = this->off_cur_major_frame;
 
 	do {
-		curMajorFrame = this->runtime->_fetchMajorFrame(this, offCurMajorFrame);
-		curMajorFrame->replaceAllocator(allocator);
-		offCurMajorFrame = curMajorFrame->offPrevFrame;
-	} while (curMajorFrame->offPrevFrame != SIZE_MAX);
+		cur_major_frame = this->runtime->_fetch_major_frame(this, off_cur_major_frame);
+		cur_major_frame->replace_allocator(allocator);
+		off_cur_major_frame = cur_major_frame->off_prev_frame;
+	} while (cur_major_frame->off_prev_frame != SIZE_MAX);
 }
 
-SLAKE_API void Context::forEachMajorFrame(MajorFrameWalker walker, void *userData) {
-	MajorFrame *curMajorFrame;
-	size_t offCurMajorFrame = this->offCurMajorFrame;
+SLAKE_API void Context::for_each_major_frame(MajorFrameWalker walker, void *user_data) {
+	MajorFrame *cur_major_frame;
+	size_t off_cur_major_frame = this->off_cur_major_frame;
 
 	do {
-		curMajorFrame = this->runtime->_fetchMajorFrame(this, offCurMajorFrame);
-		if (!walker(curMajorFrame, userData))
+		cur_major_frame = this->runtime->_fetch_major_frame(this, off_cur_major_frame);
+		if (!walker(cur_major_frame, user_data))
 			break;
-		offCurMajorFrame = curMajorFrame->offPrevFrame;
-	} while (curMajorFrame->offPrevFrame != SIZE_MAX);
+		off_cur_major_frame = cur_major_frame->off_prev_frame;
+	} while (cur_major_frame->off_prev_frame != SIZE_MAX);
 }
 
 SLAKE_API ContextObject::ContextObject(
 	Runtime *rt,
-	peff::Alloc *selfAllocator)
-	: Object(rt, selfAllocator, ObjectKind::Context), _context(rt, selfAllocator) {
+	peff::Alloc *self_allocator)
+	: Object(rt, self_allocator, ObjectKind::Context), _context(rt, self_allocator) {
 }
 
 SLAKE_API ContextObject::~ContextObject() {
 }
 
-SLAKE_API HostObjectRef<ContextObject> slake::ContextObject::alloc(Runtime *rt, size_t stackSize) {
-	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();
+SLAKE_API HostObjectRef<ContextObject> slake::ContextObject::alloc(Runtime *rt, size_t stack_size) {
+	peff::RcObjectPtr<peff::Alloc> cur_generation_allocator = rt->get_cur_gen_alloc();
 
 	std::unique_ptr<ContextObject, peff::DeallocableDeleter<ContextObject>> ptr(
-		peff::allocAndConstruct<ContextObject>(
-			curGenerationAllocator.get(),
+		peff::alloc_and_construct<ContextObject>(
+			cur_generation_allocator.get(),
 			sizeof(std::max_align_t),
-			rt, curGenerationAllocator.get()));
+			rt, cur_generation_allocator.get()));
 	if (!ptr)
 		return nullptr;
 
-	if (!(ptr->_context.dataStack = (char *)curGenerationAllocator->alloc(stackSize, sizeof(std::max_align_t))))
+	if (!(ptr->_context.data_stack = (char *)cur_generation_allocator->alloc(stack_size, sizeof(std::max_align_t))))
 		return nullptr;
 
-	ptr->_context.stackSize = stackSize;
+	ptr->_context.stack_size = stack_size;
 
-	if (!rt->addObject(ptr.get()))
+	if (!rt->add_object(ptr.get()))
 		return nullptr;
 
 	return ptr.release();
@@ -117,23 +117,23 @@ SLAKE_API MajorFrame::~MajorFrame() {
 }
 
 SLAKE_API void slake::ContextObject::dealloc() {
-	peff::destroyAndRelease<ContextObject>(selfAllocator.get(), this, sizeof(std::max_align_t));
+	peff::destroy_and_release<ContextObject>(self_allocator.get(), this, sizeof(std::max_align_t));
 }
 
-SLAKE_API void MajorFrame::replaceAllocator(peff::Alloc *allocator) noexcept {
+SLAKE_API void MajorFrame::replace_allocator(peff::Alloc *allocator) noexcept {
 }
 
-SLAKE_API InternalExceptionPointer ContextObject::resume(HostRefHolder *hostRefHolder) {
+SLAKE_API InternalExceptionPointer ContextObject::resume(HostRefHolder *host_ref_holder) {
 	_context.flags &= ~CTX_YIELDED;
-	return associatedRuntime->execContext(this);
+	return associated_runtime->exec_context(this);
 }
 
-SLAKE_API bool ContextObject::isDone() {
+SLAKE_API bool ContextObject::is_done() {
 	return _context.flags & CTX_DONE;
 }
 
-SLAKE_API void ContextObject::replaceAllocator(peff::Alloc *allocator) noexcept {
-	this->Object::replaceAllocator(allocator);
+SLAKE_API void ContextObject::replace_allocator(peff::Alloc *allocator) noexcept {
+	this->Object::replace_allocator(allocator);
 
-	_context.replaceAllocator(allocator);
+	_context.replace_allocator(allocator);
 }

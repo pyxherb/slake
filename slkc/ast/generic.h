@@ -8,47 +8,47 @@ namespace slkc {
 
 	class GenericConstraint {
 	public:
-		peff::RcObjectPtr<peff::Alloc> selfAllocator;
-		AstNodePtr<TypeNameNode> baseType;
-		peff::DynArray<AstNodePtr<TypeNameNode>> implTypes;
+		peff::RcObjectPtr<peff::Alloc> self_allocator;
+		AstNodePtr<TypeNameNode> base_type;
+		peff::DynArray<AstNodePtr<TypeNameNode>> impl_types;
 
-		SLKC_API GenericConstraint(peff::Alloc *selfAllocator);
+		SLKC_API GenericConstraint(peff::Alloc *self_allocator);
 		SLKC_API virtual ~GenericConstraint();
 
 		SLKC_API void dealloc() noexcept;
 	};
 	using GenericConstraintPtr = std::unique_ptr<GenericConstraint, peff::DeallocableDeleter<GenericConstraint>>;
 
-	GenericConstraintPtr duplicateGenericConstraint(peff::Alloc *allocator, const GenericConstraint *constraint);
+	GenericConstraintPtr duplicate_generic_constraint(peff::Alloc *allocator, const GenericConstraint *constraint);
 
 	class ParamTypeListGenericConstraint {
 	public:
-		peff::RcObjectPtr<peff::Alloc> selfAllocator;
-		peff::DynArray<AstNodePtr<TypeNameNode>> argTypes;
-		bool hasVarArg = false;
+		peff::RcObjectPtr<peff::Alloc> self_allocator;
+		peff::DynArray<AstNodePtr<TypeNameNode>> arg_types;
+		bool has_var_arg = false;
 
-		SLKC_API ParamTypeListGenericConstraint(peff::Alloc *selfAllocator);
+		SLKC_API ParamTypeListGenericConstraint(peff::Alloc *self_allocator);
 		SLKC_API virtual ~ParamTypeListGenericConstraint();
 
 		SLKC_API void dealloc() noexcept;
 	};
 	using ParamTypeListGenericConstraintPtr = std::unique_ptr<ParamTypeListGenericConstraint, peff::DeallocableDeleter<ParamTypeListGenericConstraint>>;
 
-	ParamTypeListGenericConstraintPtr duplicateParamTypeListGenericConstraint(peff::Alloc *allocator, const ParamTypeListGenericConstraint *constraint);
+	ParamTypeListGenericConstraintPtr duplicate_param_type_list_generic_constraint(peff::Alloc *allocator, const ParamTypeListGenericConstraint *constraint);
 
 	class GenericParamNode : public MemberNode {
 	protected:
-		SLKC_API virtual AstNodePtr<AstNode> doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const override;
+		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 
 	public:
-		AstNodePtr<TypeNameNode> inputType;
-		GenericConstraintPtr genericConstraint;
-		ParamTypeListGenericConstraintPtr paramTypeListGenericConstraint;
+		AstNodePtr<TypeNameNode> input_type;
+		GenericConstraintPtr generic_constraint;
+		ParamTypeListGenericConstraintPtr param_type_list_generic_constraint;
 
-		bool isParamTypeList = false;
+		bool is_param_type_list = false;
 
-		SLKC_API GenericParamNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
-		SLKC_API GenericParamNode(const GenericParamNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut);
+		SLKC_API GenericParamNode(peff::Alloc *self_allocator, const peff::SharedPtr<Document> &document);
+		SLKC_API GenericParamNode(const GenericParamNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeeded_out);
 		SLKC_API virtual ~GenericParamNode();
 	};
 }

@@ -3,759 +3,759 @@
 using namespace slake;
 using namespace slake::opti;
 
-InternalExceptionPointer slake::opti::analyzeCastIns(
-	ProgramAnalyzeContext &analyzeContext,
-	uint32_t regIndex) {
-	Instruction &curIns = analyzeContext.fnObject->instructions.at(analyzeContext.idxCurIns);
+InternalExceptionPointer slake::opti::analyze_cast_ins(
+	ProgramAnalyzeContext &analyze_context,
+	uint32_t reg_index) {
+	Instruction &cur_ins = analyze_context.fn_object->instructions.at(analyze_context.idx_cur_ins);
 
-	if (curIns.nOperands != 2) {
-		return allocOutOfMemoryErrorIfAllocFailed(
+	if (cur_ins.num_operands != 2) {
+		return alloc_out_of_memory_error_if_alloc_failed(
 			MalformedProgramError::alloc(
-				analyzeContext.runtime->getFixedAlloc(),
-				analyzeContext.fnObject,
-				analyzeContext.idxCurIns));
+				analyze_context.runtime->get_fixed_alloc(),
+				analyze_context.fn_object,
+				analyze_context.idx_cur_ins));
 	}
 
-	if (curIns.operands[0].valueType != ValueType::TypeName) {
-		return allocOutOfMemoryErrorIfAllocFailed(
+	if (cur_ins.operands[0].value_type != ValueType::TypeName) {
+		return alloc_out_of_memory_error_if_alloc_failed(
 			MalformedProgramError::alloc(
-				analyzeContext.runtime->getFixedAlloc(),
-				analyzeContext.fnObject,
-				analyzeContext.idxCurIns));
+				analyze_context.runtime->get_fixed_alloc(),
+				analyze_context.fn_object,
+				analyze_context.idx_cur_ins));
 	}
 
-	Value constSrc(ValueType::Undefined);
-	TypeRef srcType, destType = curIns.operands[0].getTypeName();
-	SLAKE_RETURN_IF_EXCEPT(evalConstValue(analyzeContext, curIns.operands[1], constSrc));
-	SLAKE_RETURN_IF_EXCEPT(evalValueType(analyzeContext, curIns.operands[1], srcType));
+	Value const_src(ValueType::Undefined);
+	TypeRef src_type, dest_type = cur_ins.operands[0].get_type_name();
+	SLAKE_RETURN_IF_EXCEPT(eval_const_value(analyze_context, cur_ins.operands[1], const_src));
+	SLAKE_RETURN_IF_EXCEPT(eval_value_type(analyze_context, cur_ins.operands[1], src_type));
 
-	switch (srcType.typeId) {
+	switch (src_type.type_id) {
 		case TypeId::I8:
-			switch (destType.typeId) {
+			switch (dest_type.type_id) {
 				case TypeId::I8:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int8_t)constSrc.getI8());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((int8_t)const_src.get_i8());
 					}
 					break;
 				case TypeId::I16:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int16_t)constSrc.getI8());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((int16_t)const_src.get_i8());
 					}
 					break;
 				case TypeId::I32:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int32_t)constSrc.getI8());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((int32_t)const_src.get_i8());
 					}
 					break;
 				case TypeId::I64:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int64_t)constSrc.getI8());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((int64_t)const_src.get_i8());
 					}
 					break;
 				case TypeId::U8:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint8_t)constSrc.getI8());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((uint8_t)const_src.get_i8());
 					}
 					break;
 				case TypeId::U16:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint16_t)constSrc.getI8());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((uint16_t)const_src.get_i8());
 					}
 					break;
 				case TypeId::U32:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint32_t)constSrc.getI8());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((uint32_t)const_src.get_i8());
 					}
 					break;
 				case TypeId::U64:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint64_t)constSrc.getI8());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((uint64_t)const_src.get_i8());
 					}
 					break;
 				case TypeId::F32:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((float)constSrc.getI8());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((float)const_src.get_i8());
 					}
 					break;
 				case TypeId::F64:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((double)constSrc.getI8());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((double)const_src.get_i8());
 					}
 					break;
 				case TypeId::Bool:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((bool)constSrc.getI8());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((bool)const_src.get_i8());
 					}
 					break;
 				default: {
-					return allocOutOfMemoryErrorIfAllocFailed(
+					return alloc_out_of_memory_error_if_alloc_failed(
 						MalformedProgramError::alloc(
-							analyzeContext.runtime->getFixedAlloc(),
-							analyzeContext.fnObject,
-							analyzeContext.idxCurIns));
+							analyze_context.runtime->get_fixed_alloc(),
+							analyze_context.fn_object,
+							analyze_context.idx_cur_ins));
 				}
 			}
 			break;
 		case TypeId::I16:
-			switch (destType.typeId) {
+			switch (dest_type.type_id) {
 				case TypeId::I8:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int8_t)constSrc.getI16());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((int8_t)const_src.get_i16());
 					}
 					break;
 				case TypeId::I16:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int16_t)constSrc.getI16());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((int16_t)const_src.get_i16());
 					}
 					break;
 				case TypeId::I32:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int32_t)constSrc.getI16());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((int32_t)const_src.get_i16());
 					}
 					break;
 				case TypeId::I64:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int64_t)constSrc.getI16());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((int64_t)const_src.get_i16());
 					}
 					break;
 				case TypeId::U8:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint8_t)constSrc.getI16());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((uint8_t)const_src.get_i16());
 					}
 					break;
 				case TypeId::U16:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint16_t)constSrc.getI16());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((uint16_t)const_src.get_i16());
 					}
 					break;
 				case TypeId::U32:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint32_t)constSrc.getI16());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((uint32_t)const_src.get_i16());
 					}
 					break;
 				case TypeId::U64:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint64_t)constSrc.getI16());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((uint64_t)const_src.get_i16());
 					}
 					break;
 				case TypeId::F32:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((float)constSrc.getI16());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((float)const_src.get_i16());
 					}
 					break;
 				case TypeId::F64:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((double)constSrc.getI16());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((double)const_src.get_i16());
 					}
 					break;
 				case TypeId::Bool:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((bool)constSrc.getI16());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((bool)const_src.get_i16());
 					}
 					break;
 				default: {
-					return allocOutOfMemoryErrorIfAllocFailed(
+					return alloc_out_of_memory_error_if_alloc_failed(
 						MalformedProgramError::alloc(
-							analyzeContext.runtime->getFixedAlloc(),
-							analyzeContext.fnObject,
-							analyzeContext.idxCurIns));
+							analyze_context.runtime->get_fixed_alloc(),
+							analyze_context.fn_object,
+							analyze_context.idx_cur_ins));
 				}
 			}
 			break;
 			break;
 		case TypeId::I32:
-			switch (destType.typeId) {
+			switch (dest_type.type_id) {
 				case TypeId::I8:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int8_t)constSrc.getI32());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((int8_t)const_src.get_i32());
 					}
 					break;
 				case TypeId::I16:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int16_t)constSrc.getI32());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((int16_t)const_src.get_i32());
 					}
 					break;
 				case TypeId::I32:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int32_t)constSrc.getI32());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((int32_t)const_src.get_i32());
 					}
 					break;
 				case TypeId::I64:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int64_t)constSrc.getI32());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((int64_t)const_src.get_i32());
 					}
 					break;
 				case TypeId::U8:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint8_t)constSrc.getI32());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((uint8_t)const_src.get_i32());
 					}
 					break;
 				case TypeId::U16:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint16_t)constSrc.getI32());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((uint16_t)const_src.get_i32());
 					}
 					break;
 				case TypeId::U32:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint32_t)constSrc.getI32());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((uint32_t)const_src.get_i32());
 					}
 					break;
 				case TypeId::U64:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint64_t)constSrc.getI32());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((uint64_t)const_src.get_i32());
 					}
 					break;
 				case TypeId::F32:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((float)constSrc.getI32());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((float)const_src.get_i32());
 					}
 					break;
 				case TypeId::F64:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((double)constSrc.getI32());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((double)const_src.get_i32());
 					}
 					break;
 				case TypeId::Bool:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((bool)constSrc.getI32());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((bool)const_src.get_i32());
 					}
 					break;
 					break;
 				default: {
-					return allocOutOfMemoryErrorIfAllocFailed(
+					return alloc_out_of_memory_error_if_alloc_failed(
 						MalformedProgramError::alloc(
-							analyzeContext.runtime->getFixedAlloc(),
-							analyzeContext.fnObject,
-							analyzeContext.idxCurIns));
+							analyze_context.runtime->get_fixed_alloc(),
+							analyze_context.fn_object,
+							analyze_context.idx_cur_ins));
 				}
 			}
 			break;
 		case TypeId::I64:
-			switch (destType.typeId) {
+			switch (dest_type.type_id) {
 				case TypeId::I8:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int8_t)constSrc.getI64());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((int8_t)const_src.get_i64());
 					}
 					break;
 				case TypeId::I16:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int16_t)constSrc.getI64());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((int16_t)const_src.get_i64());
 					}
 					break;
 				case TypeId::I32:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int32_t)constSrc.getI64());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((int32_t)const_src.get_i64());
 					}
 					break;
 				case TypeId::I64:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int64_t)constSrc.getI64());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((int64_t)const_src.get_i64());
 					}
 					break;
 				case TypeId::U8:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint8_t)constSrc.getI64());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((uint8_t)const_src.get_i64());
 					}
 					break;
 				case TypeId::U16:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint16_t)constSrc.getI64());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((uint16_t)const_src.get_i64());
 					}
 					break;
 				case TypeId::U32:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint32_t)constSrc.getI64());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((uint32_t)const_src.get_i64());
 					}
 					break;
 				case TypeId::U64:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint64_t)constSrc.getI64());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((uint64_t)const_src.get_i64());
 					}
 					break;
 				case TypeId::F32:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((float)constSrc.getI64());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((float)const_src.get_i64());
 					}
 					break;
 				case TypeId::F64:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((double)constSrc.getI64());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((double)const_src.get_i64());
 					}
 					break;
 				case TypeId::Bool:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((bool)constSrc.getI64());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((bool)const_src.get_i64());
 					}
 					break;
 				default: {
-					return allocOutOfMemoryErrorIfAllocFailed(
+					return alloc_out_of_memory_error_if_alloc_failed(
 						MalformedProgramError::alloc(
-							analyzeContext.runtime->getFixedAlloc(),
-							analyzeContext.fnObject,
-							analyzeContext.idxCurIns));
+							analyze_context.runtime->get_fixed_alloc(),
+							analyze_context.fn_object,
+							analyze_context.idx_cur_ins));
 				}
 			}
 			break;
 		case TypeId::U8:
-			switch (destType.typeId) {
+			switch (dest_type.type_id) {
 				case TypeId::I8:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int8_t)constSrc.getU8());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((int8_t)const_src.get_u8());
 					}
 					break;
 				case TypeId::I16:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int16_t)constSrc.getU8());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((int16_t)const_src.get_u8());
 					}
 					break;
 				case TypeId::I32:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int32_t)constSrc.getU8());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((int32_t)const_src.get_u8());
 					}
 					break;
 				case TypeId::I64:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int64_t)constSrc.getU8());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((int64_t)const_src.get_u8());
 					}
 					break;
 				case TypeId::U8:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint8_t)constSrc.getU8());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((uint8_t)const_src.get_u8());
 					}
 					break;
 				case TypeId::U16:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint16_t)constSrc.getU8());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((uint16_t)const_src.get_u8());
 					}
 					break;
 				case TypeId::U32:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint32_t)constSrc.getU8());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((uint32_t)const_src.get_u8());
 					}
 					break;
 				case TypeId::U64:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint64_t)constSrc.getU8());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((uint64_t)const_src.get_u8());
 					}
 					break;
 				case TypeId::F32:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((float)constSrc.getU8());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((float)const_src.get_u8());
 					}
 					break;
 				case TypeId::F64:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((double)constSrc.getU8());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((double)const_src.get_u8());
 					}
 					break;
 				case TypeId::Bool:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((bool)constSrc.getU8());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((bool)const_src.get_u8());
 					}
 					break;
 					break;
 				default: {
-					return allocOutOfMemoryErrorIfAllocFailed(
+					return alloc_out_of_memory_error_if_alloc_failed(
 						MalformedProgramError::alloc(
-							analyzeContext.runtime->getFixedAlloc(),
-							analyzeContext.fnObject,
-							analyzeContext.idxCurIns));
+							analyze_context.runtime->get_fixed_alloc(),
+							analyze_context.fn_object,
+							analyze_context.idx_cur_ins));
 				}
 			}
 			break;
 		case TypeId::U16:
-			switch (destType.typeId) {
+			switch (dest_type.type_id) {
 				case TypeId::I8:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int8_t)constSrc.getU16());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((int8_t)const_src.get_u16());
 					}
 					break;
 				case TypeId::I16:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int16_t)constSrc.getU16());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((int16_t)const_src.get_u16());
 					}
 					break;
 				case TypeId::I32:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int32_t)constSrc.getU16());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((int32_t)const_src.get_u16());
 					}
 					break;
 				case TypeId::I64:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int64_t)constSrc.getU16());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((int64_t)const_src.get_u16());
 					}
 					break;
 				case TypeId::U8:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint8_t)constSrc.getU16());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((uint8_t)const_src.get_u16());
 					}
 					break;
 				case TypeId::U16:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint16_t)constSrc.getU16());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((uint16_t)const_src.get_u16());
 					}
 					break;
 				case TypeId::U32:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint32_t)constSrc.getU16());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((uint32_t)const_src.get_u16());
 					}
 					break;
 				case TypeId::U64:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint64_t)constSrc.getU16());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((uint64_t)const_src.get_u16());
 					}
 					break;
 				case TypeId::F32:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((float)constSrc.getU16());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((float)const_src.get_u16());
 					}
 					break;
 				case TypeId::F64:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((double)constSrc.getU16());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((double)const_src.get_u16());
 					}
 					break;
 				case TypeId::Bool:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((bool)constSrc.getU16());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((bool)const_src.get_u16());
 					}
 					break;
 				default: {
-					return allocOutOfMemoryErrorIfAllocFailed(
+					return alloc_out_of_memory_error_if_alloc_failed(
 						MalformedProgramError::alloc(
-							analyzeContext.runtime->getFixedAlloc(),
-							analyzeContext.fnObject,
-							analyzeContext.idxCurIns));
+							analyze_context.runtime->get_fixed_alloc(),
+							analyze_context.fn_object,
+							analyze_context.idx_cur_ins));
 				}
 			}
 			break;
 		case TypeId::U32:
-			switch (destType.typeId) {
+			switch (dest_type.type_id) {
 				case TypeId::I8:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int8_t)constSrc.getU32());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((int8_t)const_src.get_u32());
 					}
 					break;
 				case TypeId::I16:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int16_t)constSrc.getU32());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((int16_t)const_src.get_u32());
 					}
 					break;
 				case TypeId::I32:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int32_t)constSrc.getU32());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((int32_t)const_src.get_u32());
 					}
 					break;
 				case TypeId::I64:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int64_t)constSrc.getU32());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((int64_t)const_src.get_u32());
 					}
 					break;
 				case TypeId::U8:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint8_t)constSrc.getU32());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((uint8_t)const_src.get_u32());
 					}
 					break;
 				case TypeId::U16:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint16_t)constSrc.getU32());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((uint16_t)const_src.get_u32());
 					}
 					break;
 				case TypeId::U32:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint32_t)constSrc.getU32());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((uint32_t)const_src.get_u32());
 					}
 					break;
 				case TypeId::U64:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint64_t)constSrc.getU32());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((uint64_t)const_src.get_u32());
 					}
 					break;
 				case TypeId::F32:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((float)constSrc.getU32());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((float)const_src.get_u32());
 					}
 					break;
 				case TypeId::F64:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((double)constSrc.getU32());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((double)const_src.get_u32());
 					}
 					break;
 				case TypeId::Bool:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((bool)constSrc.getU32());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((bool)const_src.get_u32());
 					}
 					break;
 				default: {
-					return allocOutOfMemoryErrorIfAllocFailed(
+					return alloc_out_of_memory_error_if_alloc_failed(
 						MalformedProgramError::alloc(
-							analyzeContext.runtime->getFixedAlloc(),
-							analyzeContext.fnObject,
-							analyzeContext.idxCurIns));
+							analyze_context.runtime->get_fixed_alloc(),
+							analyze_context.fn_object,
+							analyze_context.idx_cur_ins));
 				}
 			}
 			break;
 		case TypeId::U64:
-			switch (destType.typeId) {
+			switch (dest_type.type_id) {
 				case TypeId::I8:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int8_t)constSrc.getU64());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((int8_t)const_src.get_u64());
 					}
 					break;
 				case TypeId::I16:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int16_t)constSrc.getU64());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((int16_t)const_src.get_u64());
 					}
 					break;
 				case TypeId::I32:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int32_t)constSrc.getU64());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((int32_t)const_src.get_u64());
 					}
 					break;
 				case TypeId::I64:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int64_t)constSrc.getU64());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((int64_t)const_src.get_u64());
 					}
 					break;
 				case TypeId::U8:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint8_t)constSrc.getU64());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((uint8_t)const_src.get_u64());
 					}
 					break;
 				case TypeId::U16:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint16_t)constSrc.getU64());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((uint16_t)const_src.get_u64());
 					}
 					break;
 				case TypeId::U32:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint32_t)constSrc.getU64());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((uint32_t)const_src.get_u64());
 					}
 					break;
 				case TypeId::U64:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint64_t)constSrc.getU64());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((uint64_t)const_src.get_u64());
 					}
 					break;
 				case TypeId::F32:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((float)constSrc.getU64());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((float)const_src.get_u64());
 					}
 					break;
 				case TypeId::F64:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((double)constSrc.getU64());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((double)const_src.get_u64());
 					}
 					break;
 				case TypeId::Bool:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((bool)constSrc.getU64());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((bool)const_src.get_u64());
 					}
 					break;
 				default: {
-					return allocOutOfMemoryErrorIfAllocFailed(
+					return alloc_out_of_memory_error_if_alloc_failed(
 						MalformedProgramError::alloc(
-							analyzeContext.runtime->getFixedAlloc(),
-							analyzeContext.fnObject,
-							analyzeContext.idxCurIns));
+							analyze_context.runtime->get_fixed_alloc(),
+							analyze_context.fn_object,
+							analyze_context.idx_cur_ins));
 				}
 			}
 			break;
 		case TypeId::Bool:
-			switch (destType.typeId) {
+			switch (dest_type.type_id) {
 				case TypeId::I8:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int8_t)constSrc.getBool());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((int8_t)const_src.get_bool());
 					}
 					break;
 				case TypeId::I16:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int16_t)constSrc.getBool());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((int16_t)const_src.get_bool());
 					}
 					break;
 				case TypeId::I32:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int32_t)constSrc.getBool());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((int32_t)const_src.get_bool());
 					}
 					break;
 				case TypeId::I64:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int64_t)constSrc.getBool());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((int64_t)const_src.get_bool());
 					}
 					break;
 				case TypeId::U8:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint8_t)constSrc.getBool());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((uint8_t)const_src.get_bool());
 					}
 					break;
 				case TypeId::U16:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint16_t)constSrc.getBool());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((uint16_t)const_src.get_bool());
 					}
 					break;
 				case TypeId::U32:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint32_t)constSrc.getBool());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((uint32_t)const_src.get_bool());
 					}
 					break;
 				case TypeId::U64:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint64_t)constSrc.getBool());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((uint64_t)const_src.get_bool());
 					}
 					break;
 				case TypeId::F32:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((float)constSrc.getBool());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((float)const_src.get_bool());
 					}
 					break;
 				case TypeId::F64:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((double)constSrc.getBool());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((double)const_src.get_bool());
 					}
 					break;
 				case TypeId::Bool:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((bool)constSrc.getBool());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((bool)const_src.get_bool());
 					}
 					break;
 				default: {
-					return allocOutOfMemoryErrorIfAllocFailed(
+					return alloc_out_of_memory_error_if_alloc_failed(
 						MalformedProgramError::alloc(
-							analyzeContext.runtime->getFixedAlloc(),
-							analyzeContext.fnObject,
-							analyzeContext.idxCurIns));
+							analyze_context.runtime->get_fixed_alloc(),
+							analyze_context.fn_object,
+							analyze_context.idx_cur_ins));
 				}
 			}
 			break;
 		case TypeId::F32:
-			switch (destType.typeId) {
+			switch (dest_type.type_id) {
 				case TypeId::I8:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int8_t)constSrc.getF32());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((int8_t)const_src.get_f32());
 					}
 					break;
 				case TypeId::I16:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int16_t)constSrc.getF32());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((int16_t)const_src.get_f32());
 					}
 					break;
 				case TypeId::I32:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int32_t)constSrc.getF32());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((int32_t)const_src.get_f32());
 					}
 					break;
 				case TypeId::I64:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int64_t)constSrc.getF32());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((int64_t)const_src.get_f32());
 					}
 					break;
 				case TypeId::U8:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint8_t)constSrc.getF32());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((uint8_t)const_src.get_f32());
 					}
 					break;
 				case TypeId::U16:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint16_t)constSrc.getF32());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((uint16_t)const_src.get_f32());
 					}
 					break;
 				case TypeId::U32:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint32_t)constSrc.getF32());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((uint32_t)const_src.get_f32());
 					}
 					break;
 				case TypeId::U64:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint64_t)constSrc.getF32());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((uint64_t)const_src.get_f32());
 					}
 					break;
 				case TypeId::F32:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((float)constSrc.getF32());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((float)const_src.get_f32());
 					}
 					break;
 				case TypeId::F64:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((double)constSrc.getF32());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((double)const_src.get_f32());
 					}
 					break;
 				case TypeId::Bool:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((bool)constSrc.getF32());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((bool)const_src.get_f32());
 					}
 					break;
 				default: {
-					return allocOutOfMemoryErrorIfAllocFailed(
+					return alloc_out_of_memory_error_if_alloc_failed(
 						MalformedProgramError::alloc(
-							analyzeContext.runtime->getFixedAlloc(),
-							analyzeContext.fnObject,
-							analyzeContext.idxCurIns));
+							analyze_context.runtime->get_fixed_alloc(),
+							analyze_context.fn_object,
+							analyze_context.idx_cur_ins));
 				}
 			}
 			break;
 		case TypeId::F64:
-			switch (destType.typeId) {
+			switch (dest_type.type_id) {
 				case TypeId::I8:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int8_t)constSrc.getF64());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((int8_t)const_src.get_f64());
 					}
 					break;
 				case TypeId::I16:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int16_t)constSrc.getF64());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((int16_t)const_src.get_f64());
 					}
 					break;
 				case TypeId::I32:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int32_t)constSrc.getF64());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((int32_t)const_src.get_f64());
 					}
 					break;
 				case TypeId::I64:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int64_t)constSrc.getF64());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((int64_t)const_src.get_f64());
 					}
 					break;
 				case TypeId::U8:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint8_t)constSrc.getF64());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((uint8_t)const_src.get_f64());
 					}
 					break;
 				case TypeId::U16:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint16_t)constSrc.getF64());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((uint16_t)const_src.get_f64());
 					}
 					break;
 				case TypeId::U32:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint32_t)constSrc.getF64());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((uint32_t)const_src.get_f64());
 					}
 					break;
 				case TypeId::U64:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint64_t)constSrc.getF64());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((uint64_t)const_src.get_f64());
 					}
 					break;
 				case TypeId::F32:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((float)constSrc.getF64());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((float)const_src.get_f64());
 					}
 					break;
 				case TypeId::F64:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((double)constSrc.getF64());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((double)const_src.get_f64());
 					}
 					break;
 				case TypeId::Bool:
-					if (constSrc.valueType != ValueType::Undefined) {
-						analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((bool)constSrc.getF64());
+					if (const_src.value_type != ValueType::Undefined) {
+						analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = Value((bool)const_src.get_f64());
 					}
 					break;
 				default: {
-					return allocOutOfMemoryErrorIfAllocFailed(
+					return alloc_out_of_memory_error_if_alloc_failed(
 						MalformedProgramError::alloc(
-							analyzeContext.runtime->getFixedAlloc(),
-							analyzeContext.fnObject,
-							analyzeContext.idxCurIns));
+							analyze_context.runtime->get_fixed_alloc(),
+							analyze_context.fn_object,
+							analyze_context.idx_cur_ins));
 				} break;
 			}
 			break;
@@ -763,16 +763,16 @@ InternalExceptionPointer slake::opti::analyzeCastIns(
 			break;
 		}
 		default: {
-			return allocOutOfMemoryErrorIfAllocFailed(
+			return alloc_out_of_memory_error_if_alloc_failed(
 				MalformedProgramError::alloc(
-					analyzeContext.runtime->getFixedAlloc(),
-					analyzeContext.fnObject,
-					analyzeContext.idxCurIns));
+					analyze_context.runtime->get_fixed_alloc(),
+					analyze_context.fn_object,
+					analyze_context.idx_cur_ins));
 		}
 	}
 
-	if (regIndex != UINT32_MAX) {
-		analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).type = destType;
+	if (reg_index != UINT32_MAX) {
+		analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).type = dest_type;
 	}
 
 	return {};

@@ -2,94 +2,94 @@
 
 using namespace slkc;
 
-SLKC_API peff::Option<SyntaxError> Parser::parseAttribute(AstNodePtr<AttributeNode> &attributeOut) {
-	peff::Option<SyntaxError> syntaxError;
+SLKC_API peff::Option<SyntaxError> Parser::parse_attribute(AstNodePtr<AttributeNode> &attribute_out) {
+	peff::Option<SyntaxError> syntax_error;
 
 	AstNodePtr<AttributeNode> attribute;
 
-	if (!(attribute = makeAstNode<AttributeNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
-		return genOutOfMemorySyntaxError();
+	if (!(attribute = make_ast_node<AttributeNode>(resource_allocator.get(), resource_allocator.get(), document))) {
+		return gen_out_of_memory_syntax_error();
 	}
 
-	attributeOut = attribute;
+	attribute_out = attribute;
 
-	SLKC_RETURN_IF_PARSE_ERROR(parseIdRef(attribute->attributeName));
+	SLKC_RETURN_IF_PARSE_ERROR(parse_id_ref(attribute->attribute_name));
 
 	{
-		Token *lParentheseToken;
+		Token *l_parenthese_token;
 
-		if ((lParentheseToken = peekToken())->tokenId == TokenId::LParenthese) {
-			nextToken();
+		if ((l_parenthese_token = peek_token())->token_id == TokenId::LParenthese) {
+			next_token();
 
 			while (true) {
-				if (peekToken()->tokenId == TokenId::RParenthese) {
+				if (peek_token()->token_id == TokenId::RParenthese) {
 					break;
 				}
 
 				AstNodePtr<ExprNode> arg;
 
-				Token *nameToken;
-				SLKC_RETURN_IF_PARSE_ERROR(expectToken((nameToken = peekToken()), TokenId::Id));
-				nextToken();
+				Token *name_token;
+				SLKC_RETURN_IF_PARSE_ERROR(expect_token((name_token = peek_token()), TokenId::Id));
+				next_token();
 
-				Token *assignToken;
-				SLKC_RETURN_IF_PARSE_ERROR(expectToken((assignToken = peekToken()), TokenId::AssignOp));
-				nextToken();
+				Token *assign_token;
+				SLKC_RETURN_IF_PARSE_ERROR(expect_token((assign_token = peek_token()), TokenId::AssignOp));
+				next_token();
 
-				if (auto e = parseExpr(0, arg); e)
+				if (auto e = parse_expr(0, arg); e)
 					return e;
 
-				/*if (!argsOut.pushBack(std::move(arg)))
-					return genOutOfMemorySyntaxError();*/
+				/*if (!args_out.push_back(std::move(arg)))
+					return gen_out_of_memory_syntax_error();*/
 
-				if (peekToken()->tokenId != TokenId::Comma) {
+				if (peek_token()->token_id != TokenId::Comma) {
 					break;
 				}
 
-				Token *commaToken = nextToken();
-				/*if (!idxCommaTokensOut.pushBack(+commaToken->index))
-					return genOutOfMemorySyntaxError();*/
+				Token *comma_token = next_token();
+				/*if (!idx_comma_tokens_out.push_back(+comma_token->index))
+					return gen_out_of_memory_syntax_error();*/
 			}
 
-			Token *rParentheseToken;
+			Token *r_parenthese_token;
 
-			SLKC_RETURN_IF_PARSE_ERROR(expectToken((rParentheseToken = peekToken()), TokenId::RParenthese));
+			SLKC_RETURN_IF_PARSE_ERROR(expect_token((r_parenthese_token = peek_token()), TokenId::RParenthese));
 
-			nextToken();
+			next_token();
 		}
 	}
 
-	Token *rDBracketToken;
-	SLKC_RETURN_IF_PARSE_ERROR(expectToken((rDBracketToken = peekToken()), TokenId::RDBracket));
+	Token *r_dbracket_token;
+	SLKC_RETURN_IF_PARSE_ERROR(expect_token((r_dbracket_token = peek_token()), TokenId::RDBracket));
 
-	nextToken();
+	next_token();
 
-	if (Token *forToken = peekToken(); forToken->tokenId == TokenId::ForKeyword) {
-		nextToken();
+	if (Token *for_token = peek_token(); for_token->token_id == TokenId::ForKeyword) {
+		next_token();
 
-		SLKC_RETURN_IF_PARSE_ERROR(parseTypeName(attributeOut->appliedFor));
+		SLKC_RETURN_IF_PARSE_ERROR(parse_type_name(attribute_out->applied_for));
 	}
 
 	return {};
 }
 
-SLKC_API peff::Option<SyntaxError> Parser::parseAttributes(peff::DynArray<AstNodePtr<AttributeNode>> &attributesOut) {
-	peff::Option<SyntaxError> syntaxError;
-	Token *currentToken;
+SLKC_API peff::Option<SyntaxError> Parser::parse_attributes(peff::DynArray<AstNodePtr<AttributeNode>> &attributes_out) {
+	peff::Option<SyntaxError> syntax_error;
+	Token *current_token;
 
 	for (;;) {
-		if ((currentToken = peekToken())->tokenId != TokenId::LDBracket) {
+		if ((current_token = peek_token())->token_id != TokenId::LDBracket) {
 			break;
 		}
 
-		nextToken();
+		next_token();
 
 		AstNodePtr<AttributeNode> attribute;
 
-		SLKC_RETURN_IF_PARSE_ERROR(parseAttribute(attribute));
+		SLKC_RETURN_IF_PARSE_ERROR(parse_attribute(attribute));
 
-		if (!attributesOut.pushBack(std::move(attribute)))
-			return genOutOfMemorySyntaxError();
+		if (!attributes_out.push_back(std::move(attribute)))
+			return gen_out_of_memory_syntax_error();
 	}
 
 	return {};

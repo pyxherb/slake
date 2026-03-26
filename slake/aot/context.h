@@ -6,12 +6,12 @@
 namespace slake {
 	struct AOTFnExecContext {
 		Runtime *runtime;
-		HostObjectRef<ContextObject> hostContext;
-		peff::HashMap<peff::String, Type> *mappedGenericArgs;
+		HostObjectRef<ContextObject> host_context;
+		peff::HashMap<peff::String, Type> *mapped_generic_args;
 		Value *args;
-		void *mappedObjects;
-		Value thisObject;
-		Value returnValue;
+		void *mapped_objects;
+		Value this_object;
+		Value return_value;
 	};
 }
 

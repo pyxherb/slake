@@ -8,23 +8,23 @@
 namespace slake {
 	struct IdRefEntry final {
 		peff::String name;
-		peff::DynArray<Value> genericArgs;
+		peff::DynArray<Value> generic_args;
 
-		SLAKE_API IdRefEntry(peff::Alloc *selfAllocator);
+		SLAKE_API IdRefEntry(peff::Alloc *self_allocator);
 		SLAKE_API IdRefEntry(peff::String &&name,
-			peff::DynArray<Value> &&genericArgs);
+			peff::DynArray<Value> &&generic_args);
 		SLAKE_FORCEINLINE IdRefEntry(IdRefEntry &&rhs) noexcept
-			: name(std::move(rhs.name)), genericArgs(std::move(rhs.genericArgs)) {
+			: name(std::move(rhs.name)), generic_args(std::move(rhs.generic_args)) {
 		}
 
 		SLAKE_FORCEINLINE bool copy(IdRefEntry &dest) const {
-			peff::constructAt<IdRefEntry>(&dest, genericArgs.allocator());
+			peff::construct_at<IdRefEntry>(&dest, generic_args.allocator());
 
 			if (!dest.name.build(name)) {
 				return false;
 			}
 
-			if (!dest.genericArgs.build(genericArgs)) {
+			if (!dest.generic_args.build(generic_args)) {
 				return false;
 			}
 
@@ -32,23 +32,23 @@ namespace slake {
 		}
 		SLAKE_FORCEINLINE IdRefEntry &operator=(IdRefEntry &&rhs) noexcept {
 			name = std::move(rhs.name);
-			genericArgs = std::move(rhs.genericArgs);
+			generic_args = std::move(rhs.generic_args);
 
 			return *this;
 		}
 
-		SLAKE_API void replaceAllocator(peff::Alloc *allocator) noexcept;
+		SLAKE_API void replace_allocator(peff::Alloc *allocator) noexcept;
 	};
 
 	class IdRefObject final : public Object {
 	public:
 		peff::DynArray<IdRefEntry> entries;
-		peff::Option<peff::DynArray<TypeRef>> paramTypes;
-		bool hasVarArgs;
-		TypeRef overridenType;
+		peff::Option<peff::DynArray<TypeRef>> param_types;
+		bool has_var_args;
+		TypeRef overriden_type;
 
-		SLAKE_API IdRefObject(Runtime *rt, peff::Alloc *selfAllocator);
-		SLAKE_API IdRefObject(const IdRefObject &x, peff::Alloc *allocator, bool &succeededOut);
+		SLAKE_API IdRefObject(Runtime *rt, peff::Alloc *self_allocator);
+		SLAKE_API IdRefObject(const IdRefObject &x, peff::Alloc *allocator, bool &succeeded_out);
 		SLAKE_API virtual ~IdRefObject();
 
 		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
@@ -57,7 +57,7 @@ namespace slake {
 		SLAKE_API static HostObjectRef<IdRefObject> alloc(const IdRefObject *other);
 		SLAKE_API virtual void dealloc() override;
 
-		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;
+		SLAKE_API virtual void replace_allocator(peff::Alloc *allocator) noexcept override;
 	};
 
 	struct IdRefComparator {
@@ -65,16 +65,16 @@ namespace slake {
 	};
 
 	struct IdRefLtComparator {
-		IdRefComparator innerComparator;
+		IdRefComparator inner_comparator;
 
 		SLAKE_FORCEINLINE bool operator()(const IdRefObject *lhs, const IdRefObject *rhs) const noexcept {
-			return innerComparator(lhs, rhs) < 0;
+			return inner_comparator(lhs, rhs) < 0;
 		}
 	};
 }
 
 namespace std {
-	SLAKE_API string to_string(std::vector<slake::IdRefEntry> &idRefEntries);
+	SLAKE_API string to_string(std::vector<slake::IdRefEntry> &id_ref_entries);
 	SLAKE_API string to_string(const slake::IdRefObject *ref);
 }
 

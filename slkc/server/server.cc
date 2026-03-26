@@ -8,61 +8,61 @@ SLKC_API ServerAlloc::ServerAlloc(peff::Alloc *upstream) : upstream(upstream) {
 SLKC_API ServerAlloc::~ServerAlloc() {
 }
 
-SLKC_API size_t ServerAlloc::incRef(size_t globalRc) noexcept {
-	SLAKE_REFERENCED_PARAM(globalRc);
+SLKC_API size_t ServerAlloc::inc_ref(size_t global_rc) noexcept {
+	SLAKE_REFERENCED_PARAM(global_rc);
 
-	return ++refCount;
+	return ++ref_count;
 }
 
-SLKC_API size_t ServerAlloc::decRef(size_t globalRc) noexcept {
-	SLAKE_REFERENCED_PARAM(globalRc);
+SLKC_API size_t ServerAlloc::dec_ref(size_t global_rc) noexcept {
+	SLAKE_REFERENCED_PARAM(global_rc);
 
-	if (!--refCount) {
-		onRefZero();
+	if (!--ref_count) {
+		on_ref_zero();
 		return 0;
 	}
 
-	return refCount;
+	return ref_count;
 }
 
-SLKC_API void ServerAlloc::onRefZero() noexcept {
+SLKC_API void ServerAlloc::on_ref_zero() noexcept {
 }
 
 SLKC_API void *ServerAlloc::alloc(size_t size, size_t alignment) noexcept {
-	if (szAllocated + size > limit)
+	if (sz_allocated + size > limit)
 		return nullptr;
 	void *p = upstream->alloc(size, alignment);
 	if (!p)
 		return nullptr;
 
-	szAllocated += size;
+	sz_allocated += size;
 
 	return p;
 }
 
-SLKC_API void *ServerAlloc::realloc(void *ptr, size_t size, size_t alignment, size_t newSize, size_t newAlignment) noexcept {
-	if (szAllocated - size + newSize > limit)
+SLKC_API void *ServerAlloc::realloc(void *ptr, size_t size, size_t alignment, size_t new_size, size_t new_alignment) noexcept {
+	if (sz_allocated - size + new_size > limit)
 		return nullptr;
-	void *p = upstream->realloc(ptr, size, alignment, newSize, newAlignment);
+	void *p = upstream->realloc(ptr, size, alignment, new_size, new_alignment);
 	if (!p)
 		return nullptr;
 
-	szAllocated -= size;
-	szAllocated += newSize;
+	sz_allocated -= size;
+	sz_allocated += new_size;
 
 	return p;
 }
 
 SLKC_API void ServerAlloc::release(void *ptr, size_t size, size_t alignment) noexcept {
-	assert(size <= szAllocated);
+	assert(size <= sz_allocated);
 
 	upstream->release(ptr, size, alignment);
 
-	szAllocated -= size;
+	sz_allocated -= size;
 }
 
-SLKC_API bool ServerAlloc::isReplaceable(const Alloc *rhs) const noexcept {
-	if (getTypeId() != rhs->getTypeId())
+SLKC_API bool ServerAlloc::is_replaceable(const Alloc *rhs) const noexcept {
+	if (type_identity() != rhs->type_identity())
 		return false;
 
 	ServerAlloc *r = (ServerAlloc *)rhs;
@@ -73,6 +73,6 @@ SLKC_API bool ServerAlloc::isReplaceable(const Alloc *rhs) const noexcept {
 	return true;
 }
 
-SLKC_API peff::UUID ServerAlloc::getTypeId() const noexcept {
+SLKC_API peff::UUID ServerAlloc::type_identity() const noexcept {
 	return PEFF_UUID(1a2b3c4d, 5e6f, 7a8b, 9cad, 114514191981);
 }

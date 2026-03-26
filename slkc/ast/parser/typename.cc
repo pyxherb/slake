@@ -3,11 +3,11 @@
 
 using namespace slkc;
 
-SLKC_API peff::Option<SyntaxError> Parser::parseGenericArg(AstNodePtr<AstNode>& argOut) {
-	peff::Option<SyntaxError> syntaxError;
-	Token *t = peekToken();
+SLKC_API peff::Option<SyntaxError> Parser::parse_generic_arg(AstNodePtr<AstNode>& arg_out) {
+	peff::Option<SyntaxError> syntax_error;
+	Token *t = peek_token();
 
-	switch (t->tokenId) {
+	switch (t->token_id) {
 		case TokenId::I8Literal:
 		case TokenId::I16Literal:
 		case TokenId::I32Literal:
@@ -20,24 +20,24 @@ SLKC_API peff::Option<SyntaxError> Parser::parseGenericArg(AstNodePtr<AstNode>& 
 		case TokenId::F64Literal:
 		case TokenId::StringLiteral: {
 			AstNodePtr<ExprNode> e;
-			if((syntaxError = parseExpr(INT_MAX, e)))
-				return syntaxError;
-			argOut = e.castTo<AstNode>();
+			if((syntax_error = parse_expr(INT_MAX, e)))
+				return syntax_error;
+			arg_out = e.cast_to<AstNode>();
 			break;
 		}
 		case TokenId::LParenthese: {
 			AstNodePtr<ExprNode> e;
-			SLKC_RETURN_IF_PARSE_ERROR(parseExpr(INT_MAX, e));
-			argOut = e.castTo<AstNode>();
+			SLKC_RETURN_IF_PARSE_ERROR(parse_expr(INT_MAX, e));
+			arg_out = e.cast_to<AstNode>();
 			break;
 		}
 		case TokenId::TypenameKeyword:
-			nextToken();
+			next_token();
 			[[fallthrough]];
 		default: {
 			AstNodePtr<TypeNameNode> t;
-			SLKC_RETURN_IF_PARSE_ERROR(parseTypeName(t));
-			argOut = t.castTo<AstNode>();
+			SLKC_RETURN_IF_PARSE_ERROR(parse_type_name(t));
+			arg_out = t.cast_to<AstNode>();
 			break;
 		}
 	}
@@ -45,261 +45,261 @@ SLKC_API peff::Option<SyntaxError> Parser::parseGenericArg(AstNodePtr<AstNode>& 
 	return {};
 }
 
-SLKC_API peff::Option<SyntaxError> Parser::parseTypeName(AstNodePtr<TypeNameNode> &typeNameOut, bool withCircumfixes) {
-	peff::Option<SyntaxError> syntaxError;
-	Token *t = peekToken();
+SLKC_API peff::Option<SyntaxError> Parser::parse_type_name(AstNodePtr<TypeNameNode> &type_name_out, bool with_circumfixes) {
+	peff::Option<SyntaxError> syntax_error;
+	Token *t = peek_token();
 
-	switch (t->tokenId) {
+	switch (t->token_id) {
 		case TokenId::VarArg:
-			if (!(typeNameOut = makeAstNode<UnpackingTypeNameNode>(
-					  resourceAllocator.get(),
-					  resourceAllocator.get(), document)
-						.castTo<TypeNameNode>()))
-				return genOutOfMemorySyntaxError();
-			typeNameOut->tokenRange = TokenRange{ document->mainModule, t->index };
-			nextToken();
+			if (!(type_name_out = make_ast_node<UnpackingTypeNameNode>(
+					  resource_allocator.get(),
+					  resource_allocator.get(), document)
+						.cast_to<TypeNameNode>()))
+				return gen_out_of_memory_syntax_error();
+			type_name_out->token_range = TokenRange{ document->main_module, t->index };
+			next_token();
 
-			SLKC_RETURN_IF_PARSE_ERROR(parseTypeName(typeNameOut.castTo<UnpackingTypeNameNode>()->innerTypeName, true));
+			SLKC_RETURN_IF_PARSE_ERROR(parse_type_name(type_name_out.cast_to<UnpackingTypeNameNode>()->inner_type_name, true));
 			break;
 		case TokenId::VoidTypeName:
-			if (!(typeNameOut = makeAstNode<VoidTypeNameNode>(
-					  resourceAllocator.get(),
-					  resourceAllocator.get(), document)
-						.castTo<TypeNameNode>()))
-				return genOutOfMemorySyntaxError();
-			typeNameOut->tokenRange = TokenRange{ document->mainModule, t->index };
-			nextToken();
+			if (!(type_name_out = make_ast_node<VoidTypeNameNode>(
+					  resource_allocator.get(),
+					  resource_allocator.get(), document)
+						.cast_to<TypeNameNode>()))
+				return gen_out_of_memory_syntax_error();
+			type_name_out->token_range = TokenRange{ document->main_module, t->index };
+			next_token();
 			break;
 		case TokenId::I8TypeName:
-			if (!(typeNameOut = peff::makeSharedWithControlBlock<I8TypeNameNode, AstNodeControlBlock<I8TypeNameNode>>(
-					  resourceAllocator.get(),
-					  resourceAllocator.get(), document)
-						.castTo<TypeNameNode>()))
-				return genOutOfMemorySyntaxError();
-			typeNameOut->tokenRange = TokenRange{ document->mainModule, t->index };
-			nextToken();
+			if (!(type_name_out = peff::make_shared_with_control_block<I8TypeNameNode, AstNodeControlBlock<I8TypeNameNode>>(
+					  resource_allocator.get(),
+					  resource_allocator.get(), document)
+						.cast_to<TypeNameNode>()))
+				return gen_out_of_memory_syntax_error();
+			type_name_out->token_range = TokenRange{ document->main_module, t->index };
+			next_token();
 			break;
 		case TokenId::I16TypeName:
-			if (!(typeNameOut = peff::makeSharedWithControlBlock<I16TypeNameNode, AstNodeControlBlock<I16TypeNameNode>>(
-					  resourceAllocator.get(),
-					  resourceAllocator.get(), document)
-						.castTo<TypeNameNode>()))
-				return genOutOfMemorySyntaxError();
-			typeNameOut->tokenRange = TokenRange{ document->mainModule, t->index };
-			nextToken();
+			if (!(type_name_out = peff::make_shared_with_control_block<I16TypeNameNode, AstNodeControlBlock<I16TypeNameNode>>(
+					  resource_allocator.get(),
+					  resource_allocator.get(), document)
+						.cast_to<TypeNameNode>()))
+				return gen_out_of_memory_syntax_error();
+			type_name_out->token_range = TokenRange{ document->main_module, t->index };
+			next_token();
 			break;
 		case TokenId::I32TypeName:
-			if (!(typeNameOut = peff::makeSharedWithControlBlock<I32TypeNameNode, AstNodeControlBlock<I32TypeNameNode>>(
-					  resourceAllocator.get(),
-					  resourceAllocator.get(), document)
-						.castTo<TypeNameNode>()))
-				return genOutOfMemorySyntaxError();
-			typeNameOut->tokenRange = TokenRange{ document->mainModule, t->index };
-			nextToken();
+			if (!(type_name_out = peff::make_shared_with_control_block<I32TypeNameNode, AstNodeControlBlock<I32TypeNameNode>>(
+					  resource_allocator.get(),
+					  resource_allocator.get(), document)
+						.cast_to<TypeNameNode>()))
+				return gen_out_of_memory_syntax_error();
+			type_name_out->token_range = TokenRange{ document->main_module, t->index };
+			next_token();
 			break;
 		case TokenId::I64TypeName:
-			if (!(typeNameOut = peff::makeSharedWithControlBlock<I64TypeNameNode, AstNodeControlBlock<I64TypeNameNode>>(
-					  resourceAllocator.get(),
-					  resourceAllocator.get(), document)
-						.castTo<TypeNameNode>()))
-				return genOutOfMemorySyntaxError();
-			typeNameOut->tokenRange = TokenRange{ document->mainModule, t->index };
-			nextToken();
+			if (!(type_name_out = peff::make_shared_with_control_block<I64TypeNameNode, AstNodeControlBlock<I64TypeNameNode>>(
+					  resource_allocator.get(),
+					  resource_allocator.get(), document)
+						.cast_to<TypeNameNode>()))
+				return gen_out_of_memory_syntax_error();
+			type_name_out->token_range = TokenRange{ document->main_module, t->index };
+			next_token();
 			break;
 		case TokenId::U8TypeName:
-			if (!(typeNameOut = peff::makeSharedWithControlBlock<U8TypeNameNode, AstNodeControlBlock<U8TypeNameNode>>(
-					  resourceAllocator.get(),
-					  resourceAllocator.get(), document)
-						.castTo<TypeNameNode>()))
-				return genOutOfMemorySyntaxError();
-			typeNameOut->tokenRange = TokenRange{ document->mainModule, t->index };
-			nextToken();
+			if (!(type_name_out = peff::make_shared_with_control_block<U8TypeNameNode, AstNodeControlBlock<U8TypeNameNode>>(
+					  resource_allocator.get(),
+					  resource_allocator.get(), document)
+						.cast_to<TypeNameNode>()))
+				return gen_out_of_memory_syntax_error();
+			type_name_out->token_range = TokenRange{ document->main_module, t->index };
+			next_token();
 			break;
 		case TokenId::U16TypeName:
-			if (!(typeNameOut = peff::makeSharedWithControlBlock<U16TypeNameNode, AstNodeControlBlock<U16TypeNameNode>>(
-					  resourceAllocator.get(),
-					  resourceAllocator.get(), document)
-						.castTo<TypeNameNode>()))
-				return genOutOfMemorySyntaxError();
-			typeNameOut->tokenRange = TokenRange{ document->mainModule, t->index };
-			nextToken();
+			if (!(type_name_out = peff::make_shared_with_control_block<U16TypeNameNode, AstNodeControlBlock<U16TypeNameNode>>(
+					  resource_allocator.get(),
+					  resource_allocator.get(), document)
+						.cast_to<TypeNameNode>()))
+				return gen_out_of_memory_syntax_error();
+			type_name_out->token_range = TokenRange{ document->main_module, t->index };
+			next_token();
 			break;
 		case TokenId::U32TypeName:
-			if (!(typeNameOut = peff::makeSharedWithControlBlock<U32TypeNameNode, AstNodeControlBlock<U32TypeNameNode>>(
-					  resourceAllocator.get(),
-					  resourceAllocator.get(), document)
-						.castTo<TypeNameNode>()))
-				return genOutOfMemorySyntaxError();
-			typeNameOut->tokenRange = TokenRange{ document->mainModule, t->index };
-			nextToken();
+			if (!(type_name_out = peff::make_shared_with_control_block<U32TypeNameNode, AstNodeControlBlock<U32TypeNameNode>>(
+					  resource_allocator.get(),
+					  resource_allocator.get(), document)
+						.cast_to<TypeNameNode>()))
+				return gen_out_of_memory_syntax_error();
+			type_name_out->token_range = TokenRange{ document->main_module, t->index };
+			next_token();
 			break;
 		case TokenId::U64TypeName:
-			if (!(typeNameOut = peff::makeSharedWithControlBlock<U64TypeNameNode, AstNodeControlBlock<U64TypeNameNode>>(
-					  resourceAllocator.get(),
-					  resourceAllocator.get(), document)
-						.castTo<TypeNameNode>()))
-				return genOutOfMemorySyntaxError();
-			typeNameOut->tokenRange = TokenRange{ document->mainModule, t->index };
-			nextToken();
+			if (!(type_name_out = peff::make_shared_with_control_block<U64TypeNameNode, AstNodeControlBlock<U64TypeNameNode>>(
+					  resource_allocator.get(),
+					  resource_allocator.get(), document)
+						.cast_to<TypeNameNode>()))
+				return gen_out_of_memory_syntax_error();
+			type_name_out->token_range = TokenRange{ document->main_module, t->index };
+			next_token();
 			break;
 		case TokenId::ISizeTypeName:
-			if (!(typeNameOut = makeAstNode<ISizeTypeNameNode>(
-					  resourceAllocator.get(),
-					  resourceAllocator.get(), document)
-						.castTo<TypeNameNode>()))
-				return genOutOfMemorySyntaxError();
-			typeNameOut->tokenRange = TokenRange{ document->mainModule, t->index };
+			if (!(type_name_out = make_ast_node<ISizeTypeNameNode>(
+					  resource_allocator.get(),
+					  resource_allocator.get(), document)
+						.cast_to<TypeNameNode>()))
+				return gen_out_of_memory_syntax_error();
+			type_name_out->token_range = TokenRange{ document->main_module, t->index };
 			break;
 		case TokenId::USizeTypeName:
-			if (!(typeNameOut = makeAstNode<USizeTypeNameNode>(
-					  resourceAllocator.get(),
-					  resourceAllocator.get(), document)
-						.castTo<TypeNameNode>()))
-				return genOutOfMemorySyntaxError();
-			typeNameOut->tokenRange = TokenRange{ document->mainModule, t->index };
-			nextToken();
+			if (!(type_name_out = make_ast_node<USizeTypeNameNode>(
+					  resource_allocator.get(),
+					  resource_allocator.get(), document)
+						.cast_to<TypeNameNode>()))
+				return gen_out_of_memory_syntax_error();
+			type_name_out->token_range = TokenRange{ document->main_module, t->index };
+			next_token();
 			break;
 		case TokenId::F32TypeName:
-			if (!(typeNameOut = peff::makeSharedWithControlBlock<F32TypeNameNode, AstNodeControlBlock<F32TypeNameNode>>(
-					  resourceAllocator.get(),
-					  resourceAllocator.get(), document)
-						.castTo<TypeNameNode>()))
-				return genOutOfMemorySyntaxError();
-			typeNameOut->tokenRange = TokenRange{ document->mainModule, t->index };
-			nextToken();
+			if (!(type_name_out = peff::make_shared_with_control_block<F32TypeNameNode, AstNodeControlBlock<F32TypeNameNode>>(
+					  resource_allocator.get(),
+					  resource_allocator.get(), document)
+						.cast_to<TypeNameNode>()))
+				return gen_out_of_memory_syntax_error();
+			type_name_out->token_range = TokenRange{ document->main_module, t->index };
+			next_token();
 			break;
 		case TokenId::F64TypeName:
-			if (!(typeNameOut = peff::makeSharedWithControlBlock<F64TypeNameNode, AstNodeControlBlock<F64TypeNameNode>>(
-					  resourceAllocator.get(),
-					  resourceAllocator.get(), document)
-						.castTo<TypeNameNode>()))
-				return genOutOfMemorySyntaxError();
-			typeNameOut->tokenRange = TokenRange{ document->mainModule, t->index };
-			nextToken();
+			if (!(type_name_out = peff::make_shared_with_control_block<F64TypeNameNode, AstNodeControlBlock<F64TypeNameNode>>(
+					  resource_allocator.get(),
+					  resource_allocator.get(), document)
+						.cast_to<TypeNameNode>()))
+				return gen_out_of_memory_syntax_error();
+			type_name_out->token_range = TokenRange{ document->main_module, t->index };
+			next_token();
 			break;
 		case TokenId::BoolTypeName:
-			if (!(typeNameOut = makeAstNode<BoolTypeNameNode>(
-					  resourceAllocator.get(),
-					  resourceAllocator.get(), document)
-						.castTo<TypeNameNode>()))
-				return genOutOfMemorySyntaxError();
-			typeNameOut->tokenRange = TokenRange{ document->mainModule, t->index };
-			nextToken();
+			if (!(type_name_out = make_ast_node<BoolTypeNameNode>(
+					  resource_allocator.get(),
+					  resource_allocator.get(), document)
+						.cast_to<TypeNameNode>()))
+				return gen_out_of_memory_syntax_error();
+			type_name_out->token_range = TokenRange{ document->main_module, t->index };
+			next_token();
 			break;
 		case TokenId::StringTypeName:
-			if (!(typeNameOut = makeAstNode<StringTypeNameNode>(
-					  resourceAllocator.get(),
-					  resourceAllocator.get(), document)
-						.castTo<TypeNameNode>()))
-				return genOutOfMemorySyntaxError();
-			typeNameOut->tokenRange = TokenRange{ document->mainModule, t->index };
-			nextToken();
+			if (!(type_name_out = make_ast_node<StringTypeNameNode>(
+					  resource_allocator.get(),
+					  resource_allocator.get(), document)
+						.cast_to<TypeNameNode>()))
+				return gen_out_of_memory_syntax_error();
+			type_name_out->token_range = TokenRange{ document->main_module, t->index };
+			next_token();
 			break;
 		case TokenId::LParenthese: {
 			AstNodePtr<ParamTypeListTypeNameNode> tn;
 
-			if (!(tn = makeAstNode<ParamTypeListTypeNameNode>(
-					  resourceAllocator.get(),
-					  resourceAllocator.get(), document)))
-				return genOutOfMemorySyntaxError();
+			if (!(tn = make_ast_node<ParamTypeListTypeNameNode>(
+					  resource_allocator.get(),
+					  resource_allocator.get(), document)))
+				return gen_out_of_memory_syntax_error();
 
-			typeNameOut = tn.castTo<TypeNameNode>();
+			type_name_out = tn.cast_to<TypeNameNode>();
 
-			typeNameOut->tokenRange = TokenRange{ document->mainModule, t->index };
+			type_name_out->token_range = TokenRange{ document->main_module, t->index };
 
-			Token *lParentheseToken = nextToken();
+			Token *l_parenthese_token = next_token();
 
 			for (;;) {
-				if (peekToken()->tokenId == TokenId::RParenthese) {
+				if (peek_token()->token_id == TokenId::RParenthese) {
 					break;
 				}
 
-				if (peekToken()->tokenId == TokenId::VarArg) {
-					tn->hasVarArgs = true;
+				if (peek_token()->token_id == TokenId::VarArg) {
+					tn->has_var_args = true;
 					break;
 				}
 
-				AstNodePtr<TypeNameNode> paramType;
+				AstNodePtr<TypeNameNode> param_type;
 
-				if (auto e = parseTypeName(paramType); e)
+				if (auto e = parse_type_name(param_type); e)
 					return e;
 
-				if (!tn->paramTypes.pushBack(std::move(paramType)))
-					return genOutOfMemorySyntaxError();
+				if (!tn->param_types.push_back(std::move(param_type)))
+					return gen_out_of_memory_syntax_error();
 
-				if (peekToken()->tokenId != TokenId::Comma) {
+				if (peek_token()->token_id != TokenId::Comma) {
 					break;
 				}
 
-				Token *commaToken = nextToken();
+				Token *comma_token = next_token();
 				/*
-				if (!idxCommaTokensOut.pushBack(+commaToken->index))
-					return genOutOfMemorySyntaxError();*/
+				if (!idx_comma_tokens_out.push_back(+comma_token->index))
+					return gen_out_of_memory_syntax_error();*/
 			}
 
-			Token *rParentheseToken;
-			if ((syntaxError = expectToken((rParentheseToken = peekToken()), TokenId::RParenthese)))
-				return SyntaxError(TokenRange{ document->mainModule, rParentheseToken->index }, ExpectingSingleTokenErrorExData{ TokenId::RParenthese });
+			Token *r_parenthese_token;
+			if ((syntax_error = expect_token((r_parenthese_token = peek_token()), TokenId::RParenthese)))
+				return SyntaxError(TokenRange{ document->main_module, r_parenthese_token->index }, ExpectingSingleTokenErrorExData{ TokenId::RParenthese });
 
-			nextToken();
+			next_token();
 			break;
 		}
 		case TokenId::FnKeyword: {
 			AstNodePtr<FnTypeNameNode> tn;
-			if (!(tn = makeAstNode<FnTypeNameNode>(
-					  resourceAllocator.get(),
-					  resourceAllocator.get(), document)))
-				return genOutOfMemorySyntaxError();
-			typeNameOut = tn.castTo<TypeNameNode>();
-			tn->tokenRange = TokenRange{ document->mainModule, t->index };
-			nextToken();
+			if (!(tn = make_ast_node<FnTypeNameNode>(
+					  resource_allocator.get(),
+					  resource_allocator.get(), document)))
+				return gen_out_of_memory_syntax_error();
+			type_name_out = tn.cast_to<TypeNameNode>();
+			tn->token_range = TokenRange{ document->main_module, t->index };
+			next_token();
 
-			Token *lParentheseToken;
-			if ((syntaxError = expectToken((lParentheseToken = peekToken()), TokenId::LParenthese)))
-				return SyntaxError(TokenRange{ document->mainModule, lParentheseToken->index }, ExpectingSingleTokenErrorExData{ TokenId::LParenthese });
+			Token *l_parenthese_token;
+			if ((syntax_error = expect_token((l_parenthese_token = peek_token()), TokenId::LParenthese)))
+				return SyntaxError(TokenRange{ document->main_module, l_parenthese_token->index }, ExpectingSingleTokenErrorExData{ TokenId::LParenthese });
 
-			nextToken();
+			next_token();
 
 			for (;;) {
-				if (peekToken()->tokenId == TokenId::RParenthese) {
+				if (peek_token()->token_id == TokenId::RParenthese) {
 					break;
 				}
 
-				AstNodePtr<TypeNameNode> paramType;
+				AstNodePtr<TypeNameNode> param_type;
 
-				if (auto e = parseTypeName(paramType); e)
+				if (auto e = parse_type_name(param_type); e)
 					return e;
 
-				if (!tn->paramTypes.pushBack(std::move(paramType)))
-					return genOutOfMemorySyntaxError();
+				if (!tn->param_types.push_back(std::move(param_type)))
+					return gen_out_of_memory_syntax_error();
 
-				if (peekToken()->tokenId != TokenId::Comma) {
+				if (peek_token()->token_id != TokenId::Comma) {
 					break;
 				}
 
-				Token *commaToken = nextToken();
+				Token *comma_token = next_token();
 				/*
-				if (!idxCommaTokensOut.pushBack(+commaToken->index))
-					return genOutOfMemorySyntaxError();*/
+				if (!idx_comma_tokens_out.push_back(+comma_token->index))
+					return gen_out_of_memory_syntax_error();*/
 			}
 
-			Token *rParentheseToken;
-			if ((syntaxError = expectToken((rParentheseToken = peekToken()), TokenId::RParenthese)))
-				return SyntaxError(TokenRange{ document->mainModule, rParentheseToken->index }, ExpectingSingleTokenErrorExData{ TokenId::RParenthese });
+			Token *r_parenthese_token;
+			if ((syntax_error = expect_token((r_parenthese_token = peek_token()), TokenId::RParenthese)))
+				return SyntaxError(TokenRange{ document->main_module, r_parenthese_token->index }, ExpectingSingleTokenErrorExData{ TokenId::RParenthese });
 
-			nextToken();
+			next_token();
 
-			if (peekToken()->tokenId == TokenId::WithKeyword) {
-				nextToken();
+			if (peek_token()->token_id == TokenId::WithKeyword) {
+				next_token();
 
-				if (auto e = parseTypeName(tn->thisType); e)
+				if (auto e = parse_type_name(tn->this_type); e)
 					return e;
 			}
 
-			if (peekToken()->tokenId == TokenId::ReturnTypeOp) {
-				nextToken();
+			if (peek_token()->token_id == TokenId::ReturnTypeOp) {
+				next_token();
 
-				if (auto e = parseTypeName(tn->returnType); e)
+				if (auto e = parse_type_name(tn->return_type); e)
 					return e;
 			}
 
@@ -308,170 +308,170 @@ SLKC_API peff::Option<SyntaxError> Parser::parseTypeName(AstNodePtr<TypeNameNode
 		case TokenId::LBracket: {
 			AstNodePtr<TupleTypeNameNode> tn;
 
-			if (!(tn = makeAstNode<TupleTypeNameNode>(
-					  resourceAllocator.get(),
-					  resourceAllocator.get(),
+			if (!(tn = make_ast_node<TupleTypeNameNode>(
+					  resource_allocator.get(),
+					  resource_allocator.get(),
 					  document)))
-				return genOutOfMemorySyntaxError();
+				return gen_out_of_memory_syntax_error();
 
-			typeNameOut = tn.castTo<TypeNameNode>();
+			type_name_out = tn.cast_to<TypeNameNode>();
 
-			Token *lBracketToken;
+			Token *l_bracket_token;
 
-			if (auto e = expectToken(lBracketToken = peekToken(), TokenId::LBracket))
+			if (auto e = expect_token(l_bracket_token = peek_token(), TokenId::LBracket))
 				return e;
 
-			tn->idxLBracketToken = lBracketToken->index;
+			tn->idx_lbracket_token = l_bracket_token->index;
 
-			nextToken();
+			next_token();
 
 			for (;;) {
-				if (peekToken()->tokenId == TokenId::RParenthese) {
+				if (peek_token()->token_id == TokenId::RParenthese) {
 					break;
 				}
 
 				AstNodePtr<TypeNameNode> t;
 
-				if (auto e = parseTypeName(t); e)
+				if (auto e = parse_type_name(t); e)
 					return e;
 
-				if (!tn->elementTypes.pushBack(std::move(t)))
-					return genOutOfMemorySyntaxError();
+				if (!tn->element_types.push_back(std::move(t)))
+					return gen_out_of_memory_syntax_error();
 
-				if (peekToken()->tokenId != TokenId::Comma) {
+				if (peek_token()->token_id != TokenId::Comma) {
 					break;
 				}
 
-				Token *commaToken = nextToken();
+				Token *comma_token = next_token();
 
-				if (!tn->idxCommaTokens.pushBack(+commaToken->index))
-					return genOutOfMemorySyntaxError();
+				if (!tn->idx_comma_tokens.push_back(+comma_token->index))
+					return gen_out_of_memory_syntax_error();
 			}
 
-			Token *rBracketToken;
+			Token *r_bracket_token;
 
-			if (auto e = expectToken(rBracketToken = peekToken(), TokenId::RBracket))
+			if (auto e = expect_token(r_bracket_token = peek_token(), TokenId::RBracket))
 				return e;
 
-			tn->idxRBracketToken = rBracketToken->index;
+			tn->idx_rbracket_token = r_bracket_token->index;
 
-			nextToken();
+			next_token();
 
 			break;
 		}
 		case TokenId::SIMDTypeName: {
 			AstNodePtr<SIMDTypeNameNode> tn;
 
-			nextToken();
+			next_token();
 
-			if (!(tn = makeAstNode<SIMDTypeNameNode>(
-					  resourceAllocator.get(),
-					  resourceAllocator.get(),
+			if (!(tn = make_ast_node<SIMDTypeNameNode>(
+					  resource_allocator.get(),
+					  resource_allocator.get(),
 					  document)))
-				return genOutOfMemorySyntaxError();
+				return gen_out_of_memory_syntax_error();
 
-			typeNameOut = tn.castTo<TypeNameNode>();
+			type_name_out = tn.cast_to<TypeNameNode>();
 
-			Token *lAngleBracketToken;
+			Token *l_angle_bracket_token;
 
-			if (auto e = expectToken(lAngleBracketToken = peekToken(), TokenId::LtOp); e)
+			if (auto e = expect_token(l_angle_bracket_token = peek_token(), TokenId::LtOp); e)
 				return e;
 
-			tn->idxLAngleBracketToken = lAngleBracketToken->index;
+			tn->idx_langle_bracket_token = l_angle_bracket_token->index;
 
-			nextToken();
+			next_token();
 
-			if (auto e = parseTypeName(tn->elementType); e)
+			if (auto e = parse_type_name(tn->element_type); e)
 				return e;
 
-			Token *commaToken;
+			Token *comma_token;
 
-			if (auto e = expectToken(commaToken = peekToken(), TokenId::Comma))
+			if (auto e = expect_token(comma_token = peek_token(), TokenId::Comma))
 				return e;
 
-			tn->idxCommaToken = commaToken->index;
+			tn->idx_comma_token = comma_token->index;
 
-			nextToken();
+			next_token();
 
-			if (auto e = parseExpr(140, tn->width); e)
+			if (auto e = parse_expr(140, tn->width); e)
 				return e;
 
-			Token *rAngleBracketToken;
+			Token *r_angle_bracket_token;
 
-			if (auto e = expectToken(rAngleBracketToken = peekToken(), TokenId::GtOp))
+			if (auto e = expect_token(r_angle_bracket_token = peek_token(), TokenId::GtOp))
 				return e;
 
-			tn->idxRAngleBracketToken = rAngleBracketToken->index;
+			tn->idx_rangle_bracket_token = r_angle_bracket_token->index;
 
-			nextToken();
+			next_token();
 
 			break;
 		}
 		case TokenId::Id: {
 			IdRefPtr id;
-			SLKC_RETURN_IF_PARSE_ERROR(parseIdRef(id));
+			SLKC_RETURN_IF_PARSE_ERROR(parse_id_ref(id));
 
 			AstNodePtr<CustomTypeNameNode> tn;
 
-			if (!(tn = makeAstNode<CustomTypeNameNode>(
-					  resourceAllocator.get(),
-					  resourceAllocator.get(),
+			if (!(tn = make_ast_node<CustomTypeNameNode>(
+					  resource_allocator.get(),
+					  resource_allocator.get(),
 					  document)))
-				return genOutOfMemorySyntaxError();
+				return gen_out_of_memory_syntax_error();
 
-			tn->contextNode = toWeakPtr(curParent);
+			tn->context_node = to_weak_ptr(cur_parent);
 
-			tn->tokenRange = id->tokenRange;
-			tn->idRefPtr = std::move(id);
+			tn->token_range = id->token_range;
+			tn->id_ref_ptr = std::move(id);
 
-			typeNameOut = tn.castTo<TypeNameNode>();
+			type_name_out = tn.cast_to<TypeNameNode>();
 
 			break;
 		}
 		default:
-			return SyntaxError(TokenRange{ document->mainModule, t->index }, SyntaxErrorKind::UnexpectedToken);
+			return SyntaxError(TokenRange{ document->main_module, t->index }, SyntaxErrorKind::UnexpectedToken);
 	}
 
-	if (withCircumfixes) {
+	if (with_circumfixes) {
 		while (true) {
-			switch ((t = peekToken())->tokenId) {
+			switch ((t = peek_token())->token_id) {
 				case TokenId::FinalKeyword: {
-					nextToken();
+					next_token();
 
-					typeNameOut->isFinal = true;
-					typeNameOut->idxFinalToken = t->index;
+					type_name_out->is_final = true;
+					type_name_out->idx_final_token = t->index;
 					break;
 				}
 				case TokenId::LocalKeyword: {
-					nextToken();
+					next_token();
 
-					typeNameOut->isLocal = true;
-					typeNameOut->idxLocalToken = t->index;
+					type_name_out->is_local = true;
+					type_name_out->idx_local_token = t->index;
 					break;
 				}
 				case TokenId::Question: {
-					nextToken();
+					next_token();
 
-					typeNameOut->isNullable = true;
-					typeNameOut->idxNullableToken = t->index;
+					type_name_out->is_nullable = true;
+					type_name_out->idx_nullable_token = t->index;
 					break;
 				}
 				case TokenId::LBracket: {
-					nextToken();
+					next_token();
 
-					Token *rBracketToken;
-					if ((syntaxError = expectToken((rBracketToken = peekToken()), TokenId::RBracket)))
-						return SyntaxError(TokenRange{ document->mainModule, rBracketToken->index }, ExpectingSingleTokenErrorExData{ TokenId::RBracket });
+					Token *r_bracket_token;
+					if ((syntax_error = expect_token((r_bracket_token = peek_token()), TokenId::RBracket)))
+						return SyntaxError(TokenRange{ document->main_module, r_bracket_token->index }, ExpectingSingleTokenErrorExData{ TokenId::RBracket });
 
-					nextToken();
+					next_token();
 
-					if (!(typeNameOut = makeAstNode<ArrayTypeNameNode>(
-							  resourceAllocator.get(),
-							  resourceAllocator.get(),
+					if (!(type_name_out = make_ast_node<ArrayTypeNameNode>(
+							  resource_allocator.get(),
+							  resource_allocator.get(),
 							  document,
-							  typeNameOut)
-								.castTo<TypeNameNode>()))
-						return genOutOfMemorySyntaxError();
+							  type_name_out)
+								.cast_to<TypeNameNode>()))
+						return gen_out_of_memory_syntax_error();
 					break;
 				}
 				default:
@@ -481,25 +481,25 @@ SLKC_API peff::Option<SyntaxError> Parser::parseTypeName(AstNodePtr<TypeNameNode
 	}
 
 end:
-	if (withCircumfixes) {
-		if ((t = peekToken())->tokenId == TokenId::AndOp) {
-			nextToken();
-			if (!(typeNameOut = makeAstNode<RefTypeNameNode>(
-					  resourceAllocator.get(),
-					  resourceAllocator.get(),
+	if (with_circumfixes) {
+		if ((t = peek_token())->token_id == TokenId::AndOp) {
+			next_token();
+			if (!(type_name_out = make_ast_node<RefTypeNameNode>(
+					  resource_allocator.get(),
+					  resource_allocator.get(),
 					  document,
-					  typeNameOut)
-						.castTo<TypeNameNode>()))
-				return genOutOfMemorySyntaxError();
-		} else if ((t = peekToken())->tokenId == TokenId::LAndOp) {
-			nextToken();
-			if (!(typeNameOut = makeAstNode<TempRefTypeNameNode>(
-					  resourceAllocator.get(),
-					  resourceAllocator.get(),
+					  type_name_out)
+						.cast_to<TypeNameNode>()))
+				return gen_out_of_memory_syntax_error();
+		} else if ((t = peek_token())->token_id == TokenId::LAndOp) {
+			next_token();
+			if (!(type_name_out = make_ast_node<TempRefTypeNameNode>(
+					  resource_allocator.get(),
+					  resource_allocator.get(),
 					  document,
-					  typeNameOut)
-						.castTo<TypeNameNode>()))
-				return genOutOfMemorySyntaxError();
+					  type_name_out)
+						.cast_to<TypeNameNode>()))
+				return gen_out_of_memory_syntax_error();
 		}
 	}
 

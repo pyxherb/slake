@@ -8,7 +8,7 @@ SLAKE_API ExecutionRunnable::ExecutionRunnable() {
 SLAKE_API void ExecutionRunnable::run() {
 	switch (status) {
 		case ThreadStatus::Ready:
-			getCurrentThreadStackBounds(nativeStackBase, nativeStackSize);
+			get_current_thread_stack_bounds(native_stack_base, native_stack_size);
 			break;
 		case ThreadStatus::Running:
 			std::terminate();
@@ -16,5 +16,5 @@ SLAKE_API void ExecutionRunnable::run() {
 		case ThreadStatus::Dead:
 			return;
 	}
-	exceptPtr = context->associatedRuntime->execContext(context.get());
+	except_ptr = context->associated_runtime->exec_context(context.get());
 }

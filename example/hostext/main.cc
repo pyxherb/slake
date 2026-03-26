@@ -7,62 +7,62 @@
 
 using namespace slake;
 
-Value print(Context *context, MajorFrame *curMajorFrame) {
-	if (curMajorFrame->resumableContextData.nArgs < 1)
+Value print(Context *context, MajorFrame *cur_major_frame) {
+	if (cur_major_frame->resumable_context_data.num_args < 1)
 		putchar('\n');
 	else {
-		for (uint8_t i = 0; i < curMajorFrame->resumableContextData.nArgs; ++i) {
+		for (uint8_t i = 0; i < cur_major_frame->resumable_context_data.num_args; ++i) {
 			Value data;
-			if (curMajorFrame->curCoroutine)
-				Runtime::readVar(CoroutineArgRef(curMajorFrame->curCoroutine, i), data);
+			if (cur_major_frame->cur_coroutine)
+				Runtime::read_var(CoroutineArgRef(cur_major_frame->cur_coroutine, i), data);
 			else
-				Runtime::readVar(ArgRef(curMajorFrame, i), data);
+				Runtime::read_var(ArgRef(cur_major_frame, i), data);
 
-			switch (data.valueType) {
+			switch (data.value_type) {
 				case ValueType::I8:
-					std::cout << data.getI8();
+					std::cout << data.get_i8();
 					break;
 				case ValueType::I16:
-					std::cout << data.getI16();
+					std::cout << data.get_i16();
 					break;
 				case ValueType::I32:
-					std::cout << data.getI32();
+					std::cout << data.get_i32();
 					break;
 				case ValueType::I64:
-					std::cout << data.getI64();
+					std::cout << data.get_i64();
 					break;
 				case ValueType::U8:
-					std::cout << data.getU8();
+					std::cout << data.get_u8();
 					break;
 				case ValueType::U16:
-					std::cout << data.getU16();
+					std::cout << data.get_u16();
 					break;
 				case ValueType::U32:
-					std::cout << data.getU32();
+					std::cout << data.get_u32();
 					break;
 				case ValueType::U64:
-					std::cout << data.getU64();
+					std::cout << data.get_u64();
 					break;
 				case ValueType::F32:
-					std::cout << data.getF32();
+					std::cout << data.get_f32();
 					break;
 				case ValueType::F64:
-					std::cout << data.getF64();
+					std::cout << data.get_f64();
 					break;
 				case ValueType::Bool:
-					fputs(data.getBool() ? "true" : "false", stdout);
+					fputs(data.get_bool() ? "true" : "false", stdout);
 					break;
 				case ValueType::Reference: {
-					Object *objectPtr = data.getReference().asObject;
-					if (!objectPtr)
+					Object *object_ptr = data.get_reference().as_object;
+					if (!object_ptr)
 						fputs("null", stdout);
 					else {
-						switch (objectPtr->getObjectKind()) {
+						switch (object_ptr->get_object_kind()) {
 							case ObjectKind::String:
-								std::cout << ((StringObject *)objectPtr)->data.data();
+								std::cout << ((StringObject *)object_ptr)->data.data();
 								break;
 							default:
-								std::cout << "<object at " << std::hex << objectPtr << ">";
+								std::cout << "<object at " << std::hex << object_ptr << ">";
 								break;
 						}
 					}
@@ -77,66 +77,66 @@ Value print(Context *context, MajorFrame *curMajorFrame) {
 	return {};
 }
 
-void printTraceback(Runtime *rt, ContextObject *context) {
+void print_traceback(Runtime *rt, ContextObject *context) {
 	printf("Traceback:\n");
 
-	auto walker = [](MajorFrame *i, void *userData) {
-		if (!i->curFn) {
+	auto walker = [](MajorFrame *i, void *user_data) {
+		if (!i->cur_fn) {
 			printf("(Stack top)\n");
 			return true;
 		}
 
-		peff::DynArray<IdRefEntry> fullRef(peff::getDefaultAlloc());
+		peff::DynArray<IdRefEntry> full_ref(peff::default_allocator());
 
-		if (!i->associatedRuntime->getFullRef(peff::getDefaultAlloc(), i->curFn->fnObject, fullRef)) {
+		if (!i->associated_runtime->get_full_ref(peff::default_allocator(), i->cur_fn->fn_object, full_ref)) {
 			throw std::bad_alloc();
 		}
 
 		std::string name;
 
-		for (size_t i = 0; i < fullRef.size(); ++i) {
+		for (size_t i = 0; i < full_ref.size(); ++i) {
 			if (i) {
 				name += '.';
 			}
 
-			IdRefEntry &id = fullRef.at(i);
+			IdRefEntry &id = full_ref.at(i);
 
 			name += id.name;
 
-			if (id.genericArgs.size()) {
+			if (id.generic_args.size()) {
 				name += '<';
 
-				/* for (size_t j = 0; j < id.genericArgs.size(); ++j) {
+				/* for (size_t j = 0; j < id.generic_args.size(); ++j) {
 					if (j)
 						name += ",";
-					name += std::to_string(id.genericArgs.at(j), rt);
+					name += std::to_string(id.generic_args.at(j), rt);
 				}*/
 
 				name += '>';
 			}
 		}
 
-		printf("\t%s: %u", name.c_str(), i->resumableContextData.curIns);
+		printf("\t%s: %u", name.c_str(), i->resumable_context_data.cur_ins);
 		putchar('\n');
 
 		return true;
 	};
 
-	context->getContext().forEachMajorFrame(walker, nullptr);
+	context->get_context().for_each_major_frame(walker, nullptr);
 }
 
 class MyReader : public loader::Reader {
 public:
-	peff::RcObjectPtr<peff::Alloc> selfAllocator;
+	peff::RcObjectPtr<peff::Alloc> self_allocator;
 
 	FILE *fp;
 
-	MyReader(peff::Alloc *selfAllocator, FILE *fp) : selfAllocator(selfAllocator), fp(fp) {}
+	MyReader(peff::Alloc *self_allocator, FILE *fp) : self_allocator(self_allocator), fp(fp) {}
 	virtual ~MyReader() {
 		fclose(fp);
 	}
 
-	virtual bool isEof() noexcept override {
+	virtual bool is_eof() noexcept override {
 		return feof(fp);
 	}
 
@@ -148,7 +148,7 @@ public:
 	}
 
 	virtual void dealloc() noexcept override {
-		peff::destroyAndRelease<MyReader>(selfAllocator.get(), this, alignof(MyReader));
+		peff::destroy_and_release<MyReader>(self_allocator.get(), this, alignof(MyReader));
 	}
 };
 
@@ -159,7 +159,7 @@ public:
 	~LoaderContext() {
 	}
 
-	virtual InternalExceptionPointer locateModule(Runtime *rt, const peff::DynArray<IdRefEntry> &ref, loader::Reader *&readerOut) {
+	virtual InternalExceptionPointer locate_module(Runtime *rt, const peff::DynArray<IdRefEntry> &ref, loader::Reader *&reader_out) {
 		std::string path;
 		for (size_t i = 0; i < ref.size(); ++i) {
 			path += ref.at(i).name;
@@ -172,21 +172,21 @@ public:
 
 		if (!(fp = fopen(path.c_str(), "rb"))) {
 			puts("Error opening the main module");
-			return BadMagicError::alloc(rt->getFixedAlloc());
+			return BadMagicError::alloc(rt->get_fixed_alloc());
 		}
 
-		peff::ScopeGuard closeFpGuard([fp]() noexcept {
+		peff::ScopeGuard close_fp_guard([fp]() noexcept {
 			fclose(fp);
 		});
 
-		std::unique_ptr<MyReader, peff::DeallocableDeleter<MyReader>> reader(peff::allocAndConstruct<MyReader>(allocator.get(), alignof(MyReader), allocator.get(), fp));
+		std::unique_ptr<MyReader, peff::DeallocableDeleter<MyReader>> reader(peff::alloc_and_construct<MyReader>(allocator.get(), alignof(MyReader), allocator.get(), fp));
 
 		if (!reader)
 			return OutOfMemoryError::alloc();
 
-		readerOut = reader.release();
+		reader_out = reader.release();
 
-		closeFpGuard.release();
+		close_fp_guard.release();
 
 		return {};
 	}
@@ -203,92 +203,92 @@ public:
 	}
 };
 
-[[nodiscard]] SLAKE_API bool dumpTypeName(peff::Alloc *allocator, DumpWriter *writer, const slake::TypeRef &type);
-[[nodiscard]] SLAKE_API bool dumpValue(peff::Alloc *allocator, DumpWriter *writer, const slake::Value &value);
-[[nodiscard]] SLAKE_API bool dumpIdRefEntries(peff::Alloc *allocator, DumpWriter *writer, const peff::DynArray<slake::IdRefEntry> &idRefIn);
-[[nodiscard]] SLAKE_API bool dumpIdRef(peff::Alloc *allocator, DumpWriter *writer, slake::IdRefObject *idRefIn);
+[[nodiscard]] SLAKE_API bool dump_type_name(peff::Alloc *allocator, DumpWriter *writer, const slake::TypeRef &type);
+[[nodiscard]] SLAKE_API bool dump_value(peff::Alloc *allocator, DumpWriter *writer, const slake::Value &value);
+[[nodiscard]] SLAKE_API bool dump_id_ref_entries(peff::Alloc *allocator, DumpWriter *writer, const peff::DynArray<slake::IdRefEntry> &id_ref_in);
+[[nodiscard]] SLAKE_API bool dump_id_ref(peff::Alloc *allocator, DumpWriter *writer, slake::IdRefObject *id_ref_in);
 
 #define SLAKE_RETURN_IF_FALSE(e) \
 	if (!e) return false
 
-SLAKE_API bool dumpValue(peff::Alloc *allocator, DumpWriter *writer, const slake::Value &value) {
-	switch (value.valueType) {
+SLAKE_API bool dump_value(peff::Alloc *allocator, DumpWriter *writer, const slake::Value &value) {
+	switch (value.value_type) {
 		case slake::ValueType::I8: {
 			char s[8];
-			sprintf(s, "%hd", (int16_t)value.getI8());
+			sprintf(s, "%hd", (int16_t)value.get_i8());
 			SLAKE_RETURN_IF_FALSE(writer->write(s));
 			break;
 		}
 		case slake::ValueType::I16: {
 			char s[16];
-			sprintf(s, "%hd", (int16_t)value.getI16());
+			sprintf(s, "%hd", (int16_t)value.get_i16());
 			SLAKE_RETURN_IF_FALSE(writer->write(s));
 			break;
 		}
 		case slake::ValueType::I32: {
 			char s[32];
-			sprintf(s, "%d", value.getI32());
+			sprintf(s, "%d", value.get_i32());
 			SLAKE_RETURN_IF_FALSE(writer->write(s));
 			break;
 		}
 		case slake::ValueType::I64: {
 			char s[48];
-			sprintf(s, "%lld", value.getI64());
+			sprintf(s, "%lld", value.get_i64());
 			SLAKE_RETURN_IF_FALSE(writer->write(s));
 			break;
 		}
 		case slake::ValueType::U8: {
 			char s[4];
-			sprintf(s, "%hu", (uint16_t)value.getU8());
+			sprintf(s, "%hu", (uint16_t)value.get_u8());
 			SLAKE_RETURN_IF_FALSE(writer->write(s));
 			break;
 		}
 		case slake::ValueType::U16: {
 			char s[8];
-			sprintf(s, "%hu", (uint16_t)value.getU16());
+			sprintf(s, "%hu", (uint16_t)value.get_u16());
 			SLAKE_RETURN_IF_FALSE(writer->write(s));
 			break;
 		}
 		case slake::ValueType::U32: {
 			char s[16];
-			sprintf(s, "%u", value.getU32());
+			sprintf(s, "%u", value.get_u32());
 			SLAKE_RETURN_IF_FALSE(writer->write(s));
 			break;
 		}
 		case slake::ValueType::U64: {
 			char s[32];
-			sprintf(s, "%llu", value.getU64());
+			sprintf(s, "%llu", value.get_u64());
 			SLAKE_RETURN_IF_FALSE(writer->write(s));
 			break;
 		}
 		case slake::ValueType::F32: {
 			char s[16];
-			sprintf(s, "%f", value.getF32());
+			sprintf(s, "%f", value.get_f32());
 			SLAKE_RETURN_IF_FALSE(writer->write(s));
 			break;
 		}
 		case slake::ValueType::F64: {
 			char s[32];
-			sprintf(s, "%f", value.getF64());
+			sprintf(s, "%f", value.get_f64());
 			SLAKE_RETURN_IF_FALSE(writer->write(s));
 			break;
 		}
 		case slake::ValueType::Bool:
-			SLAKE_RETURN_IF_FALSE(writer->write(value.getBool() ? "true" : "false"));
+			SLAKE_RETURN_IF_FALSE(writer->write(value.get_bool() ? "true" : "false"));
 			break;
 		case slake::ValueType::Reference: {
-			const slake::Reference &er = value.getReference();
+			const slake::Reference &er = value.get_reference();
 
 			switch (er.kind) {
 				case slake::ReferenceKind::ObjectRef: {
-					slake::Object *obj = er.asObject;
+					slake::Object *obj = er.as_object;
 
 					if (!obj) {
 						SLAKE_RETURN_IF_FALSE(writer->write("null"));
 						break;
 					}
 
-					switch (obj->getObjectKind()) {
+					switch (obj->get_object_kind()) {
 						case slake::ObjectKind::String: {
 							SLAKE_RETURN_IF_FALSE(writer->write("\""));
 
@@ -298,7 +298,7 @@ SLAKE_API bool dumpValue(peff::Alloc *allocator, DumpWriter *writer, const slake
 							size_t len = s->data.size();
 							char c;
 
-							size_t idxCharSinceLastEsc = 0;
+							size_t idx_char_since_last_esc = 0;
 
 							for (size_t i = 0; i < len; ++i) {
 								switch ((c = data[i])) {
@@ -311,7 +311,7 @@ SLAKE_API bool dumpValue(peff::Alloc *allocator, DumpWriter *writer, const slake
 									case '\r':
 									case '"':
 									case '\\':
-										SLAKE_RETURN_IF_FALSE(writer->write(std::string_view(data + idxCharSinceLastEsc, i - idxCharSinceLastEsc)));
+										SLAKE_RETURN_IF_FALSE(writer->write(std::string_view(data + idx_char_since_last_esc, i - idx_char_since_last_esc)));
 
 										switch (c) {
 											case '\0':
@@ -346,7 +346,7 @@ SLAKE_API bool dumpValue(peff::Alloc *allocator, DumpWriter *writer, const slake
 												break;
 										}
 
-										idxCharSinceLastEsc = i + 1;
+										idx_char_since_last_esc = i + 1;
 										break;
 
 									default:
@@ -355,14 +355,14 @@ SLAKE_API bool dumpValue(peff::Alloc *allocator, DumpWriter *writer, const slake
 								}
 							}
 
-							if (idxCharSinceLastEsc < len)
-								SLAKE_RETURN_IF_FALSE(writer->write(std::string_view(data + idxCharSinceLastEsc, len - idxCharSinceLastEsc)));
+							if (idx_char_since_last_esc < len)
+								SLAKE_RETURN_IF_FALSE(writer->write(std::string_view(data + idx_char_since_last_esc, len - idx_char_since_last_esc)));
 
 							SLAKE_RETURN_IF_FALSE(writer->write("\""));
 							break;
 						}
 						case slake::ObjectKind::IdRef: {
-							SLAKE_RETURN_IF_FALSE(dumpIdRef(allocator, writer, (slake::IdRefObject *)obj));
+							SLAKE_RETURN_IF_FALSE(dump_id_ref(allocator, writer, (slake::IdRefObject *)obj));
 							break;
 						}
 						case slake::ObjectKind::Array: {
@@ -378,9 +378,9 @@ SLAKE_API bool dumpValue(peff::Alloc *allocator, DumpWriter *writer, const slake
 								slake::Reference rer = slake::ArrayElementRef(a, i);
 								slake::Value data;
 
-								slake::Runtime::readVar(rer, data);
+								slake::Runtime::read_var(rer, data);
 
-								SLAKE_RETURN_IF_FALSE(dumpValue(allocator, writer, data));
+								SLAKE_RETURN_IF_FALSE(dump_value(allocator, writer, data));
 							}
 
 							SLAKE_RETURN_IF_FALSE(writer->write(" }"));
@@ -397,12 +397,12 @@ SLAKE_API bool dumpValue(peff::Alloc *allocator, DumpWriter *writer, const slake
 		}
 		case slake::ValueType::RegIndex: {
 			char s[32];
-			sprintf(s, "%%%u", value.getRegIndex());
+			sprintf(s, "%%%u", value.get_reg_index());
 			SLAKE_RETURN_IF_FALSE(writer->write(s));
 			break;
 		}
 		case slake::ValueType::TypeName: {
-			SLAKE_RETURN_IF_FALSE(dumpTypeName(allocator, writer, value.getTypeName()));
+			SLAKE_RETURN_IF_FALSE(dump_type_name(allocator, writer, value.get_type_name()));
 			break;
 		}
 		default:
@@ -412,23 +412,23 @@ SLAKE_API bool dumpValue(peff::Alloc *allocator, DumpWriter *writer, const slake
 	return true;
 }
 
-SLAKE_API bool dumpIdRefEntries(peff::Alloc *allocator, DumpWriter *writer, const peff::DynArray<slake::IdRefEntry> &idRefIn) {
-	for (size_t i = 0; i < idRefIn.size(); ++i) {
+SLAKE_API bool dump_id_ref_entries(peff::Alloc *allocator, DumpWriter *writer, const peff::DynArray<slake::IdRefEntry> &id_ref_in) {
+	for (size_t i = 0; i < id_ref_in.size(); ++i) {
 		if (i) {
 			SLAKE_RETURN_IF_FALSE(writer->write("."));
 		}
 
-		auto &curEntry = idRefIn.at(i);
+		auto &cur_entry = id_ref_in.at(i);
 
-		SLAKE_RETURN_IF_FALSE(writer->write(curEntry.name));
+		SLAKE_RETURN_IF_FALSE(writer->write(cur_entry.name));
 
-		if (curEntry.genericArgs.size()) {
+		if (cur_entry.generic_args.size()) {
 			SLAKE_RETURN_IF_FALSE(writer->write("<"));
-			for (size_t j = 0; j < curEntry.genericArgs.size(); ++j) {
+			for (size_t j = 0; j < cur_entry.generic_args.size(); ++j) {
 				if (j) {
 					SLAKE_RETURN_IF_FALSE(writer->write(","));
 				}
-				SLAKE_RETURN_IF_FALSE(dumpValue(allocator, writer, curEntry.genericArgs.at(j)));
+				SLAKE_RETURN_IF_FALSE(dump_value(allocator, writer, cur_entry.generic_args.at(j)));
 			}
 			SLAKE_RETURN_IF_FALSE(writer->write(">"));
 		}
@@ -437,51 +437,51 @@ SLAKE_API bool dumpIdRefEntries(peff::Alloc *allocator, DumpWriter *writer, cons
 	return true;
 }
 
-SLAKE_API bool dumpIdRef(peff::Alloc *allocator, DumpWriter *writer, slake::IdRefObject *idRefIn) {
-	SLAKE_RETURN_IF_FALSE(dumpIdRefEntries(allocator, writer, idRefIn->entries));
+SLAKE_API bool dump_id_ref(peff::Alloc *allocator, DumpWriter *writer, slake::IdRefObject *id_ref_in) {
+	SLAKE_RETURN_IF_FALSE(dump_id_ref_entries(allocator, writer, id_ref_in->entries));
 
-	if (idRefIn->paramTypes.hasValue()) {
-		auto &paramTypes = *idRefIn->paramTypes;
+	if (id_ref_in->param_types.has_value()) {
+		auto &param_types = *id_ref_in->param_types;
 
-		if (paramTypes.size()) {
+		if (param_types.size()) {
 			SLAKE_RETURN_IF_FALSE(writer->write("("));
 
-			for (size_t i = 0; i < paramTypes.size(); ++i) {
+			for (size_t i = 0; i < param_types.size(); ++i) {
 				if (i) {
 					SLAKE_RETURN_IF_FALSE(writer->write(", "));
 				}
 
-				SLAKE_RETURN_IF_FALSE(dumpTypeName(allocator, writer, paramTypes.at(i)));
+				SLAKE_RETURN_IF_FALSE(dump_type_name(allocator, writer, param_types.at(i)));
 			}
 
-			if (idRefIn->hasVarArgs) {
+			if (id_ref_in->has_var_args) {
 				SLAKE_RETURN_IF_FALSE(writer->write(", ..."));
 			}
 
 			SLAKE_RETURN_IF_FALSE(writer->write(")"));
 		} else {
-			if (idRefIn->hasVarArgs) {
+			if (id_ref_in->has_var_args) {
 				SLAKE_RETURN_IF_FALSE(writer->write("(...)"));
 			} else {
 				SLAKE_RETURN_IF_FALSE(writer->write("()"));
 			}
 		}
 	} else {
-		if (idRefIn->hasVarArgs) {
+		if (id_ref_in->has_var_args) {
 			SLAKE_RETURN_IF_FALSE(writer->write("(...)"));
 		}
 	}
 
-	if (idRefIn->overridenType) {
+	if (id_ref_in->overriden_type) {
 		SLAKE_RETURN_IF_FALSE(writer->write(" override "));
-		SLAKE_RETURN_IF_FALSE(dumpTypeName(allocator, writer, idRefIn->overridenType));
+		SLAKE_RETURN_IF_FALSE(dump_type_name(allocator, writer, id_ref_in->overriden_type));
 	}
 
 	return true;
 }
 
-SLAKE_API bool dumpTypeName(peff::Alloc *allocator, DumpWriter *writer, const slake::TypeRef &type) {
-	switch (type.typeId) {
+SLAKE_API bool dump_type_name(peff::Alloc *allocator, DumpWriter *writer, const slake::TypeRef &type) {
+	switch (type.type_id) {
 		case slake::TypeId::Invalid:
 			SLAKE_RETURN_IF_FALSE(writer->write("/* Invalid type */"));
 			break;
@@ -525,25 +525,25 @@ SLAKE_API bool dumpTypeName(peff::Alloc *allocator, DumpWriter *writer, const sl
 			SLAKE_RETURN_IF_FALSE(writer->write("string"));
 			break;
 		case slake::TypeId::Instance: {
-			auto obj = type.getCustomTypeDef();
+			auto obj = type.get_custom_type_def();
 
-			slake::Runtime *runtime = obj->associatedRuntime;
+			slake::Runtime *runtime = obj->associated_runtime;
 
-			switch (obj->typeObject->getObjectKind()) {
+			switch (obj->type_object->get_object_kind()) {
 				case slake::ObjectKind::Class:
 				case slake::ObjectKind::Interface: {
 					SLAKE_RETURN_IF_FALSE(writer->write("@"));
 
-					peff::DynArray<slake::IdRefEntry> moduleFullName(allocator);
+					peff::DynArray<slake::IdRefEntry> module_full_name(allocator);
 
-					if (!runtime->getFullRef(allocator, (slake::MemberObject *)obj->typeObject, moduleFullName))
+					if (!runtime->get_full_ref(allocator, (slake::MemberObject *)obj->type_object, module_full_name))
 						return false;
 
 					break;
 				}
 				case slake::ObjectKind::IdRef: {
 					SLAKE_RETURN_IF_FALSE(writer->write("@"));
-					SLAKE_RETURN_IF_FALSE(dumpIdRef(allocator, writer, (slake::IdRefObject *)obj->typeObject));
+					SLAKE_RETURN_IF_FALSE(dump_id_ref(allocator, writer, (slake::IdRefObject *)obj->type_object));
 					break;
 				}
 				default:
@@ -552,24 +552,24 @@ SLAKE_API bool dumpTypeName(peff::Alloc *allocator, DumpWriter *writer, const sl
 			break;
 		}
 		case slake::TypeId::StructInstance: {
-			auto obj = type.getCustomTypeDef();
+			auto obj = type.get_custom_type_def();
 
-			slake::Runtime *runtime = obj->associatedRuntime;
+			slake::Runtime *runtime = obj->associated_runtime;
 
-			switch (obj->typeObject->getObjectKind()) {
+			switch (obj->type_object->get_object_kind()) {
 				case slake::ObjectKind::Struct: {
 					SLAKE_RETURN_IF_FALSE(writer->write("struct "));
 
-					peff::DynArray<slake::IdRefEntry> moduleFullName(allocator);
+					peff::DynArray<slake::IdRefEntry> module_full_name(allocator);
 
-					if (!runtime->getFullRef(allocator, (slake::MemberObject *)obj->typeObject, moduleFullName))
+					if (!runtime->get_full_ref(allocator, (slake::MemberObject *)obj->type_object, module_full_name))
 						return false;
 
 					break;
 				}
 				case slake::ObjectKind::IdRef: {
 					SLAKE_RETURN_IF_FALSE(writer->write("struct "));
-					SLAKE_RETURN_IF_FALSE(dumpIdRef(allocator, writer, (slake::IdRefObject *)obj->typeObject));
+					SLAKE_RETURN_IF_FALSE(dump_id_ref(allocator, writer, (slake::IdRefObject *)obj->type_object));
 					break;
 				}
 				default:
@@ -578,24 +578,24 @@ SLAKE_API bool dumpTypeName(peff::Alloc *allocator, DumpWriter *writer, const sl
 			break;
 		}
 		case slake::TypeId::ScopedEnum: {
-			auto obj = type.getCustomTypeDef();
+			auto obj = type.get_custom_type_def();
 
-			slake::Runtime *runtime = obj->associatedRuntime;
+			slake::Runtime *runtime = obj->associated_runtime;
 
-			switch (obj->typeObject->getObjectKind()) {
+			switch (obj->type_object->get_object_kind()) {
 				case slake::ObjectKind::Struct: {
 					SLAKE_RETURN_IF_FALSE(writer->write("enum base "));
 
-					peff::DynArray<slake::IdRefEntry> moduleFullName(allocator);
+					peff::DynArray<slake::IdRefEntry> module_full_name(allocator);
 
-					if (!runtime->getFullRef(allocator, (slake::MemberObject *)obj->typeObject, moduleFullName))
+					if (!runtime->get_full_ref(allocator, (slake::MemberObject *)obj->type_object, module_full_name))
 						return false;
 
 					break;
 				}
 				case slake::ObjectKind::IdRef: {
 					SLAKE_RETURN_IF_FALSE(writer->write("enum base "));
-					SLAKE_RETURN_IF_FALSE(dumpIdRef(allocator, writer, (slake::IdRefObject *)obj->typeObject));
+					SLAKE_RETURN_IF_FALSE(dump_id_ref(allocator, writer, (slake::IdRefObject *)obj->type_object));
 					break;
 				}
 				default:
@@ -604,24 +604,24 @@ SLAKE_API bool dumpTypeName(peff::Alloc *allocator, DumpWriter *writer, const sl
 			break;
 		}
 		case slake::TypeId::TypelessScopedEnum: {
-			auto obj = type.getCustomTypeDef();
+			auto obj = type.get_custom_type_def();
 
-			slake::Runtime *runtime = obj->associatedRuntime;
+			slake::Runtime *runtime = obj->associated_runtime;
 
-			switch (obj->typeObject->getObjectKind()) {
+			switch (obj->type_object->get_object_kind()) {
 				case slake::ObjectKind::Struct: {
 					SLAKE_RETURN_IF_FALSE(writer->write("enum "));
 
-					peff::DynArray<slake::IdRefEntry> moduleFullName(allocator);
+					peff::DynArray<slake::IdRefEntry> module_full_name(allocator);
 
-					if (!runtime->getFullRef(allocator, (slake::MemberObject *)obj->typeObject, moduleFullName))
+					if (!runtime->get_full_ref(allocator, (slake::MemberObject *)obj->type_object, module_full_name))
 						return false;
 
 					break;
 				}
 				case slake::ObjectKind::IdRef: {
 					SLAKE_RETURN_IF_FALSE(writer->write("enum "));
-					SLAKE_RETURN_IF_FALSE(dumpIdRef(allocator, writer, (slake::IdRefObject *)obj->typeObject));
+					SLAKE_RETURN_IF_FALSE(dump_id_ref(allocator, writer, (slake::IdRefObject *)obj->type_object));
 					break;
 				}
 				default:
@@ -630,24 +630,24 @@ SLAKE_API bool dumpTypeName(peff::Alloc *allocator, DumpWriter *writer, const sl
 			break;
 		}
 		case slake::TypeId::UnionEnum: {
-			auto obj = type.getCustomTypeDef();
+			auto obj = type.get_custom_type_def();
 
-			slake::Runtime *runtime = obj->associatedRuntime;
+			slake::Runtime *runtime = obj->associated_runtime;
 
-			switch (obj->typeObject->getObjectKind()) {
+			switch (obj->type_object->get_object_kind()) {
 				case slake::ObjectKind::Struct: {
 					SLAKE_RETURN_IF_FALSE(writer->write("enum union "));
 
-					peff::DynArray<slake::IdRefEntry> moduleFullName(allocator);
+					peff::DynArray<slake::IdRefEntry> module_full_name(allocator);
 
-					if (!runtime->getFullRef(allocator, (slake::MemberObject *)obj->typeObject, moduleFullName))
+					if (!runtime->get_full_ref(allocator, (slake::MemberObject *)obj->type_object, module_full_name))
 						return false;
 
 					break;
 				}
 				case slake::ObjectKind::IdRef: {
 					SLAKE_RETURN_IF_FALSE(writer->write("enum union "));
-					SLAKE_RETURN_IF_FALSE(dumpIdRef(allocator, writer, (slake::IdRefObject *)obj->typeObject));
+					SLAKE_RETURN_IF_FALSE(dump_id_ref(allocator, writer, (slake::IdRefObject *)obj->type_object));
 					break;
 				}
 				default:
@@ -656,24 +656,24 @@ SLAKE_API bool dumpTypeName(peff::Alloc *allocator, DumpWriter *writer, const sl
 			break;
 		}
 		case slake::TypeId::UnionEnumItem: {
-			auto obj = type.getCustomTypeDef();
+			auto obj = type.get_custom_type_def();
 
-			slake::Runtime *runtime = obj->associatedRuntime;
+			slake::Runtime *runtime = obj->associated_runtime;
 
-			switch (obj->typeObject->getObjectKind()) {
+			switch (obj->type_object->get_object_kind()) {
 				case slake::ObjectKind::Struct: {
 					SLAKE_RETURN_IF_FALSE(writer->write("enum struct "));
 
-					peff::DynArray<slake::IdRefEntry> moduleFullName(allocator);
+					peff::DynArray<slake::IdRefEntry> module_full_name(allocator);
 
-					if (!runtime->getFullRef(allocator, (slake::MemberObject *)obj->typeObject, moduleFullName))
+					if (!runtime->get_full_ref(allocator, (slake::MemberObject *)obj->type_object, module_full_name))
 						return false;
 
 					break;
 				}
 				case slake::ObjectKind::IdRef: {
 					SLAKE_RETURN_IF_FALSE(writer->write("enum struct "));
-					SLAKE_RETURN_IF_FALSE(dumpIdRef(allocator, writer, (slake::IdRefObject *)obj->typeObject));
+					SLAKE_RETURN_IF_FALSE(dump_id_ref(allocator, writer, (slake::IdRefObject *)obj->type_object));
 					break;
 				}
 				default:
@@ -682,29 +682,29 @@ SLAKE_API bool dumpTypeName(peff::Alloc *allocator, DumpWriter *writer, const sl
 			break;
 		}
 		case slake::TypeId::GenericArg: {
-			auto obj = type.getGenericArgTypeDef();
+			auto obj = type.get_generic_arg_type_def();
 
-			slake::Runtime *runtime = obj->associatedRuntime;
+			slake::Runtime *runtime = obj->associated_runtime;
 
 			SLAKE_RETURN_IF_FALSE(writer->write("@!"));
-			SLAKE_RETURN_IF_FALSE(writer->write(obj->nameObject->data.data(), obj->nameObject->data.size()));
+			SLAKE_RETURN_IF_FALSE(writer->write(obj->name_object->data.data(), obj->name_object->data.size()));
 			break;
 		}
 		case slake::TypeId::Array: {
-			auto obj = type.getArrayTypeDef();
+			auto obj = type.get_array_type_def();
 
-			slake::Runtime *runtime = obj->associatedRuntime;
+			slake::Runtime *runtime = obj->associated_runtime;
 
-			SLAKE_RETURN_IF_FALSE(dumpTypeName(allocator, writer, obj->elementType->typeRef));
+			SLAKE_RETURN_IF_FALSE(dump_type_name(allocator, writer, obj->element_type->type_ref));
 			SLAKE_RETURN_IF_FALSE(writer->write("[]"));
 			break;
 		}
 		case slake::TypeId::Ref: {
-			auto obj = type.getRefTypeDef();
+			auto obj = type.get_ref_type_def();
 
-			slake::Runtime *runtime = obj->associatedRuntime;
+			slake::Runtime *runtime = obj->associated_runtime;
 
-			SLAKE_RETURN_IF_FALSE(dumpTypeName(allocator, writer, obj->referencedType->typeRef));
+			SLAKE_RETURN_IF_FALSE(dump_type_name(allocator, writer, obj->referenced_type->type_ref));
 			SLAKE_RETURN_IF_FALSE(writer->write("&"));
 			break;
 		}
@@ -716,43 +716,43 @@ SLAKE_API bool dumpTypeName(peff::Alloc *allocator, DumpWriter *writer, const sl
 			SLAKE_RETURN_IF_FALSE(writer->write("any"));
 			break;
 		case slake::TypeId::ParamTypeList: {
-			auto obj = type.getParamTypeListTypeDef();
+			auto obj = type.get_param_type_list_type_def();
 
 			SLAKE_RETURN_IF_FALSE(writer->write("("));
 
-			for (size_t i = 0; i < obj->paramTypes.size(); ++i) {
+			for (size_t i = 0; i < obj->param_types.size(); ++i) {
 				if (i) {
 					SLAKE_RETURN_IF_FALSE(writer->write(", "));
 				}
 
-				SLAKE_RETURN_IF_FALSE(dumpTypeName(allocator, writer, obj->paramTypes.at(i)->typeRef));
+				SLAKE_RETURN_IF_FALSE(dump_type_name(allocator, writer, obj->param_types.at(i)->type_ref));
 			}
 
 			SLAKE_RETURN_IF_FALSE(writer->write(")"));
 			break;
 		}
 		case slake::TypeId::Tuple: {
-			auto obj = type.getTupleTypeDef();
+			auto obj = type.get_tuple_type_def();
 
 			SLAKE_RETURN_IF_FALSE(writer->write("["));
 
-			for (size_t i = 0; i < obj->elementTypes.size(); ++i) {
+			for (size_t i = 0; i < obj->element_types.size(); ++i) {
 				if (i) {
 					SLAKE_RETURN_IF_FALSE(writer->write(", "));
 				}
 
-				SLAKE_RETURN_IF_FALSE(dumpTypeName(allocator, writer, obj->elementTypes.at(i)->typeRef));
+				SLAKE_RETURN_IF_FALSE(dump_type_name(allocator, writer, obj->element_types.at(i)->type_ref));
 			}
 
 			SLAKE_RETURN_IF_FALSE(writer->write("]"));
 			break;
 		}
 		case slake::TypeId::SIMD: {
-			auto obj = type.getSIMDTypeDef();
+			auto obj = type.get_simdtype_def();
 
 			SLAKE_RETURN_IF_FALSE(writer->write("simd_t<"));
 
-			SLAKE_RETURN_IF_FALSE(dumpTypeName(allocator, writer, obj->type->typeRef));
+			SLAKE_RETURN_IF_FALSE(dump_type_name(allocator, writer, obj->type->type_ref));
 
 			SLAKE_RETURN_IF_FALSE(writer->write(", "));
 
@@ -764,24 +764,24 @@ SLAKE_API bool dumpTypeName(peff::Alloc *allocator, DumpWriter *writer, const sl
 			break;
 		}
 		case slake::TypeId::Unpacking: {
-			auto obj = type.getUnpackingTypeDef();
+			auto obj = type.get_unpacking_type_def();
 			SLAKE_RETURN_IF_FALSE(writer->write("@..."));
-			SLAKE_RETURN_IF_FALSE(dumpTypeName(allocator, writer, obj->type->typeRef));
+			SLAKE_RETURN_IF_FALSE(dump_type_name(allocator, writer, obj->type->type_ref));
 			break;
 		}
 		default:
 			std::terminate();
 	}
 
-	if (type.isNullable())
+	if (type.is_nullable())
 		SLAKE_RETURN_IF_FALSE(writer->write("?"));
 	return true;
 }
 
-bool dumpExceptionInfo(peff::Alloc *allocator, DumpWriter *writer, slake::InternalException *e) {
+bool dump_exception_info(peff::Alloc *allocator, DumpWriter *writer, slake::InternalException *e) {
 	SLAKE_RETURN_IF_FALSE(writer->write(e->what()));
 	SLAKE_RETURN_IF_FALSE(writer->write("\n"));
-	auto writeDetailsHeader = [writer]() -> bool {
+	auto write_details_header = [writer]() -> bool {
 		SLAKE_RETURN_IF_FALSE(writer->write("Details:\n"));
 		return true;
 	};
@@ -790,40 +790,40 @@ bool dumpExceptionInfo(peff::Alloc *allocator, DumpWriter *writer, slake::Intern
 			break;
 		case ErrorKind::RuntimeExecError: {
 			RuntimeExecError *rte = (RuntimeExecError *)e;
-			switch (rte->errorCode) {
+			switch (rte->error_code) {
 				case slake::RuntimeExecErrorCode::MismatchedVarType: {
 					MismatchedVarTypeError *err = (MismatchedVarTypeError *)rte;
-					SLAKE_RETURN_IF_FALSE(writeDetailsHeader());
+					SLAKE_RETURN_IF_FALSE(write_details_header());
 					SLAKE_RETURN_IF_FALSE(writer->write("Mismatched variable type"));
 					break;
 				}
 				case slake::RuntimeExecErrorCode::ReferencedMemberNotFound: {
 					ReferencedMemberNotFoundError *err = (ReferencedMemberNotFoundError *)rte;
-					SLAKE_RETURN_IF_FALSE(writeDetailsHeader());
+					SLAKE_RETURN_IF_FALSE(write_details_header());
 					SLAKE_RETURN_IF_FALSE(writer->write("Referenced member not found: "));
-					SLAKE_RETURN_IF_FALSE(dumpIdRef(allocator, writer, err->idRef.get()));
+					SLAKE_RETURN_IF_FALSE(dump_id_ref(allocator, writer, err->id_ref.get()));
 					break;
 				}
 				case slake::RuntimeExecErrorCode::UncaughtException: {
 					UncaughtExceptionError *err = (UncaughtExceptionError *)rte;
-					SLAKE_RETURN_IF_FALSE(writeDetailsHeader());
+					SLAKE_RETURN_IF_FALSE(write_details_header());
 					SLAKE_RETURN_IF_FALSE(writer->write("Uncaught exception: "));
-					SLAKE_RETURN_IF_FALSE(dumpValue(allocator, writer, err->exceptionValue));
+					SLAKE_RETURN_IF_FALSE(dump_value(allocator, writer, err->exception_value));
 					break;
 				}
 				case slake::RuntimeExecErrorCode::FrameBoundaryExceeded: {
 					FrameBoundaryExceededError *err = (FrameBoundaryExceededError *)rte;
-					SLAKE_RETURN_IF_FALSE(writeDetailsHeader());
+					SLAKE_RETURN_IF_FALSE(write_details_header());
 					SLAKE_RETURN_IF_FALSE(writer->write("Frame boundary exceeded"));
 					break;
 				}
 				case slake::RuntimeExecErrorCode::InvalidArgumentNumber: {
 					InvalidArgumentNumberError *err = (InvalidArgumentNumberError *)rte;
-					SLAKE_RETURN_IF_FALSE(writeDetailsHeader());
+					SLAKE_RETURN_IF_FALSE(write_details_header());
 					SLAKE_RETURN_IF_FALSE(writer->write("Invalid argument number, "));
 					{
 						char n[13];
-						sprintf(n, "%u", err->nArgs);
+						sprintf(n, "%u", err->num_args);
 						SLAKE_RETURN_IF_FALSE(writer->write(n));
 					}
 					SLAKE_RETURN_IF_FALSE(writer->write(" arguments does not match"));
@@ -831,7 +831,7 @@ bool dumpExceptionInfo(peff::Alloc *allocator, DumpWriter *writer, slake::Intern
 				}
 				case slake::RuntimeExecErrorCode::InvalidArrayIndex: {
 					InvalidArrayIndexError *err = (InvalidArrayIndexError *)rte;
-					SLAKE_RETURN_IF_FALSE(writeDetailsHeader());
+					SLAKE_RETURN_IF_FALSE(write_details_header());
 					SLAKE_RETURN_IF_FALSE(writer->write("Invalid array index, "));
 					{
 						char n[26];
@@ -843,13 +843,13 @@ bool dumpExceptionInfo(peff::Alloc *allocator, DumpWriter *writer, slake::Intern
 				}
 				case slake::RuntimeExecErrorCode::StackOverflow: {
 					StackOverflowError *err = (StackOverflowError *)rte;
-					SLAKE_RETURN_IF_FALSE(writeDetailsHeader());
+					SLAKE_RETURN_IF_FALSE(write_details_header());
 					SLAKE_RETURN_IF_FALSE(writer->write("Stack overflowed"));
 					break;
 				}
 				case slake::RuntimeExecErrorCode::MalformedClassStructure: {
 					MalformedClassStructureError *err = (MalformedClassStructureError *)rte;
-					SLAKE_RETURN_IF_FALSE(writeDetailsHeader());
+					SLAKE_RETURN_IF_FALSE(write_details_header());
 					SLAKE_RETURN_IF_FALSE(writer->write("Malformed class structure"));
 					break;
 				}
@@ -880,14 +880,14 @@ public:
 };
 
 int main(int argc, char **argv) {
-	util::setupMemoryLeakDetector();
+	util::setup_memory_leak_detector();
 
-	StdDumpWriter stderrWriter(stderr);
+	StdDumpWriter stderr_writer(stderr);
 	{
 		std::unique_ptr<Runtime, peff::DeallocableDeleter<Runtime>> rt = std::unique_ptr<Runtime, peff::DeallocableDeleter<Runtime>>(
 			Runtime::alloc(
-				peff::getDefaultAlloc(),
-				peff::getDefaultAlloc(),
+				peff::default_allocator(),
+				peff::default_allocator(),
 				RT_DEBUG | RT_GCDBG));
 
 		{
@@ -900,18 +900,18 @@ int main(int argc, char **argv) {
 					return -1;
 				}
 
-				peff::ScopeGuard closeFpGuard([fp]() noexcept {
+				peff::ScopeGuard close_fp_guard([fp]() noexcept {
 					fclose(fp);
 				});
 
-				LoaderContext loaderContext(peff::getDefaultAlloc());
-				MyReader reader(&peff::g_nullAlloc, fp);
+				LoaderContext loader_context(peff::default_allocator());
+				MyReader reader(&peff::g_null_alloc, fp);
 
-				closeFpGuard.release();
+				close_fp_guard.release();
 
-				if (auto e = loader::loadModule(loaderContext, rt.get(), &reader, mod); e) {
+				if (auto e = loader::load_module(loader_context, rt.get(), &reader, mod); e) {
 					printf("Error loading main module:\n");
-					if (!dumpExceptionInfo(peff::getDefaultAlloc(), &stderrWriter, e.get()))
+					if (!dump_exception_info(peff::default_allocator(), &stderr_writer, e.get()))
 						abort();
 					e.reset();
 					return -1;
@@ -919,70 +919,70 @@ int main(int argc, char **argv) {
 			}
 
 			{
-				HostRefHolder hostRefHolder(rt->getFixedAlloc());
+				HostRefHolder host_ref_holder(rt->get_fixed_alloc());
 
-				HostObjectRef<ModuleObject> modObjectHostext;
+				HostObjectRef<ModuleObject> mod_object_hostext;
 
-				modObjectHostext = (ModuleObject *)rt->getRootObject()->getMember("hostext").getObjectRef();
-				if ((!modObjectHostext) || (modObjectHostext->getName() != "hostext"))
+				mod_object_hostext = (ModuleObject *)rt->get_root_object()->get_member("hostext").get_object_ref();
+				if ((!mod_object_hostext) || (mod_object_hostext->get_name() != "hostext"))
 					std::terminate();
 
 				/*
-				if (!modObjectHostext->setName("hostext")) {
+				if (!mod_object_hostext->set_name("hostext")) {
 					std::terminate();
 				}*/
-				HostObjectRef<ModuleObject> modObjectExtfns = ModuleObject::alloc(rt.get());
-				if (!modObjectExtfns)
+				HostObjectRef<ModuleObject> mod_object_extfns = ModuleObject::alloc(rt.get());
+				if (!mod_object_extfns)
 					std::terminate();
-				if (!modObjectExtfns->setName("extfns")) {
-					std::terminate();
-				}
-
-				if (!modObjectHostext->addMember(modObjectExtfns.get())) {
+				if (!mod_object_extfns->set_name("extfns")) {
 					std::terminate();
 				}
 
-				modObjectExtfns = (ModuleObject *)modObjectHostext->getMember("extfns").getObjectRef();
-				if ((!modObjectExtfns) || (modObjectExtfns->getName() != "extfns"))
+				if (!mod_object_hostext->add_member(mod_object_extfns.get())) {
+					std::terminate();
+				}
+
+				mod_object_extfns = (ModuleObject *)mod_object_hostext->get_member("extfns").get_object_ref();
+				if ((!mod_object_extfns) || (mod_object_extfns->get_name() != "extfns"))
 					std::terminate();
 
-				HostObjectRef<FnObject> fnObject = FnObject::alloc(rt.get());
+				HostObjectRef<FnObject> fn_object = FnObject::alloc(rt.get());
 
-				auto printFn = NativeFnOverloadingObject::alloc(
-					fnObject.get(),
+				auto print_fn = NativeFnOverloadingObject::alloc(
+					fn_object.get(),
 					print);
-				printFn->setAccess(ACCESS_PUBLIC);
-				printFn->returnType = TypeId::Void;
-				printFn->setVarArgs();
-				printFn->overridenType = TypeId::Void;
-				if (!fnObject->overloadings.insert({ printFn->paramTypes, printFn->isWithVarArgs(), printFn->genericParams.size(), printFn->overridenType }, printFn.get()))
+				print_fn->set_access(ACCESS_PUBLIC);
+				print_fn->return_type = TypeId::Void;
+				print_fn->set_var_args();
+				print_fn->overriden_type = TypeId::Void;
+				if (!fn_object->overloadings.insert({ print_fn->param_types, print_fn->is_with_var_args(), print_fn->generic_params.size(), print_fn->overriden_type }, print_fn.get()))
 					throw std::bad_alloc();
-				fnObject->setName("print");
+				fn_object->set_name("print");
 
-				modObjectExtfns->removeMember("print");
-				if (!modObjectExtfns->addMember(fnObject.get()))
+				mod_object_extfns->remove_member("print");
+				if (!mod_object_extfns->add_member(fn_object.get()))
 					throw std::bad_alloc();
 
-				auto fn = (FnObject *)mod->getMember("main").asObject;
+				auto fn = (FnObject *)mod->get_member("main").as_object;
 				FnOverloadingObject *overloading;
 
-				peff::DynArray<TypeRef> params(peff::getDefaultAlloc());
+				peff::DynArray<TypeRef> params(peff::default_allocator());
 
 				overloading = fn->overloadings.at(FnSignature(params, false, 0, TypeId::Void));
 
-				/* opti::ProgramAnalyzedInfo analyzedInfo(rt.get(), &myAllocator);
-				if (auto e = opti::analyzeProgramInfoPass(rt.get(), &myAllocator, (RegularFnOverloadingObject *)overloading, analyzedInfo, hostRefHolder);
+				/* opti::ProgramAnalyzedInfo analyzed_info(rt.get(), &my_allocator);
+				if (auto e = opti::analyze_program_info_pass(rt.get(), &my_allocator, (RegularFnOverloadingObject *)overloading, analyzed_info, host_ref_holder);
 					e) {
 					printf("Internal exception: %s\n", e->what());
 					switch (e->kind) {
 						case ErrorKind::OptimizerError: {
 							OptimizerError *err = (OptimizerError *)e.get();
 
-							switch (err->optimizerErrorCode) {
+							switch (err->optimizer_error_code) {
 								case OptimizerErrorCode::MalformedProgram: {
 									MalformedProgramError *err = (MalformedProgramError *)e.get();
 
-									printf("Malformed program error at instruction #%zu\n", err->offIns);
+									printf("Malformed program error at instruction #%zu\n", err->off_ins);
 								}
 								default:;
 							}
@@ -992,14 +992,14 @@ int main(int argc, char **argv) {
 					e.reset();
 					goto end;
 				}
-				for (auto it = analyzedInfo.analyzedRegInfo.begin(); it != analyzedInfo.analyzedRegInfo.end(); ++it) {
+				for (auto it = analyzed_info.analyzed_reg_info.begin(); it != analyzed_info.analyzed_reg_info.end(); ++it) {
 					printf("Register #%u\n", it.key());
-					printf("Lifetime: %u-%u\n", it.value().lifetime.offBeginIns, it.value().lifetime.offEndIns);
+					printf("Lifetime: %u-%u\n", it.value().lifetime.off_begin_ins, it.value().lifetime.off_end_ins);
 				}*/
 
 				{
 					HostObjectRef<CoroutineObject> co;
-					if (auto e = rt->createCoroutineInstance(overloading, nullptr, nullptr, 0, co); e) {
+					if (auto e = rt->create_coroutine_instance(overloading, nullptr, nullptr, 0, co); e) {
 						printf("Internal exception: %s\n", e->what());
 						e.reset();
 						goto end;
@@ -1013,15 +1013,15 @@ int main(int argc, char **argv) {
 					}
 
 					Value result;
-					while (!co->isDone()) {
-						if (auto e = rt->resumeCoroutine(context.get(), co.get(), result);
+					while (!co->is_done()) {
+						if (auto e = rt->resume_coroutine(context.get(), co.get(), result);
 							e) {
 							printf("Internal exception: %s\n", e->what());
 
-							if (!dumpExceptionInfo(peff::getDefaultAlloc(), &stderrWriter, e.get()))
+							if (!dump_exception_info(peff::default_allocator(), &stderr_writer, e.get()))
 								abort();
 
-							printTraceback(rt.get(), context.get());
+							print_traceback(rt.get(), context.get());
 							e.reset();
 							goto end;
 						}

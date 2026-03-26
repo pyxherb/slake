@@ -2,71 +2,71 @@
 
 using namespace slake;
 
-SLAKE_API void Runtime::_destructDestructibleObjects(InstanceObject *destructibleList) {
+SLAKE_API void Runtime::_destruct_destructible_objects(InstanceObject *destructible_list) {
 	InternalExceptionPointer exception;
 	/*
-	for (InstanceObject *i = destructibleList, *next; i; i = next) {
-		next = (InstanceObject *)i->nextSameKindObject;
+	for (InstanceObject *i = destructible_list, *next; i; i = next) {
+		next = (InstanceObject *)i->next_same_kind_object;
 
-		destructibleList = next;
+		destructible_list = next;
 
-		i->objectFlags |= VF_DESTRUCTED;
+		i->object_flags |= VF_DESTRUCTED;
 
-		Value resultOut;
-		for (auto j : i->_class->cachedInstantiatedMethodTable->destructors) {
-			if ((exception = execFn(j, nullptr, i, nullptr, 0, resultOut))) {
-				if (!_uncaughtExceptionHandler) {
+		Value result_out;
+		for (auto j : i->_class->cached_instantiated_method_table->destructors) {
+			if ((exception = exec_fn(j, nullptr, i, nullptr, 0, result_out))) {
+				if (!_uncaught_exception_handler) {
 					std::terminate();
 				}
-				_uncaughtExceptionHandler(std::move(exception));
+				_uncaught_exception_handler(std::move(exception));
 			}
 		}
 	}*/
 }
 
 SLAKE_API void Runtime::gc() {
-	runtimeFlags |= _RT_INGC;
+	runtime_flags |= _RT_INGC;
 
 	// TODO: This is a stupid way to make sure that all the destructible objects are destructed.
 	// Can we create a separate GC thread in advance and let it to execute them?
-	Object *youngObjectsEnd;
-	_gcSerial(youngObjectList, youngObjectsEnd, nYoungObjects, ObjectGeneration::Persistent, &persistentAlloc);
+	Object *young_objects_end;
+	_gc_serial(young_object_list, young_objects_end, num_young_objects, ObjectGeneration::Persistent, &persistent_alloc);
 
-	size_t youngSize = youngAlloc.szAllocated.load();
-	if (youngSize) {
-		persistentAlloc.szAllocated += youngSize;
-		youngAlloc.szAllocated = 0;
+	size_t young_size = young_alloc.sz_allocated.load();
+	if (young_size) {
+		persistent_alloc.sz_allocated += young_size;
+		young_alloc.sz_allocated = 0;
 	}
 
-	if (youngObjectsEnd) {
-		youngObjectsEnd->nextSameGenObject = persistentObjectList;
+	if (young_objects_end) {
+		young_objects_end->next_same_gen_object = persistent_object_list;
 	}
-	if (persistentObjectList) {
-		persistentObjectList->prevSameGenObject = youngObjectsEnd;
+	if (persistent_object_list) {
+		persistent_object_list->prev_same_gen_object = young_objects_end;
 	}
-	if (youngObjectList)
-		persistentObjectList = youngObjectList;
-	nPersistentObjects += nYoungObjects;
+	if (young_object_list)
+		persistent_object_list = young_object_list;
+	num_persistent_objects += num_young_objects;
 
-	youngObjectList = nullptr;
-	nYoungObjects = 0;
+	young_object_list = nullptr;
+	num_young_objects = 0;
 
-	if (persistentAlloc.szAllocated >= _szComputedPersistentGcLimit) {
-		Object *persistentObjectsEnd;
-		_gcSerial(persistentObjectList, persistentObjectsEnd, nPersistentObjects, ObjectGeneration::Persistent, nullptr);
+	if (persistent_alloc.sz_allocated >= _sz_computed_persistent_gc_limit) {
+		Object *persistent_objects_end;
+		_gc_serial(persistent_object_list, persistent_objects_end, num_persistent_objects, ObjectGeneration::Persistent, nullptr);
 
-		_szPersistentMemUsedAfterLastGc = persistentAlloc.szAllocated;
-		_szComputedPersistentGcLimit = _szPersistentMemUsedAfterLastGc + (_szPersistentMemUsedAfterLastGc >> 1);
+		_sz_persistent_mem_used_after_last_gc = persistent_alloc.sz_allocated;
+		_sz_computed_persistent_gc_limit = _sz_persistent_mem_used_after_last_gc + (_sz_persistent_mem_used_after_last_gc >> 1);
 	}
 
-	_szMemUsedAfterLastGc = youngAlloc.szAllocated + persistentAlloc.szAllocated;
-	_szComputedGcLimit = _szMemUsedAfterLastGc + (_szMemUsedAfterLastGc >> 1);
+	_sz_mem_used_after_last_gc = young_alloc.sz_allocated + persistent_alloc.sz_allocated;
+	_sz_computed_gc_limit = _sz_mem_used_after_last_gc + (_sz_mem_used_after_last_gc >> 1);
 
 #ifndef _NDEBUG
-	if (youngAlloc.refCount) {
+	if (young_alloc.ref_count) {
 		puts("Detected unreplaced allocator references!");
 
-		for (auto i : youngAlloc.recordedRefPoints) {
+		for (auto i : young_alloc.recorded_ref_points) {
 			printf("Reference point #%zu\n", i);
 		}
 
@@ -75,5 +75,5 @@ SLAKE_API void Runtime::gc() {
 	}
 #endif
 
-	runtimeFlags &= ~_RT_INGC;
+	runtime_flags &= ~_RT_INGC;
 }

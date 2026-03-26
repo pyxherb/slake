@@ -2,15 +2,15 @@
 
 using namespace slake;
 
-SLAKE_API GenericParam::GenericParam(peff::Alloc *selfAllocator) : name(selfAllocator), interfaces(selfAllocator) {
+SLAKE_API GenericParam::GenericParam(peff::Alloc *self_allocator) : name(self_allocator), interfaces(self_allocator) {
 }
 
-SLAKE_API GenericParam::GenericParam(GenericParam &&rhs) : name(std::move(rhs.name)), inputType(std::move(rhs.inputType)), baseType(std::move(rhs.baseType)), interfaces(std::move(rhs.interfaces)) {
+SLAKE_API GenericParam::GenericParam(GenericParam &&rhs) : name(std::move(rhs.name)), input_type(std::move(rhs.input_type)), base_type(std::move(rhs.base_type)), interfaces(std::move(rhs.interfaces)) {
 }
 
-SLAKE_API void GenericParam::replaceAllocator(peff::Alloc *allocator) noexcept {
-	name.replaceAllocator(allocator);
-	interfaces.replaceAllocator(allocator);
+SLAKE_API void GenericParam::replace_allocator(peff::Alloc *allocator) noexcept {
+	name.replace_allocator(allocator);
+	interfaces.replace_allocator(allocator);
 }
 
 SLAKE_API int ParamListComparator::operator()(const ParamTypeList &lhs, const ParamTypeList &rhs) const noexcept {
@@ -22,47 +22,47 @@ SLAKE_API int ParamListComparator::operator()(const ParamTypeList &lhs, const Pa
 	for (size_t j = 0; j < lhs.size(); ++j) {
 		TypeRef l = lhs.at(j), r = rhs.at(j);
 
-		if (l.typeId == TypeId::GenericArg && r.typeId == TypeId::GenericArg) {
-			GenericArgTypeDefObject *ltd = (GenericArgTypeDefObject *)l.typeDef,
-									*rtd = (GenericArgTypeDefObject *)r.typeDef;
+		if (l.type_id == TypeId::GenericArg && r.type_id == TypeId::GenericArg) {
+			GenericArgTypeDefObject *ltd = (GenericArgTypeDefObject *)l.type_def,
+									*rtd = (GenericArgTypeDefObject *)r.type_def;
 
-			auto findDefObject = [](Object *member, std::string_view name) -> std::pair<Object *, size_t> {
+			auto find_def_object = [](Object *member, std::string_view name) -> std::pair<Object *, size_t> {
 				for (Object *i = member; i;) {
-					switch (i->getObjectKind()) {
+					switch (i->get_object_kind()) {
 						case ObjectKind::Class: {
 							ClassObject *j = (ClassObject *)i;
 
-							if (auto it = j->mappedGenericParams.find(name); it != j->mappedGenericParams.end()) {
+							if (auto it = j->mapped_generic_params.find(name); it != j->mapped_generic_params.end()) {
 								return { j, it.value() };
 							}
-							i = j->getParent();
+							i = j->get_parent();
 							break;
 						}
 						case ObjectKind::Interface: {
 							InterfaceObject *j = (InterfaceObject *)i;
 
-							if (auto it = j->mappedGenericParams.find(name); it != j->mappedGenericParams.end()) {
+							if (auto it = j->mapped_generic_params.find(name); it != j->mapped_generic_params.end()) {
 								return { j, it.value() };
 							}
-							i = j->getParent();
+							i = j->get_parent();
 							break;
 						}
 						case ObjectKind::Struct: {
 							StructObject *j = (StructObject *)i;
 
-							if (auto it = j->mappedGenericParams.find(name); it != j->mappedGenericParams.end()) {
+							if (auto it = j->mapped_generic_params.find(name); it != j->mapped_generic_params.end()) {
 								return { j, it.value() };
 							}
-							i = j->getParent();
+							i = j->get_parent();
 							break;
 						}
 						case ObjectKind::FnOverloading: {
 							FnOverloadingObject *j = (FnOverloadingObject *)i;
 
-							if (auto it = j->mappedGenericParams.find(name); it != j->mappedGenericParams.end()) {
+							if (auto it = j->mapped_generic_params.find(name); it != j->mapped_generic_params.end()) {
 								return { j, it.value() };
 							}
-							i = j->fnObject;
+							i = j->fn_object;
 							break;
 						}
 						default:
@@ -72,16 +72,16 @@ SLAKE_API int ParamListComparator::operator()(const ParamTypeList &lhs, const Pa
 				return { nullptr, SIZE_MAX };
 			};
 
-			auto ld = findDefObject(ltd->ownerObject, ltd->nameObject->data),
-				 rd = findDefObject(rtd->ownerObject, rtd->nameObject->data);
+			auto ld = find_def_object(ltd->owner_object, ltd->name_object->data),
+				 rd = find_def_object(rtd->owner_object, rtd->name_object->data);
 
 			if (ld.first && rd.first) {
-				if (ld.first->getObjectKind() < ld.first->getObjectKind())
+				if (ld.first->get_object_kind() < ld.first->get_object_kind())
 					return -1;
-				if (rd.first->getObjectKind() > rd.first->getObjectKind())
+				if (rd.first->get_object_kind() > rd.first->get_object_kind())
 					return 1;
 
-				switch (ld.first->getObjectKind()) {
+				switch (ld.first->get_object_kind()) {
 					case ObjectKind::FnOverloading: {
 						if (ld.second < rd.second)
 							return -1;
@@ -120,65 +120,65 @@ SLAKE_API int GenericArgListComparator::operator()(const peff::DynArray<Value>& 
 	return 0;
 }
 
-SLAKE_API size_t slake::getGenericParamIndex(const GenericParamList &genericParamList, const std::string_view &name) {
-	for (size_t i = 0; i < genericParamList.size(); ++i) {
-		if (genericParamList.at(i).name == name)
+SLAKE_API size_t slake::get_generic_param_index(const GenericParamList &generic_param_list, const std::string_view &name) {
+	for (size_t i = 0; i < generic_param_list.size(); ++i) {
+		if (generic_param_list.at(i).name == name)
 			return i;
 	}
 
 	return SIZE_MAX;
 }
 
-SLAKE_API GenericParam *slake::getGenericParam(Object *object, const std::string_view &name, Object **ownerOut) {
+SLAKE_API GenericParam *slake::get_generic_param(Object *object, const std::string_view &name, Object **owner_out) {
 	while (true) {
-		size_t idxGenericParam;
+		size_t idx_generic_param;
 
-		switch (object->getObjectKind()) {
+		switch (object->get_object_kind()) {
 			case ObjectKind::Class: {
-				ClassObject *classObject = (ClassObject *)object;
-				idxGenericParam = getGenericParamIndex(classObject->genericParams, name);
-				if (idxGenericParam != SIZE_MAX) {
-					if (ownerOut)
-						*ownerOut = object;
-					return &classObject->genericParams.at(idxGenericParam);
+				ClassObject *class_object = (ClassObject *)object;
+				idx_generic_param = get_generic_param_index(class_object->generic_params, name);
+				if (idx_generic_param != SIZE_MAX) {
+					if (owner_out)
+						*owner_out = object;
+					return &class_object->generic_params.at(idx_generic_param);
 				}
 
-				if (!classObject->getParent())
+				if (!class_object->get_parent())
 					return nullptr;
 
-				object = classObject->getParent();
+				object = class_object->get_parent();
 
 				break;
 			}
 			case ObjectKind::Interface: {
-				InterfaceObject *interfaceObject = (InterfaceObject *)object;
-				idxGenericParam = getGenericParamIndex(interfaceObject->genericParams, name);
-				if (idxGenericParam != SIZE_MAX) {
-					if (ownerOut)
-						*ownerOut = object;
-					return &interfaceObject->genericParams.at(idxGenericParam);
+				InterfaceObject *interface_object = (InterfaceObject *)object;
+				idx_generic_param = get_generic_param_index(interface_object->generic_params, name);
+				if (idx_generic_param != SIZE_MAX) {
+					if (owner_out)
+						*owner_out = object;
+					return &interface_object->generic_params.at(idx_generic_param);
 				}
 
-				if (!interfaceObject->getParent())
+				if (!interface_object->get_parent())
 					return nullptr;
 
-				object = interfaceObject->getParent();
+				object = interface_object->get_parent();
 
 				break;
 			}
 			case ObjectKind::FnOverloading: {
-				FnOverloadingObject *fnOverloadingObject = (FnOverloadingObject *)object;
-				idxGenericParam = getGenericParamIndex(fnOverloadingObject->genericParams, name);
-				if (idxGenericParam != SIZE_MAX) {
-					if (ownerOut)
-						*ownerOut = object;
-					return &fnOverloadingObject->genericParams.at(idxGenericParam);
+				FnOverloadingObject *fn_overloading_object = (FnOverloadingObject *)object;
+				idx_generic_param = get_generic_param_index(fn_overloading_object->generic_params, name);
+				if (idx_generic_param != SIZE_MAX) {
+					if (owner_out)
+						*owner_out = object;
+					return &fn_overloading_object->generic_params.at(idx_generic_param);
 				}
 
-				if (!fnOverloadingObject->fnObject->getParent())
+				if (!fn_overloading_object->fn_object->get_parent())
 					return nullptr;
 
-				object = fnOverloadingObject->fnObject->getParent();
+				object = fn_overloading_object->fn_object->get_parent();
 
 				break;
 			}

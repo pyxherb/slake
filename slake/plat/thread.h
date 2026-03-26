@@ -20,24 +20,24 @@ namespace slake {
 	using NativeThreadHandle = pthread_t;
 #endif
 
-	NativeThreadHandle currentThreadHandle();
-	void yieldCurrentThread();
+	NativeThreadHandle current_thread_handle();
+	void yield_current_thread();
 
-	void getCurrentThreadStackBounds(void *&baseOut, size_t &sizeOut);
+	void get_current_thread_stack_bounds(void *&base_out, size_t &size_out);
 
 	class Mutex final {
 	public:
 #if _WIN32
-		CRITICAL_SECTION nativeHandle;
+		CRITICAL_SECTION native_handle;
 #elif __unix__
-		pthread_mutex_t nativeHandle;
+		pthread_mutex_t native_handle;
 #endif
 
 		SLAKE_API Mutex();
 		SLAKE_API ~Mutex();
 
 		SLAKE_API void lock();
-		SLAKE_API bool tryLock();
+		SLAKE_API bool try_lock();
 		SLAKE_API void unlock();
 	};
 
@@ -82,11 +82,11 @@ namespace slake {
 			bool expected = false;
 			while (!locked.compare_exchange_strong(expected, true, std::memory_order_acquire)) {
 				expected = false;
-				yieldCurrentThread();
+				yield_current_thread();
 			}
 		}
 
-		SLAKE_FORCEINLINE bool tryLock() noexcept {
+		SLAKE_FORCEINLINE bool try_lock() noexcept {
 			bool expected = false;
 			if(!locked.compare_exchange_strong(expected, true, std::memory_order_acquire)) {
 				return false;
@@ -130,11 +130,11 @@ namespace slake {
 	class Cond final {
 	public:
 #if _WIN32
-		CRITICAL_SECTION criticalSection;
-		CONDITION_VARIABLE nativeHandle;
+		CRITICAL_SECTION critical_section;
+		CONDITION_VARIABLE native_handle;
 #elif __unix__
-		Mutex internalMutex;
-		pthread_cond_t nativeHandle;
+		Mutex internal_mutex;
+		pthread_cond_t native_handle;
 #endif
 
 		SLAKE_API Cond();
@@ -142,7 +142,7 @@ namespace slake {
 
 		SLAKE_API void wait();
 		SLAKE_API void notify();
-		SLAKE_API void notifyAll();
+		SLAKE_API void notify_all();
 	};
 
 	enum class ThreadKind : uint8_t {
@@ -165,21 +165,21 @@ namespace slake {
 
 	class Thread final {
 	private:
-		Mutex _initialRunMutex;
-		Mutex _doneMutex;
+		Mutex _initial_run_mutex;
+		Mutex _done_mutex;
 
 #if _WIN32
-		static DWORD WINAPI _threadWrapperProc(LPVOID lpThreadParameter);
+		static DWORD WINAPI _thread_wrapper_proc(LPVOID lp_thread_parameter);
 #elif __unix__
-		static void *_threadWrapperProc(void *arg);
+		static void *_thread_wrapper_proc(void *arg);
 #endif
 
 	public:
-		peff::RcObjectPtr<peff::Alloc> selfAllocator;
-		NativeThreadHandle nativeThreadHandle;
+		peff::RcObjectPtr<peff::Alloc> self_allocator;
+		NativeThreadHandle native_thread_handle;
 		Runnable *runnable;
 
-		SLAKE_API Thread(peff::Alloc *selfAllocator, Runnable *runnable);
+		SLAKE_API Thread(peff::Alloc *self_allocator, Runnable *runnable);
 		SLAKE_API ~Thread();
 
 		SLAKE_API void start();
@@ -187,7 +187,7 @@ namespace slake {
 
 		SLAKE_API void dealloc();
 
-		SLAKE_API static Thread *alloc(peff::Alloc *selfAllocator, Runnable *runnable, size_t stackSize);
+		SLAKE_API static Thread *alloc(peff::Alloc *self_allocator, Runnable *runnable, size_t stack_size);
 	};
 }
 

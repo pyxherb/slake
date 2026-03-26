@@ -9,7 +9,7 @@ namespace slake {
 	struct MajorFrame;
 	struct Context;
 
-	[[nodiscard]] InternalExceptionPointer raiseMismatchedVarTypeError(Runtime *rt);
+	[[nodiscard]] InternalExceptionPointer raise_mismatched_var_type_error(Runtime *rt);
 }
 
 #endif

@@ -16,59 +16,59 @@
 namespace slake {
 	class CountablePoolAlloc : public peff::Alloc {
 	protected:
-		std::atomic_size_t refCount = 0;
+		std::atomic_size_t ref_count = 0;
 
 	public:
 		Runtime *runtime;
 
 		peff::RcObjectPtr<peff::Alloc> upstream;
-		std::atomic_size_t szAllocated = 0;
+		std::atomic_size_t sz_allocated = 0;
 
 		SLAKE_API CountablePoolAlloc(Runtime *runtime, peff::Alloc *upstream);
 
-		SLAKE_API virtual size_t incRef(size_t globalRc) noexcept override;
-		SLAKE_API virtual size_t decRef(size_t globalRc) noexcept override;
+		SLAKE_API virtual size_t inc_ref(size_t global_rc) noexcept override;
+		SLAKE_API virtual size_t dec_ref(size_t global_rc) noexcept override;
 
 		SLAKE_API virtual void *alloc(size_t size, size_t alignment) noexcept override;
-		SLAKE_API virtual void *realloc(void *ptr, size_t size, size_t alignment, size_t newSize, size_t newAlignment) noexcept override;
-		SLAKE_API virtual void *reallocInPlace(void *ptr, size_t size, size_t alignment, size_t newSize, size_t newAlignment) noexcept override;
+		SLAKE_API virtual void *realloc(void *ptr, size_t size, size_t alignment, size_t new_size, size_t new_alignment) noexcept override;
+		SLAKE_API virtual void *realloc_in_place(void *ptr, size_t size, size_t alignment, size_t new_size, size_t new_alignment) noexcept override;
 		SLAKE_API virtual void release(void *p, size_t size, size_t alignment) noexcept override;
 
-		SLAKE_API virtual bool isReplaceable(const peff::Alloc *rhs) const noexcept override;
+		SLAKE_API virtual bool is_replaceable(const peff::Alloc *rhs) const noexcept override;
 
-		SLAKE_API virtual peff::UUID getTypeId() const noexcept override;
-		SLAKE_API virtual void onRefZero() noexcept;
+		SLAKE_API virtual peff::UUID type_identity() const noexcept override;
+		SLAKE_API virtual void on_ref_zero() noexcept;
 	};
 
 	class GenerationalPoolAlloc : public peff::Alloc {
 	protected:
-		std::atomic_size_t refCount = 0;
+		std::atomic_size_t ref_count = 0;
 		friend class Runtime;
 
 	public:
 		Runtime *runtime;
 
 #ifndef _NDEBUG
-		peff::Set<size_t> recordedRefPoints;
+		peff::Set<size_t> recorded_ref_points;
 #endif
 
 		peff::RcObjectPtr<peff::Alloc> upstream;
-		std::atomic_size_t szAllocated = 0;
+		std::atomic_size_t sz_allocated = 0;
 
 		SLAKE_API GenerationalPoolAlloc(Runtime *runtime, peff::Alloc *upstream);
 
-		SLAKE_API virtual size_t incRef(size_t globalRc) noexcept override;
-		SLAKE_API virtual size_t decRef(size_t globalRc) noexcept override;
+		SLAKE_API virtual size_t inc_ref(size_t global_rc) noexcept override;
+		SLAKE_API virtual size_t dec_ref(size_t global_rc) noexcept override;
 
 		SLAKE_API virtual void *alloc(size_t size, size_t alignment) noexcept override;
-		SLAKE_API virtual void *realloc(void *ptr, size_t size, size_t alignment, size_t newSize, size_t newAlignment) noexcept override;
-		SLAKE_API virtual void *reallocInPlace(void *ptr, size_t size, size_t alignment, size_t newSize, size_t newAlignment) noexcept override;
+		SLAKE_API virtual void *realloc(void *ptr, size_t size, size_t alignment, size_t new_size, size_t new_alignment) noexcept override;
+		SLAKE_API virtual void *realloc_in_place(void *ptr, size_t size, size_t alignment, size_t new_size, size_t new_alignment) noexcept override;
 		SLAKE_API virtual void release(void *p, size_t size, size_t alignment) noexcept override;
 
-		SLAKE_API virtual bool isReplaceable(const peff::Alloc *rhs) const noexcept override;
+		SLAKE_API virtual bool is_replaceable(const peff::Alloc *rhs) const noexcept override;
 
-		SLAKE_API virtual peff::UUID getTypeId() const noexcept override;
-		SLAKE_API virtual void onRefZero() noexcept;
+		SLAKE_API virtual peff::UUID type_identity() const noexcept override;
+		SLAKE_API virtual void on_ref_zero() noexcept;
 	};
 
 	using RuntimeFlags = uint32_t;
@@ -89,7 +89,7 @@ namespace slake {
 		_RT_INITING = 0x80000000;
 
 	struct SecurityPolicy {
-		bool allowUnsafe;
+		bool allow_unsafe;
 	};
 
 	using LoadModuleFlags = uint8_t;
@@ -115,34 +115,34 @@ namespace slake {
 
 	struct GCWalkContext {
 	private:
-		Object *walkableList = nullptr;
-		Mutex accessMutex;
-		InstanceObject *unwalkedInstanceList = nullptr;
-		InstanceObject *destructibleList = nullptr;
-		InstanceObject *typeDefList = nullptr;
-		Object *unwalkedList = nullptr;
-		Object *walkedList = nullptr;
+		Object *walkable_list = nullptr;
+		Mutex access_mutex;
+		InstanceObject *unwalked_instance_list = nullptr;
+		InstanceObject *destructible_list = nullptr;
+		InstanceObject *type_def_list = nullptr;
+		Object *unwalked_list = nullptr;
+		Object *walked_list = nullptr;
 
 	public:
-		SLAKE_API void removeFromCurGCSet(Object *object);
-		SLAKE_API void pushObject(Object *object);
-		SLAKE_API void removeFromUnwalkedList(Object *v);
-		SLAKE_API void removeFromWalkableList(Object *v);
-		SLAKE_API void removeFromDestructibleList(Object *v);
+		SLAKE_API void remove_from_cur_gcset(Object *object);
+		SLAKE_API void push_object(Object *object);
+		SLAKE_API void remove_from_unwalked_list(Object *v);
+		SLAKE_API void remove_from_walkable_list(Object *v);
+		SLAKE_API void remove_from_destructible_list(Object *v);
 
-		SLAKE_API bool isWalkableListEmpty();
-		SLAKE_API Object *getWalkableList();
-		SLAKE_API void pushWalkable(Object *walkableObject);
+		SLAKE_API bool is_walkable_list_empty();
+		SLAKE_API Object *get_walkable_list();
+		SLAKE_API void push_walkable(Object *walkable_object);
 
-		SLAKE_API Object *getUnwalkedList(bool clearList);
-		SLAKE_API void pushUnwalked(Object *walkableObject);
-		SLAKE_API void updateUnwalkedList(Object *deletedObject);
+		SLAKE_API Object *get_unwalked_list(bool clear_list);
+		SLAKE_API void push_unwalked(Object *walkable_object);
+		SLAKE_API void update_unwalked_list(Object *deleted_object);
 
-		SLAKE_API Object *getWalkedList();
-		SLAKE_API void pushWalked(Object *walkedObject);
+		SLAKE_API Object *get_walked_list();
+		SLAKE_API void push_walked(Object *walked_object);
 
-		SLAKE_API InstanceObject *getDestructibleList();
-		SLAKE_API void pushDestructible(InstanceObject *v);
+		SLAKE_API InstanceObject *get_destructible_list();
+		SLAKE_API void push_destructible(InstanceObject *v);
 
 		SLAKE_API void reset();
 	};
@@ -153,20 +153,20 @@ namespace slake {
 
 		struct GenericInstantiationDispatcher;
 
-		mutable CountablePoolAlloc fixedAlloc;
-		mutable GenerationalPoolAlloc youngAlloc;
-		mutable GenerationalPoolAlloc persistentAlloc;
+		mutable CountablePoolAlloc fixed_alloc;
+		mutable GenerationalPoolAlloc young_alloc;
+		mutable GenerationalPoolAlloc persistent_alloc;
 
 	private:
-		peff::RcObjectPtr<peff::Alloc> selfAllocator;
+		peff::RcObjectPtr<peff::Alloc> self_allocator;
 		/// @brief Root value of the runtime.
-		ModuleObject *_rootObject;
+		ModuleObject *_root_object;
 
 		struct GenericLookupEntry {
-			MemberObject *originalObject;
-			peff::DynArray<Value> genericArgs;
+			MemberObject *original_object;
+			peff::DynArray<Value> generic_args;
 		};
-		mutable peff::Map<const MemberObject *, GenericLookupEntry> _genericCacheLookupTable;
+		mutable peff::Map<const MemberObject *, GenericLookupEntry> _generic_cache_lookup_table;
 
 		using GenericCacheTable =
 			peff::Map<
@@ -180,83 +180,83 @@ namespace slake {
 			GenericCacheTable>;
 
 		/// @brief Cached instances of generic values.
-		mutable GenericCacheDirectory _genericCacheDir;
+		mutable GenericCacheDirectory _generic_cache_dir;
 
 		/// @brief Size of memory allocated for values after last GC cycle.
-		size_t _szMemUsedAfterLastGc = 0,
-			   _szComputedGcLimit = 0,
-			   _szPersistentMemUsedAfterLastGc = 0,
-			   _szComputedPersistentGcLimit = 0;
+		size_t _sz_mem_used_after_last_gc = 0,
+			   _sz_computed_gc_limit = 0,
+			   _sz_persistent_mem_used_after_last_gc = 0,
+			   _sz_computed_persistent_gc_limit = 0;
 
-		UncaughtExceptionHandler _uncaughtExceptionHandler = nullptr;
+		UncaughtExceptionHandler _uncaught_except_handler = nullptr;
 
 		struct LoaderContext {
 			std::istream &fs;
-			Object *ownerObject;
-			bool isInGenericScope;
+			Object *owner_object;
+			bool is_in_generic_scope;
 		};
 
-		SLAKE_API MinorFrame *_fetchMinorFrameUnchecked(
+		SLAKE_API MinorFrame *_fetch_minor_frame_unchecked(
 			Context *context,
-			const MajorFrame *majorFrame,
-			size_t stackOffset);
-		SLAKE_API MinorFrame *_fetchMinorFrame(
+			const MajorFrame *major_frame,
+			size_t stack_offset);
+		SLAKE_API MinorFrame *_fetch_minor_frame(
 			Context *context,
-			const MajorFrame *majorFrame,
-			size_t stackOffset);
-		SLAKE_API AllocaRecord *_allocAllocaRecord(Context *context, const MajorFrame *frame, uint32_t outputReg);
-		SLAKE_API static Value *_fetchArgStack(
-			char *dataStack,
-			size_t stackSize,
-			const MajorFrame *majorFrame,
-			size_t stackOffset);
-		SLAKE_API AllocaRecord *_fetchAllocaRecord(
+			const MajorFrame *major_frame,
+			size_t stack_offset);
+		SLAKE_API AllocaRecord *_alloc_alloca_record(Context *context, const MajorFrame *frame, uint32_t output_reg);
+		SLAKE_API static Value *_fetch_arg_stack(
+			char *data_stack,
+			size_t stack_size,
+			const MajorFrame *major_frame,
+			size_t stack_offset);
+		SLAKE_API AllocaRecord *_fetch_alloca_record(
 			Context *context,
-			const MajorFrame *majorFrame,
-			size_t stackOffset);
-		SLAKE_API static MajorFrame *_fetchMajorFrameUnchecked(
+			const MajorFrame *major_frame,
+			size_t stack_offset);
+		SLAKE_API static MajorFrame *_fetch_major_frame_unchecked(
 			Context *context,
-			size_t stackOffset);
-		SLAKE_API static MajorFrame *_fetchMajorFrame(
+			size_t stack_offset);
+		SLAKE_API static MajorFrame *_fetch_major_frame(
 			Context *context,
-			size_t stackOffset);
-		SLAKE_API ExceptHandler *_fetchExceptHandler(
+			size_t stack_offset);
+		SLAKE_API ExceptHandler *_fetch_except_handler(
 			Context *context,
-			MajorFrame *majorFrame,
-			size_t stackOffset);
+			MajorFrame *major_frame,
+			size_t stack_offset);
 		/// @brief Execute a single instruction.
 		/// @param context Context for execution.
 		/// @param ins Instruction to be executed.
-		[[nodiscard]] InternalExceptionPointer _execIns(ContextObject *const context, MajorFrame *const curMajorFrame, const Opcode opcode, const size_t output, const size_t nOperands, const Value *const operands, bool &isContextChangedOut) noexcept;
+		[[nodiscard]] InternalExceptionPointer _exec_ins(ContextObject *const context, MajorFrame *const cur_major_frame, const Opcode opcode, const size_t output, const size_t num_operands, const Value *const operands, bool &is_context_changed_out) noexcept;
 
 		friend struct Context;
 
 	public:
-		Object *youngObjectList = nullptr, *persistentObjectList = nullptr;
-		size_t nYoungObjects = 0, nPersistentObjects = 0;
+		Object *young_object_list = nullptr, *persistent_object_list = nullptr;
+		size_t num_young_objects = 0, num_persistent_objects = 0;
 
-		Object *instanceObjectList = nullptr;
-		Object *contextObjectList = nullptr;
-		Object *classObjectList = nullptr;
+		Object *instance_object_list = nullptr;
+		Object *context_object_list = nullptr;
+		Object *class_object_list = nullptr;
 
-		peff::Set<TypeDefObject *, TypeDefComparator, true> typeDefs;
+		peff::Set<TypeDefObject *, TypeDefComparator, true> type_defs;
 
-		SLAKE_API TypeDefObject *getEqualTypeDef(TypeDefObject *typeDef) const noexcept;
-		SLAKE_API void unregisterTypeDef(TypeDefObject *typeDef) noexcept;
-		SLAKE_API InternalExceptionPointer registerTypeDef(TypeDefObject *typeDef) noexcept;
+		SLAKE_API TypeDefObject *get_equal_type_def(TypeDefObject *type_def) const noexcept;
+		SLAKE_API void unregister_type_def(TypeDefObject *type_def) noexcept;
+		SLAKE_API InternalExceptionPointer register_type_def(TypeDefObject *type_def) noexcept;
 
 	private:
-		SLAKE_API void _gcWalk(GCWalkContext *context, MethodTable *methodTable);
-		SLAKE_API void _gcWalk(GCWalkContext *context, GenericParamList &genericParamList);
-		SLAKE_API void _gcWalk(GCWalkContext *context, const TypeRef &type);
-		SLAKE_API void _gcWalk(GCWalkContext *context, const Value &i);
-		SLAKE_API void _gcWalk(GCWalkContext *context, char *stackTop, size_t szStack, ResumableContextData &i);
-		SLAKE_API void _gcWalk(GCWalkContext *context, Object *i);
-		SLAKE_API void _gcWalk(GCWalkContext *context, char *dataStack, size_t stackSize, MajorFrame *majorFrame);
-		SLAKE_API void _gcWalk(GCWalkContext *context, Context &value);
-		SLAKE_API void _gcSerial(Object *&objectList, Object *&endObjectOut, size_t &nObjects, ObjectGeneration newGeneration, peff::Alloc *newGenerationAllocator);
+		SLAKE_API void _gc_walk(GCWalkContext *context, MethodTable *method_table);
+		SLAKE_API void _gc_walk(GCWalkContext *context, GenericParamList &generic_param_list);
+		SLAKE_API void _gc_walk(GCWalkContext *context, const TypeRef &type);
+		SLAKE_API void _gc_walk(GCWalkContext *context, const Value &i);
+		SLAKE_API void _gc_walk(GCWalkContext *context, char *stack_top, size_t sz_stack, ResumableContextData &i);
+		SLAKE_API void _gc_walk(GCWalkContext *context, Object *i);
+		SLAKE_API void _gc_walk(GCWalkContext *context, char *data_stack, size_t stack_size, MajorFrame *major_frame);
+		SLAKE_API void _gc_walk(GCWalkContext *context, Context &value);
+		SLAKE_API void _gc_serial(Object *&object_list, Object *&end_object_out, size_t &num_objects, ObjectGeneration new_generation, peff::Alloc *new_generation_allocator);
 
-		std::unique_ptr<Thread, peff::DeallocableDeleter<Thread>> parallelGcThread;
+		std::unique_ptr<Thread, peff::DeallocableDeleter<Thread>> parallel_gc_thread;
 
 		enum class ParallelGcThreadState : uint8_t {
 			Alive = 0,
@@ -268,9 +268,9 @@ namespace slake {
 		public:
 			Runtime *runtime;
 			GCWalkContext context;
-			bool isActive = false, isDone = false;
-			Cond activeCond, doneCond;
-			ParallelGcThreadState threadState = ParallelGcThreadState::Alive;
+			bool is_active = false, is_done = false;
+			Cond active_cond, done_cond;
+			ParallelGcThreadState thread_state = ParallelGcThreadState::Alive;
 
 			SLAKE_API ParallelGcThreadRunnable(Runtime *runtime);
 			SLAKE_API virtual void run() override;
@@ -278,25 +278,25 @@ namespace slake {
 			SLAKE_API void dealloc();
 		};
 
-		std::unique_ptr<ParallelGcThreadRunnable, peff::DeallocableDeleter<ParallelGcThreadRunnable>> parallelGcThreadRunnable;
+		std::unique_ptr<ParallelGcThreadRunnable, peff::DeallocableDeleter<ParallelGcThreadRunnable>> parallel_gc_thread_runnable;
 
-		SLAKE_API bool _allocParallelGcResources();
-		SLAKE_API void _releaseParallelGcResources();
+		SLAKE_API bool _alloc_parallel_gc_resources();
+		SLAKE_API void _release_parallel_gc_resources();
 
-		SLAKE_API void _gcParallelHeapless(Object *&objectList, Object *&endObjectOut, size_t &nObjects, ObjectGeneration newGeneration);
+		SLAKE_API void _gc_parallel_heapless(Object *&object_list, Object *&end_object_out, size_t &num_objects, ObjectGeneration new_generation);
 
-		SLAKE_API void _destructDestructibleObjects(InstanceObject *destructibleList);
+		SLAKE_API void _destruct_destructible_objects(InstanceObject *destructible_list);
 
-		[[nodiscard]] SLAKE_API InternalExceptionPointer _instantiateModuleFields(GenericInstantiationDispatcher &dispatcher, BasicModuleObject *mod, GenericInstantiationContext *instantiationContext);
+		[[nodiscard]] SLAKE_API InternalExceptionPointer _instantiate_module_fields(GenericInstantiationDispatcher &dispatcher, BasicModuleObject *mod, GenericInstantiationContext *instantiation_context);
 
-		[[nodiscard]] SLAKE_API InternalExceptionPointer _mapGenericParams(const Object *v, GenericInstantiationContext *instantiationContext) const;
-		[[nodiscard]] SLAKE_API InternalExceptionPointer _mapGenericParams(const FnOverloadingObject *ol, GenericInstantiationContext *instantiationContext) const;
+		[[nodiscard]] SLAKE_API InternalExceptionPointer _map_generic_params(const Object *v, GenericInstantiationContext *instantiation_context) const;
+		[[nodiscard]] SLAKE_API InternalExceptionPointer _map_generic_params(const FnOverloadingObject *ol, GenericInstantiationContext *instantiation_context) const;
 
-		[[nodiscard]] SLAKE_API InternalExceptionPointer _instantiateGenericObject(GenericInstantiationDispatcher &dispatcher, Reference dest, Value value, GenericInstantiationContext *instantiationContext);
-		[[nodiscard]] SLAKE_API InternalExceptionPointer _instantiateGenericObject(GenericInstantiationDispatcher &dispatcher, TypeRef &type, GenericInstantiationContext *instantiationContext);
-		[[nodiscard]] SLAKE_API InternalExceptionPointer _instantiateGenericObject(GenericInstantiationDispatcher &dispatcher, Value &value, GenericInstantiationContext *instantiationContext);
-		[[nodiscard]] SLAKE_API InternalExceptionPointer _instantiateGenericObject(GenericInstantiationDispatcher &dispatcher, Object *v, GenericInstantiationContext *instantiationContext);
-		[[nodiscard]] SLAKE_API InternalExceptionPointer _instantiateGenericObject(GenericInstantiationDispatcher &dispatcher, FnOverloadingObject *ol, GenericInstantiationContext *instantiationContext);
+		[[nodiscard]] SLAKE_API InternalExceptionPointer _instantiate_generic_object(GenericInstantiationDispatcher &dispatcher, Reference dest, Value value, GenericInstantiationContext *instantiation_context);
+		[[nodiscard]] SLAKE_API InternalExceptionPointer _instantiate_generic_object(GenericInstantiationDispatcher &dispatcher, TypeRef &type, GenericInstantiationContext *instantiation_context);
+		[[nodiscard]] SLAKE_API InternalExceptionPointer _instantiate_generic_object(GenericInstantiationDispatcher &dispatcher, Value &value, GenericInstantiationContext *instantiation_context);
+		[[nodiscard]] SLAKE_API InternalExceptionPointer _instantiate_generic_object(GenericInstantiationDispatcher &dispatcher, Object *v, GenericInstantiationContext *instantiation_context);
+		[[nodiscard]] SLAKE_API InternalExceptionPointer _instantiate_generic_object(GenericInstantiationDispatcher &dispatcher, FnOverloadingObject *ol, GenericInstantiationContext *instantiation_context);
 
 		friend class Object;
 		friend class RegularFnOverloadingObject;
@@ -305,200 +305,200 @@ namespace slake {
 		friend class ModuleObject;
 
 	public:
-		[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer _addLocalVar(Context *context, const MajorFrame *frame, TypeRef type, uint32_t outputReg, Reference &objectRefOut) noexcept;
-		[[nodiscard]] SLAKE_API InternalExceptionPointer _fillArgs(
+		[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer _add_local_var(Context *context, const MajorFrame *frame, TypeRef type, uint32_t output_reg, Reference &object_ref_out) noexcept;
+		[[nodiscard]] SLAKE_API InternalExceptionPointer _fill_args(
 			Context *context,
-			MajorFrame *newMajorFrame,
+			MajorFrame *new_major_frame,
 			const FnOverloadingObject *fn,
 			const Value *args,
-			uint32_t nArgs);
-		[[nodiscard]] SLAKE_API InternalExceptionPointer _createNewCoroutineMajorFrame(
+			uint32_t num_args);
+		[[nodiscard]] SLAKE_API InternalExceptionPointer _create_new_coroutine_major_frame(
 			Context *context,
 			CoroutineObject *coroutine,
-			uint32_t returnValueOut,
-			const Reference *returnStructRef) noexcept;
-		[[nodiscard]] SLAKE_API InternalExceptionPointer _createNewMajorFrame(
-			ContextObject *contextObject,
-			Object *thisObject,
+			uint32_t return_value_out,
+			const Reference *return_struct_ref) noexcept;
+		[[nodiscard]] SLAKE_API InternalExceptionPointer _create_new_major_frame(
+			ContextObject *context_object,
+			Object *this_object,
 			const FnOverloadingObject *fn,
 			const Value *args,
-			size_t offArgs,
-			uint32_t nArgs,
-			uint32_t returnValueOut,
-			const Reference *returnStructRef) noexcept;
-		SLAKE_API void _leaveMajorFrame(Context *context) noexcept;
+			size_t off_args,
+			uint32_t num_args,
+			uint32_t return_value_out,
+			const Reference *return_struct_ref) noexcept;
+		SLAKE_API void _leave_major_frame(Context *context) noexcept;
 
 		/// @brief Runtime flags.
-		RuntimeFlags runtimeFlags = 0;
+		RuntimeFlags runtime_flags = 0;
 
 		/// @brief Active contexts of threads.
-		std::map<std::thread::id, ContextObject *> activeContexts;
+		std::map<std::thread::id, ContextObject *> active_contexts;
 
 		/// @brief Thread IDs of threads which are executing destructors.
-		peff::Map<NativeThreadHandle, ExecutionRunnable *> managedThreadRunnables;
+		peff::Map<NativeThreadHandle, ExecutionRunnable *> managed_thread_runnables;
 
 		SLAKE_API Runtime(Runtime &) = delete;
 		SLAKE_API Runtime(Runtime &&) = delete;
 		SLAKE_API Runtime &operator=(Runtime &) = delete;
 		SLAKE_API Runtime &operator=(Runtime &&) = delete;
 
-		SLAKE_API Runtime(peff::Alloc *selfAllocator, peff::Alloc *upstream, RuntimeFlags flags = 0);
+		SLAKE_API Runtime(peff::Alloc *self_allocator, peff::Alloc *upstream, RuntimeFlags flags = 0);
 		SLAKE_API virtual ~Runtime();
 
 		class GenericInstantiationContext final {
 		public:
-			std::atomic_size_t refCount = 0;
-			peff::RcObjectPtr<peff::Alloc> selfAllocator;
-			const Object *mappedObject;
-			const peff::DynArray<Value> *genericArgs;
-			peff::HashMap<std::string_view, Value> mappedGenericArgs;
+			std::atomic_size_t ref_count = 0;
+			peff::RcObjectPtr<peff::Alloc> self_allocator;
+			const Object *mapped_object;
+			const peff::DynArray<Value> *generic_args;
+			peff::HashMap<std::string_view, Value> mapped_generic_args;
 
-			SLAKE_FORCEINLINE GenericInstantiationContext(peff::Alloc *selfAllocator, peff::Alloc *resourceAllocator) : selfAllocator(selfAllocator), mappedGenericArgs(resourceAllocator) {}
+			SLAKE_FORCEINLINE GenericInstantiationContext(peff::Alloc *self_allocator, peff::Alloc *resource_allocator) : self_allocator(self_allocator), mapped_generic_args(resource_allocator) {}
 			SLAKE_FORCEINLINE GenericInstantiationContext(
-				peff::Alloc *selfAllocator,
-				const Object *mappedObject,
-				const peff::DynArray<Value> *genericArgs,
-				peff::HashMap<std::string_view, Value> &&mappedGenericArgs)
-				: selfAllocator(selfAllocator),
-				  mappedObject(mappedObject),
-				  genericArgs(genericArgs),
-				  mappedGenericArgs(std::move(mappedGenericArgs)) {
+				peff::Alloc *self_allocator,
+				const Object *mapped_object,
+				const peff::DynArray<Value> *generic_args,
+				peff::HashMap<std::string_view, Value> &&mapped_generic_args)
+				: self_allocator(self_allocator),
+				  mapped_object(mapped_object),
+				  generic_args(generic_args),
+				  mapped_generic_args(std::move(mapped_generic_args)) {
 			}
 
-			SLAKE_FORCEINLINE size_t incRef(size_t globalRc) noexcept {
-				SLAKE_REFERENCED_PARAM(globalRc);
-				return ++refCount;
+			SLAKE_FORCEINLINE size_t inc_ref(size_t global_rc) noexcept {
+				SLAKE_REFERENCED_PARAM(global_rc);
+				return ++ref_count;
 			}
 
-			SLAKE_FORCEINLINE size_t decRef(size_t globalRc) noexcept {
-				SLAKE_REFERENCED_PARAM(globalRc);
-				if (!--refCount) {
-					onRefZero();
+			SLAKE_FORCEINLINE size_t dec_ref(size_t global_rc) noexcept {
+				SLAKE_REFERENCED_PARAM(global_rc);
+				if (!--ref_count) {
+					on_ref_zero();
 					return 0;
 				}
 
-				return refCount;
+				return ref_count;
 			}
 
-			SLAKE_FORCEINLINE void onRefZero() noexcept {
-				peff::destroyAndRelease<GenericInstantiationContext>(selfAllocator.get(), this, alignof(GenericInstantiationContext));
+			SLAKE_FORCEINLINE void on_ref_zero() noexcept {
+				peff::destroy_and_release<GenericInstantiationContext>(self_allocator.get(), this, alignof(GenericInstantiationContext));
 			}
 		};
 
-		SLAKE_API void invalidateGenericCache(MemberObject *i);
+		SLAKE_API void invalidate_generic_cache(MemberObject *i);
 
 		/// @brief Instantiate an generic value (e.g. generic class, etc).
 		/// @param v Object to be instantiated.
-		/// @param genericArgs Generic arguments for instantiation.
+		/// @param generic_args Generic arguments for instantiation.
 		/// @return Instantiated value.
 		/// @note You must make sure that there's no local values in the instantiation context, or the operation will trigger termination.
-		[[nodiscard]] SLAKE_API InternalExceptionPointer instantiateGenericObject(MemberObject *object, MemberObject *&objectOut, GenericInstantiationContext *instantiationContext);
+		[[nodiscard]] SLAKE_API InternalExceptionPointer instantiate_generic_object(MemberObject *object, MemberObject *&object_out, GenericInstantiationContext *instantiation_context);
 
-		SLAKE_API InternalExceptionPointer setGenericCache(MemberObject *object, const peff::DynArray<Value> &genericArgs, MemberObject *instantiatedObject);
+		SLAKE_API InternalExceptionPointer set_generic_cache(MemberObject *object, const peff::DynArray<Value> &generic_args, MemberObject *instantiated_object);
 
 		/// @brief Resolve a reference and get the referenced value.
 		/// @param ref Reference to be resolved.
-		/// @param scopeObject Scope value for resolving.
+		/// @param scope_object Scope value for resolving.
 		/// @return Resolved value which is referred by the reference.
-		SLAKE_API InternalExceptionPointer resolveIdRef(IdRefObject *ref, Reference &objectRefOut, Object *scopeObject = nullptr);
+		SLAKE_API InternalExceptionPointer resolve_id_ref(IdRefObject *ref, Reference &object_ref_out, Object *scope_object = nullptr);
 
-		[[nodiscard]] SLAKE_API bool addObject(Object *object) noexcept;
-		SLAKE_API void removeObject(Object *object) noexcept;
-		SLAKE_FORCEINLINE peff::Alloc *getFixedAlloc() const {
-			return &fixedAlloc;
+		[[nodiscard]] SLAKE_API bool add_object(Object *object) noexcept;
+		SLAKE_API void remove_object(Object *object) noexcept;
+		SLAKE_FORCEINLINE peff::Alloc *get_fixed_alloc() const {
+			return &fixed_alloc;
 		}
-		SLAKE_API peff::Alloc *getCurGenAlloc();
+		SLAKE_API peff::Alloc *get_cur_gen_alloc();
 
-		SLAKE_API HostObjectRef<ModuleObject> loadModule(const void *buf, size_t size, LoadModuleFlags flags);
+		SLAKE_API HostObjectRef<ModuleObject> load_module(const void *buf, size_t size, LoadModuleFlags flags);
 
-		SLAKE_FORCEINLINE ModuleObject *getRootObject() { return _rootObject; }
+		SLAKE_FORCEINLINE ModuleObject *get_root_object() { return _root_object; }
 
-		[[nodiscard]] SLAKE_API bool getFullRef(peff::Alloc *allocator, const MemberObject *v, peff::DynArray<IdRefEntry> &idRefOut) const;
+		[[nodiscard]] SLAKE_API bool get_full_ref(peff::Alloc *allocator, const MemberObject *v, peff::DynArray<IdRefEntry> &id_ref_out) const;
 
 		/// @brief Run a cycle of GC.
 		SLAKE_API void gc();
 
-		[[nodiscard]] SLAKE_API InternalExceptionPointer initMethodTableForClass(ClassObject *cls, ClassObject *parentClass);
+		[[nodiscard]] SLAKE_API InternalExceptionPointer init_method_table_for_class(ClassObject *cls, ClassObject *parent_class);
 
-		[[nodiscard]] SLAKE_API InternalExceptionPointer initObjectLayoutForModule(BasicModuleObject *mod, ObjectLayout *objectLayout);
-		[[nodiscard]] SLAKE_API InternalExceptionPointer initObjectLayoutForClass(ClassObject *cls, ClassObject *parentClass);
-		[[nodiscard]] SLAKE_API InternalExceptionPointer initObjectLayoutForStruct(StructObject *s);
-		[[nodiscard]] SLAKE_API InternalExceptionPointer initObjectLayoutForUnionEnumItem(UnionEnumItemObject *s);
+		[[nodiscard]] SLAKE_API InternalExceptionPointer init_object_layout_for_module(BasicModuleObject *mod, ObjectLayout *object_layout);
+		[[nodiscard]] SLAKE_API InternalExceptionPointer init_object_layout_for_class(ClassObject *cls, ClassObject *parent_class);
+		[[nodiscard]] SLAKE_API InternalExceptionPointer init_object_layout_for_struct(StructObject *s);
+		[[nodiscard]] SLAKE_API InternalExceptionPointer init_object_layout_for_union_enum_item(UnionEnumItemObject *s);
 
-		[[nodiscard]] SLAKE_API InternalExceptionPointer prepareClassForInstantiation(ClassObject *cls);
-		[[nodiscard]] SLAKE_API InternalExceptionPointer prepareStructForInstantiation(StructObject *cls);
-		[[nodiscard]] SLAKE_API InternalExceptionPointer prepareUnionEnumForInstantiation(UnionEnumObject *cls);
-		[[nodiscard]] SLAKE_API InternalExceptionPointer prepareUnionEnumItemForInstantiation(UnionEnumItemObject *cls);
+		[[nodiscard]] SLAKE_API InternalExceptionPointer prepare_class_for_instantiation(ClassObject *cls);
+		[[nodiscard]] SLAKE_API InternalExceptionPointer prepare_struct_for_instantiation(StructObject *cls);
+		[[nodiscard]] SLAKE_API InternalExceptionPointer prepare_union_enum_for_instantiation(UnionEnumObject *cls);
+		[[nodiscard]] SLAKE_API InternalExceptionPointer prepare_union_enum_item_for_instantiation(UnionEnumItemObject *cls);
 
-		SLAKE_API HostObjectRef<InstanceObject> newClassInstance(ClassObject *cls, NewClassInstanceFlags flags);
-		SLAKE_API HostObjectRef<ArrayObject> newArrayInstance(Runtime *rt, const TypeRef &type, size_t length);
+		SLAKE_API HostObjectRef<InstanceObject> new_class_instance(ClassObject *cls, NewClassInstanceFlags flags);
+		SLAKE_API HostObjectRef<ArrayObject> new_array_instance(Runtime *rt, const TypeRef &type, size_t length);
 
-		[[nodiscard]] SLAKE_API InternalExceptionPointer execContext(ContextObject *context) noexcept;
+		[[nodiscard]] SLAKE_API InternalExceptionPointer exec_context(ContextObject *context) noexcept;
 		/// @brief Execute a function on current thread.
 		/// @param overloading Function overloading to be executed.
-		/// @param prevContext Previous context for execution.
-		/// @param thisObject This object for execution.
+		/// @param prev_context Previous context for execution.
+		/// @param this_object This object for execution.
 		/// @param args Argument that will be passed to the function.
-		/// @param nArgs Number of arguments.
-		/// @param contextOut Where to receive the execution context.
-		/// @param nativeStackBaseCurrentPtr Approximate value of the initial stack pointer, used for platforms that do not support stack information features.
-		/// @param nativeStackSize Approximate value of the native stack size, used for platforms that do not support stack information features.
-		/// @note `nativeBaseCurrentPtr` and `nativeStackSize` is used for native
+		/// @param num_args Number of arguments.
+		/// @param context_out Where to receive the execution context.
+		/// @param native_stack_base_current_ptr Approximate value of the initial stack pointer, used for platforms that do not support stack information features.
+		/// @param native_stack_size Approximate value of the native stack size, used for platforms that do not support stack information features.
+		/// @note `native_base_current_ptr` and `native_stack_size` is used for native
 		/// stack size estimation on platforms that do not support stack information features,
 		/// for platform with stack information features, the arguments are ignored.
 		///
 		/// @return
-		[[nodiscard]] SLAKE_API InternalExceptionPointer execFn(
+		[[nodiscard]] SLAKE_API InternalExceptionPointer exec_fn(
 			const FnOverloadingObject *overloading,
 			ContextObject *context,
-			Object *thisObject,
+			Object *this_object,
 			const Value *args,
-			uint32_t nArgs,
-			Value &valueOut);
-		[[nodiscard]] SLAKE_API InternalExceptionPointer execFnWithSeparatedExecutionThread(
+			uint32_t num_args,
+			Value &value_out);
+		[[nodiscard]] SLAKE_API InternalExceptionPointer exec_fn_with_separated_execution_thread(
 			const FnOverloadingObject *overloading,
 			ContextObject *context,
-			Object *thisObject,
+			Object *this_object,
 			const Value *args,
-			uint32_t nArgs,
-			HostObjectRef<ContextObject> &contextOut);
-		[[nodiscard]] SLAKE_API InternalExceptionPointer createCoroutineInstance(
+			uint32_t num_args,
+			HostObjectRef<ContextObject> &context_out);
+		[[nodiscard]] SLAKE_API InternalExceptionPointer create_coroutine_instance(
 			const FnOverloadingObject *fn,
-			Object *thisObject,
+			Object *this_object,
 			const Value *args,
-			uint32_t nArgs,
-			HostObjectRef<CoroutineObject> &coroutineOut);
-		[[nodiscard]] SLAKE_API InternalExceptionPointer resumeCoroutine(
+			uint32_t num_args,
+			HostObjectRef<CoroutineObject> &coroutine_out);
+		[[nodiscard]] SLAKE_API InternalExceptionPointer resume_coroutine(
 			ContextObject *context,
 			CoroutineObject *coroutine,
-			Value &resultOut,
-			void *nativeStackBaseCurrentPtr = nullptr,
-			size_t nativeStackSize = 0);
+			Value &result_out,
+			void *native_stack_base_current_ptr = nullptr,
+			size_t native_stack_size = 0);
 
-		SLAKE_API static void *locateValueBasePtr(const Reference &entityRef) noexcept;
-		SLAKE_API static TypeRef typeofVar(const Reference &entityRef) noexcept;
-		SLAKE_API static void readVarWithType(const Reference &entityRef, const TypeRef &t, Value &valueOut) noexcept;
-		SLAKE_FORCEINLINE static void readVar(const Reference& entityRef, Value& valueOut) noexcept {
-			readVarWithType(entityRef, typeofVar(entityRef), valueOut);
+		SLAKE_API static void *locate_value_base_ptr(const Reference &entity_ref) noexcept;
+		SLAKE_API static TypeRef typeof_var(const Reference &entity_ref) noexcept;
+		SLAKE_API static void read_var_with_type(const Reference &entity_ref, const TypeRef &t, Value &value_out) noexcept;
+		SLAKE_FORCEINLINE static void read_var(const Reference& entity_ref, Value& value_out) noexcept {
+			read_var_with_type(entity_ref, typeof_var(entity_ref), value_out);
 		}
-		SLAKE_API static void writeVarWithType(const Reference &entityRef, const TypeRef &t, const Value &value) noexcept;
-		SLAKE_FORCEINLINE static void writeVar(const Reference& entityRef, const Value& value) noexcept {
-			writeVarWithType(entityRef, typeofVar(entityRef), value);
+		SLAKE_API static void write_var_with_type(const Reference &entity_ref, const TypeRef &t, const Value &value) noexcept;
+		SLAKE_FORCEINLINE static void write_var(const Reference& entity_ref, const Value& value) noexcept {
+			write_var_with_type(entity_ref, typeof_var(entity_ref), value);
 		}
-		SLAKE_FORCEINLINE InternalExceptionPointer writeVarChecked(const Reference &entityRef, const Value &value) const noexcept {
-			if (!isCompatible(typeofVar(entityRef), value))
-				return MismatchedVarTypeError::alloc(getFixedAlloc());
-			writeVar(entityRef, value);
+		SLAKE_FORCEINLINE InternalExceptionPointer write_var_checked(const Reference &entity_ref, const Value &value) const noexcept {
+			if (!is_compatible(typeof_var(entity_ref), value))
+				return MismatchedVarTypeError::alloc(get_fixed_alloc());
+			write_var(entity_ref, value);
 			return {};
 		}
 
-		SLAKE_API static size_t sizeofType(const TypeRef &type);
-		SLAKE_API static size_t alignofType(const TypeRef &type);
-		SLAKE_API Value defaultValueOf(const TypeRef &type) const;
-		SLAKE_API InternalExceptionPointer loadDeferredCustomTypeDef(CustomTypeDefObject *customTypeDef);
+		SLAKE_API static size_t sizeof_type(const TypeRef &type);
+		SLAKE_API static size_t alignof_type(const TypeRef &type);
+		SLAKE_API Value default_value_of(const TypeRef &type) const;
+		SLAKE_API InternalExceptionPointer load_deferred_custom_type_def(CustomTypeDefObject *custom_type_def);
 
-		[[nodiscard]] SLAKE_API static bool constructAt(Runtime *dest, peff::Alloc *upstream, RuntimeFlags flags = 0);
-		[[nodiscard]] SLAKE_API static Runtime *alloc(peff::Alloc *selfAllocator, peff::Alloc *upstream, RuntimeFlags flags = 0);
+		[[nodiscard]] SLAKE_API static bool construct_at(Runtime *dest, peff::Alloc *upstream, RuntimeFlags flags = 0);
+		[[nodiscard]] SLAKE_API static Runtime *alloc(peff::Alloc *self_allocator, peff::Alloc *upstream, RuntimeFlags flags = 0);
 
 		SLAKE_API void dealloc() noexcept;
 	};

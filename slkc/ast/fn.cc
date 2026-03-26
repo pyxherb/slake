@@ -2,162 +2,162 @@
 
 using namespace slkc;
 
-SLKC_API AstNodePtr<AstNode> FnNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
+SLKC_API AstNodePtr<AstNode> FnNode::do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const {
 	bool succeeded = false;
-	AstNodePtr<FnNode> duplicatedNode(makeAstNode<FnNode>(newAllocator, *this, newAllocator, context, succeeded));
-	if ((!duplicatedNode) || (!succeeded)) {
+	AstNodePtr<FnNode> duplicated_node(make_ast_node<FnNode>(new_allocator, *this, new_allocator, context, succeeded));
+	if ((!duplicated_node) || (!succeeded)) {
 		return {};
 	}
 
-	return duplicatedNode.castTo<AstNode>();
+	return duplicated_node.cast_to<AstNode>();
 }
 
 SLKC_API FnNode::FnNode(
-	peff::Alloc *selfAllocator,
+	peff::Alloc *self_allocator,
 	const peff::SharedPtr<Document> &document)
-	: MemberNode(AstNodeType::Fn, selfAllocator, document),
-	  overloadings(selfAllocator) {
+	: MemberNode(AstNodeType::Fn, self_allocator, document),
+	  overloadings(self_allocator) {
 }
 
-SLKC_API FnNode::FnNode(const FnNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut) : MemberNode(rhs, allocator, context, succeededOut), overloadings(allocator) {
-	if (!succeededOut) {
+SLKC_API FnNode::FnNode(const FnNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeeded_out) : MemberNode(rhs, allocator, context, succeeded_out), overloadings(allocator) {
+	if (!succeeded_out) {
 		return;
 	}
 
 	if (!overloadings.resize(rhs.overloadings.size())) {
-		succeededOut = false;
+		succeeded_out = false;
 		return;
 	}
 
 	for (size_t i = 0; i < overloadings.size(); ++i) {
 		if (!(overloadings.at(i) = rhs.overloadings.at(i)->duplicate<FnOverloadingNode>(allocator))) {
-			succeededOut = false;
+			succeeded_out = false;
 			return;
 		}
 
-		overloadings.at(i)->setParent(this);
+		overloadings.at(i)->set_parent(this);
 	}
 
-	succeededOut = true;
+	succeeded_out = true;
 }
 
 SLKC_API FnNode::~FnNode() {
 }
 
-SLKC_API AstNodePtr<AstNode> FnOverloadingNode::doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const {
+SLKC_API AstNodePtr<AstNode> FnOverloadingNode::do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const {
 	bool succeeded = false;
-	AstNodePtr<FnOverloadingNode> duplicatedNode(makeAstNode<FnOverloadingNode>(newAllocator, *this, newAllocator, context, succeeded));
-	if ((!duplicatedNode) || (!succeeded)) {
+	AstNodePtr<FnOverloadingNode> duplicated_node(make_ast_node<FnOverloadingNode>(new_allocator, *this, new_allocator, context, succeeded));
+	if ((!duplicated_node) || (!succeeded)) {
 		return {};
 	}
 
-	return duplicatedNode.castTo<AstNode>();
+	return duplicated_node.cast_to<AstNode>();
 }
 
 SLKC_API FnOverloadingNode::FnOverloadingNode(
-	peff::Alloc *selfAllocator,
+	peff::Alloc *self_allocator,
 	const peff::SharedPtr<Document> &document)
-	: MemberNode(AstNodeType::FnOverloading, selfAllocator, document),
-	  params(selfAllocator),
-	  paramIndices(selfAllocator),
-	  genericParams(selfAllocator),
-	  genericParamIndices(selfAllocator),
-	  idxParamCommaTokens(selfAllocator),
-	  idxGenericParamCommaTokens(selfAllocator) {
+	: MemberNode(AstNodeType::FnOverloading, self_allocator, document),
+	  params(self_allocator),
+	  param_indices(self_allocator),
+	  generic_params(self_allocator),
+	  generic_param_indices(self_allocator),
+	  idx_param_comma_tokens(self_allocator),
+	  idx_generic_param_comma_tokens(self_allocator) {
 }
 
-SLKC_API FnOverloadingNode::FnOverloadingNode(const FnOverloadingNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeededOut)
-	: MemberNode(rhs, allocator, context, succeededOut),
+SLKC_API FnOverloadingNode::FnOverloadingNode(const FnOverloadingNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeeded_out)
+	: MemberNode(rhs, allocator, context, succeeded_out),
 	  params(allocator),
-	  paramIndices(allocator),
-	  genericParams(allocator),
-	  genericParamIndices(allocator),
-	  idxParamCommaTokens(allocator),
-	  idxGenericParamCommaTokens(allocator),
-	  lAngleBracketIndex(rhs.lAngleBracketIndex),
-	  rAngleBracketIndex(rhs.rAngleBracketIndex),
-	  lvalueMarkerIndex(rhs.lvalueMarkerIndex),
-	  returnTypeTokenIndex(rhs.returnTypeTokenIndex),
-	  overloadingKind(rhs.overloadingKind),
-	  fnFlags(rhs.fnFlags) {
+	  param_indices(allocator),
+	  generic_params(allocator),
+	  generic_param_indices(allocator),
+	  idx_param_comma_tokens(allocator),
+	  idx_generic_param_comma_tokens(allocator),
+	  l_angle_bracket_index(rhs.l_angle_bracket_index),
+	  r_angle_bracket_index(rhs.r_angle_bracket_index),
+	  lvalue_marker_index(rhs.lvalue_marker_index),
+	  return_type_token_index(rhs.return_type_token_index),
+	  overloading_kind(rhs.overloading_kind),
+	  fn_flags(rhs.fn_flags) {
 	/* if (rhs.body && !(body = rhs.body->duplicate<CodeBlockStmtNode>(allocator))) {
-		succeededOut = false;
+		succeeded_out = false;
 		return;
 	}*/
 
-	if (!context.pushTask([this, &rhs, allocator, &context]() -> bool {
-			if (rhs.returnType && !(returnType = rhs.returnType->duplicate<TypeNameNode>(allocator))) {
+	if (!context.push_task([this, &rhs, allocator, &context]() -> bool {
+			if (rhs.return_type && !(return_type = rhs.return_type->duplicate<TypeNameNode>(allocator))) {
 				return false;
 			}
 			return true;
 		})) {
-		succeededOut = false;
+		succeeded_out = false;
 		return;
 	}
 
-	if (!context.pushTask([this, &rhs, allocator, &context]() -> bool {
-			if (rhs.overridenType && !(overridenType = rhs.overridenType->duplicate<TypeNameNode>(allocator))) {
+	if (!context.push_task([this, &rhs, allocator, &context]() -> bool {
+			if (rhs.overriden_type && !(overriden_type = rhs.overriden_type->duplicate<TypeNameNode>(allocator))) {
 				return false;
 			}
 			return true;
 		})) {
-		succeededOut = false;
+		succeeded_out = false;
 		return;
 	}
 
 	if (!params.resize(rhs.params.size())) {
-		succeededOut = false;
+		succeeded_out = false;
 		return;
 	}
 
 	for (size_t i = 0; i < params.size(); ++i) {
-		if (!context.pushTask([this, i, &rhs, allocator, &context]() -> bool {
+		if (!context.push_task([this, i, &rhs, allocator, &context]() -> bool {
 				if (!(params.at(i) = rhs.params.at(i)->duplicate<VarNode>(allocator))) {
 					return false;
 				}
 
-				if (!(paramIndices.insert(params.at(i)->name, +i))) {
+				if (!(param_indices.insert(params.at(i)->name, +i))) {
 					return false;
 				}
 
-				params.at(i)->setParent(this);
+				params.at(i)->set_parent(this);
 				return true;
 			})) {
-			succeededOut = false;
+			succeeded_out = false;
 			return;
 		}
 	}
 
-	if (!genericParams.resize(rhs.genericParams.size())) {
-		succeededOut = false;
+	if (!generic_params.resize(rhs.generic_params.size())) {
+		succeeded_out = false;
 		return;
 	}
 
-	for (size_t i = 0; i < genericParams.size(); ++i) {
-		if (!context.pushTask([this, i, &rhs, allocator, &context]() -> bool {
-				if (!(genericParams.at(i) = rhs.genericParams.at(i)->duplicate<GenericParamNode>(allocator)))
+	for (size_t i = 0; i < generic_params.size(); ++i) {
+		if (!context.push_task([this, i, &rhs, allocator, &context]() -> bool {
+				if (!(generic_params.at(i) = rhs.generic_params.at(i)->duplicate<GenericParamNode>(allocator)))
 					return false;
 
-				if (!genericParamIndices.insert(genericParams.at(i)->name, +i))
+				if (!generic_param_indices.insert(generic_params.at(i)->name, +i))
 					return false;
 
-				genericParams.at(i)->setParent(this);
+				generic_params.at(i)->set_parent(this);
 				return true;
 			})) {
-			succeededOut = false;
+			succeeded_out = false;
 			return;
 		}
 	}
 
-	isParamsIndexed = rhs.isParamsIndexed;
+	is_params_indexed = rhs.is_params_indexed;
 
-	if (!idxGenericParamCommaTokens.resize(rhs.idxGenericParamCommaTokens.size())) {
-		succeededOut = false;
+	if (!idx_generic_param_comma_tokens.resize(rhs.idx_generic_param_comma_tokens.size())) {
+		succeeded_out = false;
 		return;
 	}
-	memcpy(idxGenericParamCommaTokens.data(), rhs.idxGenericParamCommaTokens.data(), idxGenericParamCommaTokens.size() * sizeof(size_t));
+	memcpy(idx_generic_param_comma_tokens.data(), rhs.idx_generic_param_comma_tokens.data(), idx_generic_param_comma_tokens.size() * sizeof(size_t));
 
-	succeededOut = true;
+	succeeded_out = true;
 }
 
 SLKC_API FnOverloadingNode::~FnOverloadingNode() {

@@ -3,212 +3,212 @@
 using namespace slkc;
 using namespace slkc::bc;
 
-SLKC_API peff::Option<SyntaxError> BCParser::parseGenericConstraint(GenericConstraintPtr &constraintOut) {
-	GenericConstraintPtr constraint(peff::allocAndConstruct<GenericConstraint>(resourceAllocator.get(), alignof(GenericConstraint), resourceAllocator.get()));
+SLKC_API peff::Option<SyntaxError> BCParser::parse_generic_constraint(GenericConstraintPtr &constraint_out) {
+	GenericConstraintPtr constraint(peff::alloc_and_construct<GenericConstraint>(resource_allocator.get(), alignof(GenericConstraint), resource_allocator.get()));
 
 	if (!constraint) {
-		return genOutOfMemorySyntaxError();
+		return gen_out_of_memory_syntax_error();
 	}
 
-	peff::Option<SyntaxError> syntaxError;
+	peff::Option<SyntaxError> syntax_error;
 
-	if (Token *lParentheseToken = peekToken(); lParentheseToken->tokenId == TokenId::LParenthese) {
-		nextToken();
+	if (Token *l_parenthese_token = peek_token(); l_parenthese_token->token_id == TokenId::LParenthese) {
+		next_token();
 
-		if ((syntaxError = parseTypeName(constraint->baseType))) {
-			return syntaxError;
+		if ((syntax_error = parse_type_name(constraint->base_type))) {
+			return syntax_error;
 		}
 
-		Token *rParentheseToken;
-		if ((syntaxError = expectToken((rParentheseToken = peekToken()), TokenId::RParenthese))) {
-			return syntaxError;
+		Token *r_parenthese_token;
+		if ((syntax_error = expect_token((r_parenthese_token = peek_token()), TokenId::RParenthese))) {
+			return syntax_error;
 		}
-		nextToken();
+		next_token();
 	}
 
-	if (Token *colonToken = peekToken(); colonToken->tokenId == TokenId::Colon) {
-		nextToken();
+	if (Token *colon_token = peek_token(); colon_token->token_id == TokenId::Colon) {
+		next_token();
 
 		while (true) {
 			AstNodePtr<TypeNameNode> tn;
 
-			if ((syntaxError = parseTypeName(tn))) {
-				return syntaxError;
+			if ((syntax_error = parse_type_name(tn))) {
+				return syntax_error;
 			}
 
-			if (!constraint->implTypes.pushBack(std::move(tn))) {
-				return genOutOfMemorySyntaxError();
+			if (!constraint->impl_types.push_back(std::move(tn))) {
+				return gen_out_of_memory_syntax_error();
 			}
 
-			if (peekToken()->tokenId != TokenId::AddOp) {
+			if (peek_token()->token_id != TokenId::AddOp) {
 				break;
 			}
 
-			nextToken();
+			next_token();
 		}
 	}
 
-	constraintOut = std::move(constraint);
+	constraint_out = std::move(constraint);
 
 	return {};
 }
 
-SLKC_API peff::Option<SyntaxError> BCParser::parseParamTypeListGenericConstraint(ParamTypeListGenericConstraintPtr &constraintOut) {
-	ParamTypeListGenericConstraintPtr constraint(peff::allocAndConstruct<ParamTypeListGenericConstraint>(resourceAllocator.get(), alignof(ParamTypeListGenericConstraint), resourceAllocator.get()));
+SLKC_API peff::Option<SyntaxError> BCParser::parse_param_type_list_generic_constraint(ParamTypeListGenericConstraintPtr &constraint_out) {
+	ParamTypeListGenericConstraintPtr constraint(peff::alloc_and_construct<ParamTypeListGenericConstraint>(resource_allocator.get(), alignof(ParamTypeListGenericConstraint), resource_allocator.get()));
 
 	if (!constraint) {
-		return genOutOfMemorySyntaxError();
+		return gen_out_of_memory_syntax_error();
 	}
 
-	peff::Option<SyntaxError> syntaxError;
+	peff::Option<SyntaxError> syntax_error;
 
-	if (Token *lParentheseToken = peekToken(); lParentheseToken->tokenId == TokenId::LParenthese) {
-		nextToken();
+	if (Token *l_parenthese_token = peek_token(); l_parenthese_token->token_id == TokenId::LParenthese) {
+		next_token();
 
 		while (true) {
 			AstNodePtr<TypeNameNode> tn;
 
-			if (peekToken()->tokenId == TokenId::VarArg) {
-				nextToken();
+			if (peek_token()->token_id == TokenId::VarArg) {
+				next_token();
 
-				constraint->hasVarArg = true;
+				constraint->has_var_arg = true;
 
 				break;
 			}
 
-			if ((syntaxError = parseTypeName(tn))) {
-				return syntaxError;
+			if ((syntax_error = parse_type_name(tn))) {
+				return syntax_error;
 			}
 
-			if (!constraint->argTypes.pushBack(std::move(tn))) {
-				return genOutOfMemorySyntaxError();
+			if (!constraint->arg_types.push_back(std::move(tn))) {
+				return gen_out_of_memory_syntax_error();
 			}
 
-			if (peekToken()->tokenId != TokenId::Comma) {
+			if (peek_token()->token_id != TokenId::Comma) {
 				break;
 			}
 
-			nextToken();
+			next_token();
 		}
 
-		Token *rParentheseToken;
-		if ((syntaxError = expectToken((rParentheseToken = peekToken()), TokenId::RParenthese))) {
-			return syntaxError;
+		Token *r_parenthese_token;
+		if ((syntax_error = expect_token((r_parenthese_token = peek_token()), TokenId::RParenthese))) {
+			return syntax_error;
 		}
-		nextToken();
+		next_token();
 	}
 
-	constraintOut = std::move(constraint);
+	constraint_out = std::move(constraint);
 
 	return {};
 }
 
-SLKC_API peff::Option<SyntaxError> BCParser::parseGenericParams(
-	peff::DynArray<AstNodePtr<GenericParamNode>> &genericParamsOut,
-	peff::DynArray<size_t> &idxCommaTokensOut,
-	size_t &lAngleBracketIndexOut,
-	size_t &rAngleBracketIndexOut) {
-	peff::Option<SyntaxError> syntaxError;
+SLKC_API peff::Option<SyntaxError> BCParser::parse_generic_params(
+	peff::DynArray<AstNodePtr<GenericParamNode>> &generic_params_out,
+	peff::DynArray<size_t> &idx_comma_tokens_out,
+	size_t &l_angle_bracket_index_out,
+	size_t &r_angle_bracket_index_out) {
+	peff::Option<SyntaxError> syntax_error;
 
-	Token *lAngleBracketToken = peekToken();
+	Token *l_angle_bracket_token = peek_token();
 
-	lAngleBracketIndexOut = lAngleBracketToken->index;
+	l_angle_bracket_index_out = l_angle_bracket_token->index;
 
-	if (lAngleBracketToken->tokenId == TokenId::LtOp) {
-		nextToken();
+	if (l_angle_bracket_token->token_id == TokenId::LtOp) {
+		next_token();
 		while (true) {
-			AstNodePtr<GenericParamNode> genericParamNode;
+			AstNodePtr<GenericParamNode> generic_param_node;
 
-			if (!(genericParamNode = makeAstNode<GenericParamNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
-				return genOutOfMemorySyntaxError();
+			if (!(generic_param_node = make_ast_node<GenericParamNode>(resource_allocator.get(), resource_allocator.get(), document))) {
+				return gen_out_of_memory_syntax_error();
 			}
 
-			genericParamNode->parent = curParent.get();
+			generic_param_node->parent = cur_parent.get();
 
-			if (Token *lParentheseToken = peekToken(); lParentheseToken->tokenId == TokenId::VarArg) {
-				nextToken();
+			if (Token *l_parenthese_token = peek_token(); l_parenthese_token->token_id == TokenId::VarArg) {
+				next_token();
 
-				genericParamNode->isParamTypeList = true;
+				generic_param_node->is_param_type_list = true;
 
-				Token *nameToken;
+				Token *name_token;
 
-				if ((syntaxError = expectToken((nameToken = peekToken()), TokenId::Id))) {
-					return syntaxError;
+				if ((syntax_error = expect_token((name_token = peek_token()), TokenId::Id))) {
+					return syntax_error;
 				};
 
-				if (!genericParamNode->name.build(nameToken->sourceText))
-					return genOutOfMemorySyntaxError();
+				if (!generic_param_node->name.build(name_token->source_text))
+					return gen_out_of_memory_syntax_error();
 
-				nextToken();
+				next_token();
 
 				{
-					peff::ScopeGuard setTokenRangeGuard([this, nameToken, &genericParamNode]() noexcept {
-						if (genericParamNode) {
-							genericParamNode->tokenRange = TokenRange{ document->mainModule, nameToken->index, parseContext.idxPrevToken };
+					peff::ScopeGuard set_token_range_guard([this, name_token, &generic_param_node]() noexcept {
+						if (generic_param_node) {
+							generic_param_node->token_range = TokenRange{ document->main_module, name_token->index, parse_context.idx_prev_token };
 						}
 					});
 
-					if ((syntaxError = parseParamTypeListGenericConstraint(genericParamNode->paramTypeListGenericConstraint))) {
-						return syntaxError;
+					if ((syntax_error = parse_param_type_list_generic_constraint(generic_param_node->param_type_list_generic_constraint))) {
+						return syntax_error;
 					}
 
-					if (!genericParamsOut.pushBack(std::move(genericParamNode)))
-						return genOutOfMemorySyntaxError();
+					if (!generic_params_out.push_back(std::move(generic_param_node)))
+						return gen_out_of_memory_syntax_error();
 				}
 			} else {
-				Token *nameToken;
+				Token *name_token;
 
-				if ((syntaxError = expectToken((nameToken = peekToken()), TokenId::Id))) {
-					return syntaxError;
+				if ((syntax_error = expect_token((name_token = peek_token()), TokenId::Id))) {
+					return syntax_error;
 				};
 
-				if (!genericParamNode->name.build(nameToken->sourceText))
-					return genOutOfMemorySyntaxError();
+				if (!generic_param_node->name.build(name_token->source_text))
+					return gen_out_of_memory_syntax_error();
 
-				nextToken();
+				next_token();
 
 				{
-					peff::ScopeGuard setTokenRangeGuard([this, nameToken, &genericParamNode]() noexcept {
-						if (genericParamNode) {
-							genericParamNode->tokenRange = TokenRange{ document->mainModule, nameToken->index, parseContext.idxPrevToken };
+					peff::ScopeGuard set_token_range_guard([this, name_token, &generic_param_node]() noexcept {
+						if (generic_param_node) {
+							generic_param_node->token_range = TokenRange{ document->main_module, name_token->index, parse_context.idx_prev_token };
 						}
 					});
 
-					if (peekToken()->tokenId == TokenId::AsKeyword) {
-						nextToken();
-						if ((syntaxError = parseTypeName(genericParamNode->inputType))) {
-							return syntaxError;
+					if (peek_token()->token_id == TokenId::AsKeyword) {
+						next_token();
+						if ((syntax_error = parse_type_name(generic_param_node->input_type))) {
+							return syntax_error;
 						}
 					} else {
-						if ((syntaxError = parseGenericConstraint(genericParamNode->genericConstraint))) {
-							return syntaxError;
+						if ((syntax_error = parse_generic_constraint(generic_param_node->generic_constraint))) {
+							return syntax_error;
 						}
 					}
 
-					if (!genericParamsOut.pushBack(std::move(genericParamNode)))
-						return genOutOfMemorySyntaxError();
+					if (!generic_params_out.push_back(std::move(generic_param_node)))
+						return gen_out_of_memory_syntax_error();
 				}
 			}
 
-			if (peekToken()->tokenId != TokenId::Comma) {
+			if (peek_token()->token_id != TokenId::Comma) {
 				break;
 			}
 
-			Token *commaToken = nextToken();
+			Token *comma_token = next_token();
 
-			if (!idxCommaTokensOut.pushBack(+commaToken->index))
-				return genOutOfMemorySyntaxError();
+			if (!idx_comma_tokens_out.push_back(+comma_token->index))
+				return gen_out_of_memory_syntax_error();
 		}
 
-		Token *rAngleBracketToken;
+		Token *r_angle_bracket_token;
 
-		if ((syntaxError = expectToken((rAngleBracketToken = peekToken()), TokenId::GtOp))) {
-			return syntaxError;
+		if ((syntax_error = expect_token((r_angle_bracket_token = peek_token()), TokenId::GtOp))) {
+			return syntax_error;
 		}
 
-		nextToken();
+		next_token();
 
-		rAngleBracketIndexOut = rAngleBracketToken->index;
+		r_angle_bracket_index_out = r_angle_bracket_token->index;
 	}
 
 	return {};

@@ -12,16 +12,16 @@ SLAKE_API BasicBlock::BasicBlock(BasicBlock &&rhs) : instructions(std::move(rhs.
 SLAKE_API BasicBlock::~BasicBlock() {
 }
 
-SLAKE_API ControlFlowGraph::ControlFlowGraph(peff::Alloc *allocator) : basicBlocks(allocator) {
+SLAKE_API ControlFlowGraph::ControlFlowGraph(peff::Alloc *allocator) : basic_blocks(allocator) {
 }
 
 SLAKE_API ControlFlowGraph::~ControlFlowGraph() {
 }
 
-SLAKE_API InternalExceptionPointer slake::opti::checkTerminalInstructions(peff::Alloc *exceptAllocator, const ControlFlowGraph &controlFlowGraph) {
-	for (size_t i = 0; i < controlFlowGraph.basicBlocks.size(); ++i) {
-		const BasicBlock &basicBlock = controlFlowGraph.basicBlocks.at(i);
-		const Instruction &ins = basicBlock.instructions.back();
+SLAKE_API InternalExceptionPointer slake::opti::check_terminal_instructions(peff::Alloc *except_allocator, const ControlFlowGraph &control_flow_graph) {
+	for (size_t i = 0; i < control_flow_graph.basic_blocks.size(); ++i) {
+		const BasicBlock &basic_block = control_flow_graph.basic_blocks.at(i);
+		const Instruction &ins = basic_block.instructions.back();
 
 		switch (ins.opcode) {
 			case Opcode::JMP:
@@ -29,7 +29,7 @@ SLAKE_API InternalExceptionPointer slake::opti::checkTerminalInstructions(peff::
 			case Opcode::RET:
 				break;
 			default:
-				return MalformedCfgError::alloc(exceptAllocator, &controlFlowGraph, i, basicBlock.instructions.size() - 1);
+				return MalformedCfgError::alloc(except_allocator, &control_flow_graph, i, basic_block.instructions.size() - 1);
 		}
 	}
 

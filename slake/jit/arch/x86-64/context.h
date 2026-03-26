@@ -16,15 +16,15 @@ namespace slake {
 				Runtime *runtime;
 				JITCompiledFnOverloadingObject *fn;
 				JITArgRegistry *args;
-				Value returnValue;
+				Value return_value;
 				InternalException *exception;
-				StackOverflowError *stackOverflowError;
-				size_t insOff;
-				void *stackBase;
-				void *stackLimit;
+				StackOverflowError *stack_overflow_error;
+				size_t ins_off;
+				void *stack_base;
+				void *stack_limit;
 			};
 
-			typedef void (*JITCompiledBody)(JITExecContext *execContext);
+			typedef void (*JITCompiledBody)(JITExecContext *exec_context);
 		}
 	}
 }

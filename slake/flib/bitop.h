@@ -6,220 +6,220 @@
 
 namespace slake {
 	namespace flib {
-		SLAKE_FORCEINLINE int8_t shrSigned8(int8_t lhs, uint32_t rhs) {
+		SLAKE_FORCEINLINE int8_t shr_signed8(int8_t lhs, uint32_t rhs) {
 			if (rhs >= 8)
 				return 0;
 #if defined(__x86_64__) || defined(_M_X64) || defined(__i386__)
 			return lhs >> rhs;
 #else
 			if (*((uint8_t *)&lhs) & 0x80) {
-				uint8_t unsignedLhs = *((uint8_t *)&lhs);
+				uint8_t unsigned_lhs = *((uint8_t *)&lhs);
 
-				unsignedLhs >>= rhs;
+				unsigned_lhs >>= rhs;
 
-				unsignedLhs |= 0xff << (8 - rhs);
+				unsigned_lhs |= 0xff << (8 - rhs);
 
-				return *(int8_t *)&unsignedLhs;
+				return *(int8_t *)&unsigned_lhs;
 			} else {
 				return (int8_t)(lhs >> rhs);
 			}
 #endif
 		}
 
-		SLAKE_FORCEINLINE int16_t shrSigned16(int16_t lhs, uint32_t rhs) {
+		SLAKE_FORCEINLINE int16_t shr_signed16(int16_t lhs, uint32_t rhs) {
 			if (rhs >= 16)
 				return 0;
 #if defined(__x86_64__) || defined(_M_X64) || defined(__i386__)
 			return lhs >> rhs;
 #else
 			if (*((uint16_t *)&lhs) & 0x8000) {
-				uint16_t unsignedLhs = *((uint16_t *)&lhs);
+				uint16_t unsigned_lhs = *((uint16_t *)&lhs);
 
-				unsignedLhs >>= rhs;
+				unsigned_lhs >>= rhs;
 
-				unsignedLhs |= 0xffff << (16 - rhs);
+				unsigned_lhs |= 0xffff << (16 - rhs);
 
-				return *(int16_t *)&unsignedLhs;
+				return *(int16_t *)&unsigned_lhs;
 			} else {
 				return (int16_t)(lhs >> rhs);
 			}
 #endif
 		}
 
-		SLAKE_FORCEINLINE int32_t shrSigned32(int32_t lhs, uint32_t rhs) {
+		SLAKE_FORCEINLINE int32_t shr_signed32(int32_t lhs, uint32_t rhs) {
 			if (rhs >= 32)
 				return 0;
 #if defined(__x86_64__) || defined(_M_X64) || defined(__i386__)
 			return lhs >> rhs;
 #else
 			if (*((uint32_t *)&lhs) & 0x80000000) {
-				uint32_t unsignedLhs = *((uint32_t *)&lhs);
+				uint32_t unsigned_lhs = *((uint32_t *)&lhs);
 
-				unsignedLhs >>= rhs;
+				unsigned_lhs >>= rhs;
 
-				unsignedLhs |= 0xffffffff << (32 - rhs);
+				unsigned_lhs |= 0xffffffff << (32 - rhs);
 
-				return *(int32_t *)&unsignedLhs;
+				return *(int32_t *)&unsigned_lhs;
 			} else {
 				return (int32_t)(lhs >> rhs);
 			}
 #endif
 		}
 
-		SLAKE_FORCEINLINE int64_t shrSigned64(int64_t lhs, uint32_t rhs) {
+		SLAKE_FORCEINLINE int64_t shr_signed64(int64_t lhs, uint32_t rhs) {
 			if (rhs >= 64)
 				return 0;
 #if defined(__x86_64__) || defined(_M_X64) || defined(__i386__)
 			return lhs >> rhs;
 #else
-			if (*((uint64_t *)&lhs) & 0x8000000000000000ULL) {
-				uint64_t unsignedLhs = *((uint64_t *)&lhs);
+			if (*((uint64_t *)&lhs) & 0x8000000000000000_ull) {
+				uint64_t unsigned_lhs = *((uint64_t *)&lhs);
 
-				unsignedLhs >>= rhs;
+				unsigned_lhs >>= rhs;
 
-				unsignedLhs |= 0xffffffffffffffffULL << (64 - rhs);
+				unsigned_lhs |= 0xffffffffffffffff_ull << (64 - rhs);
 
-				return *(int64_t *)&unsignedLhs;
+				return *(int64_t *)&unsigned_lhs;
 			} else {
 				return (int64_t)(lhs >> rhs);
 			}
 #endif
 		}
 
-		SLAKE_FORCEINLINE uint8_t shrUnsigned8(uint8_t lhs, uint32_t rhs) {
+		SLAKE_FORCEINLINE uint8_t shr_unsigned8(uint8_t lhs, uint32_t rhs) {
 			if (rhs >= 8)
 				return 0;
 			return lhs >> rhs;
 		}
 
-		SLAKE_FORCEINLINE uint16_t shrUnsigned16(uint16_t lhs, uint32_t rhs) {
+		SLAKE_FORCEINLINE uint16_t shr_unsigned16(uint16_t lhs, uint32_t rhs) {
 			if (rhs >= 16)
 				return 0;
 			return lhs >> rhs;
 		}
 
-		SLAKE_FORCEINLINE uint32_t shrUnsigned32(uint32_t lhs, uint32_t rhs) {
+		SLAKE_FORCEINLINE uint32_t shr_unsigned32(uint32_t lhs, uint32_t rhs) {
 			if (rhs >= 32)
 				return 0;
 			return lhs >> rhs;
 		}
 
-		SLAKE_FORCEINLINE uint64_t shrUnsigned64(uint64_t lhs, uint32_t rhs) {
+		SLAKE_FORCEINLINE uint64_t shr_unsigned64(uint64_t lhs, uint32_t rhs) {
 			if (rhs >= 64)
 				return 0;
 			return lhs >> rhs;
 		}
 
-		SLAKE_FORCEINLINE int8_t shlSigned8(int8_t lhs, uint32_t rhs) {
+		SLAKE_FORCEINLINE int8_t shl_signed8(int8_t lhs, uint32_t rhs) {
 			if (rhs >= 8)
 				return 0;
 			return lhs << rhs;
 		}
 
-		SLAKE_FORCEINLINE int16_t shlSigned16(int16_t lhs, uint32_t rhs) {
+		SLAKE_FORCEINLINE int16_t shl_signed16(int16_t lhs, uint32_t rhs) {
 			if (rhs >= 16)
 				return 0;
 			return lhs << rhs;
 		}
 
-		SLAKE_FORCEINLINE int32_t shlSigned32(int32_t lhs, uint32_t rhs) {
+		SLAKE_FORCEINLINE int32_t shl_signed32(int32_t lhs, uint32_t rhs) {
 			if (rhs >= 32)
 				return 0;
 			return lhs << rhs;
 		}
 
-		SLAKE_FORCEINLINE int64_t shlSigned64(int64_t lhs, uint32_t rhs) {
+		SLAKE_FORCEINLINE int64_t shl_signed64(int64_t lhs, uint32_t rhs) {
 			if (rhs >= 64)
 				return 0;
 			return lhs << rhs;
 		}
 
-		SLAKE_FORCEINLINE uint8_t shlUnsigned8(uint8_t lhs, uint32_t rhs) {
+		SLAKE_FORCEINLINE uint8_t shl_unsigned8(uint8_t lhs, uint32_t rhs) {
 			if (rhs >= 8)
 				return 0;
 			return lhs << rhs;
 		}
 
-		SLAKE_FORCEINLINE uint16_t shlUnsigned16(uint16_t lhs, uint32_t rhs) {
+		SLAKE_FORCEINLINE uint16_t shl_unsigned16(uint16_t lhs, uint32_t rhs) {
 			if (rhs >= 16)
 				return 0;
 			return lhs << rhs;
 		}
 
-		SLAKE_FORCEINLINE uint32_t shlUnsigned32(uint32_t lhs, uint32_t rhs) {
+		SLAKE_FORCEINLINE uint32_t shl_unsigned32(uint32_t lhs, uint32_t rhs) {
 			if (rhs >= 32)
 				return 0;
 			return lhs << rhs;
 		}
 
-		SLAKE_FORCEINLINE uint64_t shlUnsigned64(uint64_t lhs, uint32_t rhs) {
+		SLAKE_FORCEINLINE uint64_t shl_unsigned64(uint64_t lhs, uint32_t rhs) {
 			if (rhs >= 64)
 				return 0;
 			return lhs << rhs;
 		}
 
-		SLAKE_FORCEINLINE int8_t shlSigned(int8_t lhs, uint32_t rhs) {
-			return shlSigned8(lhs, rhs);
+		SLAKE_FORCEINLINE int8_t shl_signed(int8_t lhs, uint32_t rhs) {
+			return shl_signed8(lhs, rhs);
 		}
 
-		SLAKE_FORCEINLINE int16_t shlSigned(int16_t lhs, uint32_t rhs) {
-			return shlSigned16(lhs, rhs);
+		SLAKE_FORCEINLINE int16_t shl_signed(int16_t lhs, uint32_t rhs) {
+			return shl_signed16(lhs, rhs);
 		}
 
-		SLAKE_FORCEINLINE int32_t shlSigned(int32_t lhs, uint32_t rhs) {
-			return shlSigned32(lhs, rhs);
+		SLAKE_FORCEINLINE int32_t shl_signed(int32_t lhs, uint32_t rhs) {
+			return shl_signed32(lhs, rhs);
 		}
 
-		SLAKE_FORCEINLINE int64_t shlSigned(int64_t lhs, uint32_t rhs) {
-			return shlSigned64(lhs, rhs);
+		SLAKE_FORCEINLINE int64_t shl_signed(int64_t lhs, uint32_t rhs) {
+			return shl_signed64(lhs, rhs);
 		}
 
-		SLAKE_FORCEINLINE int8_t shrSigned(int8_t lhs, uint32_t rhs) {
-			return shrSigned8(lhs, rhs);
+		SLAKE_FORCEINLINE int8_t shr_signed(int8_t lhs, uint32_t rhs) {
+			return shr_signed8(lhs, rhs);
 		}
 
-		SLAKE_FORCEINLINE int16_t shrSigned(int16_t lhs, uint32_t rhs) {
-			return shrSigned16(lhs, rhs);
+		SLAKE_FORCEINLINE int16_t shr_signed(int16_t lhs, uint32_t rhs) {
+			return shr_signed16(lhs, rhs);
 		}
 
-		SLAKE_FORCEINLINE int32_t shrSigned(int32_t lhs, uint32_t rhs) {
-			return shrSigned32(lhs, rhs);
+		SLAKE_FORCEINLINE int32_t shr_signed(int32_t lhs, uint32_t rhs) {
+			return shr_signed32(lhs, rhs);
 		}
 
-		SLAKE_FORCEINLINE int64_t shrSigned(int64_t lhs, uint32_t rhs) {
-			return shrSigned64(lhs, rhs);
+		SLAKE_FORCEINLINE int64_t shr_signed(int64_t lhs, uint32_t rhs) {
+			return shr_signed64(lhs, rhs);
 		}
 
-		SLAKE_FORCEINLINE uint8_t shlUnsigned(uint8_t lhs, uint32_t rhs) {
-			return shlUnsigned8(lhs, rhs);
+		SLAKE_FORCEINLINE uint8_t shl_unsigned(uint8_t lhs, uint32_t rhs) {
+			return shl_unsigned8(lhs, rhs);
 		}
 
-		SLAKE_FORCEINLINE uint16_t shlUnsigned(uint16_t lhs, uint32_t rhs) {
-			return shlUnsigned16(lhs, rhs);
+		SLAKE_FORCEINLINE uint16_t shl_unsigned(uint16_t lhs, uint32_t rhs) {
+			return shl_unsigned16(lhs, rhs);
 		}
 
-		SLAKE_FORCEINLINE uint32_t shlUnsigned(uint32_t lhs, uint32_t rhs) {
-			return shlUnsigned32(lhs, rhs);
+		SLAKE_FORCEINLINE uint32_t shl_unsigned(uint32_t lhs, uint32_t rhs) {
+			return shl_unsigned32(lhs, rhs);
 		}
 
-		SLAKE_FORCEINLINE uint64_t shlUnsigned(uint64_t lhs, uint32_t rhs) {
-			return shlUnsigned64(lhs, rhs);
+		SLAKE_FORCEINLINE uint64_t shl_unsigned(uint64_t lhs, uint32_t rhs) {
+			return shl_unsigned64(lhs, rhs);
 		}
 
-		SLAKE_FORCEINLINE uint8_t shrUnsigned(uint8_t lhs, uint32_t rhs) {
-			return shlUnsigned8(lhs, rhs);
+		SLAKE_FORCEINLINE uint8_t shr_unsigned(uint8_t lhs, uint32_t rhs) {
+			return shl_unsigned8(lhs, rhs);
 		}
 
-		SLAKE_FORCEINLINE uint16_t shrUnsigned(uint16_t lhs, uint32_t rhs) {
-			return shlUnsigned16(lhs, rhs);
+		SLAKE_FORCEINLINE uint16_t shr_unsigned(uint16_t lhs, uint32_t rhs) {
+			return shl_unsigned16(lhs, rhs);
 		}
 
-		SLAKE_FORCEINLINE uint32_t shrUnsigned(uint32_t lhs, uint32_t rhs) {
-			return shlUnsigned32(lhs, rhs);
+		SLAKE_FORCEINLINE uint32_t shr_unsigned(uint32_t lhs, uint32_t rhs) {
+			return shl_unsigned32(lhs, rhs);
 		}
 
-		SLAKE_FORCEINLINE uint64_t shrUnsigned(uint64_t lhs, uint32_t rhs) {
-			return shlUnsigned64(lhs, rhs);
+		SLAKE_FORCEINLINE uint64_t shr_unsigned(uint64_t lhs, uint32_t rhs) {
+			return shl_unsigned64(lhs, rhs);
 		}
 	}
 }

@@ -2,13 +2,13 @@
 
 using namespace slake;
 
-SLAKE_API bool slake::StringObject::_setData(const char *str, size_t size) {
+SLAKE_API bool slake::StringObject::_set_data(const char *str, size_t size) {
 	if (!size)
-		data.clearAndShrink();
+		data.clear_and_shrink();
 	else {
-		peff::String s(selfAllocator.get());
+		peff::String s(self_allocator.get());
 
-		if (!s.resizeAndShrink(size))
+		if (!s.resize_and_shrink(size))
 			return false;
 
 		memcpy(s.data(), str, size);
@@ -18,12 +18,12 @@ SLAKE_API bool slake::StringObject::_setData(const char *str, size_t size) {
 	return true;
 }
 
-SLAKE_API slake::StringObject::StringObject(Runtime *rt, peff::Alloc *selfAllocator) : Object(rt, selfAllocator, ObjectKind::String), data(selfAllocator) {
+SLAKE_API slake::StringObject::StringObject(Runtime *rt, peff::Alloc *self_allocator) : Object(rt, self_allocator, ObjectKind::String), data(self_allocator) {
 }
 
-SLAKE_API StringObject::StringObject(const StringObject &x, peff::Alloc *allocator, bool &succeededOut) : Object(x, allocator), data(allocator) {
-	if (!_setData(x.data.data(), x.data.size())) {
-		succeededOut = false;
+SLAKE_API StringObject::StringObject(const StringObject &x, peff::Alloc *allocator, bool &succeeded_out) : Object(x, allocator), data(allocator) {
+	if (!_set_data(x.data.data(), x.data.size())) {
+		succeeded_out = false;
 		return;
 	}
 }
@@ -38,46 +38,46 @@ SLAKE_API Object *StringObject::duplicate(Duplicator *duplicator) const {
 }
 
 SLAKE_API HostObjectRef<StringObject> slake::StringObject::alloc(const StringObject *other) {
-	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = other->associatedRuntime->getCurGenAlloc();
+	peff::RcObjectPtr<peff::Alloc> cur_generation_allocator = other->associated_runtime->get_cur_gen_alloc();
 
 	bool succeeded = true;
 
 	std::unique_ptr<StringObject, peff::DeallocableDeleter<StringObject>> ptr(
-		peff::allocAndConstruct<StringObject>(
-			curGenerationAllocator.get(),
+		peff::alloc_and_construct<StringObject>(
+			cur_generation_allocator.get(),
 			sizeof(std::max_align_t),
-			*other, curGenerationAllocator.get(), succeeded));
+			*other, cur_generation_allocator.get(), succeeded));
 
 	if (!succeeded)
 		return nullptr;
 
-	if (!other->associatedRuntime->addObject(ptr.get()))
+	if (!other->associated_runtime->add_object(ptr.get()))
 		return nullptr;
 
 	return ptr.release();
 }
 
 SLAKE_API HostObjectRef<StringObject> slake::StringObject::alloc(Runtime *rt) {
-	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();
+	peff::RcObjectPtr<peff::Alloc> cur_generation_allocator = rt->get_cur_gen_alloc();
 
 	std::unique_ptr<StringObject, peff::DeallocableDeleter<StringObject>> ptr(
-		peff::allocAndConstruct<StringObject>(
-			curGenerationAllocator.get(),
+		peff::alloc_and_construct<StringObject>(
+			cur_generation_allocator.get(),
 			sizeof(std::max_align_t),
-			rt, curGenerationAllocator.get()));
+			rt, cur_generation_allocator.get()));
 
-	if (!rt->addObject(ptr.get()))
+	if (!rt->add_object(ptr.get()))
 		return nullptr;
 
 	return ptr.release();
 }
 
 SLAKE_API void slake::StringObject::dealloc() {
-	peff::destroyAndRelease<StringObject>(selfAllocator.get(), this, sizeof(std::max_align_t));
+	peff::destroy_and_release<StringObject>(self_allocator.get(), this, sizeof(std::max_align_t));
 }
 
-SLAKE_API void StringObject::replaceAllocator(peff::Alloc *allocator) noexcept {
-	this->Object::replaceAllocator(allocator);
+SLAKE_API void StringObject::replace_allocator(peff::Alloc *allocator) noexcept {
+	this->Object::replace_allocator(allocator);
 
-	data.replaceAllocator(allocator);
+	data.replace_allocator(allocator);
 }

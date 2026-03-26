@@ -2,36 +2,36 @@
 
 using namespace slake;
 
-SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, MethodTable *methodTable) {
-	if (!methodTable)
+SLAKE_API void Runtime::_gc_walk(GCWalkContext *context, MethodTable *method_table) {
+	if (!method_table)
 		return;
-	for (auto i : methodTable->methods) {
-		context->pushObject(i.second);
+	for (auto i : method_table->methods) {
+		context->push_object(i.second);
 	}
-	for (auto i : methodTable->destructors) {
-		context->pushObject(i);
+	for (auto i : method_table->destructors) {
+		context->push_object(i);
 	}
 }
 
-SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, GenericParamList &genericParamList) {
-	for (auto &i : genericParamList) {
-		// i.baseType.loadDeferredType(this);
-		_gcWalk(context, i.baseType);
+SLAKE_API void Runtime::_gc_walk(GCWalkContext *context, GenericParamList &generic_param_list) {
+	for (auto &i : generic_param_list) {
+		// i.base_type.load_deferred_type(this);
+		_gc_walk(context, i.base_type);
 
 		for (auto &j : i.interfaces) {
-			// j.loadDeferredType(this);
-			_gcWalk(context, i.baseType);
+			// j.load_deferred_type(this);
+			_gc_walk(context, i.base_type);
 		}
 	}
 }
 
-SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, const TypeRef &type) {
-	context->pushObject(type.typeDef);
+SLAKE_API void Runtime::_gc_walk(GCWalkContext *context, const TypeRef &type) {
+	context->push_object(type.type_def);
 }
 
-SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, const Value &i) {
-	bool isWalkableObjectDetected = false;
-	switch (i.valueType) {
+SLAKE_API void Runtime::_gc_walk(GCWalkContext *context, const Value &i) {
+	bool is_walkable_object_detected = false;
+	switch (i.value_type) {
 		case ValueType::I8:
 		case ValueType::I16:
 		case ValueType::I32:
@@ -45,39 +45,39 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, const Value &i) {
 		case ValueType::Bool:
 			break;
 		case ValueType::Reference: {
-			const Reference &entityRef = i.getReference();
+			const Reference &entity_ref = i.get_reference();
 
-			switch (entityRef.kind) {
+			switch (entity_ref.kind) {
 				case ReferenceKind::StaticFieldRef:
-					context->pushObject(entityRef.asStaticField.moduleObject);
+					context->push_object(entity_ref.as_static_field.module_object);
 					break;
 				case ReferenceKind::ArrayElementRef:
-					context->pushObject(entityRef.asArrayElement.arrayObject);
+					context->push_object(entity_ref.as_array_element.array_object);
 					break;
 				case ReferenceKind::ObjectRef:
-					context->pushObject(entityRef.asObject);
+					context->push_object(entity_ref.as_object);
 					break;
 				case ReferenceKind::ObjectFieldRef:
-					context->pushObject(entityRef.asObjectField.instanceObject);
+					context->push_object(entity_ref.as_object_field.instance_object);
 					break;
 				case ReferenceKind::LocalVarRef: {
 					Value data;
-					_gcWalk(context, *entityRef.asLocalVar.context);
-					readVar(entityRef, data);
-					_gcWalk(context, data);
+					_gc_walk(context, *entity_ref.as_local_var.context);
+					read_var(entity_ref, data);
+					_gc_walk(context, data);
 					break;
 				}
 				case ReferenceKind::CoroutineLocalVarRef: {
 					Value data;
-					context->pushObject(entityRef.asCoroutineLocalVar.coroutine);
-					readVar(entityRef, data);
-					_gcWalk(context, data);
+					context->push_object(entity_ref.as_coroutine_local_var.coroutine);
+					read_var(entity_ref, data);
+					_gc_walk(context, data);
 					break;
 				}
 				case ReferenceKind::ArgRef:
 					break;
 				case ReferenceKind::CoroutineArgRef:
-					context->pushObject(entityRef.asCoroutineArg.coroutine);
+					context->push_object(entity_ref.as_coroutine_arg.coroutine);
 					break;
 			}
 			break;
@@ -85,7 +85,7 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, const Value &i) {
 		case ValueType::RegIndex:
 			break;
 		case ValueType::TypeName:
-			_gcWalk(context, i.getTypeName());
+			_gc_walk(context, i.get_type_name());
 			break;
 		case ValueType::Undefined:
 			break;
@@ -94,105 +94,105 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, const Value &i) {
 	}
 }
 
-SLAKE_API void GCWalkContext::removeFromWalkableList(Object *v) {
-	MutexGuard accessMutexGuard(accessMutex);
+SLAKE_API void GCWalkContext::remove_from_walkable_list(Object *v) {
+	MutexGuard access_mutex_guard(access_mutex);
 
-	if (v == walkableList)
-		walkableList = v->nextSameGCSet;
+	if (v == walkable_list)
+		walkable_list = v->next_same_gcset;
 
-	removeFromCurGCSet(v);
+	remove_from_cur_gcset(v);
 }
 
-SLAKE_API void GCWalkContext::removeFromDestructibleList(Object *v) {
-	MutexGuard accessMutexGuard(accessMutex);
+SLAKE_API void GCWalkContext::remove_from_destructible_list(Object *v) {
+	MutexGuard access_mutex_guard(access_mutex);
 }
 
-SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, char *stackTop, size_t szStack, ResumableContextData &value) {
-	context->pushObject(value.thisObject);
+SLAKE_API void Runtime::_gc_walk(GCWalkContext *context, char *stack_top, size_t sz_stack, ResumableContextData &value) {
+	context->push_object(value.this_object);
 	{
-		Value *argStack = _fetchArgStack(stackTop, szStack, nullptr, value.offArgs);
-		for (size_t i = 0; i < value.nArgs; ++i)
-			_gcWalk(context, argStack[i]);
+		Value *arg_stack = _fetch_arg_stack(stack_top, sz_stack, nullptr, value.off_args);
+		for (size_t i = 0; i < value.num_args; ++i)
+			_gc_walk(context, arg_stack[i]);
 	}
 	{
-		Value *argStack = _fetchArgStack(stackTop, szStack, nullptr, value.offNextArgs);
-		for (size_t i = 0; i < value.nNextArgs; ++i)
-			_gcWalk(context, argStack[i]);
+		Value *arg_stack = _fetch_arg_stack(stack_top, sz_stack, nullptr, value.off_next_args);
+		for (size_t i = 0; i < value.num_next_args; ++i)
+			_gc_walk(context, arg_stack[i]);
 	};
-	char *const stackBase = stackTop + szStack;
-	for (auto k = value.offCurMinorFrame; k != SIZE_MAX;) {
-		MinorFrame *mjf = (MinorFrame *)(stackBase - k);
-		for (auto l = mjf->offExceptHandler; l != SIZE_MAX;) {
-			ExceptHandler *eh = (ExceptHandler *)(stackBase - l);
+	char *const stack_base = stack_top + sz_stack;
+	for (auto k = value.off_cur_minor_frame; k != SIZE_MAX;) {
+		MinorFrame *mjf = (MinorFrame *)(stack_base - k);
+		for (auto l = mjf->off_except_handler; l != SIZE_MAX;) {
+			ExceptHandler *eh = (ExceptHandler *)(stack_base - l);
 
-			_gcWalk(context, eh->type);
+			_gc_walk(context, eh->type);
 
-			l = eh->offNext;
+			l = eh->off_next;
 		}
-		k = mjf->offLastMinorFrame;
+		k = mjf->off_last_minor_frame;
 	}
 }
 
-SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
+SLAKE_API void Runtime::_gc_walk(GCWalkContext *context, Object *v) {
 	if (!v)
 		return;
 
-	switch (v->gcStatus) {
+	switch (v->gc_status) {
 		case ObjectGCStatus::Unwalked:
 			throw std::logic_error("Cannot walk on an unwalked object");
 		case ObjectGCStatus::ReadyToWalk:
-			v->gcStatus = ObjectGCStatus::Walked;
+			v->gc_status = ObjectGCStatus::Walked;
 
-			switch (v->getObjectKind()) {
+			switch (v->get_object_kind()) {
 				case ObjectKind::String:
 					break;
 				case ObjectKind::HeapType:
-					_gcWalk(context, ((HeapTypeObject *)v)->typeRef);
+					_gc_walk(context, ((HeapTypeObject *)v)->type_ref);
 					break;
 				case ObjectKind::TypeDef: {
-					auto typeDef = (TypeDefObject *)v;
+					auto type_def = (TypeDefObject *)v;
 
-					switch (typeDef->getTypeDefKind()) {
+					switch (type_def->get_type_def_kind()) {
 						case TypeDefKind::CustomTypeDef:
-							context->pushObject(((CustomTypeDefObject *)typeDef)->typeObject);
+							context->push_object(((CustomTypeDefObject *)type_def)->type_object);
 							break;
 						case TypeDefKind::ArrayTypeDef:
-							context->pushObject(((ArrayTypeDefObject *)typeDef)->elementType);
+							context->push_object(((ArrayTypeDefObject *)type_def)->element_type);
 							break;
 						case TypeDefKind::RefTypeDef:
-							context->pushObject(((RefTypeDefObject *)typeDef)->referencedType);
+							context->push_object(((RefTypeDefObject *)type_def)->referenced_type);
 							break;
 						case TypeDefKind::GenericArgTypeDef:
-							context->pushObject(((GenericArgTypeDefObject *)typeDef)->ownerObject);
-							context->pushObject(((GenericArgTypeDefObject *)typeDef)->nameObject);
+							context->push_object(((GenericArgTypeDefObject *)type_def)->owner_object);
+							context->push_object(((GenericArgTypeDefObject *)type_def)->name_object);
 							break;
 						case TypeDefKind::FnTypeDef: {
-							auto td = ((FnTypeDefObject *)typeDef);
-							context->pushObject(td->returnType);
-							for (auto i : td->paramTypes)
-								context->pushObject(i);
+							auto td = ((FnTypeDefObject *)type_def);
+							context->push_object(td->return_type);
+							for (auto i : td->param_types)
+								context->push_object(i);
 							break;
 						}
 						case TypeDefKind::ParamTypeListTypeDef: {
-							auto td = ((ParamTypeListTypeDefObject *)typeDef);
-							for (auto i : td->paramTypes)
-								context->pushObject(i);
+							auto td = ((ParamTypeListTypeDefObject *)type_def);
+							for (auto i : td->param_types)
+								context->push_object(i);
 							break;
 						}
 						case TypeDefKind::TupleTypeDef: {
-							auto td = ((TupleTypeDefObject *)typeDef);
-							for (auto i : td->elementTypes)
-								context->pushObject(i);
+							auto td = ((TupleTypeDefObject *)type_def);
+							for (auto i : td->element_types)
+								context->push_object(i);
 							break;
 						}
 						case TypeDefKind::SIMDTypeDef: {
-							auto td = ((SIMDTypeDefObject *)typeDef);
-							context->pushObject(td->type);
+							auto td = ((SIMDTypeDefObject *)type_def);
+							context->push_object(td->type);
 							break;
 						}
 						case TypeDefKind::UnpackingTypeDef: {
-							auto td = ((UnpackingTypeDefObject *)typeDef);
-							context->pushObject(td->type);
+							auto td = ((UnpackingTypeDefObject *)type_def);
+							context->push_object(td->type);
 							break;
 						}
 						default:
@@ -203,33 +203,33 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 				case ObjectKind::Instance: {
 					auto value = (InstanceObject *)v;
 
-					context->pushObject(value->_class);
+					context->push_object(value->_class);
 
-					if (value->_class->cachedObjectLayout) {
-						for (auto &i : value->_class->cachedObjectLayout->fieldRecords) {
-							switch (i.type.typeId) {
+					if (value->_class->cached_object_layout) {
+						for (auto &i : value->_class->cached_object_layout->field_records) {
+							switch (i.type.type_id) {
 								case TypeId::String:
 								case TypeId::Instance:
 								case TypeId::Array:
 								case TypeId::Ref:
-									context->pushObject(*((Object **)(value->rawFieldData + i.offset)));
+									context->push_object(*((Object **)(value->raw_field_data + i.offset)));
 									break;
 							}
 						}
 					}
 
-					context->removeFromDestructibleList(value);
+					context->remove_from_destructible_list(value);
 					break;
 				}
 				case ObjectKind::Array: {
 					auto value = (ArrayObject *)v;
 
-					_gcWalk(context, value->elementType);
+					_gc_walk(context, value->element_type);
 
-					switch (value->elementType.typeId) {
+					switch (value->element_type.type_id) {
 						case TypeId::Instance: {
 							for (size_t i = 0; i < value->length; ++i)
-								context->pushObject(((Object **)value->data)[i]);
+								context->push_object(((Object **)value->data)[i]);
 							break;
 						}
 					}
@@ -237,110 +237,110 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 				}
 				case ObjectKind::Module: {
 					for (auto i = ((ModuleObject *)v)->members.begin(); i != ((ModuleObject *)v)->members.end(); ++i) {
-						context->pushObject(i.value());
+						context->push_object(i.value());
 					}
 					Value data;
-					for (size_t i = 0; i < ((ModuleObject *)v)->fieldRecords.size(); ++i) {
-						readVar(StaticFieldRef((ModuleObject *)v, i), data);
-						_gcWalk(context, data);
+					for (size_t i = 0; i < ((ModuleObject *)v)->field_records.size(); ++i) {
+						read_var(StaticFieldRef((ModuleObject *)v, i), data);
+						_gc_walk(context, data);
 					}
 
-					context->pushObject(((ModuleObject *)v)->getParent());
+					context->push_object(((ModuleObject *)v)->get_parent());
 
-					for (auto i : ((ModuleObject *)v)->unnamedImports)
-						context->pushObject(i);
+					for (auto i : ((ModuleObject *)v)->unnamed_imports)
+						context->push_object(i);
 
 					break;
 				}
 				case ObjectKind::Class: {
 					for (auto i = ((ClassObject *)v)->members.begin(); i != ((ClassObject *)v)->members.end(); ++i) {
-						context->pushObject(i.value());
+						context->push_object(i.value());
 					}
-					context->pushObject(((ClassObject *)v)->getParent());
+					context->push_object(((ClassObject *)v)->get_parent());
 
 					ClassObject *value = (ClassObject *)v;
 
-					if (auto mt = value->cachedInstantiatedMethodTable.get(); mt) {
-						_gcWalk(context, mt);
+					if (auto mt = value->cached_instantiated_method_table.get(); mt) {
+						_gc_walk(context, mt);
 					}
 
 					Value data;
-					for (size_t i = 0; i < value->fieldRecords.size(); ++i) {
-						_gcWalk(context, value->fieldRecords.at(i).type);
-						readVar(StaticFieldRef(value, i), data);
-						_gcWalk(context, data);
+					for (size_t i = 0; i < value->field_records.size(); ++i) {
+						_gc_walk(context, value->field_records.at(i).type);
+						read_var(StaticFieldRef(value, i), data);
+						_gc_walk(context, data);
 					}
 
-					for (auto &i : value->implTypes) {
-						// i.loadDeferredType(this);
-						_gcWalk(context, i);
+					for (auto &i : value->impl_types) {
+						// i.load_deferred_type(this);
+						_gc_walk(context, i);
 					}
-					for (auto &i : value->genericParams) {
-						// i.baseType.loadDeferredType(this);
-						_gcWalk(context, i.baseType);
+					for (auto &i : value->generic_params) {
+						// i.base_type.load_deferred_type(this);
+						_gc_walk(context, i.base_type);
 						for (auto &j : i.interfaces) {
-							// j.loadDeferredType(this);
-							_gcWalk(context, j);
+							// j.load_deferred_type(this);
+							_gc_walk(context, j);
 						}
 					}
-					for (auto &i : value->genericArgs) {
-						// i.loadDeferredType(this);
-						_gcWalk(context, i);
+					for (auto &i : value->generic_args) {
+						// i.load_deferred_type(this);
+						_gc_walk(context, i);
 					}
 
-					// value->parentClass.loadDeferredType(this);
-					_gcWalk(context, value->baseType);
+					// value->parent_class.load_deferred_type(this);
+					_gc_walk(context, value->base_type);
 
-					_gcWalk(context, value->genericParams);
+					_gc_walk(context, value->generic_params);
 
 					break;
 				}
 				case ObjectKind::Struct: {
 					for (auto i = ((StructObject *)v)->members.begin(); i != ((StructObject *)v)->members.end(); ++i) {
-						context->pushObject(i.value());
+						context->push_object(i.value());
 					}
-					context->pushObject(((StructObject *)v)->getParent());
+					context->push_object(((StructObject *)v)->get_parent());
 
 					StructObject *value = (StructObject *)v;
 
 					Value data;
-					for (size_t i = 0; i < value->fieldRecords.size(); ++i) {
-						_gcWalk(context, value->fieldRecords.at(i).type);
-						readVar(StaticFieldRef(value, i), data);
-						_gcWalk(context, data);
+					for (size_t i = 0; i < value->field_records.size(); ++i) {
+						_gc_walk(context, value->field_records.at(i).type);
+						read_var(StaticFieldRef(value, i), data);
+						_gc_walk(context, data);
 					}
 
-					for (auto &i : value->genericParams) {
-						// i.baseType.loadDeferredType(this);
-						_gcWalk(context, i.baseType);
+					for (auto &i : value->generic_params) {
+						// i.base_type.load_deferred_type(this);
+						_gc_walk(context, i.base_type);
 						for (auto &j : i.interfaces) {
-							// j.loadDeferredType(this);
-							_gcWalk(context, j);
+							// j.load_deferred_type(this);
+							_gc_walk(context, j);
 						}
 					}
-					for (auto &i : value->genericArgs) {
-						// i.loadDeferredType(this);
-						_gcWalk(context, i);
+					for (auto &i : value->generic_args) {
+						// i.load_deferred_type(this);
+						_gc_walk(context, i);
 					}
 
-					_gcWalk(context, value->genericParams);
+					_gc_walk(context, value->generic_params);
 
 					break;
 				}
 				case ObjectKind::ScopedEnum: {
 					for (auto i = ((ScopedEnumObject *)v)->members.begin(); i != ((ScopedEnumObject *)v)->members.end(); ++i) {
-						context->pushObject(i.value());
+						context->push_object(i.value());
 					}
-					context->pushObject(((ScopedEnumObject *)v)->getParent());
+					context->push_object(((ScopedEnumObject *)v)->get_parent());
 
 					ScopedEnumObject *value = (ScopedEnumObject *)v;
 
-					if (value->baseType) {
+					if (value->base_type) {
 						Value data;
-						for (size_t i = 0; i < value->fieldRecords.size(); ++i) {
-							_gcWalk(context, value->fieldRecords.at(i).type);
-							readVar(StaticFieldRef(value, i), data);
-							_gcWalk(context, data);
+						for (size_t i = 0; i < value->field_records.size(); ++i) {
+							_gc_walk(context, value->field_records.at(i).type);
+							read_var(StaticFieldRef(value, i), data);
+							_gc_walk(context, data);
 						}
 					}
 
@@ -350,122 +350,122 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 					UnionEnumObject *value = (UnionEnumObject *)v;
 
 					for (auto i = value->members.begin(); i != value->members.end(); ++i) {
-						context->pushObject(i.value());
+						context->push_object(i.value());
 					}
-					context->pushObject(value->getParent());
+					context->push_object(value->get_parent());
 
-					for (auto &i : value->genericParams) {
-						// i.baseType.loadDeferredType(this);
-						_gcWalk(context, i.baseType);
+					for (auto &i : value->generic_params) {
+						// i.base_type.load_deferred_type(this);
+						_gc_walk(context, i.base_type);
 						for (auto &j : i.interfaces) {
-							// j.loadDeferredType(this);
-							_gcWalk(context, j);
+							// j.load_deferred_type(this);
+							_gc_walk(context, j);
 						}
 					}
-					for (auto &i : value->genericArgs) {
-						// i.loadDeferredType(this);
-						_gcWalk(context, i);
+					for (auto &i : value->generic_args) {
+						// i.load_deferred_type(this);
+						_gc_walk(context, i);
 					}
 
-					_gcWalk(context, value->genericParams);
+					_gc_walk(context, value->generic_params);
 
 					break;
 				}
 				case ObjectKind::UnionEnumItem: {
 					UnionEnumItemObject *value = (UnionEnumItemObject *)v;
 
-					context->pushObject(value->getParent());
+					context->push_object(value->get_parent());
 
 					Value data;
-					for (size_t i = 0; i < value->fieldRecords.size(); ++i) {
-						_gcWalk(context, value->fieldRecords.at(i).type);
-						readVar(StaticFieldRef(value, i), data);
-						_gcWalk(context, data);
+					for (size_t i = 0; i < value->field_records.size(); ++i) {
+						_gc_walk(context, value->field_records.at(i).type);
+						read_var(StaticFieldRef(value, i), data);
+						_gc_walk(context, data);
 					}
 					break;
 				}
 				case ObjectKind::Interface: {
 					// TODO: Walk generic parameters.
 					for (auto i = ((InterfaceObject *)v)->members.begin(); i != ((InterfaceObject *)v)->members.end(); ++i) {
-						context->pushObject(i.value());
+						context->push_object(i.value());
 					}
-					context->pushObject(((InterfaceObject *)v)->getParent());
+					context->push_object(((InterfaceObject *)v)->get_parent());
 
 					InterfaceObject *value = (InterfaceObject *)v;
 
 					Value data;
-					for (size_t i = 0; i < value->fieldRecords.size(); ++i) {
-						readVar(StaticFieldRef(value, i), data);
-						_gcWalk(context, data);
+					for (size_t i = 0; i < value->field_records.size(); ++i) {
+						read_var(StaticFieldRef(value, i), data);
+						_gc_walk(context, data);
 					}
 
-					for (auto &i : value->implTypes) {
-						// i.loadDeferredType(this);
-						context->pushObject(i.typeDef);
+					for (auto &i : value->impl_types) {
+						// i.load_deferred_type(this);
+						context->push_object(i.type_def);
 					}
-					for (auto &i : value->genericParams) {
-						// i.baseType.loadDeferredType(this);
-						_gcWalk(context, i.baseType);
+					for (auto &i : value->generic_params) {
+						// i.base_type.load_deferred_type(this);
+						_gc_walk(context, i.base_type);
 						for (auto &j : i.interfaces) {
-							_gcWalk(context, j);
+							_gc_walk(context, j);
 						}
 					}
-					for (auto &i : value->genericArgs) {
-						// i.loadDeferredType(this);
-						_gcWalk(context, i);
+					for (auto &i : value->generic_args) {
+						// i.load_deferred_type(this);
+						_gc_walk(context, i);
 					}
 
-					_gcWalk(context, value->genericParams);
+					_gc_walk(context, value->generic_params);
 
 					break;
 				}
 				case ObjectKind::Fn: {
 					auto fn = (FnObject *)v;
 
-					context->pushObject(fn->getParent());
+					context->push_object(fn->get_parent());
 
 					for (auto i : fn->overloadings) {
-						context->pushObject(i.second);
+						context->push_object(i.second);
 					}
 
 					break;
 				}
 				case ObjectKind::FnOverloading: {
-					auto fnOverloading = (FnOverloadingObject *)v;
+					auto fn_overloading = (FnOverloadingObject *)v;
 
-					context->pushObject(fnOverloading->fnObject);
+					context->push_object(fn_overloading->fn_object);
 
-					for (auto &i : fnOverloading->genericParams) {
-						// i.baseType.loadDeferredType(this);
-						_gcWalk(context, i.baseType);
+					for (auto &i : fn_overloading->generic_params) {
+						// i.base_type.load_deferred_type(this);
+						_gc_walk(context, i.base_type);
 						for (auto &j : i.interfaces) {
-							// j.loadDeferredType(this);
-							_gcWalk(context, j);
+							// j.load_deferred_type(this);
+							_gc_walk(context, j);
 						}
 					}
-					for (auto i = fnOverloading->mappedGenericArgs.begin(); i != fnOverloading->mappedGenericArgs.end(); ++i) {
-						// i.value().loadDeferredType(this);
-						_gcWalk(context, i.value());
+					for (auto i = fn_overloading->mapped_generic_args.begin(); i != fn_overloading->mapped_generic_args.end(); ++i) {
+						// i.value().load_deferred_type(this);
+						_gc_walk(context, i.value());
 					}
 
-					for (auto &j : fnOverloading->paramTypes)
-						_gcWalk(context, j);
-					_gcWalk(context, fnOverloading->returnType);
+					for (auto &j : fn_overloading->param_types)
+						_gc_walk(context, j);
+					_gc_walk(context, fn_overloading->return_type);
 
-					switch (fnOverloading->overloadingKind) {
+					switch (fn_overloading->overloading_kind) {
 						case FnOverloadingKind::Regular: {
-							RegularFnOverloadingObject *ol = (RegularFnOverloadingObject *)fnOverloading;
+							RegularFnOverloadingObject *ol = (RegularFnOverloadingObject *)fn_overloading;
 
 							for (auto &i : ol->instructions) {
-								for (size_t j = 0; j < i.nOperands; ++j) {
-									_gcWalk(context, i.operands[j]);
+								for (size_t j = 0; j < i.num_operands; ++j) {
+									_gc_walk(context, i.operands[j]);
 								}
 							}
 
 							break;
 						}
 						case FnOverloadingKind::Native: {
-							NativeFnOverloadingObject *ol = (NativeFnOverloadingObject *)fnOverloading;
+							NativeFnOverloadingObject *ol = (NativeFnOverloadingObject *)fn_overloading;
 
 							break;
 						}
@@ -473,7 +473,7 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 							throw std::logic_error("Invalid overloading kind");
 					}
 
-					_gcWalk(context, fnOverloading->genericParams);
+					_gc_walk(context, fn_overloading->generic_params);
 
 					break;
 				}
@@ -481,14 +481,14 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 					auto value = (IdRefObject *)v;
 
 					for (auto &i : value->entries) {
-						for (auto &j : i.genericArgs) {
-							_gcWalk(context, j);
+						for (auto &j : i.generic_args) {
+							_gc_walk(context, j);
 						}
 					}
 
-					if (value->paramTypes.hasValue()) {
-						for (auto &j : *value->paramTypes) {
-							_gcWalk(context, j);
+					if (value->param_types.has_value()) {
+						for (auto &j : *value->param_types) {
+							_gc_walk(context, j);
 						}
 					}
 					break;
@@ -496,25 +496,25 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 				case ObjectKind::Context: {
 					auto value = (ContextObject *)v;
 
-					_gcWalk(context, value->_context);
+					_gc_walk(context, value->_context);
 					break;
 				}
 				case ObjectKind::Coroutine: {
 					auto value = (CoroutineObject *)v;
 
-					context->pushObject((FnOverloadingObject *)value->overloading);
+					context->push_object((FnOverloadingObject *)value->overloading);
 
-					if (value->resumable.hasValue()) {
-						_gcWalk(context, value->stackData, value->lenStackData, value->resumable.value());
+					if (value->resumable.has_value()) {
+						_gc_walk(context, value->stack_data, value->len_stack_data, value->resumable.value());
 
-						if (value->stackData) {
-							for (size_t i = 0; i < value->resumable->nRegs; ++i)
-								_gcWalk(context, *((Value *)(value->stackData + value->lenStackData - sizeof(Value) * i)));
+						if (value->stack_data) {
+							for (size_t i = 0; i < value->resumable->num_regs; ++i)
+								_gc_walk(context, *((Value *)(value->stack_data + value->len_stack_data - sizeof(Value) * i)));
 						}
 					}
 
-					if (value->isDone()) {
-						_gcWalk(context, value->finalResult);
+					if (value->is_done()) {
+						_gc_walk(context, value->final_result);
 					}
 					break;
 				}
@@ -522,10 +522,10 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 					throw std::logic_error("Unhandled object type");
 			}
 
-			context->removeFromWalkableList(v);
-			context->pushWalked(v);
+			context->remove_from_walkable_list(v);
+			context->push_walked(v);
 
-			v->gcSpinlock.unlock();
+			v->gc_spinlock.unlock();
 
 			break;
 		case ObjectGCStatus::Walked:
@@ -533,55 +533,55 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 	}
 }
 
-SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, char *dataStack, size_t stackSize, MajorFrame *majorFrame) {
-	context->pushObject((FnOverloadingObject *)majorFrame->curFn);
-	if (majorFrame->curCoroutine)
-		context->pushObject(majorFrame->curCoroutine);
+SLAKE_API void Runtime::_gc_walk(GCWalkContext *context, char *data_stack, size_t stack_size, MajorFrame *major_frame) {
+	context->push_object((FnOverloadingObject *)major_frame->cur_fn);
+	if (major_frame->cur_coroutine)
+		context->push_object(major_frame->cur_coroutine);
 
-	_gcWalk(context, dataStack, stackSize, majorFrame->resumableContextData);
+	_gc_walk(context, data_stack, stack_size, major_frame->resumable_context_data);
 
-	size_t nRegs = majorFrame->resumableContextData.nRegs;
-	for (size_t i = 0; i < nRegs; ++i)
-		_gcWalk(context, *calcStackAddr(dataStack, stackSize, (majorFrame->offRegs + sizeof(Value) * i)));
+	size_t num_regs = major_frame->resumable_context_data.num_regs;
+	for (size_t i = 0; i < num_regs; ++i)
+		_gc_walk(context, *calc_stack_addr(data_stack, stack_size, (major_frame->off_regs + sizeof(Value) * i)));
 }
 
-SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Context &ctxt) {
-	bool isWalkableObjectDetected = false;
+SLAKE_API void Runtime::_gc_walk(GCWalkContext *context, Context &ctxt) {
+	bool is_walkable_object_detected = false;
 
 	MajorFrame *mf;
-	size_t offCurMajorFrame = ctxt.offCurMajorFrame;
+	size_t off_cur_major_frame = ctxt.off_cur_major_frame;
 	do {
-		mf = _fetchMajorFrame(&ctxt, offCurMajorFrame);
-		context->pushObject(mf->curCoroutine);
-		_gcWalk(context, ctxt.dataStack, ctxt.stackSize, mf);
-		offCurMajorFrame = mf->offPrevFrame;
-	} while (mf->offPrevFrame != SIZE_MAX);
+		mf = _fetch_major_frame(&ctxt, off_cur_major_frame);
+		context->push_object(mf->cur_coroutine);
+		_gc_walk(context, ctxt.data_stack, ctxt.stack_size, mf);
+		off_cur_major_frame = mf->off_prev_frame;
+	} while (mf->off_prev_frame != SIZE_MAX);
 }
 
-SLAKE_API void GCWalkContext::removeFromCurGCSet(Object *object) {
-	if (object->prevSameGCSet)
-		object->prevSameGCSet->nextSameGCSet = object->nextSameGCSet;
-	if (object->nextSameGCSet)
-		object->nextSameGCSet->prevSameGCSet = object->prevSameGCSet;
-	object->nextSameGCSet = nullptr;
-	object->prevSameGCSet = nullptr;
+SLAKE_API void GCWalkContext::remove_from_cur_gcset(Object *object) {
+	if (object->prev_same_gcset)
+		object->prev_same_gcset->next_same_gcset = object->next_same_gcset;
+	if (object->next_same_gcset)
+		object->next_same_gcset->prev_same_gcset = object->prev_same_gcset;
+	object->next_same_gcset = nullptr;
+	object->prev_same_gcset = nullptr;
 }
 
-SLAKE_API void GCWalkContext::pushObject(Object *object) {
+SLAKE_API void GCWalkContext::push_object(Object *object) {
 	if (!object)
 		return;
 
-	switch (object->gcStatus) {
+	switch (object->gc_status) {
 		case ObjectGCStatus::Unwalked:
-			object->gcStatus = ObjectGCStatus::ReadyToWalk;
+			object->gc_status = ObjectGCStatus::ReadyToWalk;
 
-			object->gcSpinlock.lock();
+			object->gc_spinlock.lock();
 
-			if (object == unwalkedList)
-				unwalkedList = object->nextSameGCSet;
+			if (object == unwalked_list)
+				unwalked_list = object->next_same_gcset;
 
-			removeFromCurGCSet(object);
-			pushWalkable(object);
+			remove_from_cur_gcset(object);
+			push_walkable(object);
 			break;
 		case ObjectGCStatus::ReadyToWalk:
 			break;
@@ -592,92 +592,92 @@ SLAKE_API void GCWalkContext::pushObject(Object *object) {
 	}
 }
 
-SLAKE_API bool GCWalkContext::isWalkableListEmpty() {
-	return !walkableList;
+SLAKE_API bool GCWalkContext::is_walkable_list_empty() {
+	return !walkable_list;
 }
 
-SLAKE_API Object *GCWalkContext::getWalkableList() {
-	MutexGuard accessMutexGuard(accessMutex);
+SLAKE_API Object *GCWalkContext::get_walkable_list() {
+	MutexGuard access_mutex_guard(access_mutex);
 
-	Object *p = walkableList;
-	walkableList = nullptr;
+	Object *p = walkable_list;
+	walkable_list = nullptr;
 
 	return p;
 }
 
-SLAKE_API void GCWalkContext::pushWalkable(Object *walkableObject) {
-	MutexGuard accessMutexGuard(accessMutex);
+SLAKE_API void GCWalkContext::push_walkable(Object *walkable_object) {
+	MutexGuard access_mutex_guard(access_mutex);
 
-	if (unwalkedList == walkableObject)
-		unwalkedList = walkableObject->nextSameGCSet;
+	if (unwalked_list == walkable_object)
+		unwalked_list = walkable_object->next_same_gcset;
 
-	walkableObject->nextSameGCSet = walkableList;
-	walkableList = walkableObject;
+	walkable_object->next_same_gcset = walkable_list;
+	walkable_list = walkable_object;
 }
 
-SLAKE_API Object *GCWalkContext::getUnwalkedList(bool clearList) {
-	MutexGuard accessMutexGuard(accessMutex);
+SLAKE_API Object *GCWalkContext::get_unwalked_list(bool clear_list) {
+	MutexGuard access_mutex_guard(access_mutex);
 
-	Object *p = unwalkedList;
-	if (clearList)
-		unwalkedList = nullptr;
+	Object *p = unwalked_list;
+	if (clear_list)
+		unwalked_list = nullptr;
 
 	return p;
 }
 
-SLAKE_API void GCWalkContext::pushUnwalked(Object *walkableObject) {
-	MutexGuard accessMutexGuard(accessMutex);
+SLAKE_API void GCWalkContext::push_unwalked(Object *walkable_object) {
+	MutexGuard access_mutex_guard(access_mutex);
 
-	if (unwalkedList)
-		unwalkedList->prevSameGCSet = walkableObject;
+	if (unwalked_list)
+		unwalked_list->prev_same_gcset = walkable_object;
 
-	walkableObject->nextSameGCSet = unwalkedList;
+	walkable_object->next_same_gcset = unwalked_list;
 
-	unwalkedList = walkableObject;
+	unwalked_list = walkable_object;
 }
 
-SLAKE_API void GCWalkContext::updateUnwalkedList(Object *deletedObject) {
-	MutexGuard accessMutexGuard(accessMutex);
+SLAKE_API void GCWalkContext::update_unwalked_list(Object *deleted_object) {
+	MutexGuard access_mutex_guard(access_mutex);
 
-	if (unwalkedList == deletedObject)
-		unwalkedList = deletedObject->nextSameGCSet;
+	if (unwalked_list == deleted_object)
+		unwalked_list = deleted_object->next_same_gcset;
 
-	removeFromCurGCSet(deletedObject);
+	remove_from_cur_gcset(deleted_object);
 }
 
-SLAKE_API Object *GCWalkContext::getWalkedList() {
-	return walkedList;
+SLAKE_API Object *GCWalkContext::get_walked_list() {
+	return walked_list;
 }
 
-SLAKE_API void GCWalkContext::pushWalked(Object *walkedObject) {
-	MutexGuard accessMutexGuard(accessMutex);
+SLAKE_API void GCWalkContext::push_walked(Object *walked_object) {
+	MutexGuard access_mutex_guard(access_mutex);
 
-	if (walkedList)
-		walkedList->prevSameGCSet = walkedObject;
+	if (walked_list)
+		walked_list->prev_same_gcset = walked_object;
 
-	walkedObject->nextSameGCSet = walkedList;
+	walked_object->next_same_gcset = walked_list;
 
-	walkedList = walkedObject;
+	walked_list = walked_object;
 }
 
-SLAKE_API InstanceObject *GCWalkContext::getDestructibleList() {
-	MutexGuard accessMutexGuard(accessMutex);
+SLAKE_API InstanceObject *GCWalkContext::get_destructible_list() {
+	MutexGuard access_mutex_guard(access_mutex);
 
-	auto p = destructibleList;
-	destructibleList = nullptr;
+	auto p = destructible_list;
+	destructible_list = nullptr;
 
 	return p;
 }
 
-SLAKE_API void GCWalkContext::pushDestructible(InstanceObject *v) {
-	MutexGuard accessMutexGuard(accessMutex);
+SLAKE_API void GCWalkContext::push_destructible(InstanceObject *v) {
+	MutexGuard access_mutex_guard(access_mutex);
 }
 
 SLAKE_API void GCWalkContext::reset() {
-	walkableList = nullptr;
-	unwalkedInstanceList = nullptr;
-	destructibleList = nullptr;
-	unwalkedList = nullptr;
+	walkable_list = nullptr;
+	unwalked_instance_list = nullptr;
+	destructible_list = nullptr;
+	unwalked_list = nullptr;
 }
 
 enum class GCTarget : uint8_t {
@@ -685,50 +685,50 @@ enum class GCTarget : uint8_t {
 	All
 };
 
-SLAKE_API void Runtime::_gcSerial(Object *&objectList, Object *&endObjectOut, size_t &nObjects, ObjectGeneration newGeneration, peff::Alloc *newGenerationAllocator) {
-	size_t iterationTimes = 0;
+SLAKE_API void Runtime::_gc_serial(Object *&object_list, Object *&end_object_out, size_t &num_objects, ObjectGeneration new_generation, peff::Alloc *new_generation_allocator) {
+	size_t iteration_times = 0;
 rescan:
-	++iterationTimes;
+	++iteration_times;
 	GCWalkContext context;
 
-	Object *hostRefList = nullptr, *ephemeralList = nullptr;
+	Object *host_ref_list = nullptr, *ephemeral_list = nullptr;
 
 	{
 		Object *prev = nullptr;
 
-		for (Object *i = objectList; i; i = i->nextSameGenObject) {
-			i->gcStatus = ObjectGCStatus::Unwalked;
+		for (Object *i = object_list; i; i = i->next_same_gen_object) {
+			i->gc_status = ObjectGCStatus::Unwalked;
 
-			i->nextSameGCSet = nullptr;
-			i->prevSameGCSet = nullptr;
+			i->next_same_gcset = nullptr;
+			i->prev_same_gcset = nullptr;
 
-			i->objectGeneration = newGeneration;
+			i->object_generation = new_generation;
 
 			// Check if the object is referenced by the host, if so, exclude them into a separated list.
-			size_t hostRefCount = i->hostRefCount;
-			switch (hostRefCount) {
+			size_t host_ref_count = i->host_ref_count;
+			switch (host_ref_count) {
 				case HOSTREF_EPHEMERAL:
-					if (ephemeralList)
-						ephemeralList->prevSameGCSet = i;
-					i->nextSameGCSet = ephemeralList;
-					ephemeralList = i;
+					if (ephemeral_list)
+						ephemeral_list->prev_same_gcset = i;
+					i->next_same_gcset = ephemeral_list;
+					ephemeral_list = i;
 					break;
 				case 0:
-					context.pushUnwalked(i);
+					context.push_unwalked(i);
 					break;
 				default:
-					if (hostRefList)
-						hostRefList->prevSameGCSet = i;
-					i->nextSameGCSet = hostRefList;
-					hostRefList = i;
+					if (host_ref_list)
+						host_ref_list->prev_same_gcset = i;
+					i->next_same_gcset = host_ref_list;
+					host_ref_list = i;
 			}
 
-			switch (i->getObjectKind()) {
+			switch (i->get_object_kind()) {
 				case ObjectKind::Instance: {
 					InstanceObject *value = (InstanceObject *)i;
 
 					/* if (!(value->_flags & VF_DESTRUCTED)) {
-						context.pushDestructible(value);
+						context.push_destructible(value);
 					}*/
 					break;
 				}
@@ -739,51 +739,51 @@ rescan:
 			prev = i;
 		}
 
-		endObjectOut = prev;
+		end_object_out = prev;
 	}
 
-	for (Object *i = hostRefList, *next; i; i = next) {
-		next = i->nextSameGCSet;
-		context.pushObject(i);
+	for (Object *i = host_ref_list, *next; i; i = next) {
+		next = i->next_same_gcset;
+		context.push_object(i);
 	}
 
-	for (Object *i = ephemeralList, *next; i; i = next) {
-		next = i->nextSameGCSet;
-		context.pushObject(i);
+	for (Object *i = ephemeral_list, *next; i; i = next) {
+		next = i->next_same_gcset;
+		context.push_object(i);
 	}
 
-	for (auto i : _genericCacheDir) {
+	for (auto i : _generic_cache_dir) {
 		for (auto j : i.second) {
-			context.pushObject(i.first);
-			context.pushObject(j.second);
+			context.push_object(i.first);
+			context.push_object(j.second);
 		}
 	}
 
-	for (auto i : managedThreadRunnables) {
-		context.pushObject(i.second->context.get());
+	for (auto i : managed_thread_runnables) {
+		context.push_object(i.second->context.get());
 	}
 
-	if (!(runtimeFlags & _RT_DEINITING)) {
+	if (!(runtime_flags & _RT_DEINITING)) {
 		// Walk the root node.
-		context.pushObject(_rootObject);
+		context.push_object(_root_object);
 
 		// Walk contexts for each thread.
-		for (auto &i : activeContexts)
-			context.pushObject(i.second);
+		for (auto &i : active_contexts)
+			context.push_object(i.second);
 	}
 
-	for (Object *p = context.getWalkableList(), *i; p;) {
+	for (Object *p = context.get_walkable_list(), *i; p;) {
 		i = p;
 
 		while (i) {
-			Object *next = i->nextSameGCSet;
+			Object *next = i->next_same_gcset;
 
-			switch (i->gcStatus) {
+			switch (i->gc_status) {
 				case ObjectGCStatus::Unwalked:
 					std::terminate();
 					break;
 				case ObjectGCStatus::ReadyToWalk:
-					_gcWalk(&context, i);
+					_gc_walk(&context, i);
 					break;
 				case ObjectGCStatus::Walked:
 					std::terminate();
@@ -793,53 +793,53 @@ rescan:
 			i = next;
 		}
 
-		p = context.getWalkableList();
+		p = context.get_walkable_list();
 	}
 
-	bool isRescanNeeded = false;
+	bool is_rescan_needed = false;
 
 	/*
-	if (InstanceObject *p = context.getDestructibleList(); p) {
-		_destructDestructibleObjects(p);
-		isRescanNeeded = true;
+	if (InstanceObject *p = context.get_destructible_list(); p) {
+		_destruct_destructible_objects(p);
+		is_rescan_needed = true;
 	}*/
 
-	if (isRescanNeeded) {
+	if (is_rescan_needed) {
 		goto rescan;
 	}
 
-	size_t nDeletedObjects = 0;
+	size_t num_deleted_objects = 0;
 	// Delete unreachable objects.
-	GCTarget curGcTarget = GCTarget::TypeDef;
-	bool clearUnwalkedList = false;
+	GCTarget cur_gc_target = GCTarget::TypeDef;
+	bool clear_unwalked_list = false;
 
-rescanDeletables:
-	Object *i = context.getUnwalkedList(clearUnwalkedList);
+rescan_deletables:
+	Object *i = context.get_unwalked_list(clear_unwalked_list);
 
-	bool updateUnwalkedList;
-	switch (curGcTarget) {
+	bool update_unwalked_list;
+	switch (cur_gc_target) {
 		case GCTarget::TypeDef: {
-			if (!isTypeDefObject(i))
-				updateUnwalkedList = true;
+			if (!is_type_def_object(i))
+				update_unwalked_list = true;
 			else
-				updateUnwalkedList = false;
+				update_unwalked_list = false;
 			break;
 		}
 		case GCTarget::All:
-			updateUnwalkedList = false;
+			update_unwalked_list = false;
 			break;
 		default:
 			std::terminate();
 	}
 
 	for (Object *next; i; i = next) {
-		next = i->nextSameGCSet;
+		next = i->next_same_gcset;
 
-		switch (curGcTarget) {
+		switch (cur_gc_target) {
 			case GCTarget::TypeDef:
-				if (!isTypeDefObject(i))
+				if (!is_type_def_object(i))
 					continue;
-				unregisterTypeDef((TypeDefObject *)i);
+				unregister_type_def((TypeDefObject *)i);
 				break;
 			case GCTarget::All:
 				break;
@@ -847,137 +847,137 @@ rescanDeletables:
 				std::terminate();
 		}
 
-		if (i == objectList) {
-			objectList = i->nextSameGenObject;
-			assert(!i->prevSameGenObject);
+		if (i == object_list) {
+			object_list = i->next_same_gen_object;
+			assert(!i->prev_same_gen_object);
 		}
 
-		if (endObjectOut == i) {
-			if (i->prevSameGenObject) {
-				endObjectOut = i->prevSameGenObject;
+		if (end_object_out == i) {
+			if (i->prev_same_gen_object) {
+				end_object_out = i->prev_same_gen_object;
 			} else {
-				endObjectOut = nullptr;
+				end_object_out = nullptr;
 			}
-			assert(!i->nextSameGenObject);
+			assert(!i->next_same_gen_object);
 		}
 
-		if (i->prevSameGenObject) {
-			i->prevSameGenObject->nextSameGenObject = i->nextSameGenObject;
+		if (i->prev_same_gen_object) {
+			i->prev_same_gen_object->next_same_gen_object = i->next_same_gen_object;
 		}
 
-		if (i->nextSameGenObject) {
-			i->nextSameGenObject->prevSameGenObject = i->prevSameGenObject;
+		if (i->next_same_gen_object) {
+			i->next_same_gen_object->prev_same_gen_object = i->prev_same_gen_object;
 		}
 
-		if (updateUnwalkedList)
-			context.updateUnwalkedList(i);
+		if (update_unwalked_list)
+			context.update_unwalked_list(i);
 		i->dealloc();
 
-		++nDeletedObjects;
+		++num_deleted_objects;
 	}
 
-	switch (curGcTarget) {
+	switch (cur_gc_target) {
 		case GCTarget::TypeDef:
-			curGcTarget = GCTarget::All;
-			clearUnwalkedList = true;
-			goto rescanDeletables;
+			cur_gc_target = GCTarget::All;
+			clear_unwalked_list = true;
+			goto rescan_deletables;
 		case GCTarget::All:
 			break;
 		default:
 			std::terminate();
 	}
 
-	nObjects -= nDeletedObjects;
+	num_objects -= num_deleted_objects;
 
-	if (newGenerationAllocator) {
-		for (Object *i = context.getWalkedList(), *next; i; i = next) {
-			next = i->nextSameGCSet;
-			context.removeFromCurGCSet(i);
-			i->replaceAllocator(newGenerationAllocator);
-			i->gcStatus = ObjectGCStatus::Unwalked;
+	if (new_generation_allocator) {
+		for (Object *i = context.get_walked_list(), *next; i; i = next) {
+			next = i->next_same_gcset;
+			context.remove_from_cur_gcset(i);
+			i->replace_allocator(new_generation_allocator);
+			i->gc_status = ObjectGCStatus::Unwalked;
 		}
 	} else {
-		for (Object *i = context.getWalkedList(), *next; i; i = next) {
-			next = i->nextSameGCSet;
-			context.removeFromCurGCSet(i);
-			i->gcStatus = ObjectGCStatus::Unwalked;
+		for (Object *i = context.get_walked_list(), *next; i; i = next) {
+			next = i->next_same_gcset;
+			context.remove_from_cur_gcset(i);
+			i->gc_status = ObjectGCStatus::Unwalked;
 		}
 	}
 }
 
 SLAKE_API void Runtime::ParallelGcThreadRunnable::run() {
 	for (;;) {
-		while (!isActive) {
-			activeCond.wait();
+		while (!is_active) {
+			active_cond.wait();
 
-			yieldCurrentThread();
+			yield_current_thread();
 		}
 
-		isActive = false;
+		is_active = false;
 
-		if (threadState == ParallelGcThreadState::NotifyTermination) {
+		if (thread_state == ParallelGcThreadState::NotifyTermination) {
 			break;
 		}
 
 		// TODO: Implement it.
 
-		isDone = true;
-		while (isDone) {
-			doneCond.notifyAll();
-			yieldCurrentThread();
+		is_done = true;
+		while (is_done) {
+			done_cond.notify_all();
+			yield_current_thread();
 		}
 	}
 
-	threadState = ParallelGcThreadState::Terminated;
+	thread_state = ParallelGcThreadState::Terminated;
 	return;
 }
 
 SLAKE_API void Runtime::ParallelGcThreadRunnable::dealloc() {
-	peff::destroyAndRelease<ParallelGcThreadRunnable>(runtime->getFixedAlloc(), this, alignof(ParallelGcThreadRunnable));
+	peff::destroy_and_release<ParallelGcThreadRunnable>(runtime->get_fixed_alloc(), this, alignof(ParallelGcThreadRunnable));
 }
 
-SLAKE_API void Runtime::_gcParallelHeapless(Object *&objectList, Object *&endObjectOut, size_t &nObjects, ObjectGeneration newGeneration) {
+SLAKE_API void Runtime::_gc_parallel_heapless(Object *&object_list, Object *&end_object_out, size_t &num_objects, ObjectGeneration new_generation) {
 rescan:
-	size_t nRecordedObjects = nObjects;
+	size_t num_recorded_objects = num_objects;
 
-	parallelGcThreadRunnable->context.reset();
-	parallelGcThreadRunnable->isActive = true;
-	parallelGcThreadRunnable->activeCond.notifyAll();
+	parallel_gc_thread_runnable->context.reset();
+	parallel_gc_thread_runnable->is_active = true;
+	parallel_gc_thread_runnable->active_cond.notify_all();
 
-	while (!parallelGcThreadRunnable->isDone) {
-		yieldCurrentThread();
-		parallelGcThreadRunnable->doneCond.wait();
+	while (!parallel_gc_thread_runnable->is_done) {
+		yield_current_thread();
+		parallel_gc_thread_runnable->done_cond.wait();
 	}
-	parallelGcThreadRunnable->isDone = false;
+	parallel_gc_thread_runnable->is_done = false;
 }
 
 SLAKE_API Runtime::ParallelGcThreadRunnable::ParallelGcThreadRunnable(Runtime *runtime) : runtime(runtime) {
 }
 
-SLAKE_API bool Runtime::_allocParallelGcResources() {
-	if (!(parallelGcThreadRunnable = std::unique_ptr<ParallelGcThreadRunnable, peff::DeallocableDeleter<ParallelGcThreadRunnable>>(peff::allocAndConstruct<ParallelGcThreadRunnable>(getFixedAlloc(), alignof(ParallelGcThreadRunnable), this)))) {
+SLAKE_API bool Runtime::_alloc_parallel_gc_resources() {
+	if (!(parallel_gc_thread_runnable = std::unique_ptr<ParallelGcThreadRunnable, peff::DeallocableDeleter<ParallelGcThreadRunnable>>(peff::alloc_and_construct<ParallelGcThreadRunnable>(get_fixed_alloc(), alignof(ParallelGcThreadRunnable), this)))) {
 		return false;
 	}
 
-	if (!(parallelGcThread = std::unique_ptr<Thread, peff::DeallocableDeleter<Thread>>(Thread::alloc(getFixedAlloc(), parallelGcThreadRunnable.get(), 4096)))) {
+	if (!(parallel_gc_thread = std::unique_ptr<Thread, peff::DeallocableDeleter<Thread>>(Thread::alloc(get_fixed_alloc(), parallel_gc_thread_runnable.get(), 4096)))) {
 		return false;
 	}
 
-	parallelGcThread->start();
+	parallel_gc_thread->start();
 
 	return true;
 }
 
-SLAKE_API void Runtime::_releaseParallelGcResources() {
-	parallelGcThreadRunnable->threadState = ParallelGcThreadState::NotifyTermination;
+SLAKE_API void Runtime::_release_parallel_gc_resources() {
+	parallel_gc_thread_runnable->thread_state = ParallelGcThreadState::NotifyTermination;
 
-	parallelGcThreadRunnable->isActive = true;
+	parallel_gc_thread_runnable->is_active = true;
 
-	parallelGcThreadRunnable->activeCond.notifyAll();
+	parallel_gc_thread_runnable->active_cond.notify_all();
 
-	while (parallelGcThreadRunnable->threadState == ParallelGcThreadState::NotifyTermination)
-		yieldCurrentThread();
+	while (parallel_gc_thread_runnable->thread_state == ParallelGcThreadState::NotifyTermination)
+		yield_current_thread();
 
-	parallelGcThreadRunnable.reset();
-	parallelGcThread.reset();
+	parallel_gc_thread_runnable.reset();
+	parallel_gc_thread.reset();
 }

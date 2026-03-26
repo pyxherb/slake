@@ -4,41 +4,41 @@
 
 using namespace slake;
 
-SLAKE_API InternalExceptionPointer Runtime::initMethodTableForClass(ClassObject *cls, ClassObject *parentClass) {
-	assert(!cls->cachedInstantiatedMethodTable);
-	MethodTable *parentMt = parentClass ? parentClass->cachedInstantiatedMethodTable.get() : nullptr;
-	std::unique_ptr<MethodTable, peff::DeallocableDeleter<MethodTable>> methodTable(MethodTable::alloc(cls->selfAllocator.get()));
+SLAKE_API InternalExceptionPointer Runtime::init_method_table_for_class(ClassObject *cls, ClassObject *parent_class) {
+	assert(!cls->cached_instantiated_method_table);
+	MethodTable *parent_mt = parent_class ? parent_class->cached_instantiated_method_table.get() : nullptr;
+	std::unique_ptr<MethodTable, peff::DeallocableDeleter<MethodTable>> method_table(MethodTable::alloc(cls->self_allocator.get()));
 
-	if (parentMt) {
-		if (!methodTable->destructors.resize(parentMt->destructors.size())) {
+	if (parent_mt) {
+		if (!method_table->destructors.resize(parent_mt->destructors.size())) {
 			return OutOfMemoryError::alloc();
 		}
-		memcpy(methodTable->destructors.data(), parentMt->destructors.data(), methodTable->destructors.size() * sizeof(void *));
+		memcpy(method_table->destructors.data(), parent_mt->destructors.data(), method_table->destructors.size() * sizeof(void *));
 	}
 
 	for (auto it = cls->members.begin(); it != cls->members.end(); ++it) {
-		switch (it.value()->getObjectKind()) {
+		switch (it.value()->get_object_kind()) {
 			case ObjectKind::Fn: {
 				FnObject *fn = (FnObject *)it.value();
 
-				HostObjectRef<FnObject> fnSlot;
+				HostObjectRef<FnObject> fn_slot;
 
-				fnSlot = FnObject::alloc(this);
-				if (!fnSlot) {
+				fn_slot = FnObject::alloc(this);
+				if (!fn_slot) {
 					return OutOfMemoryError::alloc();
 				}
-				if (!fnSlot->setName(((FnObject *)it.value())->getName())) {
+				if (!fn_slot->set_name(((FnObject *)it.value())->get_name())) {
 					return OutOfMemoryError::alloc();
 				}
 
 				if (it.key() == "delete") {
-					peff::DynArray<TypeRef> destructorParamTypes(getFixedAlloc());
+					peff::DynArray<TypeRef> destructor_param_types(get_fixed_alloc());
 
 					for (auto j : fn->overloadings) {
 						bool result;
 						static FnSignatureComparator cmp;
-						if (cmp(FnSignature(j.second->paramTypes, j.second->isWithVarArgs(), j.second->genericParams.size(), j.second->overridenType), FnSignature(destructorParamTypes, false, 0, TypeId::Void))) {
-							if (!methodTable->destructors.pushFront(+j.second)) {
+						if (cmp(FnSignature(j.second->param_types, j.second->is_with_var_args(), j.second->generic_params.size(), j.second->overriden_type), FnSignature(destructor_param_types, false, 0, TypeId::Void))) {
+							if (!method_table->destructors.push_front(+j.second)) {
 								return OutOfMemoryError::alloc();
 							}
 							break;
@@ -46,18 +46,18 @@ SLAKE_API InternalExceptionPointer Runtime::initMethodTableForClass(ClassObject 
 					}
 				} else {
 					for (auto j : fn->overloadings) {
-						if (!fnSlot->overloadings.insert(FnSignature(j.first), +j.second))
+						if (!fn_slot->overloadings.insert(FnSignature(j.first), +j.second))
 							return OutOfMemoryError::alloc();
 					}
 
-					if (parentMt) {
-						if (auto m = parentMt->getMethod(fn->getName()); m) {
+					if (parent_mt) {
+						if (auto m = parent_mt->get_method(fn->get_name()); m) {
 							if (m->overloadings.size()) {
 								// Link the method with method inherited from the parent.
 								for (auto k : m->overloadings) {
 									// If we found a non-duplicated overloading from the parent, add it.
-									if (auto it = fnSlot->overloadings.find(k.first); it == fnSlot->overloadings.end()) {
-										if (!fnSlot->overloadings.insert(FnSignature(k.first), +k.second))
+									if (auto it = fn_slot->overloadings.find(k.first); it == fn_slot->overloadings.end()) {
+										if (!fn_slot->overloadings.insert(FnSignature(k.first), +k.second))
 											return OutOfMemoryError::alloc();
 									}
 								}
@@ -66,8 +66,8 @@ SLAKE_API InternalExceptionPointer Runtime::initMethodTableForClass(ClassObject 
 					}
 				}
 
-				if (fnSlot->overloadings.size()) {
-					if (!methodTable->methods.insert(fnSlot->getName(), fnSlot.get()))
+				if (fn_slot->overloadings.size()) {
+					if (!method_table->methods.insert(fn_slot->get_name(), fn_slot.get()))
 						return OutOfMemoryError::alloc();
 				}
 
@@ -76,141 +76,141 @@ SLAKE_API InternalExceptionPointer Runtime::initMethodTableForClass(ClassObject 
 		}
 	}
 
-	cls->cachedInstantiatedMethodTable = methodTable.release();
+	cls->cached_instantiated_method_table = method_table.release();
 
 	return {};
 }
 
-SLAKE_API InternalExceptionPointer Runtime::initObjectLayoutForModule(BasicModuleObject *mod, ObjectLayout *objectLayout) {
+SLAKE_API InternalExceptionPointer Runtime::init_object_layout_for_module(BasicModuleObject *mod, ObjectLayout *object_layout) {
 	size_t cnt = 0;
-	for (size_t i = 0; i < mod->fieldRecords.size(); ++i) {
-		FieldRecord &clsFieldRecord = mod->fieldRecords.at(i);
+	for (size_t i = 0; i < mod->field_records.size(); ++i) {
+		FieldRecord &cls_field_record = mod->field_records.at(i);
 
-		if (clsFieldRecord.accessModifier & ACCESS_STATIC) {
+		if (cls_field_record.access_modifier & ACCESS_STATIC) {
 			continue;
 		}
 
-		ObjectFieldRecord fieldRecord(mod->selfAllocator.get());
+		ObjectFieldRecord field_record(mod->self_allocator.get());
 
-		TypeRef type = clsFieldRecord.type;
+		TypeRef type = cls_field_record.type;
 
-		size_t size = sizeofType(type);
-		size_t align = alignofType(type);
+		size_t size = sizeof_type(type);
+		size_t align = alignof_type(type);
 
 		if (align > 1) {
-			if (size_t diff = objectLayout->totalSize % align; diff) {
-				objectLayout->totalSize += align - diff;
+			if (size_t diff = object_layout->total_size % align; diff) {
+				object_layout->total_size += align - diff;
 			}
 		}
-		fieldRecord.offset = objectLayout->totalSize;
-		fieldRecord.idxInitFieldRecord = i;
+		field_record.offset = object_layout->total_size;
+		field_record.idx_init_field_record = i;
 
-		fieldRecord.type = type;
-		if (!fieldRecord.name.build(clsFieldRecord.name))
+		field_record.type = type;
+		if (!field_record.name.build(cls_field_record.name))
 			return OutOfMemoryError::alloc();
 
-		if (!objectLayout->fieldNameMap.insert(fieldRecord.name, objectLayout->fieldRecords.size()))
+		if (!object_layout->field_name_map.insert(field_record.name, object_layout->field_records.size()))
 			return OutOfMemoryError::alloc();
-		if (!objectLayout->fieldRecords.pushBack(std::move(fieldRecord)))
+		if (!object_layout->field_records.push_back(std::move(field_record)))
 			return OutOfMemoryError::alloc();
 
-		objectLayout->totalSize += size;
+		object_layout->total_size += size;
 
 		++cnt;
 	}
 
-	if (!objectLayout->fieldRecordInitModuleFieldsNumber.pushBack({ mod, cnt }))
+	if (!object_layout->field_record_init_module_fields_number.push_back({ mod, cnt }))
 		return OutOfMemoryError::alloc();
 
 	return {};
 }
 
-SLAKE_API InternalExceptionPointer Runtime::initObjectLayoutForClass(ClassObject *cls, ClassObject *parentClass) {
-	assert(!cls->cachedObjectLayout);
-	std::unique_ptr<ObjectLayout, peff::DeallocableDeleter<ObjectLayout>> objectLayout;
+SLAKE_API InternalExceptionPointer Runtime::init_object_layout_for_class(ClassObject *cls, ClassObject *parent_class) {
+	assert(!cls->cached_object_layout);
+	std::unique_ptr<ObjectLayout, peff::DeallocableDeleter<ObjectLayout>> object_layout;
 
-	if (parentClass && parentClass->cachedObjectLayout) {
-		objectLayout = decltype(objectLayout)(parentClass->cachedObjectLayout->duplicate(cls->selfAllocator.get()));
+	if (parent_class && parent_class->cached_object_layout) {
+		object_layout = decltype(object_layout)(parent_class->cached_object_layout->duplicate(cls->self_allocator.get()));
 	} else {
-		objectLayout = decltype(objectLayout)(ObjectLayout::alloc(cls->selfAllocator.get()));
+		object_layout = decltype(object_layout)(ObjectLayout::alloc(cls->self_allocator.get()));
 	}
 
-	if (!objectLayout)
+	if (!object_layout)
 		return OutOfMemoryError::alloc();
 
-	SLAKE_RETURN_IF_EXCEPT(initObjectLayoutForModule(cls, objectLayout.get()));
+	SLAKE_RETURN_IF_EXCEPT(init_object_layout_for_module(cls, object_layout.get()));
 
-	// cls->cachedFieldInitVars.shrink_to_fit();
-	cls->cachedObjectLayout = objectLayout.release();
+	// cls->cached_field_init_vars.shrink_to_fit();
+	cls->cached_object_layout = object_layout.release();
 
 	return {};
 }
 
-SLAKE_API InternalExceptionPointer Runtime::initObjectLayoutForStruct(StructObject *s) {
-	assert(!s->cachedObjectLayout);
-	std::unique_ptr<ObjectLayout, peff::DeallocableDeleter<ObjectLayout>> objectLayout(ObjectLayout::alloc(s->selfAllocator.get()));
+SLAKE_API InternalExceptionPointer Runtime::init_object_layout_for_struct(StructObject *s) {
+	assert(!s->cached_object_layout);
+	std::unique_ptr<ObjectLayout, peff::DeallocableDeleter<ObjectLayout>> object_layout(ObjectLayout::alloc(s->self_allocator.get()));
 
-	if (!objectLayout)
+	if (!object_layout)
 		return OutOfMemoryError::alloc();
 
-	SLAKE_RETURN_IF_EXCEPT(initObjectLayoutForModule(s, objectLayout.get()));
+	SLAKE_RETURN_IF_EXCEPT(init_object_layout_for_module(s, object_layout.get()));
 
-	// cls->cachedFieldInitVars.shrink_to_fit();
-	s->cachedObjectLayout = objectLayout.release();
+	// cls->cached_field_init_vars.shrink_to_fit();
+	s->cached_object_layout = object_layout.release();
 
 	return {};
 }
 
-SLAKE_API InternalExceptionPointer Runtime::initObjectLayoutForUnionEnumItem(UnionEnumItemObject *s) {
-	assert(!s->cachedObjectLayout);
-	std::unique_ptr<ObjectLayout, peff::DeallocableDeleter<ObjectLayout>> objectLayout(ObjectLayout::alloc(s->selfAllocator.get()));
+SLAKE_API InternalExceptionPointer Runtime::init_object_layout_for_union_enum_item(UnionEnumItemObject *s) {
+	assert(!s->cached_object_layout);
+	std::unique_ptr<ObjectLayout, peff::DeallocableDeleter<ObjectLayout>> object_layout(ObjectLayout::alloc(s->self_allocator.get()));
 
-	if (!objectLayout)
+	if (!object_layout)
 		return OutOfMemoryError::alloc();
 
-	SLAKE_RETURN_IF_EXCEPT(initObjectLayoutForModule(s, objectLayout.get()));
+	SLAKE_RETURN_IF_EXCEPT(init_object_layout_for_module(s, object_layout.get()));
 
-	// cls->cachedFieldInitVars.shrink_to_fit();
-	s->cachedObjectLayout = objectLayout.release();
+	// cls->cached_field_init_vars.shrink_to_fit();
+	s->cached_object_layout = object_layout.release();
 
 	return {};
 }
 
-SLAKE_API InternalExceptionPointer Runtime::prepareClassForInstantiation(ClassObject *cls) {
-	peff::List<ClassObject *> unpreparedClasses(getFixedAlloc());
+SLAKE_API InternalExceptionPointer Runtime::prepare_class_for_instantiation(ClassObject *cls) {
+	peff::List<ClassObject *> unprepared_classes(get_fixed_alloc());
 	{
 		ClassObject *p = cls;
 
 		while (true) {
-			if (!unpreparedClasses.pushBack(+p))
+			if (!unprepared_classes.push_back(+p))
 				return OutOfMemoryError::alloc();
 
-			if (!p->baseType)
+			if (!p->base_type)
 				break;
 
-			if (p->baseType.typeId != TypeId::Instance)
-				return allocOutOfMemoryErrorIfAllocFailed(MalformedClassStructureError::alloc(getFixedAlloc(), p));
+			if (p->base_type.type_id != TypeId::Instance)
+				return alloc_out_of_memory_error_if_alloc_failed(MalformedClassStructureError::alloc(get_fixed_alloc(), p));
 
-			Object *parentClass = (p->baseType.getCustomTypeDef())->typeObject;
-			if (parentClass->getObjectKind() != ObjectKind::Class)
-				return allocOutOfMemoryErrorIfAllocFailed(MalformedClassStructureError::alloc(getFixedAlloc(), p));
+			Object *parent_class = (p->base_type.get_custom_type_def())->type_object;
+			if (parent_class->get_object_kind() != ObjectKind::Class)
+				return alloc_out_of_memory_error_if_alloc_failed(MalformedClassStructureError::alloc(get_fixed_alloc(), p));
 
-			p = (ClassObject *)parentClass;
+			p = (ClassObject *)parent_class;
 		}
 	}
 
 	ClassObject *c, *p = nullptr;
 
-	while (unpreparedClasses.size()) {
-		c = unpreparedClasses.back();
+	while (unprepared_classes.size()) {
+		c = unprepared_classes.back();
 
-		if (!c->cachedObjectLayout)
-			SLAKE_RETURN_IF_EXCEPT(initObjectLayoutForClass(c, p));
-		if (!c->cachedInstantiatedMethodTable)
-			SLAKE_RETURN_IF_EXCEPT(initMethodTableForClass(c, p));
+		if (!c->cached_object_layout)
+			SLAKE_RETURN_IF_EXCEPT(init_object_layout_for_class(c, p));
+		if (!c->cached_instantiated_method_table)
+			SLAKE_RETURN_IF_EXCEPT(init_method_table_for_class(c, p));
 
 		p = c;
-		unpreparedClasses.popBack();
+		unprepared_classes.pop_back();
 	}
 
 	return {};
@@ -225,8 +225,8 @@ struct MembersOpStructPreparationFrameExData {
 };
 
 struct StructPreparationFrame {
-	Object *structObject;
-	std::variant<std::monostate, FieldsOpStructPreparationFrameExData, MembersOpStructPreparationFrameExData> exData;
+	Object *struct_object;
+	std::variant<std::monostate, FieldsOpStructPreparationFrameExData, MembersOpStructPreparationFrameExData> ex_data;
 };
 
 struct StructPreparationContext {
@@ -235,36 +235,36 @@ struct StructPreparationContext {
 	SLAKE_FORCEINLINE StructPreparationContext(peff::Alloc *allocator) : frames(allocator) {}
 };
 
-SLAKE_FORCEINLINE InternalExceptionPointer _prepareStructForInstantiation(StructPreparationContext &context) {
+SLAKE_FORCEINLINE InternalExceptionPointer _prepare_struct_for_instantiation(StructPreparationContext &context) {
 	while (context.frames.size()) {
-		StructPreparationFrame &curFrame = context.frames.back();
+		StructPreparationFrame &cur_frame = context.frames.back();
 
-		auto pushFieldRecordCorrespondingTypeObject = [&context](const FieldRecord &curRecord) -> InternalExceptionPointer {
-			TypeRef typeRef = curRecord.type;
-			switch (curRecord.type.typeId) {
+		auto push_field_record_corresponding_type_object = [&context](const FieldRecord &cur_record) -> InternalExceptionPointer {
+			TypeRef type_ref = cur_record.type;
+			switch (cur_record.type.type_id) {
 				case TypeId::StructInstance: {
-					CustomTypeDefObject *td = typeRef.getCustomTypeDef();
-					assert(td->typeObject->getObjectKind() == ObjectKind::Struct);
-					if (!context.frames.pushBack(
-							{ (StructObject *)td->typeObject,
+					CustomTypeDefObject *td = type_ref.get_custom_type_def();
+					assert(td->type_object->get_object_kind() == ObjectKind::Struct);
+					if (!context.frames.push_back(
+							{ (StructObject *)td->type_object,
 								FieldsOpStructPreparationFrameExData{ 0 } }))
 						return OutOfMemoryError::alloc();
 					break;
 				}
 				case TypeId::UnionEnum: {
-					CustomTypeDefObject *td = typeRef.getCustomTypeDef();
-					assert(td->typeObject->getObjectKind() == ObjectKind::UnionEnum);
-					if (!context.frames.pushBack(
-							{ (UnionEnumObject *)td->typeObject,
-								MembersOpStructPreparationFrameExData{ ((UnionEnumObject *)td->typeObject)->getMembers().beginConst() } }))
+					CustomTypeDefObject *td = type_ref.get_custom_type_def();
+					assert(td->type_object->get_object_kind() == ObjectKind::UnionEnum);
+					if (!context.frames.push_back(
+							{ (UnionEnumObject *)td->type_object,
+								MembersOpStructPreparationFrameExData{ ((UnionEnumObject *)td->type_object)->get_members().begin_const() } }))
 						return OutOfMemoryError::alloc();
 					break;
 				}
 				case TypeId::UnionEnumItem: {
-					CustomTypeDefObject *td = typeRef.getCustomTypeDef();
-					assert(td->typeObject->getObjectKind() == ObjectKind::UnionEnumItem);
-					if (!context.frames.pushBack(
-							{ (UnionEnumItemObject *)td->typeObject,
+					CustomTypeDefObject *td = type_ref.get_custom_type_def();
+					assert(td->type_object->get_object_kind() == ObjectKind::UnionEnumItem);
+					if (!context.frames.push_back(
+							{ (UnionEnumItemObject *)td->type_object,
 								FieldsOpStructPreparationFrameExData{ 0 } }))
 						return OutOfMemoryError::alloc();
 					break;
@@ -273,74 +273,74 @@ SLAKE_FORCEINLINE InternalExceptionPointer _prepareStructForInstantiation(Struct
 			return {};
 		};
 
-		switch (curFrame.structObject->getObjectKind()) {
+		switch (cur_frame.struct_object->get_object_kind()) {
 			case ObjectKind::Struct: {
-				StructObject *structObject = (StructObject *)curFrame.structObject;
-				FieldsOpStructPreparationFrameExData &exData = std::get<FieldsOpStructPreparationFrameExData>(curFrame.exData);
+				StructObject *struct_object = (StructObject *)cur_frame.struct_object;
+				FieldsOpStructPreparationFrameExData &ex_data = std::get<FieldsOpStructPreparationFrameExData>(cur_frame.ex_data);
 
-				auto &fieldRecords = structObject->getFieldRecords();
+				auto &field_records = struct_object->get_field_records();
 
-				if (exData.index >= fieldRecords.size()) {
-					if (!structObject->cachedObjectLayout)
-						SLAKE_RETURN_IF_EXCEPT(structObject->associatedRuntime->initObjectLayoutForStruct(structObject));
-					context.frames.popBack();
+				if (ex_data.index >= field_records.size()) {
+					if (!struct_object->cached_object_layout)
+						SLAKE_RETURN_IF_EXCEPT(struct_object->associated_runtime->init_object_layout_for_struct(struct_object));
+					context.frames.pop_back();
 					continue;
 				}
 
-				auto &curRecord = fieldRecords.at(exData.index);
+				auto &cur_record = field_records.at(ex_data.index);
 
-				SLAKE_RETURN_IF_EXCEPT(pushFieldRecordCorrespondingTypeObject(curRecord));
+				SLAKE_RETURN_IF_EXCEPT(push_field_record_corresponding_type_object(cur_record));
 
-				++exData.index;
+				++ex_data.index;
 				break;
 			}
 			case ObjectKind::UnionEnum: {
-				UnionEnumObject *enumObject = (UnionEnumObject *)curFrame.structObject;
-				MembersOpStructPreparationFrameExData &exData = std::get<MembersOpStructPreparationFrameExData>(curFrame.exData);
-				auto &fieldRecords = enumObject->getMembers();
-				if (exData.iter == enumObject->getMembers().endConst()) {
+				UnionEnumObject *enum_object = (UnionEnumObject *)cur_frame.struct_object;
+				MembersOpStructPreparationFrameExData &ex_data = std::get<MembersOpStructPreparationFrameExData>(cur_frame.ex_data);
+				auto &field_records = enum_object->get_members();
+				if (ex_data.iter == enum_object->get_members().end_const()) {
 					// TODO: Find out the maximum alignment and the maximum size.
-					size_t maxAlignment = 0, maxSize = 0;
-					for (auto i : enumObject->getMembers()) {
-						if (i.second->getObjectKind() == ObjectKind::UnionEnumItem) {
+					size_t max_alignment = 0, max_size = 0;
+					for (auto i : enum_object->get_members()) {
+						if (i.second->get_object_kind() == ObjectKind::UnionEnumItem) {
 							UnionEnumItemObject *item = (UnionEnumItemObject *)i.second;
-							maxAlignment = (std::max)(item->cachedObjectLayout->alignment, maxAlignment);
-							maxSize = (std::max)(item->cachedObjectLayout->totalSize, maxSize);
+							max_alignment = (std::max)(item->cached_object_layout->alignment, max_alignment);
+							max_size = (std::max)(item->cached_object_layout->total_size, max_size);
 						}
 					}
-					enumObject->cachedMaxAlign = maxAlignment;
-					enumObject->cachedMaxSize = maxSize;
-					context.frames.popBack();
+					enum_object->cached_max_align = max_alignment;
+					enum_object->cached_max_size = max_size;
+					context.frames.pop_back();
 					continue;
 				}
 
-				Object *m = exData.iter.value();
+				Object *m = ex_data.iter.value();
 
-				assert(m->getObjectKind() == ObjectKind::UnionEnumItem);
+				assert(m->get_object_kind() == ObjectKind::UnionEnumItem);
 
-				if (!context.frames.pushBack({ (UnionEnumItemObject *)m, FieldsOpStructPreparationFrameExData{ 0 } }))
+				if (!context.frames.push_back({ (UnionEnumItemObject *)m, FieldsOpStructPreparationFrameExData{ 0 } }))
 					return OutOfMemoryError::alloc();
 
-				++exData.iter;
+				++ex_data.iter;
 				break;
 			}
 			case ObjectKind::UnionEnumItem: {
-				UnionEnumItemObject *itemObject = (UnionEnumItemObject *)curFrame.structObject;
-				FieldsOpStructPreparationFrameExData &exData = std::get<FieldsOpStructPreparationFrameExData>(curFrame.exData);
+				UnionEnumItemObject *item_object = (UnionEnumItemObject *)cur_frame.struct_object;
+				FieldsOpStructPreparationFrameExData &ex_data = std::get<FieldsOpStructPreparationFrameExData>(cur_frame.ex_data);
 
-				auto &fieldRecords = itemObject->getFieldRecords();
-				if (exData.index >= fieldRecords.size()) {
-					if (!itemObject->cachedObjectLayout)
-						SLAKE_RETURN_IF_EXCEPT(itemObject->associatedRuntime->initObjectLayoutForUnionEnumItem(itemObject));
-					context.frames.popBack();
+				auto &field_records = item_object->get_field_records();
+				if (ex_data.index >= field_records.size()) {
+					if (!item_object->cached_object_layout)
+						SLAKE_RETURN_IF_EXCEPT(item_object->associated_runtime->init_object_layout_for_union_enum_item(item_object));
+					context.frames.pop_back();
 					continue;
 				}
 
-				auto &curRecord = fieldRecords.at(exData.index);
+				auto &cur_record = field_records.at(ex_data.index);
 
-				SLAKE_RETURN_IF_EXCEPT(pushFieldRecordCorrespondingTypeObject(curRecord));
+				SLAKE_RETURN_IF_EXCEPT(push_field_record_corresponding_type_object(cur_record));
 
-				++exData.index;
+				++ex_data.index;
 				break;
 			}
 		}
@@ -349,35 +349,35 @@ SLAKE_FORCEINLINE InternalExceptionPointer _prepareStructForInstantiation(Struct
 	return {};
 }
 
-SLAKE_API InternalExceptionPointer Runtime::prepareStructForInstantiation(StructObject *cls) {
-	StructPreparationContext context(getFixedAlloc());
+SLAKE_API InternalExceptionPointer Runtime::prepare_struct_for_instantiation(StructObject *cls) {
+	StructPreparationContext context(get_fixed_alloc());
 
-	if (!context.frames.pushBack({ cls, FieldsOpStructPreparationFrameExData{ 0 } }))
+	if (!context.frames.push_back({ cls, FieldsOpStructPreparationFrameExData{ 0 } }))
 		return OutOfMemoryError::alloc();
 
-	SLAKE_RETURN_IF_EXCEPT(_prepareStructForInstantiation(context));
+	SLAKE_RETURN_IF_EXCEPT(_prepare_struct_for_instantiation(context));
 
 	return {};
 }
 
-SLAKE_API InternalExceptionPointer Runtime::prepareUnionEnumForInstantiation(UnionEnumObject *cls) {
-	StructPreparationContext context(getFixedAlloc());
+SLAKE_API InternalExceptionPointer Runtime::prepare_union_enum_for_instantiation(UnionEnumObject *cls) {
+	StructPreparationContext context(get_fixed_alloc());
 
-	if (!context.frames.pushBack({ cls, MembersOpStructPreparationFrameExData{ cls->members.beginConst() } }))
+	if (!context.frames.push_back({ cls, MembersOpStructPreparationFrameExData{ cls->members.begin_const() } }))
 		return OutOfMemoryError::alloc();
 
-	SLAKE_RETURN_IF_EXCEPT(_prepareStructForInstantiation(context));
+	SLAKE_RETURN_IF_EXCEPT(_prepare_struct_for_instantiation(context));
 
 	return {};
 }
 
-SLAKE_API InternalExceptionPointer Runtime::prepareUnionEnumItemForInstantiation(UnionEnumItemObject *cls) {
-	StructPreparationContext context(getFixedAlloc());
+SLAKE_API InternalExceptionPointer Runtime::prepare_union_enum_item_for_instantiation(UnionEnumItemObject *cls) {
+	StructPreparationContext context(get_fixed_alloc());
 
-	if (!context.frames.pushBack({ cls, FieldsOpStructPreparationFrameExData{ 0 } }))
+	if (!context.frames.push_back({ cls, FieldsOpStructPreparationFrameExData{ 0 } }))
 		return OutOfMemoryError::alloc();
 
-	SLAKE_RETURN_IF_EXCEPT(_prepareStructForInstantiation(context));
+	SLAKE_RETURN_IF_EXCEPT(_prepare_struct_for_instantiation(context));
 
 	return {};
 }
@@ -387,20 +387,20 @@ SLAKE_API InternalExceptionPointer Runtime::prepareUnionEnumItemForInstantiation
 /// @return Created instance of the class.
 ///
 /// @note This function normalizes loading-deferred types.
-SLAKE_API HostObjectRef<InstanceObject> slake::Runtime::newClassInstance(ClassObject *cls, NewClassInstanceFlags flags) {
+SLAKE_API HostObjectRef<InstanceObject> slake::Runtime::new_class_instance(ClassObject *cls, NewClassInstanceFlags flags) {
 	HostObjectRef<InstanceObject> instance;
 	InternalExceptionPointer e;
 
-	if ((e = prepareClassForInstantiation(cls))) {
+	if ((e = prepare_class_for_instantiation(cls))) {
 		e.reset();
 		return {};
 	}
 
 	instance = InstanceObject::alloc(this);
 
-	if (cls->cachedObjectLayout->totalSize)
-		instance->rawFieldData = new char[cls->cachedObjectLayout->totalSize];
-	instance->szRawFieldData = cls->cachedObjectLayout->totalSize;
+	if (cls->cached_object_layout->total_size)
+		instance->raw_field_data = new char[cls->cached_object_layout->total_size];
+	instance->sz_raw_field_data = cls->cached_object_layout->total_size;
 
 	instance->_class = cls;
 
@@ -408,111 +408,111 @@ SLAKE_API HostObjectRef<InstanceObject> slake::Runtime::newClassInstance(ClassOb
 	// Initialize the fields.
 	//
 	size_t index = 0, cnt = 0;
-	std::pair<BasicModuleObject *, size_t> p = cls->cachedObjectLayout->fieldRecordInitModuleFieldsNumber.at(0);
+	std::pair<BasicModuleObject *, size_t> p = cls->cached_object_layout->field_record_init_module_fields_number.at(0);
 
-	for (size_t i = 0; i < cls->fieldRecords.size(); ++i) {
-		const ObjectFieldRecord &fieldRecord = cls->cachedObjectLayout->fieldRecords.at(i);
+	for (size_t i = 0; i < cls->field_records.size(); ++i) {
+		const ObjectFieldRecord &field_record = cls->cached_object_layout->field_records.at(i);
 
 		Value data;
-		readVar(StaticFieldRef(p.first, fieldRecord.idxInitFieldRecord), data);
-		writeVar(ObjectFieldRef(instance.get(), i), data);
+		read_var(StaticFieldRef(p.first, field_record.idx_init_field_record), data);
+		write_var(ObjectFieldRef(instance.get(), i), data);
 
 		if (cnt++ >= p.second) {
 			cnt = 0;
-			p = cls->cachedObjectLayout->fieldRecordInitModuleFieldsNumber.at(++index);
+			p = cls->cached_object_layout->field_record_init_module_fields_number.at(++index);
 		}
 	}
 
 	return instance;
 }
 
-SLAKE_API HostObjectRef<ArrayObject> Runtime::newArrayInstance(Runtime *rt, const TypeRef &type, size_t length) {
-	switch (type.typeId) {
+SLAKE_API HostObjectRef<ArrayObject> Runtime::new_array_instance(Runtime *rt, const TypeRef &type, size_t length) {
+	switch (type.type_id) {
 		case TypeId::I8: {
 			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(int8_t));
-			if (!(obj->data = obj->selfAllocator->alloc(sizeof(int8_t) * length, alignof(int8_t))))
+			if (!(obj->data = obj->self_allocator->alloc(sizeof(int8_t) * length, alignof(int8_t))))
 				return nullptr;
-			obj->elementAlignment = alignof(int8_t);
+			obj->element_alignment = alignof(int8_t);
 			obj->length = length;
 			return obj.get();
 		}
 		case TypeId::I16: {
 			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(int16_t));
-			if (!(obj->data = obj->selfAllocator->alloc(sizeof(int16_t) * length, alignof(int16_t))))
+			if (!(obj->data = obj->self_allocator->alloc(sizeof(int16_t) * length, alignof(int16_t))))
 				return nullptr;
-			obj->elementAlignment = alignof(int16_t);
+			obj->element_alignment = alignof(int16_t);
 			obj->length = length;
 			return obj.get();
 		}
 		case TypeId::I32: {
 			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(int32_t));
-			if (!(obj->data = obj->selfAllocator->alloc(sizeof(int32_t) * length, alignof(int32_t))))
+			if (!(obj->data = obj->self_allocator->alloc(sizeof(int32_t) * length, alignof(int32_t))))
 				return nullptr;
-			obj->elementAlignment = alignof(int32_t);
+			obj->element_alignment = alignof(int32_t);
 			obj->length = length;
 			return obj.get();
 		}
 		case TypeId::I64: {
 			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(int64_t));
-			if (!(obj->data = obj->selfAllocator->alloc(sizeof(int64_t) * length, alignof(int64_t))))
+			if (!(obj->data = obj->self_allocator->alloc(sizeof(int64_t) * length, alignof(int64_t))))
 				return nullptr;
-			obj->elementAlignment = alignof(int64_t);
+			obj->element_alignment = alignof(int64_t);
 			obj->length = length;
 			return obj.get();
 		}
 		case TypeId::U8: {
 			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(uint8_t));
-			if (!(obj->data = obj->selfAllocator->alloc(sizeof(uint8_t) * length, alignof(uint8_t))))
+			if (!(obj->data = obj->self_allocator->alloc(sizeof(uint8_t) * length, alignof(uint8_t))))
 				return nullptr;
-			obj->elementAlignment = alignof(uint8_t);
+			obj->element_alignment = alignof(uint8_t);
 			obj->length = length;
 			return obj.get();
 		}
 		case TypeId::U16: {
 			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(uint16_t));
-			if (!(obj->data = obj->selfAllocator->alloc(sizeof(uint16_t) * length, alignof(uint16_t))))
+			if (!(obj->data = obj->self_allocator->alloc(sizeof(uint16_t) * length, alignof(uint16_t))))
 				return nullptr;
-			obj->elementAlignment = alignof(uint16_t);
+			obj->element_alignment = alignof(uint16_t);
 			obj->length = length;
 			return obj.get();
 		}
 		case TypeId::U32: {
 			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(uint32_t));
-			if (!(obj->data = obj->selfAllocator->alloc(sizeof(uint32_t) * length, alignof(uint32_t))))
+			if (!(obj->data = obj->self_allocator->alloc(sizeof(uint32_t) * length, alignof(uint32_t))))
 				return nullptr;
-			obj->elementAlignment = alignof(uint32_t);
+			obj->element_alignment = alignof(uint32_t);
 			obj->length = length;
 			return obj.get();
 		}
 		case TypeId::U64: {
 			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(uint64_t));
-			if (!(obj->data = obj->selfAllocator->alloc(sizeof(uint64_t) * length, alignof(uint64_t))))
+			if (!(obj->data = obj->self_allocator->alloc(sizeof(uint64_t) * length, alignof(uint64_t))))
 				return nullptr;
-			obj->elementAlignment = alignof(uint64_t);
+			obj->element_alignment = alignof(uint64_t);
 			obj->length = length;
 			return obj.get();
 		}
 		case TypeId::F32: {
 			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(float));
-			if (!(obj->data = obj->selfAllocator->alloc(sizeof(float) * length, alignof(float))))
+			if (!(obj->data = obj->self_allocator->alloc(sizeof(float) * length, alignof(float))))
 				return nullptr;
-			obj->elementAlignment = alignof(float);
+			obj->element_alignment = alignof(float);
 			obj->length = length;
 			return obj.get();
 		}
 		case TypeId::F64: {
 			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(double));
-			if (!(obj->data = obj->selfAllocator->alloc(sizeof(double) * length, alignof(double))))
+			if (!(obj->data = obj->self_allocator->alloc(sizeof(double) * length, alignof(double))))
 				return nullptr;
-			obj->elementAlignment = alignof(double);
+			obj->element_alignment = alignof(double);
 			obj->length = length;
 			return obj.get();
 		}
 		case TypeId::Bool: {
 			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(bool));
-			if (!(obj->data = obj->selfAllocator->alloc(sizeof(bool) * length, alignof(bool))))
+			if (!(obj->data = obj->self_allocator->alloc(sizeof(bool) * length, alignof(bool))))
 				return nullptr;
-			obj->elementAlignment = alignof(bool);
+			obj->element_alignment = alignof(bool);
 			obj->length = length;
 			return obj.get();
 		}
@@ -520,17 +520,17 @@ SLAKE_API HostObjectRef<ArrayObject> Runtime::newArrayInstance(Runtime *rt, cons
 		case TypeId::Instance:
 		case TypeId::Array: {
 			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(Reference));
-			if (!(obj->data = obj->selfAllocator->alloc(sizeof(Reference) * length, alignof(Reference))))
+			if (!(obj->data = obj->self_allocator->alloc(sizeof(Reference) * length, alignof(Reference))))
 				return nullptr;
-			obj->elementAlignment = alignof(Reference);
+			obj->element_alignment = alignof(Reference);
 			obj->length = length;
 			return obj.get();
 		}
 		case TypeId::Any: {
 			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(Value));
-			if (!(obj->data = obj->selfAllocator->alloc(sizeof(Value) * length, alignof(Value))))
+			if (!(obj->data = obj->self_allocator->alloc(sizeof(Value) * length, alignof(Value))))
 				return nullptr;
-			obj->elementAlignment = alignof(Value);
+			obj->element_alignment = alignof(Value);
 			obj->length = length;
 			return obj.get();
 		}

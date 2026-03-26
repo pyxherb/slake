@@ -4,7 +4,7 @@
 namespace slake {
 	/// @brief Estimate current stack pointer (may not accurate).
 	/// @return Estimated current stack pointer.
-	void *estimateCurrentStackPointer();
+	void *estimate_current_stack_pointer();
 }
 
 #endif

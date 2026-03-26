@@ -7,9 +7,9 @@ namespace slkc {
 	namespace bc {
 		class BCCustomTypeNameNode : public TypeNameNode {
 		public:
-			IdRefPtr idRefPtr;
+			IdRefPtr id_ref_ptr;
 
-			SLKC_API BCCustomTypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
+			SLKC_API BCCustomTypeNameNode(peff::Alloc *self_allocator, const peff::SharedPtr<Document> &document);
 			SLKC_API virtual ~BCCustomTypeNameNode();
 		};
 	}

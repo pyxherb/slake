@@ -9,7 +9,7 @@ namespace slkc {
 		public:
 			peff::String name;
 
-			SLKC_API BCLabelExprNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document, peff::String &&name);
+			SLKC_API BCLabelExprNode(peff::Alloc *self_allocator, const peff::SharedPtr<Document> &document, peff::String &&name);
 			SLKC_API virtual ~BCLabelExprNode();
 		};
 	}

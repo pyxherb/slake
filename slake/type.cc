@@ -4,8 +4,8 @@
 
 using namespace slake;
 
-SLAKE_API TypeId slake::valueTypeToTypeId(ValueType valueType) noexcept {
-	switch (valueType) {
+SLAKE_API TypeId slake::value_type_to_type_id(ValueType value_type) noexcept {
+	switch (value_type) {
 		case ValueType::I8:
 			return TypeId::I8;
 		case ValueType::I16:
@@ -36,8 +36,8 @@ SLAKE_API TypeId slake::valueTypeToTypeId(ValueType valueType) noexcept {
 	std::terminate();
 }
 
-SLAKE_API bool slake::isValueTypeCompatibleTypeId(TypeId typeId) noexcept {
-	switch (typeId) {
+SLAKE_API bool slake::is_value_type_compatible_type_id(TypeId type_id) noexcept {
+	switch (type_id) {
 		case TypeId::I8:
 		case TypeId::I16:
 		case TypeId::I32:
@@ -55,8 +55,8 @@ SLAKE_API bool slake::isValueTypeCompatibleTypeId(TypeId typeId) noexcept {
 	return false;
 }
 
-SLAKE_API ValueType slake::typeIdToValueType(TypeId typeId) noexcept {
-	switch (typeId) {
+SLAKE_API ValueType slake::type_id_to_value_type(TypeId type_id) noexcept {
+	switch (type_id) {
 		case TypeId::I8:
 			return ValueType::I8;
 		case TypeId::I16:
@@ -91,27 +91,27 @@ SLAKE_API bool Reference::operator==(const Reference &rhs) const {
 		case ReferenceKind::Invalid:
 			break;
 		case ReferenceKind::StaticFieldRef:
-			if (asStaticField.moduleObject != rhs.asStaticField.moduleObject)
+			if (as_static_field.module_object != rhs.as_static_field.module_object)
 				return false;
-			return asStaticField.index == rhs.asStaticField.index;
+			return as_static_field.index == rhs.as_static_field.index;
 		case ReferenceKind::ArrayElementRef:
-			if (asArrayElement.arrayObject != rhs.asArrayElement.arrayObject)
+			if (as_array_element.array_object != rhs.as_array_element.array_object)
 				return false;
-			return asStaticField.index == rhs.asStaticField.index;
+			return as_static_field.index == rhs.as_static_field.index;
 		case ReferenceKind::ObjectRef:
-			return asObject == rhs.asObject;
+			return as_object == rhs.as_object;
 		case ReferenceKind::ObjectFieldRef:
-			if (asObjectField.instanceObject != rhs.asObjectField.instanceObject)
+			if (as_object_field.instance_object != rhs.as_object_field.instance_object)
 				return false;
-			return asObjectField.fieldIndex == rhs.asObjectField.fieldIndex;
+			return as_object_field.field_index == rhs.as_object_field.field_index;
 		case ReferenceKind::LocalVarRef:
-			if (asLocalVar.context != rhs.asLocalVar.context)
+			if (as_local_var.context != rhs.as_local_var.context)
 				return false;
-			return asLocalVar.stackOff == rhs.asLocalVar.stackOff;
+			return as_local_var.stack_off == rhs.as_local_var.stack_off;
 		case ReferenceKind::ArgRef:
-			if (asArg.majorFrame != rhs.asArg.majorFrame)
+			if (as_arg.major_frame != rhs.as_arg.major_frame)
 				return false;
-			return asArg.argIndex == rhs.asArg.argIndex;
+			return as_arg.arg_index == rhs.as_arg.arg_index;
 		default:
 			break;
 	}
@@ -127,39 +127,39 @@ SLAKE_API bool Reference::operator<(const Reference &rhs) const {
 		case ReferenceKind::Invalid:
 			break;
 		case ReferenceKind::StaticFieldRef:
-			if (asStaticField.moduleObject < rhs.asStaticField.moduleObject)
+			if (as_static_field.module_object < rhs.as_static_field.module_object)
 				return true;
-			if (asStaticField.moduleObject > rhs.asStaticField.moduleObject)
+			if (as_static_field.module_object > rhs.as_static_field.module_object)
 				return false;
-			return asStaticField.index < rhs.asStaticField.index;
+			return as_static_field.index < rhs.as_static_field.index;
 		case ReferenceKind::ArrayElementRef:
-			if (asArrayElement.arrayObject < rhs.asArrayElement.arrayObject)
+			if (as_array_element.array_object < rhs.as_array_element.array_object)
 				return true;
-			if (asArrayElement.arrayObject > rhs.asArrayElement.arrayObject)
+			if (as_array_element.array_object > rhs.as_array_element.array_object)
 				return false;
-			return asStaticField.index < rhs.asStaticField.index;
+			return as_static_field.index < rhs.as_static_field.index;
 		case ReferenceKind::ObjectRef:
-			return asObject < rhs.asObject;
+			return as_object < rhs.as_object;
 		case ReferenceKind::ObjectFieldRef:
-			if (asObjectField.instanceObject < rhs.asObjectField.instanceObject)
+			if (as_object_field.instance_object < rhs.as_object_field.instance_object)
 				return true;
-			if (asObjectField.instanceObject > rhs.asObjectField.instanceObject)
+			if (as_object_field.instance_object > rhs.as_object_field.instance_object)
 				return false;
-			return asObjectField.fieldIndex < rhs.asObjectField.fieldIndex;
+			return as_object_field.field_index < rhs.as_object_field.field_index;
 		case ReferenceKind::LocalVarRef:
-			if (asLocalVar.context < rhs.asLocalVar.context)
+			if (as_local_var.context < rhs.as_local_var.context)
 				return true;
-			if (asLocalVar.context > rhs.asLocalVar.context)
+			if (as_local_var.context > rhs.as_local_var.context)
 				return false;
-			return asLocalVar.stackOff < rhs.asLocalVar.stackOff;
+			return as_local_var.stack_off < rhs.as_local_var.stack_off;
 		case ReferenceKind::ArgRef:
-			if (asArg.majorFrame < rhs.asArg.majorFrame)
+			if (as_arg.major_frame < rhs.as_arg.major_frame)
 				return true;
-			if (asArg.majorFrame > rhs.asArg.majorFrame)
+			if (as_arg.major_frame > rhs.as_arg.major_frame)
 				return false;
-			return asArg.argIndex < rhs.asArg.argIndex;
+			return as_arg.arg_index < rhs.as_arg.arg_index;
 		case ReferenceKind::AotPtrRef:
-			return asAotPtr < rhs.asAotPtr;
+			return as_aot_ptr < rhs.as_aot_ptr;
 		default:
 			break;
 	}
@@ -175,164 +175,164 @@ SLAKE_API bool Reference::operator>(const Reference &rhs) const {
 		case ReferenceKind::Invalid:
 			break;
 		case ReferenceKind::StaticFieldRef:
-			if (asStaticField.moduleObject > rhs.asStaticField.moduleObject)
+			if (as_static_field.module_object > rhs.as_static_field.module_object)
 				return true;
-			if (asStaticField.moduleObject < rhs.asStaticField.moduleObject)
+			if (as_static_field.module_object < rhs.as_static_field.module_object)
 				return false;
-			return asStaticField.index > rhs.asStaticField.index;
+			return as_static_field.index > rhs.as_static_field.index;
 		case ReferenceKind::ArrayElementRef:
-			if (asArrayElement.arrayObject > rhs.asArrayElement.arrayObject)
+			if (as_array_element.array_object > rhs.as_array_element.array_object)
 				return true;
-			if (asArrayElement.arrayObject < rhs.asArrayElement.arrayObject)
+			if (as_array_element.array_object < rhs.as_array_element.array_object)
 				return false;
-			return asStaticField.index > rhs.asStaticField.index;
+			return as_static_field.index > rhs.as_static_field.index;
 		case ReferenceKind::ObjectRef:
-			return asObject > rhs.asObject;
+			return as_object > rhs.as_object;
 		case ReferenceKind::ObjectFieldRef:
-			if (asObjectField.instanceObject > rhs.asObjectField.instanceObject)
+			if (as_object_field.instance_object > rhs.as_object_field.instance_object)
 				return true;
-			if (asObjectField.instanceObject < rhs.asObjectField.instanceObject)
+			if (as_object_field.instance_object < rhs.as_object_field.instance_object)
 				return false;
-			return asObjectField.fieldIndex > rhs.asObjectField.fieldIndex;
+			return as_object_field.field_index > rhs.as_object_field.field_index;
 		case ReferenceKind::LocalVarRef:
-			if (asLocalVar.context > rhs.asLocalVar.context)
+			if (as_local_var.context > rhs.as_local_var.context)
 				return true;
-			if (asLocalVar.context < rhs.asLocalVar.context)
+			if (as_local_var.context < rhs.as_local_var.context)
 				return false;
-			return asLocalVar.stackOff > rhs.asLocalVar.stackOff;
+			return as_local_var.stack_off > rhs.as_local_var.stack_off;
 		case ReferenceKind::ArgRef:
-			if (asArg.majorFrame > rhs.asArg.majorFrame)
+			if (as_arg.major_frame > rhs.as_arg.major_frame)
 				return true;
-			if (asArg.majorFrame < rhs.asArg.majorFrame)
+			if (as_arg.major_frame < rhs.as_arg.major_frame)
 				return false;
-			return asArg.argIndex > rhs.asArg.argIndex;
+			return as_arg.arg_index > rhs.as_arg.arg_index;
 		case ReferenceKind::AotPtrRef:
-			return asAotPtr > rhs.asAotPtr;
+			return as_aot_ptr > rhs.as_aot_ptr;
 		default:
 			break;
 	}
 	std::terminate();
 }
 
-SLAKE_API int TypeRef::comparesTo(const TypeRef &rhs) const noexcept {
-	if (typeId < rhs.typeId)
+SLAKE_API int TypeRef::compares_to(const TypeRef &rhs) const noexcept {
+	if (type_id < rhs.type_id)
 		return -1;
-	if (typeId > rhs.typeId)
+	if (type_id > rhs.type_id)
 		return 1;
-	if (typeModifier < rhs.typeModifier)
+	if (type_modifier < rhs.type_modifier)
 		return -1;
-	if (typeModifier > rhs.typeModifier)
+	if (type_modifier > rhs.type_modifier)
 		return 1;
-	if (isFundamentalType(typeId))
+	if (is_fundamental_type(type_id))
 		return 0;
-	if (typeDef < rhs.typeDef)
+	if (type_def < rhs.type_def)
 		return -1;
-	if (typeDef > rhs.typeDef)
+	if (type_def > rhs.type_def)
 		return 1;
 	return 0;
 }
 
-SLAKE_API TypeRef TypeRef::duplicate(bool &succeededOut) const {
-	TypeRef newType(*this);
+SLAKE_API TypeRef TypeRef::duplicate(bool &succeeded_out) const {
+	TypeRef new_type(*this);
 
-	switch (typeId) {
+	switch (type_id) {
 		case TypeId::Array:
 		case TypeId::Ref:
 		case TypeId::GenericArg:
-			newType.typeDef = (TypeDefObject *)typeDef->duplicate(nullptr);
-			if (!succeededOut) {
+			new_type.type_def = (TypeDefObject *)type_def->duplicate(nullptr);
+			if (!succeeded_out) {
 				return {};
 			}
 			break;
 		default:;
 	}
 
-	succeededOut = true;
+	succeeded_out = true;
 
-	return newType;
+	return new_type;
 }
 
-SLAKE_API bool slake::isCompatible(const TypeRef &type, const Value &value) noexcept {
-	if (type.isNullable() && (value.isNull()))
+SLAKE_API bool slake::is_compatible(const TypeRef &type, const Value &value) noexcept {
+	if (type.is_nullable() && (value.is_null()))
 		return true;
-	switch (type.typeId) {
+	switch (type.type_id) {
 		case TypeId::I8:
-			return value.valueType == ValueType::I8;
+			return value.value_type == ValueType::I8;
 		case TypeId::I16:
-			return value.valueType == ValueType::I16;
+			return value.value_type == ValueType::I16;
 		case TypeId::I32:
-			return value.valueType == ValueType::I32;
+			return value.value_type == ValueType::I32;
 		case TypeId::I64:
-			return value.valueType == ValueType::I64;
+			return value.value_type == ValueType::I64;
 		case TypeId::ISize:
-			return value.valueType == ValueType::ISize;
+			return value.value_type == ValueType::ISize;
 		case TypeId::U8:
-			return value.valueType == ValueType::U8;
+			return value.value_type == ValueType::U8;
 		case TypeId::U16:
-			return value.valueType == ValueType::U16;
+			return value.value_type == ValueType::U16;
 		case TypeId::U32:
-			return value.valueType == ValueType::U32;
+			return value.value_type == ValueType::U32;
 		case TypeId::U64:
-			return value.valueType == ValueType::U64;
+			return value.value_type == ValueType::U64;
 		case TypeId::USize:
-			return value.valueType == ValueType::USize;
+			return value.value_type == ValueType::USize;
 		case TypeId::F32:
-			return value.valueType == ValueType::F32;
+			return value.value_type == ValueType::F32;
 		case TypeId::F64:
-			return value.valueType == ValueType::F64;
+			return value.value_type == ValueType::F64;
 		case TypeId::Bool:
-			return value.valueType == ValueType::Bool;
+			return value.value_type == ValueType::Bool;
 		case TypeId::String: {
-			if (value.valueType != ValueType::Reference)
+			if (value.value_type != ValueType::Reference)
 				return false;
-			if (value.isLocal() && !type.isLocal())
+			if (value.is_local() && !type.is_local())
 				return false;
-			const Reference &entityRef = value.getReference();
-			if (entityRef.kind != ReferenceKind::ObjectRef)
+			const Reference &entity_ref = value.get_reference();
+			if (entity_ref.kind != ReferenceKind::ObjectRef)
 				return false;
-			if (!entityRef.asObject)
+			if (!entity_ref.as_object)
 				return true;
-			if (entityRef.asObject->getObjectKind() != ObjectKind::String)
+			if (entity_ref.as_object->get_object_kind() != ObjectKind::String)
 				return false;
 			return true;
 		}
 		case TypeId::Instance: {
-			if (value.valueType != ValueType::Reference)
+			if (value.value_type != ValueType::Reference)
 				return false;
-			if (value.isLocal() && !type.isLocal())
+			if (value.is_local() && !type.is_local())
 				return false;
 
-			const Reference &entityRef = value.getReference();
-			if (entityRef.kind != ReferenceKind::ObjectRef)
+			const Reference &entity_ref = value.get_reference();
+			if (entity_ref.kind != ReferenceKind::ObjectRef)
 				return false;
-			Object *objectPtr = entityRef.asObject;
+			Object *object_ptr = entity_ref.as_object;
 
-			if (!objectPtr)
+			if (!object_ptr)
 				return true;
 
-			Object *typeObject = type.getCustomTypeDef()->typeObject;
-			switch (typeObject->getObjectKind()) {
+			Object *type_object = type.get_custom_type_def()->type_object;
+			switch (type_object->get_object_kind()) {
 				case ObjectKind::Class: {
-					ClassObject *thisClass = (ClassObject *)typeObject;
+					ClassObject *this_class = (ClassObject *)type_object;
 
-					ClassObject *valueClass = ((InstanceObject *)objectPtr)->_class;
+					ClassObject *value_class = ((InstanceObject *)object_ptr)->_class;
 
-					if (type.isFinal()) {
-						if (thisClass != valueClass)
+					if (type.is_final()) {
+						if (this_class != value_class)
 							return false;
 					} else {
-						if (!thisClass->isBaseOf(valueClass))
+						if (!this_class->is_base_of(value_class))
 							return false;
 					}
 					break;
 				}
 				case ObjectKind::Interface: {
-					InterfaceObject *thisInterface = (InterfaceObject *)typeObject;
+					InterfaceObject *this_interface = (InterfaceObject *)type_object;
 
-					ClassObject *valueClass = ((InstanceObject *)objectPtr)->_class;
+					ClassObject *value_class = ((InstanceObject *)object_ptr)->_class;
 
-					assert(!type.isFinal());
-					if (!valueClass->hasImplemented(thisInterface))
+					assert(!type.is_final());
+					if (!value_class->has_implemented(this_interface))
 						return false;
 					break;
 				}
@@ -348,34 +348,34 @@ SLAKE_API bool slake::isCompatible(const TypeRef &type, const Value &value) noex
 		case TypeId::GenericArg:
 			return false;
 		case TypeId::Array: {
-			if (value.valueType != ValueType::Reference) {
+			if (value.value_type != ValueType::Reference) {
 				return false;
 			}
-			if (value.isLocal() && !type.isLocal())
+			if (value.is_local() && !type.is_local())
 				return false;
 
-			const Reference &entityRef = value.getReference();
-			if (entityRef.kind != ReferenceKind::ObjectRef) {
+			const Reference &entity_ref = value.get_reference();
+			if (entity_ref.kind != ReferenceKind::ObjectRef) {
 				return false;
 			}
-			Object *objectPtr = entityRef.asObject;
-			if (!objectPtr)
+			Object *object_ptr = entity_ref.as_object;
+			if (!object_ptr)
 				return false;
-			if (objectPtr->getObjectKind() != ObjectKind::Array) {
+			if (object_ptr->get_object_kind() != ObjectKind::Array) {
 				return false;
 			}
 
-			auto arrayObjectPtr = ((ArrayObject *)objectPtr);
+			auto array_object_ptr = ((ArrayObject *)object_ptr);
 
-			if (arrayObjectPtr->elementType != (type.getArrayTypeDef()->elementType->typeRef)) {
+			if (array_object_ptr->element_type != (type.get_array_type_def()->element_type->type_ref)) {
 				return false;
 			}
 			return true;
 		}
 		case TypeId::Ref: {
-			if (value.isLocal() && !type.isLocal())
+			if (value.is_local() && !type.is_local())
 				return false;
-			const Reference &ref = value.getReference();
+			const Reference &ref = value.get_reference();
 			switch (ref.kind) {
 				case ReferenceKind::Invalid:
 				case ReferenceKind::LocalVarRef:
@@ -386,10 +386,10 @@ SLAKE_API bool slake::isCompatible(const TypeRef &type, const Value &value) noex
 				default:
 					break;
 			}
-			return isCompatible(((RefTypeDefObject *)type.typeDef)->referencedType->typeRef, Runtime::typeofVar(value.getReference()));
+			return is_compatible(((RefTypeDefObject *)type.type_def)->referenced_type->type_ref, Runtime::typeof_var(value.get_reference()));
 		}
 		case TypeId::Any:
-			if (value.isLocal() && !type.isLocal())
+			if (value.is_local() && !type.is_local())
 				return false;
 			return true;
 		default:
@@ -399,14 +399,14 @@ SLAKE_API bool slake::isCompatible(const TypeRef &type, const Value &value) noex
 }
 
 int TypeRefComparator::operator()(const TypeRef &lhs, const TypeRef &rhs) const noexcept {
-	if (lhs.typeId < rhs.typeId)
+	if (lhs.type_id < rhs.type_id)
 		return -1;
-	if (lhs.typeId > rhs.typeId)
+	if (lhs.type_id > rhs.type_id)
 		return 1;
 
-	if (lhs.typeDef < rhs.typeDef)
+	if (lhs.type_def < rhs.type_def)
 		return -1;
-	if (lhs.typeDef > rhs.typeDef)
+	if (lhs.type_def > rhs.type_def)
 		return 1;
 
 	return 0;

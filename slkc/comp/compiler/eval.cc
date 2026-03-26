@@ -5,655 +5,655 @@
 using namespace slkc;
 
 template <typename T, typename E, typename SetData = typename E::SetData>
-peff::Option<CompilationError> _doSimpleIntLiteralCast(
-	CompileEnv *compileEnv,
+peff::Option<CompilationError> _do_simple_int_literal_cast(
+	CompileEnv *compile_env,
 	AstNodePtr<ExprNode> src,
-	AstNodePtr<E> &exprOut) {
-	static SetData _setData;
+	AstNodePtr<E> &expr_out) {
+	static SetData _set_data;
 
-	switch (src->exprKind) {
+	switch (src->expr_kind) {
 		case ExprKind::I8: {
-			AstNodePtr<I8LiteralExprNode> l = src.castTo<I8LiteralExprNode>();
+			AstNodePtr<I8LiteralExprNode> l = src.cast_to<I8LiteralExprNode>();
 
-			_setData(exprOut, (T)l->data);
+			_set_data(expr_out, (T)l->data);
 			break;
 		}
 		case ExprKind::I16: {
-			AstNodePtr<I16LiteralExprNode> l = src.castTo<I16LiteralExprNode>();
+			AstNodePtr<I16LiteralExprNode> l = src.cast_to<I16LiteralExprNode>();
 
-			_setData(exprOut, (T)l->data);
+			_set_data(expr_out, (T)l->data);
 			break;
 		}
 		case ExprKind::I32: {
-			AstNodePtr<I32LiteralExprNode> l = src.castTo<I32LiteralExprNode>();
+			AstNodePtr<I32LiteralExprNode> l = src.cast_to<I32LiteralExprNode>();
 
-			_setData(exprOut, (T)l->data);
+			_set_data(expr_out, (T)l->data);
 			break;
 		}
 		case ExprKind::I64: {
-			AstNodePtr<I64LiteralExprNode> l = src.castTo<I64LiteralExprNode>();
+			AstNodePtr<I64LiteralExprNode> l = src.cast_to<I64LiteralExprNode>();
 
-			_setData(exprOut, (T)l->data);
+			_set_data(expr_out, (T)l->data);
 			break;
 		}
 		case ExprKind::U8: {
-			AstNodePtr<U8LiteralExprNode> l = src.castTo<U8LiteralExprNode>();
+			AstNodePtr<U8LiteralExprNode> l = src.cast_to<U8LiteralExprNode>();
 
-			_setData(exprOut, (T)l->data);
+			_set_data(expr_out, (T)l->data);
 			break;
 		}
 		case ExprKind::U16: {
-			AstNodePtr<U16LiteralExprNode> l = src.castTo<U16LiteralExprNode>();
+			AstNodePtr<U16LiteralExprNode> l = src.cast_to<U16LiteralExprNode>();
 
-			_setData(exprOut, (T)l->data);
+			_set_data(expr_out, (T)l->data);
 			break;
 		}
 		case ExprKind::U32: {
-			AstNodePtr<U32LiteralExprNode> l = src.castTo<U32LiteralExprNode>();
+			AstNodePtr<U32LiteralExprNode> l = src.cast_to<U32LiteralExprNode>();
 
-			_setData(exprOut, (T)l->data);
+			_set_data(expr_out, (T)l->data);
 			break;
 		}
 		case ExprKind::U64: {
-			AstNodePtr<U64LiteralExprNode> l = src.castTo<U64LiteralExprNode>();
+			AstNodePtr<U64LiteralExprNode> l = src.cast_to<U64LiteralExprNode>();
 
-			_setData(exprOut, (T)l->data);
+			_set_data(expr_out, (T)l->data);
 			break;
 		}
 		case ExprKind::F32: {
-			AstNodePtr<F32LiteralExprNode> l = src.castTo<F32LiteralExprNode>();
+			AstNodePtr<F32LiteralExprNode> l = src.cast_to<F32LiteralExprNode>();
 
-			_setData(exprOut, (T)l->data);
+			_set_data(expr_out, (T)l->data);
 			break;
 		}
 		case ExprKind::F64: {
-			AstNodePtr<F64LiteralExprNode> l = src.castTo<F64LiteralExprNode>();
+			AstNodePtr<F64LiteralExprNode> l = src.cast_to<F64LiteralExprNode>();
 
-			_setData(exprOut, (T)l->data);
+			_set_data(expr_out, (T)l->data);
 			break;
 		}
 		case ExprKind::Bool: {
-			AstNodePtr<BoolLiteralExprNode> l = src.castTo<BoolLiteralExprNode>();
+			AstNodePtr<BoolLiteralExprNode> l = src.cast_to<BoolLiteralExprNode>();
 
-			_setData(exprOut, (T)l->data);
+			_set_data(expr_out, (T)l->data);
 			break;
 		}
 		default:
-			exprOut = {};
+			expr_out = {};
 			break;
 	}
 
 	return {};
 }
 
-peff::Option<CompilationError> _castConstExpr(
-	CompileEnv *compileEnv,
-	CompilationContext *compilationContext,
-	PathEnv *pathEnv,
+peff::Option<CompilationError> _cast_const_expr(
+	CompileEnv *compile_env,
+	CompilationContext *compilation_context,
+	PathEnv *path_env,
 	AstNodePtr<ExprNode> expr,
 	AstNodePtr<TypeNameNode> type,
-	AstNodePtr<ExprNode> &exprOut) {
-	AstNodePtr<CastExprNode> castExpr;
+	AstNodePtr<ExprNode> &expr_out) {
+	AstNodePtr<CastExprNode> cast_expr;
 
-	if (!(castExpr = makeAstNode<CastExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-		return genOutOfMemoryCompError();
+	if (!(cast_expr = make_ast_node<CastExprNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->document))) {
+		return gen_out_of_memory_comp_error();
 	}
 
-	castExpr->source = expr;
-	castExpr->targetType = type;
+	cast_expr->source = expr;
+	cast_expr->target_type = type;
 
-	bool sideEffectApplied;
+	bool side_effect_applied;
 
-	SLKC_RETURN_IF_COMP_ERROR(_doEvalConstExpr(compileEnv, compilationContext, pathEnv, castExpr.castTo<ExprNode>(), exprOut));
+	SLKC_RETURN_IF_COMP_ERROR(_do_eval_const_expr(compile_env, compilation_context, path_env, cast_expr.cast_to<ExprNode>(), expr_out));
 
 	return {};
 }
 
-static peff::Option<CompilationError> evalBinaryOpExprOperand(
-	CompileEnv *compileEnv,
-	CompilationContext *compilationContext,
-	PathEnv *pathEnv,
-	AstNodePtr<ExprNode> operandIn,
-	AstNodePtr<ExprNode> &operandOut) {
-	SLKC_RETURN_IF_COMP_ERROR(_doEvalConstExpr(compileEnv, compilationContext, pathEnv, operandIn, operandOut));
-	if (!operandOut) {
+static peff::Option<CompilationError> eval_binary_op_expr_operand(
+	CompileEnv *compile_env,
+	CompilationContext *compilation_context,
+	PathEnv *path_env,
+	AstNodePtr<ExprNode> operand_in,
+	AstNodePtr<ExprNode> &operand_out) {
+	SLKC_RETURN_IF_COMP_ERROR(_do_eval_const_expr(compile_env, compilation_context, path_env, operand_in, operand_out));
+	if (!operand_out) {
 		return {};
 	}
 	return {};
 }
 
 template <typename LT>
-static peff::Option<CompilationError> evalIntegralBinaryOpExpr(
-	CompileEnv *compileEnv,
-	CompilationContext *compilationContext,
-	PathEnv *pathEnv,
-	AstNodePtr<TypeNameNode> mainOperationType,
-	BinaryOp binaryOp,
-	AstNodePtr<ExprNode> lhsIn,
-	AstNodePtr<TypeNameNode> lhsType,
-	AstNodePtr<ExprNode> rhsIn,
-	AstNodePtr<TypeNameNode> rhsType,
-	AstNodePtr<ExprNode> &exprOut) {
+static peff::Option<CompilationError> eval_integral_binary_op_expr(
+	CompileEnv *compile_env,
+	CompilationContext *compilation_context,
+	PathEnv *path_env,
+	AstNodePtr<TypeNameNode> main_operation_type,
+	BinaryOp binary_op,
+	AstNodePtr<ExprNode> lhs_in,
+	AstNodePtr<TypeNameNode> lhs_type,
+	AstNodePtr<ExprNode> rhs_in,
+	AstNodePtr<TypeNameNode> rhs_type,
+	AstNodePtr<ExprNode> &expr_out) {
 	AstNodePtr<ExprNode> lhs;
 	AstNodePtr<ExprNode> rhs;
 
-	switch (binaryOp) {
+	switch (binary_op) {
 		case BinaryOp::LAnd:
 		case BinaryOp::LOr:
 			break;
 		default:
-			SLKC_RETURN_IF_COMP_ERROR(evalBinaryOpExprOperand(
-				compileEnv,
-				compilationContext,
-				pathEnv,
-				lhsIn, lhs));
+			SLKC_RETURN_IF_COMP_ERROR(eval_binary_op_expr_operand(
+				compile_env,
+				compilation_context,
+				path_env,
+				lhs_in, lhs));
 			if (!lhs) {
-				exprOut = {};
+				expr_out = {};
 				return {};
 			}
-			SLKC_RETURN_IF_COMP_ERROR(evalBinaryOpExprOperand(
-				compileEnv,
-				compilationContext,
-				pathEnv,
-				rhsIn, rhs));
+			SLKC_RETURN_IF_COMP_ERROR(eval_binary_op_expr_operand(
+				compile_env,
+				compilation_context,
+				path_env,
+				rhs_in, rhs));
 			if (!rhs) {
-				exprOut = {};
+				expr_out = {};
 				return {};
 			}
 	}
 
-	switch (binaryOp) {
+	switch (binary_op) {
 		case BinaryOp::Add: {
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs));
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs));
+			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, lhs, main_operation_type, lhs));
+			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, rhs, main_operation_type, rhs));
 
 			if ((!lhs) || (!rhs)) {
-				exprOut = {};
+				expr_out = {};
 				return {};
 			}
 
-			if (!(exprOut = makeAstNode<LT>(
-					  compileEnv->allocator.get(),
-					  compileEnv->allocator.get(), compileEnv->document,
-					  lhs.castTo<LT>()->data + rhs.castTo<LT>()->data)
-						.template castTo<ExprNode>()))
-				return genOutOfMemoryCompError();
+			if (!(expr_out = make_ast_node<LT>(
+					  compile_env->allocator.get(),
+					  compile_env->allocator.get(), compile_env->document,
+					  lhs.cast_to<LT>()->data + rhs.cast_to<LT>()->data)
+						.template cast_to<ExprNode>()))
+				return gen_out_of_memory_comp_error();
 			break;
 		}
 		case BinaryOp::Sub: {
-			if ((lhsType->isNullable) || (rhsType->isNullable)) {
-				exprOut = {};
+			if ((lhs_type->is_nullable) || (rhs_type->is_nullable)) {
+				expr_out = {};
 				return {};
 			}
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs));
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs));
+			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, lhs, main_operation_type, lhs));
+			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, rhs, main_operation_type, rhs));
 
 			if ((!lhs) || (!rhs)) {
-				exprOut = {};
+				expr_out = {};
 				return {};
 			}
 
-			if (!(exprOut = makeAstNode<LT>(
-					  compileEnv->allocator.get(),
-					  compileEnv->allocator.get(), compileEnv->document,
-					  lhs.castTo<LT>()->data - rhs.castTo<LT>()->data)
-						.template castTo<ExprNode>()))
-				return genOutOfMemoryCompError();
+			if (!(expr_out = make_ast_node<LT>(
+					  compile_env->allocator.get(),
+					  compile_env->allocator.get(), compile_env->document,
+					  lhs.cast_to<LT>()->data - rhs.cast_to<LT>()->data)
+						.template cast_to<ExprNode>()))
+				return gen_out_of_memory_comp_error();
 			break;
 		}
 		case BinaryOp::Mul: {
-			if ((lhsType->isNullable) || (rhsType->isNullable)) {
-				exprOut = {};
+			if ((lhs_type->is_nullable) || (rhs_type->is_nullable)) {
+				expr_out = {};
 				return {};
 			}
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs));
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs));
+			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, lhs, main_operation_type, lhs));
+			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, rhs, main_operation_type, rhs));
 
 			if ((!lhs) || (!rhs)) {
-				exprOut = {};
+				expr_out = {};
 				return {};
 			}
 
-			if (!(exprOut = makeAstNode<LT>(
-					  compileEnv->allocator.get(),
-					  compileEnv->allocator.get(), compileEnv->document,
-					  lhs.castTo<LT>()->data * rhs.castTo<LT>()->data)
-						.template castTo<ExprNode>()))
-				return genOutOfMemoryCompError();
+			if (!(expr_out = make_ast_node<LT>(
+					  compile_env->allocator.get(),
+					  compile_env->allocator.get(), compile_env->document,
+					  lhs.cast_to<LT>()->data * rhs.cast_to<LT>()->data)
+						.template cast_to<ExprNode>()))
+				return gen_out_of_memory_comp_error();
 			break;
 		}
 		case BinaryOp::Div: {
-			if ((lhsType->isNullable) || (rhsType->isNullable)) {
-				exprOut = {};
+			if ((lhs_type->is_nullable) || (rhs_type->is_nullable)) {
+				expr_out = {};
 				return {};
 			}
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs));
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs));
+			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, lhs, main_operation_type, lhs));
+			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, rhs, main_operation_type, rhs));
 
 			if ((!lhs) || (!rhs)) {
-				exprOut = {};
+				expr_out = {};
 				return {};
 			}
 
-			if (!(exprOut = makeAstNode<LT>(
-					  compileEnv->allocator.get(),
-					  compileEnv->allocator.get(), compileEnv->document,
-					  lhs.castTo<LT>()->data / rhs.castTo<LT>()->data)
-						.template castTo<ExprNode>()))
-				return genOutOfMemoryCompError();
+			if (!(expr_out = make_ast_node<LT>(
+					  compile_env->allocator.get(),
+					  compile_env->allocator.get(), compile_env->document,
+					  lhs.cast_to<LT>()->data / rhs.cast_to<LT>()->data)
+						.template cast_to<ExprNode>()))
+				return gen_out_of_memory_comp_error();
 			break;
 		}
 		case BinaryOp::Mod: {
-			if ((lhsType->isNullable) || (rhsType->isNullable)) {
-				exprOut = {};
+			if ((lhs_type->is_nullable) || (rhs_type->is_nullable)) {
+				expr_out = {};
 				return {};
 			}
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs));
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs));
+			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, lhs, main_operation_type, lhs));
+			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, rhs, main_operation_type, rhs));
 
 			if ((!lhs) || (!rhs)) {
-				exprOut = {};
+				expr_out = {};
 				return {};
 			}
 
-			if (!(exprOut = makeAstNode<LT>(
-					  compileEnv->allocator.get(),
-					  compileEnv->allocator.get(), compileEnv->document,
-					  lhs.castTo<LT>()->data % rhs.castTo<LT>()->data)
-						.template castTo<ExprNode>()))
-				return genOutOfMemoryCompError();
+			if (!(expr_out = make_ast_node<LT>(
+					  compile_env->allocator.get(),
+					  compile_env->allocator.get(), compile_env->document,
+					  lhs.cast_to<LT>()->data % rhs.cast_to<LT>()->data)
+						.template cast_to<ExprNode>()))
+				return gen_out_of_memory_comp_error();
 			break;
 		}
 		case BinaryOp::And: {
-			if ((lhsType->isNullable) || (rhsType->isNullable)) {
-				exprOut = {};
+			if ((lhs_type->is_nullable) || (rhs_type->is_nullable)) {
+				expr_out = {};
 				return {};
 			}
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs));
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs));
+			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, lhs, main_operation_type, lhs));
+			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, rhs, main_operation_type, rhs));
 
 			if ((!lhs) || (!rhs)) {
-				exprOut = {};
+				expr_out = {};
 				return {};
 			}
 
-			if (!(exprOut = makeAstNode<LT>(
-					  compileEnv->allocator.get(),
-					  compileEnv->allocator.get(), compileEnv->document,
-					  lhs.castTo<LT>()->data & rhs.castTo<LT>()->data)
-						.template castTo<ExprNode>()))
-				return genOutOfMemoryCompError();
+			if (!(expr_out = make_ast_node<LT>(
+					  compile_env->allocator.get(),
+					  compile_env->allocator.get(), compile_env->document,
+					  lhs.cast_to<LT>()->data & rhs.cast_to<LT>()->data)
+						.template cast_to<ExprNode>()))
+				return gen_out_of_memory_comp_error();
 			break;
 		}
 		case BinaryOp::Or: {
-			if ((lhsType->isNullable) || (rhsType->isNullable)) {
-				exprOut = {};
+			if ((lhs_type->is_nullable) || (rhs_type->is_nullable)) {
+				expr_out = {};
 				return {};
 			}
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs));
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs));
+			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, lhs, main_operation_type, lhs));
+			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, rhs, main_operation_type, rhs));
 
 			if ((!lhs) || (!rhs)) {
-				exprOut = {};
+				expr_out = {};
 				return {};
 			}
 
-			if (!(exprOut = makeAstNode<LT>(
-					  compileEnv->allocator.get(),
-					  compileEnv->allocator.get(), compileEnv->document,
-					  lhs.castTo<LT>()->data | rhs.castTo<LT>()->data)
-						.template castTo<ExprNode>()))
-				return genOutOfMemoryCompError();
+			if (!(expr_out = make_ast_node<LT>(
+					  compile_env->allocator.get(),
+					  compile_env->allocator.get(), compile_env->document,
+					  lhs.cast_to<LT>()->data | rhs.cast_to<LT>()->data)
+						.template cast_to<ExprNode>()))
+				return gen_out_of_memory_comp_error();
 			break;
 		}
 		case BinaryOp::Xor: {
-			if ((lhsType->isNullable) || (rhsType->isNullable)) {
-				exprOut = {};
+			if ((lhs_type->is_nullable) || (rhs_type->is_nullable)) {
+				expr_out = {};
 				return {};
 			}
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs));
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs));
+			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, lhs, main_operation_type, lhs));
+			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, rhs, main_operation_type, rhs));
 
 			if ((!lhs) || (!rhs)) {
-				exprOut = {};
+				expr_out = {};
 				return {};
 			}
 
-			if (!(exprOut = makeAstNode<LT>(
-					  compileEnv->allocator.get(),
-					  compileEnv->allocator.get(), compileEnv->document,
-					  lhs.castTo<LT>()->data ^ rhs.castTo<LT>()->data)
-						.template castTo<ExprNode>()))
-				return genOutOfMemoryCompError();
+			if (!(expr_out = make_ast_node<LT>(
+					  compile_env->allocator.get(),
+					  compile_env->allocator.get(), compile_env->document,
+					  lhs.cast_to<LT>()->data ^ rhs.cast_to<LT>()->data)
+						.template cast_to<ExprNode>()))
+				return gen_out_of_memory_comp_error();
 			break;
 		}
 		case BinaryOp::LAnd: {
-			AstNodePtr<BoolTypeNameNode> boolType;
-			if (!(boolType = makeAstNode<BoolTypeNameNode>(
-					  compileEnv->allocator.get(),
-					  compileEnv->allocator.get(), compileEnv->document)))
-				return genOutOfMemoryCompError();
+			AstNodePtr<BoolTypeNameNode> bool_type;
+			if (!(bool_type = make_ast_node<BoolTypeNameNode>(
+					  compile_env->allocator.get(),
+					  compile_env->allocator.get(), compile_env->document)))
+				return gen_out_of_memory_comp_error();
 
-			SLKC_RETURN_IF_COMP_ERROR(evalBinaryOpExprOperand(
-				compileEnv,
-				compilationContext,
-				pathEnv,
-				lhsIn, lhs));
-			if (!lhsIn) {
-				exprOut = {};
+			SLKC_RETURN_IF_COMP_ERROR(eval_binary_op_expr_operand(
+				compile_env,
+				compilation_context,
+				path_env,
+				lhs_in, lhs));
+			if (!lhs_in) {
+				expr_out = {};
 				return {};
 			}
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, boolType.castTo<TypeNameNode>(), lhs));
+			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, lhs, bool_type.cast_to<TypeNameNode>(), lhs));
 			if (!lhs) {
-				exprOut = {};
+				expr_out = {};
 				return {};
 			}
-			auto l = lhs.castTo<BoolLiteralExprNode>();
+			auto l = lhs.cast_to<BoolLiteralExprNode>();
 			if (!l->data) {
-				exprOut = lhs;
+				expr_out = lhs;
 				return {};
 			}
 
-			SLKC_RETURN_IF_COMP_ERROR(evalBinaryOpExprOperand(
-				compileEnv,
-				compilationContext,
-				pathEnv,
-				rhsIn, rhs));
-			if (!rhsIn) {
-				exprOut = {};
+			SLKC_RETURN_IF_COMP_ERROR(eval_binary_op_expr_operand(
+				compile_env,
+				compilation_context,
+				path_env,
+				rhs_in, rhs));
+			if (!rhs_in) {
+				expr_out = {};
 				return {};
 			}
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, boolType.castTo<TypeNameNode>(), rhs));
+			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, rhs, bool_type.cast_to<TypeNameNode>(), rhs));
 			if (!rhs) {
-				exprOut = {};
+				expr_out = {};
 				return {};
 			}
-			if (rhsType->isNullable) {
-				exprOut = {};
+			if (rhs_type->is_nullable) {
+				expr_out = {};
 				return {};
 			}
-			exprOut = rhs;
+			expr_out = rhs;
 			break;
 		}
 		case BinaryOp::LOr: {
-			AstNodePtr<BoolTypeNameNode> boolType;
-			if (!(boolType = makeAstNode<BoolTypeNameNode>(
-					  compileEnv->allocator.get(),
-					  compileEnv->allocator.get(), compileEnv->document)))
-				return genOutOfMemoryCompError();
+			AstNodePtr<BoolTypeNameNode> bool_type;
+			if (!(bool_type = make_ast_node<BoolTypeNameNode>(
+					  compile_env->allocator.get(),
+					  compile_env->allocator.get(), compile_env->document)))
+				return gen_out_of_memory_comp_error();
 
-			SLKC_RETURN_IF_COMP_ERROR(evalBinaryOpExprOperand(
-				compileEnv,
-				compilationContext,
-				pathEnv,
-				lhsIn, lhs));
-			if (!lhsIn) {
-				exprOut = {};
+			SLKC_RETURN_IF_COMP_ERROR(eval_binary_op_expr_operand(
+				compile_env,
+				compilation_context,
+				path_env,
+				lhs_in, lhs));
+			if (!lhs_in) {
+				expr_out = {};
 				return {};
 			}
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, boolType.castTo<TypeNameNode>(), lhs));
+			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, lhs, bool_type.cast_to<TypeNameNode>(), lhs));
 			if (!lhs) {
-				exprOut = {};
+				expr_out = {};
 				return {};
 			}
-			auto l = lhs.castTo<BoolLiteralExprNode>();
+			auto l = lhs.cast_to<BoolLiteralExprNode>();
 			if (l->data) {
-				exprOut = lhs;
+				expr_out = lhs;
 				return {};
 			}
 
-			SLKC_RETURN_IF_COMP_ERROR(evalBinaryOpExprOperand(
-				compileEnv,
-				compilationContext,
-				pathEnv,
-				rhsIn, rhs));
-			if (!rhsIn) {
-				exprOut = {};
+			SLKC_RETURN_IF_COMP_ERROR(eval_binary_op_expr_operand(
+				compile_env,
+				compilation_context,
+				path_env,
+				rhs_in, rhs));
+			if (!rhs_in) {
+				expr_out = {};
 				return {};
 			}
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, boolType.castTo<TypeNameNode>(), rhs));
+			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, rhs, bool_type.cast_to<TypeNameNode>(), rhs));
 			if (!rhs) {
-				exprOut = {};
+				expr_out = {};
 				return {};
 			}
-			if (rhsType->isNullable) {
-				exprOut = {};
+			if (rhs_type->is_nullable) {
+				expr_out = {};
 				return {};
 			}
-			exprOut = rhs;
+			expr_out = rhs;
 			break;
 		}
 		case BinaryOp::Shl: {
-			if ((lhsType->isNullable) || (rhsType->isNullable)) {
-				exprOut = {};
+			if ((lhs_type->is_nullable) || (rhs_type->is_nullable)) {
+				expr_out = {};
 				return {};
 			}
-			AstNodePtr<U32TypeNameNode> u32Type;
+			AstNodePtr<U32TypeNameNode> u32_type;
 
-			if (!(u32Type = makeAstNode<U32TypeNameNode>(
-					  compileEnv->allocator.get(),
-					  compileEnv->allocator.get(), compileEnv->document)))
-				return genOutOfMemoryCompError();
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, u32Type.castTo<TypeNameNode>(), rhs));
+			if (!(u32_type = make_ast_node<U32TypeNameNode>(
+					  compile_env->allocator.get(),
+					  compile_env->allocator.get(), compile_env->document)))
+				return gen_out_of_memory_comp_error();
+			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, rhs, u32_type.cast_to<TypeNameNode>(), rhs));
 
 			if ((!lhs) || (!rhs)) {
-				exprOut = {};
+				expr_out = {};
 				return {};
 			}
 
 			// TODO: Use a portable one.
-			if (!(exprOut = makeAstNode<BoolLiteralExprNode>(
-					  compileEnv->allocator.get(),
-					  compileEnv->allocator.get(), compileEnv->document,
-					  lhs.castTo<BoolLiteralExprNode>()->data << rhs.castTo<U32LiteralExprNode>()->data)
-						.template castTo<ExprNode>()))
-				return genOutOfMemoryCompError();
+			if (!(expr_out = make_ast_node<BoolLiteralExprNode>(
+					  compile_env->allocator.get(),
+					  compile_env->allocator.get(), compile_env->document,
+					  lhs.cast_to<BoolLiteralExprNode>()->data << rhs.cast_to<U32LiteralExprNode>()->data)
+						.template cast_to<ExprNode>()))
+				return gen_out_of_memory_comp_error();
 			break;
 		}
 		case BinaryOp::Shr: {
-			if ((lhsType->isNullable) || (rhsType->isNullable)) {
-				exprOut = {};
+			if ((lhs_type->is_nullable) || (rhs_type->is_nullable)) {
+				expr_out = {};
 				return {};
 			}
-			AstNodePtr<U32TypeNameNode> u32Type;
+			AstNodePtr<U32TypeNameNode> u32_type;
 
-			if (!(u32Type = makeAstNode<U32TypeNameNode>(
-					  compileEnv->allocator.get(),
-					  compileEnv->allocator.get(), compileEnv->document)))
-				return genOutOfMemoryCompError();
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, u32Type.castTo<TypeNameNode>(), rhs));
+			if (!(u32_type = make_ast_node<U32TypeNameNode>(
+					  compile_env->allocator.get(),
+					  compile_env->allocator.get(), compile_env->document)))
+				return gen_out_of_memory_comp_error();
+			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, rhs, u32_type.cast_to<TypeNameNode>(), rhs));
 
 			if ((!lhs) || (!rhs)) {
-				exprOut = {};
+				expr_out = {};
 				return {};
 			}
 
 			// TODO: Use a portable one.
-			if (!(exprOut = makeAstNode<BoolLiteralExprNode>(
-					  compileEnv->allocator.get(),
-					  compileEnv->allocator.get(), compileEnv->document,
-					  lhs.castTo<BoolLiteralExprNode>()->data >> rhs.castTo<U32LiteralExprNode>()->data)
-						.template castTo<ExprNode>()))
-				return genOutOfMemoryCompError();
+			if (!(expr_out = make_ast_node<BoolLiteralExprNode>(
+					  compile_env->allocator.get(),
+					  compile_env->allocator.get(), compile_env->document,
+					  lhs.cast_to<BoolLiteralExprNode>()->data >> rhs.cast_to<U32LiteralExprNode>()->data)
+						.template cast_to<ExprNode>()))
+				return gen_out_of_memory_comp_error();
 			break;
 		}
 		case BinaryOp::Eq:
 		case BinaryOp::StrictEq: {
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs));
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs));
+			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, lhs, main_operation_type, lhs));
+			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, rhs, main_operation_type, rhs));
 
 			if ((!lhs) || (!rhs)) {
-				exprOut = {};
+				expr_out = {};
 				return {};
 			}
 
-			if (lhsType->isNullable) {
-				if (rhs->exprKind == ExprKind::Null) {
-					if (!(exprOut = makeAstNode<BoolLiteralExprNode>(
-							  compileEnv->allocator.get(),
-							  compileEnv->allocator.get(), compileEnv->document,
-							  lhs->exprKind == ExprKind::Null)
-								.template castTo<ExprNode>()))
-						return genOutOfMemoryCompError();
+			if (lhs_type->is_nullable) {
+				if (rhs->expr_kind == ExprKind::Null) {
+					if (!(expr_out = make_ast_node<BoolLiteralExprNode>(
+							  compile_env->allocator.get(),
+							  compile_env->allocator.get(), compile_env->document,
+							  lhs->expr_kind == ExprKind::Null)
+								.template cast_to<ExprNode>()))
+						return gen_out_of_memory_comp_error();
 				} else {
-					if (lhs->exprKind == ExprKind::Null) {
-						if (!(exprOut = makeAstNode<BoolLiteralExprNode>(
-								  compileEnv->allocator.get(),
-								  compileEnv->allocator.get(), compileEnv->document,
-								  rhs->exprKind == ExprKind::Null)
-									.template castTo<ExprNode>()))
-							return genOutOfMemoryCompError();
+					if (lhs->expr_kind == ExprKind::Null) {
+						if (!(expr_out = make_ast_node<BoolLiteralExprNode>(
+								  compile_env->allocator.get(),
+								  compile_env->allocator.get(), compile_env->document,
+								  rhs->expr_kind == ExprKind::Null)
+									.template cast_to<ExprNode>()))
+							return gen_out_of_memory_comp_error();
 					} else {
-						if (!(exprOut = makeAstNode<BoolLiteralExprNode>(
-								  compileEnv->allocator.get(),
-								  compileEnv->allocator.get(), compileEnv->document,
-								  lhs.castTo<LT>()->data == rhs.castTo<LT>()->data)
-									.template castTo<ExprNode>()))
-							return genOutOfMemoryCompError();
+						if (!(expr_out = make_ast_node<BoolLiteralExprNode>(
+								  compile_env->allocator.get(),
+								  compile_env->allocator.get(), compile_env->document,
+								  lhs.cast_to<LT>()->data == rhs.cast_to<LT>()->data)
+									.template cast_to<ExprNode>()))
+							return gen_out_of_memory_comp_error();
 					}
 				}
 			} else {
-				if (!(exprOut = makeAstNode<BoolLiteralExprNode>(
-						  compileEnv->allocator.get(),
-						  compileEnv->allocator.get(), compileEnv->document,
-						  lhs.castTo<LT>()->data == rhs.castTo<LT>()->data)
-							.template castTo<ExprNode>()))
-					return genOutOfMemoryCompError();
+				if (!(expr_out = make_ast_node<BoolLiteralExprNode>(
+						  compile_env->allocator.get(),
+						  compile_env->allocator.get(), compile_env->document,
+						  lhs.cast_to<LT>()->data == rhs.cast_to<LT>()->data)
+							.template cast_to<ExprNode>()))
+					return gen_out_of_memory_comp_error();
 			}
 			break;
 		}
 		case BinaryOp::Neq:
 		case BinaryOp::StrictNeq: {
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs));
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs));
+			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, lhs, main_operation_type, lhs));
+			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, rhs, main_operation_type, rhs));
 
 			if ((!lhs) || (!rhs)) {
-				exprOut = {};
+				expr_out = {};
 				return {};
 			}
 
-			if (lhsType->isNullable) {
-				if (rhs->exprKind == ExprKind::Null) {
-					if (!(exprOut = makeAstNode<BoolLiteralExprNode>(
-							  compileEnv->allocator.get(),
-							  compileEnv->allocator.get(), compileEnv->document,
-							  lhs->exprKind != ExprKind::Null)
-								.template castTo<ExprNode>()))
-						return genOutOfMemoryCompError();
+			if (lhs_type->is_nullable) {
+				if (rhs->expr_kind == ExprKind::Null) {
+					if (!(expr_out = make_ast_node<BoolLiteralExprNode>(
+							  compile_env->allocator.get(),
+							  compile_env->allocator.get(), compile_env->document,
+							  lhs->expr_kind != ExprKind::Null)
+								.template cast_to<ExprNode>()))
+						return gen_out_of_memory_comp_error();
 				} else {
-					if (lhs->exprKind == ExprKind::Null) {
-						if (!(exprOut = makeAstNode<BoolLiteralExprNode>(
-								  compileEnv->allocator.get(),
-								  compileEnv->allocator.get(), compileEnv->document,
-								  rhs->exprKind != ExprKind::Null)
-									.template castTo<ExprNode>()))
-							return genOutOfMemoryCompError();
+					if (lhs->expr_kind == ExprKind::Null) {
+						if (!(expr_out = make_ast_node<BoolLiteralExprNode>(
+								  compile_env->allocator.get(),
+								  compile_env->allocator.get(), compile_env->document,
+								  rhs->expr_kind != ExprKind::Null)
+									.template cast_to<ExprNode>()))
+							return gen_out_of_memory_comp_error();
 					} else {
-						if (!(exprOut = makeAstNode<BoolLiteralExprNode>(
-								  compileEnv->allocator.get(),
-								  compileEnv->allocator.get(), compileEnv->document,
-								  lhs.castTo<LT>()->data != rhs.castTo<LT>()->data)
-									.template castTo<ExprNode>()))
-							return genOutOfMemoryCompError();
+						if (!(expr_out = make_ast_node<BoolLiteralExprNode>(
+								  compile_env->allocator.get(),
+								  compile_env->allocator.get(), compile_env->document,
+								  lhs.cast_to<LT>()->data != rhs.cast_to<LT>()->data)
+									.template cast_to<ExprNode>()))
+							return gen_out_of_memory_comp_error();
 					}
 				}
 			} else {
-				if (!(exprOut = makeAstNode<BoolLiteralExprNode>(
-						  compileEnv->allocator.get(),
-						  compileEnv->allocator.get(), compileEnv->document,
-						  lhs.castTo<LT>()->data != rhs.castTo<LT>()->data)
-							.template castTo<ExprNode>()))
-					return genOutOfMemoryCompError();
+				if (!(expr_out = make_ast_node<BoolLiteralExprNode>(
+						  compile_env->allocator.get(),
+						  compile_env->allocator.get(), compile_env->document,
+						  lhs.cast_to<LT>()->data != rhs.cast_to<LT>()->data)
+							.template cast_to<ExprNode>()))
+					return gen_out_of_memory_comp_error();
 			}
 			break;
 		}
 		case BinaryOp::Gt: {
-			if ((lhsType->isNullable) || (rhsType->isNullable)) {
-				exprOut = {};
+			if ((lhs_type->is_nullable) || (rhs_type->is_nullable)) {
+				expr_out = {};
 				return {};
 			}
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs));
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs));
+			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, lhs, main_operation_type, lhs));
+			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, rhs, main_operation_type, rhs));
 
 			if ((!lhs) || (!rhs)) {
-				exprOut = {};
+				expr_out = {};
 				return {};
 			}
 
-			if (!(exprOut = makeAstNode<BoolLiteralExprNode>(
-					  compileEnv->allocator.get(),
-					  compileEnv->allocator.get(), compileEnv->document,
-					  lhs.castTo<LT>()->data > rhs.castTo<LT>()->data)
-						.template castTo<ExprNode>()))
-				return genOutOfMemoryCompError();
+			if (!(expr_out = make_ast_node<BoolLiteralExprNode>(
+					  compile_env->allocator.get(),
+					  compile_env->allocator.get(), compile_env->document,
+					  lhs.cast_to<LT>()->data > rhs.cast_to<LT>()->data)
+						.template cast_to<ExprNode>()))
+				return gen_out_of_memory_comp_error();
 			break;
 		}
 		case BinaryOp::Lt: {
-			if ((lhsType->isNullable) || (rhsType->isNullable)) {
-				exprOut = {};
+			if ((lhs_type->is_nullable) || (rhs_type->is_nullable)) {
+				expr_out = {};
 				return {};
 			}
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs));
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs));
+			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, lhs, main_operation_type, lhs));
+			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, rhs, main_operation_type, rhs));
 
 			if ((!lhs) || (!rhs)) {
-				exprOut = {};
+				expr_out = {};
 				return {};
 			}
 
-			if (!(exprOut = makeAstNode<BoolLiteralExprNode>(
-					  compileEnv->allocator.get(),
-					  compileEnv->allocator.get(), compileEnv->document,
-					  lhs.castTo<LT>()->data < rhs.castTo<LT>()->data)
-						.template castTo<ExprNode>()))
-				return genOutOfMemoryCompError();
+			if (!(expr_out = make_ast_node<BoolLiteralExprNode>(
+					  compile_env->allocator.get(),
+					  compile_env->allocator.get(), compile_env->document,
+					  lhs.cast_to<LT>()->data < rhs.cast_to<LT>()->data)
+						.template cast_to<ExprNode>()))
+				return gen_out_of_memory_comp_error();
 			break;
 		}
 		case BinaryOp::GtEq: {
-			if ((lhsType->isNullable) || (rhsType->isNullable)) {
-				exprOut = {};
+			if ((lhs_type->is_nullable) || (rhs_type->is_nullable)) {
+				expr_out = {};
 				return {};
 			}
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs));
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs));
+			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, lhs, main_operation_type, lhs));
+			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, rhs, main_operation_type, rhs));
 
 			if ((!lhs) || (!rhs)) {
-				exprOut = {};
+				expr_out = {};
 				return {};
 			}
 
-			if (!(exprOut = makeAstNode<BoolLiteralExprNode>(
-					  compileEnv->allocator.get(),
-					  compileEnv->allocator.get(), compileEnv->document,
-					  lhs.castTo<LT>()->data >= rhs.castTo<LT>()->data)
-						.template castTo<ExprNode>()))
-				return genOutOfMemoryCompError();
+			if (!(expr_out = make_ast_node<BoolLiteralExprNode>(
+					  compile_env->allocator.get(),
+					  compile_env->allocator.get(), compile_env->document,
+					  lhs.cast_to<LT>()->data >= rhs.cast_to<LT>()->data)
+						.template cast_to<ExprNode>()))
+				return gen_out_of_memory_comp_error();
 			break;
 		}
 		case BinaryOp::LtEq: {
-			if ((lhsType->isNullable) || (rhsType->isNullable)) {
-				exprOut = {};
+			if ((lhs_type->is_nullable) || (rhs_type->is_nullable)) {
+				expr_out = {};
 				return {};
 			}
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs));
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs));
+			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, lhs, main_operation_type, lhs));
+			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, rhs, main_operation_type, rhs));
 
 			if ((!lhs) || (!rhs)) {
-				exprOut = {};
+				expr_out = {};
 				return {};
 			}
 
-			if (!(exprOut = makeAstNode<BoolLiteralExprNode>(
-					  compileEnv->allocator.get(),
-					  compileEnv->allocator.get(), compileEnv->document,
-					  lhs.castTo<LT>()->data <= rhs.castTo<LT>()->data)
-						.template castTo<ExprNode>()))
-				return genOutOfMemoryCompError();
+			if (!(expr_out = make_ast_node<BoolLiteralExprNode>(
+					  compile_env->allocator.get(),
+					  compile_env->allocator.get(), compile_env->document,
+					  lhs.cast_to<LT>()->data <= rhs.cast_to<LT>()->data)
+						.template cast_to<ExprNode>()))
+				return gen_out_of_memory_comp_error();
 			break;
 		}
 		// TODO: Implement comparison operation.
 		default:
-			exprOut = {};
+			expr_out = {};
 			break;
 	}
 
@@ -661,494 +661,494 @@ static peff::Option<CompilationError> evalIntegralBinaryOpExpr(
 }
 
 template <typename LT>
-static peff::Option<CompilationError> evalFloatingPointBinaryOpExpr(
-	CompileEnv *compileEnv,
-	CompilationContext *compilationContext,
-	PathEnv *pathEnv,
-	AstNodePtr<TypeNameNode> mainOperationType,
-	BinaryOp binaryOp,
-	AstNodePtr<ExprNode> lhsIn,
-	AstNodePtr<TypeNameNode> lhsType,
-	AstNodePtr<ExprNode> rhsIn,
-	AstNodePtr<TypeNameNode> rhsType,
-	AstNodePtr<ExprNode> &exprOut) {
+static peff::Option<CompilationError> eval_floating_point_binary_op_expr(
+	CompileEnv *compile_env,
+	CompilationContext *compilation_context,
+	PathEnv *path_env,
+	AstNodePtr<TypeNameNode> main_operation_type,
+	BinaryOp binary_op,
+	AstNodePtr<ExprNode> lhs_in,
+	AstNodePtr<TypeNameNode> lhs_type,
+	AstNodePtr<ExprNode> rhs_in,
+	AstNodePtr<TypeNameNode> rhs_type,
+	AstNodePtr<ExprNode> &expr_out) {
 	AstNodePtr<ExprNode> lhs;
 	AstNodePtr<ExprNode> rhs;
 
-	switch (binaryOp) {
+	switch (binary_op) {
 		case BinaryOp::LAnd:
 		case BinaryOp::LOr:
 			break;
 		default:
-			SLKC_RETURN_IF_COMP_ERROR(evalBinaryOpExprOperand(
-				compileEnv,
-				compilationContext,
-				pathEnv,
-				lhsIn, lhs));
+			SLKC_RETURN_IF_COMP_ERROR(eval_binary_op_expr_operand(
+				compile_env,
+				compilation_context,
+				path_env,
+				lhs_in, lhs));
 			if (!lhs) {
-				exprOut = {};
+				expr_out = {};
 				return {};
 			}
-			SLKC_RETURN_IF_COMP_ERROR(evalBinaryOpExprOperand(
-				compileEnv,
-				compilationContext,
-				pathEnv,
-				rhsIn, rhs));
+			SLKC_RETURN_IF_COMP_ERROR(eval_binary_op_expr_operand(
+				compile_env,
+				compilation_context,
+				path_env,
+				rhs_in, rhs));
 			if (!rhs) {
-				exprOut = {};
+				expr_out = {};
 				return {};
 			}
 	}
 
-	switch (binaryOp) {
+	switch (binary_op) {
 		case BinaryOp::Add: {
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs));
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs));
+			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, lhs, main_operation_type, lhs));
+			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, rhs, main_operation_type, rhs));
 
 			if ((!lhs) || (!rhs)) {
-				exprOut = {};
+				expr_out = {};
 				return {};
 			}
 
-			if (!(exprOut = makeAstNode<LT>(
-					  compileEnv->allocator.get(),
-					  compileEnv->allocator.get(), compileEnv->document,
-					  lhs.castTo<LT>()->data + rhs.castTo<LT>()->data)
-						.template castTo<ExprNode>()))
-				return genOutOfMemoryCompError();
+			if (!(expr_out = make_ast_node<LT>(
+					  compile_env->allocator.get(),
+					  compile_env->allocator.get(), compile_env->document,
+					  lhs.cast_to<LT>()->data + rhs.cast_to<LT>()->data)
+						.template cast_to<ExprNode>()))
+				return gen_out_of_memory_comp_error();
 			break;
 		}
 		case BinaryOp::Sub: {
-			if ((lhsType->isNullable) || (rhsType->isNullable)) {
-				exprOut = {};
+			if ((lhs_type->is_nullable) || (rhs_type->is_nullable)) {
+				expr_out = {};
 				return {};
 			}
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs));
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs));
+			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, lhs, main_operation_type, lhs));
+			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, rhs, main_operation_type, rhs));
 
 			if ((!lhs) || (!rhs)) {
-				exprOut = {};
+				expr_out = {};
 				return {};
 			}
 
-			if (!(exprOut = makeAstNode<LT>(
-					  compileEnv->allocator.get(),
-					  compileEnv->allocator.get(), compileEnv->document,
-					  lhs.castTo<LT>()->data - rhs.castTo<LT>()->data)
-						.template castTo<ExprNode>()))
-				return genOutOfMemoryCompError();
+			if (!(expr_out = make_ast_node<LT>(
+					  compile_env->allocator.get(),
+					  compile_env->allocator.get(), compile_env->document,
+					  lhs.cast_to<LT>()->data - rhs.cast_to<LT>()->data)
+						.template cast_to<ExprNode>()))
+				return gen_out_of_memory_comp_error();
 			break;
 		}
 		case BinaryOp::Mul: {
-			if ((lhsType->isNullable) || (rhsType->isNullable)) {
-				exprOut = {};
+			if ((lhs_type->is_nullable) || (rhs_type->is_nullable)) {
+				expr_out = {};
 				return {};
 			}
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs));
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs));
+			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, lhs, main_operation_type, lhs));
+			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, rhs, main_operation_type, rhs));
 
 			if ((!lhs) || (!rhs)) {
-				exprOut = {};
+				expr_out = {};
 				return {};
 			}
 
-			if (!(exprOut = makeAstNode<LT>(
-					  compileEnv->allocator.get(),
-					  compileEnv->allocator.get(), compileEnv->document,
-					  lhs.castTo<LT>()->data * rhs.castTo<LT>()->data)
-						.template castTo<ExprNode>()))
-				return genOutOfMemoryCompError();
+			if (!(expr_out = make_ast_node<LT>(
+					  compile_env->allocator.get(),
+					  compile_env->allocator.get(), compile_env->document,
+					  lhs.cast_to<LT>()->data * rhs.cast_to<LT>()->data)
+						.template cast_to<ExprNode>()))
+				return gen_out_of_memory_comp_error();
 			break;
 		}
 		case BinaryOp::Div: {
-			if ((lhsType->isNullable) || (rhsType->isNullable)) {
-				exprOut = {};
+			if ((lhs_type->is_nullable) || (rhs_type->is_nullable)) {
+				expr_out = {};
 				return {};
 			}
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs));
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs));
+			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, lhs, main_operation_type, lhs));
+			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, rhs, main_operation_type, rhs));
 
 			if ((!lhs) || (!rhs)) {
-				exprOut = {};
+				expr_out = {};
 				return {};
 			}
 
-			if (!(exprOut = makeAstNode<LT>(
-					  compileEnv->allocator.get(),
-					  compileEnv->allocator.get(), compileEnv->document,
-					  lhs.castTo<LT>()->data / rhs.castTo<LT>()->data)
-						.template castTo<ExprNode>()))
-				return genOutOfMemoryCompError();
+			if (!(expr_out = make_ast_node<LT>(
+					  compile_env->allocator.get(),
+					  compile_env->allocator.get(), compile_env->document,
+					  lhs.cast_to<LT>()->data / rhs.cast_to<LT>()->data)
+						.template cast_to<ExprNode>()))
+				return gen_out_of_memory_comp_error();
 			break;
 		}
 		case BinaryOp::Mod: {
-			if ((lhsType->isNullable) || (rhsType->isNullable)) {
-				exprOut = {};
+			if ((lhs_type->is_nullable) || (rhs_type->is_nullable)) {
+				expr_out = {};
 				return {};
 			}
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs));
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs));
+			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, lhs, main_operation_type, lhs));
+			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, rhs, main_operation_type, rhs));
 
 			if ((!lhs) || (!rhs)) {
-				exprOut = {};
+				expr_out = {};
 				return {};
 			}
 
 			if constexpr (std::is_same_v<decltype(LT::data), float>) {
-				if (!(exprOut = makeAstNode<LT>(
-						  compileEnv->allocator.get(),
-						  compileEnv->allocator.get(), compileEnv->document,
-						  slake::flib::fmodf(lhs.castTo<LT>()->data, rhs.castTo<LT>()->data))
-							.template castTo<ExprNode>()))
-					return genOutOfMemoryCompError();
+				if (!(expr_out = make_ast_node<LT>(
+						  compile_env->allocator.get(),
+						  compile_env->allocator.get(), compile_env->document,
+						  slake::flib::fmodf(lhs.cast_to<LT>()->data, rhs.cast_to<LT>()->data))
+							.template cast_to<ExprNode>()))
+					return gen_out_of_memory_comp_error();
 			} else {
-				if (!(exprOut = makeAstNode<LT>(
-						  compileEnv->allocator.get(),
-						  compileEnv->allocator.get(), compileEnv->document,
-						  slake::flib::fmod(lhs.castTo<LT>()->data, rhs.castTo<LT>()->data))
-							.template castTo<ExprNode>()))
-					return genOutOfMemoryCompError();
+				if (!(expr_out = make_ast_node<LT>(
+						  compile_env->allocator.get(),
+						  compile_env->allocator.get(), compile_env->document,
+						  slake::flib::fmod(lhs.cast_to<LT>()->data, rhs.cast_to<LT>()->data))
+							.template cast_to<ExprNode>()))
+					return gen_out_of_memory_comp_error();
 			}
 			break;
 		}
 		case BinaryOp::Eq:
 		case BinaryOp::StrictEq: {
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs));
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs));
+			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, lhs, main_operation_type, lhs));
+			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, rhs, main_operation_type, rhs));
 
 			if ((!lhs) || (!rhs)) {
-				exprOut = {};
+				expr_out = {};
 				return {};
 			}
 
-			if (lhsType->isNullable) {
-				if (rhs->exprKind == ExprKind::Null) {
-					if (!(exprOut = makeAstNode<BoolLiteralExprNode>(
-							  compileEnv->allocator.get(),
-							  compileEnv->allocator.get(), compileEnv->document,
-							  lhs->exprKind == ExprKind::Null)
-								.template castTo<ExprNode>()))
-						return genOutOfMemoryCompError();
+			if (lhs_type->is_nullable) {
+				if (rhs->expr_kind == ExprKind::Null) {
+					if (!(expr_out = make_ast_node<BoolLiteralExprNode>(
+							  compile_env->allocator.get(),
+							  compile_env->allocator.get(), compile_env->document,
+							  lhs->expr_kind == ExprKind::Null)
+								.template cast_to<ExprNode>()))
+						return gen_out_of_memory_comp_error();
 				} else {
-					if (lhs->exprKind == ExprKind::Null) {
-						if (!(exprOut = makeAstNode<BoolLiteralExprNode>(
-								  compileEnv->allocator.get(),
-								  compileEnv->allocator.get(), compileEnv->document,
-								  rhs->exprKind == ExprKind::Null)
-									.template castTo<ExprNode>()))
-							return genOutOfMemoryCompError();
+					if (lhs->expr_kind == ExprKind::Null) {
+						if (!(expr_out = make_ast_node<BoolLiteralExprNode>(
+								  compile_env->allocator.get(),
+								  compile_env->allocator.get(), compile_env->document,
+								  rhs->expr_kind == ExprKind::Null)
+									.template cast_to<ExprNode>()))
+							return gen_out_of_memory_comp_error();
 					} else {
-						if (!(exprOut = makeAstNode<BoolLiteralExprNode>(
-								  compileEnv->allocator.get(),
-								  compileEnv->allocator.get(), compileEnv->document,
-								  lhs.castTo<LT>()->data == rhs.castTo<LT>()->data)
-									.template castTo<ExprNode>()))
-							return genOutOfMemoryCompError();
+						if (!(expr_out = make_ast_node<BoolLiteralExprNode>(
+								  compile_env->allocator.get(),
+								  compile_env->allocator.get(), compile_env->document,
+								  lhs.cast_to<LT>()->data == rhs.cast_to<LT>()->data)
+									.template cast_to<ExprNode>()))
+							return gen_out_of_memory_comp_error();
 					}
 				}
 			} else {
-				if (!(exprOut = makeAstNode<BoolLiteralExprNode>(
-						  compileEnv->allocator.get(),
-						  compileEnv->allocator.get(), compileEnv->document,
-						  lhs.castTo<LT>()->data == rhs.castTo<LT>()->data)
-							.template castTo<ExprNode>()))
-					return genOutOfMemoryCompError();
+				if (!(expr_out = make_ast_node<BoolLiteralExprNode>(
+						  compile_env->allocator.get(),
+						  compile_env->allocator.get(), compile_env->document,
+						  lhs.cast_to<LT>()->data == rhs.cast_to<LT>()->data)
+							.template cast_to<ExprNode>()))
+					return gen_out_of_memory_comp_error();
 			}
 			break;
 		}
 		case BinaryOp::Neq:
 		case BinaryOp::StrictNeq: {
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs));
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs));
+			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, lhs, main_operation_type, lhs));
+			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, rhs, main_operation_type, rhs));
 
 			if ((!lhs) || (!rhs)) {
-				exprOut = {};
+				expr_out = {};
 				return {};
 			}
 
-			if (lhsType->isNullable) {
-				if (rhs->exprKind == ExprKind::Null) {
-					if (!(exprOut = makeAstNode<BoolLiteralExprNode>(
-							  compileEnv->allocator.get(),
-							  compileEnv->allocator.get(), compileEnv->document,
-							  lhs->exprKind != ExprKind::Null)
-								.template castTo<ExprNode>()))
-						return genOutOfMemoryCompError();
+			if (lhs_type->is_nullable) {
+				if (rhs->expr_kind == ExprKind::Null) {
+					if (!(expr_out = make_ast_node<BoolLiteralExprNode>(
+							  compile_env->allocator.get(),
+							  compile_env->allocator.get(), compile_env->document,
+							  lhs->expr_kind != ExprKind::Null)
+								.template cast_to<ExprNode>()))
+						return gen_out_of_memory_comp_error();
 				} else {
-					if (lhs->exprKind == ExprKind::Null) {
-						if (!(exprOut = makeAstNode<BoolLiteralExprNode>(
-								  compileEnv->allocator.get(),
-								  compileEnv->allocator.get(), compileEnv->document,
-								  rhs->exprKind != ExprKind::Null)
-									.template castTo<ExprNode>()))
-							return genOutOfMemoryCompError();
+					if (lhs->expr_kind == ExprKind::Null) {
+						if (!(expr_out = make_ast_node<BoolLiteralExprNode>(
+								  compile_env->allocator.get(),
+								  compile_env->allocator.get(), compile_env->document,
+								  rhs->expr_kind != ExprKind::Null)
+									.template cast_to<ExprNode>()))
+							return gen_out_of_memory_comp_error();
 					} else {
-						if (!(exprOut = makeAstNode<BoolLiteralExprNode>(
-								  compileEnv->allocator.get(),
-								  compileEnv->allocator.get(), compileEnv->document,
-								  lhs.castTo<LT>()->data != rhs.castTo<LT>()->data)
-									.template castTo<ExprNode>()))
-							return genOutOfMemoryCompError();
+						if (!(expr_out = make_ast_node<BoolLiteralExprNode>(
+								  compile_env->allocator.get(),
+								  compile_env->allocator.get(), compile_env->document,
+								  lhs.cast_to<LT>()->data != rhs.cast_to<LT>()->data)
+									.template cast_to<ExprNode>()))
+							return gen_out_of_memory_comp_error();
 					}
 				}
 			} else {
-				if (!(exprOut = makeAstNode<BoolLiteralExprNode>(
-						  compileEnv->allocator.get(),
-						  compileEnv->allocator.get(), compileEnv->document,
-						  lhs.castTo<LT>()->data != rhs.castTo<LT>()->data)
-							.template castTo<ExprNode>()))
-					return genOutOfMemoryCompError();
+				if (!(expr_out = make_ast_node<BoolLiteralExprNode>(
+						  compile_env->allocator.get(),
+						  compile_env->allocator.get(), compile_env->document,
+						  lhs.cast_to<LT>()->data != rhs.cast_to<LT>()->data)
+							.template cast_to<ExprNode>()))
+					return gen_out_of_memory_comp_error();
 			}
 			break;
 		}
 		case BinaryOp::Gt: {
-			if ((lhsType->isNullable) || (rhsType->isNullable)) {
-				exprOut = {};
+			if ((lhs_type->is_nullable) || (rhs_type->is_nullable)) {
+				expr_out = {};
 				return {};
 			}
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs));
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs));
+			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, lhs, main_operation_type, lhs));
+			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, rhs, main_operation_type, rhs));
 
 			if ((!lhs) || (!rhs)) {
-				exprOut = {};
+				expr_out = {};
 				return {};
 			}
 
-			if (!(exprOut = makeAstNode<BoolLiteralExprNode>(
-					  compileEnv->allocator.get(),
-					  compileEnv->allocator.get(), compileEnv->document,
-					  lhs.castTo<LT>()->data > rhs.castTo<LT>()->data)
-						.template castTo<ExprNode>()))
-				return genOutOfMemoryCompError();
+			if (!(expr_out = make_ast_node<BoolLiteralExprNode>(
+					  compile_env->allocator.get(),
+					  compile_env->allocator.get(), compile_env->document,
+					  lhs.cast_to<LT>()->data > rhs.cast_to<LT>()->data)
+						.template cast_to<ExprNode>()))
+				return gen_out_of_memory_comp_error();
 			break;
 		}
 		case BinaryOp::Lt: {
-			if ((lhsType->isNullable) || (rhsType->isNullable)) {
-				exprOut = {};
+			if ((lhs_type->is_nullable) || (rhs_type->is_nullable)) {
+				expr_out = {};
 				return {};
 			}
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs));
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs));
+			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, lhs, main_operation_type, lhs));
+			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, rhs, main_operation_type, rhs));
 
 			if ((!lhs) || (!rhs)) {
-				exprOut = {};
+				expr_out = {};
 				return {};
 			}
 
-			if (!(exprOut = makeAstNode<BoolLiteralExprNode>(
-					  compileEnv->allocator.get(),
-					  compileEnv->allocator.get(), compileEnv->document,
-					  lhs.castTo<LT>()->data < rhs.castTo<LT>()->data)
-						.template castTo<ExprNode>()))
-				return genOutOfMemoryCompError();
+			if (!(expr_out = make_ast_node<BoolLiteralExprNode>(
+					  compile_env->allocator.get(),
+					  compile_env->allocator.get(), compile_env->document,
+					  lhs.cast_to<LT>()->data < rhs.cast_to<LT>()->data)
+						.template cast_to<ExprNode>()))
+				return gen_out_of_memory_comp_error();
 			break;
 		}
 		case BinaryOp::GtEq: {
-			if ((lhsType->isNullable) || (rhsType->isNullable)) {
-				exprOut = {};
+			if ((lhs_type->is_nullable) || (rhs_type->is_nullable)) {
+				expr_out = {};
 				return {};
 			}
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs));
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs));
+			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, lhs, main_operation_type, lhs));
+			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, rhs, main_operation_type, rhs));
 
 			if ((!lhs) || (!rhs)) {
-				exprOut = {};
+				expr_out = {};
 				return {};
 			}
 
-			if (!(exprOut = makeAstNode<BoolLiteralExprNode>(
-					  compileEnv->allocator.get(),
-					  compileEnv->allocator.get(), compileEnv->document,
-					  lhs.castTo<LT>()->data >= rhs.castTo<LT>()->data)
-						.template castTo<ExprNode>()))
-				return genOutOfMemoryCompError();
+			if (!(expr_out = make_ast_node<BoolLiteralExprNode>(
+					  compile_env->allocator.get(),
+					  compile_env->allocator.get(), compile_env->document,
+					  lhs.cast_to<LT>()->data >= rhs.cast_to<LT>()->data)
+						.template cast_to<ExprNode>()))
+				return gen_out_of_memory_comp_error();
 			break;
 		}
 		case BinaryOp::LtEq: {
-			if ((lhsType->isNullable) || (rhsType->isNullable)) {
-				exprOut = {};
+			if ((lhs_type->is_nullable) || (rhs_type->is_nullable)) {
+				expr_out = {};
 				return {};
 			}
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, lhs, mainOperationType, lhs));
-			SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileEnv, compilationContext, pathEnv, rhs, mainOperationType, rhs));
+			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, lhs, main_operation_type, lhs));
+			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, rhs, main_operation_type, rhs));
 
 			if ((!lhs) || (!rhs)) {
-				exprOut = {};
+				expr_out = {};
 				return {};
 			}
 
-			if (!(exprOut = makeAstNode<BoolLiteralExprNode>(
-					  compileEnv->allocator.get(),
-					  compileEnv->allocator.get(), compileEnv->document,
-					  lhs.castTo<LT>()->data <= rhs.castTo<LT>()->data)
-						.template castTo<ExprNode>()))
-				return genOutOfMemoryCompError();
+			if (!(expr_out = make_ast_node<BoolLiteralExprNode>(
+					  compile_env->allocator.get(),
+					  compile_env->allocator.get(), compile_env->document,
+					  lhs.cast_to<LT>()->data <= rhs.cast_to<LT>()->data)
+						.template cast_to<ExprNode>()))
+				return gen_out_of_memory_comp_error();
 			break;
 		}
 		// TODO: Implement comparison operation.
 		default:
-			exprOut = {};
+			expr_out = {};
 			break;
 	}
 
 	return {};
 }
 
-SLAKE_API peff::Option<CompilationError> slkc::_doEvalConstExpr(
-	CompileEnv *compileEnv,
-	CompilationContext *compilationContext,
-	PathEnv *pathEnv,
+SLAKE_API peff::Option<CompilationError> slkc::_do_eval_const_expr(
+	CompileEnv *compile_env,
+	CompilationContext *compilation_context,
+	PathEnv *path_env,
 	AstNodePtr<ExprNode> expr,
-	AstNodePtr<ExprNode> &exprOut) {
+	AstNodePtr<ExprNode> &expr_out) {
 reeval:
 
-	switch (expr->exprKind) {
+	switch (expr->expr_kind) {
 		case ExprKind::Unary: {
 			// stub
-			exprOut = {};
+			expr_out = {};
 			break;
 		}
 		case ExprKind::Binary: {
-			AstNodePtr<BinaryExprNode> e = expr.castTo<BinaryExprNode>();
+			AstNodePtr<BinaryExprNode> e = expr.cast_to<BinaryExprNode>();
 
-			AstNodePtr<TypeNameNode> lhsType, rhsType, decayedLhsType, decayedRhsType;
-			SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileEnv, compilationContext, pathEnv, e->lhs, lhsType, {}));
-			SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileEnv, compilationContext, pathEnv, e->rhs, rhsType, {}));
+			AstNodePtr<TypeNameNode> lhs_type, rhs_type, decayed_lhs_type, decayed_rhs_type;
+			SLKC_RETURN_IF_COMP_ERROR(eval_expr_type(compile_env, compilation_context, path_env, e->lhs, lhs_type, {}));
+			SLKC_RETURN_IF_COMP_ERROR(eval_expr_type(compile_env, compilation_context, path_env, e->rhs, rhs_type, {}));
 
 			SLKC_RETURN_IF_COMP_ERROR(
-				removeRefOfType(lhsType, decayedLhsType));
+				remove_ref_of_type(lhs_type, decayed_lhs_type));
 			SLKC_RETURN_IF_COMP_ERROR(
-				removeRefOfType(rhsType, decayedRhsType));
+				remove_ref_of_type(rhs_type, decayed_rhs_type));
 
-			AstNodePtr<TypeNameNode> mainOperationType;
+			AstNodePtr<TypeNameNode> main_operation_type;
 
-			switch (e->binaryOp) {
+			switch (e->binary_op) {
 				case BinaryOp::Assign:
 				case BinaryOp::Shl:
 				case BinaryOp::Shr:
 				case BinaryOp::ShlAssign:
 				case BinaryOp::ShrAssign:
 				case BinaryOp::Subscript:
-					mainOperationType = decayedLhsType;
+					main_operation_type = decayed_lhs_type;
 					break;
 				default: {
 					// If the both conversions of sides are viable, choose their common type.
 					// If only one side is viable, choose the viable side.
 					// Or else, choose the left side to generate the error message.
-					bool lhsToRhsViability, rhsToLhsViability;
-					SLKC_RETURN_IF_COMP_ERROR(isConvertible(decayedLhsType, decayedRhsType, true, lhsToRhsViability));
-					SLKC_RETURN_IF_COMP_ERROR(isConvertible(decayedRhsType, decayedLhsType, true, rhsToLhsViability));
-					if (lhsToRhsViability && rhsToLhsViability) {
-						SLKC_RETURN_IF_COMP_ERROR(deduceCommonType(decayedLhsType, decayedRhsType, mainOperationType));
+					bool lhs_to_rhs_viability, rhs_to_lhs_viability;
+					SLKC_RETURN_IF_COMP_ERROR(is_convertible(decayed_lhs_type, decayed_rhs_type, true, lhs_to_rhs_viability));
+					SLKC_RETURN_IF_COMP_ERROR(is_convertible(decayed_rhs_type, decayed_lhs_type, true, rhs_to_lhs_viability));
+					if (lhs_to_rhs_viability && rhs_to_lhs_viability) {
+						SLKC_RETURN_IF_COMP_ERROR(deduce_common_type(decayed_lhs_type, decayed_rhs_type, main_operation_type));
 					}
-					if (!mainOperationType) {
-						if (lhsToRhsViability)
-							mainOperationType = decayedRhsType;
+					if (!main_operation_type) {
+						if (lhs_to_rhs_viability)
+							main_operation_type = decayed_rhs_type;
 						else
-							mainOperationType = decayedLhsType;
+							main_operation_type = decayed_lhs_type;
 					}
 				}
 			}
 
-			switch (mainOperationType->typeNameKind) {
+			switch (main_operation_type->type_name_kind) {
 				case TypeNameKind::I8:
-					SLKC_RETURN_IF_COMP_ERROR(evalIntegralBinaryOpExpr<I8LiteralExprNode>(
-						compileEnv, compilationContext, pathEnv,
-						mainOperationType,
-						e->binaryOp,
-						e->lhs, decayedLhsType,
-						e->rhs, decayedRhsType,
-						exprOut));
+					SLKC_RETURN_IF_COMP_ERROR(eval_integral_binary_op_expr<I8LiteralExprNode>(
+						compile_env, compilation_context, path_env,
+						main_operation_type,
+						e->binary_op,
+						e->lhs, decayed_lhs_type,
+						e->rhs, decayed_rhs_type,
+						expr_out));
 					break;
 				case TypeNameKind::I16:
-					SLKC_RETURN_IF_COMP_ERROR(evalIntegralBinaryOpExpr<I16LiteralExprNode>(
-						compileEnv, compilationContext, pathEnv,
-						mainOperationType,
-						e->binaryOp,
-						e->lhs, decayedLhsType,
-						e->rhs, decayedRhsType,
-						exprOut));
+					SLKC_RETURN_IF_COMP_ERROR(eval_integral_binary_op_expr<I16LiteralExprNode>(
+						compile_env, compilation_context, path_env,
+						main_operation_type,
+						e->binary_op,
+						e->lhs, decayed_lhs_type,
+						e->rhs, decayed_rhs_type,
+						expr_out));
 					break;
 				case TypeNameKind::I32:
-					SLKC_RETURN_IF_COMP_ERROR(evalIntegralBinaryOpExpr<I32LiteralExprNode>(
-						compileEnv, compilationContext, pathEnv,
-						mainOperationType,
-						e->binaryOp,
-						e->lhs, decayedLhsType,
-						e->rhs, decayedRhsType,
-						exprOut));
+					SLKC_RETURN_IF_COMP_ERROR(eval_integral_binary_op_expr<I32LiteralExprNode>(
+						compile_env, compilation_context, path_env,
+						main_operation_type,
+						e->binary_op,
+						e->lhs, decayed_lhs_type,
+						e->rhs, decayed_rhs_type,
+						expr_out));
 					break;
 				case TypeNameKind::I64:
-					SLKC_RETURN_IF_COMP_ERROR(evalIntegralBinaryOpExpr<I64LiteralExprNode>(
-						compileEnv, compilationContext, pathEnv,
-						mainOperationType,
-						e->binaryOp,
-						e->lhs, decayedLhsType,
-						e->rhs, decayedRhsType,
-						exprOut));
+					SLKC_RETURN_IF_COMP_ERROR(eval_integral_binary_op_expr<I64LiteralExprNode>(
+						compile_env, compilation_context, path_env,
+						main_operation_type,
+						e->binary_op,
+						e->lhs, decayed_lhs_type,
+						e->rhs, decayed_rhs_type,
+						expr_out));
 					break;
 				case TypeNameKind::U8:
-					SLKC_RETURN_IF_COMP_ERROR(evalIntegralBinaryOpExpr<U8LiteralExprNode>(
-						compileEnv, compilationContext, pathEnv,
-						mainOperationType,
-						e->binaryOp,
-						e->lhs, decayedLhsType,
-						e->rhs, decayedRhsType,
-						exprOut));
+					SLKC_RETURN_IF_COMP_ERROR(eval_integral_binary_op_expr<U8LiteralExprNode>(
+						compile_env, compilation_context, path_env,
+						main_operation_type,
+						e->binary_op,
+						e->lhs, decayed_lhs_type,
+						e->rhs, decayed_rhs_type,
+						expr_out));
 					break;
 				case TypeNameKind::U16:
-					SLKC_RETURN_IF_COMP_ERROR(evalIntegralBinaryOpExpr<U16LiteralExprNode>(
-						compileEnv, compilationContext, pathEnv,
-						mainOperationType,
-						e->binaryOp,
-						e->lhs, decayedLhsType,
-						e->rhs, decayedRhsType,
-						exprOut));
+					SLKC_RETURN_IF_COMP_ERROR(eval_integral_binary_op_expr<U16LiteralExprNode>(
+						compile_env, compilation_context, path_env,
+						main_operation_type,
+						e->binary_op,
+						e->lhs, decayed_lhs_type,
+						e->rhs, decayed_rhs_type,
+						expr_out));
 					break;
 				case TypeNameKind::U32:
-					SLKC_RETURN_IF_COMP_ERROR(evalIntegralBinaryOpExpr<U32LiteralExprNode>(
-						compileEnv, compilationContext, pathEnv,
-						mainOperationType,
-						e->binaryOp,
-						e->lhs, decayedLhsType,
-						e->rhs, decayedRhsType,
-						exprOut));
+					SLKC_RETURN_IF_COMP_ERROR(eval_integral_binary_op_expr<U32LiteralExprNode>(
+						compile_env, compilation_context, path_env,
+						main_operation_type,
+						e->binary_op,
+						e->lhs, decayed_lhs_type,
+						e->rhs, decayed_rhs_type,
+						expr_out));
 					break;
 				case TypeNameKind::U64:
-					SLKC_RETURN_IF_COMP_ERROR(evalIntegralBinaryOpExpr<U64LiteralExprNode>(
-						compileEnv, compilationContext, pathEnv,
-						mainOperationType,
-						e->binaryOp,
-						e->lhs, decayedLhsType,
-						e->rhs, decayedRhsType,
-						exprOut));
+					SLKC_RETURN_IF_COMP_ERROR(eval_integral_binary_op_expr<U64LiteralExprNode>(
+						compile_env, compilation_context, path_env,
+						main_operation_type,
+						e->binary_op,
+						e->lhs, decayed_lhs_type,
+						e->rhs, decayed_rhs_type,
+						expr_out));
 					break;
 				case TypeNameKind::F32:
-					SLKC_RETURN_IF_COMP_ERROR(evalFloatingPointBinaryOpExpr<F32LiteralExprNode>(
-						compileEnv, compilationContext, pathEnv,
-						mainOperationType,
-						e->binaryOp,
-						e->lhs, decayedLhsType,
-						e->rhs, decayedRhsType,
-						exprOut));
+					SLKC_RETURN_IF_COMP_ERROR(eval_floating_point_binary_op_expr<F32LiteralExprNode>(
+						compile_env, compilation_context, path_env,
+						main_operation_type,
+						e->binary_op,
+						e->lhs, decayed_lhs_type,
+						e->rhs, decayed_rhs_type,
+						expr_out));
 					break;
 				case TypeNameKind::F64:
-					SLKC_RETURN_IF_COMP_ERROR(evalFloatingPointBinaryOpExpr<F64LiteralExprNode>(
-						compileEnv, compilationContext, pathEnv,
-						mainOperationType,
-						e->binaryOp,
-						e->lhs, decayedLhsType,
-						e->rhs, decayedRhsType,
-						exprOut));
+					SLKC_RETURN_IF_COMP_ERROR(eval_floating_point_binary_op_expr<F64LiteralExprNode>(
+						compile_env, compilation_context, path_env,
+						main_operation_type,
+						e->binary_op,
+						e->lhs, decayed_lhs_type,
+						e->rhs, decayed_rhs_type,
+						expr_out));
 					break;
 				default:
-					exprOut = {};
+					expr_out = {};
 			}
 
 			break;
 		}
 		case ExprKind::Ternary: {
-			exprOut = {};
+			expr_out = {};
 			break;
 		}
 		case ExprKind::IdRef:
@@ -1166,32 +1166,32 @@ reeval:
 		case ExprKind::String:
 		case ExprKind::Bool:
 		case ExprKind::Null: {
-			exprOut = expr;
+			expr_out = expr;
 			break;
 		}
 		case ExprKind::Cast: {
-			AstNodePtr<CastExprNode> e = expr.castTo<CastExprNode>();
+			AstNodePtr<CastExprNode> e = expr.cast_to<CastExprNode>();
 			AstNodePtr<ExprNode> src;
-			SLKC_RETURN_IF_COMP_ERROR(_doEvalConstExpr(compileEnv, compilationContext, pathEnv, e->source, src));
+			SLKC_RETURN_IF_COMP_ERROR(_do_eval_const_expr(compile_env, compilation_context, path_env, e->source, src));
 
 			if (!src) {
-				exprOut = {};
+				expr_out = {};
 				break;
 			}
 
 			// The type may be nullable, but the value will still be non-nullable.
-			switch (e->targetType->typeNameKind) {
+			switch (e->target_type->type_name_kind) {
 				case TypeNameKind::I8: {
 					AstNodePtr<I8LiteralExprNode> l;
 
-					if ((e->targetType->isNullable) && (e->source->exprKind == ExprKind::Null)) {
-						exprOut = e->source;
+					if ((e->target_type->is_nullable) && (e->source->expr_kind == ExprKind::Null)) {
+						expr_out = e->source;
 					} else {
-						if (!(l = makeAstNode<I8LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, 0))) {
-							return genOutOfMemoryCompError();
+						if (!(l = make_ast_node<I8LiteralExprNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->document, 0))) {
+							return gen_out_of_memory_comp_error();
 						}
-						SLKC_RETURN_IF_COMP_ERROR(_doSimpleIntLiteralCast<int8_t, I8LiteralExprNode>(compileEnv, src, l));
-						exprOut = l.castTo<ExprNode>();
+						SLKC_RETURN_IF_COMP_ERROR(_do_simple_int_literal_cast<int8_t, I8LiteralExprNode>(compile_env, src, l));
+						expr_out = l.cast_to<ExprNode>();
 					}
 
 					break;
@@ -1199,14 +1199,14 @@ reeval:
 				case TypeNameKind::I16: {
 					AstNodePtr<I16LiteralExprNode> l;
 
-					if ((e->targetType->isNullable) && (e->source->exprKind == ExprKind::Null)) {
-						exprOut = e->source;
+					if ((e->target_type->is_nullable) && (e->source->expr_kind == ExprKind::Null)) {
+						expr_out = e->source;
 					} else {
-						if (!(l = makeAstNode<I16LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, 0))) {
-							return genOutOfMemoryCompError();
+						if (!(l = make_ast_node<I16LiteralExprNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->document, 0))) {
+							return gen_out_of_memory_comp_error();
 						}
-						SLKC_RETURN_IF_COMP_ERROR(_doSimpleIntLiteralCast<int16_t, I16LiteralExprNode>(compileEnv, src, l));
-						exprOut = l.castTo<ExprNode>();
+						SLKC_RETURN_IF_COMP_ERROR(_do_simple_int_literal_cast<int16_t, I16LiteralExprNode>(compile_env, src, l));
+						expr_out = l.cast_to<ExprNode>();
 					}
 
 					break;
@@ -1214,133 +1214,133 @@ reeval:
 				case TypeNameKind::I32: {
 					AstNodePtr<I32LiteralExprNode> l;
 
-					if ((e->targetType->isNullable) && (e->source->exprKind == ExprKind::Null)) {
-						exprOut = e->source;
+					if ((e->target_type->is_nullable) && (e->source->expr_kind == ExprKind::Null)) {
+						expr_out = e->source;
 					} else {
-						if (!(l = makeAstNode<I32LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, 0))) {
-							return genOutOfMemoryCompError();
+						if (!(l = make_ast_node<I32LiteralExprNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->document, 0))) {
+							return gen_out_of_memory_comp_error();
 						}
-						SLKC_RETURN_IF_COMP_ERROR(_doSimpleIntLiteralCast<int32_t, I32LiteralExprNode>(compileEnv, src, l));
-						exprOut = l.castTo<ExprNode>();
+						SLKC_RETURN_IF_COMP_ERROR(_do_simple_int_literal_cast<int32_t, I32LiteralExprNode>(compile_env, src, l));
+						expr_out = l.cast_to<ExprNode>();
 					}
 					break;
 				}
 				case TypeNameKind::I64: {
 					AstNodePtr<I64LiteralExprNode> l;
 
-					if ((e->targetType->isNullable) && (e->source->exprKind == ExprKind::Null)) {
-						exprOut = e->source;
+					if ((e->target_type->is_nullable) && (e->source->expr_kind == ExprKind::Null)) {
+						expr_out = e->source;
 					} else {
-						if (!(l = makeAstNode<I64LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, 0))) {
-							return genOutOfMemoryCompError();
+						if (!(l = make_ast_node<I64LiteralExprNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->document, 0))) {
+							return gen_out_of_memory_comp_error();
 						}
-						SLKC_RETURN_IF_COMP_ERROR(_doSimpleIntLiteralCast<int64_t, I64LiteralExprNode>(compileEnv, src, l));
-						exprOut = l.castTo<ExprNode>();
+						SLKC_RETURN_IF_COMP_ERROR(_do_simple_int_literal_cast<int64_t, I64LiteralExprNode>(compile_env, src, l));
+						expr_out = l.cast_to<ExprNode>();
 					}
 					break;
 				}
 				case TypeNameKind::U8: {
 					AstNodePtr<U8LiteralExprNode> l;
 
-					if ((e->targetType->isNullable) && (e->source->exprKind == ExprKind::Null)) {
-						exprOut = e->source;
+					if ((e->target_type->is_nullable) && (e->source->expr_kind == ExprKind::Null)) {
+						expr_out = e->source;
 					} else {
-						if (!(l = makeAstNode<U8LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, 0))) {
-							return genOutOfMemoryCompError();
+						if (!(l = make_ast_node<U8LiteralExprNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->document, 0))) {
+							return gen_out_of_memory_comp_error();
 						}
-						SLKC_RETURN_IF_COMP_ERROR(_doSimpleIntLiteralCast<int8_t, U8LiteralExprNode>(compileEnv, src, l));
-						exprOut = l.castTo<ExprNode>();
+						SLKC_RETURN_IF_COMP_ERROR(_do_simple_int_literal_cast<int8_t, U8LiteralExprNode>(compile_env, src, l));
+						expr_out = l.cast_to<ExprNode>();
 					}
 					break;
 				}
 				case TypeNameKind::U16: {
 					AstNodePtr<U16LiteralExprNode> l;
 
-					if ((e->targetType->isNullable) && (e->source->exprKind == ExprKind::Null)) {
-						exprOut = e->source;
+					if ((e->target_type->is_nullable) && (e->source->expr_kind == ExprKind::Null)) {
+						expr_out = e->source;
 					} else {
-						if (!(l = makeAstNode<U16LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, 0))) {
-							return genOutOfMemoryCompError();
+						if (!(l = make_ast_node<U16LiteralExprNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->document, 0))) {
+							return gen_out_of_memory_comp_error();
 						}
-						SLKC_RETURN_IF_COMP_ERROR(_doSimpleIntLiteralCast<int16_t, U16LiteralExprNode>(compileEnv, src, l));
-						exprOut = l.castTo<ExprNode>();
+						SLKC_RETURN_IF_COMP_ERROR(_do_simple_int_literal_cast<int16_t, U16LiteralExprNode>(compile_env, src, l));
+						expr_out = l.cast_to<ExprNode>();
 					}
 					break;
 				}
 				case TypeNameKind::U32: {
 					AstNodePtr<U32LiteralExprNode> l;
 
-					if ((e->targetType->isNullable) && (e->source->exprKind == ExprKind::Null)) {
-						exprOut = e->source;
+					if ((e->target_type->is_nullable) && (e->source->expr_kind == ExprKind::Null)) {
+						expr_out = e->source;
 					} else {
-						if (!(l = makeAstNode<U32LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, 0))) {
-							return genOutOfMemoryCompError();
+						if (!(l = make_ast_node<U32LiteralExprNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->document, 0))) {
+							return gen_out_of_memory_comp_error();
 						}
-						SLKC_RETURN_IF_COMP_ERROR(_doSimpleIntLiteralCast<int32_t, U32LiteralExprNode>(compileEnv, src, l));
-						exprOut = l.castTo<ExprNode>();
+						SLKC_RETURN_IF_COMP_ERROR(_do_simple_int_literal_cast<int32_t, U32LiteralExprNode>(compile_env, src, l));
+						expr_out = l.cast_to<ExprNode>();
 					}
 					break;
 				}
 				case TypeNameKind::U64: {
 					AstNodePtr<U64LiteralExprNode> l;
 
-					if ((e->targetType->isNullable) && (e->source->exprKind == ExprKind::Null)) {
-						exprOut = e->source;
+					if ((e->target_type->is_nullable) && (e->source->expr_kind == ExprKind::Null)) {
+						expr_out = e->source;
 					} else {
-						if (!(l = makeAstNode<U64LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, 0))) {
-							return genOutOfMemoryCompError();
+						if (!(l = make_ast_node<U64LiteralExprNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->document, 0))) {
+							return gen_out_of_memory_comp_error();
 						}
-						SLKC_RETURN_IF_COMP_ERROR(_doSimpleIntLiteralCast<int64_t, U64LiteralExprNode>(compileEnv, src, l));
-						exprOut = l.castTo<ExprNode>();
+						SLKC_RETURN_IF_COMP_ERROR(_do_simple_int_literal_cast<int64_t, U64LiteralExprNode>(compile_env, src, l));
+						expr_out = l.cast_to<ExprNode>();
 					}
 					break;
 				}
 				case TypeNameKind::F32: {
 					AstNodePtr<F32LiteralExprNode> l;
 
-					if ((e->targetType->isNullable) && (e->source->exprKind == ExprKind::Null)) {
-						exprOut = e->source;
+					if ((e->target_type->is_nullable) && (e->source->expr_kind == ExprKind::Null)) {
+						expr_out = e->source;
 					} else {
-						if (!(l = makeAstNode<F32LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, 0))) {
-							return genOutOfMemoryCompError();
+						if (!(l = make_ast_node<F32LiteralExprNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->document, 0))) {
+							return gen_out_of_memory_comp_error();
 						}
-						SLKC_RETURN_IF_COMP_ERROR(_doSimpleIntLiteralCast<float, F32LiteralExprNode>(compileEnv, src, l));
-						exprOut = l.castTo<ExprNode>();
+						SLKC_RETURN_IF_COMP_ERROR(_do_simple_int_literal_cast<float, F32LiteralExprNode>(compile_env, src, l));
+						expr_out = l.cast_to<ExprNode>();
 					}
 					break;
 				}
 				case TypeNameKind::F64: {
 					AstNodePtr<F64LiteralExprNode> l;
 
-					if ((e->targetType->isNullable) && (e->source->exprKind == ExprKind::Null)) {
-						exprOut = e->source;
+					if ((e->target_type->is_nullable) && (e->source->expr_kind == ExprKind::Null)) {
+						expr_out = e->source;
 					} else {
-						if (!(l = makeAstNode<F64LiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, 0))) {
-							return genOutOfMemoryCompError();
+						if (!(l = make_ast_node<F64LiteralExprNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->document, 0))) {
+							return gen_out_of_memory_comp_error();
 						}
-						SLKC_RETURN_IF_COMP_ERROR(_doSimpleIntLiteralCast<double, F64LiteralExprNode>(compileEnv, src, l));
-						exprOut = l.castTo<ExprNode>();
+						SLKC_RETURN_IF_COMP_ERROR(_do_simple_int_literal_cast<double, F64LiteralExprNode>(compile_env, src, l));
+						expr_out = l.cast_to<ExprNode>();
 					}
 					break;
 				}
 				case TypeNameKind::Bool: {
 					AstNodePtr<BoolLiteralExprNode> l;
 
-					if ((e->targetType->isNullable) && (e->source->exprKind == ExprKind::Null)) {
-						exprOut = e->source;
+					if ((e->target_type->is_nullable) && (e->source->expr_kind == ExprKind::Null)) {
+						expr_out = e->source;
 					} else {
-						if (!(l = makeAstNode<BoolLiteralExprNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document, 0))) {
-							return genOutOfMemoryCompError();
+						if (!(l = make_ast_node<BoolLiteralExprNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->document, 0))) {
+							return gen_out_of_memory_comp_error();
 						}
-						SLKC_RETURN_IF_COMP_ERROR(_doSimpleIntLiteralCast<double, BoolLiteralExprNode>(compileEnv, src, l));
-						exprOut = l.castTo<ExprNode>();
+						SLKC_RETURN_IF_COMP_ERROR(_do_simple_int_literal_cast<double, BoolLiteralExprNode>(compile_env, src, l));
+						expr_out = l.cast_to<ExprNode>();
 					}
 					break;
 				}
 				case TypeNameKind::String: {
-					switch (expr->exprKind) {
+					switch (expr->expr_kind) {
 						case ExprKind::String:
-							exprOut = expr;
+							expr_out = expr;
 							break;
 						default:
 							break;
@@ -1348,9 +1348,9 @@ reeval:
 					break;
 				}
 				case TypeNameKind::Object: {
-					switch (expr->exprKind) {
+					switch (expr->expr_kind) {
 						case ExprKind::Null:
-							exprOut = expr;
+							expr_out = expr;
 							break;
 						default:
 							break;
@@ -1358,9 +1358,9 @@ reeval:
 					break;
 				}
 				case TypeNameKind::Custom: {
-					switch (expr->exprKind) {
+					switch (expr->expr_kind) {
 						case ExprKind::Null:
-							exprOut = expr;
+							expr_out = expr;
 							break;
 						default:
 							break;
@@ -1368,10 +1368,10 @@ reeval:
 					break;
 				}
 				case TypeNameKind::Array: {
-					switch (expr->exprKind) {
+					switch (expr->expr_kind) {
 						case ExprKind::InitializerList:
 						case ExprKind::Null:
-							exprOut = expr;
+							expr_out = expr;
 							break;
 						default:
 							break;
@@ -1379,17 +1379,17 @@ reeval:
 					break;
 				}
 				default:
-					exprOut = {};
+					expr_out = {};
 			}
 
 			break;
 		}
 		case ExprKind::Wrapper:
-			expr = expr.castTo<WrapperExprNode>()->target;
+			expr = expr.cast_to<WrapperExprNode>()->target;
 			goto reeval;
 		case ExprKind::Call:
 		case ExprKind::Bad: {
-			exprOut = {};
+			expr_out = {};
 			break;
 		}
 		default:
@@ -1399,14 +1399,14 @@ reeval:
 	return {};
 }
 
-SLKC_API peff::Option<CompilationError> slkc::evalConstExpr(
-	CompileEnv *compileEnv,
-	CompilationContext *compilationContext,
-	PathEnv *pathEnv,
+SLKC_API peff::Option<CompilationError> slkc::eval_const_expr(
+	CompileEnv *compile_env,
+	CompilationContext *compilation_context,
+	PathEnv *path_env,
 	AstNodePtr<ExprNode> expr,
-	AstNodePtr<ExprNode> &exprOut) {
-	PathEnv pe(compileEnv->allocator.get());
-	pe.parent = pathEnv;
+	AstNodePtr<ExprNode> &expr_out) {
+	PathEnv pe(compile_env->allocator.get());
+	pe.parent = path_env;
 
-	return _doEvalConstExpr(compileEnv, compilationContext, &pe, expr, exprOut);
+	return _do_eval_const_expr(compile_env, compilation_context, &pe, expr, expr_out);
 }

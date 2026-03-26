@@ -19,10 +19,10 @@ namespace slake {
 
 	class InternalException {
 	public:
-		peff::RcObjectPtr<peff::Alloc> selfAllocator;
+		peff::RcObjectPtr<peff::Alloc> self_allocator;
 		ErrorKind kind;
 
-		SLAKE_API InternalException(peff::Alloc *selfAllocator, ErrorKind kind);
+		SLAKE_API InternalException(peff::Alloc *self_allocator, ErrorKind kind);
 		SLAKE_API virtual ~InternalException();
 
 		virtual const char *what() const = 0;

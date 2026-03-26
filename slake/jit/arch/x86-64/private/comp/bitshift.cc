@@ -5,385 +5,385 @@ using namespace slake::jit;
 using namespace slake::jit::x86_64;
 
 template <typename T>
-[[nodiscard]] InternalExceptionPointer compileIntShlInstruction(
-	JITCompileContext &compileContext,
-	const Instruction &curIns,
-	const Value &lhsExpectedValue,
-	const Value &rhsExpectedValue) noexcept {
+[[nodiscard]] InternalExceptionPointer compile_int_shl_instruction(
+	JITCompileContext &compile_context,
+	const Instruction &cur_ins,
+	const Value &lhs_expected_value,
+	const Value &rhs_expected_value) noexcept {
 	InternalExceptionPointer exception;
-	uint32_t outputRegIndex = curIns.output;
+	uint32_t output_reg_index = cur_ins.output;
 
-	if (rhsExpectedValue.valueType != ValueType::Undefined) {
-		uint32_t lhsRegIndex = curIns.operands[0].getRegIndex();
-		const RegisterId lhsRegId = compileContext.allocGpReg();
+	if (rhs_expected_value.value_type != ValueType::Undefined) {
+		uint32_t lhs_reg_index = cur_ins.operands[0].get_reg_index();
+		const RegisterId lhs_reg_id = compile_context.alloc_gp_reg();
 
-		uint32_t rhsData = curIns.operands[1].getU32();
+		uint32_t rhs_data = cur_ins.operands[1].get_u32();
 
-		if (compileContext.isRegInUse(lhsRegId)) {
+		if (compile_context.is_reg_in_use(lhs_reg_id)) {
 			int32_t off;
 			size_t size;
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(lhsRegId, off, size));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_reg(lhs_reg_id, off, size));
 		}
 
 		if constexpr (sizeof(T) == sizeof(uint8_t)) {
-			if (rhsData >= 8) {
+			if (rhs_data >= 8) {
 				uint8_t imm0 = 0;
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																emitMovImm8ToReg8Ins(
-																	lhsRegId,
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																emit_mov_imm8_to_reg8_ins(
+																	lhs_reg_id,
 																	(uint8_t *)&imm0)));
-				VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, lhsRegId, sizeof(T));
-				if (!outputVregState)
+				VirtualRegState *output_vreg_state = compile_context.def_virtual_reg(output_reg_index, lhs_reg_id, sizeof(T));
+				if (!output_vreg_state)
 					return OutOfMemoryError::alloc();
 			}
 		} else if constexpr (sizeof(T) == sizeof(uint16_t)) {
-			if (rhsData >= 16) {
+			if (rhs_data >= 16) {
 				uint16_t imm0 = 0;
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																emitMovImm16ToReg16Ins(
-																	lhsRegId,
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																emit_mov_imm16_to_reg16_ins(
+																	lhs_reg_id,
 																	(uint8_t *)&imm0)));
-				VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, lhsRegId, sizeof(T));
-				if (!outputVregState)
+				VirtualRegState *output_vreg_state = compile_context.def_virtual_reg(output_reg_index, lhs_reg_id, sizeof(T));
+				if (!output_vreg_state)
 					return OutOfMemoryError::alloc();
 			}
 		} else if constexpr (sizeof(T) == sizeof(uint32_t)) {
-			if (rhsData >= 32) {
+			if (rhs_data >= 32) {
 				uint32_t imm0 = 0;
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																emitMovImm32ToReg32Ins(
-																	lhsRegId,
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																emit_mov_imm32_to_reg32_ins(
+																	lhs_reg_id,
 																	(uint8_t *)&imm0)));
-				VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, lhsRegId, sizeof(T));
-				if (!outputVregState)
+				VirtualRegState *output_vreg_state = compile_context.def_virtual_reg(output_reg_index, lhs_reg_id, sizeof(T));
+				if (!output_vreg_state)
 					return OutOfMemoryError::alloc();
 			}
 		} else if constexpr (sizeof(T) == sizeof(uint64_t)) {
-			if (rhsData >= 64) {
+			if (rhs_data >= 64) {
 				uint64_t imm0 = 0;
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																emitMovImm64ToReg64Ins(
-																	lhsRegId,
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																emit_mov_imm64_to_reg64_ins(
+																	lhs_reg_id,
 																	(uint8_t *)&imm0)));
-				VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, lhsRegId, sizeof(T));
-				if (!outputVregState)
+				VirtualRegState *output_vreg_state = compile_context.def_virtual_reg(output_reg_index, lhs_reg_id, sizeof(T));
+				if (!output_vreg_state)
 					return OutOfMemoryError::alloc();
 			}
 		}
 
-		uint8_t narrowedRhsData = (uint8_t)rhsData;
+		uint8_t narrowed_rhs_data = (uint8_t)rhs_data;
 
-		VirtualRegState &lhsVregState = compileContext.virtualRegStates.at(lhsRegIndex);
-		if (lhsVregState.saveOffset != INT32_MIN) {
+		VirtualRegState &lhs_vreg_state = compile_context.virtual_reg_states.at(lhs_reg_index);
+		if (lhs_vreg_state.save_offset != INT32_MIN) {
 			if constexpr (sizeof(T) == sizeof(uint8_t)) {
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																emitMovMemToReg8Ins(
-																	lhsRegId,
-																	MemoryLocation{ REG_RBP, lhsVregState.saveOffset, REG_MAX, 0 })));
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																emit_mov_mem_to_reg8_ins(
+																	lhs_reg_id,
+																	MemoryLocation{ REG_RBP, lhs_vreg_state.save_offset, REG_MAX, 0 })));
 			} else if constexpr (sizeof(T) == sizeof(uint16_t)) {
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																emitMovMemToReg16Ins(
-																	lhsRegId,
-																	MemoryLocation{ REG_RBP, lhsVregState.saveOffset, REG_MAX, 0 })));
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																emit_mov_mem_to_reg16_ins(
+																	lhs_reg_id,
+																	MemoryLocation{ REG_RBP, lhs_vreg_state.save_offset, REG_MAX, 0 })));
 			} else if constexpr (sizeof(T) == sizeof(uint32_t)) {
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																emitMovMemToReg32Ins(
-																	lhsRegId,
-																	MemoryLocation{ REG_RBP, lhsVregState.saveOffset, REG_MAX, 0 })));
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																emit_mov_mem_to_reg32_ins(
+																	lhs_reg_id,
+																	MemoryLocation{ REG_RBP, lhs_vreg_state.save_offset, REG_MAX, 0 })));
 			} else if constexpr (sizeof(T) == sizeof(uint64_t)) {
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																emitMovMemToReg64Ins(
-																	lhsRegId,
-																	MemoryLocation{ REG_RBP, lhsVregState.saveOffset, REG_MAX, 0 })));
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																emit_mov_mem_to_reg64_ins(
+																	lhs_reg_id,
+																	MemoryLocation{ REG_RBP, lhs_vreg_state.save_offset, REG_MAX, 0 })));
 			} else {
 				static_assert(!std::is_same_v<T, T>, "Invalid operand size");
 			}
 		} else {
 			if constexpr (sizeof(T) == sizeof(uint8_t)) {
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																emitMovReg8ToReg8Ins(
-																	lhsRegId,
-																	lhsVregState.phyReg)));
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																emit_mov_reg8_to_reg8_ins(
+																	lhs_reg_id,
+																	lhs_vreg_state.phy_reg)));
 			} else if constexpr (sizeof(T) == sizeof(uint16_t)) {
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																emitMovReg16ToReg16Ins(
-																	lhsRegId,
-																	lhsVregState.phyReg)));
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																emit_mov_reg16_to_reg16_ins(
+																	lhs_reg_id,
+																	lhs_vreg_state.phy_reg)));
 			} else if constexpr (sizeof(T) == sizeof(uint32_t)) {
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																emitMovReg32ToReg32Ins(
-																	lhsRegId,
-																	lhsVregState.phyReg)));
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																emit_mov_reg32_to_reg32_ins(
+																	lhs_reg_id,
+																	lhs_vreg_state.phy_reg)));
 			} else if constexpr (sizeof(T) == sizeof(uint64_t)) {
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																emitMovReg64ToReg64Ins(
-																	lhsRegId,
-																	lhsVregState.phyReg)));
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																emit_mov_reg64_to_reg64_ins(
+																	lhs_reg_id,
+																	lhs_vreg_state.phy_reg)));
 			} else {
 				static_assert(!std::is_same_v<T, T>, "Invalid operand size");
 			}
 		}
 
-		VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, lhsRegId, sizeof(T));
-		if (!outputVregState)
+		VirtualRegState *output_vreg_state = compile_context.def_virtual_reg(output_reg_index, lhs_reg_id, sizeof(T));
+		if (!output_vreg_state)
 			return OutOfMemoryError::alloc();
 
 		if constexpr (std::is_same_v<T, int8_t> || std::is_same_v<T, uint8_t>) {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitShlReg8WithImm8Ins(lhsRegId, narrowedRhsData)));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(emit_shl_reg8_with_imm8_ins(lhs_reg_id, narrowed_rhs_data)));
 		} else if constexpr (std::is_same_v<T, int16_t> || std::is_same_v<T, uint16_t>) {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitShlReg16WithImm8Ins(lhsRegId, narrowedRhsData)));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(emit_shl_reg16_with_imm8_ins(lhs_reg_id, narrowed_rhs_data)));
 		} else if constexpr (std::is_same_v<T, int32_t> || std::is_same_v<T, uint32_t>) {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitShlReg32WithImm8Ins(lhsRegId, narrowedRhsData)));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(emit_shl_reg32_with_imm8_ins(lhs_reg_id, narrowed_rhs_data)));
 		} else if constexpr (std::is_same_v<T, int64_t> || std::is_same_v<T, uint64_t>) {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitShlReg64WithImm8Ins(lhsRegId, narrowedRhsData)));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(emit_shl_reg64_with_imm8_ins(lhs_reg_id, narrowed_rhs_data)));
 		} else {
 			static_assert(!std::is_same_v<T, T>, "Invalid operand type");
 		}
 	} else {
-		if (lhsExpectedValue.valueType != ValueType::Undefined) {
-			uint32_t rhsRegIndex = curIns.operands[1].getRegIndex();
-			const RegisterId rhsRegId = compileContext.allocGpReg();
+		if (lhs_expected_value.value_type != ValueType::Undefined) {
+			uint32_t rhs_reg_index = cur_ins.operands[1].get_reg_index();
+			const RegisterId rhs_reg_id = compile_context.alloc_gp_reg();
 
-			uint32_t lhsData = curIns.operands[1].getU32();
+			uint32_t lhs_data = cur_ins.operands[1].get_u32();
 
-			if (compileContext.isRegInUse(rhsRegId)) {
+			if (compile_context.is_reg_in_use(rhs_reg_id)) {
 				int32_t off;
 				size_t size;
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(rhsRegId, off, size));
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_reg(rhs_reg_id, off, size));
 			}
 
 			if constexpr (sizeof(T) == sizeof(uint8_t)) {
-				if (lhsData >= 8) {
+				if (lhs_data >= 8) {
 					uint8_t imm0 = 0;
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovImm8ToReg8Ins(
-																		rhsRegId,
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_imm8_to_reg8_ins(
+																		rhs_reg_id,
 																		(uint8_t *)&imm0)));
-					VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, rhsRegId, sizeof(T));
-					if (!outputVregState)
+					VirtualRegState *output_vreg_state = compile_context.def_virtual_reg(output_reg_index, rhs_reg_id, sizeof(T));
+					if (!output_vreg_state)
 						return OutOfMemoryError::alloc();
 				}
 			} else if constexpr (sizeof(T) == sizeof(uint16_t)) {
-				if (lhsData >= 16) {
+				if (lhs_data >= 16) {
 					uint16_t imm0 = 0;
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovImm16ToReg16Ins(
-																		rhsRegId,
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_imm16_to_reg16_ins(
+																		rhs_reg_id,
 																		(uint8_t *)&imm0)));
-					VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, rhsRegId, sizeof(T));
-					if (!outputVregState)
+					VirtualRegState *output_vreg_state = compile_context.def_virtual_reg(output_reg_index, rhs_reg_id, sizeof(T));
+					if (!output_vreg_state)
 						return OutOfMemoryError::alloc();
 				}
 			} else if constexpr (sizeof(T) == sizeof(uint32_t)) {
-				if (lhsData >= 32) {
+				if (lhs_data >= 32) {
 					uint32_t imm0 = 0;
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovImm32ToReg32Ins(
-																		rhsRegId,
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_imm32_to_reg32_ins(
+																		rhs_reg_id,
 																		(uint8_t *)&imm0)));
-					VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, rhsRegId, sizeof(T));
-					if (!outputVregState)
+					VirtualRegState *output_vreg_state = compile_context.def_virtual_reg(output_reg_index, rhs_reg_id, sizeof(T));
+					if (!output_vreg_state)
 						return OutOfMemoryError::alloc();
 				}
 			} else if constexpr (sizeof(T) == sizeof(uint64_t)) {
-				if (lhsData >= 64) {
+				if (lhs_data >= 64) {
 					uint64_t imm0 = 0;
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovImm64ToReg64Ins(
-																		rhsRegId,
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_imm64_to_reg64_ins(
+																		rhs_reg_id,
 																		(uint8_t *)&imm0)));
-					VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, rhsRegId, sizeof(T));
-					if (!outputVregState)
+					VirtualRegState *output_vreg_state = compile_context.def_virtual_reg(output_reg_index, rhs_reg_id, sizeof(T));
+					if (!output_vreg_state)
 						return OutOfMemoryError::alloc();
 				}
 			}
 
-			uint8_t narrowedLhsData = (uint8_t)lhsData;
+			uint8_t narrowed_lhs_data = (uint8_t)lhs_data;
 
-			VirtualRegState &rhsVregState = compileContext.virtualRegStates.at(rhsRegIndex);
-			if (rhsVregState.saveOffset != INT32_MIN) {
+			VirtualRegState &rhs_vreg_state = compile_context.virtual_reg_states.at(rhs_reg_index);
+			if (rhs_vreg_state.save_offset != INT32_MIN) {
 				if constexpr (sizeof(T) == sizeof(uint8_t)) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovMemToReg8Ins(
-																		rhsRegId,
-																		MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 })));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_mem_to_reg8_ins(
+																		rhs_reg_id,
+																		MemoryLocation{ REG_RBP, rhs_vreg_state.save_offset, REG_MAX, 0 })));
 				} else if constexpr (sizeof(T) == sizeof(uint16_t)) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovMemToReg16Ins(
-																		rhsRegId,
-																		MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 })));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_mem_to_reg16_ins(
+																		rhs_reg_id,
+																		MemoryLocation{ REG_RBP, rhs_vreg_state.save_offset, REG_MAX, 0 })));
 				} else if constexpr (sizeof(T) == sizeof(uint32_t)) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovMemToReg32Ins(
-																		rhsRegId,
-																		MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 })));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_mem_to_reg32_ins(
+																		rhs_reg_id,
+																		MemoryLocation{ REG_RBP, rhs_vreg_state.save_offset, REG_MAX, 0 })));
 				} else if constexpr (sizeof(T) == sizeof(uint64_t)) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovMemToReg64Ins(
-																		rhsRegId,
-																		MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 })));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_mem_to_reg64_ins(
+																		rhs_reg_id,
+																		MemoryLocation{ REG_RBP, rhs_vreg_state.save_offset, REG_MAX, 0 })));
 				} else {
 					static_assert(!std::is_same_v<T, T>, "Invalid operand size");
 				}
 			} else {
 				if constexpr (sizeof(T) == sizeof(uint8_t)) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovReg8ToReg8Ins(
-																		rhsRegId,
-																		rhsVregState.phyReg)));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_reg8_to_reg8_ins(
+																		rhs_reg_id,
+																		rhs_vreg_state.phy_reg)));
 				} else if constexpr (sizeof(T) == sizeof(uint16_t)) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovReg16ToReg16Ins(
-																		rhsRegId,
-																		rhsVregState.phyReg)));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_reg16_to_reg16_ins(
+																		rhs_reg_id,
+																		rhs_vreg_state.phy_reg)));
 				} else if constexpr (sizeof(T) == sizeof(uint32_t)) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovReg32ToReg32Ins(
-																		rhsRegId,
-																		rhsVregState.phyReg)));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_reg32_to_reg32_ins(
+																		rhs_reg_id,
+																		rhs_vreg_state.phy_reg)));
 				} else if constexpr (sizeof(T) == sizeof(uint64_t)) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovReg64ToReg64Ins(
-																		rhsRegId,
-																		rhsVregState.phyReg)));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_reg64_to_reg64_ins(
+																		rhs_reg_id,
+																		rhs_vreg_state.phy_reg)));
 				} else {
 					static_assert(!std::is_same_v<T, T>, "Invalid operand size");
 				}
 			}
 
-			VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, rhsRegId, sizeof(T));
-			if (!outputVregState)
+			VirtualRegState *output_vreg_state = compile_context.def_virtual_reg(output_reg_index, rhs_reg_id, sizeof(T));
+			if (!output_vreg_state)
 				return OutOfMemoryError::alloc();
 
 			if constexpr (std::is_same_v<T, int8_t> || std::is_same_v<T, uint8_t>) {
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitShlReg8WithImm8Ins(rhsRegId, narrowedLhsData)));
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(emit_shl_reg8_with_imm8_ins(rhs_reg_id, narrowed_lhs_data)));
 			} else if constexpr (std::is_same_v<T, int16_t> || std::is_same_v<T, uint16_t>) {
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitShlReg16WithImm8Ins(rhsRegId, narrowedLhsData)));
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(emit_shl_reg16_with_imm8_ins(rhs_reg_id, narrowed_lhs_data)));
 			} else if constexpr (std::is_same_v<T, int32_t> || std::is_same_v<T, uint32_t>) {
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitShlReg32WithImm8Ins(rhsRegId, narrowedLhsData)));
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(emit_shl_reg32_with_imm8_ins(rhs_reg_id, narrowed_lhs_data)));
 			} else if constexpr (std::is_same_v<T, int64_t> || std::is_same_v<T, uint64_t>) {
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitShlReg64WithImm8Ins(rhsRegId, narrowedLhsData)));
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(emit_shl_reg64_with_imm8_ins(rhs_reg_id, narrowed_lhs_data)));
 			} else {
 				static_assert(!std::is_same_v<T, T>, "Invalid operand type");
 			}
 		} else {
-			uint32_t rhsRegIndex = curIns.operands[1].getRegIndex();
+			uint32_t rhs_reg_index = cur_ins.operands[1].get_reg_index();
 
-			const RegisterId lhsRegId = compileContext.allocGpReg();
+			const RegisterId lhs_reg_id = compile_context.alloc_gp_reg();
 
-			if (compileContext.isRegInUse(lhsRegId)) {
+			if (compile_context.is_reg_in_use(lhs_reg_id)) {
 				int32_t off;
 				size_t size;
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(lhsRegId, off, size));
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_reg(lhs_reg_id, off, size));
 			}
 
-			VirtualRegState &lhsVregState = compileContext.virtualRegStates.at(lhsRegId);
-			if (lhsVregState.saveOffset != INT32_MIN) {
+			VirtualRegState &lhs_vreg_state = compile_context.virtual_reg_states.at(lhs_reg_id);
+			if (lhs_vreg_state.save_offset != INT32_MIN) {
 				if constexpr (sizeof(T) == sizeof(uint8_t)) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovMemToReg8Ins(
-																		lhsRegId,
-																		MemoryLocation{ REG_RBP, lhsVregState.saveOffset, REG_MAX, 0 })));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_mem_to_reg8_ins(
+																		lhs_reg_id,
+																		MemoryLocation{ REG_RBP, lhs_vreg_state.save_offset, REG_MAX, 0 })));
 				} else if constexpr (sizeof(T) == sizeof(uint16_t)) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovMemToReg16Ins(
-																		lhsRegId,
-																		MemoryLocation{ REG_RBP, lhsVregState.saveOffset, REG_MAX, 0 })));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_mem_to_reg16_ins(
+																		lhs_reg_id,
+																		MemoryLocation{ REG_RBP, lhs_vreg_state.save_offset, REG_MAX, 0 })));
 				} else if constexpr (sizeof(T) == sizeof(uint32_t)) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovMemToReg32Ins(
-																		lhsRegId,
-																		MemoryLocation{ REG_RBP, lhsVregState.saveOffset, REG_MAX, 0 })));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_mem_to_reg32_ins(
+																		lhs_reg_id,
+																		MemoryLocation{ REG_RBP, lhs_vreg_state.save_offset, REG_MAX, 0 })));
 				} else if constexpr (sizeof(T) == sizeof(uint64_t)) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovMemToReg64Ins(
-																		lhsRegId,
-																		MemoryLocation{ REG_RBP, lhsVregState.saveOffset, REG_MAX, 0 })));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_mem_to_reg64_ins(
+																		lhs_reg_id,
+																		MemoryLocation{ REG_RBP, lhs_vreg_state.save_offset, REG_MAX, 0 })));
 				} else {
 					static_assert(!std::is_same_v<T, T>, "Invalid operand size");
 				}
 			} else {
 				if constexpr (sizeof(T) == sizeof(uint8_t)) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovReg8ToReg8Ins(
-																		lhsRegId,
-																		lhsVregState.phyReg)));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_reg8_to_reg8_ins(
+																		lhs_reg_id,
+																		lhs_vreg_state.phy_reg)));
 				} else if constexpr (sizeof(T) == sizeof(uint16_t)) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovReg16ToReg16Ins(
-																		lhsRegId,
-																		lhsVregState.phyReg)));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_reg16_to_reg16_ins(
+																		lhs_reg_id,
+																		lhs_vreg_state.phy_reg)));
 				} else if constexpr (sizeof(T) == sizeof(uint32_t)) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovReg32ToReg32Ins(
-																		lhsRegId,
-																		lhsVregState.phyReg)));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_reg32_to_reg32_ins(
+																		lhs_reg_id,
+																		lhs_vreg_state.phy_reg)));
 				} else if constexpr (sizeof(T) == sizeof(uint64_t)) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovReg64ToReg64Ins(
-																		lhsRegId,
-																		lhsVregState.phyReg)));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_reg64_to_reg64_ins(
+																		lhs_reg_id,
+																		lhs_vreg_state.phy_reg)));
 				} else {
 					static_assert(!std::is_same_v<T, T>, "Invalid operand size");
 				}
 			}
 
-			VirtualRegState &rhsVregState = compileContext.virtualRegStates.at(rhsRegIndex);
-			int32_t cxOff = INT32_MIN;
-			size_t cxSize;
+			VirtualRegState &rhs_vreg_state = compile_context.virtual_reg_states.at(rhs_reg_index);
+			int32_t cx_off = INT32_MIN;
+			size_t cx_size;
 
 			// TODO: Handle RCX >= 8, 16, 32, 64.
-			if (rhsVregState.saveOffset != INT32_MIN) {
-				if (compileContext.isRegInUse(REG_RCX)) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg32(REG_RCX, cxOff, cxSize));
+			if (rhs_vreg_state.save_offset != INT32_MIN) {
+				if (compile_context.is_reg_in_use(REG_RCX)) {
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_reg32(REG_RCX, cx_off, cx_size));
 				}
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																emitMovMemToReg32Ins(REG_RCX, MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 })));
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																emit_mov_mem_to_reg32_ins(REG_RCX, MemoryLocation{ REG_RBP, rhs_vreg_state.save_offset, REG_MAX, 0 })));
 
 				if constexpr (std::is_same_v<T, int8_t> || std::is_same_v<T, uint8_t>) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitShlReg8WithClIns(lhsRegId)));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_shl_reg8_with_cl_ins(lhs_reg_id)));
 				} else if constexpr (std::is_same_v<T, int16_t> || std::is_same_v<T, uint16_t>) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitShlReg16WithClIns(lhsRegId)));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_shl_reg16_with_cl_ins(lhs_reg_id)));
 				} else if constexpr (std::is_same_v<T, int32_t> || std::is_same_v<T, uint32_t>) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitShlReg32WithClIns(lhsRegId)));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_shl_reg32_with_cl_ins(lhs_reg_id)));
 				} else if constexpr (std::is_same_v<T, int64_t> || std::is_same_v<T, uint64_t>) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitShlReg64WithClIns(lhsRegId)));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_shl_reg64_with_cl_ins(lhs_reg_id)));
 				} else {
 					static_assert(!std::is_same_v<T, T>, "Invalid operand type");
 				}
 			} else {
-				if (rhsVregState.phyReg != REG_RCX && compileContext.isRegInUse(REG_RCX)) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg8(REG_RCX, cxOff, cxSize));
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovReg32ToReg32Ins(REG_RCX, rhsVregState.phyReg)));
+				if (rhs_vreg_state.phy_reg != REG_RCX && compile_context.is_reg_in_use(REG_RCX)) {
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_reg8(REG_RCX, cx_off, cx_size));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_reg32_to_reg32_ins(REG_RCX, rhs_vreg_state.phy_reg)));
 				}
 				if constexpr (std::is_same_v<T, int8_t> || std::is_same_v<T, uint8_t>) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitShlReg8WithClIns(lhsRegId)));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_shl_reg8_with_cl_ins(lhs_reg_id)));
 				} else if constexpr (std::is_same_v<T, int16_t> || std::is_same_v<T, uint16_t>) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitShlReg16WithClIns(lhsRegId)));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_shl_reg16_with_cl_ins(lhs_reg_id)));
 				} else if constexpr (std::is_same_v<T, int32_t> || std::is_same_v<T, uint32_t>) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitShlReg32WithClIns(lhsRegId)));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_shl_reg32_with_cl_ins(lhs_reg_id)));
 				} else if constexpr (std::is_same_v<T, int64_t> || std::is_same_v<T, uint64_t>) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitShlReg64WithClIns(lhsRegId)));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_shl_reg64_with_cl_ins(lhs_reg_id)));
 				} else {
 					static_assert(!std::is_same_v<T, T>, "Invalid operand type");
 				}
 			}
 
-			VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, lhsRegId, sizeof(T));
-			if (!outputVregState)
+			VirtualRegState *output_vreg_state = compile_context.def_virtual_reg(output_reg_index, lhs_reg_id, sizeof(T));
+			if (!output_vreg_state)
 				return OutOfMemoryError::alloc();
 
-			if (cxOff != INT32_MIN) {
-				SLAKE_RETURN_IF_EXCEPT(compileContext.popReg32(REG_RCX, cxOff));
+			if (cx_off != INT32_MIN) {
+				SLAKE_RETURN_IF_EXCEPT(compile_context.pop_reg32(REG_RCX, cx_off));
 			}
 		}
 	}
@@ -391,19 +391,19 @@ template <typename T>
 	return {};
 }
 
-InternalExceptionPointer slake::jit::x86_64::compileShlInstruction(
-	JITCompileContext &compileContext,
-	opti::ProgramAnalyzedInfo &analyzedInfo,
-	size_t offIns,
-	const Instruction &curIns) noexcept {
+InternalExceptionPointer slake::jit::x86_64::compile_shl_instruction(
+	JITCompileContext &compile_context,
+	opti::ProgramAnalyzedInfo &analyzed_info,
+	size_t off_ins,
+	const Instruction &cur_ins) noexcept {
 	InternalExceptionPointer exception;
-	uint32_t outputRegIndex = UINT32_MAX;
-	auto &outputRegInfo = analyzedInfo.analyzedRegInfo.at(outputRegIndex);
+	uint32_t output_reg_index = UINT32_MAX;
+	auto &output_reg_info = analyzed_info.analyzed_reg_info.at(output_reg_index);
 
-	Value lhs = curIns.operands[0], rhs = curIns.operands[1];
-	Value lhsExpectedValue(ValueType::Undefined), rhsExpectedValue(ValueType::Undefined);
+	Value lhs = cur_ins.operands[0], rhs = cur_ins.operands[1];
+	Value lhs_expected_value(ValueType::Undefined), rhs_expected_value(ValueType::Undefined);
 
-	switch (lhs.valueType) {
+	switch (lhs.value_type) {
 		case ValueType::I8:
 		case ValueType::I16:
 		case ValueType::I32:
@@ -412,17 +412,17 @@ InternalExceptionPointer slake::jit::x86_64::compileShlInstruction(
 		case ValueType::U16:
 		case ValueType::U32:
 		case ValueType::U64:
-			lhsExpectedValue = lhs;
+			lhs_expected_value = lhs;
 			break;
 		case ValueType::RegIndex:
-			lhsExpectedValue = analyzedInfo.analyzedRegInfo.at(lhs.getRegIndex()).expectedValue;
+			lhs_expected_value = analyzed_info.analyzed_reg_info.at(lhs.get_reg_index()).expected_value;
 			break;
 		default:
 			// Malformed function
 			std::terminate();
 	}
 
-	switch (rhs.valueType) {
+	switch (rhs.value_type) {
 		case ValueType::I8:
 		case ValueType::I16:
 		case ValueType::I32:
@@ -431,79 +431,79 @@ InternalExceptionPointer slake::jit::x86_64::compileShlInstruction(
 		case ValueType::U16:
 		case ValueType::U32:
 		case ValueType::U64:
-			lhsExpectedValue = rhs;
+			lhs_expected_value = rhs;
 			break;
 		case ValueType::RegIndex:
-			lhsExpectedValue = analyzedInfo.analyzedRegInfo.at(rhs.getRegIndex()).expectedValue;
+			lhs_expected_value = analyzed_info.analyzed_reg_info.at(rhs.get_reg_index()).expected_value;
 			break;
 		default:
 			// Malformed function
 			std::terminate();
 	}
 
-	switch (outputRegInfo.type.typeId) {
+	switch (output_reg_info.type.type_id) {
 		case TypeId::I8: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntShlInstruction<int8_t>(
-															compileContext,
-															curIns,
-															lhsExpectedValue,
-															rhsExpectedValue));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_int_shl_instruction<int8_t>(
+															compile_context,
+															cur_ins,
+															lhs_expected_value,
+															rhs_expected_value));
 			break;
 		}
 		case TypeId::I16: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntShlInstruction<int16_t>(
-															compileContext,
-															curIns,
-															lhsExpectedValue,
-															rhsExpectedValue));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_int_shl_instruction<int16_t>(
+															compile_context,
+															cur_ins,
+															lhs_expected_value,
+															rhs_expected_value));
 			break;
 		}
 		case TypeId::I32: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntShlInstruction<int32_t>(
-															compileContext,
-															curIns,
-															lhsExpectedValue,
-															rhsExpectedValue));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_int_shl_instruction<int32_t>(
+															compile_context,
+															cur_ins,
+															lhs_expected_value,
+															rhs_expected_value));
 			break;
 		}
 		case TypeId::I64: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntShlInstruction<int64_t>(
-															compileContext,
-															curIns,
-															lhsExpectedValue,
-															rhsExpectedValue));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_int_shl_instruction<int64_t>(
+															compile_context,
+															cur_ins,
+															lhs_expected_value,
+															rhs_expected_value));
 			break;
 		}
 		case TypeId::U8: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntShlInstruction<uint8_t>(
-															compileContext,
-															curIns,
-															lhsExpectedValue,
-															rhsExpectedValue));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_int_shl_instruction<uint8_t>(
+															compile_context,
+															cur_ins,
+															lhs_expected_value,
+															rhs_expected_value));
 			break;
 		}
 		case TypeId::U16: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntShlInstruction<uint16_t>(
-															compileContext,
-															curIns,
-															lhsExpectedValue,
-															rhsExpectedValue));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_int_shl_instruction<uint16_t>(
+															compile_context,
+															cur_ins,
+															lhs_expected_value,
+															rhs_expected_value));
 			break;
 		}
 		case TypeId::U32: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntShlInstruction<uint32_t>(
-															compileContext,
-															curIns,
-															lhsExpectedValue,
-															rhsExpectedValue));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_int_shl_instruction<uint32_t>(
+															compile_context,
+															cur_ins,
+															lhs_expected_value,
+															rhs_expected_value));
 			break;
 		}
 		case TypeId::U64: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntShlInstruction<uint64_t>(
-															compileContext,
-															curIns,
-															lhsExpectedValue,
-															rhsExpectedValue));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_int_shl_instruction<uint64_t>(
+															compile_context,
+															cur_ins,
+															lhs_expected_value,
+															rhs_expected_value));
 			break;
 		}
 		default:
@@ -515,385 +515,385 @@ InternalExceptionPointer slake::jit::x86_64::compileShlInstruction(
 }
 
 template <typename T>
-[[nodiscard]] InternalExceptionPointer compileIntShrInstruction(
-	JITCompileContext &compileContext,
-	const Instruction &curIns,
-	const Value &lhsExpectedValue,
-	const Value &rhsExpectedValue) noexcept {
+[[nodiscard]] InternalExceptionPointer compile_int_shr_instruction(
+	JITCompileContext &compile_context,
+	const Instruction &cur_ins,
+	const Value &lhs_expected_value,
+	const Value &rhs_expected_value) noexcept {
 	InternalExceptionPointer exception;
-	uint32_t outputRegIndex = curIns.output;
+	uint32_t output_reg_index = cur_ins.output;
 
-	if (rhsExpectedValue.valueType != ValueType::Undefined) {
-		uint32_t lhsRegIndex = curIns.operands[0].getRegIndex();
-		const RegisterId lhsRegId = compileContext.allocGpReg();
+	if (rhs_expected_value.value_type != ValueType::Undefined) {
+		uint32_t lhs_reg_index = cur_ins.operands[0].get_reg_index();
+		const RegisterId lhs_reg_id = compile_context.alloc_gp_reg();
 
-		uint32_t rhsData = curIns.operands[1].getU32();
+		uint32_t rhs_data = cur_ins.operands[1].get_u32();
 
-		if (compileContext.isRegInUse(lhsRegId)) {
+		if (compile_context.is_reg_in_use(lhs_reg_id)) {
 			int32_t off;
 			size_t size;
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(lhsRegId, off, size));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_reg(lhs_reg_id, off, size));
 		}
 
 		if constexpr (sizeof(T) == sizeof(uint8_t)) {
-			if (rhsData >= 8) {
+			if (rhs_data >= 8) {
 				uint8_t imm0 = 0;
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																emitMovImm8ToReg8Ins(
-																	lhsRegId,
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																emit_mov_imm8_to_reg8_ins(
+																	lhs_reg_id,
 																	(uint8_t *)&imm0)));
-				VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, lhsRegId, sizeof(T));
-				if (!outputVregState)
+				VirtualRegState *output_vreg_state = compile_context.def_virtual_reg(output_reg_index, lhs_reg_id, sizeof(T));
+				if (!output_vreg_state)
 					return OutOfMemoryError::alloc();
 			}
 		} else if constexpr (sizeof(T) == sizeof(uint16_t)) {
-			if (rhsData >= 16) {
+			if (rhs_data >= 16) {
 				uint16_t imm0 = 0;
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																emitMovImm16ToReg16Ins(
-																	lhsRegId,
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																emit_mov_imm16_to_reg16_ins(
+																	lhs_reg_id,
 																	(uint8_t *)&imm0)));
-				VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, lhsRegId, sizeof(T));
-				if (!outputVregState)
+				VirtualRegState *output_vreg_state = compile_context.def_virtual_reg(output_reg_index, lhs_reg_id, sizeof(T));
+				if (!output_vreg_state)
 					return OutOfMemoryError::alloc();
 			}
 		} else if constexpr (sizeof(T) == sizeof(uint32_t)) {
-			if (rhsData >= 32) {
+			if (rhs_data >= 32) {
 				uint32_t imm0 = 0;
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																emitMovImm32ToReg32Ins(
-																	lhsRegId,
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																emit_mov_imm32_to_reg32_ins(
+																	lhs_reg_id,
 																	(uint8_t *)&imm0)));
-				VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, lhsRegId, sizeof(T));
-				if (!outputVregState)
+				VirtualRegState *output_vreg_state = compile_context.def_virtual_reg(output_reg_index, lhs_reg_id, sizeof(T));
+				if (!output_vreg_state)
 					return OutOfMemoryError::alloc();
 			}
 		} else if constexpr (sizeof(T) == sizeof(uint64_t)) {
-			if (rhsData >= 64) {
+			if (rhs_data >= 64) {
 				uint64_t imm0 = 0;
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																emitMovImm64ToReg64Ins(
-																	lhsRegId,
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																emit_mov_imm64_to_reg64_ins(
+																	lhs_reg_id,
 																	(uint8_t *)&imm0)));
-				VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, lhsRegId, sizeof(T));
-				if (!outputVregState)
+				VirtualRegState *output_vreg_state = compile_context.def_virtual_reg(output_reg_index, lhs_reg_id, sizeof(T));
+				if (!output_vreg_state)
 					return OutOfMemoryError::alloc();
 			}
 		}
 
-		uint8_t narrowedRhsData = (uint8_t)rhsData;
+		uint8_t narrowed_rhs_data = (uint8_t)rhs_data;
 
-		VirtualRegState &lhsVregState = compileContext.virtualRegStates.at(lhsRegIndex);
-		if (lhsVregState.saveOffset != INT32_MIN) {
+		VirtualRegState &lhs_vreg_state = compile_context.virtual_reg_states.at(lhs_reg_index);
+		if (lhs_vreg_state.save_offset != INT32_MIN) {
 			if constexpr (sizeof(T) == sizeof(uint8_t)) {
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																emitMovMemToReg8Ins(
-																	lhsRegId,
-																	MemoryLocation{ REG_RBP, lhsVregState.saveOffset, REG_MAX, 0 })));
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																emit_mov_mem_to_reg8_ins(
+																	lhs_reg_id,
+																	MemoryLocation{ REG_RBP, lhs_vreg_state.save_offset, REG_MAX, 0 })));
 			} else if constexpr (sizeof(T) == sizeof(uint16_t)) {
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																emitMovMemToReg16Ins(
-																	lhsRegId,
-																	MemoryLocation{ REG_RBP, lhsVregState.saveOffset, REG_MAX, 0 })));
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																emit_mov_mem_to_reg16_ins(
+																	lhs_reg_id,
+																	MemoryLocation{ REG_RBP, lhs_vreg_state.save_offset, REG_MAX, 0 })));
 			} else if constexpr (sizeof(T) == sizeof(uint32_t)) {
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																emitMovMemToReg32Ins(
-																	lhsRegId,
-																	MemoryLocation{ REG_RBP, lhsVregState.saveOffset, REG_MAX, 0 })));
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																emit_mov_mem_to_reg32_ins(
+																	lhs_reg_id,
+																	MemoryLocation{ REG_RBP, lhs_vreg_state.save_offset, REG_MAX, 0 })));
 			} else if constexpr (sizeof(T) == sizeof(uint64_t)) {
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																emitMovMemToReg64Ins(
-																	lhsRegId,
-																	MemoryLocation{ REG_RBP, lhsVregState.saveOffset, REG_MAX, 0 })));
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																emit_mov_mem_to_reg64_ins(
+																	lhs_reg_id,
+																	MemoryLocation{ REG_RBP, lhs_vreg_state.save_offset, REG_MAX, 0 })));
 			} else {
 				static_assert(!std::is_same_v<T, T>, "Invalid operand size");
 			}
 		} else {
 			if constexpr (sizeof(T) == sizeof(uint8_t)) {
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																emitMovReg8ToReg8Ins(
-																	lhsRegId,
-																	lhsVregState.phyReg)));
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																emit_mov_reg8_to_reg8_ins(
+																	lhs_reg_id,
+																	lhs_vreg_state.phy_reg)));
 			} else if constexpr (sizeof(T) == sizeof(uint16_t)) {
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																emitMovReg16ToReg16Ins(
-																	lhsRegId,
-																	lhsVregState.phyReg)));
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																emit_mov_reg16_to_reg16_ins(
+																	lhs_reg_id,
+																	lhs_vreg_state.phy_reg)));
 			} else if constexpr (sizeof(T) == sizeof(uint32_t)) {
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																emitMovReg32ToReg32Ins(
-																	lhsRegId,
-																	lhsVregState.phyReg)));
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																emit_mov_reg32_to_reg32_ins(
+																	lhs_reg_id,
+																	lhs_vreg_state.phy_reg)));
 			} else if constexpr (sizeof(T) == sizeof(uint64_t)) {
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																emitMovReg64ToReg64Ins(
-																	lhsRegId,
-																	lhsVregState.phyReg)));
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																emit_mov_reg64_to_reg64_ins(
+																	lhs_reg_id,
+																	lhs_vreg_state.phy_reg)));
 			} else {
 				static_assert(!std::is_same_v<T, T>, "Invalid operand size");
 			}
 		}
 
-		VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, lhsRegId, sizeof(T));
-		if (!outputVregState)
+		VirtualRegState *output_vreg_state = compile_context.def_virtual_reg(output_reg_index, lhs_reg_id, sizeof(T));
+		if (!output_vreg_state)
 			return OutOfMemoryError::alloc();
 
 		if constexpr (std::is_same_v<T, int8_t> || std::is_same_v<T, uint8_t>) {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitShrReg8WithImm8Ins(lhsRegId, narrowedRhsData)));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(emit_shr_reg8_with_imm8_ins(lhs_reg_id, narrowed_rhs_data)));
 		} else if constexpr (std::is_same_v<T, int16_t> || std::is_same_v<T, uint16_t>) {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitShrReg16WithImm8Ins(lhsRegId, narrowedRhsData)));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(emit_shr_reg16_with_imm8_ins(lhs_reg_id, narrowed_rhs_data)));
 		} else if constexpr (std::is_same_v<T, int32_t> || std::is_same_v<T, uint32_t>) {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitShrReg32WithImm8Ins(lhsRegId, narrowedRhsData)));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(emit_shr_reg32_with_imm8_ins(lhs_reg_id, narrowed_rhs_data)));
 		} else if constexpr (std::is_same_v<T, int64_t> || std::is_same_v<T, uint64_t>) {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitShrReg64WithImm8Ins(lhsRegId, narrowedRhsData)));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(emit_shr_reg64_with_imm8_ins(lhs_reg_id, narrowed_rhs_data)));
 		} else {
 			static_assert(!std::is_same_v<T, T>, "Invalid operand type");
 		}
 	} else {
-		if (lhsExpectedValue.valueType != ValueType::Undefined) {
-			uint32_t rhsRegIndex = curIns.operands[1].getRegIndex();
-			const RegisterId rhsRegId = compileContext.allocGpReg();
+		if (lhs_expected_value.value_type != ValueType::Undefined) {
+			uint32_t rhs_reg_index = cur_ins.operands[1].get_reg_index();
+			const RegisterId rhs_reg_id = compile_context.alloc_gp_reg();
 
-			uint32_t lhsData = curIns.operands[1].getU32();
+			uint32_t lhs_data = cur_ins.operands[1].get_u32();
 
-			if (compileContext.isRegInUse(rhsRegId)) {
+			if (compile_context.is_reg_in_use(rhs_reg_id)) {
 				int32_t off;
 				size_t size;
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(rhsRegId, off, size));
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_reg(rhs_reg_id, off, size));
 			}
 
 			if constexpr (sizeof(T) == sizeof(uint8_t)) {
-				if (lhsData >= 8) {
+				if (lhs_data >= 8) {
 					uint8_t imm0 = 0;
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovImm8ToReg8Ins(
-																		rhsRegId,
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_imm8_to_reg8_ins(
+																		rhs_reg_id,
 																		(uint8_t *)&imm0)));
-					VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, rhsRegId, sizeof(T));
-					if (!outputVregState)
+					VirtualRegState *output_vreg_state = compile_context.def_virtual_reg(output_reg_index, rhs_reg_id, sizeof(T));
+					if (!output_vreg_state)
 						return OutOfMemoryError::alloc();
 				}
 			} else if constexpr (sizeof(T) == sizeof(uint16_t)) {
-				if (lhsData >= 16) {
+				if (lhs_data >= 16) {
 					uint16_t imm0 = 0;
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovImm16ToReg16Ins(
-																		rhsRegId,
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_imm16_to_reg16_ins(
+																		rhs_reg_id,
 																		(uint8_t *)&imm0)));
-					VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, rhsRegId, sizeof(T));
-					if (!outputVregState)
+					VirtualRegState *output_vreg_state = compile_context.def_virtual_reg(output_reg_index, rhs_reg_id, sizeof(T));
+					if (!output_vreg_state)
 						return OutOfMemoryError::alloc();
 				}
 			} else if constexpr (sizeof(T) == sizeof(uint32_t)) {
-				if (lhsData >= 32) {
+				if (lhs_data >= 32) {
 					uint32_t imm0 = 0;
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovImm32ToReg32Ins(
-																		rhsRegId,
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_imm32_to_reg32_ins(
+																		rhs_reg_id,
 																		(uint8_t *)&imm0)));
-					VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, rhsRegId, sizeof(T));
-					if (!outputVregState)
+					VirtualRegState *output_vreg_state = compile_context.def_virtual_reg(output_reg_index, rhs_reg_id, sizeof(T));
+					if (!output_vreg_state)
 						return OutOfMemoryError::alloc();
 				}
 			} else if constexpr (sizeof(T) == sizeof(uint64_t)) {
-				if (lhsData >= 64) {
+				if (lhs_data >= 64) {
 					uint64_t imm0 = 0;
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovImm64ToReg64Ins(
-																		rhsRegId,
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_imm64_to_reg64_ins(
+																		rhs_reg_id,
 																		(uint8_t *)&imm0)));
-					VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, rhsRegId, sizeof(T));
-					if (!outputVregState)
+					VirtualRegState *output_vreg_state = compile_context.def_virtual_reg(output_reg_index, rhs_reg_id, sizeof(T));
+					if (!output_vreg_state)
 						return OutOfMemoryError::alloc();
 				}
 			}
 
-			uint8_t narrowedLhsData = (uint8_t)lhsData;
+			uint8_t narrowed_lhs_data = (uint8_t)lhs_data;
 
-			VirtualRegState &rhsVregState = compileContext.virtualRegStates.at(rhsRegIndex);
-			if (rhsVregState.saveOffset != INT32_MIN) {
+			VirtualRegState &rhs_vreg_state = compile_context.virtual_reg_states.at(rhs_reg_index);
+			if (rhs_vreg_state.save_offset != INT32_MIN) {
 				if constexpr (sizeof(T) == sizeof(uint8_t)) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovMemToReg8Ins(
-																		rhsRegId,
-																		MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 })));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_mem_to_reg8_ins(
+																		rhs_reg_id,
+																		MemoryLocation{ REG_RBP, rhs_vreg_state.save_offset, REG_MAX, 0 })));
 				} else if constexpr (sizeof(T) == sizeof(uint16_t)) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovMemToReg16Ins(
-																		rhsRegId,
-																		MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 })));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_mem_to_reg16_ins(
+																		rhs_reg_id,
+																		MemoryLocation{ REG_RBP, rhs_vreg_state.save_offset, REG_MAX, 0 })));
 				} else if constexpr (sizeof(T) == sizeof(uint32_t)) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovMemToReg32Ins(
-																		rhsRegId,
-																		MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 })));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_mem_to_reg32_ins(
+																		rhs_reg_id,
+																		MemoryLocation{ REG_RBP, rhs_vreg_state.save_offset, REG_MAX, 0 })));
 				} else if constexpr (sizeof(T) == sizeof(uint64_t)) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovMemToReg64Ins(
-																		rhsRegId,
-																		MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 })));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_mem_to_reg64_ins(
+																		rhs_reg_id,
+																		MemoryLocation{ REG_RBP, rhs_vreg_state.save_offset, REG_MAX, 0 })));
 				} else {
 					static_assert(!std::is_same_v<T, T>, "Invalid operand size");
 				}
 			} else {
 				if constexpr (sizeof(T) == sizeof(uint8_t)) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovReg8ToReg8Ins(
-																		rhsRegId,
-																		rhsVregState.phyReg)));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_reg8_to_reg8_ins(
+																		rhs_reg_id,
+																		rhs_vreg_state.phy_reg)));
 				} else if constexpr (sizeof(T) == sizeof(uint16_t)) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovReg16ToReg16Ins(
-																		rhsRegId,
-																		rhsVregState.phyReg)));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_reg16_to_reg16_ins(
+																		rhs_reg_id,
+																		rhs_vreg_state.phy_reg)));
 				} else if constexpr (sizeof(T) == sizeof(uint32_t)) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovReg32ToReg32Ins(
-																		rhsRegId,
-																		rhsVregState.phyReg)));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_reg32_to_reg32_ins(
+																		rhs_reg_id,
+																		rhs_vreg_state.phy_reg)));
 				} else if constexpr (sizeof(T) == sizeof(uint64_t)) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovReg64ToReg64Ins(
-																		rhsRegId,
-																		rhsVregState.phyReg)));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_reg64_to_reg64_ins(
+																		rhs_reg_id,
+																		rhs_vreg_state.phy_reg)));
 				} else {
 					static_assert(!std::is_same_v<T, T>, "Invalid operand size");
 				}
 			}
 
-			VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, rhsRegId, sizeof(T));
-			if (!outputVregState)
+			VirtualRegState *output_vreg_state = compile_context.def_virtual_reg(output_reg_index, rhs_reg_id, sizeof(T));
+			if (!output_vreg_state)
 				return OutOfMemoryError::alloc();
 
 			if constexpr (std::is_same_v<T, int8_t> || std::is_same_v<T, uint8_t>) {
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitShrReg8WithImm8Ins(rhsRegId, narrowedLhsData)));
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(emit_shr_reg8_with_imm8_ins(rhs_reg_id, narrowed_lhs_data)));
 			} else if constexpr (std::is_same_v<T, int16_t> || std::is_same_v<T, uint16_t>) {
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitShrReg16WithImm8Ins(rhsRegId, narrowedLhsData)));
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(emit_shr_reg16_with_imm8_ins(rhs_reg_id, narrowed_lhs_data)));
 			} else if constexpr (std::is_same_v<T, int32_t> || std::is_same_v<T, uint32_t>) {
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitShrReg32WithImm8Ins(rhsRegId, narrowedLhsData)));
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(emit_shr_reg32_with_imm8_ins(rhs_reg_id, narrowed_lhs_data)));
 			} else if constexpr (std::is_same_v<T, int64_t> || std::is_same_v<T, uint64_t>) {
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitShrReg64WithImm8Ins(rhsRegId, narrowedLhsData)));
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(emit_shr_reg64_with_imm8_ins(rhs_reg_id, narrowed_lhs_data)));
 			} else {
 				static_assert(!std::is_same_v<T, T>, "Invalid operand type");
 			}
 		} else {
-			uint32_t rhsRegIndex = curIns.operands[1].getRegIndex();
+			uint32_t rhs_reg_index = cur_ins.operands[1].get_reg_index();
 
-			const RegisterId lhsRegId = compileContext.allocGpReg();
+			const RegisterId lhs_reg_id = compile_context.alloc_gp_reg();
 
-			if (compileContext.isRegInUse(lhsRegId)) {
+			if (compile_context.is_reg_in_use(lhs_reg_id)) {
 				int32_t off;
 				size_t size;
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(lhsRegId, off, size));
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_reg(lhs_reg_id, off, size));
 			}
 
-			VirtualRegState &lhsVregState = compileContext.virtualRegStates.at(lhsRegId);
-			if (lhsVregState.saveOffset != INT32_MIN) {
+			VirtualRegState &lhs_vreg_state = compile_context.virtual_reg_states.at(lhs_reg_id);
+			if (lhs_vreg_state.save_offset != INT32_MIN) {
 				if constexpr (sizeof(T) == sizeof(uint8_t)) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovMemToReg8Ins(
-																		lhsRegId,
-																		MemoryLocation{ REG_RBP, lhsVregState.saveOffset, REG_MAX, 0 })));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_mem_to_reg8_ins(
+																		lhs_reg_id,
+																		MemoryLocation{ REG_RBP, lhs_vreg_state.save_offset, REG_MAX, 0 })));
 				} else if constexpr (sizeof(T) == sizeof(uint16_t)) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovMemToReg16Ins(
-																		lhsRegId,
-																		MemoryLocation{ REG_RBP, lhsVregState.saveOffset, REG_MAX, 0 })));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_mem_to_reg16_ins(
+																		lhs_reg_id,
+																		MemoryLocation{ REG_RBP, lhs_vreg_state.save_offset, REG_MAX, 0 })));
 				} else if constexpr (sizeof(T) == sizeof(uint32_t)) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovMemToReg32Ins(
-																		lhsRegId,
-																		MemoryLocation{ REG_RBP, lhsVregState.saveOffset, REG_MAX, 0 })));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_mem_to_reg32_ins(
+																		lhs_reg_id,
+																		MemoryLocation{ REG_RBP, lhs_vreg_state.save_offset, REG_MAX, 0 })));
 				} else if constexpr (sizeof(T) == sizeof(uint64_t)) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovMemToReg64Ins(
-																		lhsRegId,
-																		MemoryLocation{ REG_RBP, lhsVregState.saveOffset, REG_MAX, 0 })));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_mem_to_reg64_ins(
+																		lhs_reg_id,
+																		MemoryLocation{ REG_RBP, lhs_vreg_state.save_offset, REG_MAX, 0 })));
 				} else {
 					static_assert(!std::is_same_v<T, T>, "Invalid operand size");
 				}
 			} else {
 				if constexpr (sizeof(T) == sizeof(uint8_t)) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovReg8ToReg8Ins(
-																		lhsRegId,
-																		lhsVregState.phyReg)));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_reg8_to_reg8_ins(
+																		lhs_reg_id,
+																		lhs_vreg_state.phy_reg)));
 				} else if constexpr (sizeof(T) == sizeof(uint16_t)) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovReg16ToReg16Ins(
-																		lhsRegId,
-																		lhsVregState.phyReg)));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_reg16_to_reg16_ins(
+																		lhs_reg_id,
+																		lhs_vreg_state.phy_reg)));
 				} else if constexpr (sizeof(T) == sizeof(uint32_t)) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovReg32ToReg32Ins(
-																		lhsRegId,
-																		lhsVregState.phyReg)));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_reg32_to_reg32_ins(
+																		lhs_reg_id,
+																		lhs_vreg_state.phy_reg)));
 				} else if constexpr (sizeof(T) == sizeof(uint64_t)) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovReg64ToReg64Ins(
-																		lhsRegId,
-																		lhsVregState.phyReg)));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_reg64_to_reg64_ins(
+																		lhs_reg_id,
+																		lhs_vreg_state.phy_reg)));
 				} else {
 					static_assert(!std::is_same_v<T, T>, "Invalid operand size");
 				}
 			}
 
-			VirtualRegState &rhsVregState = compileContext.virtualRegStates.at(rhsRegIndex);
-			int32_t cxOff = INT32_MIN;
-			size_t cxSize;
+			VirtualRegState &rhs_vreg_state = compile_context.virtual_reg_states.at(rhs_reg_index);
+			int32_t cx_off = INT32_MIN;
+			size_t cx_size;
 
 			// TODO: Handle RCX >= 8, 16, 32, 64.
-			if (rhsVregState.saveOffset != INT32_MIN) {
-				if (compileContext.isRegInUse(REG_RCX)) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg32(REG_RCX, cxOff, cxSize));
+			if (rhs_vreg_state.save_offset != INT32_MIN) {
+				if (compile_context.is_reg_in_use(REG_RCX)) {
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_reg32(REG_RCX, cx_off, cx_size));
 				}
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																emitMovMemToReg32Ins(REG_RCX, MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 })));
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																emit_mov_mem_to_reg32_ins(REG_RCX, MemoryLocation{ REG_RBP, rhs_vreg_state.save_offset, REG_MAX, 0 })));
 
 				if constexpr (std::is_same_v<T, int8_t> || std::is_same_v<T, uint8_t>) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitShrReg8WithClIns(lhsRegId)));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_shr_reg8_with_cl_ins(lhs_reg_id)));
 				} else if constexpr (std::is_same_v<T, int16_t> || std::is_same_v<T, uint16_t>) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitShrReg16WithClIns(lhsRegId)));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_shr_reg16_with_cl_ins(lhs_reg_id)));
 				} else if constexpr (std::is_same_v<T, int32_t> || std::is_same_v<T, uint32_t>) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitShrReg32WithClIns(lhsRegId)));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_shr_reg32_with_cl_ins(lhs_reg_id)));
 				} else if constexpr (std::is_same_v<T, int64_t> || std::is_same_v<T, uint64_t>) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitShrReg64WithClIns(lhsRegId)));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_shr_reg64_with_cl_ins(lhs_reg_id)));
 				} else {
 					static_assert(!std::is_same_v<T, T>, "Invalid operand type");
 				}
 			} else {
-				if (rhsVregState.phyReg != REG_RCX && compileContext.isRegInUse(REG_RCX)) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg8(REG_RCX, cxOff, cxSize));
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovReg32ToReg32Ins(REG_RCX, rhsVregState.phyReg)));
+				if (rhs_vreg_state.phy_reg != REG_RCX && compile_context.is_reg_in_use(REG_RCX)) {
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_reg8(REG_RCX, cx_off, cx_size));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_reg32_to_reg32_ins(REG_RCX, rhs_vreg_state.phy_reg)));
 				}
 				if constexpr (std::is_same_v<T, int8_t> || std::is_same_v<T, uint8_t>) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitShrReg8WithClIns(lhsRegId)));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_shr_reg8_with_cl_ins(lhs_reg_id)));
 				} else if constexpr (std::is_same_v<T, int16_t> || std::is_same_v<T, uint16_t>) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitShrReg16WithClIns(lhsRegId)));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_shr_reg16_with_cl_ins(lhs_reg_id)));
 				} else if constexpr (std::is_same_v<T, int32_t> || std::is_same_v<T, uint32_t>) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitShrReg32WithClIns(lhsRegId)));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_shr_reg32_with_cl_ins(lhs_reg_id)));
 				} else if constexpr (std::is_same_v<T, int64_t> || std::is_same_v<T, uint64_t>) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitShrReg64WithClIns(lhsRegId)));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_shr_reg64_with_cl_ins(lhs_reg_id)));
 				} else {
 					static_assert(!std::is_same_v<T, T>, "Invalid operand type");
 				}
 			}
 
-			VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, lhsRegId, sizeof(T));
-			if (!outputVregState)
+			VirtualRegState *output_vreg_state = compile_context.def_virtual_reg(output_reg_index, lhs_reg_id, sizeof(T));
+			if (!output_vreg_state)
 				return OutOfMemoryError::alloc();
 
-			if (cxOff != INT32_MIN) {
-				SLAKE_RETURN_IF_EXCEPT(compileContext.popReg32(REG_RCX, cxOff));
+			if (cx_off != INT32_MIN) {
+				SLAKE_RETURN_IF_EXCEPT(compile_context.pop_reg32(REG_RCX, cx_off));
 			}
 		}
 	}
@@ -901,19 +901,19 @@ template <typename T>
 	return {};
 }
 
-InternalExceptionPointer slake::jit::x86_64::compileShrInstruction(
-	JITCompileContext &compileContext,
-	opti::ProgramAnalyzedInfo &analyzedInfo,
-	size_t offIns,
-	const Instruction &curIns) noexcept {
+InternalExceptionPointer slake::jit::x86_64::compile_shr_instruction(
+	JITCompileContext &compile_context,
+	opti::ProgramAnalyzedInfo &analyzed_info,
+	size_t off_ins,
+	const Instruction &cur_ins) noexcept {
 	InternalExceptionPointer exception;
-	uint32_t outputRegIndex = UINT32_MAX;
-	auto &outputRegInfo = analyzedInfo.analyzedRegInfo.at(outputRegIndex);
+	uint32_t output_reg_index = UINT32_MAX;
+	auto &output_reg_info = analyzed_info.analyzed_reg_info.at(output_reg_index);
 
-	Value lhs = curIns.operands[0], rhs = curIns.operands[1];
-	Value lhsExpectedValue(ValueType::Undefined), rhsExpectedValue(ValueType::Undefined);
+	Value lhs = cur_ins.operands[0], rhs = cur_ins.operands[1];
+	Value lhs_expected_value(ValueType::Undefined), rhs_expected_value(ValueType::Undefined);
 
-	switch (lhs.valueType) {
+	switch (lhs.value_type) {
 		case ValueType::I8:
 		case ValueType::I16:
 		case ValueType::I32:
@@ -922,17 +922,17 @@ InternalExceptionPointer slake::jit::x86_64::compileShrInstruction(
 		case ValueType::U16:
 		case ValueType::U32:
 		case ValueType::U64:
-			lhsExpectedValue = lhs;
+			lhs_expected_value = lhs;
 			break;
 		case ValueType::RegIndex:
-			lhsExpectedValue = analyzedInfo.analyzedRegInfo.at(lhs.getRegIndex()).expectedValue;
+			lhs_expected_value = analyzed_info.analyzed_reg_info.at(lhs.get_reg_index()).expected_value;
 			break;
 		default:
 			// Malformed function
 			std::terminate();
 	}
 
-	switch (rhs.valueType) {
+	switch (rhs.value_type) {
 		case ValueType::I8:
 		case ValueType::I16:
 		case ValueType::I32:
@@ -941,79 +941,79 @@ InternalExceptionPointer slake::jit::x86_64::compileShrInstruction(
 		case ValueType::U16:
 		case ValueType::U32:
 		case ValueType::U64:
-			lhsExpectedValue = rhs;
+			lhs_expected_value = rhs;
 			break;
 		case ValueType::RegIndex:
-			lhsExpectedValue = analyzedInfo.analyzedRegInfo.at(rhs.getRegIndex()).expectedValue;
+			lhs_expected_value = analyzed_info.analyzed_reg_info.at(rhs.get_reg_index()).expected_value;
 			break;
 		default:
 			// Malformed function
 			std::terminate();
 	}
 
-	switch (outputRegInfo.type.typeId) {
+	switch (output_reg_info.type.type_id) {
 		case TypeId::I8: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntShrInstruction<int8_t>(
-															compileContext,
-															curIns,
-															lhsExpectedValue,
-															rhsExpectedValue));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_int_shr_instruction<int8_t>(
+															compile_context,
+															cur_ins,
+															lhs_expected_value,
+															rhs_expected_value));
 			break;
 		}
 		case TypeId::I16: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntShrInstruction<int16_t>(
-															compileContext,
-															curIns,
-															lhsExpectedValue,
-															rhsExpectedValue));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_int_shr_instruction<int16_t>(
+															compile_context,
+															cur_ins,
+															lhs_expected_value,
+															rhs_expected_value));
 			break;
 		}
 		case TypeId::I32: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntShrInstruction<int32_t>(
-															compileContext,
-															curIns,
-															lhsExpectedValue,
-															rhsExpectedValue));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_int_shr_instruction<int32_t>(
+															compile_context,
+															cur_ins,
+															lhs_expected_value,
+															rhs_expected_value));
 			break;
 		}
 		case TypeId::I64: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntShrInstruction<int64_t>(
-															compileContext,
-															curIns,
-															lhsExpectedValue,
-															rhsExpectedValue));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_int_shr_instruction<int64_t>(
+															compile_context,
+															cur_ins,
+															lhs_expected_value,
+															rhs_expected_value));
 			break;
 		}
 		case TypeId::U8: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntShrInstruction<uint8_t>(
-															compileContext,
-															curIns,
-															lhsExpectedValue,
-															rhsExpectedValue));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_int_shr_instruction<uint8_t>(
+															compile_context,
+															cur_ins,
+															lhs_expected_value,
+															rhs_expected_value));
 			break;
 		}
 		case TypeId::U16: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntShrInstruction<uint16_t>(
-															compileContext,
-															curIns,
-															lhsExpectedValue,
-															rhsExpectedValue));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_int_shr_instruction<uint16_t>(
+															compile_context,
+															cur_ins,
+															lhs_expected_value,
+															rhs_expected_value));
 			break;
 		}
 		case TypeId::U32: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntShrInstruction<uint32_t>(
-															compileContext,
-															curIns,
-															lhsExpectedValue,
-															rhsExpectedValue));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_int_shr_instruction<uint32_t>(
+															compile_context,
+															cur_ins,
+															lhs_expected_value,
+															rhs_expected_value));
 			break;
 		}
 		case TypeId::U64: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntShrInstruction<uint64_t>(
-															compileContext,
-															curIns,
-															lhsExpectedValue,
-															rhsExpectedValue));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_int_shr_instruction<uint64_t>(
+															compile_context,
+															cur_ins,
+															lhs_expected_value,
+															rhs_expected_value));
 			break;
 		}
 		default:
@@ -1025,385 +1025,385 @@ InternalExceptionPointer slake::jit::x86_64::compileShrInstruction(
 }
 
 template <typename T>
-[[nodiscard]] InternalExceptionPointer compileIntSarInstruction(
-	JITCompileContext &compileContext,
-	const Instruction &curIns,
-	const Value &lhsExpectedValue,
-	const Value &rhsExpectedValue) noexcept {
+[[nodiscard]] InternalExceptionPointer compile_int_sar_instruction(
+	JITCompileContext &compile_context,
+	const Instruction &cur_ins,
+	const Value &lhs_expected_value,
+	const Value &rhs_expected_value) noexcept {
 	InternalExceptionPointer exception;
-	uint32_t outputRegIndex = curIns.output;
+	uint32_t output_reg_index = cur_ins.output;
 
-	if (rhsExpectedValue.valueType != ValueType::Undefined) {
-		uint32_t lhsRegIndex = curIns.operands[0].getRegIndex();
-		const RegisterId lhsRegId = compileContext.allocGpReg();
+	if (rhs_expected_value.value_type != ValueType::Undefined) {
+		uint32_t lhs_reg_index = cur_ins.operands[0].get_reg_index();
+		const RegisterId lhs_reg_id = compile_context.alloc_gp_reg();
 
-		uint32_t rhsData = curIns.operands[1].getU32();
+		uint32_t rhs_data = cur_ins.operands[1].get_u32();
 
-		if (compileContext.isRegInUse(lhsRegId)) {
+		if (compile_context.is_reg_in_use(lhs_reg_id)) {
 			int32_t off;
 			size_t size;
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(lhsRegId, off, size));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_reg(lhs_reg_id, off, size));
 		}
 
 		if constexpr (sizeof(T) == sizeof(uint8_t)) {
-			if (rhsData >= 8) {
+			if (rhs_data >= 8) {
 				uint8_t imm0 = 0;
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																emitMovImm8ToReg8Ins(
-																	lhsRegId,
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																emit_mov_imm8_to_reg8_ins(
+																	lhs_reg_id,
 																	(uint8_t *)&imm0)));
-				VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, lhsRegId, sizeof(T));
-				if (!outputVregState)
+				VirtualRegState *output_vreg_state = compile_context.def_virtual_reg(output_reg_index, lhs_reg_id, sizeof(T));
+				if (!output_vreg_state)
 					return OutOfMemoryError::alloc();
 			}
 		} else if constexpr (sizeof(T) == sizeof(uint16_t)) {
-			if (rhsData >= 16) {
+			if (rhs_data >= 16) {
 				uint16_t imm0 = 0;
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																emitMovImm16ToReg16Ins(
-																	lhsRegId,
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																emit_mov_imm16_to_reg16_ins(
+																	lhs_reg_id,
 																	(uint8_t *)&imm0)));
-				VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, lhsRegId, sizeof(T));
-				if (!outputVregState)
+				VirtualRegState *output_vreg_state = compile_context.def_virtual_reg(output_reg_index, lhs_reg_id, sizeof(T));
+				if (!output_vreg_state)
 					return OutOfMemoryError::alloc();
 			}
 		} else if constexpr (sizeof(T) == sizeof(uint32_t)) {
-			if (rhsData >= 32) {
+			if (rhs_data >= 32) {
 				uint32_t imm0 = 0;
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																emitMovImm32ToReg32Ins(
-																	lhsRegId,
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																emit_mov_imm32_to_reg32_ins(
+																	lhs_reg_id,
 																	(uint8_t *)&imm0)));
-				VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, lhsRegId, sizeof(T));
-				if (!outputVregState)
+				VirtualRegState *output_vreg_state = compile_context.def_virtual_reg(output_reg_index, lhs_reg_id, sizeof(T));
+				if (!output_vreg_state)
 					return OutOfMemoryError::alloc();
 			}
 		} else if constexpr (sizeof(T) == sizeof(uint64_t)) {
-			if (rhsData >= 64) {
+			if (rhs_data >= 64) {
 				uint64_t imm0 = 0;
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																emitMovImm64ToReg64Ins(
-																	lhsRegId,
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																emit_mov_imm64_to_reg64_ins(
+																	lhs_reg_id,
 																	(uint8_t *)&imm0)));
-				VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, lhsRegId, sizeof(T));
-				if (!outputVregState)
+				VirtualRegState *output_vreg_state = compile_context.def_virtual_reg(output_reg_index, lhs_reg_id, sizeof(T));
+				if (!output_vreg_state)
 					return OutOfMemoryError::alloc();
 			}
 		}
 
-		uint8_t narrowedRhsData = (uint8_t)rhsData;
+		uint8_t narrowed_rhs_data = (uint8_t)rhs_data;
 
-		VirtualRegState &lhsVregState = compileContext.virtualRegStates.at(lhsRegIndex);
-		if (lhsVregState.saveOffset != INT32_MIN) {
+		VirtualRegState &lhs_vreg_state = compile_context.virtual_reg_states.at(lhs_reg_index);
+		if (lhs_vreg_state.save_offset != INT32_MIN) {
 			if constexpr (sizeof(T) == sizeof(uint8_t)) {
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																emitMovMemToReg8Ins(
-																	lhsRegId,
-																	MemoryLocation{ REG_RBP, lhsVregState.saveOffset, REG_MAX, 0 })));
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																emit_mov_mem_to_reg8_ins(
+																	lhs_reg_id,
+																	MemoryLocation{ REG_RBP, lhs_vreg_state.save_offset, REG_MAX, 0 })));
 			} else if constexpr (sizeof(T) == sizeof(uint16_t)) {
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																emitMovMemToReg16Ins(
-																	lhsRegId,
-																	MemoryLocation{ REG_RBP, lhsVregState.saveOffset, REG_MAX, 0 })));
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																emit_mov_mem_to_reg16_ins(
+																	lhs_reg_id,
+																	MemoryLocation{ REG_RBP, lhs_vreg_state.save_offset, REG_MAX, 0 })));
 			} else if constexpr (sizeof(T) == sizeof(uint32_t)) {
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																emitMovMemToReg32Ins(
-																	lhsRegId,
-																	MemoryLocation{ REG_RBP, lhsVregState.saveOffset, REG_MAX, 0 })));
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																emit_mov_mem_to_reg32_ins(
+																	lhs_reg_id,
+																	MemoryLocation{ REG_RBP, lhs_vreg_state.save_offset, REG_MAX, 0 })));
 			} else if constexpr (sizeof(T) == sizeof(uint64_t)) {
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																emitMovMemToReg64Ins(
-																	lhsRegId,
-																	MemoryLocation{ REG_RBP, lhsVregState.saveOffset, REG_MAX, 0 })));
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																emit_mov_mem_to_reg64_ins(
+																	lhs_reg_id,
+																	MemoryLocation{ REG_RBP, lhs_vreg_state.save_offset, REG_MAX, 0 })));
 			} else {
 				static_assert(!std::is_same_v<T, T>, "Invalid operand size");
 			}
 		} else {
 			if constexpr (sizeof(T) == sizeof(uint8_t)) {
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																emitMovReg8ToReg8Ins(
-																	lhsRegId,
-																	lhsVregState.phyReg)));
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																emit_mov_reg8_to_reg8_ins(
+																	lhs_reg_id,
+																	lhs_vreg_state.phy_reg)));
 			} else if constexpr (sizeof(T) == sizeof(uint16_t)) {
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																emitMovReg16ToReg16Ins(
-																	lhsRegId,
-																	lhsVregState.phyReg)));
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																emit_mov_reg16_to_reg16_ins(
+																	lhs_reg_id,
+																	lhs_vreg_state.phy_reg)));
 			} else if constexpr (sizeof(T) == sizeof(uint32_t)) {
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																emitMovReg32ToReg32Ins(
-																	lhsRegId,
-																	lhsVregState.phyReg)));
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																emit_mov_reg32_to_reg32_ins(
+																	lhs_reg_id,
+																	lhs_vreg_state.phy_reg)));
 			} else if constexpr (sizeof(T) == sizeof(uint64_t)) {
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																emitMovReg64ToReg64Ins(
-																	lhsRegId,
-																	lhsVregState.phyReg)));
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																emit_mov_reg64_to_reg64_ins(
+																	lhs_reg_id,
+																	lhs_vreg_state.phy_reg)));
 			} else {
 				static_assert(!std::is_same_v<T, T>, "Invalid operand size");
 			}
 		}
 
-		VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, lhsRegId, sizeof(T));
-		if (!outputVregState)
+		VirtualRegState *output_vreg_state = compile_context.def_virtual_reg(output_reg_index, lhs_reg_id, sizeof(T));
+		if (!output_vreg_state)
 			return OutOfMemoryError::alloc();
 
 		if constexpr (std::is_same_v<T, int8_t> || std::is_same_v<T, uint8_t>) {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitSarReg8WithImm8Ins(lhsRegId, narrowedRhsData)));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(emit_sar_reg8_with_imm8_ins(lhs_reg_id, narrowed_rhs_data)));
 		} else if constexpr (std::is_same_v<T, int16_t> || std::is_same_v<T, uint16_t>) {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitSarReg16WithImm8Ins(lhsRegId, narrowedRhsData)));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(emit_sar_reg16_with_imm8_ins(lhs_reg_id, narrowed_rhs_data)));
 		} else if constexpr (std::is_same_v<T, int32_t> || std::is_same_v<T, uint32_t>) {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitSarReg32WithImm8Ins(lhsRegId, narrowedRhsData)));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(emit_sar_reg32_with_imm8_ins(lhs_reg_id, narrowed_rhs_data)));
 		} else if constexpr (std::is_same_v<T, int64_t> || std::is_same_v<T, uint64_t>) {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitSarReg64WithImm8Ins(lhsRegId, narrowedRhsData)));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(emit_sar_reg64_with_imm8_ins(lhs_reg_id, narrowed_rhs_data)));
 		} else {
 			static_assert(!std::is_same_v<T, T>, "Invalid operand type");
 		}
 	} else {
-		if (lhsExpectedValue.valueType != ValueType::Undefined) {
-			uint32_t rhsRegIndex = curIns.operands[1].getRegIndex();
-			const RegisterId rhsRegId = compileContext.allocGpReg();
+		if (lhs_expected_value.value_type != ValueType::Undefined) {
+			uint32_t rhs_reg_index = cur_ins.operands[1].get_reg_index();
+			const RegisterId rhs_reg_id = compile_context.alloc_gp_reg();
 
-			uint32_t lhsData = curIns.operands[1].getU32();
+			uint32_t lhs_data = cur_ins.operands[1].get_u32();
 
-			if (compileContext.isRegInUse(rhsRegId)) {
+			if (compile_context.is_reg_in_use(rhs_reg_id)) {
 				int32_t off;
 				size_t size;
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(rhsRegId, off, size));
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_reg(rhs_reg_id, off, size));
 			}
 
 			if constexpr (sizeof(T) == sizeof(uint8_t)) {
-				if (lhsData >= 8) {
+				if (lhs_data >= 8) {
 					uint8_t imm0 = 0;
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovImm8ToReg8Ins(
-																		rhsRegId,
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_imm8_to_reg8_ins(
+																		rhs_reg_id,
 																		(uint8_t *)&imm0)));
-					VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, rhsRegId, sizeof(T));
-					if (!outputVregState)
+					VirtualRegState *output_vreg_state = compile_context.def_virtual_reg(output_reg_index, rhs_reg_id, sizeof(T));
+					if (!output_vreg_state)
 						return OutOfMemoryError::alloc();
 				}
 			} else if constexpr (sizeof(T) == sizeof(uint16_t)) {
-				if (lhsData >= 16) {
+				if (lhs_data >= 16) {
 					uint16_t imm0 = 0;
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovImm16ToReg16Ins(
-																		rhsRegId,
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_imm16_to_reg16_ins(
+																		rhs_reg_id,
 																		(uint8_t *)&imm0)));
-					VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, rhsRegId, sizeof(T));
-					if (!outputVregState)
+					VirtualRegState *output_vreg_state = compile_context.def_virtual_reg(output_reg_index, rhs_reg_id, sizeof(T));
+					if (!output_vreg_state)
 						return OutOfMemoryError::alloc();
 				}
 			} else if constexpr (sizeof(T) == sizeof(uint32_t)) {
-				if (lhsData >= 32) {
+				if (lhs_data >= 32) {
 					uint32_t imm0 = 0;
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovImm32ToReg32Ins(
-																		rhsRegId,
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_imm32_to_reg32_ins(
+																		rhs_reg_id,
 																		(uint8_t *)&imm0)));
-					VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, rhsRegId, sizeof(T));
-					if (!outputVregState)
+					VirtualRegState *output_vreg_state = compile_context.def_virtual_reg(output_reg_index, rhs_reg_id, sizeof(T));
+					if (!output_vreg_state)
 						return OutOfMemoryError::alloc();
 				}
 			} else if constexpr (sizeof(T) == sizeof(uint64_t)) {
-				if (lhsData >= 64) {
+				if (lhs_data >= 64) {
 					uint64_t imm0 = 0;
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovImm64ToReg64Ins(
-																		rhsRegId,
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_imm64_to_reg64_ins(
+																		rhs_reg_id,
 																		(uint8_t *)&imm0)));
-					VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, rhsRegId, sizeof(T));
-					if (!outputVregState)
+					VirtualRegState *output_vreg_state = compile_context.def_virtual_reg(output_reg_index, rhs_reg_id, sizeof(T));
+					if (!output_vreg_state)
 						return OutOfMemoryError::alloc();
 				}
 			}
 
-			uint8_t narrowedLhsData = (uint8_t)lhsData;
+			uint8_t narrowed_lhs_data = (uint8_t)lhs_data;
 
-			VirtualRegState &rhsVregState = compileContext.virtualRegStates.at(rhsRegIndex);
-			if (rhsVregState.saveOffset != INT32_MIN) {
+			VirtualRegState &rhs_vreg_state = compile_context.virtual_reg_states.at(rhs_reg_index);
+			if (rhs_vreg_state.save_offset != INT32_MIN) {
 				if constexpr (sizeof(T) == sizeof(uint8_t)) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovMemToReg8Ins(
-																		rhsRegId,
-																		MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 })));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_mem_to_reg8_ins(
+																		rhs_reg_id,
+																		MemoryLocation{ REG_RBP, rhs_vreg_state.save_offset, REG_MAX, 0 })));
 				} else if constexpr (sizeof(T) == sizeof(uint16_t)) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovMemToReg16Ins(
-																		rhsRegId,
-																		MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 })));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_mem_to_reg16_ins(
+																		rhs_reg_id,
+																		MemoryLocation{ REG_RBP, rhs_vreg_state.save_offset, REG_MAX, 0 })));
 				} else if constexpr (sizeof(T) == sizeof(uint32_t)) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovMemToReg32Ins(
-																		rhsRegId,
-																		MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 })));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_mem_to_reg32_ins(
+																		rhs_reg_id,
+																		MemoryLocation{ REG_RBP, rhs_vreg_state.save_offset, REG_MAX, 0 })));
 				} else if constexpr (sizeof(T) == sizeof(uint64_t)) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovMemToReg64Ins(
-																		rhsRegId,
-																		MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 })));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_mem_to_reg64_ins(
+																		rhs_reg_id,
+																		MemoryLocation{ REG_RBP, rhs_vreg_state.save_offset, REG_MAX, 0 })));
 				} else {
 					static_assert(!std::is_same_v<T, T>, "Invalid operand size");
 				}
 			} else {
 				if constexpr (sizeof(T) == sizeof(uint8_t)) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovReg8ToReg8Ins(
-																		rhsRegId,
-																		rhsVregState.phyReg)));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_reg8_to_reg8_ins(
+																		rhs_reg_id,
+																		rhs_vreg_state.phy_reg)));
 				} else if constexpr (sizeof(T) == sizeof(uint16_t)) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovReg16ToReg16Ins(
-																		rhsRegId,
-																		rhsVregState.phyReg)));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_reg16_to_reg16_ins(
+																		rhs_reg_id,
+																		rhs_vreg_state.phy_reg)));
 				} else if constexpr (sizeof(T) == sizeof(uint32_t)) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovReg32ToReg32Ins(
-																		rhsRegId,
-																		rhsVregState.phyReg)));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_reg32_to_reg32_ins(
+																		rhs_reg_id,
+																		rhs_vreg_state.phy_reg)));
 				} else if constexpr (sizeof(T) == sizeof(uint64_t)) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovReg64ToReg64Ins(
-																		rhsRegId,
-																		rhsVregState.phyReg)));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_reg64_to_reg64_ins(
+																		rhs_reg_id,
+																		rhs_vreg_state.phy_reg)));
 				} else {
 					static_assert(!std::is_same_v<T, T>, "Invalid operand size");
 				}
 			}
 
-			VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, rhsRegId, sizeof(T));
-			if (!outputVregState)
+			VirtualRegState *output_vreg_state = compile_context.def_virtual_reg(output_reg_index, rhs_reg_id, sizeof(T));
+			if (!output_vreg_state)
 				return OutOfMemoryError::alloc();
 
 			if constexpr (std::is_same_v<T, int8_t> || std::is_same_v<T, uint8_t>) {
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitSarReg8WithImm8Ins(rhsRegId, narrowedLhsData)));
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(emit_sar_reg8_with_imm8_ins(rhs_reg_id, narrowed_lhs_data)));
 			} else if constexpr (std::is_same_v<T, int16_t> || std::is_same_v<T, uint16_t>) {
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitSarReg16WithImm8Ins(rhsRegId, narrowedLhsData)));
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(emit_sar_reg16_with_imm8_ins(rhs_reg_id, narrowed_lhs_data)));
 			} else if constexpr (std::is_same_v<T, int32_t> || std::is_same_v<T, uint32_t>) {
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitSarReg32WithImm8Ins(rhsRegId, narrowedLhsData)));
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(emit_sar_reg32_with_imm8_ins(rhs_reg_id, narrowed_lhs_data)));
 			} else if constexpr (std::is_same_v<T, int64_t> || std::is_same_v<T, uint64_t>) {
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitSarReg64WithImm8Ins(rhsRegId, narrowedLhsData)));
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(emit_sar_reg64_with_imm8_ins(rhs_reg_id, narrowed_lhs_data)));
 			} else {
 				static_assert(!std::is_same_v<T, T>, "Invalid operand type");
 			}
 		} else {
-			uint32_t rhsRegIndex = curIns.operands[1].getRegIndex();
+			uint32_t rhs_reg_index = cur_ins.operands[1].get_reg_index();
 
-			const RegisterId lhsRegId = compileContext.allocGpReg();
+			const RegisterId lhs_reg_id = compile_context.alloc_gp_reg();
 
-			if (compileContext.isRegInUse(lhsRegId)) {
+			if (compile_context.is_reg_in_use(lhs_reg_id)) {
 				int32_t off;
 				size_t size;
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(lhsRegId, off, size));
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_reg(lhs_reg_id, off, size));
 			}
 
-			VirtualRegState &lhsVregState = compileContext.virtualRegStates.at(lhsRegId);
-			if (lhsVregState.saveOffset != INT32_MIN) {
+			VirtualRegState &lhs_vreg_state = compile_context.virtual_reg_states.at(lhs_reg_id);
+			if (lhs_vreg_state.save_offset != INT32_MIN) {
 				if constexpr (sizeof(T) == sizeof(uint8_t)) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovMemToReg8Ins(
-																		lhsRegId,
-																		MemoryLocation{ REG_RBP, lhsVregState.saveOffset, REG_MAX, 0 })));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_mem_to_reg8_ins(
+																		lhs_reg_id,
+																		MemoryLocation{ REG_RBP, lhs_vreg_state.save_offset, REG_MAX, 0 })));
 				} else if constexpr (sizeof(T) == sizeof(uint16_t)) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovMemToReg16Ins(
-																		lhsRegId,
-																		MemoryLocation{ REG_RBP, lhsVregState.saveOffset, REG_MAX, 0 })));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_mem_to_reg16_ins(
+																		lhs_reg_id,
+																		MemoryLocation{ REG_RBP, lhs_vreg_state.save_offset, REG_MAX, 0 })));
 				} else if constexpr (sizeof(T) == sizeof(uint32_t)) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovMemToReg32Ins(
-																		lhsRegId,
-																		MemoryLocation{ REG_RBP, lhsVregState.saveOffset, REG_MAX, 0 })));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_mem_to_reg32_ins(
+																		lhs_reg_id,
+																		MemoryLocation{ REG_RBP, lhs_vreg_state.save_offset, REG_MAX, 0 })));
 				} else if constexpr (sizeof(T) == sizeof(uint64_t)) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovMemToReg64Ins(
-																		lhsRegId,
-																		MemoryLocation{ REG_RBP, lhsVregState.saveOffset, REG_MAX, 0 })));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_mem_to_reg64_ins(
+																		lhs_reg_id,
+																		MemoryLocation{ REG_RBP, lhs_vreg_state.save_offset, REG_MAX, 0 })));
 				} else {
 					static_assert(!std::is_same_v<T, T>, "Invalid operand size");
 				}
 			} else {
 				if constexpr (sizeof(T) == sizeof(uint8_t)) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovReg8ToReg8Ins(
-																		lhsRegId,
-																		lhsVregState.phyReg)));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_reg8_to_reg8_ins(
+																		lhs_reg_id,
+																		lhs_vreg_state.phy_reg)));
 				} else if constexpr (sizeof(T) == sizeof(uint16_t)) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovReg16ToReg16Ins(
-																		lhsRegId,
-																		lhsVregState.phyReg)));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_reg16_to_reg16_ins(
+																		lhs_reg_id,
+																		lhs_vreg_state.phy_reg)));
 				} else if constexpr (sizeof(T) == sizeof(uint32_t)) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovReg32ToReg32Ins(
-																		lhsRegId,
-																		lhsVregState.phyReg)));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_reg32_to_reg32_ins(
+																		lhs_reg_id,
+																		lhs_vreg_state.phy_reg)));
 				} else if constexpr (sizeof(T) == sizeof(uint64_t)) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovReg64ToReg64Ins(
-																		lhsRegId,
-																		lhsVregState.phyReg)));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_reg64_to_reg64_ins(
+																		lhs_reg_id,
+																		lhs_vreg_state.phy_reg)));
 				} else {
 					static_assert(!std::is_same_v<T, T>, "Invalid operand size");
 				}
 			}
 
-			VirtualRegState &rhsVregState = compileContext.virtualRegStates.at(rhsRegIndex);
-			int32_t cxOff = INT32_MIN;
-			size_t cxSize;
+			VirtualRegState &rhs_vreg_state = compile_context.virtual_reg_states.at(rhs_reg_index);
+			int32_t cx_off = INT32_MIN;
+			size_t cx_size;
 
 			// TODO: Handle RCX >= 8, 16, 32, 64.
-			if (rhsVregState.saveOffset != INT32_MIN) {
-				if (compileContext.isRegInUse(REG_RCX)) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg32(REG_RCX, cxOff, cxSize));
+			if (rhs_vreg_state.save_offset != INT32_MIN) {
+				if (compile_context.is_reg_in_use(REG_RCX)) {
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_reg32(REG_RCX, cx_off, cx_size));
 				}
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																emitMovMemToReg32Ins(REG_RCX, MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 })));
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																emit_mov_mem_to_reg32_ins(REG_RCX, MemoryLocation{ REG_RBP, rhs_vreg_state.save_offset, REG_MAX, 0 })));
 
 				if constexpr (std::is_same_v<T, int8_t> || std::is_same_v<T, uint8_t>) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitSarReg8WithClIns(lhsRegId)));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_sar_reg8_with_cl_ins(lhs_reg_id)));
 				} else if constexpr (std::is_same_v<T, int16_t> || std::is_same_v<T, uint16_t>) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitSarReg16WithClIns(lhsRegId)));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_sar_reg16_with_cl_ins(lhs_reg_id)));
 				} else if constexpr (std::is_same_v<T, int32_t> || std::is_same_v<T, uint32_t>) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitSarReg32WithClIns(lhsRegId)));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_sar_reg32_with_cl_ins(lhs_reg_id)));
 				} else if constexpr (std::is_same_v<T, int64_t> || std::is_same_v<T, uint64_t>) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitSarReg64WithClIns(lhsRegId)));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_sar_reg64_with_cl_ins(lhs_reg_id)));
 				} else {
 					static_assert(!std::is_same_v<T, T>, "Invalid operand type");
 				}
 			} else {
-				if (rhsVregState.phyReg != REG_RCX && compileContext.isRegInUse(REG_RCX)) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg8(REG_RCX, cxOff, cxSize));
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovReg32ToReg32Ins(REG_RCX, rhsVregState.phyReg)));
+				if (rhs_vreg_state.phy_reg != REG_RCX && compile_context.is_reg_in_use(REG_RCX)) {
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_reg8(REG_RCX, cx_off, cx_size));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_mov_reg32_to_reg32_ins(REG_RCX, rhs_vreg_state.phy_reg)));
 				}
 				if constexpr (std::is_same_v<T, int8_t> || std::is_same_v<T, uint8_t>) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitSarReg8WithClIns(lhsRegId)));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_sar_reg8_with_cl_ins(lhs_reg_id)));
 				} else if constexpr (std::is_same_v<T, int16_t> || std::is_same_v<T, uint16_t>) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitSarReg16WithClIns(lhsRegId)));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_sar_reg16_with_cl_ins(lhs_reg_id)));
 				} else if constexpr (std::is_same_v<T, int32_t> || std::is_same_v<T, uint32_t>) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitSarReg32WithClIns(lhsRegId)));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_sar_reg32_with_cl_ins(lhs_reg_id)));
 				} else if constexpr (std::is_same_v<T, int64_t> || std::is_same_v<T, uint64_t>) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitSarReg64WithClIns(lhsRegId)));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_context.push_ins(
+																	emit_sar_reg64_with_cl_ins(lhs_reg_id)));
 				} else {
 					static_assert(!std::is_same_v<T, T>, "Invalid operand type");
 				}
 			}
 
-			VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, lhsRegId, sizeof(T));
-			if (!outputVregState)
+			VirtualRegState *output_vreg_state = compile_context.def_virtual_reg(output_reg_index, lhs_reg_id, sizeof(T));
+			if (!output_vreg_state)
 				return OutOfMemoryError::alloc();
 
-			if (cxOff != INT32_MIN) {
-				SLAKE_RETURN_IF_EXCEPT(compileContext.popReg32(REG_RCX, cxOff));
+			if (cx_off != INT32_MIN) {
+				SLAKE_RETURN_IF_EXCEPT(compile_context.pop_reg32(REG_RCX, cx_off));
 			}
 		}
 	}
@@ -1411,19 +1411,19 @@ template <typename T>
 	return {};
 }
 
-InternalExceptionPointer slake::jit::x86_64::compileSarInstruction(
-	JITCompileContext &compileContext,
-	opti::ProgramAnalyzedInfo &analyzedInfo,
-	size_t offIns,
-	const Instruction &curIns) noexcept {
+InternalExceptionPointer slake::jit::x86_64::compile_sar_instruction(
+	JITCompileContext &compile_context,
+	opti::ProgramAnalyzedInfo &analyzed_info,
+	size_t off_ins,
+	const Instruction &cur_ins) noexcept {
 	InternalExceptionPointer exception;
-	uint32_t outputRegIndex = UINT32_MAX;
-	auto &outputRegInfo = analyzedInfo.analyzedRegInfo.at(outputRegIndex);
+	uint32_t output_reg_index = UINT32_MAX;
+	auto &output_reg_info = analyzed_info.analyzed_reg_info.at(output_reg_index);
 
-	Value lhs = curIns.operands[0], rhs = curIns.operands[1];
-	Value lhsExpectedValue(ValueType::Undefined), rhsExpectedValue(ValueType::Undefined);
+	Value lhs = cur_ins.operands[0], rhs = cur_ins.operands[1];
+	Value lhs_expected_value(ValueType::Undefined), rhs_expected_value(ValueType::Undefined);
 
-	switch (lhs.valueType) {
+	switch (lhs.value_type) {
 		case ValueType::I8:
 		case ValueType::I16:
 		case ValueType::I32:
@@ -1432,17 +1432,17 @@ InternalExceptionPointer slake::jit::x86_64::compileSarInstruction(
 		case ValueType::U16:
 		case ValueType::U32:
 		case ValueType::U64:
-			lhsExpectedValue = lhs;
+			lhs_expected_value = lhs;
 			break;
 		case ValueType::RegIndex:
-			lhsExpectedValue = analyzedInfo.analyzedRegInfo.at(lhs.getRegIndex()).expectedValue;
+			lhs_expected_value = analyzed_info.analyzed_reg_info.at(lhs.get_reg_index()).expected_value;
 			break;
 		default:
 			// Malformed function
 			std::terminate();
 	}
 
-	switch (rhs.valueType) {
+	switch (rhs.value_type) {
 		case ValueType::I8:
 		case ValueType::I16:
 		case ValueType::I32:
@@ -1451,79 +1451,79 @@ InternalExceptionPointer slake::jit::x86_64::compileSarInstruction(
 		case ValueType::U16:
 		case ValueType::U32:
 		case ValueType::U64:
-			lhsExpectedValue = rhs;
+			lhs_expected_value = rhs;
 			break;
 		case ValueType::RegIndex:
-			lhsExpectedValue = analyzedInfo.analyzedRegInfo.at(rhs.getRegIndex()).expectedValue;
+			lhs_expected_value = analyzed_info.analyzed_reg_info.at(rhs.get_reg_index()).expected_value;
 			break;
 		default:
 			// Malformed function
 			std::terminate();
 	}
 
-	switch (outputRegInfo.type.typeId) {
+	switch (output_reg_info.type.type_id) {
 		case TypeId::I8: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntSarInstruction<int8_t>(
-															compileContext,
-															curIns,
-															lhsExpectedValue,
-															rhsExpectedValue));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_int_sar_instruction<int8_t>(
+															compile_context,
+															cur_ins,
+															lhs_expected_value,
+															rhs_expected_value));
 			break;
 		}
 		case TypeId::I16: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntSarInstruction<int16_t>(
-															compileContext,
-															curIns,
-															lhsExpectedValue,
-															rhsExpectedValue));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_int_sar_instruction<int16_t>(
+															compile_context,
+															cur_ins,
+															lhs_expected_value,
+															rhs_expected_value));
 			break;
 		}
 		case TypeId::I32: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntSarInstruction<int32_t>(
-															compileContext,
-															curIns,
-															lhsExpectedValue,
-															rhsExpectedValue));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_int_sar_instruction<int32_t>(
+															compile_context,
+															cur_ins,
+															lhs_expected_value,
+															rhs_expected_value));
 			break;
 		}
 		case TypeId::I64: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntSarInstruction<int64_t>(
-															compileContext,
-															curIns,
-															lhsExpectedValue,
-															rhsExpectedValue));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_int_sar_instruction<int64_t>(
+															compile_context,
+															cur_ins,
+															lhs_expected_value,
+															rhs_expected_value));
 			break;
 		}
 		case TypeId::U8: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntSarInstruction<uint8_t>(
-															compileContext,
-															curIns,
-															lhsExpectedValue,
-															rhsExpectedValue));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_int_sar_instruction<uint8_t>(
+															compile_context,
+															cur_ins,
+															lhs_expected_value,
+															rhs_expected_value));
 			break;
 		}
 		case TypeId::U16: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntSarInstruction<uint16_t>(
-															compileContext,
-															curIns,
-															lhsExpectedValue,
-															rhsExpectedValue));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_int_sar_instruction<uint16_t>(
+															compile_context,
+															cur_ins,
+															lhs_expected_value,
+															rhs_expected_value));
 			break;
 		}
 		case TypeId::U32: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntSarInstruction<uint32_t>(
-															compileContext,
-															curIns,
-															lhsExpectedValue,
-															rhsExpectedValue));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_int_sar_instruction<uint32_t>(
+															compile_context,
+															cur_ins,
+															lhs_expected_value,
+															rhs_expected_value));
 			break;
 		}
 		case TypeId::U64: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntSarInstruction<uint64_t>(
-															compileContext,
-															curIns,
-															lhsExpectedValue,
-															rhsExpectedValue));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compile_int_sar_instruction<uint64_t>(
+															compile_context,
+															cur_ins,
+															lhs_expected_value,
+															rhs_expected_value));
 			break;
 		}
 		default:

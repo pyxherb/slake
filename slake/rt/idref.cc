@@ -2,86 +2,86 @@
 
 using namespace slake;
 
-SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
+SLAKE_API InternalExceptionPointer Runtime::resolve_id_ref(
 	IdRefObject *ref,
-	Reference &objectRefOut,
-	Object *scopeObject) {
+	Reference &object_ref_out,
+	Object *scope_object) {
 	assert(ref);
 
-	Object *curObject = scopeObject;
+	Object *cur_object = scope_object;
 
-	if ((!curObject))
-		if (!(curObject = _rootObject))
+	if ((!cur_object))
+		if (!(cur_object = _root_object))
 			std::terminate();
 
 	for (size_t i = 0; i < ref->entries.size(); ++i) {
-		auto &curName = ref->entries.at(i);
+		auto &cur_name = ref->entries.at(i);
 
-		if (!curObject)
+		if (!cur_object)
 			goto fail;
 
-		objectRefOut = curObject->getMember(curName.name);
+		object_ref_out = cur_object->get_member(cur_name.name);
 
-		if (!objectRefOut) {
+		if (!object_ref_out) {
 			goto fail;
 		}
 
-		if (objectRefOut.kind == ReferenceKind::ObjectRef) {
+		if (object_ref_out.kind == ReferenceKind::ObjectRef) {
 			// TODO: Check if the instance object is a member object.
-			curObject = (MemberObject *)objectRefOut.asObject;
+			cur_object = (MemberObject *)object_ref_out.as_object;
 
-			switch (curObject->getObjectKind()) {
+			switch (cur_object->get_object_kind()) {
 				case ObjectKind::Class:
 				case ObjectKind::Interface:
 				case ObjectKind::Fn:
 				case ObjectKind::ScopedEnum:
 				case ObjectKind::UnionEnum:
-					if (curName.genericArgs.size()) {
-						peff::NullAlloc nullAlloc;
-						GenericInstantiationContext genericInstantiationContext(&nullAlloc, getFixedAlloc());
+					if (cur_name.generic_args.size()) {
+						peff::NullAlloc null_alloc;
+						GenericInstantiationContext generic_instantiation_context(&null_alloc, get_fixed_alloc());
 
-						genericInstantiationContext.genericArgs = &curName.genericArgs;
+						generic_instantiation_context.generic_args = &cur_name.generic_args;
 						MemberObject *m;
-						SLAKE_RETURN_IF_EXCEPT(instantiateGenericObject((MemberObject *)curObject, m, &genericInstantiationContext));
-						curObject = m;
-						objectRefOut = Reference(curObject);
+						SLAKE_RETURN_IF_EXCEPT(instantiate_generic_object((MemberObject *)cur_object, m, &generic_instantiation_context));
+						cur_object = m;
+						object_ref_out = Reference(cur_object);
 					}
 					break;
 			}
 		} else {
 			if (i + 1 != ref->entries.size()) {
-				objectRefOut = ReferenceKind::Invalid;
+				object_ref_out = ReferenceKind::Invalid;
 				return {};
 			}
 		}
 	}
 
-	if (ref->paramTypes.hasValue() || ref->hasVarArgs) {
-		switch (curObject->getObjectKind()) {
+	if (ref->param_types.has_value() || ref->has_var_args) {
+		switch (cur_object->get_object_kind()) {
 			case ObjectKind::Fn: {
-				FnObject *fnObject = ((FnObject *)curObject);
+				FnObject *fn_object = ((FnObject *)cur_object);
 
-				const ParamTypeList &paramTypes = *ref->paramTypes;
+				const ParamTypeList &param_types = *ref->param_types;
 
-				auto it = fnObject->overloadings.find(FnSignature{ paramTypes, ref->hasVarArgs, ref->entries.back().genericArgs.size(), ref->overridenType });
+				auto it = fn_object->overloadings.find(FnSignature{ param_types, ref->has_var_args, ref->entries.back().generic_args.size(), ref->overriden_type });
 
-				if (it != fnObject->overloadings.end())
-					objectRefOut = Reference(it.value());
+				if (it != fn_object->overloadings.end())
+					object_ref_out = Reference(it.value());
 				else {
-					it = fnObject->overloadings.find(FnSignature{ paramTypes, ref->hasVarArgs, ref->entries.back().genericArgs.size(), TypeId::Void });
+					it = fn_object->overloadings.find(FnSignature{ param_types, ref->has_var_args, ref->entries.back().generic_args.size(), TypeId::Void });
 
-					if (it == fnObject->overloadings.end()) {
-						objectRefOut = ReferenceKind::Invalid;
+					if (it == fn_object->overloadings.end()) {
+						object_ref_out = ReferenceKind::Invalid;
 						return {};
 					}
 				}
 
-				objectRefOut = Reference(it.value());
+				object_ref_out = Reference(it.value());
 
 				break;
 			}
 			default:
-				objectRefOut = ReferenceKind::Invalid;
+				object_ref_out = ReferenceKind::Invalid;
 				return {};
 		}
 	}
@@ -89,50 +89,50 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 	return {};
 
 fail:;
-	objectRefOut = ReferenceKind::Invalid;
+	object_ref_out = ReferenceKind::Invalid;
 	return {};
 }
 
-SLAKE_API bool Runtime::getFullRef(peff::Alloc *allocator, const MemberObject *v, peff::DynArray<IdRefEntry> &idRefOut) const {
-	while (v != _rootObject) {
+SLAKE_API bool Runtime::get_full_ref(peff::Alloc *allocator, const MemberObject *v, peff::DynArray<IdRefEntry> &id_ref_out) const {
+	while (v != _root_object) {
 		if (!v) {
 			peff::String name(allocator);
 
 			if (!name.build("(Orphaned)"))
 				return false;
 
-			if (!idRefOut.pushFront(IdRefEntry(std::move(name), { allocator }))) {
+			if (!id_ref_out.push_front(IdRefEntry(std::move(name), { allocator }))) {
 				return false;
 			}
 
 			return true;
 		}
 
-		switch (v->getObjectKind()) {
+		switch (v->get_object_kind()) {
 			case ObjectKind::Instance:
 				v = (const MemberObject *)((InstanceObject *)v)->_class;
 				break;
 		}
 
-		std::string_view name = v->getName();
-		peff::String copiedName(allocator);
-		if (!copiedName.build(name)) {
+		std::string_view name = v->get_name();
+		peff::String copied_name(allocator);
+		if (!copied_name.build(name)) {
 			return false;
 		}
-		peff::DynArray<Value> copiedGenericArgs(allocator);
-		if (auto p = v->getGenericArgs(); p) {
-			if (!copiedGenericArgs.resize(p->size()))
+		peff::DynArray<Value> copied_generic_args(allocator);
+		if (auto p = v->get_generic_args(); p) {
+			if (!copied_generic_args.resize(p->size()))
 				return false;
-			for (size_t i = 0; i < copiedGenericArgs.size(); ++i) {
-				copiedGenericArgs.at(i) = p->at(i);
+			for (size_t i = 0; i < copied_generic_args.size(); ++i) {
+				copied_generic_args.at(i) = p->at(i);
 			}
 		}
 
-		if (!idRefOut.pushFront(IdRefEntry(std::move(copiedName), std::move(copiedGenericArgs)))) {
+		if (!id_ref_out.push_front(IdRefEntry(std::move(copied_name), std::move(copied_generic_args)))) {
 			return false;
 		}
 
-		v = (MemberObject *)v->getParent();
+		v = (MemberObject *)v->get_parent();
 	};
 	return true;
 }

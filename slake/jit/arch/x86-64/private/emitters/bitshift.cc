@@ -4,146 +4,146 @@ using namespace slake;
 using namespace slake::jit;
 using namespace slake::jit::x86_64;
 
-SLAKE_API DiscreteInstruction slake::jit::x86_64::emitShlReg8WithImm8Ins(RegisterId registerId, uint8_t times) {
+SLAKE_API DiscreteInstruction slake::jit::x86_64::emit_shl_reg8_with_imm8_ins(RegisterId register_id, uint8_t times) {
 	if (times == 1) {
-		return emitInsWithReg8WithMinorOpcode(0xd0, 4, registerId);
+		return emit_ins_with_reg8_with_minor_opcode(0xd0, 4, register_id);
 	} else {
-		return emitInsWithReg8WithMinorOpcode(0xc0, 4, registerId);
+		return emit_ins_with_reg8_with_minor_opcode(0xc0, 4, register_id);
 	}
 }
 
-SLAKE_API DiscreteInstruction slake::jit::x86_64::emitShlReg16WithImm8Ins(RegisterId registerId, uint8_t times) {
+SLAKE_API DiscreteInstruction slake::jit::x86_64::emit_shl_reg16_with_imm8_ins(RegisterId register_id, uint8_t times) {
 	if (times == 1) {
-		return emitInsWithReg16WithMinorOpcode(0xd1, 4, registerId);
+		return emit_ins_with_reg16_with_minor_opcode(0xd1, 4, register_id);
 	} else {
-		return emitInsWithReg16WithMinorOpcode(0xc1, 4, registerId);
+		return emit_ins_with_reg16_with_minor_opcode(0xc1, 4, register_id);
 	}
 }
 
-SLAKE_API DiscreteInstruction slake::jit::x86_64::emitShlReg32WithImm8Ins(RegisterId registerId, uint8_t times) {
+SLAKE_API DiscreteInstruction slake::jit::x86_64::emit_shl_reg32_with_imm8_ins(RegisterId register_id, uint8_t times) {
 	if (times == 1) {
-		return emitInsWithReg32WithMinorOpcode(0xd1, 4, registerId);
+		return emit_ins_with_reg32_with_minor_opcode(0xd1, 4, register_id);
 	} else {
-		return emitInsWithReg32WithMinorOpcode(0xc1, 4, registerId);
+		return emit_ins_with_reg32_with_minor_opcode(0xc1, 4, register_id);
 	}
 }
 
-SLAKE_API DiscreteInstruction slake::jit::x86_64::emitShlReg64WithImm8Ins(RegisterId registerId, uint8_t times) {
+SLAKE_API DiscreteInstruction slake::jit::x86_64::emit_shl_reg64_with_imm8_ins(RegisterId register_id, uint8_t times) {
 	if (times == 1) {
-		return emitInsWithReg64WithMinorOpcode(0xd1, 4, registerId);
+		return emit_ins_with_reg64_with_minor_opcode(0xd1, 4, register_id);
 	} else {
-		return emitInsWithReg64WithMinorOpcode(0xc1, 4, registerId);
+		return emit_ins_with_reg64_with_minor_opcode(0xc1, 4, register_id);
 	}
 }
 
-SLAKE_API DiscreteInstruction slake::jit::x86_64::emitShlReg8WithClIns(RegisterId registerId) {
-	return emitInsWithReg8WithMinorOpcode(0xd2, 4, registerId);
+SLAKE_API DiscreteInstruction slake::jit::x86_64::emit_shl_reg8_with_cl_ins(RegisterId register_id) {
+	return emit_ins_with_reg8_with_minor_opcode(0xd2, 4, register_id);
 }
 
-SLAKE_API DiscreteInstruction slake::jit::x86_64::emitShlReg16WithClIns(RegisterId registerId) {
-	return emitInsWithReg16WithMinorOpcode(0xd3, 4, registerId);
+SLAKE_API DiscreteInstruction slake::jit::x86_64::emit_shl_reg16_with_cl_ins(RegisterId register_id) {
+	return emit_ins_with_reg16_with_minor_opcode(0xd3, 4, register_id);
 }
 
-SLAKE_API DiscreteInstruction slake::jit::x86_64::emitShlReg32WithClIns(RegisterId registerId) {
-	return emitInsWithReg32WithMinorOpcode(0xd3, 4, registerId);
+SLAKE_API DiscreteInstruction slake::jit::x86_64::emit_shl_reg32_with_cl_ins(RegisterId register_id) {
+	return emit_ins_with_reg32_with_minor_opcode(0xd3, 4, register_id);
 }
 
-SLAKE_API DiscreteInstruction slake::jit::x86_64::emitShlReg64WithClIns(RegisterId registerId) {
-	return emitInsWithReg64WithMinorOpcode(0xd3, 4, registerId);
+SLAKE_API DiscreteInstruction slake::jit::x86_64::emit_shl_reg64_with_cl_ins(RegisterId register_id) {
+	return emit_ins_with_reg64_with_minor_opcode(0xd3, 4, register_id);
 }
 
-SLAKE_API DiscreteInstruction slake::jit::x86_64::emitShrReg8WithImm8Ins(RegisterId registerId, uint8_t times) {
+SLAKE_API DiscreteInstruction slake::jit::x86_64::emit_shr_reg8_with_imm8_ins(RegisterId register_id, uint8_t times) {
 	if (times == 1) {
-		return emitInsWithReg8WithMinorOpcode(0xd0, 5, registerId);
+		return emit_ins_with_reg8_with_minor_opcode(0xd0, 5, register_id);
 	} else {
-		return emitInsWithReg8WithMinorOpcode(0xc0, 5, registerId);
+		return emit_ins_with_reg8_with_minor_opcode(0xc0, 5, register_id);
 	}
 }
 
-SLAKE_API DiscreteInstruction slake::jit::x86_64::emitShrReg16WithImm8Ins(RegisterId registerId, uint8_t times) {
+SLAKE_API DiscreteInstruction slake::jit::x86_64::emit_shr_reg16_with_imm8_ins(RegisterId register_id, uint8_t times) {
 	if (times == 1) {
-		return emitInsWithReg16WithMinorOpcode(0xd1, 5, registerId);
+		return emit_ins_with_reg16_with_minor_opcode(0xd1, 5, register_id);
 	} else {
-		return emitInsWithReg16WithMinorOpcode(0xc1, 5, registerId);
+		return emit_ins_with_reg16_with_minor_opcode(0xc1, 5, register_id);
 	}
 }
 
-SLAKE_API DiscreteInstruction slake::jit::x86_64::emitShrReg32WithImm8Ins(RegisterId registerId, uint8_t times) {
+SLAKE_API DiscreteInstruction slake::jit::x86_64::emit_shr_reg32_with_imm8_ins(RegisterId register_id, uint8_t times) {
 	if (times == 1) {
-		return emitInsWithReg32WithMinorOpcode(0xd1, 5, registerId);
+		return emit_ins_with_reg32_with_minor_opcode(0xd1, 5, register_id);
 	} else {
-		return emitInsWithReg32WithMinorOpcode(0xc1, 5, registerId);
+		return emit_ins_with_reg32_with_minor_opcode(0xc1, 5, register_id);
 	}
 }
 
-SLAKE_API DiscreteInstruction slake::jit::x86_64::emitShrReg64WithImm8Ins(RegisterId registerId, uint8_t times) {
+SLAKE_API DiscreteInstruction slake::jit::x86_64::emit_shr_reg64_with_imm8_ins(RegisterId register_id, uint8_t times) {
 	if (times == 1) {
-		return emitInsWithReg64WithMinorOpcode(0xd1, 5, registerId);
+		return emit_ins_with_reg64_with_minor_opcode(0xd1, 5, register_id);
 	} else {
-		return emitInsWithReg64WithMinorOpcode(0xc1, 5, registerId);
+		return emit_ins_with_reg64_with_minor_opcode(0xc1, 5, register_id);
 	}
 }
 
-SLAKE_API DiscreteInstruction slake::jit::x86_64::emitShrReg8WithClIns(RegisterId registerId) {
-	return emitInsWithReg8WithMinorOpcode(0xd2, 5, registerId);
+SLAKE_API DiscreteInstruction slake::jit::x86_64::emit_shr_reg8_with_cl_ins(RegisterId register_id) {
+	return emit_ins_with_reg8_with_minor_opcode(0xd2, 5, register_id);
 }
 
-SLAKE_API DiscreteInstruction slake::jit::x86_64::emitShrReg16WithClIns(RegisterId registerId) {
-	return emitInsWithReg16WithMinorOpcode(0xd3, 5, registerId);
+SLAKE_API DiscreteInstruction slake::jit::x86_64::emit_shr_reg16_with_cl_ins(RegisterId register_id) {
+	return emit_ins_with_reg16_with_minor_opcode(0xd3, 5, register_id);
 }
 
-SLAKE_API DiscreteInstruction slake::jit::x86_64::emitShrReg32WithClIns(RegisterId registerId) {
-	return emitInsWithReg32WithMinorOpcode(0xd3, 5, registerId);
+SLAKE_API DiscreteInstruction slake::jit::x86_64::emit_shr_reg32_with_cl_ins(RegisterId register_id) {
+	return emit_ins_with_reg32_with_minor_opcode(0xd3, 5, register_id);
 }
 
-SLAKE_API DiscreteInstruction slake::jit::x86_64::emitShrReg64WithClIns(RegisterId registerId) {
-	return emitInsWithReg64WithMinorOpcode(0xd3, 5, registerId);
+SLAKE_API DiscreteInstruction slake::jit::x86_64::emit_shr_reg64_with_cl_ins(RegisterId register_id) {
+	return emit_ins_with_reg64_with_minor_opcode(0xd3, 5, register_id);
 }
 
-SLAKE_API DiscreteInstruction slake::jit::x86_64::emitSarReg8WithImm8Ins(RegisterId registerId, uint8_t times) {
+SLAKE_API DiscreteInstruction slake::jit::x86_64::emit_sar_reg8_with_imm8_ins(RegisterId register_id, uint8_t times) {
 	if (times == 1) {
-		return emitInsWithReg8WithMinorOpcode(0xd0, 7, registerId);
+		return emit_ins_with_reg8_with_minor_opcode(0xd0, 7, register_id);
 	} else {
-		return emitInsWithReg8WithMinorOpcode(0xc0, 7, registerId);
+		return emit_ins_with_reg8_with_minor_opcode(0xc0, 7, register_id);
 	}
 }
 
-SLAKE_API DiscreteInstruction slake::jit::x86_64::emitSarReg16WithImm8Ins(RegisterId registerId, uint8_t times) {
+SLAKE_API DiscreteInstruction slake::jit::x86_64::emit_sar_reg16_with_imm8_ins(RegisterId register_id, uint8_t times) {
 	if (times == 1) {
-		return emitInsWithReg16WithMinorOpcode(0xd1, 7, registerId);
+		return emit_ins_with_reg16_with_minor_opcode(0xd1, 7, register_id);
 	} else {
-		return emitInsWithReg16WithMinorOpcode(0xc1, 7, registerId);
+		return emit_ins_with_reg16_with_minor_opcode(0xc1, 7, register_id);
 	}
 }
 
-SLAKE_API DiscreteInstruction slake::jit::x86_64::emitSarReg32WithImm8Ins(RegisterId registerId, uint8_t times) {
+SLAKE_API DiscreteInstruction slake::jit::x86_64::emit_sar_reg32_with_imm8_ins(RegisterId register_id, uint8_t times) {
 	if (times == 1) {
-		return emitInsWithReg32WithMinorOpcode(0xd1, 7, registerId);
+		return emit_ins_with_reg32_with_minor_opcode(0xd1, 7, register_id);
 	} else {
-		return emitInsWithReg32WithMinorOpcode(0xc1, 7, registerId);
+		return emit_ins_with_reg32_with_minor_opcode(0xc1, 7, register_id);
 	}
 }
 
-SLAKE_API DiscreteInstruction slake::jit::x86_64::emitSarReg64WithImm8Ins(RegisterId registerId, uint8_t times) {
+SLAKE_API DiscreteInstruction slake::jit::x86_64::emit_sar_reg64_with_imm8_ins(RegisterId register_id, uint8_t times) {
 	if (times == 1) {
-		return emitInsWithReg64WithMinorOpcode(0xd1, 7, registerId);
+		return emit_ins_with_reg64_with_minor_opcode(0xd1, 7, register_id);
 	} else {
-		return emitInsWithReg64WithMinorOpcode(0xc1, 7, registerId);
+		return emit_ins_with_reg64_with_minor_opcode(0xc1, 7, register_id);
 	}
 }
 
-SLAKE_API DiscreteInstruction slake::jit::x86_64::emitSarReg8WithClIns(RegisterId registerId) {
-	return emitInsWithReg8WithMinorOpcode(0xd2, 7, registerId);
+SLAKE_API DiscreteInstruction slake::jit::x86_64::emit_sar_reg8_with_cl_ins(RegisterId register_id) {
+	return emit_ins_with_reg8_with_minor_opcode(0xd2, 7, register_id);
 }
 
-SLAKE_API DiscreteInstruction slake::jit::x86_64::emitSarReg16WithClIns(RegisterId registerId) {
-	return emitInsWithReg16WithMinorOpcode(0xd3, 7, registerId);
+SLAKE_API DiscreteInstruction slake::jit::x86_64::emit_sar_reg16_with_cl_ins(RegisterId register_id) {
+	return emit_ins_with_reg16_with_minor_opcode(0xd3, 7, register_id);
 }
 
-SLAKE_API DiscreteInstruction slake::jit::x86_64::emitSarReg32WithClIns(RegisterId registerId) {
-	return emitInsWithReg32WithMinorOpcode(0xd3, 7, registerId);
+SLAKE_API DiscreteInstruction slake::jit::x86_64::emit_sar_reg32_with_cl_ins(RegisterId register_id) {
+	return emit_ins_with_reg32_with_minor_opcode(0xd3, 7, register_id);
 }
 
-SLAKE_API DiscreteInstruction slake::jit::x86_64::emitSarReg64WithClIns(RegisterId registerId) {
-	return emitInsWithReg64WithMinorOpcode(0xd3, 7, registerId);
+SLAKE_API DiscreteInstruction slake::jit::x86_64::emit_sar_reg64_with_cl_ins(RegisterId register_id) {
+	return emit_ins_with_reg64_with_minor_opcode(0xd3, 7, register_id);
 }

@@ -7,21 +7,21 @@
 namespace slake {
 	namespace jit {
 		namespace x86_64 {
-			[[nodiscard]] InternalExceptionPointer compileShlInstruction(
-				JITCompileContext &compileContext,
-				opti::ProgramAnalyzedInfo &analyzedInfo,
-				size_t offIns,
-				const Instruction &curIns) noexcept;
-			[[nodiscard]] InternalExceptionPointer compileShrInstruction(
-				JITCompileContext &compileContext,
-				opti::ProgramAnalyzedInfo &analyzedInfo,
-				size_t offIns,
-				const Instruction &curIns) noexcept;
-			[[nodiscard]] InternalExceptionPointer compileSarInstruction(
-				JITCompileContext &compileContext,
-				opti::ProgramAnalyzedInfo &analyzedInfo,
-				size_t offIns,
-				const Instruction &curIns) noexcept;
+			[[nodiscard]] InternalExceptionPointer compile_shl_instruction(
+				JITCompileContext &compile_context,
+				opti::ProgramAnalyzedInfo &analyzed_info,
+				size_t off_ins,
+				const Instruction &cur_ins) noexcept;
+			[[nodiscard]] InternalExceptionPointer compile_shr_instruction(
+				JITCompileContext &compile_context,
+				opti::ProgramAnalyzedInfo &analyzed_info,
+				size_t off_ins,
+				const Instruction &cur_ins) noexcept;
+			[[nodiscard]] InternalExceptionPointer compile_sar_instruction(
+				JITCompileContext &compile_context,
+				opti::ProgramAnalyzedInfo &analyzed_info,
+				size_t off_ins,
+				const Instruction &cur_ins) noexcept;
 		}
 	}
 }

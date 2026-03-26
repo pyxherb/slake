@@ -2,10 +2,10 @@
 
 using namespace slkc;
 
-size_t slkc::szDefaultParseThreadStack = 1024 * 1024 * 2;
-size_t slkc::szDefaultCompileThreadStack = 1024 * 1024 * 32;
+size_t slkc::sz_default_parse_thread_stack = 1024 * 1024 * 2;
+size_t slkc::sz_default_compile_thread_stack = 1024 * 1024 * 32;
 
-SLKC_API PathPossibility slkc::combinePossibility(PathPossibility outer, PathPossibility inner) noexcept {
+SLKC_API PathPossibility slkc::combine_possibility(PathPossibility outer, PathPossibility inner) noexcept {
 	switch (outer) {
 		case PathPossibility::Never:
 			return PathPossibility::Never;
@@ -38,34 +38,34 @@ SLKC_API PathPossibility slkc::combinePossibility(PathPossibility outer, PathPos
 	std::terminate();
 }
 
-SLKC_API peff::Option<CompilationError> slkc::combinePathEnv(PathEnv &outer, const PathEnv &inner) noexcept {
-	switch (inner.execPossibility) {
+SLKC_API peff::Option<CompilationError> slkc::combine_path_env(PathEnv &outer, const PathEnv &inner) noexcept {
+	switch (inner.exec_possibility) {
 		case PathPossibility::Never:
 			break;
 		case PathPossibility::May: {
-			outer.noReturnPossibility = combinePossibility(outer.noReturnPossibility, combinePossibility(inner.execPossibility, inner.noReturnPossibility));
-			outer.returnPossibility = combinePossibility(outer.returnPossibility, combinePossibility(inner.execPossibility, inner.returnPossibility));
-			outer.breakPossibility = combinePossibility(outer.breakPossibility, combinePossibility(inner.execPossibility, inner.breakPossibility));
+			outer.no_return_possibility = combine_possibility(outer.no_return_possibility, combine_possibility(inner.exec_possibility, inner.no_return_possibility));
+			outer.return_possibility = combine_possibility(outer.return_possibility, combine_possibility(inner.exec_possibility, inner.return_possibility));
+			outer.break_possibility = combine_possibility(outer.break_possibility, combine_possibility(inner.exec_possibility, inner.break_possibility));
 
-			for (auto i : inner.localVarNullOverrides) {
+			for (auto i : inner.local_var_null_overrides) {
 				if (i.second == NullOverrideType::Uncertain) {
-					SLKC_RETURN_IF_COMP_ERROR(outer.setLocalVarNullOverride(i.first, NullOverrideType::Uncertain));
+					SLKC_RETURN_IF_COMP_ERROR(outer.set_local_var_null_override(i.first, NullOverrideType::Uncertain));
 				} else if (i.second == NullOverrideType::Nullify) {
-					SLKC_RETURN_IF_COMP_ERROR(outer.setLocalVarNullOverride(i.first, NullOverrideType::Nullify));
+					SLKC_RETURN_IF_COMP_ERROR(outer.set_local_var_null_override(i.first, NullOverrideType::Nullify));
 				}
 			}
 			break;
 		}
 		case PathPossibility::Must: {
-			outer.noReturnPossibility = combinePossibility(outer.noReturnPossibility, inner.noReturnPossibility);
-			outer.returnPossibility = combinePossibility(outer.returnPossibility, inner.returnPossibility);
-			outer.breakPossibility = combinePossibility(outer.breakPossibility, inner.breakPossibility);
+			outer.no_return_possibility = combine_possibility(outer.no_return_possibility, inner.no_return_possibility);
+			outer.return_possibility = combine_possibility(outer.return_possibility, inner.return_possibility);
+			outer.break_possibility = combine_possibility(outer.break_possibility, inner.break_possibility);
 
-			for (auto i : inner.localVarNullOverrides) {
+			for (auto i : inner.local_var_null_overrides) {
 				if (i.second == NullOverrideType::Uncertain) {
-					SLKC_RETURN_IF_COMP_ERROR(outer.setLocalVarNullOverride(i.first, NullOverrideType::Uncertain));
+					SLKC_RETURN_IF_COMP_ERROR(outer.set_local_var_null_override(i.first, NullOverrideType::Uncertain));
 				} else
-					SLKC_RETURN_IF_COMP_ERROR(outer.setLocalVarNullOverride(i.first, i.second));
+					SLKC_RETURN_IF_COMP_ERROR(outer.set_local_var_null_override(i.first, i.second));
 			}
 			break;
 		}
@@ -74,31 +74,31 @@ SLKC_API peff::Option<CompilationError> slkc::combinePathEnv(PathEnv &outer, con
 	return {};
 }
 
-SLKC_API peff::Option<CompilationError> slkc::combineParallelPathEnv(peff::Alloc *allocator, CompileEnv *compileEnv, CompilationContext *compilationContext, PathEnv &outer, const PathEnv *inners, size_t nInners) noexcept {
-	peff::Map<AstNodePtr<VarNode>, NullOverrideType> localVarNullOverrides(allocator);
-	peff::Set<size_t> idxMayPaths(allocator);
+SLKC_API peff::Option<CompilationError> slkc::combine_parallel_path_env(peff::Alloc *allocator, CompileEnv *compile_env, CompilationContext *compilation_context, PathEnv &outer, const PathEnv *inners, size_t num_inners) noexcept {
+	peff::Map<AstNodePtr<VarNode>, NullOverrideType> local_var_null_overrides(allocator);
+	peff::Set<size_t> idx_may_paths(allocator);
 
-	for (size_t i = 0; i < nInners; ++i) {
+	for (size_t i = 0; i < num_inners; ++i) {
 		const PathEnv &inner = inners[i];
 
-		switch (inner.execPossibility) {
+		switch (inner.exec_possibility) {
 			case PathPossibility::Never:
 				break;
 			case PathPossibility::May: {
-				if (!idxMayPaths.insert(+i))
-					return genOutOfMemoryCompError();
+				if (!idx_may_paths.insert(+i))
+					return gen_out_of_memory_comp_error();
 				break;
 			}
 			case PathPossibility::Must: {
-				outer.noReturnPossibility = combinePossibility(outer.noReturnPossibility, inner.noReturnPossibility);
-				outer.returnPossibility = combinePossibility(outer.returnPossibility, inner.returnPossibility);
-				outer.breakPossibility = combinePossibility(outer.breakPossibility, inner.breakPossibility);
+				outer.no_return_possibility = combine_possibility(outer.no_return_possibility, inner.no_return_possibility);
+				outer.return_possibility = combine_possibility(outer.return_possibility, inner.return_possibility);
+				outer.break_possibility = combine_possibility(outer.break_possibility, inner.break_possibility);
 
-				for (auto i : inner.localVarNullOverrides) {
+				for (auto i : inner.local_var_null_overrides) {
 					if (i.second == NullOverrideType::Uncertain) {
-						SLKC_RETURN_IF_COMP_ERROR(outer.setLocalVarNullOverride(i.first, NullOverrideType::Uncertain));
+						SLKC_RETURN_IF_COMP_ERROR(outer.set_local_var_null_override(i.first, NullOverrideType::Uncertain));
 					} else
-						SLKC_RETURN_IF_COMP_ERROR(outer.setLocalVarNullOverride(i.first, i.second));
+						SLKC_RETURN_IF_COMP_ERROR(outer.set_local_var_null_override(i.first, i.second));
 				}
 				break;
 			}
@@ -106,47 +106,47 @@ SLKC_API peff::Option<CompilationError> slkc::combineParallelPathEnv(peff::Alloc
 	}
 
 	{
-		peff::Map<AstNodePtr<VarNode>, NullOverrideType> commonLocalVarNullOverrides(allocator);
+		peff::Map<AstNodePtr<VarNode>, NullOverrideType> common_local_var_null_overrides(allocator);
 
 		// Find common local variable null overrides.
 		{
-			peff::Set<AstNodePtr<VarNode>> nonunifiableNullOverrideVars(allocator);
-			for (auto it = idxMayPaths.begin(); it != idxMayPaths.end(); ++it) {
+			peff::Set<AstNodePtr<VarNode>> nonunifiable_null_override_vars(allocator);
+			for (auto it = idx_may_paths.begin(); it != idx_may_paths.end(); ++it) {
 				const PathEnv &inner = inners[*it];
 
-				for (auto curOverride : inner.localVarNullOverrides) {
-					if (!nonunifiableNullOverrideVars.contains(curOverride.first)) {
-						if (auto prevOverride = commonLocalVarNullOverrides.find(curOverride.first); prevOverride != commonLocalVarNullOverrides.end()) {
-							if (prevOverride.value() != curOverride.second) {
-								if (!nonunifiableNullOverrideVars.insert(AstNodePtr<VarNode>(prevOverride.key())))
-									return genOutOfMemoryCompError();
-								commonLocalVarNullOverrides.remove(prevOverride);
+				for (auto cur_override : inner.local_var_null_overrides) {
+					if (!nonunifiable_null_override_vars.contains(cur_override.first)) {
+						if (auto prev_override = common_local_var_null_overrides.find(cur_override.first); prev_override != common_local_var_null_overrides.end()) {
+							if (prev_override.value() != cur_override.second) {
+								if (!nonunifiable_null_override_vars.insert(AstNodePtr<VarNode>(prev_override.key())))
+									return gen_out_of_memory_comp_error();
+								common_local_var_null_overrides.remove(prev_override);
 							}
 						} else {
-							auto copiedOverrideType = curOverride.second;
-							if (!commonLocalVarNullOverrides.insert(AstNodePtr<VarNode>(curOverride.first), std::move(copiedOverrideType)))
-								return genOutOfMemoryCompError();
+							auto copied_override_type = cur_override.second;
+							if (!common_local_var_null_overrides.insert(AstNodePtr<VarNode>(cur_override.first), std::move(copied_override_type)))
+								return gen_out_of_memory_comp_error();
 						}
 					}
 				}
 			}
 
-			for (auto i : nonunifiableNullOverrideVars)
-				SLKC_RETURN_IF_COMP_ERROR(outer.setLocalVarNullOverride(i, NullOverrideType::Uncertain));
+			for (auto i : nonunifiable_null_override_vars)
+				SLKC_RETURN_IF_COMP_ERROR(outer.set_local_var_null_override(i, NullOverrideType::Uncertain));
 		}
 
-		for (auto i : commonLocalVarNullOverrides) {
-			SLKC_RETURN_IF_COMP_ERROR(outer.setLocalVarNullOverride(i.first, i.second));
+		for (auto i : common_local_var_null_overrides) {
+			SLKC_RETURN_IF_COMP_ERROR(outer.set_local_var_null_override(i.first, i.second));
 		}
 
 		// Filter out the common local variable null overrides that are not always happen.
-		for (auto it = idxMayPaths.begin(); it != idxMayPaths.end(); ++it) {
+		for (auto it = idx_may_paths.begin(); it != idx_may_paths.end(); ++it) {
 			const PathEnv &inner = inners[*it];
 
-			for (auto i : commonLocalVarNullOverrides) {
+			for (auto i : common_local_var_null_overrides) {
 				// If a local variable null override is not always happen, its original assumption should be cancelled.
-				if (!inner.localVarNullOverrides.contains(i.first)) {
-					SLKC_RETURN_IF_COMP_ERROR(outer.setLocalVarNullOverride(i.first, NullOverrideType::Uncertain));
+				if (!inner.local_var_null_overrides.contains(i.first)) {
+					SLKC_RETURN_IF_COMP_ERROR(outer.set_local_var_null_override(i.first, NullOverrideType::Uncertain));
 				}
 			}
 		}
@@ -155,13 +155,13 @@ SLKC_API peff::Option<CompilationError> slkc::combineParallelPathEnv(peff::Alloc
 	return {};
 }
 
-SLKC_API PathEnv::PathEnv(peff::Alloc *allocator) noexcept : localVarNullOverrides(allocator) {
+SLKC_API PathEnv::PathEnv(peff::Alloc *allocator) noexcept : local_var_null_overrides(allocator) {
 }
 
-SLAKE_API peff::Option<NullOverrideType> PathEnv::lookupVarNullOverride(const AstNodePtr<VarNode> &varNode) {
+SLAKE_API peff::Option<NullOverrideType> PathEnv::lookup_var_null_override(const AstNodePtr<VarNode> &var_node) {
 	for (const PathEnv *i = this; i; i = i->parent) {
-		if (auto it = i->localVarNullOverrides.find(varNode);
-			it != i->localVarNullOverrides.end()) {
+		if (auto it = i->local_var_null_overrides.find(var_node);
+			it != i->local_var_null_overrides.end()) {
 			NullOverrideType v = it.value();
 			return std::move(v);
 		}
@@ -169,16 +169,16 @@ SLAKE_API peff::Option<NullOverrideType> PathEnv::lookupVarNullOverride(const As
 	return {};
 }
 
-SLAKE_API peff::Option<CompilationError> PathEnv::setLocalVarNullOverride(AstNodePtr<VarNode> varNode, NullOverrideType type) {
-	if (auto it = localVarNullOverrides.find(varNode); it != localVarNullOverrides.end()) {
+SLAKE_API peff::Option<CompilationError> PathEnv::set_local_var_null_override(AstNodePtr<VarNode> var_node, NullOverrideType type) {
+	if (auto it = local_var_null_overrides.find(var_node); it != local_var_null_overrides.end()) {
 		it.value() = type;
-	} else if (!localVarNullOverrides.insert(std::move(varNode), std::move(type)))
-		return genOutOfMemoryCompError();
+	} else if (!local_var_null_overrides.insert(std::move(var_node), std::move(type)))
+		return gen_out_of_memory_comp_error();
 	return {};
 }
 
-SLAKE_API void PathEnv::removeVarNullOverride(const AstNodePtr<VarNode> &varNode) {
-	localVarNullOverrides.remove(varNode);
+SLAKE_API void PathEnv::remove_var_null_override(const AstNodePtr<VarNode> &var_node) {
+	local_var_null_overrides.remove(var_node);
 }
 
 SLKC_API CompilationContext::CompilationContext(CompilationContext *parent) : parent(parent) {
@@ -186,42 +186,42 @@ SLKC_API CompilationContext::CompilationContext(CompilationContext *parent) : pa
 SLKC_API CompilationContext::~CompilationContext() {
 }
 
-SLKC_API uint32_t CompilationContext::getBreakLabel() const {
+SLKC_API uint32_t CompilationContext::get_break_label() const {
 	for (const CompilationContext *i = this; i; i = i->parent) {
-		if (uint32_t l = i->doGetBreakLabel(); l != UINT32_MAX)
+		if (uint32_t l = i->do_get_break_label(); l != UINT32_MAX)
 			return l;
 	}
 	return UINT32_MAX;
 }
-SLKC_API uint32_t CompilationContext::getContinueLabel() const {
+SLKC_API uint32_t CompilationContext::get_continue_label() const {
 	for (const CompilationContext *i = this; i; i = i->parent) {
-		if (uint32_t l = i->doGetContinueLabel(); l != UINT32_MAX)
+		if (uint32_t l = i->do_get_continue_label(); l != UINT32_MAX)
 			return l;
 	}
 	return UINT32_MAX;
 }
 
-SLKC_API uint32_t CompilationContext::getBreakLabelBlockLevel() const {
+SLKC_API uint32_t CompilationContext::get_break_label_block_level() const {
 	for (const CompilationContext *i = this; i; i = i->parent) {
-		if (i->doGetBreakLabel() != UINT32_MAX)
-			return i->doGetBreakLabelBlockLevel();
+		if (i->do_get_break_label() != UINT32_MAX)
+			return i->do_get_break_label_block_level();
 	}
 	return 0;
 }
-SLKC_API uint32_t CompilationContext::getContinueLabelBlockLevel() const {
+SLKC_API uint32_t CompilationContext::get_continue_label_block_level() const {
 	for (const CompilationContext *i = this; i; i = i->parent) {
-		if (i->doGetContinueLabel() != UINT32_MAX)
-			return i->doGetContinueLabelBlockLevel();
+		if (i->do_get_continue_label() != UINT32_MAX)
+			return i->do_get_continue_label_block_level();
 	}
 	return 0;
 }
 
-SLKC_API AstNodePtr<VarNode> CompilationContext::lookupLocalVar(const std::string_view &name) const {
+SLKC_API AstNodePtr<VarNode> CompilationContext::lookup_local_var(const std::string_view &name) const {
 	for (const CompilationContext *i = this; i; i = i->parent) {
-		AstNodePtr<VarNode> varNode = i->getLocalVar(name);
+		AstNodePtr<VarNode> var_node = i->get_local_var(name);
 
-		if (varNode) {
-			return varNode;
+		if (var_node) {
+			return var_node;
 		}
 	}
 	return {};
@@ -230,133 +230,133 @@ SLKC_API AstNodePtr<VarNode> CompilationContext::lookupLocalVar(const std::strin
 SLKC_API NormalCompilationContext::BlockLayer::~BlockLayer() {
 }
 
-SLKC_API NormalCompilationContext::NormalCompilationContext(CompileEnv *compileEnv, CompilationContext *parent) : CompilationContext(parent), allocator(compileEnv->allocator), savedBlockLayers(compileEnv->allocator.get()), curBlockLayer(compileEnv->allocator.get()), labels(compileEnv->allocator.get()), labelNameIndices(compileEnv->allocator.get()), generatedInstructions(compileEnv->allocator.get()), document(compileEnv->document), baseBlockLevel(parent ? parent->getBlockLevel() : 0), baseInsOff(parent ? parent->getCurInsOff() : 0), sourceLocDescs(compileEnv->allocator.get()), sourceLocDescsMap(compileEnv->allocator.get()) {
+SLKC_API NormalCompilationContext::NormalCompilationContext(CompileEnv *compile_env, CompilationContext *parent) : CompilationContext(parent), allocator(compile_env->allocator), saved_block_layers(compile_env->allocator.get()), cur_block_layer(compile_env->allocator.get()), labels(compile_env->allocator.get()), label_name_indices(compile_env->allocator.get()), generated_instructions(compile_env->allocator.get()), document(compile_env->document), base_block_level(parent ? parent->get_block_level() : 0), base_ins_off(parent ? parent->get_cur_ins_off() : 0), source_loc_descs(compile_env->allocator.get()), source_loc_descs_map(compile_env->allocator.get()) {
 }
 SLKC_API NormalCompilationContext::~NormalCompilationContext() {
 }
 
-SLKC_API peff::Option<CompilationError> NormalCompilationContext::allocLabel(uint32_t &labelIdOut) {
-	peff::SharedPtr<Label> label = peff::makeShared<Label>(allocator.get(), peff::String(allocator.get()));
+SLKC_API peff::Option<CompilationError> NormalCompilationContext::alloc_label(uint32_t &label_id_out) {
+	peff::SharedPtr<Label> label = peff::make_shared<Label>(allocator.get(), peff::String(allocator.get()));
 
 	if (!label) {
-		return genOutOfMemoryCompError();
+		return gen_out_of_memory_comp_error();
 	}
 
-	labelIdOut = labels.size();
+	label_id_out = labels.size();
 
-	if (!labels.pushBack(peff::SharedPtr<Label>(label))) {
-		return genOutOfMemoryCompError();
+	if (!labels.push_back(peff::SharedPtr<Label>(label))) {
+		return gen_out_of_memory_comp_error();
 	}
 
 	return {};
 }
-SLKC_API void NormalCompilationContext::setLabelOffset(uint32_t labelId, uint32_t offset) const {
-	labels.at(labelId)->offset = offset;
+SLKC_API void NormalCompilationContext::set_label_offset(uint32_t label_id, uint32_t offset) const {
+	labels.at(label_id)->offset = offset;
 }
-SLKC_API peff::Option<CompilationError> NormalCompilationContext::setLabelName(uint32_t labelId, const std::string_view &name) {
-	if (!labels.at(labelId)->name.build(name)) {
-		return genOutOfMemoryCompError();
+SLKC_API peff::Option<CompilationError> NormalCompilationContext::set_label_name(uint32_t label_id, const std::string_view &name) {
+	if (!labels.at(label_id)->name.build(name)) {
+		return gen_out_of_memory_comp_error();
 	}
-	if (!labelNameIndices.insert(labels.at(labelId)->name, +labelId))
-		return genOutOfMemoryCompError();
+	if (!label_name_indices.insert(labels.at(label_id)->name, +label_id))
+		return gen_out_of_memory_comp_error();
 	return {};
 }
-SLKC_API uint32_t NormalCompilationContext::getLabelOffset(uint32_t labelId) const {
-	return labels.at(labelId)->offset;
+SLKC_API uint32_t NormalCompilationContext::get_label_offset(uint32_t label_id) const {
+	return labels.at(label_id)->offset;
 }
 
-SLKC_API peff::Option<uint32_t> NormalCompilationContext::getLabelIndexByName(const std::string_view &sv) const {
-	if (auto it = labelNameIndices.find(sv); it != labelNameIndices.end())
+SLKC_API peff::Option<uint32_t> NormalCompilationContext::get_label_index_by_name(const std::string_view &sv) const {
+	if (auto it = label_name_indices.find(sv); it != label_name_indices.end())
 		return it.value();
 	return {};
 }
 
-SLKC_API peff::Option<CompilationError> NormalCompilationContext::allocReg(uint32_t &regOut) {
-	if (nTotalRegs < UINT32_MAX) {
-		regOut = nTotalRegs++;
+SLKC_API peff::Option<CompilationError> NormalCompilationContext::alloc_reg(uint32_t &reg_out) {
+	if (num_total_regs < UINT32_MAX) {
+		reg_out = num_total_regs++;
 		return {};
 	}
 
-	return CompilationError({ document->mainModule, 0 }, CompilationErrorKind::RegLimitExceeded);
+	return CompilationError({ document->main_module, 0 }, CompilationErrorKind::RegLimitExceeded);
 }
 
-SLKC_API peff::Option<CompilationError> NormalCompilationContext::emitIns(uint32_t idxSld, slake::Opcode opcode, uint32_t outputRegIndex, const std::initializer_list<slake::Value> &operands) {
-	slake::Instruction insOut;
+SLKC_API peff::Option<CompilationError> NormalCompilationContext::emit_ins(uint32_t idx_sld, slake::Opcode opcode, uint32_t output_reg_index, const std::initializer_list<slake::Value> &operands) {
+	slake::Instruction ins_out;
 
-	insOut.offSourceLocDesc = idxSld;
-	insOut.opcode = opcode;
-	insOut.output = outputRegIndex;
-	if (!insOut.reserveOperands(allocator.get(), operands.size())) {
-		return genOutOfMemoryCompError();
+	ins_out.off_source_loc_desc = idx_sld;
+	ins_out.opcode = opcode;
+	ins_out.output = output_reg_index;
+	if (!ins_out.reserve_operands(allocator.get(), operands.size())) {
+		return gen_out_of_memory_comp_error();
 	}
 
 	auto it = operands.begin();
 	for (size_t i = 0; i < operands.size(); ++i) {
-		insOut.operands[i] = *it++;
+		ins_out.operands[i] = *it++;
 	}
 
-	if (!generatedInstructions.pushBack(std::move(insOut))) {
-		return genOutOfRuntimeMemoryCompError();
-	}
-
-	return {};
-}
-
-SLKC_API peff::Option<CompilationError> NormalCompilationContext::emitIns(uint32_t idxSld, slake::Opcode opcode, uint32_t outputRegIndex, slake::Value *operands, size_t nOperands) {
-	slake::Instruction insOut;
-
-	insOut.offSourceLocDesc = idxSld;
-	insOut.opcode = opcode;
-	insOut.output = outputRegIndex;
-	if (!insOut.reserveOperands(allocator.get(), nOperands)) {
-		return genOutOfMemoryCompError();
-	}
-
-	memcpy(insOut.operands, operands, sizeof(slake::Value) * nOperands);
-
-	if (!generatedInstructions.pushBack(std::move(insOut))) {
-		return genOutOfRuntimeMemoryCompError();
+	if (!generated_instructions.push_back(std::move(ins_out))) {
+		return gen_out_of_runtime_memory_comp_error();
 	}
 
 	return {};
 }
 
-SLKC_API peff::Option<CompilationError> NormalCompilationContext::allocLocalVar(const TokenRange &tokenRange, const std::string_view &name, uint32_t reg, AstNodePtr<TypeNameNode> type, AstNodePtr<VarNode> &localVarOut) {
-	AstNodePtr<VarNode> newVar;
+SLKC_API peff::Option<CompilationError> NormalCompilationContext::emit_ins(uint32_t idx_sld, slake::Opcode opcode, uint32_t output_reg_index, slake::Value *operands, size_t num_operands) {
+	slake::Instruction ins_out;
 
-	if (!(newVar = makeAstNode<VarNode>(allocator.get(), allocator.get(), document))) {
-		return genOutOfMemoryCompError();
+	ins_out.off_source_loc_desc = idx_sld;
+	ins_out.opcode = opcode;
+	ins_out.output = output_reg_index;
+	if (!ins_out.reserve_operands(allocator.get(), num_operands)) {
+		return gen_out_of_memory_comp_error();
 	}
 
-	if (!newVar->name.build(name)) {
-		return genOutOfMemoryCompError();
+	memcpy(ins_out.operands, operands, sizeof(slake::Value) * num_operands);
+
+	if (!generated_instructions.push_back(std::move(ins_out))) {
+		return gen_out_of_runtime_memory_comp_error();
 	}
-
-	newVar->type = type;
-
-	newVar->idxReg = reg;
-
-	if (!curBlockLayer.localVars.insert(newVar->name, AstNodePtr<VarNode>(newVar))) {
-		return genOutOfMemoryCompError();
-	}
-
-	localVarOut = newVar;
 
 	return {};
 }
-SLKC_API AstNodePtr<VarNode> NormalCompilationContext::getLocalVarInCurLevel(const std::string_view &name) const {
-	if (auto it = curBlockLayer.localVars.find(name); it != curBlockLayer.localVars.end()) {
+
+SLKC_API peff::Option<CompilationError> NormalCompilationContext::alloc_local_var(const TokenRange &token_range, const std::string_view &name, uint32_t reg, AstNodePtr<TypeNameNode> type, AstNodePtr<VarNode> &local_var_out) {
+	AstNodePtr<VarNode> new_var;
+
+	if (!(new_var = make_ast_node<VarNode>(allocator.get(), allocator.get(), document))) {
+		return gen_out_of_memory_comp_error();
+	}
+
+	if (!new_var->name.build(name)) {
+		return gen_out_of_memory_comp_error();
+	}
+
+	new_var->type = type;
+
+	new_var->idx_reg = reg;
+
+	if (!cur_block_layer.local_vars.insert(new_var->name, AstNodePtr<VarNode>(new_var))) {
+		return gen_out_of_memory_comp_error();
+	}
+
+	local_var_out = new_var;
+
+	return {};
+}
+SLKC_API AstNodePtr<VarNode> NormalCompilationContext::get_local_var_in_cur_level(const std::string_view &name) const {
+	if (auto it = cur_block_layer.local_vars.find(name); it != cur_block_layer.local_vars.end()) {
 		return it.value();
 	}
 
 	return {};
 }
-SLKC_API AstNodePtr<VarNode> NormalCompilationContext::getLocalVar(const std::string_view &name) const {
-	if (auto v = getLocalVarInCurLevel(name); v)
+SLKC_API AstNodePtr<VarNode> NormalCompilationContext::get_local_var(const std::string_view &name) const {
+	if (auto v = get_local_var_in_cur_level(name); v)
 		return v;
 
-	for (auto i = savedBlockLayers.beginConstReversed(); i != savedBlockLayers.endConstReversed(); ++i) {
-		if (auto it = i->localVars.find(name); it != i->localVars.end()) {
+	for (auto i = saved_block_layers.begin_const_reversed(); i != saved_block_layers.end_const_reversed(); ++i) {
+		if (auto it = i->local_vars.find(name); it != i->local_vars.end()) {
 			return it.value();
 		}
 	}
@@ -364,173 +364,173 @@ SLKC_API AstNodePtr<VarNode> NormalCompilationContext::getLocalVar(const std::st
 	return {};
 }
 
-SLKC_API void NormalCompilationContext::setBreakLabel(uint32_t labelId, uint32_t blockLevel) {
-	breakStmtJumpDestLabel = labelId;
-	breakStmtBlockLevel = blockLevel;
+SLKC_API void NormalCompilationContext::set_break_label(uint32_t label_id, uint32_t block_level) {
+	break_stmt_jump_dest_label = label_id;
+	break_stmt_block_level = block_level;
 }
-SLKC_API void NormalCompilationContext::setContinueLabel(uint32_t labelId, uint32_t blockLevel) {
-	continueStmtJumpDestLabel = labelId;
-	continueStmtBlockLevel = blockLevel;
-}
-
-SLKC_API uint32_t NormalCompilationContext::doGetBreakLabel() const {
-	return breakStmtJumpDestLabel;
-}
-SLKC_API uint32_t NormalCompilationContext::doGetContinueLabel() const {
-	return continueStmtJumpDestLabel;
+SLKC_API void NormalCompilationContext::set_continue_label(uint32_t label_id, uint32_t block_level) {
+	continue_stmt_jump_dest_label = label_id;
+	continue_stmt_block_level = block_level;
 }
 
-SLKC_API uint32_t NormalCompilationContext::doGetBreakLabelBlockLevel() const {
-	return breakStmtBlockLevel;
+SLKC_API uint32_t NormalCompilationContext::do_get_break_label() const {
+	return break_stmt_jump_dest_label;
+}
+SLKC_API uint32_t NormalCompilationContext::do_get_continue_label() const {
+	return continue_stmt_jump_dest_label;
 }
 
-SLKC_API uint32_t NormalCompilationContext::doGetContinueLabelBlockLevel() const {
-	return continueStmtBlockLevel;
+SLKC_API uint32_t NormalCompilationContext::do_get_break_label_block_level() const {
+	return break_stmt_block_level;
 }
 
-SLKC_API uint32_t NormalCompilationContext::getCurInsOff() const {
-	return baseInsOff + generatedInstructions.size();
+SLKC_API uint32_t NormalCompilationContext::do_get_continue_label_block_level() const {
+	return continue_stmt_block_level;
 }
 
-SLKC_API peff::Option<CompilationError> NormalCompilationContext::enterBlock() {
-	if (!savedBlockLayers.pushBack(std::move(curBlockLayer))) {
-		return genOutOfMemoryCompError();
+SLKC_API uint32_t NormalCompilationContext::get_cur_ins_off() const {
+	return base_ins_off + generated_instructions.size();
+}
+
+SLKC_API peff::Option<CompilationError> NormalCompilationContext::enter_block() {
+	if (!saved_block_layers.push_back(std::move(cur_block_layer))) {
+		return gen_out_of_memory_comp_error();
 	}
 
-	curBlockLayer = BlockLayer(allocator.get());
+	cur_block_layer = BlockLayer(allocator.get());
 
 	return {};
 }
-SLKC_API void NormalCompilationContext::leaveBlock() {
-	curBlockLayer = std::move(savedBlockLayers.back());
-	savedBlockLayers.popBack();
+SLKC_API void NormalCompilationContext::leave_block() {
+	cur_block_layer = std::move(saved_block_layers.back());
+	saved_block_layers.pop_back();
 }
 
-SLKC_API uint32_t NormalCompilationContext::getBlockLevel() {
-	return baseBlockLevel + savedBlockLayers.size();
+SLKC_API uint32_t NormalCompilationContext::get_block_level() {
+	return base_block_level + saved_block_layers.size();
 }
 
-SLKC_API peff::Option<CompilationError> NormalCompilationContext::registerSourceLocDesc(slake::slxfmt::SourceLocDesc sld, uint32_t &indexOut) {
-	if (!sourceLocDescsMap.insert(slake::slxfmt::SourceLocDesc(sld), sourceLocDescs.size()))
-		return genOutOfMemoryCompError();
-	peff::ScopeGuard removeSourceLocDescsMapGuard([this, &sld]() noexcept {
-		sourceLocDescsMap.remove(sld);
+SLKC_API peff::Option<CompilationError> NormalCompilationContext::register_source_loc_desc(slake::slxfmt::SourceLocDesc sld, uint32_t &index_out) {
+	if (!source_loc_descs_map.insert(slake::slxfmt::SourceLocDesc(sld), source_loc_descs.size()))
+		return gen_out_of_memory_comp_error();
+	peff::ScopeGuard remove_source_loc_descs_map_guard([this, &sld]() noexcept {
+		source_loc_descs_map.remove(sld);
 	});
-	if (!sourceLocDescs.pushBack(slake::slxfmt::SourceLocDesc(sld)))
-		return genOutOfMemoryCompError();
-	removeSourceLocDescsMapGuard.release();
-	indexOut = sourceLocDescs.size() - 1;
+	if (!source_loc_descs.push_back(slake::slxfmt::SourceLocDesc(sld)))
+		return gen_out_of_memory_comp_error();
+	remove_source_loc_descs_map_guard.release();
+	index_out = source_loc_descs.size() - 1;
 	return {};
 }
 
 SLKC_API CompileEnv::~CompileEnv() {
 }
 
-SLKC_API void CompileEnv::onRefZero() noexcept {
-	peff::destroyAndRelease<CompileEnv>(selfAllocator.get(), this, sizeof(std::max_align_t));
+SLKC_API void CompileEnv::on_ref_zero() noexcept {
+	peff::destroy_and_release<CompileEnv>(self_allocator.get(), this, sizeof(std::max_align_t));
 }
 
-SLKC_API peff::Option<CompilationError> slkc::evalExprType(
-	CompileEnv *compileEnv,
-	CompilationContext *compilationContext,
-	PathEnv *pathEnv,
+SLKC_API peff::Option<CompilationError> slkc::eval_expr_type(
+	CompileEnv *compile_env,
+	CompilationContext *compilation_context,
+	PathEnv *path_env,
 	const AstNodePtr<ExprNode> &expr,
-	AstNodePtr<TypeNameNode> &typeOut,
-	AstNodePtr<TypeNameNode> desiredType) {
-	NormalCompilationContext tmpContext(compileEnv, compilationContext);
+	AstNodePtr<TypeNameNode> &type_out,
+	AstNodePtr<TypeNameNode> desired_type) {
+	NormalCompilationContext tmp_context(compile_env, compilation_context);
 
-	CompileExprResult result(compileEnv->allocator.get());
+	CompileExprResult result(compile_env->allocator.get());
 
-	SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, &tmpContext, pathEnv, expr, ExprEvalPurpose::EvalType, desiredType, result));
+	SLKC_RETURN_IF_COMP_ERROR(compile_expr(compile_env, &tmp_context, path_env, expr, ExprEvalPurpose::EvalType, desired_type, result));
 
-	typeOut = result.evaluatedType;
+	type_out = result.evaluated_type;
 	return {};
 }
 
-SLKC_API peff::Option<CompilationError> slkc::evalActualExprType(
-	CompileEnv *compileEnv,
-	CompilationContext *compilationContext,
-	PathEnv *pathEnv,
+SLKC_API peff::Option<CompilationError> slkc::eval_actual_expr_type(
+	CompileEnv *compile_env,
+	CompilationContext *compilation_context,
+	PathEnv *path_env,
 	const AstNodePtr<ExprNode> &expr,
-	AstNodePtr<TypeNameNode> &typeOut,
-	AstNodePtr<TypeNameNode> desiredType) {
-	NormalCompilationContext tmpContext(compileEnv, compilationContext);
+	AstNodePtr<TypeNameNode> &type_out,
+	AstNodePtr<TypeNameNode> desired_type) {
+	NormalCompilationContext tmp_context(compile_env, compilation_context);
 
-	CompileExprResult result(compileEnv->allocator.get());
+	CompileExprResult result(compile_env->allocator.get());
 
-	ExprEvalPurpose evalPurpose;
+	ExprEvalPurpose eval_purpose;
 
-	SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileEnv, &tmpContext, pathEnv, expr, ExprEvalPurpose::EvalTypeActual, desiredType, result));
+	SLKC_RETURN_IF_COMP_ERROR(compile_expr(compile_env, &tmp_context, path_env, expr, ExprEvalPurpose::EvalTypeActual, desired_type, result));
 
-	typeOut = result.evaluatedType;
+	type_out = result.evaluated_type;
 	return {};
 }
 
-SLKC_API peff::Option<CompilationError> slkc::completeParentModules(
-	CompileEnv *compileEnv,
-	IdRef *modulePath,
+SLKC_API peff::Option<CompilationError> slkc::complete_parent_modules(
+	CompileEnv *compile_env,
+	IdRef *module_path,
 	AstNodePtr<ModuleNode> leaf) {
-	peff::DynArray<AstNodePtr<ModuleNode>> modules(compileEnv->allocator.get());
-	size_t idxNewModulesBegin = 0;
+	peff::DynArray<AstNodePtr<ModuleNode>> modules(compile_env->allocator.get());
+	size_t idx_new_modules_begin = 0;
 
-	if (!modules.resize(modulePath->entries.size())) {
-		return genOutOfMemoryCompError();
+	if (!modules.resize(module_path->entries.size())) {
+		return gen_out_of_memory_comp_error();
 	}
 
-	AstNodePtr<ModuleNode> node = compileEnv->document->rootModule;
+	AstNodePtr<ModuleNode> node = compile_env->document->root_module;
 
 	for (size_t i = 0; i < modules.size(); ++i) {
-		if (auto it = node->memberIndices.find(modulePath->entries.at(i).name); it != node->memberIndices.end()) {
-			node = node->members.at(it.value()).castTo<ModuleNode>();
+		if (auto it = node->member_indices.find(module_path->entries.at(i).name); it != node->member_indices.end()) {
+			node = node->members.at(it.value()).cast_to<ModuleNode>();
 			modules.at(i) = node;
-			idxNewModulesBegin = i + 1;
+			idx_new_modules_begin = i + 1;
 		} else {
 			if (i + 1 == modules.size()) {
 				node = leaf;
 			} else {
-				if (!(node = makeAstNode<ModuleNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-					return genOutOfMemoryCompError();
+				if (!(node = make_ast_node<ModuleNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->document))) {
+					return gen_out_of_memory_comp_error();
 				}
 			}
 			modules.at(i) = node;
-			if (!node->name.build(modulePath->entries.at(i).name)) {
-				return genOutOfMemoryCompError();
+			if (!node->name.build(module_path->entries.at(i).name)) {
+				return gen_out_of_memory_comp_error();
 			}
 		}
 	}
 
-	if (!leaf->name.build(modulePath->entries.back().name)) {
-		return genOutOfMemoryCompError();
+	if (!leaf->name.build(module_path->entries.back().name)) {
+		return gen_out_of_memory_comp_error();
 	}
 
-	for (size_t i = idxNewModulesBegin; i < modules.size(); ++i) {
-		auto &currentEntry = modulePath->entries.at(i);
+	for (size_t i = idx_new_modules_begin; i < modules.size(); ++i) {
+		auto &current_entry = module_path->entries.at(i);
 
 		if (i) {
 			auto m1 = modules.at(i - 1), m2 = modules.at(i);
-			if (!modules.at(i - 1)->addMember(modules.at(i).castTo<MemberNode>())) {
-				return genOutOfMemoryCompError();
+			if (!modules.at(i - 1)->add_member(modules.at(i).cast_to<MemberNode>())) {
+				return gen_out_of_memory_comp_error();
 			}
-			modules.at(i)->setParent(modules.at(i - 1).get());
+			modules.at(i)->set_parent(modules.at(i - 1).get());
 		} else {
-			if (!compileEnv->document->rootModule->addMember(modules.at(i).castTo<MemberNode>())) {
-				return genOutOfMemoryCompError();
+			if (!compile_env->document->root_module->add_member(modules.at(i).cast_to<MemberNode>())) {
+				return gen_out_of_memory_comp_error();
 			}
-			modules.at(i)->setParent(compileEnv->document->rootModule.get());
+			modules.at(i)->set_parent(compile_env->document->root_module.get());
 		}
 	}
 
 	return {};
 }
 
-SLKC_API peff::Option<CompilationError> slkc::cleanupUnusedModuleTree(
-	CompileEnv *compileEnv,
+SLKC_API peff::Option<CompilationError> slkc::cleanup_unused_module_tree(
+	CompileEnv *compile_env,
 	AstNodePtr<ModuleNode> leaf) {
 	AstNodePtr<ModuleNode> cur = leaf;
 
 	for (;;) {
 		for (auto &i : cur->members) {
-			if (i->getAstNodeType() == AstNodeType::Module) {
+			if (i->get_ast_node_type() == AstNodeType::Module) {
 				return {};
 			}
 		}
@@ -539,12 +539,12 @@ SLKC_API peff::Option<CompilationError> slkc::cleanupUnusedModuleTree(
 			break;
 		}
 
-		if (cur->parent->getAstNodeType() != AstNodeType::Module)
+		if (cur->parent->get_ast_node_type() != AstNodeType::Module)
 			std::terminate();
 
-		AstNodePtr<ModuleNode> parent = cur->parent->sharedFromThis().castTo<ModuleNode>();
+		AstNodePtr<ModuleNode> parent = cur->parent->shared_from_this().cast_to<ModuleNode>();
 
-		parent->removeMember(cur->name);
+		parent->remove_member(cur->name);
 
 		cur = parent;
 	}
@@ -552,164 +552,164 @@ SLKC_API peff::Option<CompilationError> slkc::cleanupUnusedModuleTree(
 	return {};
 }
 
-SLKC_API peff::Option<CompilationError> slkc::checkStackBounds(size_t reservedSize) {
+SLKC_API peff::Option<CompilationError> slkc::check_stack_bounds(size_t reserved_size) {
 	void *base;
 	size_t size;
-	slake::getCurrentThreadStackBounds(base, size);
+	slake::get_current_thread_stack_bounds(base, size);
 
-	void *ptr = slake::estimateCurrentStackPointer();
+	void *ptr = slake::estimate_current_stack_pointer();
 
-	if (((char *)ptr - (char *)base) < reservedSize)
-		return genStackOverflow();
+	if (((char *)ptr - (char *)base) < reserved_size)
+		return gen_stack_overflow();
 
 	return {};
 }
 
-ExternalModuleProvider::ExternalModuleProvider(const char *providerName) : providerName(providerName) {
+ExternalModuleProvider::ExternalModuleProvider(const char *provider_name) : provider_name(provider_name) {
 }
 
 ExternalModuleProvider::~ExternalModuleProvider() {
 }
 
-FileSystemExternalModuleProvider::FileSystemExternalModuleProvider(peff::Alloc *allocator) : ExternalModuleProvider("filesystem"), importPaths(allocator) {
+FileSystemExternalModuleProvider::FileSystemExternalModuleProvider(peff::Alloc *allocator) : ExternalModuleProvider("filesystem"), import_paths(allocator) {
 }
 
 FileSystemExternalModuleProvider::~FileSystemExternalModuleProvider() {
 }
 
-SLKC_API peff::Option<CompilationError> FileSystemExternalModuleProvider::loadModule(CompileEnv *compileEnv, IdRef *moduleName) {
-	peff::String suffixPath(compileEnv->allocator.get());
+SLKC_API peff::Option<CompilationError> FileSystemExternalModuleProvider::load_module(CompileEnv *compile_env, IdRef *module_name) {
+	peff::String suffix_path(compile_env->allocator.get());
 
 	{
-		bool isLoaded = true;
-		AstNodePtr<ModuleNode> node = compileEnv->document->rootModule;
+		bool is_loaded = true;
+		AstNodePtr<ModuleNode> node = compile_env->document->root_module;
 
-		for (size_t i = 0; i < moduleName->entries.size(); ++i) {
-			if (auto it = node->memberIndices.find(moduleName->entries.at(i).name); it != node->memberIndices.end()) {
-				node = node->members.at(it.value()).castTo<ModuleNode>();
+		for (size_t i = 0; i < module_name->entries.size(); ++i) {
+			if (auto it = node->member_indices.find(module_name->entries.at(i).name); it != node->member_indices.end()) {
+				node = node->members.at(it.value()).cast_to<ModuleNode>();
 				continue;
 			}
 
-			isLoaded = false;
+			is_loaded = false;
 			break;
 		}
 
-		if (isLoaded) {
+		if (is_loaded) {
 			return {};
 		}
 	}
 
-	for (size_t i = 0; i < moduleName->entries.size(); ++i) {
-		auto &currentEntry = moduleName->entries.at(i);
+	for (size_t i = 0; i < module_name->entries.size(); ++i) {
+		auto &current_entry = module_name->entries.at(i);
 
-		if (currentEntry.genericArgs.size()) {
-			return CompilationError(moduleName->tokenRange, CompilationErrorKind::MalformedModuleName);
+		if (current_entry.generic_args.size()) {
+			return CompilationError(module_name->token_range, CompilationErrorKind::MalformedModuleName);
 		}
 
-		size_t beginIndex = suffixPath.size();
+		size_t begin_index = suffix_path.size();
 
-		if (!suffixPath.resize(beginIndex + sizeof('/') + currentEntry.name.size())) {
-			return genOutOfMemoryCompError();
+		if (!suffix_path.resize(begin_index + sizeof('/') + current_entry.name.size())) {
+			return gen_out_of_memory_comp_error();
 		}
 
-		suffixPath.at(beginIndex) = '/';
+		suffix_path.at(begin_index) = '/';
 
-		memcpy(suffixPath.data() + beginIndex + 1, currentEntry.name.data(), currentEntry.name.size());
+		memcpy(suffix_path.data() + begin_index + 1, current_entry.name.data(), current_entry.name.size());
 	}
 
-	for (size_t i = 0; i < importPaths.size(); ++i) {
-		const peff::String &curPath = importPaths.at(i);
+	for (size_t i = 0; i < import_paths.size(); ++i) {
+		const peff::String &cur_path = import_paths.at(i);
 
 		{
-			peff::String fullPath(compileEnv->allocator.get());
+			peff::String full_path(compile_env->allocator.get());
 
 			const static char extension[] = ".slk";
 
-			if (!fullPath.resize(curPath.size() + suffixPath.size() + strlen(extension))) {
-				return genOutOfMemoryCompError();
+			if (!full_path.resize(cur_path.size() + suffix_path.size() + strlen(extension))) {
+				return gen_out_of_memory_comp_error();
 			}
 
-			memcpy(fullPath.data(), curPath.data(), curPath.size());
-			memcpy(fullPath.data() + curPath.size(), suffixPath.data(), suffixPath.size());
-			memcpy(fullPath.data() + curPath.size() + suffixPath.size(), extension, strlen(extension));
+			memcpy(full_path.data(), cur_path.data(), cur_path.size());
+			memcpy(full_path.data() + cur_path.size(), suffix_path.data(), suffix_path.size());
+			memcpy(full_path.data() + cur_path.size() + suffix_path.size(), extension, strlen(extension));
 
-			FILE *fp = fopen(fullPath.data(), "rb");
+			FILE *fp = fopen(full_path.data(), "rb");
 			if (fp) {
-				peff::ScopeGuard closeFpGuard([fp]() noexcept {
+				peff::ScopeGuard close_fp_guard([fp]() noexcept {
 					if (fp) {
 						fclose(fp);
 					}
 				});
 
 				fseek(fp, 0, SEEK_END);
-				long fileSize = ftell(fp);
-				if (fileSize < 0) {
+				long file_size = ftell(fp);
+				if (file_size < 0) {
 					goto fail;
 				}
 				fseek(fp, 0, SEEK_SET);
 
-				auto deleter = [compileEnv, fileSize](void *ptr) {
+				auto deleter = [compile_env, file_size](void *ptr) {
 					if (ptr) {
-						compileEnv->allocator->release(ptr, (size_t)fileSize, 1);
+						compile_env->allocator->release(ptr, (size_t)file_size, 1);
 					}
 				};
-				std::unique_ptr<char, decltype(deleter)> fileContent((char *)malloc((size_t)fileSize + 1), std::move(deleter));
-				if (!fileContent) {
+				std::unique_ptr<char, decltype(deleter)> file_content((char *)malloc((size_t)file_size + 1), std::move(deleter));
+				if (!file_content) {
 					goto fail;
 				}
 
-				if (fread(fileContent.get(), (size_t)fileSize, 1, fp) < 1) {
+				if (fread(file_content.get(), (size_t)file_size, 1, fp) < 1) {
 					goto fail;
 				}
 
-				fileContent.get()[fileSize] = '\0';
+				file_content.get()[file_size] = '\0';
 
 				AstNodePtr<ModuleNode> mod;
 
-				if (!(mod = makeAstNode<ModuleNode>(compileEnv->allocator.get(), compileEnv->allocator.get(), compileEnv->document))) {
-					return genOutOfMemoryCompError();
+				if (!(mod = make_ast_node<ModuleNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->document))) {
+					return gen_out_of_memory_comp_error();
 				}
 
-				slkc::TokenList tokenList(compileEnv->allocator.get());
+				slkc::TokenList token_list(compile_env->allocator.get());
 				{
-					slkc::Lexer lexer(compileEnv->allocator.get());
+					slkc::Lexer lexer(compile_env->allocator.get());
 
-					std::string_view sv(fileContent.get(), fileSize);
+					std::string_view sv(file_content.get(), file_size);
 
-					if (auto e = lexer.lex(mod.get(), sv, peff::getDefaultAlloc(), compileEnv->document); e) {
-						auto ce = CompilationError(moduleName->tokenRange, ErrorParsingImportedModuleErrorExData(std::move(*e)));
+					if (auto e = lexer.lex(mod.get(), sv, peff::default_allocator(), compile_env->document); e) {
+						auto ce = CompilationError(module_name->token_range, ErrorParsingImportedModuleErrorExData(std::move(*e)));
 						e.reset();
 						return std::move(ce);
 					}
 
-					tokenList = std::move(lexer.tokenList);
+					token_list = std::move(lexer.token_list);
 				}
 
 				peff::SharedPtr<slkc::Parser> parser;
-				if (!(parser = peff::makeShared<slkc::Parser>(compileEnv->allocator.get(), compileEnv->document, std::move(tokenList), compileEnv->allocator.get()))) {
-					return genOutOfMemoryCompError();
+				if (!(parser = peff::make_shared<slkc::Parser>(compile_env->allocator.get(), compile_env->document, std::move(token_list), compile_env->allocator.get()))) {
+					return gen_out_of_memory_comp_error();
 				}
 
-				IdRefPtr moduleName;
-				if (auto e = parser->parseProgram(mod, moduleName); e) {
-					if (!parser->syntaxErrors.pushBack(std::move(*e))) {
-						return genOutOfMemoryCompError();
+				IdRefPtr module_name;
+				if (auto e = parser->parse_program(mod, module_name); e) {
+					if (!parser->syntax_errors.push_back(std::move(*e))) {
+						return gen_out_of_memory_comp_error();
 					}
 				}
 
-				SLKC_RETURN_IF_COMP_ERROR(completeParentModules(compileEnv, moduleName.get(), mod));
+				SLKC_RETURN_IF_COMP_ERROR(complete_parent_modules(compile_env, module_name.get(), mod));
 
-				if (parser->syntaxErrors.size()) {
-					return CompilationError(moduleName->tokenRange, ErrorParsingImportedModuleErrorExData(mod));
+				if (parser->syntax_errors.size()) {
+					return CompilationError(module_name->token_range, ErrorParsingImportedModuleErrorExData(mod));
 				}
 
 				for (auto i : mod->members) {
-					if (i->getAstNodeType() == AstNodeType::Import) {
-						SLKC_RETURN_IF_COMP_ERROR(loadModule(compileEnv, i.castTo<ImportNode>()->idRef.get()));
+					if (i->get_ast_node_type() == AstNodeType::Import) {
+						SLKC_RETURN_IF_COMP_ERROR(load_module(compile_env, i.cast_to<ImportNode>()->id_ref.get()));
 					}
 				}
-				for (auto i : mod->anonymousImports) {
-					SLKC_RETURN_IF_COMP_ERROR(loadModule(compileEnv, i->idRef.get()));
+				for (auto i : mod->anonymous_imports) {
+					SLKC_RETURN_IF_COMP_ERROR(load_module(compile_env, i->id_ref.get()));
 				}
 
 				return {};
@@ -718,58 +718,58 @@ SLKC_API peff::Option<CompilationError> FileSystemExternalModuleProvider::loadMo
 		}
 
 		{
-			peff::String fullPath(compileEnv->allocator.get());
+			peff::String full_path(compile_env->allocator.get());
 
 			const static char extension[] = ".slx";
 
-			if (!fullPath.resize(curPath.size() + suffixPath.size() + strlen(extension))) {
-				return genOutOfMemoryCompError();
+			if (!full_path.resize(cur_path.size() + suffix_path.size() + strlen(extension))) {
+				return gen_out_of_memory_comp_error();
 			}
 
-			memcpy(fullPath.data(), curPath.data(), curPath.size());
-			memcpy(fullPath.data() + curPath.size(), suffixPath.data(), suffixPath.size());
-			memcpy(fullPath.data() + curPath.size() + suffixPath.size(), extension, strlen(extension));
+			memcpy(full_path.data(), cur_path.data(), cur_path.size());
+			memcpy(full_path.data() + cur_path.size(), suffix_path.data(), suffix_path.size());
+			memcpy(full_path.data() + cur_path.size() + suffix_path.size(), extension, strlen(extension));
 
-			FILE *fp = fopen(fullPath.data(), "rb");
+			FILE *fp = fopen(full_path.data(), "rb");
 			if (fp) {
-				peff::ScopeGuard closeFpGuard([fp]() noexcept {
+				peff::ScopeGuard close_fp_guard([fp]() noexcept {
 					if (fp) {
 						fclose(fp);
 					}
 				});
 
 				fseek(fp, 0, SEEK_END);
-				long fileSize = ftell(fp);
-				if (fileSize < 0) {
-					goto moduleFail;
+				long file_size = ftell(fp);
+				if (file_size < 0) {
+					goto module_fail;
 				}
 				fseek(fp, 0, SEEK_SET);
 
-				auto deleter = [compileEnv, fileSize](void *ptr) {
+				auto deleter = [compile_env, file_size](void *ptr) {
 					if (ptr) {
-						compileEnv->allocator->release(ptr, (size_t)fileSize, 1);
+						compile_env->allocator->release(ptr, (size_t)file_size, 1);
 					}
 				};
-				std::unique_ptr<char, decltype(deleter)> fileContent((char *)malloc((size_t)fileSize), std::move(deleter));
-				if (!fileContent) {
-					goto moduleFail;
+				std::unique_ptr<char, decltype(deleter)> file_content((char *)malloc((size_t)file_size), std::move(deleter));
+				if (!file_content) {
+					goto module_fail;
 				}
 
-				if (fread(fileContent.get(), (size_t)fileSize, 1, fp) < 1) {
-					goto moduleFail;
+				if (fread(file_content.get(), (size_t)file_size, 1, fp) < 1) {
+					goto module_fail;
 				}
 
 				/* TODO: Implement it.*/
 			}
-		moduleFail:;
+		module_fail:;
 		}
 	}
 
-	return CompilationError(moduleName->tokenRange, CompilationErrorKind::ModuleNotFound);
+	return CompilationError(module_name->token_range, CompilationErrorKind::ModuleNotFound);
 }
 
-SLKC_API bool FileSystemExternalModuleProvider::registerImportPath(peff::String &&path) {
-	if (!importPaths.pushBack(std::move(path))) {
+SLKC_API bool FileSystemExternalModuleProvider::register_import_path(peff::String &&path) {
+	if (!import_paths.push_back(std::move(path))) {
 		return false;
 	}
 	return true;

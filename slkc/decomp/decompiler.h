@@ -15,25 +15,25 @@ namespace slkc {
 	};
 
 	struct DecompileEnv {
-		size_t indentLevel = 0;
+		size_t indent_level = 0;
 	};
 
-	SLKC_API const char *getMnemonicName(slake::Opcode opcode);
+	SLKC_API const char *get_mnemonic_name(slake::Opcode opcode);
 
 	class Decompiler final {
 	public:
-		bool dumpCfg = false;
+		bool dump_cfg = false;
 
 		SLKC_API Decompiler();
 		SLKC_API ~Decompiler();
 
-		[[nodiscard]] SLKC_API bool decompileGenericParam(peff::Alloc *allocator, DumpWriter *writer, const slake::GenericParam &genericParam);
-		[[nodiscard]] SLKC_API bool decompileTypeName(peff::Alloc *allocator, DumpWriter *writer, const slake::TypeRef &type);
-		[[nodiscard]] SLKC_API bool decompileValue(peff::Alloc *allocator, DumpWriter *writer, const slake::Value &value);
-		[[nodiscard]] SLKC_API bool decompileIdRefEntries(peff::Alloc *allocator, DumpWriter *writer, const peff::DynArray<slake::IdRefEntry> &idRefIn);
-		[[nodiscard]] SLKC_API bool decompileIdRef(peff::Alloc *allocator, DumpWriter *writer, slake::IdRefObject *idRefIn);
-		[[nodiscard]] SLKC_API bool decompileModuleMembers(peff::Alloc *allocator, DumpWriter *writer, slake::BasicModuleObject *moduleObject, size_t indentLevel = 0);
-		[[nodiscard]] SLKC_API bool decompileModule(peff::Alloc *allocator, DumpWriter *writer, slake::ModuleObject *moduleObject);
+		[[nodiscard]] SLKC_API bool decompile_generic_param(peff::Alloc *allocator, DumpWriter *writer, const slake::GenericParam &generic_param);
+		[[nodiscard]] SLKC_API bool decompile_type_name(peff::Alloc *allocator, DumpWriter *writer, const slake::TypeRef &type);
+		[[nodiscard]] SLKC_API bool decompile_value(peff::Alloc *allocator, DumpWriter *writer, const slake::Value &value);
+		[[nodiscard]] SLKC_API bool decompile_id_ref_entries(peff::Alloc *allocator, DumpWriter *writer, const peff::DynArray<slake::IdRefEntry> &id_ref_in);
+		[[nodiscard]] SLKC_API bool decompile_id_ref(peff::Alloc *allocator, DumpWriter *writer, slake::IdRefObject *id_ref_in);
+		[[nodiscard]] SLKC_API bool decompile_module_members(peff::Alloc *allocator, DumpWriter *writer, slake::BasicModuleObject *module_object, size_t indent_level = 0);
+		[[nodiscard]] SLKC_API bool decompile_module(peff::Alloc *allocator, DumpWriter *writer, slake::ModuleObject *module_object);
 	};
 }
 

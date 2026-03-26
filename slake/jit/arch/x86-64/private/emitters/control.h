@@ -6,8 +6,8 @@
 namespace slake {
 	namespace jit {
 		namespace x86_64 {
-			SLAKE_API DiscreteInstruction emitNearRetIns();
-			SLAKE_API DiscreteInstruction emitFarRetIns();
+			SLAKE_API DiscreteInstruction emit_near_ret_ins();
+			SLAKE_API DiscreteInstruction emit_far_ret_ins();
 		}
 	}
 }

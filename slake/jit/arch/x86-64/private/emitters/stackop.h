@@ -6,10 +6,10 @@
 namespace slake {
 	namespace jit {
 		namespace x86_64 {
-			SLAKE_API DiscreteInstruction emitPushReg16Ins(RegisterId registerId);
-			SLAKE_API DiscreteInstruction emitPushReg64Ins(RegisterId registerId);
-			SLAKE_API DiscreteInstruction emitPopReg16Ins(RegisterId registerId);
-			SLAKE_API DiscreteInstruction emitPopReg64Ins(RegisterId registerId);
+			SLAKE_API DiscreteInstruction emit_push_reg16_ins(RegisterId register_id);
+			SLAKE_API DiscreteInstruction emit_push_reg64_ins(RegisterId register_id);
+			SLAKE_API DiscreteInstruction emit_pop_reg16_ins(RegisterId register_id);
+			SLAKE_API DiscreteInstruction emit_pop_reg64_ins(RegisterId register_id);
 		}
 	}
 }

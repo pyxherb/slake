@@ -4,28 +4,28 @@ using namespace slake;
 
 SLAKE_API CountablePoolAlloc::CountablePoolAlloc(Runtime *runtime, peff::Alloc *upstream) : runtime(runtime), upstream(upstream) {}
 
-SLAKE_API peff::UUID CountablePoolAlloc::getTypeId() const noexcept {
+SLAKE_API peff::UUID CountablePoolAlloc::type_identity() const noexcept {
 	return PEFF_UUID(1a4b6c8d, 0e2f, 4a6b, 8c1d, 2e4f6a8b0c2e);
 }
 
-SLAKE_API size_t CountablePoolAlloc::incRef(size_t globalRc) noexcept {
-	SLAKE_REFERENCED_PARAM(globalRc);
+SLAKE_API size_t CountablePoolAlloc::inc_ref(size_t global_rc) noexcept {
+	SLAKE_REFERENCED_PARAM(global_rc);
 
-	return ++refCount;
+	return ++ref_count;
 }
 
-SLAKE_API size_t CountablePoolAlloc::decRef(size_t globalRc) noexcept {
-	SLAKE_REFERENCED_PARAM(globalRc);
+SLAKE_API size_t CountablePoolAlloc::dec_ref(size_t global_rc) noexcept {
+	SLAKE_REFERENCED_PARAM(global_rc);
 
-	if (!--refCount) {
-		onRefZero();
+	if (!--ref_count) {
+		on_ref_zero();
 		return 0;
 	}
 
-	return refCount;
+	return ref_count;
 }
 
-SLAKE_API void CountablePoolAlloc::onRefZero() noexcept {
+SLAKE_API void CountablePoolAlloc::on_ref_zero() noexcept {
 }
 
 SLAKE_API void *CountablePoolAlloc::alloc(size_t size, size_t alignment) noexcept {
@@ -33,43 +33,43 @@ SLAKE_API void *CountablePoolAlloc::alloc(size_t size, size_t alignment) noexcep
 	if (!p)
 		return nullptr;
 
-	szAllocated += size;
+	sz_allocated += size;
 
 	return p;
 }
 
-SLAKE_API void *CountablePoolAlloc::realloc(void *ptr, size_t size, size_t alignment, size_t newSize, size_t newAlignment) noexcept {
-	void *p = upstream->realloc(ptr, size, alignment, newSize, newAlignment);
+SLAKE_API void *CountablePoolAlloc::realloc(void *ptr, size_t size, size_t alignment, size_t new_size, size_t new_alignment) noexcept {
+	void *p = upstream->realloc(ptr, size, alignment, new_size, new_alignment);
 	if (!p)
 		return nullptr;
 
-	szAllocated -= size;
-	szAllocated += newSize;
+	sz_allocated -= size;
+	sz_allocated += new_size;
 
 	return p;
 }
 
-SLAKE_API void *CountablePoolAlloc::reallocInPlace(void *ptr, size_t size, size_t alignment, size_t newSize, size_t newAlignment) noexcept {
-	void *p = upstream->reallocInPlace(ptr, size, alignment, newSize, newAlignment);
+SLAKE_API void *CountablePoolAlloc::realloc_in_place(void *ptr, size_t size, size_t alignment, size_t new_size, size_t new_alignment) noexcept {
+	void *p = upstream->realloc_in_place(ptr, size, alignment, new_size, new_alignment);
 	if (!p)
 		return nullptr;
 
-	szAllocated -= size;
-	szAllocated += newSize;
+	sz_allocated -= size;
+	sz_allocated += new_size;
 
 	return p;
 }
 
 SLAKE_API void CountablePoolAlloc::release(void *p, size_t size, size_t alignment) noexcept {
-	assert(size <= szAllocated);
+	assert(size <= sz_allocated);
 
 	upstream->release(p, size, alignment);
 
-	szAllocated -= size;
+	sz_allocated -= size;
 }
 
-SLAKE_API bool CountablePoolAlloc::isReplaceable(const peff::Alloc *rhs) const noexcept {
-	if (getTypeId() != rhs->getTypeId())
+SLAKE_API bool CountablePoolAlloc::is_replaceable(const peff::Alloc *rhs) const noexcept {
+	if (type_identity() != rhs->type_identity())
 		return false;
 
 	CountablePoolAlloc *r = (CountablePoolAlloc *)rhs;
@@ -83,52 +83,52 @@ SLAKE_API bool CountablePoolAlloc::isReplaceable(const peff::Alloc *rhs) const n
 	return true;
 }
 
-SLAKE_API size_t GenerationalPoolAlloc::incRef(size_t globalRc) noexcept {
-	++refCount;
+SLAKE_API size_t GenerationalPoolAlloc::inc_ref(size_t global_rc) noexcept {
+	++ref_count;
 
-	// if (globalRc == 1868)
+	// if (global_rc == 1868)
 	//	puts("");
 #ifndef NDEBUG
 	#if SLAKE_DEBUG_ALLOCATOR
-	if (!recordedRefPoints.insert(+globalRc)) {
+	if (!recorded_ref_points.insert(+global_rc)) {
 		puts("Error: error adding reference point!");
 	}
 	#endif
 #endif
-	return refCount;
+	return ref_count;
 }
 
-SLAKE_API size_t GenerationalPoolAlloc::decRef(size_t globalRc) noexcept {
-	--refCount;
+SLAKE_API size_t GenerationalPoolAlloc::dec_ref(size_t global_rc) noexcept {
+	--ref_count;
 #ifndef NDEBUG
 	#if SLAKE_DEBUG_ALLOCATOR
-	if (auto it = recordedRefPoints.find(+globalRc); it != recordedRefPoints.end()) {
-		recordedRefPoints.remove(+globalRc);
+	if (auto it = recorded_ref_points.find(+global_rc); it != recorded_ref_points.end()) {
+		recorded_ref_points.remove(+global_rc);
 	} else {
 		std::terminate();
 	}
 	#endif
 #endif
-	if (!refCount) {
-		onRefZero();
+	if (!ref_count) {
+		on_ref_zero();
 		return 0;
 	}
-	return refCount;
+	return ref_count;
 }
 
 SLAKE_API GenerationalPoolAlloc::GenerationalPoolAlloc(Runtime *runtime, peff::Alloc *upstream) : runtime(runtime), upstream(upstream)
 #ifndef _NDEBUG
 																								  ,
-																								  recordedRefPoints(upstream)
+																								  recorded_ref_points(upstream)
 #endif
 {
 }
 
-SLAKE_API peff::UUID GenerationalPoolAlloc::getTypeId() const noexcept {
+SLAKE_API peff::UUID GenerationalPoolAlloc::type_identity() const noexcept {
 	return PEFF_UUID(3c2d4e6f, 8a0b, 2c4e, 6a8b, 0d2e4f6a8c1d);
 }
 
-SLAKE_API void GenerationalPoolAlloc::onRefZero() noexcept {
+SLAKE_API void GenerationalPoolAlloc::on_ref_zero() noexcept {
 }
 
 SLAKE_API void *GenerationalPoolAlloc::alloc(size_t size, size_t alignment) noexcept {
@@ -136,43 +136,43 @@ SLAKE_API void *GenerationalPoolAlloc::alloc(size_t size, size_t alignment) noex
 	if (!p)
 		return nullptr;
 
-	szAllocated += size;
+	sz_allocated += size;
 
 	return p;
 }
 
-SLAKE_API void *GenerationalPoolAlloc::realloc(void *ptr, size_t size, size_t alignment, size_t newSize, size_t newAlignment) noexcept {
-	void *p = upstream->realloc(ptr, size, alignment, newSize, newAlignment);
+SLAKE_API void *GenerationalPoolAlloc::realloc(void *ptr, size_t size, size_t alignment, size_t new_size, size_t new_alignment) noexcept {
+	void *p = upstream->realloc(ptr, size, alignment, new_size, new_alignment);
 	if (!p)
 		return nullptr;
 
-	szAllocated -= size;
-	szAllocated += newSize;
+	sz_allocated -= size;
+	sz_allocated += new_size;
 
 	return p;
 }
 
-SLAKE_API void *GenerationalPoolAlloc::reallocInPlace(void *ptr, size_t size, size_t alignment, size_t newSize, size_t newAlignment) noexcept {
-	void *p = upstream->reallocInPlace(ptr, size, alignment, newSize, newAlignment);
+SLAKE_API void *GenerationalPoolAlloc::realloc_in_place(void *ptr, size_t size, size_t alignment, size_t new_size, size_t new_alignment) noexcept {
+	void *p = upstream->realloc_in_place(ptr, size, alignment, new_size, new_alignment);
 	if (!p)
 		return nullptr;
 
-	szAllocated -= size;
-	szAllocated += newSize;
+	sz_allocated -= size;
+	sz_allocated += new_size;
 
 	return p;
 }
 
 SLAKE_API void GenerationalPoolAlloc::release(void *p, size_t size, size_t alignment) noexcept {
-	assert(size <= szAllocated);
+	assert(size <= sz_allocated);
 
 	upstream->release(p, size, alignment);
 
-	szAllocated -= size;
+	sz_allocated -= size;
 }
 
-SLAKE_API bool GenerationalPoolAlloc::isReplaceable(const peff::Alloc *rhs) const noexcept {
-	if (getTypeId() != rhs->getTypeId())
+SLAKE_API bool GenerationalPoolAlloc::is_replaceable(const peff::Alloc *rhs) const noexcept {
+	if (type_identity() != rhs->type_identity())
 		return false;
 
 	GenerationalPoolAlloc *r = (GenerationalPoolAlloc *)rhs;
@@ -186,72 +186,72 @@ SLAKE_API bool GenerationalPoolAlloc::isReplaceable(const peff::Alloc *rhs) cons
 	return true;
 }
 
-SLAKE_API peff::Alloc *Runtime::getCurGenAlloc() {
-	return &youngAlloc;
+SLAKE_API peff::Alloc *Runtime::get_cur_gen_alloc() {
+	return &young_alloc;
 }
 
-SLAKE_API size_t Runtime::sizeofType(const TypeRef &type) {
-	switch (type.typeId) {
+SLAKE_API size_t Runtime::sizeof_type(const TypeRef &type) {
+	switch (type.type_id) {
 		case TypeId::I8:
-			return sizeof(int8_t) + (type.typeModifier & TYPE_NULLABLE ? 1 : 0);
+			return sizeof(int8_t) + (type.type_modifier & TYPE_NULLABLE ? 1 : 0);
 		case TypeId::I16:
-			return sizeof(int16_t) + (type.typeModifier & TYPE_NULLABLE ? 1 : 0);
+			return sizeof(int16_t) + (type.type_modifier & TYPE_NULLABLE ? 1 : 0);
 		case TypeId::I32:
-			return sizeof(int32_t) + (type.typeModifier & TYPE_NULLABLE ? 1 : 0);
+			return sizeof(int32_t) + (type.type_modifier & TYPE_NULLABLE ? 1 : 0);
 		case TypeId::I64:
-			return sizeof(int64_t) + (type.typeModifier & TYPE_NULLABLE ? 1 : 0);
+			return sizeof(int64_t) + (type.type_modifier & TYPE_NULLABLE ? 1 : 0);
 		case TypeId::U8:
-			return sizeof(uint8_t) + (type.typeModifier & TYPE_NULLABLE ? 1 : 0);
+			return sizeof(uint8_t) + (type.type_modifier & TYPE_NULLABLE ? 1 : 0);
 		case TypeId::U16:
-			return sizeof(uint16_t) + (type.typeModifier & TYPE_NULLABLE ? 1 : 0);
+			return sizeof(uint16_t) + (type.type_modifier & TYPE_NULLABLE ? 1 : 0);
 		case TypeId::U32:
-			return sizeof(uint32_t) + (type.typeModifier & TYPE_NULLABLE ? 1 : 0);
+			return sizeof(uint32_t) + (type.type_modifier & TYPE_NULLABLE ? 1 : 0);
 		case TypeId::U64:
-			return sizeof(uint64_t) + (type.typeModifier & TYPE_NULLABLE ? 1 : 0);
+			return sizeof(uint64_t) + (type.type_modifier & TYPE_NULLABLE ? 1 : 0);
 		case TypeId::F32:
-			return sizeof(float) + (type.typeModifier & TYPE_NULLABLE ? 1 : 0);
+			return sizeof(float) + (type.type_modifier & TYPE_NULLABLE ? 1 : 0);
 		case TypeId::F64:
-			return sizeof(double) + (type.typeModifier & TYPE_NULLABLE ? 1 : 0);
+			return sizeof(double) + (type.type_modifier & TYPE_NULLABLE ? 1 : 0);
 		case TypeId::Bool:
-			return sizeof(bool) + (type.typeModifier & TYPE_NULLABLE ? 1 : 0);
+			return sizeof(bool) + (type.type_modifier & TYPE_NULLABLE ? 1 : 0);
 		case TypeId::String:
 			return sizeof(void *);
 		case TypeId::Instance:
 			return sizeof(void *);
 		case TypeId::StructInstance: {
-			assert(type.getCustomTypeDef()->typeObject->getObjectKind() == ObjectKind::Struct);
-			auto so = static_cast<StructObject *>(type.getCustomTypeDef()->typeObject);
+			assert(type.get_custom_type_def()->type_object->get_object_kind() == ObjectKind::Struct);
+			auto so = static_cast<StructObject *>(type.get_custom_type_def()->type_object);
 
-			if (!so->cachedObjectLayout)
+			if (!so->cached_object_layout)
 				std::terminate();
 
-			return so->cachedObjectLayout->totalSize + (type.typeModifier & TYPE_NULLABLE ? 1 : 0);
+			return so->cached_object_layout->total_size + (type.type_modifier & TYPE_NULLABLE ? 1 : 0);
 		}
 		case TypeId::ScopedEnum:{
-			assert(type.getCustomTypeDef()->typeObject->getObjectKind() == ObjectKind::ScopedEnum);
-			auto so = static_cast<ScopedEnumObject *>(type.getCustomTypeDef()->typeObject);
+			assert(type.get_custom_type_def()->type_object->get_object_kind() == ObjectKind::ScopedEnum);
+			auto so = static_cast<ScopedEnumObject *>(type.get_custom_type_def()->type_object);
 
-			return sizeofType(so->baseType) + (type.typeModifier & TYPE_NULLABLE ? 1 : 0);
+			return sizeof_type(so->base_type) + (type.type_modifier & TYPE_NULLABLE ? 1 : 0);
 		}
 		case TypeId::TypelessScopedEnum:
-			return sizeof(uint32_t) + (type.typeModifier & TYPE_NULLABLE ? 1 : 0);
+			return sizeof(uint32_t) + (type.type_modifier & TYPE_NULLABLE ? 1 : 0);
 		case TypeId::UnionEnum: {
-			assert(type.getCustomTypeDef()->typeObject->getObjectKind() == ObjectKind::UnionEnum);
-			auto so = static_cast<UnionEnumObject *>(type.getCustomTypeDef()->typeObject);
+			assert(type.get_custom_type_def()->type_object->get_object_kind() == ObjectKind::UnionEnum);
+			auto so = static_cast<UnionEnumObject *>(type.get_custom_type_def()->type_object);
 
-			if (!so->cachedMaxSize)
+			if (!so->cached_max_size)
 				std::terminate();
 
-			return so->cachedMaxSize + (type.typeModifier & TYPE_NULLABLE ? 1 : 0);
+			return so->cached_max_size + (type.type_modifier & TYPE_NULLABLE ? 1 : 0);
 		}
 		case TypeId::UnionEnumItem: {
-			assert(type.getCustomTypeDef()->typeObject->getObjectKind() == ObjectKind::UnionEnumItem);
-			auto so = static_cast<UnionEnumItemObject *>(type.getCustomTypeDef()->typeObject);
+			assert(type.get_custom_type_def()->type_object->get_object_kind() == ObjectKind::UnionEnumItem);
+			auto so = static_cast<UnionEnumItemObject *>(type.get_custom_type_def()->type_object);
 
-			if (!so->cachedObjectLayout)
+			if (!so->cached_object_layout)
 				std::terminate();
 
-			return so->cachedObjectLayout->totalSize + (type.typeModifier & TYPE_NULLABLE ? 1 : 0);
+			return so->cached_object_layout->total_size + (type.type_modifier & TYPE_NULLABLE ? 1 : 0);
 		}
 		case TypeId::Array:
 			return sizeof(void *);
@@ -263,8 +263,8 @@ SLAKE_API size_t Runtime::sizeofType(const TypeRef &type) {
 	std::terminate();
 }
 
-SLAKE_API size_t Runtime::alignofType(const TypeRef &type) {
-	switch (type.typeId) {
+SLAKE_API size_t Runtime::alignof_type(const TypeRef &type) {
+	switch (type.type_id) {
 		case TypeId::I8:
 			return alignof(int8_t);
 		case TypeId::I16:
@@ -292,39 +292,39 @@ SLAKE_API size_t Runtime::alignofType(const TypeRef &type) {
 		case TypeId::Instance:
 			return alignof(void *);
 		case TypeId::StructInstance: {
-			assert(type.getCustomTypeDef()->typeObject->getObjectKind() == ObjectKind::Struct);
-			auto so = static_cast<StructObject *>(type.getCustomTypeDef()->typeObject);
+			assert(type.get_custom_type_def()->type_object->get_object_kind() == ObjectKind::Struct);
+			auto so = static_cast<StructObject *>(type.get_custom_type_def()->type_object);
 
-			if (!so->cachedObjectLayout)
+			if (!so->cached_object_layout)
 				std::terminate();
 
-			return so->cachedObjectLayout->alignment;
+			return so->cached_object_layout->alignment;
 		}
 		case TypeId::ScopedEnum:{
-			assert(type.getCustomTypeDef()->typeObject->getObjectKind() == ObjectKind::ScopedEnum);
-			auto so = static_cast<ScopedEnumObject *>(type.getCustomTypeDef()->typeObject);
+			assert(type.get_custom_type_def()->type_object->get_object_kind() == ObjectKind::ScopedEnum);
+			auto so = static_cast<ScopedEnumObject *>(type.get_custom_type_def()->type_object);
 
-			return alignofType(so->baseType);
+			return alignof_type(so->base_type);
 		}
 		case TypeId::TypelessScopedEnum:
 			return alignof(uint32_t);
 		case TypeId::UnionEnum: {
-			assert(type.getCustomTypeDef()->typeObject->getObjectKind() == ObjectKind::UnionEnum);
-			auto so = static_cast<UnionEnumObject *>(type.getCustomTypeDef()->typeObject);
+			assert(type.get_custom_type_def()->type_object->get_object_kind() == ObjectKind::UnionEnum);
+			auto so = static_cast<UnionEnumObject *>(type.get_custom_type_def()->type_object);
 
-			if (!so->cachedMaxAlign)
+			if (!so->cached_max_align)
 				std::terminate();
 
-			return so->cachedMaxAlign;
+			return so->cached_max_align;
 		}
 		case TypeId::UnionEnumItem: {
-			assert(type.getCustomTypeDef()->typeObject->getObjectKind() == ObjectKind::UnionEnumItem);
-			auto so = static_cast<UnionEnumItemObject *>(type.getCustomTypeDef()->typeObject);
+			assert(type.get_custom_type_def()->type_object->get_object_kind() == ObjectKind::UnionEnumItem);
+			auto so = static_cast<UnionEnumItemObject *>(type.get_custom_type_def()->type_object);
 
-			if (!so->cachedObjectLayout)
+			if (!so->cached_object_layout)
 				std::terminate();
 
-			return so->cachedObjectLayout->alignment;
+			return so->cached_object_layout->alignment;
 		}
 		case TypeId::Array:
 			return alignof(void *);
@@ -336,8 +336,8 @@ SLAKE_API size_t Runtime::alignofType(const TypeRef &type) {
 	std::terminate();
 }
 
-SLAKE_API Value Runtime::defaultValueOf(const TypeRef &type) const {
-	switch (type.typeId) {
+SLAKE_API Value Runtime::default_value_of(const TypeRef &type) const {
+	switch (type.type_id) {
 		case TypeId::I8:
 			return Value((int8_t)0);
 		case TypeId::I16:
@@ -377,171 +377,171 @@ SLAKE_API Value Runtime::defaultValueOf(const TypeRef &type) const {
 	std::terminate();
 }
 
-SLAKE_API InternalExceptionPointer Runtime::loadDeferredCustomTypeDef(CustomTypeDefObject *customTypeDef) {
-	IdRefObject *idRefObject = (IdRefObject *)customTypeDef->typeObject;
+SLAKE_API InternalExceptionPointer Runtime::load_deferred_custom_type_def(CustomTypeDefObject *custom_type_def) {
+	IdRefObject *id_ref_object = (IdRefObject *)custom_type_def->type_object;
 
-	slake::Reference entityRef;
-	SLAKE_RETURN_IF_EXCEPT(resolveIdRef(idRefObject, entityRef));
+	slake::Reference entity_ref;
+	SLAKE_RETURN_IF_EXCEPT(resolve_id_ref(id_ref_object, entity_ref));
 
-	if (!entityRef)
-		return ReferencedMemberNotFoundError::alloc(getFixedAlloc(), idRefObject);
+	if (!entity_ref)
+		return ReferencedMemberNotFoundError::alloc(get_fixed_alloc(), id_ref_object);
 
-	if (entityRef.kind != ReferenceKind::ObjectRef)
+	if (entity_ref.kind != ReferenceKind::ObjectRef)
 		std::terminate();
 
-	customTypeDef->typeObject = entityRef.asObject;
+	custom_type_def->type_object = entity_ref.as_object;
 
 	return {};
 }
 
-SLAKE_API Runtime::Runtime(peff::Alloc *selfAllocator, peff::Alloc *upstream, RuntimeFlags flags)
-	: selfAllocator(selfAllocator),
-	  fixedAlloc(this, upstream),
-	  runtimeFlags(flags | _RT_INITING),
-	  _genericCacheLookupTable(&fixedAlloc),
-	  _genericCacheDir(&fixedAlloc),
-	  managedThreadRunnables(&fixedAlloc),
-	  youngAlloc(this, &fixedAlloc),
-	  persistentAlloc(this, &fixedAlloc),
-	  typeDefs(&fixedAlloc) {
-	runtimeFlags &= ~_RT_INITING;
+SLAKE_API Runtime::Runtime(peff::Alloc *self_allocator, peff::Alloc *upstream, RuntimeFlags flags)
+	: self_allocator(self_allocator),
+	  fixed_alloc(this, upstream),
+	  runtime_flags(flags | _RT_INITING),
+	  _generic_cache_lookup_table(&fixed_alloc),
+	  _generic_cache_dir(&fixed_alloc),
+	  managed_thread_runnables(&fixed_alloc),
+	  young_alloc(this, &fixed_alloc),
+	  persistent_alloc(this, &fixed_alloc),
+	  type_defs(&fixed_alloc) {
+	runtime_flags &= ~_RT_INITING;
 }
 
 SLAKE_API Runtime::~Runtime() {
-	_genericCacheDir.clear();
-	_genericCacheLookupTable.clear();
+	_generic_cache_dir.clear();
+	_generic_cache_lookup_table.clear();
 
-	activeContexts.clear();
-	managedThreadRunnables.clear();
+	active_contexts.clear();
+	managed_thread_runnables.clear();
 
-	runtimeFlags |= _RT_DEINITING;
+	runtime_flags |= _RT_DEINITING;
 
-	_rootObject = nullptr;
+	_root_object = nullptr;
 
-	_szComputedGcLimit = 0;
-	_szComputedPersistentGcLimit = 0;
+	_sz_computed_gc_limit = 0;
+	_sz_computed_persistent_gc_limit = 0;
 	gc();
 
-	_releaseParallelGcResources();
+	_release_parallel_gc_resources();
 
 	// No need to delete the root object explicitly.
 
-	assert(!fixedAlloc.szAllocated);
-	assert(!youngObjectList);
-	assert(!persistentObjectList);
+	assert(!fixed_alloc.sz_allocated);
+	assert(!young_object_list);
+	assert(!persistent_object_list);
 	// Self allocator should be moved out in the dealloc() method, or the runtime has been destructed prematurely.
-	assert(!selfAllocator);
+	assert(!self_allocator);
 }
 
-SLAKE_API TypeDefObject *Runtime::getEqualTypeDef(TypeDefObject *typeDef) const noexcept {
-	if (auto it = typeDefs.find(typeDef); it != typeDefs.end()) {
+SLAKE_API TypeDefObject *Runtime::get_equal_type_def(TypeDefObject *type_def) const noexcept {
+	if (auto it = type_defs.find(type_def); it != type_defs.end()) {
 		return *it;
 	}
 
 	return nullptr;
 }
 
-SLAKE_API void Runtime::unregisterTypeDef(TypeDefObject *typeDef) noexcept {
-	typeDefs.remove(typeDef);
+SLAKE_API void Runtime::unregister_type_def(TypeDefObject *type_def) noexcept {
+	type_defs.remove(type_def);
 }
 
-SLAKE_API InternalExceptionPointer Runtime::registerTypeDef(TypeDefObject *typeDef) noexcept {
-	if (typeDefs.contains(+typeDef))
+SLAKE_API InternalExceptionPointer Runtime::register_type_def(TypeDefObject *type_def) noexcept {
+	if (type_defs.contains(+type_def))
 		std::terminate();
 
-	if (!typeDefs.insert(+typeDef))
+	if (!type_defs.insert(+type_def))
 		return OutOfMemoryError::alloc();
 
 	return {};
 }
 
-SLAKE_API bool Runtime::addObject(Object *object) noexcept {
-	if (youngObjectList) {
-		assert(!youngObjectList->prevSameGenObject);
-		youngObjectList->prevSameGenObject = object;
+SLAKE_API bool Runtime::add_object(Object *object) noexcept {
+	if (young_object_list) {
+		assert(!young_object_list->prev_same_gen_object);
+		young_object_list->prev_same_gen_object = object;
 	}
 
-	object->gcStatus = ObjectGCStatus::Unwalked;
+	object->gc_status = ObjectGCStatus::Unwalked;
 
-	object->nextSameGenObject = youngObjectList;
-	youngObjectList = object;
+	object->next_same_gen_object = young_object_list;
+	young_object_list = object;
 
-	++nYoungObjects;
+	++num_young_objects;
 
 	return true;
 }
 
-SLAKE_API void Runtime::removeObject(Object *object) noexcept {
-	if (youngObjectList == object) {
-		youngObjectList = object->prevSameGenObject ? object->prevSameGenObject : object->nextSameGenObject;
+SLAKE_API void Runtime::remove_object(Object *object) noexcept {
+	if (young_object_list == object) {
+		young_object_list = object->prev_same_gen_object ? object->prev_same_gen_object : object->next_same_gen_object;
 	}
-	if (persistentObjectList == object) {
-		persistentObjectList = object->prevSameGenObject ? object->prevSameGenObject : object->nextSameGenObject;
+	if (persistent_object_list == object) {
+		persistent_object_list = object->prev_same_gen_object ? object->prev_same_gen_object : object->next_same_gen_object;
 	}
 
-	if (object->prevSameGenObject)
-		object->prevSameGenObject->nextSameGenObject = object->nextSameGenObject;
-	if (object->nextSameGenObject)
-		object->nextSameGenObject->prevSameGenObject = object->prevSameGenObject;
+	if (object->prev_same_gen_object)
+		object->prev_same_gen_object->next_same_gen_object = object->next_same_gen_object;
+	if (object->next_same_gen_object)
+		object->next_same_gen_object->prev_same_gen_object = object->prev_same_gen_object;
 
-	switch (object->objectGeneration) {
+	switch (object->object_generation) {
 		case ObjectGeneration::Young:
-			--nYoungObjects;
+			--num_young_objects;
 			break;
 		case ObjectGeneration::Persistent:
-			--nPersistentObjects;
+			--num_persistent_objects;
 			break;
 		default:
 			std::terminate();
 	}
 }
 
-SLAKE_API bool Runtime::constructAt(Runtime *dest, peff::Alloc *upstream, RuntimeFlags flags) {
-	peff::constructAt<Runtime>(dest, nullptr, upstream, flags);
+SLAKE_API bool Runtime::construct_at(Runtime *dest, peff::Alloc *upstream, RuntimeFlags flags) {
+	peff::construct_at<Runtime>(dest, nullptr, upstream, flags);
 
-	peff::ScopeGuard destroyGuard([dest]() noexcept {
+	peff::ScopeGuard destroy_guard([dest]() noexcept {
 		std::destroy_at<Runtime>(dest);
 	});
 
-	if (!(dest->_rootObject = ModuleObject::alloc(dest).get())) {
+	if (!(dest->_root_object = ModuleObject::alloc(dest).get())) {
 		return false;
 	}
 
-	if (!(dest->_allocParallelGcResources())) {
+	if (!(dest->_alloc_parallel_gc_resources())) {
 		return false;
 	}
 
-	dest->_rootObject->setAccess(ACCESS_STATIC);
+	dest->_root_object->set_access(ACCESS_STATIC);
 
-	destroyGuard.release();
+	destroy_guard.release();
 
 	return true;
 }
 
-SLAKE_API Runtime *Runtime::alloc(peff::Alloc *selfAllocator, peff::Alloc *upstream, RuntimeFlags flags) {
+SLAKE_API Runtime *Runtime::alloc(peff::Alloc *self_allocator, peff::Alloc *upstream, RuntimeFlags flags) {
 	Runtime *runtime = nullptr;
 
-	if (!(runtime = (Runtime *)selfAllocator->alloc(sizeof(Runtime), alignof(Runtime)))) {
+	if (!(runtime = (Runtime *)self_allocator->alloc(sizeof(Runtime), alignof(Runtime)))) {
 		return nullptr;
 	}
 
-	peff::ScopeGuard releaseGuard([runtime, selfAllocator]() noexcept {
-		selfAllocator->release(runtime, sizeof(Runtime), alignof(Runtime));
+	peff::ScopeGuard release_guard([runtime, self_allocator]() noexcept {
+		self_allocator->release(runtime, sizeof(Runtime), alignof(Runtime));
 	});
 
-	if (!constructAt(runtime, upstream, flags)) {
+	if (!construct_at(runtime, upstream, flags)) {
 		return nullptr;
 	}
-	runtime->selfAllocator = selfAllocator;
+	runtime->self_allocator = self_allocator;
 
-	releaseGuard.release();
+	release_guard.release();
 	return runtime;
 }
 
 SLAKE_API void Runtime::dealloc() noexcept {
-	peff::RcObjectPtr<peff::Alloc> selfAllocator = std::move(this->selfAllocator);
+	peff::RcObjectPtr<peff::Alloc> self_allocator = std::move(this->self_allocator);
 	std::destroy_at<Runtime>(this);
-	if (selfAllocator) {
-		selfAllocator->release(this, sizeof(Runtime), alignof(Runtime));
+	if (self_allocator) {
+		self_allocator->release(this, sizeof(Runtime), alignof(Runtime));
 	}
 }

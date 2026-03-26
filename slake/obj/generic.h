@@ -9,20 +9,20 @@
 namespace slake {
 	struct GenericParam final {
 		peff::String name;
-		TypeRef inputType = slake::TypeId::Invalid;
-		TypeRef baseType = TypeId::Invalid;
+		TypeRef input_type = slake::TypeId::Invalid;
+		TypeRef base_type = TypeId::Invalid;
 		peff::DynArray<TypeRef> interfaces;
 
-		SLAKE_API GenericParam(peff::Alloc *selfAllocator);
+		SLAKE_API GenericParam(peff::Alloc *self_allocator);
 		SLAKE_API GenericParam(GenericParam &&rhs);
 
 		SLAKE_FORCEINLINE bool copy(GenericParam &dest) const {
-			peff::constructAt<GenericParam>(&dest, interfaces.allocator());
+			peff::construct_at<GenericParam>(&dest, interfaces.allocator());
 
 			if (!dest.name.build(name))
 				return false;
 
-			dest.baseType = baseType;
+			dest.base_type = base_type;
 
 			if (!dest.interfaces.resize(interfaces.size()))
 				return false;
@@ -31,7 +31,7 @@ namespace slake {
 			return true;
 		}
 
-		SLAKE_API void replaceAllocator(peff::Alloc *allocator) noexcept;
+		SLAKE_API void replace_allocator(peff::Alloc *allocator) noexcept;
 	};
 
 	using ParamTypeList = peff::DynArray<TypeRef>;
@@ -48,26 +48,26 @@ namespace slake {
 
 	/// @brief Less than ("<") comparator for containers.
 	struct GenericArgListLtComparator {
-		ParamListComparator innerComparator;
+		ParamListComparator inner_comparator;
 
 		SLAKE_FORCEINLINE bool operator()(const ParamTypeList& lhs, const ParamTypeList& rhs) const noexcept {
-			return innerComparator(lhs, rhs) < 0;
+			return inner_comparator(lhs, rhs) < 0;
 		}
 	};
 
 	/// @brief Equality ("==") comparator for containers.
 	struct GenericArgListEqComparator {
-		ParamListComparator innerComparator;
+		ParamListComparator inner_comparator;
 
 		SLAKE_FORCEINLINE GenericArgListEqComparator(peff::Alloc *allocator) {}
 		SLAKE_API bool operator()(const ParamTypeList& lhs, const ParamTypeList& rhs) const noexcept {
-			return innerComparator(lhs, rhs) == 0;
+			return inner_comparator(lhs, rhs) == 0;
 		}
 	};
 
-	SLAKE_API size_t getGenericParamIndex(const GenericParamList &genericParamList, const std::string_view &name);
+	SLAKE_API size_t get_generic_param_index(const GenericParamList &generic_param_list, const std::string_view &name);
 
-	SLAKE_API GenericParam *getGenericParam(Object *object, const std::string_view &name, Object **ownerOut = nullptr);
+	SLAKE_API GenericParam *get_generic_param(Object *object, const std::string_view &name, Object **owner_out = nullptr);
 }
 
 #endif

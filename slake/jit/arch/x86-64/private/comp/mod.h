@@ -7,14 +7,14 @@
 namespace slake {
 	namespace jit {
 		namespace x86_64 {
-			[[nodiscard]] InternalExceptionPointer compileModInstruction(
-				JITCompileContext &compileContext,
-				opti::ProgramAnalyzedInfo &analyzedInfo,
-				size_t offIns,
-				const Instruction &curIns) noexcept;
+			[[nodiscard]] InternalExceptionPointer compile_mod_instruction(
+				JITCompileContext &compile_context,
+				opti::ProgramAnalyzedInfo &analyzed_info,
+				size_t off_ins,
+				const Instruction &cur_ins) noexcept;
 
-			SLAKE_API float fmodfWrapper(float n, float d);
-			SLAKE_API double fmodWrapper(double n, double d);
+			SLAKE_API float fmodf_wrapper(float n, float d);
+			SLAKE_API double fmod_wrapper(double n, double d);
 		}
 	}
 }

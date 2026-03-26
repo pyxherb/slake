@@ -50,23 +50,23 @@ namespace slkc {
 	class ModuleNode;
 
 	struct TokenRange {
-		ModuleNode *moduleNode = nullptr;
-		size_t beginIndex = SIZE_MAX, endIndex = SIZE_MAX;
+		ModuleNode *module_node = nullptr;
+		size_t begin_index = SIZE_MAX, end_index = SIZE_MAX;
 
 		inline TokenRange() = default;
-		inline TokenRange(ModuleNode *moduleNode, size_t index) : moduleNode(moduleNode), beginIndex(index), endIndex(index) {}
-		inline TokenRange(ModuleNode *moduleNode, size_t beginIndex, size_t endIndex) : moduleNode(moduleNode), beginIndex(beginIndex), endIndex(endIndex) {}
+		inline TokenRange(ModuleNode *module_node, size_t index) : module_node(module_node), begin_index(index), end_index(index) {}
+		inline TokenRange(ModuleNode *module_node, size_t begin_index, size_t end_index) : module_node(module_node), begin_index(begin_index), end_index(end_index) {}
 
 		SLAKE_FORCEINLINE operator bool() const {
-			return beginIndex != SIZE_MAX;
+			return begin_index != SIZE_MAX;
 		}
 
 		SLAKE_FORCEINLINE bool operator<(const TokenRange &rhs) const {
-			return beginIndex < rhs.beginIndex;
+			return begin_index < rhs.begin_index;
 		}
 
 		SLAKE_FORCEINLINE bool operator>(const TokenRange &rhs) const {
-			return beginIndex < rhs.beginIndex;
+			return begin_index < rhs.begin_index;
 		}
 	};
 
@@ -74,105 +74,105 @@ namespace slkc {
 
 	class AstNode;
 
-	typedef void (*AstNodeDestructor)(AstNode *astNode);
+	typedef void (*AstNodeDestructor)(AstNode *ast_node);
 
 	template <typename T>
 	class AstNodePtr {
 	public:
 		using ThisType = AstNodePtr<T>;
 
-		peff::SharedPtr<T> inMemory;
-		uint32_t cachedIndex = UINT32_MAX;
+		peff::SharedPtr<T> in_memory;
+		uint32_t cached_index = UINT32_MAX;
 
 		SLAKE_FORCEINLINE AstNodePtr() {}
-		SLAKE_FORCEINLINE AstNodePtr(const peff::SharedPtr<T> &inMemory) : inMemory(inMemory) {}
-		SLAKE_FORCEINLINE explicit AstNodePtr(uint32_t cachedIndex) : cachedIndex(cachedIndex) {}
+		SLAKE_FORCEINLINE AstNodePtr(const peff::SharedPtr<T> &in_memory) : in_memory(in_memory) {}
+		SLAKE_FORCEINLINE explicit AstNodePtr(uint32_t cached_index) : cached_index(cached_index) {}
 
 		SLAKE_FORCEINLINE AstNodePtr(const ThisType &) = default;
-		SLAKE_FORCEINLINE AstNodePtr(ThisType &&inMemory) = default;
+		SLAKE_FORCEINLINE AstNodePtr(ThisType &&in_memory) = default;
 
 		SLAKE_FORCEINLINE ThisType &operator=(const ThisType &) = default;
 		SLAKE_FORCEINLINE ThisType &operator=(ThisType &&rhs) noexcept {
-			inMemory = std::move(rhs.inMemory);
-			cachedIndex = rhs.cachedIndex;
+			in_memory = std::move(rhs.in_memory);
+			cached_index = rhs.cached_index;
 
-			rhs.cachedIndex = UINT32_MAX;
+			rhs.cached_index = UINT32_MAX;
 
 			return *this;
 		}
 
 		SLAKE_FORCEINLINE T *get() const noexcept {
-			assert(inMemory);
-			return inMemory.get();
+			assert(in_memory);
+			return in_memory.get();
 		}
 
 		SLAKE_FORCEINLINE T *operator*() const noexcept {
-			assert(inMemory);
-			return inMemory.get();
+			assert(in_memory);
+			return in_memory.get();
 		}
 
 		SLAKE_FORCEINLINE T *operator->() const noexcept {
-			assert(inMemory);
-			return inMemory.get();
+			assert(in_memory);
+			return in_memory.get();
 		}
 
-		PEFF_FORCEINLINE int comparesTo(const ThisType &rhs) const noexcept {
-			if (!inMemory) {
-				if (rhs.inMemory) {
+		PEFF_FORCEINLINE int compares_to(const ThisType &rhs) const noexcept {
+			if (!in_memory) {
+				if (rhs.in_memory) {
 					return -1;
 				}
-				if (cachedIndex < rhs.cachedIndex)
+				if (cached_index < rhs.cached_index)
 					return -1;
-				if (cachedIndex > rhs.cachedIndex)
+				if (cached_index > rhs.cached_index)
 					return 1;
 				return 0;
 			} else {
-				if (!rhs.inMemory) {
+				if (!rhs.in_memory) {
 					return 1;
 				}
-				if (inMemory < rhs.inMemory)
+				if (in_memory < rhs.in_memory)
 					return -1;
-				if (inMemory > rhs.inMemory)
+				if (in_memory > rhs.in_memory)
 					return 1;
 				return 0;
 			}
 		}
 
 		PEFF_FORCEINLINE bool operator<(const ThisType &rhs) const noexcept {
-			return comparesTo(rhs) < 0;
+			return compares_to(rhs) < 0;
 		}
 
 		PEFF_FORCEINLINE bool operator>(const ThisType &rhs) const noexcept {
-			return comparesTo(rhs) > 0;
+			return compares_to(rhs) > 0;
 		}
 
 		PEFF_FORCEINLINE bool operator==(const ThisType &rhs) const noexcept {
-			return comparesTo(rhs) == 0;
+			return compares_to(rhs) == 0;
 		}
 
 		PEFF_FORCEINLINE bool operator!=(const ThisType &rhs) const noexcept {
-			return comparesTo(rhs) != 0;
+			return compares_to(rhs) != 0;
 		}
 
 		PEFF_FORCEINLINE operator bool() const noexcept {
-			return (bool)inMemory;
+			return (bool)in_memory;
 		}
 
 		template <typename T1>
-		PEFF_FORCEINLINE AstNodePtr<T1> castTo() const noexcept {
-			if (!inMemory) {
-				if (cachedIndex != UINT32_MAX) {
-					return AstNodePtr<T1>(cachedIndex);
+		PEFF_FORCEINLINE AstNodePtr<T1> cast_to() const noexcept {
+			if (!in_memory) {
+				if (cached_index != UINT32_MAX) {
+					return AstNodePtr<T1>(cached_index);
 				}
 				return {};
 			} else
-				return AstNodePtr<T1>(inMemory.template castTo<T1>());
+				return AstNodePtr<T1>(in_memory.template cast_to<T1>());
 		}
 	};
 
 	template <typename T>
-	PEFF_FORCEINLINE peff::WeakPtr<T> toWeakPtr(const AstNodePtr<T> &ptr) noexcept {
-		return peff::WeakPtr<T>(ptr.inMemory);
+	PEFF_FORCEINLINE peff::WeakPtr<T> to_weak_ptr(const AstNodePtr<T> &ptr) noexcept {
+		return peff::WeakPtr<T>(ptr.in_memory);
 	}
 
 	struct BaseAstNodeDuplicationTask {
@@ -195,10 +195,10 @@ namespace slkc {
 		SLAKE_FORCEINLINE virtual ~AstNodeDuplicationTask() {}
 
 		SLAKE_FORCEINLINE static ThisType *alloc(peff::Alloc *allocator, T &&callable) noexcept {
-			return peff::allocAndConstruct<ThisType>(allocator, alignof(ThisType), allocator, std::move(callable));
+			return peff::alloc_and_construct<ThisType>(allocator, alignof(ThisType), allocator, std::move(callable));
 		}
 		SLAKE_FORCEINLINE virtual void dealloc() override {
-			peff::destroyAndRelease<ThisType>(allocator.get(), this, alignof(ThisType));
+			peff::destroy_and_release<ThisType>(allocator.get(), this, alignof(ThisType));
 		}
 		[[nodiscard]] virtual bool perform() override {
 			return callable();
@@ -215,13 +215,13 @@ namespace slkc {
 			while (tasks.size()) {
 				if (!tasks.front()->perform())
 					return false;
-				tasks.popFront();
+				tasks.pop_front();
 			}
 			return true;
 		}
 
 		template <typename T>
-		[[nodiscard]] bool pushTask(T &&callable) noexcept {
+		[[nodiscard]] bool push_task(T &&callable) noexcept {
 			auto task =
 				std::unique_ptr<
 					BaseAstNodeDuplicationTask,
@@ -229,7 +229,7 @@ namespace slkc {
 					AstNodeDuplicationTask<T>::alloc(allocator.get(), std::move(callable)));
 			if (!task)
 				return false;
-			return tasks.pushBack(std::move(task));
+			return tasks.push_back(std::move(task));
 		}
 	};
 
@@ -240,105 +240,105 @@ namespace slkc {
 	};
 
 	struct ObjectMemberAstDumpingTaskExData {
-		wandjson::ObjectValue *objectValue;
+		wandjson::ObjectValue *object_value;
 		std::string_view name;	// The name will always refer to a constant or present string.
-		AstNodePtr<AstNode> astNode;
+		AstNodePtr<AstNode> ast_node;
 
-		SLAKE_FORCEINLINE ObjectMemberAstDumpingTaskExData(wandjson::ObjectValue *objectValue, const std::string_view &name, const AstNodePtr<AstNode> &astNode) : objectValue(objectValue), name(name), astNode(astNode) {}
+		SLAKE_FORCEINLINE ObjectMemberAstDumpingTaskExData(wandjson::ObjectValue *object_value, const std::string_view &name, const AstNodePtr<AstNode> &ast_node) : object_value(object_value), name(name), ast_node(ast_node) {}
 	};
 
 	struct ArrayInsertionAstDumpingTaskExData {
-		wandjson::ArrayValue *arrayValue;
-		AstNodePtr<AstNode> astNode;
+		wandjson::ArrayValue *array_value;
+		AstNodePtr<AstNode> ast_node;
 
-		SLAKE_FORCEINLINE ArrayInsertionAstDumpingTaskExData(wandjson::ArrayValue *arrayValue, const AstNodePtr<AstNode> &astNode) : arrayValue(arrayValue), astNode(astNode) {}
+		SLAKE_FORCEINLINE ArrayInsertionAstDumpingTaskExData(wandjson::ArrayValue *array_value, const AstNodePtr<AstNode> &ast_node) : array_value(array_value), ast_node(ast_node) {}
 	};
 
 	struct AstDumpingTask {
 		std::variant<
 			ObjectMemberAstDumpingTaskExData,
 			ArrayInsertionAstDumpingTaskExData>
-			exData;
-		AstDumpingTaskType taskType;
+			ex_data;
+		AstDumpingTaskType task_type;
 
-		SLAKE_FORCEINLINE AstDumpingTask(ObjectMemberAstDumpingTaskExData &&exData) : exData(std::move(exData)), taskType(AstDumpingTaskType::ObjectMember) {}
-		SLAKE_FORCEINLINE AstDumpingTask(ArrayInsertionAstDumpingTaskExData &&exData) : exData(std::move(exData)), taskType(AstDumpingTaskType::ArrayInsertion) {}
+		SLAKE_FORCEINLINE AstDumpingTask(ObjectMemberAstDumpingTaskExData &&ex_data) : ex_data(std::move(ex_data)), task_type(AstDumpingTaskType::ObjectMember) {}
+		SLAKE_FORCEINLINE AstDumpingTask(ArrayInsertionAstDumpingTaskExData &&ex_data) : ex_data(std::move(ex_data)), task_type(AstDumpingTaskType::ArrayInsertion) {}
 	};
 
 	struct AstDumpingContext {
-		peff::List<AstDumpingTask> dumpingTasks;
+		peff::List<AstDumpingTask> dumping_tasks;
 
-		SLAKE_FORCEINLINE AstDumpingContext(peff::Alloc *allocator) : dumpingTasks(allocator) {}
+		SLAKE_FORCEINLINE AstDumpingContext(peff::Alloc *allocator) : dumping_tasks(allocator) {}
 	};
 #endif
 
 	class AstNode : public peff::SharedFromThis<AstNode> {
 	private:
-		AstNodeType _astNodeType;
+		AstNodeType _ast_node_type;
 
 	protected:
-		SLKC_API virtual AstNodePtr<AstNode> doDuplicate(peff::Alloc *newAllocator, DuplicationContext &context) const;
+		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const;
 #if SLKC_WITH_AST_DUMPING
-		SLKC_API virtual wandjson::Value *doDump(peff::Alloc *allocator, AstDumpingContext &context) const;
+		SLKC_API virtual wandjson::Value *do_dump(peff::Alloc *allocator, AstDumpingContext &context) const;
 #endif
 
 	public:
-		peff::RcObjectPtr<peff::Alloc> selfAllocator;
+		peff::RcObjectPtr<peff::Alloc> self_allocator;
 		Document *document;
-		TokenRange tokenRange;
+		TokenRange token_range;
 
-		AstNode *_nextDestructible = nullptr;
+		AstNode *_next_destructible = nullptr;
 		AstNodeDestructor _destructor = nullptr;
 
-		SLKC_API AstNode(AstNodeType astNodeType, peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
-		SLKC_API AstNode(const AstNode &other, peff::Alloc *newAllocator, DuplicationContext &context);
+		SLKC_API AstNode(AstNodeType ast_node_type, peff::Alloc *self_allocator, const peff::SharedPtr<Document> &document);
+		SLKC_API AstNode(const AstNode &other, peff::Alloc *new_allocator, DuplicationContext &context);
 		SLKC_API virtual ~AstNode();
 
 		template <typename T>
-		SLAKE_FORCEINLINE AstNodePtr<T> duplicate(peff::Alloc *newAllocator) const noexcept {
-			DuplicationContext context(newAllocator);
+		SLAKE_FORCEINLINE AstNodePtr<T> duplicate(peff::Alloc *new_allocator) const noexcept {
+			DuplicationContext context(new_allocator);
 
-			auto newNode = doDuplicate(newAllocator, context);
+			auto new_node = do_duplicate(new_allocator, context);
 
-			if (!newNode)
+			if (!new_node)
 				return {};
 
 			if (!context.exec())
 				return {};
 
-			return newNode.castTo<T>();
+			return new_node.cast_to<T>();
 		}
 
 #if SLKC_WITH_AST_DUMPING
 		SLAKE_API wandjson::Value *dump(peff::Alloc *allocator) const noexcept;
 #endif
 
-		SLAKE_FORCEINLINE AstNodeType getAstNodeType() const noexcept {
-			return _astNodeType;
+		SLAKE_FORCEINLINE AstNodeType get_ast_node_type() const noexcept {
+			return _ast_node_type;
 		}
 	};
 
-	SLKC_API void addAstNodeToDestructibleList(AstNode *astNode, AstNodeDestructor _destructor);
+	SLKC_API void add_ast_node_to_destructible_list(AstNode *ast_node, AstNodeDestructor _destructor);
 
 	template <typename T>
 	struct AstNodeControlBlock : public peff::SharedPtr<T>::DefaultSharedPtrControlBlock {
 		PEFF_FORCEINLINE AstNodeControlBlock(peff::Alloc *allocator, T *ptr) noexcept : peff::SharedPtr<T>::DefaultSharedPtrControlBlock(allocator, ptr) {}
 		inline virtual ~AstNodeControlBlock() {}
 
-		inline virtual void onStrongRefZero() noexcept override {
-			addAstNodeToDestructibleList(this->ptr, [](AstNode *astNode) {
-				peff::destroyAndRelease<T>(astNode->selfAllocator.get(), static_cast<T *>(astNode), alignof(T));
+		inline virtual void on_strong_ref_zero() noexcept override {
+			add_ast_node_to_destructible_list(this->ptr, [](AstNode *ast_node) {
+				peff::destroy_and_release<T>(ast_node->self_allocator.get(), static_cast<T *>(ast_node), alignof(T));
 			});
 		}
 
-		inline virtual void onRefZero() noexcept override {
-			peff::destroyAndRelease<AstNodeControlBlock<T>>(this->allocator.get(), this, alignof(AstNodeControlBlock<T>));
+		inline virtual void on_ref_zero() noexcept override {
+			peff::destroy_and_release<AstNodeControlBlock<T>>(this->allocator.get(), this, alignof(AstNodeControlBlock<T>));
 		}
 	};
 
 	template <typename T, typename... Args>
-	SLAKE_FORCEINLINE AstNodePtr<T> makeAstNode(peff::Alloc *allocator, Args &&...args) {
-		return peff::makeSharedWithControlBlock<T, AstNodeControlBlock<T>>(allocator, std::forward<Args>(args)...);
+	SLAKE_FORCEINLINE AstNodePtr<T> make_ast_node(peff::Alloc *allocator, Args &&...args) {
+		return peff::make_shared_with_control_block<T, AstNodeControlBlock<T>>(allocator, std::forward<Args>(args)...);
 	}
 }
 

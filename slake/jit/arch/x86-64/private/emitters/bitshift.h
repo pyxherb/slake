@@ -6,31 +6,31 @@
 namespace slake {
 	namespace jit {
 		namespace x86_64 {
-			SLAKE_API DiscreteInstruction emitShlReg8WithImm8Ins(RegisterId registerId, uint8_t times);
-			SLAKE_API DiscreteInstruction emitShlReg16WithImm8Ins(RegisterId registerId, uint8_t times);
-			SLAKE_API DiscreteInstruction emitShlReg32WithImm8Ins(RegisterId registerId, uint8_t times);
-			SLAKE_API DiscreteInstruction emitShlReg64WithImm8Ins(RegisterId registerId, uint8_t times);
-			SLAKE_API DiscreteInstruction emitShlReg8WithClIns(RegisterId registerId);
-			SLAKE_API DiscreteInstruction emitShlReg16WithClIns(RegisterId registerId);
-			SLAKE_API DiscreteInstruction emitShlReg32WithClIns(RegisterId registerId);
-			SLAKE_API DiscreteInstruction emitShlReg64WithClIns(RegisterId registerId);
-			SLAKE_API DiscreteInstruction emitShrReg8WithImm8Ins(RegisterId registerId, uint8_t times);
-			SLAKE_API DiscreteInstruction emitShrReg16WithImm8Ins(RegisterId registerId, uint8_t times);
-			SLAKE_API DiscreteInstruction emitShrReg32WithImm8Ins(RegisterId registerId, uint8_t times);
-			SLAKE_API DiscreteInstruction emitShrReg64WithImm8Ins(RegisterId registerId, uint8_t times);
-			SLAKE_API DiscreteInstruction emitShrReg8WithClIns(RegisterId registerId);
-			SLAKE_API DiscreteInstruction emitShrReg16WithClIns(RegisterId registerId);
-			SLAKE_API DiscreteInstruction emitShrReg32WithClIns(RegisterId registerId);
-			SLAKE_API DiscreteInstruction emitShrReg64WithClIns(RegisterId registerId);
+			SLAKE_API DiscreteInstruction emit_shl_reg8_with_imm8_ins(RegisterId register_id, uint8_t times);
+			SLAKE_API DiscreteInstruction emit_shl_reg16_with_imm8_ins(RegisterId register_id, uint8_t times);
+			SLAKE_API DiscreteInstruction emit_shl_reg32_with_imm8_ins(RegisterId register_id, uint8_t times);
+			SLAKE_API DiscreteInstruction emit_shl_reg64_with_imm8_ins(RegisterId register_id, uint8_t times);
+			SLAKE_API DiscreteInstruction emit_shl_reg8_with_cl_ins(RegisterId register_id);
+			SLAKE_API DiscreteInstruction emit_shl_reg16_with_cl_ins(RegisterId register_id);
+			SLAKE_API DiscreteInstruction emit_shl_reg32_with_cl_ins(RegisterId register_id);
+			SLAKE_API DiscreteInstruction emit_shl_reg64_with_cl_ins(RegisterId register_id);
+			SLAKE_API DiscreteInstruction emit_shr_reg8_with_imm8_ins(RegisterId register_id, uint8_t times);
+			SLAKE_API DiscreteInstruction emit_shr_reg16_with_imm8_ins(RegisterId register_id, uint8_t times);
+			SLAKE_API DiscreteInstruction emit_shr_reg32_with_imm8_ins(RegisterId register_id, uint8_t times);
+			SLAKE_API DiscreteInstruction emit_shr_reg64_with_imm8_ins(RegisterId register_id, uint8_t times);
+			SLAKE_API DiscreteInstruction emit_shr_reg8_with_cl_ins(RegisterId register_id);
+			SLAKE_API DiscreteInstruction emit_shr_reg16_with_cl_ins(RegisterId register_id);
+			SLAKE_API DiscreteInstruction emit_shr_reg32_with_cl_ins(RegisterId register_id);
+			SLAKE_API DiscreteInstruction emit_shr_reg64_with_cl_ins(RegisterId register_id);
 
-			SLAKE_API DiscreteInstruction emitSarReg8WithImm8Ins(RegisterId registerId, uint8_t times);
-			SLAKE_API DiscreteInstruction emitSarReg16WithImm8Ins(RegisterId registerId, uint8_t times);
-			SLAKE_API DiscreteInstruction emitSarReg32WithImm8Ins(RegisterId registerId, uint8_t times);
-			SLAKE_API DiscreteInstruction emitSarReg64WithImm8Ins(RegisterId registerId, uint8_t times);
-			SLAKE_API DiscreteInstruction emitSarReg8WithClIns(RegisterId registerId);
-			SLAKE_API DiscreteInstruction emitSarReg16WithClIns(RegisterId registerId);
-			SLAKE_API DiscreteInstruction emitSarReg32WithClIns(RegisterId registerId);
-			SLAKE_API DiscreteInstruction emitSarReg64WithClIns(RegisterId registerId);
+			SLAKE_API DiscreteInstruction emit_sar_reg8_with_imm8_ins(RegisterId register_id, uint8_t times);
+			SLAKE_API DiscreteInstruction emit_sar_reg16_with_imm8_ins(RegisterId register_id, uint8_t times);
+			SLAKE_API DiscreteInstruction emit_sar_reg32_with_imm8_ins(RegisterId register_id, uint8_t times);
+			SLAKE_API DiscreteInstruction emit_sar_reg64_with_imm8_ins(RegisterId register_id, uint8_t times);
+			SLAKE_API DiscreteInstruction emit_sar_reg8_with_cl_ins(RegisterId register_id);
+			SLAKE_API DiscreteInstruction emit_sar_reg16_with_cl_ins(RegisterId register_id);
+			SLAKE_API DiscreteInstruction emit_sar_reg32_with_cl_ins(RegisterId register_id);
+			SLAKE_API DiscreteInstruction emit_sar_reg64_with_cl_ins(RegisterId register_id);
 		}
 	}
 }

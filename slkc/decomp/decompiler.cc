@@ -13,7 +13,7 @@ SLKC_API DumpWriter::~DumpWriter() {
 	case slake::Opcode::name:    \
 		return #name;
 
-SLKC_API const char *slkc::getMnemonicName(slake::Opcode opcode) {
+SLKC_API const char *slkc::get_mnemonic_name(slake::Opcode opcode) {
 	switch (opcode) {
 		MNEMONIC_NAME_CASE(INVALID)
 		MNEMONIC_NAME_CASE(LOAD)
@@ -103,25 +103,25 @@ SLKC_API Decompiler::Decompiler() {
 SLKC_API Decompiler::~Decompiler() {
 }
 
-SLKC_API bool Decompiler::decompileGenericParam(peff::Alloc *allocator, DumpWriter *writer, const slake::GenericParam &genericParam) {
-	SLKC_RETURN_IF_FALSE(writer->write(genericParam.name));
-	if (genericParam.inputType != slake::TypeId::Invalid) {
+SLKC_API bool Decompiler::decompile_generic_param(peff::Alloc *allocator, DumpWriter *writer, const slake::GenericParam &generic_param) {
+	SLKC_RETURN_IF_FALSE(writer->write(generic_param.name));
+	if (generic_param.input_type != slake::TypeId::Invalid) {
 		SLKC_RETURN_IF_FALSE(writer->write(" as "));
-		SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, genericParam.inputType));
-		if ((genericParam.baseType != slake::TypeId::Invalid) || (genericParam.interfaces.size()))
+		SLKC_RETURN_IF_FALSE(decompile_type_name(allocator, writer, generic_param.input_type));
+		if ((generic_param.base_type != slake::TypeId::Invalid) || (generic_param.interfaces.size()))
 			SLKC_RETURN_IF_FALSE(writer->write("/* With extraneous constraints */"));
 	} else {
-		if (genericParam.baseType != slake::TypeId::Invalid) {
+		if (generic_param.base_type != slake::TypeId::Invalid) {
 			SLKC_RETURN_IF_FALSE(writer->write("("));
-			SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, genericParam.baseType));
+			SLKC_RETURN_IF_FALSE(decompile_type_name(allocator, writer, generic_param.base_type));
 			SLKC_RETURN_IF_FALSE(writer->write(")"));
 		}
-		if (genericParam.interfaces.size()) {
+		if (generic_param.interfaces.size()) {
 			SLKC_RETURN_IF_FALSE(writer->write(": "));
-			for (size_t i = 0; i < genericParam.interfaces.size(); ++i) {
+			for (size_t i = 0; i < generic_param.interfaces.size(); ++i) {
 				if (i)
 					SLKC_RETURN_IF_FALSE(writer->write(" + "));
-				SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, genericParam.interfaces.at(i)));
+				SLKC_RETURN_IF_FALSE(decompile_type_name(allocator, writer, generic_param.interfaces.at(i)));
 			}
 		}
 	}
@@ -129,8 +129,8 @@ SLKC_API bool Decompiler::decompileGenericParam(peff::Alloc *allocator, DumpWrit
 	return true;
 }
 
-SLKC_API bool Decompiler::decompileTypeName(peff::Alloc *allocator, DumpWriter *writer, const slake::TypeRef &type) {
-	switch (type.typeId) {
+SLKC_API bool Decompiler::decompile_type_name(peff::Alloc *allocator, DumpWriter *writer, const slake::TypeRef &type) {
+	switch (type.type_id) {
 		case slake::TypeId::Invalid:
 			SLKC_RETURN_IF_FALSE(writer->write("/* Invalid type */"));
 			break;
@@ -174,25 +174,25 @@ SLKC_API bool Decompiler::decompileTypeName(peff::Alloc *allocator, DumpWriter *
 			SLKC_RETURN_IF_FALSE(writer->write("string"));
 			break;
 		case slake::TypeId::Instance: {
-			auto obj = type.getCustomTypeDef();
+			auto obj = type.get_custom_type_def();
 
-			slake::Runtime *runtime = obj->associatedRuntime;
+			slake::Runtime *runtime = obj->associated_runtime;
 
-			switch (obj->typeObject->getObjectKind()) {
+			switch (obj->type_object->get_object_kind()) {
 				case slake::ObjectKind::Class:
 				case slake::ObjectKind::Interface: {
 					SLKC_RETURN_IF_FALSE(writer->write("@"));
 
-					peff::DynArray<slake::IdRefEntry> moduleFullName(allocator);
+					peff::DynArray<slake::IdRefEntry> module_full_name(allocator);
 
-					if (!runtime->getFullRef(allocator, (slake::MemberObject *)obj->typeObject, moduleFullName))
+					if (!runtime->get_full_ref(allocator, (slake::MemberObject *)obj->type_object, module_full_name))
 						return false;
 
 					break;
 				}
 				case slake::ObjectKind::IdRef: {
 					SLKC_RETURN_IF_FALSE(writer->write("@"));
-					SLKC_RETURN_IF_FALSE(decompileIdRef(allocator, writer, (slake::IdRefObject *)obj->typeObject));
+					SLKC_RETURN_IF_FALSE(decompile_id_ref(allocator, writer, (slake::IdRefObject *)obj->type_object));
 					break;
 				}
 				default:
@@ -201,24 +201,24 @@ SLKC_API bool Decompiler::decompileTypeName(peff::Alloc *allocator, DumpWriter *
 			break;
 		}
 		case slake::TypeId::StructInstance: {
-			auto obj = type.getCustomTypeDef();
+			auto obj = type.get_custom_type_def();
 
-			slake::Runtime *runtime = obj->associatedRuntime;
+			slake::Runtime *runtime = obj->associated_runtime;
 
-			switch (obj->typeObject->getObjectKind()) {
+			switch (obj->type_object->get_object_kind()) {
 				case slake::ObjectKind::Struct: {
 					SLKC_RETURN_IF_FALSE(writer->write("struct "));
 
-					peff::DynArray<slake::IdRefEntry> moduleFullName(allocator);
+					peff::DynArray<slake::IdRefEntry> module_full_name(allocator);
 
-					if (!runtime->getFullRef(allocator, (slake::MemberObject *)obj->typeObject, moduleFullName))
+					if (!runtime->get_full_ref(allocator, (slake::MemberObject *)obj->type_object, module_full_name))
 						return false;
 
 					break;
 				}
 				case slake::ObjectKind::IdRef: {
 					SLKC_RETURN_IF_FALSE(writer->write("struct "));
-					SLKC_RETURN_IF_FALSE(decompileIdRef(allocator, writer, (slake::IdRefObject *)obj->typeObject));
+					SLKC_RETURN_IF_FALSE(decompile_id_ref(allocator, writer, (slake::IdRefObject *)obj->type_object));
 					break;
 				}
 				default:
@@ -227,24 +227,24 @@ SLKC_API bool Decompiler::decompileTypeName(peff::Alloc *allocator, DumpWriter *
 			break;
 		}
 		case slake::TypeId::ScopedEnum: {
-			auto obj = type.getCustomTypeDef();
+			auto obj = type.get_custom_type_def();
 
-			slake::Runtime *runtime = obj->associatedRuntime;
+			slake::Runtime *runtime = obj->associated_runtime;
 
-			switch (obj->typeObject->getObjectKind()) {
+			switch (obj->type_object->get_object_kind()) {
 				case slake::ObjectKind::Struct: {
 					SLKC_RETURN_IF_FALSE(writer->write("enum base "));
 
-					peff::DynArray<slake::IdRefEntry> moduleFullName(allocator);
+					peff::DynArray<slake::IdRefEntry> module_full_name(allocator);
 
-					if (!runtime->getFullRef(allocator, (slake::MemberObject *)obj->typeObject, moduleFullName))
+					if (!runtime->get_full_ref(allocator, (slake::MemberObject *)obj->type_object, module_full_name))
 						return false;
 
 					break;
 				}
 				case slake::ObjectKind::IdRef: {
 					SLKC_RETURN_IF_FALSE(writer->write("enum base "));
-					SLKC_RETURN_IF_FALSE(decompileIdRef(allocator, writer, (slake::IdRefObject *)obj->typeObject));
+					SLKC_RETURN_IF_FALSE(decompile_id_ref(allocator, writer, (slake::IdRefObject *)obj->type_object));
 					break;
 				}
 				default:
@@ -253,24 +253,24 @@ SLKC_API bool Decompiler::decompileTypeName(peff::Alloc *allocator, DumpWriter *
 			break;
 		}
 		case slake::TypeId::TypelessScopedEnum: {
-			auto obj = type.getCustomTypeDef();
+			auto obj = type.get_custom_type_def();
 
-			slake::Runtime *runtime = obj->associatedRuntime;
+			slake::Runtime *runtime = obj->associated_runtime;
 
-			switch (obj->typeObject->getObjectKind()) {
+			switch (obj->type_object->get_object_kind()) {
 				case slake::ObjectKind::Struct: {
 					SLKC_RETURN_IF_FALSE(writer->write("enum "));
 
-					peff::DynArray<slake::IdRefEntry> moduleFullName(allocator);
+					peff::DynArray<slake::IdRefEntry> module_full_name(allocator);
 
-					if (!runtime->getFullRef(allocator, (slake::MemberObject *)obj->typeObject, moduleFullName))
+					if (!runtime->get_full_ref(allocator, (slake::MemberObject *)obj->type_object, module_full_name))
 						return false;
 
 					break;
 				}
 				case slake::ObjectKind::IdRef: {
 					SLKC_RETURN_IF_FALSE(writer->write("enum "));
-					SLKC_RETURN_IF_FALSE(decompileIdRef(allocator, writer, (slake::IdRefObject *)obj->typeObject));
+					SLKC_RETURN_IF_FALSE(decompile_id_ref(allocator, writer, (slake::IdRefObject *)obj->type_object));
 					break;
 				}
 				default:
@@ -279,24 +279,24 @@ SLKC_API bool Decompiler::decompileTypeName(peff::Alloc *allocator, DumpWriter *
 			break;
 		}
 		case slake::TypeId::UnionEnum: {
-			auto obj = type.getCustomTypeDef();
+			auto obj = type.get_custom_type_def();
 
-			slake::Runtime *runtime = obj->associatedRuntime;
+			slake::Runtime *runtime = obj->associated_runtime;
 
-			switch (obj->typeObject->getObjectKind()) {
+			switch (obj->type_object->get_object_kind()) {
 				case slake::ObjectKind::Struct: {
 					SLKC_RETURN_IF_FALSE(writer->write("enum union "));
 
-					peff::DynArray<slake::IdRefEntry> moduleFullName(allocator);
+					peff::DynArray<slake::IdRefEntry> module_full_name(allocator);
 
-					if (!runtime->getFullRef(allocator, (slake::MemberObject *)obj->typeObject, moduleFullName))
+					if (!runtime->get_full_ref(allocator, (slake::MemberObject *)obj->type_object, module_full_name))
 						return false;
 
 					break;
 				}
 				case slake::ObjectKind::IdRef: {
 					SLKC_RETURN_IF_FALSE(writer->write("enum union "));
-					SLKC_RETURN_IF_FALSE(decompileIdRef(allocator, writer, (slake::IdRefObject *)obj->typeObject));
+					SLKC_RETURN_IF_FALSE(decompile_id_ref(allocator, writer, (slake::IdRefObject *)obj->type_object));
 					break;
 				}
 				default:
@@ -305,24 +305,24 @@ SLKC_API bool Decompiler::decompileTypeName(peff::Alloc *allocator, DumpWriter *
 			break;
 		}
 		case slake::TypeId::UnionEnumItem: {
-			auto obj = type.getCustomTypeDef();
+			auto obj = type.get_custom_type_def();
 
-			slake::Runtime *runtime = obj->associatedRuntime;
+			slake::Runtime *runtime = obj->associated_runtime;
 
-			switch (obj->typeObject->getObjectKind()) {
+			switch (obj->type_object->get_object_kind()) {
 				case slake::ObjectKind::Struct: {
 					SLKC_RETURN_IF_FALSE(writer->write("enum struct "));
 
-					peff::DynArray<slake::IdRefEntry> moduleFullName(allocator);
+					peff::DynArray<slake::IdRefEntry> module_full_name(allocator);
 
-					if (!runtime->getFullRef(allocator, (slake::MemberObject *)obj->typeObject, moduleFullName))
+					if (!runtime->get_full_ref(allocator, (slake::MemberObject *)obj->type_object, module_full_name))
 						return false;
 
 					break;
 				}
 				case slake::ObjectKind::IdRef: {
 					SLKC_RETURN_IF_FALSE(writer->write("enum struct "));
-					SLKC_RETURN_IF_FALSE(decompileIdRef(allocator, writer, (slake::IdRefObject *)obj->typeObject));
+					SLKC_RETURN_IF_FALSE(decompile_id_ref(allocator, writer, (slake::IdRefObject *)obj->type_object));
 					break;
 				}
 				default:
@@ -331,29 +331,29 @@ SLKC_API bool Decompiler::decompileTypeName(peff::Alloc *allocator, DumpWriter *
 			break;
 		}
 		case slake::TypeId::GenericArg: {
-			auto obj = type.getGenericArgTypeDef();
+			auto obj = type.get_generic_arg_type_def();
 
-			slake::Runtime *runtime = obj->associatedRuntime;
+			slake::Runtime *runtime = obj->associated_runtime;
 
 			SLKC_RETURN_IF_FALSE(writer->write("@!"));
-			SLKC_RETURN_IF_FALSE(writer->write(obj->nameObject->data.data(), obj->nameObject->data.size()));
+			SLKC_RETURN_IF_FALSE(writer->write(obj->name_object->data.data(), obj->name_object->data.size()));
 			break;
 		}
 		case slake::TypeId::Array: {
-			auto obj = type.getArrayTypeDef();
+			auto obj = type.get_array_type_def();
 
-			slake::Runtime *runtime = obj->associatedRuntime;
+			slake::Runtime *runtime = obj->associated_runtime;
 
-			SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, obj->elementType->typeRef));
+			SLKC_RETURN_IF_FALSE(decompile_type_name(allocator, writer, obj->element_type->type_ref));
 			SLKC_RETURN_IF_FALSE(writer->write("[]"));
 			break;
 		}
 		case slake::TypeId::Ref: {
-			auto obj = type.getRefTypeDef();
+			auto obj = type.get_ref_type_def();
 
-			slake::Runtime *runtime = obj->associatedRuntime;
+			slake::Runtime *runtime = obj->associated_runtime;
 
-			SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, obj->referencedType->typeRef));
+			SLKC_RETURN_IF_FALSE(decompile_type_name(allocator, writer, obj->referenced_type->type_ref));
 			SLKC_RETURN_IF_FALSE(writer->write("&"));
 			break;
 		}
@@ -365,43 +365,43 @@ SLKC_API bool Decompiler::decompileTypeName(peff::Alloc *allocator, DumpWriter *
 			SLKC_RETURN_IF_FALSE(writer->write("any"));
 			break;
 		case slake::TypeId::ParamTypeList: {
-			auto obj = type.getParamTypeListTypeDef();
+			auto obj = type.get_param_type_list_type_def();
 
 			SLKC_RETURN_IF_FALSE(writer->write("("));
 
-			for (size_t i = 0; i < obj->paramTypes.size(); ++i) {
+			for (size_t i = 0; i < obj->param_types.size(); ++i) {
 				if (i) {
 					SLKC_RETURN_IF_FALSE(writer->write(", "));
 				}
 
-				SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, obj->paramTypes.at(i)->typeRef));
+				SLKC_RETURN_IF_FALSE(decompile_type_name(allocator, writer, obj->param_types.at(i)->type_ref));
 			}
 
 			SLKC_RETURN_IF_FALSE(writer->write(")"));
 			break;
 		}
 		case slake::TypeId::Tuple: {
-			auto obj = type.getTupleTypeDef();
+			auto obj = type.get_tuple_type_def();
 
 			SLKC_RETURN_IF_FALSE(writer->write("["));
 
-			for (size_t i = 0; i < obj->elementTypes.size(); ++i) {
+			for (size_t i = 0; i < obj->element_types.size(); ++i) {
 				if (i) {
 					SLKC_RETURN_IF_FALSE(writer->write(", "));
 				}
 
-				SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, obj->elementTypes.at(i)->typeRef));
+				SLKC_RETURN_IF_FALSE(decompile_type_name(allocator, writer, obj->element_types.at(i)->type_ref));
 			}
 
 			SLKC_RETURN_IF_FALSE(writer->write("]"));
 			break;
 		}
 		case slake::TypeId::SIMD: {
-			auto obj = type.getSIMDTypeDef();
+			auto obj = type.get_simdtype_def();
 
 			SLKC_RETURN_IF_FALSE(writer->write("simd_t<"));
 
-			SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, obj->type->typeRef));
+			SLKC_RETURN_IF_FALSE(decompile_type_name(allocator, writer, obj->type->type_ref));
 
 			SLKC_RETURN_IF_FALSE(writer->write(", "));
 
@@ -413,98 +413,98 @@ SLKC_API bool Decompiler::decompileTypeName(peff::Alloc *allocator, DumpWriter *
 			break;
 		}
 		case slake::TypeId::Unpacking: {
-			auto obj = type.getUnpackingTypeDef();
+			auto obj = type.get_unpacking_type_def();
 			SLKC_RETURN_IF_FALSE(writer->write("@..."));
-			SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, obj->type->typeRef));
+			SLKC_RETURN_IF_FALSE(decompile_type_name(allocator, writer, obj->type->type_ref));
 			break;
 		}
 		default:
 			std::terminate();
 	}
 
-	if (type.isNullable())
+	if (type.is_nullable())
 		SLKC_RETURN_IF_FALSE(writer->write("?"));
 	return true;
 }
 
-SLKC_API bool Decompiler::decompileValue(peff::Alloc *allocator, DumpWriter *writer, const slake::Value &value) {
-	switch (value.valueType) {
+SLKC_API bool Decompiler::decompile_value(peff::Alloc *allocator, DumpWriter *writer, const slake::Value &value) {
+	switch (value.value_type) {
 		case slake::ValueType::I8: {
 			char s[8];
-			sprintf(s, "%hd", (int16_t)value.getI8());
+			sprintf(s, "%hd", (int16_t)value.get_i8());
 			SLKC_RETURN_IF_FALSE(writer->write(s));
 			break;
 		}
 		case slake::ValueType::I16: {
 			char s[16];
-			sprintf(s, "%hd", (int16_t)value.getI16());
+			sprintf(s, "%hd", (int16_t)value.get_i16());
 			SLKC_RETURN_IF_FALSE(writer->write(s));
 			break;
 		}
 		case slake::ValueType::I32: {
 			char s[32];
-			sprintf(s, "%d", value.getI32());
+			sprintf(s, "%d", value.get_i32());
 			SLKC_RETURN_IF_FALSE(writer->write(s));
 			break;
 		}
 		case slake::ValueType::I64: {
 			char s[48];
-			sprintf(s, "%lld", value.getI64());
+			sprintf(s, "%lld", value.get_i64());
 			SLKC_RETURN_IF_FALSE(writer->write(s));
 			break;
 		}
 		case slake::ValueType::U8: {
 			char s[4];
-			sprintf(s, "%hu", (uint16_t)value.getU8());
+			sprintf(s, "%hu", (uint16_t)value.get_u8());
 			SLKC_RETURN_IF_FALSE(writer->write(s));
 			break;
 		}
 		case slake::ValueType::U16: {
 			char s[8];
-			sprintf(s, "%hu", (uint16_t)value.getU16());
+			sprintf(s, "%hu", (uint16_t)value.get_u16());
 			SLKC_RETURN_IF_FALSE(writer->write(s));
 			break;
 		}
 		case slake::ValueType::U32: {
 			char s[16];
-			sprintf(s, "%u", value.getU32());
+			sprintf(s, "%u", value.get_u32());
 			SLKC_RETURN_IF_FALSE(writer->write(s));
 			break;
 		}
 		case slake::ValueType::U64: {
 			char s[32];
-			sprintf(s, "%llu", value.getU64());
+			sprintf(s, "%llu", value.get_u64());
 			SLKC_RETURN_IF_FALSE(writer->write(s));
 			break;
 		}
 		case slake::ValueType::F32: {
 			char s[16];
-			sprintf(s, "%f", value.getF32());
+			sprintf(s, "%f", value.get_f32());
 			SLKC_RETURN_IF_FALSE(writer->write(s));
 			break;
 		}
 		case slake::ValueType::F64: {
 			char s[32];
-			sprintf(s, "%f", value.getF64());
+			sprintf(s, "%f", value.get_f64());
 			SLKC_RETURN_IF_FALSE(writer->write(s));
 			break;
 		}
 		case slake::ValueType::Bool:
-			SLKC_RETURN_IF_FALSE(writer->write(value.getBool() ? "true" : "false"));
+			SLKC_RETURN_IF_FALSE(writer->write(value.get_bool() ? "true" : "false"));
 			break;
 		case slake::ValueType::Reference: {
-			const slake::Reference &er = value.getReference();
+			const slake::Reference &er = value.get_reference();
 
 			switch (er.kind) {
 				case slake::ReferenceKind::ObjectRef: {
-					slake::Object *obj = er.asObject;
+					slake::Object *obj = er.as_object;
 
 					if (!obj) {
 						SLKC_RETURN_IF_FALSE(writer->write("null"));
 						break;
 					}
 
-					switch (obj->getObjectKind()) {
+					switch (obj->get_object_kind()) {
 						case slake::ObjectKind::String: {
 							SLKC_RETURN_IF_FALSE(writer->write("\""));
 
@@ -514,7 +514,7 @@ SLKC_API bool Decompiler::decompileValue(peff::Alloc *allocator, DumpWriter *wri
 							size_t len = s->data.size();
 							char c;
 
-							size_t idxCharSinceLastEsc = 0;
+							size_t idx_char_since_last_esc = 0;
 
 							for (size_t i = 0; i < len; ++i) {
 								switch ((c = data[i])) {
@@ -527,7 +527,7 @@ SLKC_API bool Decompiler::decompileValue(peff::Alloc *allocator, DumpWriter *wri
 									case '\r':
 									case '"':
 									case '\\':
-										SLKC_RETURN_IF_FALSE(writer->write(std::string_view(data + idxCharSinceLastEsc, i - idxCharSinceLastEsc)));
+										SLKC_RETURN_IF_FALSE(writer->write(std::string_view(data + idx_char_since_last_esc, i - idx_char_since_last_esc)));
 
 										switch (c) {
 											case '\0':
@@ -562,7 +562,7 @@ SLKC_API bool Decompiler::decompileValue(peff::Alloc *allocator, DumpWriter *wri
 												break;
 										}
 
-										idxCharSinceLastEsc = i + 1;
+										idx_char_since_last_esc = i + 1;
 										break;
 
 									default:
@@ -571,14 +571,14 @@ SLKC_API bool Decompiler::decompileValue(peff::Alloc *allocator, DumpWriter *wri
 								}
 							}
 
-							if (idxCharSinceLastEsc < len)
-								SLKC_RETURN_IF_FALSE(writer->write(std::string_view(data + idxCharSinceLastEsc, len - idxCharSinceLastEsc)));
+							if (idx_char_since_last_esc < len)
+								SLKC_RETURN_IF_FALSE(writer->write(std::string_view(data + idx_char_since_last_esc, len - idx_char_since_last_esc)));
 
 							SLKC_RETURN_IF_FALSE(writer->write("\""));
 							break;
 						}
 						case slake::ObjectKind::IdRef: {
-							SLKC_RETURN_IF_FALSE(decompileIdRef(allocator, writer, (slake::IdRefObject *)obj));
+							SLKC_RETURN_IF_FALSE(decompile_id_ref(allocator, writer, (slake::IdRefObject *)obj));
 							break;
 						}
 						case slake::ObjectKind::Array: {
@@ -594,9 +594,9 @@ SLKC_API bool Decompiler::decompileValue(peff::Alloc *allocator, DumpWriter *wri
 								slake::Reference rer = slake::ArrayElementRef(a, i);
 								slake::Value data;
 
-								slake::Runtime::readVar(rer, data);
+								slake::Runtime::read_var(rer, data);
 
-								SLKC_RETURN_IF_FALSE(decompileValue(allocator, writer, data));
+								SLKC_RETURN_IF_FALSE(decompile_value(allocator, writer, data));
 							}
 
 							SLKC_RETURN_IF_FALSE(writer->write(" }"));
@@ -613,12 +613,12 @@ SLKC_API bool Decompiler::decompileValue(peff::Alloc *allocator, DumpWriter *wri
 		}
 		case slake::ValueType::RegIndex: {
 			char s[32];
-			sprintf(s, "%%%u", value.getRegIndex());
+			sprintf(s, "%%%u", value.get_reg_index());
 			SLKC_RETURN_IF_FALSE(writer->write(s));
 			break;
 		}
 		case slake::ValueType::TypeName: {
-			SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, value.getTypeName()));
+			SLKC_RETURN_IF_FALSE(decompile_type_name(allocator, writer, value.get_type_name()));
 			break;
 		}
 		default:
@@ -628,23 +628,23 @@ SLKC_API bool Decompiler::decompileValue(peff::Alloc *allocator, DumpWriter *wri
 	return true;
 }
 
-SLKC_API bool Decompiler::decompileIdRefEntries(peff::Alloc *allocator, DumpWriter *writer, const peff::DynArray<slake::IdRefEntry> &idRefIn) {
-	for (size_t i = 0; i < idRefIn.size(); ++i) {
+SLKC_API bool Decompiler::decompile_id_ref_entries(peff::Alloc *allocator, DumpWriter *writer, const peff::DynArray<slake::IdRefEntry> &id_ref_in) {
+	for (size_t i = 0; i < id_ref_in.size(); ++i) {
 		if (i) {
 			SLKC_RETURN_IF_FALSE(writer->write("."));
 		}
 
-		auto &curEntry = idRefIn.at(i);
+		auto &cur_entry = id_ref_in.at(i);
 
-		SLKC_RETURN_IF_FALSE(writer->write(curEntry.name));
+		SLKC_RETURN_IF_FALSE(writer->write(cur_entry.name));
 
-		if (curEntry.genericArgs.size()) {
+		if (cur_entry.generic_args.size()) {
 			SLKC_RETURN_IF_FALSE(writer->write("<"));
-			for (size_t j = 0; j < curEntry.genericArgs.size(); ++j) {
+			for (size_t j = 0; j < cur_entry.generic_args.size(); ++j) {
 				if (j) {
 					SLKC_RETURN_IF_FALSE(writer->write(","));
 				}
-				SLKC_RETURN_IF_FALSE(decompileValue(allocator, writer, curEntry.genericArgs.at(j)));
+				SLKC_RETURN_IF_FALSE(decompile_value(allocator, writer, cur_entry.generic_args.at(j)));
 			}
 			SLKC_RETURN_IF_FALSE(writer->write(">"));
 		}
@@ -653,86 +653,86 @@ SLKC_API bool Decompiler::decompileIdRefEntries(peff::Alloc *allocator, DumpWrit
 	return true;
 }
 
-SLKC_API bool Decompiler::decompileIdRef(peff::Alloc *allocator, DumpWriter *writer, slake::IdRefObject *idRefIn) {
-	SLKC_RETURN_IF_FALSE(decompileIdRefEntries(allocator, writer, idRefIn->entries));
+SLKC_API bool Decompiler::decompile_id_ref(peff::Alloc *allocator, DumpWriter *writer, slake::IdRefObject *id_ref_in) {
+	SLKC_RETURN_IF_FALSE(decompile_id_ref_entries(allocator, writer, id_ref_in->entries));
 
-	if (idRefIn->paramTypes.hasValue()) {
-		auto &paramTypes = *idRefIn->paramTypes;
+	if (id_ref_in->param_types.has_value()) {
+		auto &param_types = *id_ref_in->param_types;
 
-		if (paramTypes.size()) {
+		if (param_types.size()) {
 			SLKC_RETURN_IF_FALSE(writer->write("("));
 
-			for (size_t i = 0; i < paramTypes.size(); ++i) {
+			for (size_t i = 0; i < param_types.size(); ++i) {
 				if (i) {
 					SLKC_RETURN_IF_FALSE(writer->write(", "));
 				}
 
-				SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, paramTypes.at(i)));
+				SLKC_RETURN_IF_FALSE(decompile_type_name(allocator, writer, param_types.at(i)));
 			}
 
-			if (idRefIn->hasVarArgs) {
+			if (id_ref_in->has_var_args) {
 				SLKC_RETURN_IF_FALSE(writer->write(", ..."));
 			}
 
 			SLKC_RETURN_IF_FALSE(writer->write(")"));
 		} else {
-			if (idRefIn->hasVarArgs) {
+			if (id_ref_in->has_var_args) {
 				SLKC_RETURN_IF_FALSE(writer->write("(...)"));
 			} else {
 				SLKC_RETURN_IF_FALSE(writer->write("()"));
 			}
 		}
 	} else {
-		if (idRefIn->hasVarArgs) {
+		if (id_ref_in->has_var_args) {
 			SLKC_RETURN_IF_FALSE(writer->write("(...)"));
 		}
 	}
 
-	if (idRefIn->overridenType) {
+	if (id_ref_in->overriden_type) {
 		SLKC_RETURN_IF_FALSE(writer->write(" override "));
-		SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, idRefIn->overridenType));
+		SLKC_RETURN_IF_FALSE(decompile_type_name(allocator, writer, id_ref_in->overriden_type));
 	}
 
 	return true;
 }
 
-SLKC_API bool Decompiler::decompileModuleMembers(peff::Alloc *allocator, DumpWriter *writer, slake::BasicModuleObject *moduleObject, size_t indentLevel) {
-	for (auto &i : moduleObject->getFieldRecords()) {
-		for (size_t j = 0; j < indentLevel; ++j) {
+SLKC_API bool Decompiler::decompile_module_members(peff::Alloc *allocator, DumpWriter *writer, slake::BasicModuleObject *module_object, size_t indent_level) {
+	for (auto &i : module_object->get_field_records()) {
+		for (size_t j = 0; j < indent_level; ++j) {
 			SLKC_RETURN_IF_FALSE(writer->write("\t"));
 		}
 		SLKC_RETURN_IF_FALSE(writer->write("let "));
 		SLKC_RETURN_IF_FALSE(writer->write(i.name));
 		SLKC_RETURN_IF_FALSE(writer->write(" "));
-		SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, i.type));
+		SLKC_RETURN_IF_FALSE(decompile_type_name(allocator, writer, i.type));
 		SLKC_RETURN_IF_FALSE(writer->write("\n"));
 	}
 
-	for (auto [k, v] : moduleObject->getMembers()) {
-		switch (v->getObjectKind()) {
+	for (auto [k, v] : module_object->get_members()) {
+		switch (v->get_object_kind()) {
 			case slake::ObjectKind::Fn: {
 				slake::FnObject *obj = (slake::FnObject *)v;
 
 				for (auto i : obj->overloadings) {
-					for (size_t j = 0; j < indentLevel; ++j) {
+					for (size_t j = 0; j < indent_level; ++j) {
 						SLKC_RETURN_IF_FALSE(writer->write("\t"));
 					}
 					SLKC_RETURN_IF_FALSE(writer->write("fn "));
 
-					SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, i.second->returnType));
+					SLKC_RETURN_IF_FALSE(decompile_type_name(allocator, writer, i.second->return_type));
 
 					SLKC_RETURN_IF_FALSE(writer->write(" "));
 
-					SLKC_RETURN_IF_FALSE(writer->write(obj->getName()));
+					SLKC_RETURN_IF_FALSE(writer->write(obj->get_name()));
 
-					if (i.second->genericParams.size()) {
+					if (i.second->generic_params.size()) {
 						SLKC_RETURN_IF_FALSE(writer->write("<"));
 
-						for (size_t j = 0; j < i.second->genericParams.size(); ++j) {
+						for (size_t j = 0; j < i.second->generic_params.size(); ++j) {
 							if (j) {
 								SLKC_RETURN_IF_FALSE(writer->write(", "));
 							}
-							SLKC_RETURN_IF_FALSE(decompileGenericParam(allocator, writer, i.second->genericParams.at(j)));
+							SLKC_RETURN_IF_FALSE(decompile_generic_param(allocator, writer, i.second->generic_params.at(j)));
 						}
 
 						SLKC_RETURN_IF_FALSE(writer->write(">"));
@@ -740,31 +740,31 @@ SLKC_API bool Decompiler::decompileModuleMembers(peff::Alloc *allocator, DumpWri
 
 					SLKC_RETURN_IF_FALSE(writer->write("("));
 
-					for (size_t j = 0; j < i.second->paramTypes.size(); ++j) {
+					for (size_t j = 0; j < i.second->param_types.size(); ++j) {
 						if (j) {
 							SLKC_RETURN_IF_FALSE(writer->write(", "));
 						}
-						SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, i.second->paramTypes.at(j)));
+						SLKC_RETURN_IF_FALSE(decompile_type_name(allocator, writer, i.second->param_types.at(j)));
 					}
 
 					SLKC_RETURN_IF_FALSE(writer->write(")"));
 
-					switch (i.second->overloadingKind) {
+					switch (i.second->overloading_kind) {
 						case slake::FnOverloadingKind::Regular: {
 							slake::RegularFnOverloadingObject *ol = (slake::RegularFnOverloadingObject *)i.second;
 
-							if (dumpCfg) {
+							if (dump_cfg) {
 								slake::InternalExceptionPointer e;
 								slake::opti::ControlFlowGraph cfg(allocator);
 
-								if ((e = slake::opti::divideInstructionsIntoBasicBlocks(allocator, ol, allocator, cfg))) {
+								if ((e = slake::opti::divide_instructions_into_basic_blocks(allocator, ol, allocator, cfg))) {
 									std::terminate();
 								}
 
 								SLKC_RETURN_IF_FALSE(writer->write(" {\n"));
 
-								for (size_t j = 0; j < cfg.basicBlocks.size(); ++j) {
-									for (size_t k = 0; k < indentLevel; ++k) {
+								for (size_t j = 0; j < cfg.basic_blocks.size(); ++j) {
+									for (size_t k = 0; k < indent_level; ++k) {
 										SLKC_RETURN_IF_FALSE(writer->write("\t"));
 									}
 
@@ -776,16 +776,16 @@ SLKC_API bool Decompiler::decompileModuleMembers(peff::Alloc *allocator, DumpWri
 										SLKC_RETURN_IF_FALSE(writer->write("\n"));
 									}
 
-									const auto &curBasicBlock = cfg.basicBlocks.at(j);
-									for (const slake::Instruction &curIns : curBasicBlock.instructions) {
-										for (size_t j = 0; j < indentLevel + 1; ++j) {
+									const auto &cur_basic_block = cfg.basic_blocks.at(j);
+									for (const slake::Instruction &cur_ins : cur_basic_block.instructions) {
+										for (size_t j = 0; j < indent_level + 1; ++j) {
 											SLKC_RETURN_IF_FALSE(writer->write("\t"));
 										}
 
 										slake::slxfmt::SourceLocDesc *sld = nullptr;
 
-										if (curIns.offSourceLocDesc != UINT32_MAX)
-											sld = &ol->sourceLocDescs.at(curIns.offSourceLocDesc);
+										if (cur_ins.off_source_loc_desc != UINT32_MAX)
+											sld = &ol->source_loc_descs.at(cur_ins.off_source_loc_desc);
 
 										if (sld) {
 											char s[42];
@@ -795,46 +795,46 @@ SLKC_API bool Decompiler::decompileModuleMembers(peff::Alloc *allocator, DumpWri
 											SLKC_RETURN_IF_FALSE(writer->write(s));
 										}
 
-										if (curIns.output != UINT32_MAX) {
+										if (cur_ins.output != UINT32_MAX) {
 											char s[32];
 
-											sprintf(s, "%%%u = ", curIns.output);
+											sprintf(s, "%%%u = ", cur_ins.output);
 
 											SLKC_RETURN_IF_FALSE(writer->write(s));
 										}
 
 										{
-											const char *mnemonic = getMnemonicName(curIns.opcode);
+											const char *mnemonic = get_mnemonic_name(cur_ins.opcode);
 											if (mnemonic) {
 												SLKC_RETURN_IF_FALSE(writer->write(mnemonic));
 												SLKC_RETURN_IF_FALSE(writer->write(" "));
 											} else {
 												char s[13];
 
-												sprintf(s, "0x%0.2x ", (int)curIns.opcode);
+												sprintf(s, "0x%0.2x ", (int)cur_ins.opcode);
 
 												SLKC_RETURN_IF_FALSE(writer->write(s));
 											}
 										}
 
-										for (size_t k = 0; k < curIns.nOperands; ++k) {
+										for (size_t k = 0; k < cur_ins.num_operands; ++k) {
 											if (k) {
 												SLKC_RETURN_IF_FALSE(writer->write(", "));
 											}
-											if (curIns.operands[k].valueType == slake::ValueType::Label) {
+											if (cur_ins.operands[k].value_type == slake::ValueType::Label) {
 												char s[18];
 
-												sprintf(s, "#block_%u", (uint32_t)curIns.operands[k].getLabel());
+												sprintf(s, "#block_%u", (uint32_t)cur_ins.operands[k].get_label());
 												SLKC_RETURN_IF_FALSE(writer->write(s));
 											} else
-												SLKC_RETURN_IF_FALSE(decompileValue(allocator, writer, curIns.operands[k]));
+												SLKC_RETURN_IF_FALSE(decompile_value(allocator, writer, cur_ins.operands[k]));
 										}
 
 										SLKC_RETURN_IF_FALSE(writer->write("\n"));
 									}
 								}
 
-								for (size_t j = 0; j < indentLevel; ++j) {
+								for (size_t j = 0; j < indent_level; ++j) {
 									SLKC_RETURN_IF_FALSE(writer->write("\t"));
 								}
 
@@ -842,24 +842,24 @@ SLKC_API bool Decompiler::decompileModuleMembers(peff::Alloc *allocator, DumpWri
 							} else {
 								SLKC_RETURN_IF_FALSE(writer->write(" {\n"));
 
-								size_t blockDepth = 0;
+								size_t block_depth = 0;
 								for (size_t j = 0; j < ol->instructions.size(); ++j) {
-									auto &curIns = ol->instructions.at(j);
+									auto &cur_ins = ol->instructions.at(j);
 
-									if((curIns.opcode == slake::Opcode::LEAVE) && blockDepth)
-										--blockDepth;
+									if((cur_ins.opcode == slake::Opcode::LEAVE) && block_depth)
+										--block_depth;
 
-									for (size_t k = 0; k < indentLevel + 1 + blockDepth; ++k) {
+									for (size_t k = 0; k < indent_level + 1 + block_depth; ++k) {
 										SLKC_RETURN_IF_FALSE(writer->write("\t"));
 									}
 
-									if(curIns.opcode == slake::Opcode::ENTER)
-										++blockDepth;
+									if(cur_ins.opcode == slake::Opcode::ENTER)
+										++block_depth;
 
 									slake::slxfmt::SourceLocDesc *sld = nullptr;
 
-									if (curIns.offSourceLocDesc != UINT32_MAX)
-										sld = &ol->sourceLocDescs.at(curIns.offSourceLocDesc);
+									if (cur_ins.off_source_loc_desc != UINT32_MAX)
+										sld = &ol->source_loc_descs.at(cur_ins.off_source_loc_desc);
 
 									if (sld) {
 										char s[32];
@@ -869,39 +869,39 @@ SLKC_API bool Decompiler::decompileModuleMembers(peff::Alloc *allocator, DumpWri
 										SLKC_RETURN_IF_FALSE(writer->write(s));
 									}
 
-									if (curIns.output != UINT32_MAX) {
+									if (cur_ins.output != UINT32_MAX) {
 										char s[32];
 
-										sprintf(s, "%%%u = ", curIns.output);
+										sprintf(s, "%%%u = ", cur_ins.output);
 
 										SLKC_RETURN_IF_FALSE(writer->write(s));
 									}
 
 									{
-										const char *mnemonic = getMnemonicName(curIns.opcode);
+										const char *mnemonic = get_mnemonic_name(cur_ins.opcode);
 										if (mnemonic) {
 											SLKC_RETURN_IF_FALSE(writer->write(mnemonic));
 											SLKC_RETURN_IF_FALSE(writer->write(" "));
 										} else {
 											char s[13];
 
-											sprintf(s, "0x%0.2x ", (int)curIns.opcode);
+											sprintf(s, "0x%0.2x ", (int)cur_ins.opcode);
 
 											SLKC_RETURN_IF_FALSE(writer->write(s));
 										}
 									}
 
-									for (size_t k = 0; k < curIns.nOperands; ++k) {
+									for (size_t k = 0; k < cur_ins.num_operands; ++k) {
 										if (k) {
 											SLKC_RETURN_IF_FALSE(writer->write(", "));
 										}
-										SLKC_RETURN_IF_FALSE(decompileValue(allocator, writer, curIns.operands[k]));
+										SLKC_RETURN_IF_FALSE(decompile_value(allocator, writer, cur_ins.operands[k]));
 									}
 
 									SLKC_RETURN_IF_FALSE(writer->write("\n"));
 								}
 
-								for (size_t j = 0; j < indentLevel; ++j) {
+								for (size_t j = 0; j < indent_level; ++j) {
 									SLKC_RETURN_IF_FALSE(writer->write("\t"));
 								}
 
@@ -920,22 +920,22 @@ SLKC_API bool Decompiler::decompileModuleMembers(peff::Alloc *allocator, DumpWri
 			case slake::ObjectKind::Class: {
 				slake::ClassObject *obj = (slake::ClassObject *)v;
 
-				for (size_t j = 0; j < indentLevel; ++j) {
+				for (size_t j = 0; j < indent_level; ++j) {
 					SLKC_RETURN_IF_FALSE(writer->write("\t"));
 				}
 
 				SLKC_RETURN_IF_FALSE(writer->write("class "));
 
-				SLKC_RETURN_IF_FALSE(writer->write(obj->getName()));
+				SLKC_RETURN_IF_FALSE(writer->write(obj->get_name()));
 
-				if (obj->genericParams.size()) {
+				if (obj->generic_params.size()) {
 					SLKC_RETURN_IF_FALSE(writer->write("<"));
 
-					for (size_t j = 0; j < obj->genericParams.size(); ++j) {
+					for (size_t j = 0; j < obj->generic_params.size(); ++j) {
 						if (j) {
 							SLKC_RETURN_IF_FALSE(writer->write(", "));
 						}
-						SLKC_RETURN_IF_FALSE(decompileGenericParam(allocator, writer, obj->genericParams.at(j)));
+						SLKC_RETURN_IF_FALSE(decompile_generic_param(allocator, writer, obj->generic_params.at(j)));
 					}
 
 					SLKC_RETURN_IF_FALSE(writer->write(">"));
@@ -943,25 +943,25 @@ SLKC_API bool Decompiler::decompileModuleMembers(peff::Alloc *allocator, DumpWri
 
 				SLKC_RETURN_IF_FALSE(writer->write(" "));
 
-				if (obj->baseType)
-					SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, obj->baseType));
+				if (obj->base_type)
+					SLKC_RETURN_IF_FALSE(decompile_type_name(allocator, writer, obj->base_type));
 
-				if (obj->implTypes.size()) {
+				if (obj->impl_types.size()) {
 					SLKC_RETURN_IF_FALSE(writer->write(": "));
-					for (size_t i = 0; i < obj->implTypes.size(); ++i) {
+					for (size_t i = 0; i < obj->impl_types.size(); ++i) {
 						if (i) {
 							SLKC_RETURN_IF_FALSE(writer->write(" + "));
 						}
 
-						SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, obj->implTypes.at(i)));
+						SLKC_RETURN_IF_FALSE(decompile_type_name(allocator, writer, obj->impl_types.at(i)));
 					}
 				}
 
 				SLKC_RETURN_IF_FALSE(writer->write(" {\n"));
 
-				SLKC_RETURN_IF_FALSE(decompileModuleMembers(allocator, writer, obj, indentLevel + 1));
+				SLKC_RETURN_IF_FALSE(decompile_module_members(allocator, writer, obj, indent_level + 1));
 
-				for (size_t j = 0; j < indentLevel; ++j) {
+				for (size_t j = 0; j < indent_level; ++j) {
 					SLKC_RETURN_IF_FALSE(writer->write("\t"));
 				}
 
@@ -971,22 +971,22 @@ SLKC_API bool Decompiler::decompileModuleMembers(peff::Alloc *allocator, DumpWri
 			case slake::ObjectKind::Interface: {
 				slake::InterfaceObject *obj = (slake::InterfaceObject *)v;
 
-				for (size_t j = 0; j < indentLevel; ++j) {
+				for (size_t j = 0; j < indent_level; ++j) {
 					SLKC_RETURN_IF_FALSE(writer->write("\t"));
 				}
 
 				SLKC_RETURN_IF_FALSE(writer->write("interface "));
 
-				SLKC_RETURN_IF_FALSE(writer->write(obj->getName()));
+				SLKC_RETURN_IF_FALSE(writer->write(obj->get_name()));
 
-				if (obj->genericParams.size()) {
+				if (obj->generic_params.size()) {
 					SLKC_RETURN_IF_FALSE(writer->write("<"));
 
-					for (size_t j = 0; j < obj->genericParams.size(); ++j) {
+					for (size_t j = 0; j < obj->generic_params.size(); ++j) {
 						if (j) {
 							SLKC_RETURN_IF_FALSE(writer->write(", "));
 						}
-						SLKC_RETURN_IF_FALSE(decompileGenericParam(allocator, writer, obj->genericParams.at(j)));
+						SLKC_RETURN_IF_FALSE(decompile_generic_param(allocator, writer, obj->generic_params.at(j)));
 					}
 
 					SLKC_RETURN_IF_FALSE(writer->write(">"));
@@ -994,22 +994,22 @@ SLKC_API bool Decompiler::decompileModuleMembers(peff::Alloc *allocator, DumpWri
 
 				SLKC_RETURN_IF_FALSE(writer->write(" "));
 
-				if (obj->implTypes.size()) {
+				if (obj->impl_types.size()) {
 					SLKC_RETURN_IF_FALSE(writer->write(": "));
-					for (size_t i = 0; i < obj->implTypes.size(); ++i) {
+					for (size_t i = 0; i < obj->impl_types.size(); ++i) {
 						if (i) {
 							SLKC_RETURN_IF_FALSE(writer->write(" + "));
 						}
 
-						SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, obj->implTypes.at(i)));
+						SLKC_RETURN_IF_FALSE(decompile_type_name(allocator, writer, obj->impl_types.at(i)));
 					}
 				}
 
 				SLKC_RETURN_IF_FALSE(writer->write(" {\n"));
 
-				SLKC_RETURN_IF_FALSE(decompileModuleMembers(allocator, writer, obj, indentLevel + 1));
+				SLKC_RETURN_IF_FALSE(decompile_module_members(allocator, writer, obj, indent_level + 1));
 
-				for (size_t j = 0; j < indentLevel; ++j) {
+				for (size_t j = 0; j < indent_level; ++j) {
 					SLKC_RETURN_IF_FALSE(writer->write("\t"));
 				}
 
@@ -1019,43 +1019,43 @@ SLKC_API bool Decompiler::decompileModuleMembers(peff::Alloc *allocator, DumpWri
 			case slake::ObjectKind::Struct: {
 				slake::StructObject *obj = (slake::StructObject *)v;
 
-				for (size_t j = 0; j < indentLevel; ++j) {
+				for (size_t j = 0; j < indent_level; ++j) {
 					SLKC_RETURN_IF_FALSE(writer->write("\t"));
 				}
 
 				SLKC_RETURN_IF_FALSE(writer->write("struct "));
 
-				SLKC_RETURN_IF_FALSE(writer->write(obj->getName()));
+				SLKC_RETURN_IF_FALSE(writer->write(obj->get_name()));
 
-				if (obj->genericParams.size()) {
+				if (obj->generic_params.size()) {
 					SLKC_RETURN_IF_FALSE(writer->write("<"));
 
-					for (size_t j = 0; j < obj->genericParams.size(); ++j) {
+					for (size_t j = 0; j < obj->generic_params.size(); ++j) {
 						if (j) {
 							SLKC_RETURN_IF_FALSE(writer->write(", "));
 						}
-						SLKC_RETURN_IF_FALSE(decompileGenericParam(allocator, writer, obj->genericParams.at(j)));
+						SLKC_RETURN_IF_FALSE(decompile_generic_param(allocator, writer, obj->generic_params.at(j)));
 					}
 
 					SLKC_RETURN_IF_FALSE(writer->write(">"));
 				}
 
-				if (obj->implTypes.size()) {
+				if (obj->impl_types.size()) {
 					SLKC_RETURN_IF_FALSE(writer->write(": "));
-					for (size_t i = 0; i < obj->implTypes.size(); ++i) {
+					for (size_t i = 0; i < obj->impl_types.size(); ++i) {
 						if (i) {
 							SLKC_RETURN_IF_FALSE(writer->write(" + "));
 						}
 
-						SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, obj->implTypes.at(i)));
+						SLKC_RETURN_IF_FALSE(decompile_type_name(allocator, writer, obj->impl_types.at(i)));
 					}
 				}
 
 				SLKC_RETURN_IF_FALSE(writer->write(" {\n"));
 
-				SLKC_RETURN_IF_FALSE(decompileModuleMembers(allocator, writer, obj, indentLevel + 1));
+				SLKC_RETURN_IF_FALSE(decompile_module_members(allocator, writer, obj, indent_level + 1));
 
-				for (size_t j = 0; j < indentLevel; ++j) {
+				for (size_t j = 0; j < indent_level; ++j) {
 					SLKC_RETURN_IF_FALSE(writer->write("\t"));
 				}
 
@@ -1065,45 +1065,45 @@ SLKC_API bool Decompiler::decompileModuleMembers(peff::Alloc *allocator, DumpWri
 			case slake::ObjectKind::ScopedEnum: {
 				slake::ScopedEnumObject *obj = (slake::ScopedEnumObject *)v;
 
-				for (size_t j = 0; j < indentLevel; ++j) {
+				for (size_t j = 0; j < indent_level; ++j) {
 					SLKC_RETURN_IF_FALSE(writer->write("\t"));
 				}
 
 				SLKC_RETURN_IF_FALSE(writer->write("enum "));
 
-				SLKC_RETURN_IF_FALSE(writer->write(obj->getName()));
+				SLKC_RETURN_IF_FALSE(writer->write(obj->get_name()));
 
-				if (obj->baseType) {
+				if (obj->base_type) {
 					SLKC_RETURN_IF_FALSE(writer->write("("));
-					SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, obj->baseType));
+					SLKC_RETURN_IF_FALSE(decompile_type_name(allocator, writer, obj->base_type));
 					SLKC_RETURN_IF_FALSE(writer->write(")"));
 				}
 
 				SLKC_RETURN_IF_FALSE(writer->write(" {\n"));
 
 				size_t k = 0;
-				for (auto &j : obj->getFieldRecords()) {
-					for (size_t l = 0; l < indentLevel + 1; ++l) {
+				for (auto &j : obj->get_field_records()) {
+					for (size_t l = 0; l < indent_level + 1; ++l) {
 						SLKC_RETURN_IF_FALSE(writer->write("\t"));
 					}
 					SLKC_RETURN_IF_FALSE(writer->write(j.name));
 
-					if (obj->baseType) {
+					if (obj->base_type) {
 						SLKC_RETURN_IF_FALSE(writer->write(" = "));
 
 						slake::Value data;
-						slake::Runtime::readVar(slake::StaticFieldRef(obj, k), data);
+						slake::Runtime::read_var(slake::StaticFieldRef(obj, k), data);
 
-						SLKC_RETURN_IF_FALSE(decompileValue(allocator, writer, data));
+						SLKC_RETURN_IF_FALSE(decompile_value(allocator, writer, data));
 					}
 
-					if (k + 1 < indentLevel + 1)
+					if (k + 1 < indent_level + 1)
 						SLKC_RETURN_IF_FALSE(writer->write(","));
 					SLKC_RETURN_IF_FALSE(writer->write("\n"));
 					++k;
 				}
 
-				for (size_t j = 0; j < indentLevel; ++j) {
+				for (size_t j = 0; j < indent_level; ++j) {
 					SLKC_RETURN_IF_FALSE(writer->write("\t"));
 				}
 
@@ -1118,21 +1118,21 @@ SLKC_API bool Decompiler::decompileModuleMembers(peff::Alloc *allocator, DumpWri
 	return true;
 }
 
-SLKC_API bool Decompiler::decompileModule(peff::Alloc *allocator, DumpWriter *writer, slake::ModuleObject *moduleObject) {
-	slake::Runtime *runtime = moduleObject->associatedRuntime;
+SLKC_API bool Decompiler::decompile_module(peff::Alloc *allocator, DumpWriter *writer, slake::ModuleObject *module_object) {
+	slake::Runtime *runtime = module_object->associated_runtime;
 
 	{
-		peff::DynArray<slake::IdRefEntry> moduleFullName(allocator);
+		peff::DynArray<slake::IdRefEntry> module_full_name(allocator);
 
-		if (!runtime->getFullRef(allocator, moduleObject, moduleFullName))
+		if (!runtime->get_full_ref(allocator, module_object, module_full_name))
 			return false;
 
 		SLKC_RETURN_IF_FALSE(writer->write("module "));
-		SLKC_RETURN_IF_FALSE(decompileIdRefEntries(allocator, writer, moduleFullName));
+		SLKC_RETURN_IF_FALSE(decompile_id_ref_entries(allocator, writer, module_full_name));
 		SLKC_RETURN_IF_FALSE(writer->write(";\n"));
 	}
 
-	SLKC_RETURN_IF_FALSE(decompileModuleMembers(allocator, writer, moduleObject));
+	SLKC_RETURN_IF_FALSE(decompile_module_members(allocator, writer, module_object));
 
 	return true;
 }

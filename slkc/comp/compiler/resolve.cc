@@ -2,8 +2,8 @@
 
 using namespace slkc;
 
-SLKC_API peff::Option<CompilationError> slkc::getFullIdRef(peff::Alloc *allocator, AstNodePtr<MemberNode> m, IdRefPtr &idRefOut) {
-	IdRefPtr p(peff::allocAndConstruct<IdRef>(allocator, ASTNODE_ALIGNMENT, allocator));
+SLKC_API peff::Option<CompilationError> slkc::get_full_id_ref(peff::Alloc *allocator, AstNodePtr<MemberNode> m, IdRefPtr &id_ref_out) {
+	IdRefPtr p(peff::alloc_and_construct<IdRef>(allocator, ASTNODE_ALIGNMENT, allocator));
 
 	for (;;) {
 		IdRefEntry entry(allocator);
@@ -13,91 +13,91 @@ SLKC_API peff::Option<CompilationError> slkc::getFullIdRef(peff::Alloc *allocato
 		}
 
 		if (!entry.name.build(m->name)) {
-			return genOutOfMemoryCompError();
+			return gen_out_of_memory_comp_error();
 		}
 
-		if (!entry.genericArgs.resize(m->genericArgs.size())) {
-			return genOutOfMemoryCompError();
+		if (!entry.generic_args.resize(m->generic_args.size())) {
+			return gen_out_of_memory_comp_error();
 		}
 
-		for (size_t i = 0; i < entry.genericArgs.size(); ++i) {
-			if (!(entry.genericArgs.at(i) = m->genericArgs.at(i)->duplicate<AstNode>(allocator))) {
-				return genOutOfMemoryCompError();
+		for (size_t i = 0; i < entry.generic_args.size(); ++i) {
+			if (!(entry.generic_args.at(i) = m->generic_args.at(i)->duplicate<AstNode>(allocator))) {
+				return gen_out_of_memory_comp_error();
 			}
 		}
 
-		if (!p->entries.pushFront(std::move(entry))) {
-			return genOutOfMemoryCompError();
+		if (!p->entries.push_front(std::move(entry))) {
+			return gen_out_of_memory_comp_error();
 		}
 
-		switch (m->getAstNodeType()) {
+		switch (m->get_ast_node_type()) {
 			case AstNodeType::FnOverloading:
 				if (!m->parent->parent)
 					goto end;
-				m = m->parent->parent->sharedFromThis().castTo<MemberNode>();
+				m = m->parent->parent->shared_from_this().cast_to<MemberNode>();
 				break;
 			default:
 				if (!m->parent)
 					goto end;
-				m = m->parent->sharedFromThis().castTo<MemberNode>();
+				m = m->parent->shared_from_this().cast_to<MemberNode>();
 		}
 	}
 
 end:
-	idRefOut = std::move(p);
+	id_ref_out = std::move(p);
 
 	return {};
 }
 
-SLKC_API peff::Option<CompilationError> slkc::resolveStaticMember(
-	CompileEnv *compileEnv,
+SLKC_API peff::Option<CompilationError> slkc::resolve_static_member(
+	CompileEnv *compile_env,
 	peff::SharedPtr<Document> document,
-	const AstNodePtr<MemberNode> &memberNode,
+	const AstNodePtr<MemberNode> &member_node,
 	const IdRefEntry &name,
-	AstNodePtr<MemberNode> &memberOut) {
+	AstNodePtr<MemberNode> &member_out) {
 	AstNodePtr<MemberNode> result;
 
-	switch (memberNode->getAstNodeType()) {
+	switch (member_node->get_ast_node_type()) {
 		case AstNodeType::Module: {
-			AstNodePtr<ModuleNode> mod = memberNode.castTo<ModuleNode>();
+			AstNodePtr<ModuleNode> mod = member_node.cast_to<ModuleNode>();
 
-			if (auto it = mod->memberIndices.find(name.name); it != mod->memberIndices.end()) {
+			if (auto it = mod->member_indices.find(name.name); it != mod->member_indices.end()) {
 				result = mod->members.at(it.value());
 			}
 
 			break;
 		}
 		case AstNodeType::Class: {
-			AstNodePtr<ClassNode> cls = memberNode.castTo<ClassNode>();
+			AstNodePtr<ClassNode> cls = member_node.cast_to<ClassNode>();
 
-			if (auto it = cls->memberIndices.find(name.name); it != cls->memberIndices.end()) {
+			if (auto it = cls->member_indices.find(name.name); it != cls->member_indices.end()) {
 				result = cls->members.at(it.value());
 			}
 
 			break;
 		}
 		case AstNodeType::Interface: {
-			AstNodePtr<InterfaceNode> cls = memberNode.castTo<InterfaceNode>();
+			AstNodePtr<InterfaceNode> cls = member_node.cast_to<InterfaceNode>();
 
-			if (auto it = cls->memberIndices.find(name.name); it != cls->memberIndices.end()) {
+			if (auto it = cls->member_indices.find(name.name); it != cls->member_indices.end()) {
 				result = cls->members.at(it.value());
 			}
 
 			break;
 		}
 		case AstNodeType::Struct: {
-			AstNodePtr<StructNode> cls = memberNode.castTo<StructNode>();
+			AstNodePtr<StructNode> cls = member_node.cast_to<StructNode>();
 
-			if (auto it = cls->memberIndices.find(name.name); it != cls->memberIndices.end()) {
+			if (auto it = cls->member_indices.find(name.name); it != cls->member_indices.end()) {
 				result = cls->members.at(it.value());
 			}
 
 			break;
 		}
 		case AstNodeType::UnionEnum: {
-			AstNodePtr<UnionEnumNode> cls = memberNode.castTo<UnionEnumNode>();
+			AstNodePtr<UnionEnumNode> cls = member_node.cast_to<UnionEnumNode>();
 
-			if (auto it = cls->memberIndices.find(name.name); it != cls->memberIndices.end()) {
+			if (auto it = cls->member_indices.find(name.name); it != cls->member_indices.end()) {
 				result = cls->members.at(it.value());
 			}
 
@@ -108,31 +108,31 @@ SLKC_API peff::Option<CompilationError> slkc::resolveStaticMember(
 	}
 
 	if (result) {
-		if (name.genericArgs.size()) {
-			SLKC_RETURN_IF_COMP_ERROR(document->instantiateGenericObject(result, name.genericArgs, result));
+		if (name.generic_args.size()) {
+			SLKC_RETURN_IF_COMP_ERROR(document->instantiate_generic_object(result, name.generic_args, result));
 		}
 
-		switch (result->getAstNodeType()) {
+		switch (result->get_ast_node_type()) {
 			case AstNodeType::Var: {
-				AstNodePtr<VarNode> m = result.castTo<VarNode>();
+				AstNodePtr<VarNode> m = result.cast_to<VarNode>();
 
 				// Check if the variable member is static.
-				if (!(m->accessModifier & slake::ACCESS_STATIC)) {
-					memberOut = {};
+				if (!(m->access_modifier & slake::ACCESS_STATIC)) {
+					member_out = {};
 					return {};
 				}
 				break;
 			}
 			case AstNodeType::Fn: {
-				AstNodePtr<FnNode> m = result.castTo<FnNode>();
+				AstNodePtr<FnNode> m = result.cast_to<FnNode>();
 
 				// Check if the slot contains any static method.
 				for (auto i : m->overloadings) {
-					if (i->accessModifier & slake::ACCESS_STATIC)
+					if (i->access_modifier & slake::ACCESS_STATIC)
 						goto pass;
 				}
 
-				memberOut = {};
+				member_out = {};
 				return {};
 			pass:
 				break;
@@ -140,178 +140,178 @@ SLKC_API peff::Option<CompilationError> slkc::resolveStaticMember(
 			default:
 				break;
 		}
-		memberOut = result;
+		member_out = result;
 		return {};
 	}
 
-	memberOut = {};
+	member_out = {};
 	return {};
 }
 
-SLKC_API peff::Option<CompilationError> slkc::resolveInstanceMember(
-	CompileEnv *compileEnv,
+SLKC_API peff::Option<CompilationError> slkc::resolve_instance_member(
+	CompileEnv *compile_env,
 	peff::SharedPtr<Document> document,
-	AstNodePtr<MemberNode> memberNode,
+	AstNodePtr<MemberNode> member_node,
 	const IdRefEntry &name,
-	AstNodePtr<MemberNode> &memberOut) {
+	AstNodePtr<MemberNode> &member_out) {
 	AstNodePtr<MemberNode> result;
 
-	switch (memberNode->getAstNodeType()) {
+	switch (member_node->get_ast_node_type()) {
 		case AstNodeType::Module: {
-			AstNodePtr<ModuleNode> mod = memberNode.castTo<ModuleNode>();
+			AstNodePtr<ModuleNode> mod = member_node.cast_to<ModuleNode>();
 
-			if (auto it = mod->memberIndices.find(name.name); it != mod->memberIndices.end()) {
+			if (auto it = mod->member_indices.find(name.name); it != mod->member_indices.end()) {
 				result = mod->members.at(it.value());
 			}
 
 			break;
 		}
 		case AstNodeType::Class: {
-			AstNodePtr<ClassNode> m = memberNode.castTo<ClassNode>();
+			AstNodePtr<ClassNode> m = member_node.cast_to<ClassNode>();
 
-			if (auto it = m->memberIndices.find(name.name); it != m->memberIndices.end()) {
+			if (auto it = m->member_indices.find(name.name); it != m->member_indices.end()) {
 				result = m->members.at(it.value());
 			} else {
 				{
-					AstNodePtr<ClassNode> baseType;
-					SLKC_RETURN_IF_COMP_ERROR(visitBaseClass(m->baseType, baseType, nullptr));
-					if (baseType) {
-						SLKC_RETURN_IF_COMP_ERROR(resolveInstanceMember(compileEnv, document, baseType.castTo<MemberNode>(), name, result));
+					AstNodePtr<ClassNode> base_type;
+					SLKC_RETURN_IF_COMP_ERROR(visit_base_class(m->base_type, base_type, nullptr));
+					if (base_type) {
+						SLKC_RETURN_IF_COMP_ERROR(resolve_instance_member(compile_env, document, base_type.cast_to<MemberNode>(), name, result));
 
 						if (result) {
-							goto classResolutionSucceeded;
+							goto class_resolution_succeeded;
 						}
 					}
 				}
 
-				for (auto &i : m->implTypes) {
+				for (auto &i : m->impl_types) {
 					{
-						AstNodePtr<InterfaceNode> baseType;
-						SLKC_RETURN_IF_COMP_ERROR(visitBaseInterface(i, baseType, nullptr));
-						if (baseType) {
-							SLKC_RETURN_IF_COMP_ERROR(resolveInstanceMember(compileEnv, document, baseType.castTo<MemberNode>(), name, result));
+						AstNodePtr<InterfaceNode> base_type;
+						SLKC_RETURN_IF_COMP_ERROR(visit_base_interface(i, base_type, nullptr));
+						if (base_type) {
+							SLKC_RETURN_IF_COMP_ERROR(resolve_instance_member(compile_env, document, base_type.cast_to<MemberNode>(), name, result));
 
 							if (result) {
-								goto classResolutionSucceeded;
+								goto class_resolution_succeeded;
 							}
 						}
 					}
 				}
 			}
 
-		classResolutionSucceeded:
+		class_resolution_succeeded:
 			break;
 		}
 		case AstNodeType::Interface: {
-			AstNodePtr<InterfaceNode> m = memberNode.castTo<InterfaceNode>();
+			AstNodePtr<InterfaceNode> m = member_node.cast_to<InterfaceNode>();
 
-			if (auto it = m->memberIndices.find(name.name); it != m->memberIndices.end()) {
+			if (auto it = m->member_indices.find(name.name); it != m->member_indices.end()) {
 				result = m->members.at(it.value());
 			} else {
-				for (auto &i : m->implTypes) {
+				for (auto &i : m->impl_types) {
 					{
-						AstNodePtr<InterfaceNode> baseType;
-						SLKC_RETURN_IF_COMP_ERROR(visitBaseInterface(i, baseType, nullptr));
-						if (baseType) {
-							SLKC_RETURN_IF_COMP_ERROR(resolveInstanceMember(compileEnv, document, baseType.castTo<MemberNode>(), name, result));
+						AstNodePtr<InterfaceNode> base_type;
+						SLKC_RETURN_IF_COMP_ERROR(visit_base_interface(i, base_type, nullptr));
+						if (base_type) {
+							SLKC_RETURN_IF_COMP_ERROR(resolve_instance_member(compile_env, document, base_type.cast_to<MemberNode>(), name, result));
 
 							if (result) {
-								goto interfaceResolutionSucceeded;
+								goto interface_resolution_succeeded;
 							}
 						}
 					}
 				}
 			}
 
-		interfaceResolutionSucceeded:
+		interface_resolution_succeeded:
 			break;
 		}
 		case AstNodeType::Struct: {
-			AstNodePtr<StructNode> m = memberNode.castTo<StructNode>();
+			AstNodePtr<StructNode> m = member_node.cast_to<StructNode>();
 
-			if (auto it = m->memberIndices.find(name.name); it != m->memberIndices.end()) {
+			if (auto it = m->member_indices.find(name.name); it != m->member_indices.end()) {
 				result = m->members.at(it.value());
 			}
 
 			break;
 		}
 		case AstNodeType::UnionEnumItem: {
-			AstNodePtr<UnionEnumItemNode> m = memberNode.castTo<UnionEnumItemNode>();
+			AstNodePtr<UnionEnumItemNode> m = member_node.cast_to<UnionEnumItemNode>();
 
-			if (auto it = m->memberIndices.find(name.name); it != m->memberIndices.end()) {
+			if (auto it = m->member_indices.find(name.name); it != m->member_indices.end()) {
 				result = m->members.at(it.value());
 			}
 
 			break;
 		}
 		case AstNodeType::UnionEnum: {
-			AstNodePtr<UnionEnumNode> m = memberNode.castTo<UnionEnumNode>();
+			AstNodePtr<UnionEnumNode> m = member_node.cast_to<UnionEnumNode>();
 
-			if (auto it = m->memberIndices.find(name.name); it != m->memberIndices.end()) {
+			if (auto it = m->member_indices.find(name.name); it != m->member_indices.end()) {
 				result = m->members.at(it.value());
 			}
 
 			break;
 		}
 		case AstNodeType::GenericParam: {
-			AstNodePtr<GenericParamNode> m = memberNode.castTo<GenericParamNode>();
+			AstNodePtr<GenericParamNode> m = member_node.cast_to<GenericParamNode>();
 
 			{
-				AstNodePtr<ClassNode> baseType;
-				SLKC_RETURN_IF_COMP_ERROR(visitBaseClass(m->genericConstraint->baseType, baseType, nullptr));
-				if (baseType) {
-					SLKC_RETURN_IF_COMP_ERROR(resolveInstanceMember(compileEnv, document, baseType.castTo<MemberNode>(), name, result));
+				AstNodePtr<ClassNode> base_type;
+				SLKC_RETURN_IF_COMP_ERROR(visit_base_class(m->generic_constraint->base_type, base_type, nullptr));
+				if (base_type) {
+					SLKC_RETURN_IF_COMP_ERROR(resolve_instance_member(compile_env, document, base_type.cast_to<MemberNode>(), name, result));
 
 					if (result) {
-						goto genericParamResolutionSucceeded;
+						goto generic_param_resolution_succeeded;
 					}
 				}
 			}
 
-			for (auto &i : m->genericConstraint->implTypes) {
+			for (auto &i : m->generic_constraint->impl_types) {
 				{
-					AstNodePtr<InterfaceNode> baseType;
-					SLKC_RETURN_IF_COMP_ERROR(visitBaseInterface(i, baseType, nullptr));
-					if (baseType) {
-						SLKC_RETURN_IF_COMP_ERROR(resolveInstanceMember(compileEnv, document, baseType.castTo<MemberNode>(), name, result));
+					AstNodePtr<InterfaceNode> base_type;
+					SLKC_RETURN_IF_COMP_ERROR(visit_base_interface(i, base_type, nullptr));
+					if (base_type) {
+						SLKC_RETURN_IF_COMP_ERROR(resolve_instance_member(compile_env, document, base_type.cast_to<MemberNode>(), name, result));
 
 						if (result) {
-							goto genericParamResolutionSucceeded;
+							goto generic_param_resolution_succeeded;
 						}
 					}
 				}
 			}
 
-		genericParamResolutionSucceeded:
+		generic_param_resolution_succeeded:
 			break;
 		}
 		case AstNodeType::This: {
-			AstNodePtr<ThisNode> cls = memberNode.castTo<ThisNode>();
+			AstNodePtr<ThisNode> cls = member_node.cast_to<ThisNode>();
 
-			SLKC_RETURN_IF_COMP_ERROR(resolveInstanceMember(compileEnv, cls->document->sharedFromThis(), cls->thisType, name, result));
+			SLKC_RETURN_IF_COMP_ERROR(resolve_instance_member(compile_env, cls->document->shared_from_this(), cls->this_type, name, result));
 
 			break;
 		}
 		case AstNodeType::Var: {
-			AstNodePtr<VarNode> m = memberNode.castTo<VarNode>();
+			AstNodePtr<VarNode> m = member_node.cast_to<VarNode>();
 
-			if (m->type->typeNameKind != TypeNameKind::Custom) {
+			if (m->type->type_name_kind != TypeNameKind::Custom) {
 				result = {};
 				break;
 			}
 
 			AstNodePtr<TypeNameNode> type;
-			SLKC_RETURN_IF_COMP_ERROR(removeRefOfType(m->type, type));
+			SLKC_RETURN_IF_COMP_ERROR(remove_ref_of_type(m->type, type));
 
 			AstNodePtr<MemberNode> tm;
-			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(compileEnv, document, type.castTo<CustomTypeNameNode>(), tm));
+			SLKC_RETURN_IF_COMP_ERROR(resolve_custom_type_name(compile_env, document, type.cast_to<CustomTypeNameNode>(), tm));
 
 			if (!tm) {
 				result = {};
 				break;
 			}
 
-			SLKC_RETURN_IF_COMP_ERROR(resolveInstanceMember(compileEnv, document, tm, name, result));
+			SLKC_RETURN_IF_COMP_ERROR(resolve_instance_member(compile_env, document, tm, name, result));
 
 			break;
 		}
@@ -320,30 +320,30 @@ SLKC_API peff::Option<CompilationError> slkc::resolveInstanceMember(
 	}
 
 	if (result) {
-		if (name.genericArgs.size()) {
-			SLKC_RETURN_IF_COMP_ERROR(document->instantiateGenericObject(result, name.genericArgs, result));
+		if (name.generic_args.size()) {
+			SLKC_RETURN_IF_COMP_ERROR(document->instantiate_generic_object(result, name.generic_args, result));
 		}
 
-		switch (result->getAstNodeType()) {
+		switch (result->get_ast_node_type()) {
 			case AstNodeType::Var: {
-				AstNodePtr<VarNode> m = result.castTo<VarNode>();
+				AstNodePtr<VarNode> m = result.cast_to<VarNode>();
 
 				// Check if the variable member is static or not.
-				if (m->accessModifier & slake::ACCESS_STATIC) {
+				if (m->access_modifier & slake::ACCESS_STATIC) {
 					return {};
 				}
 				break;
 			}
 			case AstNodeType::Fn: {
-				AstNodePtr<FnNode> m = result.castTo<FnNode>();
+				AstNodePtr<FnNode> m = result.cast_to<FnNode>();
 
 				// Check if the slot contains any instance method.
 				for (auto i : m->overloadings) {
-					if (!(i->accessModifier & slake::ACCESS_STATIC))
+					if (!(i->access_modifier & slake::ACCESS_STATIC))
 						goto pass;
 				}
 
-				memberOut = {};
+				member_out = {};
 				return {};
 			pass:
 				break;
@@ -351,312 +351,312 @@ SLKC_API peff::Option<CompilationError> slkc::resolveInstanceMember(
 			default:
 				break;
 		}
-		memberOut = result;
+		member_out = result;
 		return {};
 	}
 
-	memberOut = {};
+	member_out = {};
 	return {};
 }
 
-SLKC_API peff::Option<CompilationError> slkc::isMemberAccessible(
-	CompileEnv *compileEnv,
+SLKC_API peff::Option<CompilationError> slkc::is_member_accessible(
+	CompileEnv *compile_env,
 	AstNodePtr<MemberNode> parent,
 	AstNodePtr<MemberNode> member,
-	bool &resultOut) {
-	if (member->isPublic())
-		goto accessCheckPassed;
-	if (compileEnv->curParentAccessNode) {
-		auto p = member->parent->sharedFromThis().castTo<MemberNode>();
+	bool &result_out) {
+	if (member->is_public())
+		goto access_check_passed;
+	if (compile_env->cur_parent_access_node) {
+		auto p = member->parent->shared_from_this().cast_to<MemberNode>();
 
-		if (p->getAstNodeType() == AstNodeType::Fn)
-			p = p->parent->sharedFromThis().castTo<MemberNode>();
+		if (p->get_ast_node_type() == AstNodeType::Fn)
+			p = p->parent->shared_from_this().cast_to<MemberNode>();
 
-		auto accessNode = compileEnv->curParentAccessNode.castTo<MemberNode>();
+		auto access_node = compile_env->cur_parent_access_node.cast_to<MemberNode>();
 
-		switch (p->getAstNodeType()) {
+		switch (p->get_ast_node_type()) {
 			case AstNodeType::Class:
-				if (accessNode->getAstNodeType() == AstNodeType::Class) {
+				if (access_node->get_ast_node_type() == AstNodeType::Class) {
 					bool result;
 
-					SLKC_RETURN_IF_COMP_ERROR(isBaseOf(compileEnv->document, accessNode.castTo<ClassNode>(), p->sharedFromThis().castTo<ClassNode>(), result));
+					SLKC_RETURN_IF_COMP_ERROR(is_base_of(compile_env->document, access_node.cast_to<ClassNode>(), p->shared_from_this().cast_to<ClassNode>(), result));
 
 					if (result) {
 						// Child classes can always access parent's members.
-						goto accessCheckPassed;
+						goto access_check_passed;
 					}
 				}
-				for (AstNodePtr<MemberNode> j = p; j; j = j->parent ? j->parent->sharedFromThis().castTo<MemberNode>() : AstNodePtr<MemberNode>{}) {
-					if (accessNode->getAstNodeType() == AstNodeType::Module) {
-						switch (j->getAstNodeType()) {
+				for (AstNodePtr<MemberNode> j = p; j; j = j->parent ? j->parent->shared_from_this().cast_to<MemberNode>() : AstNodePtr<MemberNode>{}) {
+					if (access_node->get_ast_node_type() == AstNodeType::Module) {
+						switch (j->get_ast_node_type()) {
 							case AstNodeType::Class:
 							case AstNodeType::Interface:
 							case AstNodeType::Struct:
 								break;
 							default:
-								goto notInternal;
+								goto not_internal;
 						}
 					}
-					if (j == accessNode)
+					if (j == access_node)
 						// Outer class is always accessible to internal classes' members.
-						goto accessCheckPassed;
+						goto access_check_passed;
 				}
 				break;
 			case AstNodeType::Module:
 				// Members in the same module can access each other.
-				if (p == compileEnv->curParentAccessNode.castTo<MemberNode>())
-					goto accessCheckPassed;
+				if (p == compile_env->cur_parent_access_node.cast_to<MemberNode>())
+					goto access_check_passed;
 				break;
 		}
 
-	notInternal:;
+	not_internal:;
 	}
 	// TODO: Check if this is a friend.
-	resultOut = false;
+	result_out = false;
 	return {};
-accessCheckPassed:
-	resultOut = true;
+access_check_passed:
+	result_out = true;
 	return {};
 }
 
-SLKC_API peff::Option<CompilationError> slkc::resolveIdRef(
-	CompileEnv *compileEnv,
+SLKC_API peff::Option<CompilationError> slkc::resolve_id_ref(
+	CompileEnv *compile_env,
 	peff::SharedPtr<Document> document,
-	const AstNodePtr<MemberNode> &resolveRoot,
-	IdRefEntry *idRef,
-	size_t nEntries,
-	AstNodePtr<MemberNode> &memberOut,
-	ResolvedIdRefPartList *resolvedPartListOut,
-	bool isStatic) {
-	AstNodePtr<MemberNode> curMember = resolveRoot;
+	const AstNodePtr<MemberNode> &resolve_root,
+	IdRefEntry *id_ref,
+	size_t num_entries,
+	AstNodePtr<MemberNode> &member_out,
+	ResolvedIdRefPartList *resolved_part_list_out,
+	bool is_static) {
+	AstNodePtr<MemberNode> cur_member = resolve_root;
 
-	bool isPostStaticParts = !isStatic;
+	bool is_post_static_parts = !is_static;
 
-	auto updateStaticStatus = [&curMember, &isStatic]() {
-		switch (curMember->getAstNodeType()) {
+	auto update_static_status = [&cur_member, &is_static]() {
+		switch (cur_member->get_ast_node_type()) {
 			case AstNodeType::Var:
-				isStatic = false;
+				is_static = false;
 				break;
 			default:
 				break;
 		}
 	};
 
-	updateStaticStatus();
+	update_static_status();
 
-	for (size_t i = 0; i < nEntries; ++i) {
-		const IdRefEntry &curEntry = idRef[i];
+	for (size_t i = 0; i < num_entries; ++i) {
+		const IdRefEntry &cur_entry = id_ref[i];
 
-		AstNodePtr<MemberNode> parent = curMember;
-		if (isStatic) {
-			SLKC_RETURN_IF_COMP_ERROR(resolveStaticMember(compileEnv, document, parent, curEntry, curMember));
+		AstNodePtr<MemberNode> parent = cur_member;
+		if (is_static) {
+			SLKC_RETURN_IF_COMP_ERROR(resolve_static_member(compile_env, document, parent, cur_entry, cur_member));
 		} else {
-			SLKC_RETURN_IF_COMP_ERROR(resolveInstanceMember(compileEnv, document, parent, curEntry, curMember));
+			SLKC_RETURN_IF_COMP_ERROR(resolve_instance_member(compile_env, document, parent, cur_entry, cur_member));
 		}
 
-		if (!curMember) {
-			memberOut = {};
-			if (resolvedPartListOut) {
-				resolvedPartListOut->clearAndShrink();
+		if (!cur_member) {
+			member_out = {};
+			if (resolved_part_list_out) {
+				resolved_part_list_out->clear_and_shrink();
 			}
 			return {};
 		}
 
-		if (compileEnv) {
-			if (curMember->getAstNodeType() == AstNodeType::Module)
-				goto accessCheckPassed;
-			if (curMember->getAstNodeType() == AstNodeType::Fn)
-				goto accessCheckPassed;
+		if (compile_env) {
+			if (cur_member->get_ast_node_type() == AstNodeType::Module)
+				goto access_check_passed;
+			if (cur_member->get_ast_node_type() == AstNodeType::Fn)
+				goto access_check_passed;
 			bool accessible;
-			SLKC_RETURN_IF_COMP_ERROR(isMemberAccessible(compileEnv, parent, curMember, accessible));
+			SLKC_RETURN_IF_COMP_ERROR(is_member_accessible(compile_env, parent, cur_member, accessible));
 			if (!accessible)
 				return CompilationError(
-					TokenRange{ document->mainModule, curEntry.nameTokenIndex },
+					TokenRange{ document->main_module, cur_entry.name_token_index },
 					CompilationErrorKind::MemberIsNotAccessible);
 		}
-	accessCheckPassed:
-		updateStaticStatus();
+	access_check_passed:
+		update_static_status();
 
 		// We assume that all parts after the static parts are in instance.
-		if (resolvedPartListOut) {
-			if (!isStatic) {
-				if (!isPostStaticParts) {
-					ResolvedIdRefPart part = { isStatic, i, curMember };
+		if (resolved_part_list_out) {
+			if (!is_static) {
+				if (!is_post_static_parts) {
+					ResolvedIdRefPart part = { is_static, i, cur_member };
 
-					assert(part.nEntries);
+					assert(part.num_entries);
 
-					if (!resolvedPartListOut->pushBack(std::move(part)))
-						return genOutOfMemoryCompError();
+					if (!resolved_part_list_out->push_back(std::move(part)))
+						return gen_out_of_memory_comp_error();
 
-					isPostStaticParts = true;
+					is_post_static_parts = true;
 				} else {
-					ResolvedIdRefPart part = { isStatic, 1, curMember };
+					ResolvedIdRefPart part = { is_static, 1, cur_member };
 
-					if (!resolvedPartListOut->pushBack(std::move(part)))
-						return genOutOfMemoryCompError();
+					if (!resolved_part_list_out->push_back(std::move(part)))
+						return gen_out_of_memory_comp_error();
 				}
 			}
 		}
 	}
 
-	if (resolvedPartListOut) {
-		if (isStatic) {
-			ResolvedIdRefPart part = { isStatic, nEntries, curMember };
+	if (resolved_part_list_out) {
+		if (is_static) {
+			ResolvedIdRefPart part = { is_static, num_entries, cur_member };
 
-			if (!resolvedPartListOut->pushBack(std::move(part)))
-				return genOutOfMemoryCompError();
+			if (!resolved_part_list_out->push_back(std::move(part)))
+				return gen_out_of_memory_comp_error();
 		}
 	}
 
-	memberOut = curMember;
+	member_out = cur_member;
 	return {};
 }
 
-SLKC_API peff::Option<CompilationError> slkc::resolveIdRefWithScopeNode(
-	CompileEnv *compileEnv,
+SLKC_API peff::Option<CompilationError> slkc::resolve_id_ref_with_scope_node(
+	CompileEnv *compile_env,
 	peff::SharedPtr<Document> document,
-	peff::Set<AstNodePtr<MemberNode>> &walkedNodes,
-	const AstNodePtr<MemberNode> &resolveScope,
-	IdRefEntry *idRef,
-	size_t nEntries,
-	AstNodePtr<MemberNode> &memberOut,
-	ResolvedIdRefPartList *resolvedPartListOut,
-	bool isStatic,
-	bool isSealed) {
-	if (walkedNodes.contains(resolveScope)) {
-		memberOut = {};
+	peff::Set<AstNodePtr<MemberNode>> &walked_nodes,
+	const AstNodePtr<MemberNode> &resolve_scope,
+	IdRefEntry *id_ref,
+	size_t num_entries,
+	AstNodePtr<MemberNode> &member_out,
+	ResolvedIdRefPartList *resolved_part_list_out,
+	bool is_static,
+	bool is_sealed) {
+	if (walked_nodes.contains(resolve_scope)) {
+		member_out = {};
 		return {};
 	}
 
-	if ((nEntries == 1) && (!isSealed)) {
-		const IdRefEntry &initialEntry = idRef[0];
+	if ((num_entries == 1) && (!is_sealed)) {
+		const IdRefEntry &initial_entry = id_ref[0];
 
-		if (!initialEntry.genericArgs.size()) {
-			AstNodePtr<MemberNode> curScope = resolveScope;
+		if (!initial_entry.generic_args.size()) {
+			AstNodePtr<MemberNode> cur_scope = resolve_scope;
 
-		reresolveWithNewScope:
-			switch (curScope->getAstNodeType()) {
+		reresolve_with_new_scope:
+			switch (cur_scope->get_ast_node_type()) {
 				case AstNodeType::Class: {
-					AstNodePtr<ClassNode> m = curScope.castTo<ClassNode>();
+					AstNodePtr<ClassNode> m = cur_scope.cast_to<ClassNode>();
 
-					if (auto it = m->genericParamIndices.find(initialEntry.name); it != m->genericParamIndices.end()) {
-						memberOut = m->genericParams.at(it.value()).castTo<MemberNode>();
+					if (auto it = m->generic_param_indices.find(initial_entry.name); it != m->generic_param_indices.end()) {
+						member_out = m->generic_params.at(it.value()).cast_to<MemberNode>();
 						return {};
 					}
 					if (m->parent) {
-						curScope = m->parent->sharedFromThis().castTo<MemberNode>();
-						goto reresolveWithNewScope;
+						cur_scope = m->parent->shared_from_this().cast_to<MemberNode>();
+						goto reresolve_with_new_scope;
 					}
 					break;
 				}
 				case AstNodeType::Interface: {
-					AstNodePtr<InterfaceNode> m = curScope.castTo<InterfaceNode>();
+					AstNodePtr<InterfaceNode> m = cur_scope.cast_to<InterfaceNode>();
 
-					if (auto it = m->genericParamIndices.find(initialEntry.name); it != m->genericParamIndices.end()) {
-						memberOut = m->genericParams.at(it.value()).castTo<MemberNode>();
+					if (auto it = m->generic_param_indices.find(initial_entry.name); it != m->generic_param_indices.end()) {
+						member_out = m->generic_params.at(it.value()).cast_to<MemberNode>();
 						return {};
 					}
 					if (m->parent) {
-						curScope = m->parent->sharedFromThis().castTo<MemberNode>();
-						goto reresolveWithNewScope;
+						cur_scope = m->parent->shared_from_this().cast_to<MemberNode>();
+						goto reresolve_with_new_scope;
 					}
 					break;
 				}
 				case AstNodeType::Struct: {
-					AstNodePtr<StructNode> m = curScope.castTo<StructNode>();
+					AstNodePtr<StructNode> m = cur_scope.cast_to<StructNode>();
 
-					if (auto it = m->genericParamIndices.find(initialEntry.name); it != m->genericParamIndices.end()) {
-						memberOut = m->genericParams.at(it.value()).castTo<MemberNode>();
+					if (auto it = m->generic_param_indices.find(initial_entry.name); it != m->generic_param_indices.end()) {
+						member_out = m->generic_params.at(it.value()).cast_to<MemberNode>();
 						return {};
 					}
 					if (m->parent) {
-						curScope = m->parent->sharedFromThis().castTo<MemberNode>();
-						goto reresolveWithNewScope;
+						cur_scope = m->parent->shared_from_this().cast_to<MemberNode>();
+						goto reresolve_with_new_scope;
 					}
 					break;
 				}
 				case AstNodeType::UnionEnum: {
-					AstNodePtr<UnionEnumNode> m = curScope.castTo<UnionEnumNode>();
+					AstNodePtr<UnionEnumNode> m = cur_scope.cast_to<UnionEnumNode>();
 
-					if (auto it = m->genericParamIndices.find(initialEntry.name); it != m->genericParamIndices.end()) {
-						memberOut = m->genericParams.at(it.value()).castTo<MemberNode>();
+					if (auto it = m->generic_param_indices.find(initial_entry.name); it != m->generic_param_indices.end()) {
+						member_out = m->generic_params.at(it.value()).cast_to<MemberNode>();
 						return {};
 					}
 					if (m->parent) {
-						curScope = m->parent->sharedFromThis().castTo<MemberNode>();
-						goto reresolveWithNewScope;
+						cur_scope = m->parent->shared_from_this().cast_to<MemberNode>();
+						goto reresolve_with_new_scope;
 					}
 					break;
 				}
 				case AstNodeType::FnOverloading: {
-					AstNodePtr<FnOverloadingNode> m = curScope.castTo<FnOverloadingNode>();
+					AstNodePtr<FnOverloadingNode> m = cur_scope.cast_to<FnOverloadingNode>();
 
-					if (auto it = m->genericParamIndices.find(initialEntry.name); it != m->genericParamIndices.end()) {
-						memberOut = m->genericParams.at(it.value()).castTo<MemberNode>();
+					if (auto it = m->generic_param_indices.find(initial_entry.name); it != m->generic_param_indices.end()) {
+						member_out = m->generic_params.at(it.value()).cast_to<MemberNode>();
 						return {};
 					}
 
-					curScope = m->parent->parent->sharedFromThis().castTo<MemberNode>();
-					goto reresolveWithNewScope;
+					cur_scope = m->parent->parent->shared_from_this().cast_to<MemberNode>();
+					goto reresolve_with_new_scope;
 				}
 				default:;
 			}
 		}
 	}
 
-	SLKC_RETURN_IF_COMP_ERROR(resolveIdRef(compileEnv, document, resolveScope, idRef, nEntries, memberOut, resolvedPartListOut, isStatic));
+	SLKC_RETURN_IF_COMP_ERROR(resolve_id_ref(compile_env, document, resolve_scope, id_ref, num_entries, member_out, resolved_part_list_out, is_static));
 
-	if (!memberOut) {
-		switch (resolveScope->getAstNodeType()) {
+	if (!member_out) {
+		switch (resolve_scope->get_ast_node_type()) {
 			case AstNodeType::Class: {
-				AstNodePtr<ClassNode> m = resolveScope.castTo<ClassNode>();
+				AstNodePtr<ClassNode> m = resolve_scope.cast_to<ClassNode>();
 
-				if (!walkedNodes.insert(m.castTo<MemberNode>())) {
-					return genOutOfMemoryCompError();
+				if (!walked_nodes.insert(m.cast_to<MemberNode>())) {
+					return gen_out_of_memory_comp_error();
 				}
 
 				{
-					AstNodePtr<ClassNode> baseType;
-					SLKC_RETURN_IF_COMP_ERROR(visitBaseClass(m->baseType, baseType, &walkedNodes));
-					if (baseType) {
-						SLKC_RETURN_IF_COMP_ERROR(resolveIdRefWithScopeNode(compileEnv, document, walkedNodes, baseType.castTo<MemberNode>(), idRef, nEntries, memberOut, resolvedPartListOut, isStatic, true));
+					AstNodePtr<ClassNode> base_type;
+					SLKC_RETURN_IF_COMP_ERROR(visit_base_class(m->base_type, base_type, &walked_nodes));
+					if (base_type) {
+						SLKC_RETURN_IF_COMP_ERROR(resolve_id_ref_with_scope_node(compile_env, document, walked_nodes, base_type.cast_to<MemberNode>(), id_ref, num_entries, member_out, resolved_part_list_out, is_static, true));
 
-						if (memberOut) {
+						if (member_out) {
 							return {};
 						}
 					}
 				}
-				walkedNodes.clear();
+				walked_nodes.clear();
 
-				for (auto &i : m->implTypes) {
-					if (!walkedNodes.insert(m.castTo<MemberNode>())) {
-						return genOutOfMemoryCompError();
+				for (auto &i : m->impl_types) {
+					if (!walked_nodes.insert(m.cast_to<MemberNode>())) {
+						return gen_out_of_memory_comp_error();
 					}
 					{
-						AstNodePtr<InterfaceNode> baseType;
-						SLKC_RETURN_IF_COMP_ERROR(visitBaseInterface(i, baseType, &walkedNodes));
-						if (baseType) {
-							SLKC_RETURN_IF_COMP_ERROR(resolveIdRefWithScopeNode(compileEnv, document, walkedNodes, baseType.castTo<MemberNode>(), idRef, nEntries, memberOut, resolvedPartListOut, isStatic, true));
+						AstNodePtr<InterfaceNode> base_type;
+						SLKC_RETURN_IF_COMP_ERROR(visit_base_interface(i, base_type, &walked_nodes));
+						if (base_type) {
+							SLKC_RETURN_IF_COMP_ERROR(resolve_id_ref_with_scope_node(compile_env, document, walked_nodes, base_type.cast_to<MemberNode>(), id_ref, num_entries, member_out, resolved_part_list_out, is_static, true));
 
-							if (memberOut) {
+							if (member_out) {
 								return {};
 							}
 						}
 					}
-					walkedNodes.clear();
+					walked_nodes.clear();
 				}
 
-				if (m->parent && (!isSealed)) {
-					AstNodePtr<MemberNode> p = m->parent->sharedFromThis().castTo<MemberNode>();
+				if (m->parent && (!is_sealed)) {
+					AstNodePtr<MemberNode> p = m->parent->shared_from_this().cast_to<MemberNode>();
 
-					switch (p->getAstNodeType()) {
+					switch (p->get_ast_node_type()) {
 						case AstNodeType::Class:
 						case AstNodeType::Interface:
 						case AstNodeType::Struct:
 						case AstNodeType::Module:
-							SLKC_RETURN_IF_COMP_ERROR(resolveIdRefWithScopeNode(compileEnv, document, walkedNodes, p.castTo<MemberNode>(), idRef, nEntries, memberOut, resolvedPartListOut, isStatic));
+							SLKC_RETURN_IF_COMP_ERROR(resolve_id_ref_with_scope_node(compile_env, document, walked_nodes, p.cast_to<MemberNode>(), id_ref, num_entries, member_out, resolved_part_list_out, is_static));
 
-							if (memberOut) {
+							if (member_out) {
 								return {};
 							}
 							break;
@@ -665,41 +665,41 @@ SLKC_API peff::Option<CompilationError> slkc::resolveIdRefWithScopeNode(
 				break;
 			}
 			case AstNodeType::Interface: {
-				AstNodePtr<InterfaceNode> m = resolveScope.castTo<InterfaceNode>();
+				AstNodePtr<InterfaceNode> m = resolve_scope.cast_to<InterfaceNode>();
 
-				if (!walkedNodes.insert(m.castTo<MemberNode>())) {
-					return genOutOfMemoryCompError();
+				if (!walked_nodes.insert(m.cast_to<MemberNode>())) {
+					return gen_out_of_memory_comp_error();
 				}
 
-				for (auto &i : m->implTypes) {
-					if (!walkedNodes.insert(m.castTo<MemberNode>())) {
-						return genOutOfMemoryCompError();
+				for (auto &i : m->impl_types) {
+					if (!walked_nodes.insert(m.cast_to<MemberNode>())) {
+						return gen_out_of_memory_comp_error();
 					}
 					{
-						AstNodePtr<InterfaceNode> baseType;
-						SLKC_RETURN_IF_COMP_ERROR(visitBaseInterface(i, baseType, &walkedNodes));
-						if (baseType) {
-							SLKC_RETURN_IF_COMP_ERROR(resolveIdRefWithScopeNode(compileEnv, document, walkedNodes, baseType.castTo<MemberNode>(), idRef, nEntries, memberOut, resolvedPartListOut, isStatic, true));
+						AstNodePtr<InterfaceNode> base_type;
+						SLKC_RETURN_IF_COMP_ERROR(visit_base_interface(i, base_type, &walked_nodes));
+						if (base_type) {
+							SLKC_RETURN_IF_COMP_ERROR(resolve_id_ref_with_scope_node(compile_env, document, walked_nodes, base_type.cast_to<MemberNode>(), id_ref, num_entries, member_out, resolved_part_list_out, is_static, true));
 
-							if (memberOut) {
+							if (member_out) {
 								return {};
 							}
 						}
 					}
-					walkedNodes.clear();
+					walked_nodes.clear();
 				}
 
-				if (m->parent && (!isSealed)) {
-					AstNodePtr<MemberNode> p = m->parent->sharedFromThis().castTo<MemberNode>();
+				if (m->parent && (!is_sealed)) {
+					AstNodePtr<MemberNode> p = m->parent->shared_from_this().cast_to<MemberNode>();
 
-					switch (p->getAstNodeType()) {
+					switch (p->get_ast_node_type()) {
 						case AstNodeType::Class:
 						case AstNodeType::Interface:
 						case AstNodeType::Struct:
 						case AstNodeType::Module:
-							SLKC_RETURN_IF_COMP_ERROR(resolveIdRefWithScopeNode(compileEnv, document, walkedNodes, p, idRef, nEntries, memberOut, resolvedPartListOut, isStatic));
+							SLKC_RETURN_IF_COMP_ERROR(resolve_id_ref_with_scope_node(compile_env, document, walked_nodes, p, id_ref, num_entries, member_out, resolved_part_list_out, is_static));
 
-							if (memberOut) {
+							if (member_out) {
 								return {};
 							}
 							break;
@@ -711,23 +711,23 @@ SLKC_API peff::Option<CompilationError> slkc::resolveIdRefWithScopeNode(
 			case AstNodeType::UnionEnum:
 			case AstNodeType::UnionEnumItem:
 			case AstNodeType::Module: {
-				AstNodePtr<ModuleNode> m = resolveScope.castTo<ModuleNode>();
+				AstNodePtr<ModuleNode> m = resolve_scope.cast_to<ModuleNode>();
 
-				if (!walkedNodes.insert(m.castTo<MemberNode>())) {
-					return genOutOfMemoryCompError();
+				if (!walked_nodes.insert(m.cast_to<MemberNode>())) {
+					return gen_out_of_memory_comp_error();
 				}
 
-				if (m->parent && (!isSealed)) {
-					AstNodePtr<MemberNode> p = m->parent->sharedFromThis().castTo<MemberNode>();
+				if (m->parent && (!is_sealed)) {
+					AstNodePtr<MemberNode> p = m->parent->shared_from_this().cast_to<MemberNode>();
 
-					switch (p->getAstNodeType()) {
+					switch (p->get_ast_node_type()) {
 						case AstNodeType::Class:
 						case AstNodeType::Interface:
 						case AstNodeType::Struct:
 						case AstNodeType::Module:
-							SLKC_RETURN_IF_COMP_ERROR(resolveIdRefWithScopeNode(compileEnv, document, walkedNodes, p, idRef, nEntries, memberOut, resolvedPartListOut, isStatic));
+							SLKC_RETURN_IF_COMP_ERROR(resolve_id_ref_with_scope_node(compile_env, document, walked_nodes, p, id_ref, num_entries, member_out, resolved_part_list_out, is_static));
 
-							if (memberOut) {
+							if (member_out) {
 								return {};
 							}
 							break;
@@ -736,10 +736,10 @@ SLKC_API peff::Option<CompilationError> slkc::resolveIdRefWithScopeNode(
 				break;
 			}
 			case AstNodeType::FnOverloading: {
-				AstNodePtr<FnOverloadingNode> m = resolveScope.castTo<FnOverloadingNode>();
+				AstNodePtr<FnOverloadingNode> m = resolve_scope.cast_to<FnOverloadingNode>();
 
-				if (!walkedNodes.insert(m.castTo<MemberNode>())) {
-					return genOutOfMemoryCompError();
+				if (!walked_nodes.insert(m.cast_to<MemberNode>())) {
+					return gen_out_of_memory_comp_error();
 				}
 
 				if (!m->parent)
@@ -747,18 +747,18 @@ SLKC_API peff::Option<CompilationError> slkc::resolveIdRefWithScopeNode(
 
 				AstNodePtr<FnNode> slot;
 				{
-					AstNodePtr<MemberNode> p = m->parent->sharedFromThis().castTo<MemberNode>();
+					AstNodePtr<MemberNode> p = m->parent->shared_from_this().cast_to<MemberNode>();
 
-					if (p->getAstNodeType() != AstNodeType::Fn)
+					if (p->get_ast_node_type() != AstNodeType::Fn)
 						std::terminate();
-					slot = p.castTo<FnNode>();
+					slot = p.cast_to<FnNode>();
 				}
 
 				if (slot->parent) {
-					SLKC_RETURN_IF_COMP_ERROR(resolveIdRefWithScopeNode(compileEnv, document, walkedNodes, slot->parent->sharedFromThis().castTo<MemberNode>(), idRef, nEntries, memberOut, resolvedPartListOut, isStatic, false));
+					SLKC_RETURN_IF_COMP_ERROR(resolve_id_ref_with_scope_node(compile_env, document, walked_nodes, slot->parent->shared_from_this().cast_to<MemberNode>(), id_ref, num_entries, member_out, resolved_part_list_out, is_static, false));
 				}
 
-				if (memberOut) {
+				if (member_out) {
 					return {};
 				}
 				break;
@@ -770,28 +770,28 @@ SLKC_API peff::Option<CompilationError> slkc::resolveIdRefWithScopeNode(
 		return {};
 	}
 
-	memberOut = {};
+	member_out = {};
 	return {};
 }
 
-SLKC_API peff::Option<CompilationError> slkc::resolveCustomTypeName(
-	CompileEnv *compileEnv,
+SLKC_API peff::Option<CompilationError> slkc::resolve_custom_type_name(
+	CompileEnv *compile_env,
 	peff::SharedPtr<Document> document,
-	const AstNodePtr<CustomTypeNameNode> &typeName,
-	AstNodePtr<MemberNode> &memberNodeOut,
-	peff::Set<AstNodePtr<MemberNode>> *walkedNodes) {
+	const AstNodePtr<CustomTypeNameNode> &type_name,
+	AstNodePtr<MemberNode> &member_node_out,
+	peff::Set<AstNodePtr<MemberNode>> *walked_nodes) {
 	AstNodePtr<MemberNode> member;
 
-	if (typeName->cachedResolveResult.isValid()) {
-		member = typeName->cachedResolveResult.lock();
+	if (type_name->cached_resolve_result.is_valid()) {
+		member = type_name->cached_resolve_result.lock();
 		goto resolved;
 	}
 
-	if (walkedNodes) {
-		SLKC_RETURN_IF_COMP_ERROR(resolveIdRefWithScopeNode(nullptr, document, *walkedNodes, typeName->contextNode.lock(), typeName->idRefPtr->entries.data(), typeName->idRefPtr->entries.size(), member, nullptr));
+	if (walked_nodes) {
+		SLKC_RETURN_IF_COMP_ERROR(resolve_id_ref_with_scope_node(nullptr, document, *walked_nodes, type_name->context_node.lock(), type_name->id_ref_ptr->entries.data(), type_name->id_ref_ptr->entries.size(), member, nullptr));
 	} else {
-		peff::Set<AstNodePtr<MemberNode>> myWalkedNodes(document->allocator.get());
-		SLKC_RETURN_IF_COMP_ERROR(resolveIdRefWithScopeNode(nullptr, document, myWalkedNodes, typeName->contextNode.lock(), typeName->idRefPtr->entries.data(), typeName->idRefPtr->entries.size(), member, nullptr));
+		peff::Set<AstNodePtr<MemberNode>> my_walked_nodes(document->allocator.get());
+		SLKC_RETURN_IF_COMP_ERROR(resolve_id_ref_with_scope_node(nullptr, document, my_walked_nodes, type_name->context_node.lock(), type_name->id_ref_ptr->entries.data(), type_name->id_ref_ptr->entries.size(), member, nullptr));
 	}
 
 	if (member) {
@@ -800,9 +800,9 @@ SLKC_API peff::Option<CompilationError> slkc::resolveCustomTypeName(
 
 resolved:
 	if (member) {
-		typeName->cachedResolveResult = toWeakPtr(member);
+		type_name->cached_resolve_result = to_weak_ptr(member);
 
-		switch (member->getAstNodeType()) {
+		switch (member->get_ast_node_type()) {
 			case AstNodeType::Class:
 			case AstNodeType::Interface:
 			case AstNodeType::Struct:
@@ -810,45 +810,45 @@ resolved:
 			case AstNodeType::ScopedEnum:
 			case AstNodeType::UnionEnum:
 			case AstNodeType::UnionEnumItem:
-				memberNodeOut = member;
+				member_node_out = member;
 				return {};
 			default:;
 		}
 
-		memberNodeOut = {};
+		member_node_out = {};
 		return {};
 	}
 
-	memberNodeOut = {};
+	member_node_out = {};
 	return {};
 }
 
 [[nodiscard]] SLKC_API
 	peff::Option<CompilationError>
-	slkc::resolveBaseOverridenCustomTypeName(
+	slkc::resolve_base_overriden_custom_type_name(
 		peff::SharedPtr<Document> document,
-		const AstNodePtr<CustomTypeNameNode> &typeName,
-		AstNodePtr<TypeNameNode> &typeNameOut) {
+		const AstNodePtr<CustomTypeNameNode> &type_name,
+		AstNodePtr<TypeNameNode> &type_name_out) {
 	AstNodePtr<MemberNode> member;
 
-	SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(nullptr, document, typeName, member, nullptr));
+	SLKC_RETURN_IF_COMP_ERROR(resolve_custom_type_name(nullptr, document, type_name, member, nullptr));
 
 	if (!member) {
-		typeNameOut = {};
+		type_name_out = {};
 		return {};
 	}
 
-	switch (member->getAstNodeType()) {
+	switch (member->get_ast_node_type()) {
 		case AstNodeType::GenericParam: {
-			auto gp = member.castTo<GenericParamNode>();
+			auto gp = member.cast_to<GenericParamNode>();
 
-			if (gp->genericConstraint) {
-				auto &c = gp->genericConstraint;
+			if (gp->generic_constraint) {
+				auto &c = gp->generic_constraint;
 
-				if (c->baseType) {
-					auto bt = c->baseType;
+				if (c->base_type) {
+					auto bt = c->base_type;
 
-					switch (bt->typeNameKind) {
+					switch (bt->type_name_kind) {
 						case TypeNameKind::I8:
 						case TypeNameKind::I16:
 						case TypeNameKind::I32:
@@ -867,7 +867,7 @@ resolved:
 						case TypeNameKind::Unpacking:
 						case TypeNameKind::Fn:
 						case TypeNameKind::Array:
-							typeNameOut = bt;
+							type_name_out = bt;
 							break;
 					}
 				}
@@ -875,25 +875,25 @@ resolved:
 		}
 	}
 
-	typeNameOut = typeName.castTo<TypeNameNode>();
+	type_name_out = type_name.cast_to<TypeNameNode>();
 
 	return {};
 }
 
-SLKC_API peff::Option<CompilationError> slkc::visitBaseClass(AstNodePtr<TypeNameNode> cls, AstNodePtr<ClassNode> &classOut, peff::Set<AstNodePtr<MemberNode>> *walkedNodes) {
-	if (cls && (cls->typeNameKind == TypeNameKind::Custom)) {
-		AstNodePtr<MemberNode> baseType;
+SLKC_API peff::Option<CompilationError> slkc::visit_base_class(AstNodePtr<TypeNameNode> cls, AstNodePtr<ClassNode> &class_out, peff::Set<AstNodePtr<MemberNode>> *walked_nodes) {
+	if (cls && (cls->type_name_kind == TypeNameKind::Custom)) {
+		AstNodePtr<MemberNode> base_type;
 
-		SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(nullptr, cls->document->sharedFromThis(), cls.castTo<CustomTypeNameNode>(), baseType, walkedNodes));
+		SLKC_RETURN_IF_COMP_ERROR(resolve_custom_type_name(nullptr, cls->document->shared_from_this(), cls.cast_to<CustomTypeNameNode>(), base_type, walked_nodes));
 
-		if (baseType && (baseType->getAstNodeType() == AstNodeType::Class)) {
-			AstNodePtr<ClassNode> b = baseType.castTo<ClassNode>();
-			bool isCyclicInherited;
+		if (base_type && (base_type->get_ast_node_type() == AstNodeType::Class)) {
+			AstNodePtr<ClassNode> b = base_type.cast_to<ClassNode>();
+			bool is_cyclic_inherited;
 
-			SLKC_RETURN_IF_COMP_ERROR(b->isCyclicInherited(isCyclicInherited));
+			SLKC_RETURN_IF_COMP_ERROR(b->is_cyclic_inherited(is_cyclic_inherited));
 
-			if (((!walkedNodes) || (!walkedNodes->contains(baseType))) && (!isCyclicInherited)) {
-				classOut = b;
+			if (((!walked_nodes) || (!walked_nodes->contains(base_type))) && (!is_cyclic_inherited)) {
+				class_out = b;
 			}
 		}
 	}
@@ -901,20 +901,20 @@ SLKC_API peff::Option<CompilationError> slkc::visitBaseClass(AstNodePtr<TypeName
 	return {};
 }
 
-SLKC_API peff::Option<CompilationError> slkc::visitBaseInterface(AstNodePtr<TypeNameNode> cls, AstNodePtr<InterfaceNode> &classOut, peff::Set<AstNodePtr<MemberNode>> *walkedNodes) {
-	if (cls && (cls->typeNameKind == TypeNameKind::Custom)) {
-		AstNodePtr<MemberNode> baseType;
+SLKC_API peff::Option<CompilationError> slkc::visit_base_interface(AstNodePtr<TypeNameNode> cls, AstNodePtr<InterfaceNode> &class_out, peff::Set<AstNodePtr<MemberNode>> *walked_nodes) {
+	if (cls && (cls->type_name_kind == TypeNameKind::Custom)) {
+		AstNodePtr<MemberNode> base_type;
 
-		SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(nullptr, cls->document->sharedFromThis(), cls.castTo<CustomTypeNameNode>(), baseType, walkedNodes));
+		SLKC_RETURN_IF_COMP_ERROR(resolve_custom_type_name(nullptr, cls->document->shared_from_this(), cls.cast_to<CustomTypeNameNode>(), base_type, walked_nodes));
 
-		if (baseType && (baseType->getAstNodeType() == AstNodeType::Interface)) {
-			AstNodePtr<InterfaceNode> b = baseType.castTo<InterfaceNode>();
-			bool isCyclicInherited;
+		if (base_type && (base_type->get_ast_node_type() == AstNodeType::Interface)) {
+			AstNodePtr<InterfaceNode> b = base_type.cast_to<InterfaceNode>();
+			bool is_cyclic_inherited;
 
-			SLKC_RETURN_IF_COMP_ERROR(b->isCyclicInherited(isCyclicInherited));
+			SLKC_RETURN_IF_COMP_ERROR(b->is_cyclic_inherited(is_cyclic_inherited));
 
-			if (((!walkedNodes) || (!walkedNodes->contains(baseType))) && (!isCyclicInherited)) {
-				classOut = b;
+			if (((!walked_nodes) || (!walked_nodes->contains(base_type))) && (!is_cyclic_inherited)) {
+				class_out = b;
 			}
 		}
 	}

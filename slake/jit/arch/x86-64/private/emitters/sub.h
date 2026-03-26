@@ -6,22 +6,22 @@
 namespace slake {
 	namespace jit {
 		namespace x86_64 {
-			SLAKE_API DiscreteInstruction emitSubImm8ToReg8Ins(RegisterId registerId, uint8_t imm0[1]);
-			SLAKE_API DiscreteInstruction emitSubImm16ToReg16Ins(RegisterId registerId, uint8_t imm0[2]);
-			SLAKE_API DiscreteInstruction emitSubImm32ToReg32Ins(RegisterId registerId, uint8_t imm0[4]);
-			SLAKE_API DiscreteInstruction emitSubImm32ToReg64Ins(RegisterId registerId, uint8_t imm0[4]);
-			SLAKE_API DiscreteInstruction emitSubReg8ToReg8Ins(RegisterId registerId, RegisterId srcRegisterId);
-			SLAKE_API DiscreteInstruction emitSubReg16ToReg16Ins(RegisterId registerId, RegisterId srcRegisterId);
-			SLAKE_API DiscreteInstruction emitSubReg32ToReg32Ins(RegisterId registerId, RegisterId srcRegisterId);
-			SLAKE_API DiscreteInstruction emitSubReg64ToReg64Ins(RegisterId registerId, RegisterId srcRegisterId);
-			SLAKE_API DiscreteInstruction emitSubMemToReg8Ins(RegisterId srcRegisterId, const MemoryLocation &mem);
-			SLAKE_API DiscreteInstruction emitSubMemToReg16Ins(RegisterId srcRegisterId, const MemoryLocation &mem);
-			SLAKE_API DiscreteInstruction emitSubMemToReg32Ins(RegisterId srcRegisterId, const MemoryLocation &mem);
-			SLAKE_API DiscreteInstruction emitSubMemToReg64Ins(RegisterId srcRegisterId, const MemoryLocation &mem);
-			SLAKE_API DiscreteInstruction emitSubssRegXmmToRegXmmIns(RegisterId registerId, RegisterId srcRegisterId);
-			SLAKE_API DiscreteInstruction emitSubssMemToRegXmmIns(RegisterId registerId, const MemoryLocation &mem);
-			SLAKE_API DiscreteInstruction emitSubsdRegXmmToRegXmmIns(RegisterId registerId, RegisterId srcRegisterId);
-			SLAKE_API DiscreteInstruction emitSubsdMemToRegXmmIns(RegisterId registerId, const MemoryLocation &mem);
+			SLAKE_API DiscreteInstruction emit_sub_imm8_to_reg8_ins(RegisterId register_id, uint8_t imm0[1]);
+			SLAKE_API DiscreteInstruction emit_sub_imm16_to_reg16_ins(RegisterId register_id, uint8_t imm0[2]);
+			SLAKE_API DiscreteInstruction emit_sub_imm32_to_reg32_ins(RegisterId register_id, uint8_t imm0[4]);
+			SLAKE_API DiscreteInstruction emit_sub_imm32_to_reg64_ins(RegisterId register_id, uint8_t imm0[4]);
+			SLAKE_API DiscreteInstruction emit_sub_reg8_to_reg8_ins(RegisterId register_id, RegisterId src_register_id);
+			SLAKE_API DiscreteInstruction emit_sub_reg16_to_reg16_ins(RegisterId register_id, RegisterId src_register_id);
+			SLAKE_API DiscreteInstruction emit_sub_reg32_to_reg32_ins(RegisterId register_id, RegisterId src_register_id);
+			SLAKE_API DiscreteInstruction emit_sub_reg64_to_reg64_ins(RegisterId register_id, RegisterId src_register_id);
+			SLAKE_API DiscreteInstruction emit_sub_mem_to_reg8_ins(RegisterId src_register_id, const MemoryLocation &mem);
+			SLAKE_API DiscreteInstruction emit_sub_mem_to_reg16_ins(RegisterId src_register_id, const MemoryLocation &mem);
+			SLAKE_API DiscreteInstruction emit_sub_mem_to_reg32_ins(RegisterId src_register_id, const MemoryLocation &mem);
+			SLAKE_API DiscreteInstruction emit_sub_mem_to_reg64_ins(RegisterId src_register_id, const MemoryLocation &mem);
+			SLAKE_API DiscreteInstruction emit_subss_reg_xmm_to_reg_xmm_ins(RegisterId register_id, RegisterId src_register_id);
+			SLAKE_API DiscreteInstruction emit_subss_mem_to_reg_xmm_ins(RegisterId register_id, const MemoryLocation &mem);
+			SLAKE_API DiscreteInstruction emit_subsd_reg_xmm_to_reg_xmm_ins(RegisterId register_id, RegisterId src_register_id);
+			SLAKE_API DiscreteInstruction emit_subsd_mem_to_reg_xmm_ins(RegisterId register_id, const MemoryLocation &mem);
 		}
 	}
 }

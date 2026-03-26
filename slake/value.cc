@@ -3,100 +3,100 @@
 using namespace slake;
 
 SLAKE_API bool Value::operator==(const Value &rhs) const noexcept {
-	return !comparesTo(rhs);
+	return !compares_to(rhs);
 }
 
-SLAKE_API int Value::comparesTo(const Value& rhs) const noexcept {
-	if (valueFlags < rhs.valueFlags)
+SLAKE_API int Value::compares_to(const Value& rhs) const noexcept {
+	if (value_flags < rhs.value_flags)
 		return -1;
-	if (valueFlags > rhs.valueFlags)
+	if (value_flags > rhs.value_flags)
 		return 1;
-	if (valueType < rhs.valueType)
+	if (value_type < rhs.value_type)
 		return -1;
-	if (valueType > rhs.valueType)
+	if (value_type > rhs.value_type)
 		return 1;
 
-	switch (valueType) {
+	switch (value_type) {
 		case ValueType::I8:
-			if (asI8 < rhs.asI8)
+			if (as_i8 < rhs.as_i8)
 				return -1;
-			if (asI8 > rhs.asI8)
+			if (as_i8 > rhs.as_i8)
 				return 1;
 			break;
 		case ValueType::I16:
-			if (asI16 < rhs.asI16)
+			if (as_i16 < rhs.as_i16)
 				return -1;
-			if (asI16 > rhs.asI16)
+			if (as_i16 > rhs.as_i16)
 				return 1;
 			break;
 		case ValueType::I32:
-			if (asI32 < rhs.asI32)
+			if (as_i32 < rhs.as_i32)
 				return -1;
-			if (asI32 > rhs.asI32)
+			if (as_i32 > rhs.as_i32)
 				return 1;
 			break;
 		case ValueType::I64:
-			if (asI64 < rhs.asI64)
+			if (as_i64 < rhs.as_i64)
 				return -1;
-			if (asI64 > rhs.asI64)
+			if (as_i64 > rhs.as_i64)
 				return 1;
 			break;
 		case ValueType::ISize:
-			if (asISize < rhs.asISize)
+			if (as_isize < rhs.as_isize)
 				return -1;
-			if (asISize > rhs.asISize)
+			if (as_isize > rhs.as_isize)
 				return 1;
 			break;
 		case ValueType::U8:
-			if (asU8 < rhs.asU8)
+			if (as_u8 < rhs.as_u8)
 				return -1;
-			if (asU8 > rhs.asU8)
+			if (as_u8 > rhs.as_u8)
 				return 1;
 			break;
 		case ValueType::U16:
-			if (asU16 < rhs.asU16)
+			if (as_u16 < rhs.as_u16)
 				return -1;
-			if (asU16 > rhs.asU16)
+			if (as_u16 > rhs.as_u16)
 				return 1;
 			break;
 		case ValueType::U32:
-			if (asU32 < rhs.asU32)
+			if (as_u32 < rhs.as_u32)
 				return -1;
-			if (asU32 > rhs.asU32)
+			if (as_u32 > rhs.as_u32)
 				return 1;
 			break;
 		case ValueType::U64:
-			if (asU64 < rhs.asU64)
+			if (as_u64 < rhs.as_u64)
 				return -1;
-			if (asU64 > rhs.asU64)
+			if (as_u64 > rhs.as_u64)
 				return 1;
 			break;
 		case ValueType::USize:
-			if (asUSize < rhs.asUSize)
+			if (as_usize < rhs.as_usize)
 				return -1;
-			if (asUSize > rhs.asUSize)
+			if (as_usize > rhs.as_usize)
 				return 1;
 			break;
 		case ValueType::Bool:
-			if (asBool < rhs.asBool)
+			if (as_bool < rhs.as_bool)
 				return -1;
-			if (asBool > rhs.asBool)
+			if (as_bool > rhs.as_bool)
 				return 1;
 			break;
 		case ValueType::Reference:
-			if (asReference < rhs.asReference)
+			if (as_reference < rhs.as_reference)
 				return -1;
-			if (asReference > rhs.asReference)
+			if (as_reference > rhs.as_reference)
 				return 1;
 			break;
 		case ValueType::RegIndex:
-			if (asU32 < rhs.asU32)
+			if (as_u32 < rhs.as_u32)
 				return -1;
-			if (asU32 > rhs.asU32)
+			if (as_u32 > rhs.as_u32)
 				return 1;
 			break;
 		case ValueType::TypeName:
-			if (int result = asType.comparesTo(rhs.asType); result)
+			if (int result = as_type.compares_to(rhs.as_type); result)
 				return result;
 			break;
 		case ValueType::Undefined:
@@ -108,9 +108,9 @@ SLAKE_API int Value::comparesTo(const Value& rhs) const noexcept {
 }
 
 SLAKE_API bool Value::operator<(const Value &rhs) const noexcept {
-	return comparesTo(rhs) < 0;
+	return compares_to(rhs) < 0;
 }
 
 SLAKE_API bool Value::operator>(const Value &rhs) const noexcept {
-	return comparesTo(rhs) > 0;
+	return compares_to(rhs) > 0;
 }

@@ -7,11 +7,11 @@
 namespace slake {
 	class StringObject final : public Object {
 	private:
-		[[nodiscard]] SLAKE_API bool _setData(const char *str, size_t size);
+		[[nodiscard]] SLAKE_API bool _set_data(const char *str, size_t size);
 
 	public:
-		SLAKE_API StringObject(Runtime *rt, peff::Alloc *selfAllocator);
-		SLAKE_API StringObject(const StringObject &x, peff::Alloc *allocator, bool &succeededOut);
+		SLAKE_API StringObject(Runtime *rt, peff::Alloc *self_allocator);
+		SLAKE_API StringObject(const StringObject &x, peff::Alloc *allocator, bool &succeeded_out);
 		SLAKE_API virtual ~StringObject();
 
 		peff::String data;
@@ -24,7 +24,7 @@ namespace slake {
 
 		StringObject &operator=(StringObject &&) = delete;
 
-		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;
+		SLAKE_API virtual void replace_allocator(peff::Alloc *allocator) noexcept override;
 	};
 }
 

@@ -6,10 +6,10 @@
 namespace slake {
 	namespace jit {
 		namespace x86_64 {
-			SLAKE_API DiscreteInstruction emitSSESsArithmRegXmmToRegXmmIns(RegisterId registerId, RegisterId srcRegisterId, uint8_t opcode);
-			SLAKE_API DiscreteInstruction emitSSESsArithmMemToRegXmmIns(RegisterId registerId, const MemoryLocation &mem, uint8_t opcode);
-			SLAKE_API DiscreteInstruction emitSSESdArithmRegXmmToRegXmmIns(RegisterId registerId, RegisterId srcRegisterId, uint8_t opcode);
-			SLAKE_API DiscreteInstruction emitSSESdArithmMemToRegXmmIns(RegisterId registerId, const MemoryLocation &mem, uint8_t opcode);
+			SLAKE_API DiscreteInstruction emit_ssess_arithm_reg_xmm_to_reg_xmm_ins(RegisterId register_id, RegisterId src_register_id, uint8_t opcode);
+			SLAKE_API DiscreteInstruction emit_ssess_arithm_mem_to_reg_xmm_ins(RegisterId register_id, const MemoryLocation &mem, uint8_t opcode);
+			SLAKE_API DiscreteInstruction emit_ssesd_arithm_reg_xmm_to_reg_xmm_ins(RegisterId register_id, RegisterId src_register_id, uint8_t opcode);
+			SLAKE_API DiscreteInstruction emit_ssesd_arithm_mem_to_reg_xmm_ins(RegisterId register_id, const MemoryLocation &mem, uint8_t opcode);
 		}
 	}
 }

@@ -3,102 +3,102 @@
 using namespace slkc;
 using namespace slkc::bc;
 
-SLKC_API peff::Option<SyntaxError> BCParser::parseAttribute(AstNodePtr<AttributeNode> &attributeOut) {
-	peff::Option<SyntaxError> syntaxError;
+SLKC_API peff::Option<SyntaxError> BCParser::parse_attribute(AstNodePtr<AttributeNode> &attribute_out) {
+	peff::Option<SyntaxError> syntax_error;
 
 	AstNodePtr<AttributeNode> attribute;
 
-	if (!(attribute = makeAstNode<AttributeNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
-		return genOutOfMemorySyntaxError();
+	if (!(attribute = make_ast_node<AttributeNode>(resource_allocator.get(), resource_allocator.get(), document))) {
+		return gen_out_of_memory_syntax_error();
 	}
 
-	attributeOut = attribute;
+	attribute_out = attribute;
 
-	if ((syntaxError = parseIdRef(attribute->attributeName))) {
-		return syntaxError;
+	if ((syntax_error = parse_id_ref(attribute->attribute_name))) {
+		return syntax_error;
 	}
 
 	{
-		Token *lParentheseToken;
+		Token *l_parenthese_token;
 
-		if ((lParentheseToken = peekToken())->tokenId == TokenId::LParenthese) {
-			nextToken();
+		if ((l_parenthese_token = peek_token())->token_id == TokenId::LParenthese) {
+			next_token();
 
 			while (true) {
-				if (peekToken()->tokenId == TokenId::RParenthese) {
+				if (peek_token()->token_id == TokenId::RParenthese) {
 					break;
 				}
 
 				AstNodePtr<ExprNode> arg;
 
-				Token *nameToken;
-				if ((syntaxError = expectToken((nameToken = peekToken()), TokenId::Id)))
-					return syntaxError;
-				nextToken();
+				Token *name_token;
+				if ((syntax_error = expect_token((name_token = peek_token()), TokenId::Id)))
+					return syntax_error;
+				next_token();
 
-				Token *assignToken;
-				if ((syntaxError = expectToken((assignToken = peekToken()), TokenId::AssignOp)))
-					return syntaxError;
-				nextToken();
+				Token *assign_token;
+				if ((syntax_error = expect_token((assign_token = peek_token()), TokenId::AssignOp)))
+					return syntax_error;
+				next_token();
 
-				if (auto e = parseComptimeExpr(arg); e)
+				if (auto e = parse_comptime_expr(arg); e)
 					return e;
 
-				/*if (!argsOut.pushBack(std::move(arg)))
-					return genOutOfMemorySyntaxError();*/
+				/*if (!args_out.push_back(std::move(arg)))
+					return gen_out_of_memory_syntax_error();*/
 
-				if (peekToken()->tokenId != TokenId::Comma) {
+				if (peek_token()->token_id != TokenId::Comma) {
 					break;
 				}
 
-				Token *commaToken = nextToken();
-				/*if (!idxCommaTokensOut.pushBack(+commaToken->index))
-					return genOutOfMemorySyntaxError();*/
+				Token *comma_token = next_token();
+				/*if (!idx_comma_tokens_out.push_back(+comma_token->index))
+					return gen_out_of_memory_syntax_error();*/
 			}
 
-			Token *rParentheseToken;
+			Token *r_parenthese_token;
 
-			if ((syntaxError = expectToken((rParentheseToken = peekToken()), TokenId::RParenthese)))
-				return syntaxError;
+			if ((syntax_error = expect_token((r_parenthese_token = peek_token()), TokenId::RParenthese)))
+				return syntax_error;
 
-			nextToken();
+			next_token();
 		}
 	}
 
-	Token *rDBracketToken;
-	if ((syntaxError = expectToken((rDBracketToken = peekToken()), TokenId::RDBracket)))
-		return syntaxError;
+	Token *r_dbracket_token;
+	if ((syntax_error = expect_token((r_dbracket_token = peek_token()), TokenId::RDBracket)))
+		return syntax_error;
 
-	nextToken();
+	next_token();
 
-	if (Token *forToken = peekToken(); forToken->tokenId == TokenId::ForKeyword) {
-		nextToken();
+	if (Token *for_token = peek_token(); for_token->token_id == TokenId::ForKeyword) {
+		next_token();
 
-		if ((syntaxError = parseTypeName(attributeOut->appliedFor)))
-			return syntaxError;
+		if ((syntax_error = parse_type_name(attribute_out->applied_for)))
+			return syntax_error;
 	}
 
 	return {};
 }
 
-SLKC_API peff::Option<SyntaxError> BCParser::parseAttributes(peff::DynArray<AstNodePtr<AttributeNode>> &attributesOut) {
-	peff::Option<SyntaxError> syntaxError;
-	Token *currentToken;
+SLKC_API peff::Option<SyntaxError> BCParser::parse_attributes(peff::DynArray<AstNodePtr<AttributeNode>> &attributes_out) {
+	peff::Option<SyntaxError> syntax_error;
+	Token *current_token;
 
 	for (;;) {
-		if ((currentToken = peekToken())->tokenId != TokenId::LDBracket) {
+		if ((current_token = peek_token())->token_id != TokenId::LDBracket) {
 			break;
 		}
 
-		nextToken();
+		next_token();
 
 		AstNodePtr<AttributeNode> attribute;
 
-		if ((syntaxError = parseAttribute(attribute)))
-			return syntaxError;
+		if ((syntax_error = parse_attribute(attribute)))
+			return syntax_error;
 
-		if (!attributesOut.pushBack(std::move(attribute)))
-			return genOutOfMemorySyntaxError();
+		if (!attributes_out.push_back(std::move(attribute)))
+			return gen_out_of_memory_syntax_error();
 	}
 
 	return {};

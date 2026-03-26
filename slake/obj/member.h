@@ -13,31 +13,31 @@ namespace slake {
 	class MemberObject : public Object {
 	private:
 		peff::String _name;
-		AccessModifier _accessModifier = 0;
+		AccessModifier _access_modifier = 0;
 		Object *_parent = nullptr;
 
 	public:
-		SLAKE_API MemberObject(Runtime *rt, peff::Alloc *selfAllocator, ObjectKind objectKind);
-		SLAKE_API MemberObject(const MemberObject &x, peff::Alloc *allocator, bool &succeededOut);
+		SLAKE_API MemberObject(Runtime *rt, peff::Alloc *self_allocator, ObjectKind object_kind);
+		SLAKE_API MemberObject(const MemberObject &x, peff::Alloc *allocator, bool &succeeded_out);
 		SLAKE_API virtual ~MemberObject();
 
-		SLAKE_FORCEINLINE void setParent(Object *parent) noexcept {
+		SLAKE_FORCEINLINE void set_parent(Object *parent) noexcept {
 			_parent = parent;
 		}
-		SLAKE_FORCEINLINE Object *getParent() const noexcept {
+		SLAKE_FORCEINLINE Object *get_parent() const noexcept {
 			return _parent;
 		}
-		SLAKE_API virtual const peff::DynArray<Value> *getGenericArgs() const;
+		SLAKE_API virtual const peff::DynArray<Value> *get_generic_args() const;
 
-		SLAKE_API std::string_view getName() const noexcept;
-		SLAKE_API bool setName(const std::string_view &name) noexcept;
-		SLAKE_API bool resizeName(size_t size) noexcept;
-		SLAKE_API char *getNameRawPtr() noexcept;
+		SLAKE_API std::string_view get_name() const noexcept;
+		SLAKE_API bool set_name(const std::string_view &name) noexcept;
+		SLAKE_API bool resize_name(size_t size) noexcept;
+		SLAKE_API char *get_name_raw_ptr() noexcept;
 
-		SLAKE_API AccessModifier getAccess() const noexcept;
-		SLAKE_API void setAccess(AccessModifier accessModifier) noexcept;
+		SLAKE_API AccessModifier get_access() const noexcept;
+		SLAKE_API void set_access(AccessModifier access_modifier) noexcept;
 
-		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;
+		SLAKE_API virtual void replace_allocator(peff::Alloc *allocator) noexcept override;
 	};
 }
 

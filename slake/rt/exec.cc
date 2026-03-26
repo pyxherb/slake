@@ -7,170 +7,170 @@
 
 using namespace slake;
 
-template <bool hasOutput, size_t nOperands>
-[[nodiscard]] static SLAKE_FORCEINLINE InternalExceptionPointer _checkOperandCount(
+template <bool has_output, size_t num_operands>
+[[nodiscard]] static SLAKE_FORCEINLINE InternalExceptionPointer _check_operand_count(
 	Runtime *runtime,
 	size_t output,
-	size_t nOperandsIn) noexcept {
-	if constexpr (hasOutput) {
-		if ((output == UINT32_MAX) || (nOperands != nOperandsIn))
-			return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(runtime->getFixedAlloc()));
+	size_t num_operands_in) noexcept {
+	if constexpr (has_output) {
+		if ((output == UINT32_MAX) || (num_operands != num_operands_in))
+			return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(runtime->get_fixed_alloc()));
 	} else {
-		if (nOperands != nOperandsIn) {
-			return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(runtime->getFixedAlloc()));
+		if (num_operands != num_operands_in) {
+			return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(runtime->get_fixed_alloc()));
 		}
 	}
 
 	return {};
 }
 
-template <ValueType valueType>
-[[nodiscard]] static SLAKE_FORCEINLINE InternalExceptionPointer _checkOperandType(
+template <ValueType value_type>
+[[nodiscard]] static SLAKE_FORCEINLINE InternalExceptionPointer _check_operand_type(
 	Runtime *runtime,
 	const Value &operand) noexcept {
-	if (operand.valueType != valueType)
-		return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(runtime->getFixedAlloc()));
+	if (operand.value_type != value_type)
+		return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(runtime->get_fixed_alloc()));
 	return {};
 }
 
 template <ReferenceKind kind>
-[[nodiscard]] static SLAKE_FORCEINLINE InternalExceptionPointer _checkObjectRefOperandType(
+[[nodiscard]] static SLAKE_FORCEINLINE InternalExceptionPointer _check_object_ref_operand_type(
 	Runtime *runtime,
 	const Reference &operand) noexcept {
 	if (operand.kind != kind) {
-		return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(runtime->getFixedAlloc()));
+		return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(runtime->get_fixed_alloc()));
 	}
 	return {};
 }
 
-template <ObjectKind typeId>
-[[nodiscard]] static SLAKE_FORCEINLINE InternalExceptionPointer _checkObjectOperandType(
+template <ObjectKind type_id>
+[[nodiscard]] static SLAKE_FORCEINLINE InternalExceptionPointer _check_object_operand_type(
 	Runtime *runtime,
 	const Object *const object) noexcept {
-	if (object && object->getObjectKind() != typeId) {
-		return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(runtime->getFixedAlloc()));
+	if (object && object->get_object_kind() != type_id) {
+		return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(runtime->get_fixed_alloc()));
 	}
 	return {};
 }
 
-#define _isRegisterValid(curMajorFrame, index) ((index) < (curMajorFrame)->resumableContextData.nRegs)
+#define _is_register_valid(cur_major_frame, index) ((index) < (cur_major_frame)->resumable_context_data.num_regs)
 
-static SLAKE_FORCEINLINE Value *_calcRegPtr(
-	char *stackData,
-	size_t stackSize,
-	const MajorFrame *curMajorFrame,
+static SLAKE_FORCEINLINE Value *_calc_reg_ptr(
+	char *stack_data,
+	size_t stack_size,
+	const MajorFrame *cur_major_frame,
 	uint32_t index) noexcept {
-	return &((Value *)calcStackAddr(stackData, stackSize, curMajorFrame->offRegs))[index];
+	return &((Value *)calc_stack_addr(stack_data, stack_size, cur_major_frame->off_regs))[index];
 }
 
-static SLAKE_FORCEINLINE const Value *_calcRegPtr(
-	const char *stackData,
-	size_t stackSize,
-	const MajorFrame *curMajorFrame,
+static SLAKE_FORCEINLINE const Value *_calc_reg_ptr(
+	const char *stack_data,
+	size_t stack_size,
+	const MajorFrame *cur_major_frame,
 	uint32_t index) noexcept {
-	return &((const Value *)calcStackAddr(stackData, stackSize, curMajorFrame->offRegs))[index];
+	return &((const Value *)calc_stack_addr(stack_data, stack_size, cur_major_frame->off_regs))[index];
 }
 
-[[nodiscard]] static SLAKE_FORCEINLINE InternalExceptionPointer _setRegisterValue(
+[[nodiscard]] static SLAKE_FORCEINLINE InternalExceptionPointer _set_register_value(
 	Runtime *runtime,
-	char *stackData,
-	const size_t stackSize,
-	const MajorFrame *curMajorFrame,
+	char *stack_data,
+	const size_t stack_size,
+	const MajorFrame *cur_major_frame,
 	uint32_t index,
 	const Value &value) noexcept {
-	if (!_isRegisterValid(curMajorFrame, index)) {
+	if (!_is_register_valid(cur_major_frame, index)) {
 		// The register does not present.
-		return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(runtime->getFixedAlloc()));
+		return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(runtime->get_fixed_alloc()));
 	}
-	Value *val = _calcRegPtr(stackData, stackSize, curMajorFrame, index);
-	*_calcRegPtr(stackData, stackSize, curMajorFrame, index) = value;
+	Value *val = _calc_reg_ptr(stack_data, stack_size, cur_major_frame, index);
+	*_calc_reg_ptr(stack_data, stack_size, cur_major_frame, index) = value;
 	return {};
 }
 
-[[nodiscard]] static SLAKE_FORCEINLINE InternalExceptionPointer _unwrapRegOperand(
+[[nodiscard]] static SLAKE_FORCEINLINE InternalExceptionPointer _unwrap_reg_operand(
 	Runtime *const runtime,
-	const char *stackData,
-	const size_t stackSize,
-	const MajorFrame *curMajorFrame,
+	const char *stack_data,
+	const size_t stack_size,
+	const MajorFrame *cur_major_frame,
 	const Value &value,
-	Value &valueOut) noexcept {
-	if (value.valueType == ValueType::RegIndex) {
-		if (value.asU32 >= curMajorFrame->resumableContextData.nRegs) {
+	Value &value_out) noexcept {
+	if (value.value_type == ValueType::RegIndex) {
+		if (value.as_u32 >= cur_major_frame->resumable_context_data.num_regs) {
 			// The register does not present.
-			return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(runtime->getFixedAlloc()));
+			return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(runtime->get_fixed_alloc()));
 		}
-		valueOut = *_calcRegPtr(stackData, stackSize, curMajorFrame, value.asU32);
+		value_out = *_calc_reg_ptr(stack_data, stack_size, cur_major_frame, value.as_u32);
 		return {};
 	}
-	valueOut = value;
+	value_out = value;
 	return {};
 }
 
-[[nodiscard]] static SLAKE_FORCEINLINE InternalExceptionPointer _unwrapRegOperandIntoPtr(
+[[nodiscard]] static SLAKE_FORCEINLINE InternalExceptionPointer _unwrap_reg_operand_into_ptr(
 	Runtime *const runtime,
-	const char *stackData,
-	const size_t stackSize,
-	const MajorFrame *curMajorFrame,
+	const char *stack_data,
+	const size_t stack_size,
+	const MajorFrame *cur_major_frame,
 	const Value &value,
-	const Value *&valueOut) noexcept {
-	if (value.valueType == ValueType::RegIndex) {
-		if (value.asU32 >= curMajorFrame->resumableContextData.nRegs) {
+	const Value *&value_out) noexcept {
+	if (value.value_type == ValueType::RegIndex) {
+		if (value.as_u32 >= cur_major_frame->resumable_context_data.num_regs) {
 			// The register does not present.
-			return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(runtime->getFixedAlloc()));
+			return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(runtime->get_fixed_alloc()));
 		}
-		valueOut = _calcRegPtr(stackData, stackSize, curMajorFrame, value.asU32);
+		value_out = _calc_reg_ptr(stack_data, stack_size, cur_major_frame, value.as_u32);
 		return {};
 	}
-	valueOut = &value;
+	value_out = &value;
 	return {};
 }
 
 template <typename LT>
-static void _castToLiteralValue(bool nullable, const Value &x, Value &valueOut) noexcept {
-	switch (x.valueType) {
+static void _cast_to_literal_value(bool nullable, const Value &x, Value &value_out) noexcept {
+	switch (x.value_type) {
 		case ValueType::I8:
-			valueOut = ((LT)(x.getI8()));
+			value_out = ((LT)(x.get_i8()));
 			break;
 		case ValueType::I16:
-			valueOut = ((LT)(x.getI16()));
+			value_out = ((LT)(x.get_i16()));
 			break;
 		case ValueType::I32:
-			valueOut = ((LT)(x.getI32()));
+			value_out = ((LT)(x.get_i32()));
 			break;
 		case ValueType::I64:
-			valueOut = ((LT)(x.getI64()));
+			value_out = ((LT)(x.get_i64()));
 			break;
 		case ValueType::ISize:
-			valueOut = ((LT)(x.getISize()));
+			value_out = ((LT)(x.get_isize()));
 			break;
 		case ValueType::U8:
-			valueOut = ((LT)(x.getU8()));
+			value_out = ((LT)(x.get_u8()));
 			break;
 		case ValueType::U16:
-			valueOut = ((LT)(x.getU16()));
+			value_out = ((LT)(x.get_u16()));
 			break;
 		case ValueType::U32:
-			valueOut = ((LT)(x.getU32()));
+			value_out = ((LT)(x.get_u32()));
 			break;
 		case ValueType::U64:
-			valueOut = ((LT)(x.getU64()));
+			value_out = ((LT)(x.get_u64()));
 			break;
 		case ValueType::USize:
-			valueOut = ((LT)(x.getUSize()));
+			value_out = ((LT)(x.get_usize()));
 			break;
 		case ValueType::F32:
-			valueOut = ((LT)(x.getF32()));
+			value_out = ((LT)(x.get_f32()));
 			break;
 		case ValueType::F64:
-			valueOut = ((LT)(x.getF64()));
+			value_out = ((LT)(x.get_f64()));
 			break;
 		case ValueType::Bool:
-			valueOut = ((LT)(x.getBool()));
+			value_out = ((LT)(x.get_bool()));
 			break;
 		case ValueType::Reference:
 			if (nullable) {
-				if (x.isNull())
-					valueOut = nullptr;
+				if (x.is_null())
+					value_out = nullptr;
 				else
 					std::terminate();
 			}
@@ -180,209 +180,209 @@ static void _castToLiteralValue(bool nullable, const Value &x, Value &valueOut) 
 	}
 }
 
-SLAKE_API InternalExceptionPointer Runtime::_fillArgs(
+SLAKE_API InternalExceptionPointer Runtime::_fill_args(
 	Context *context,
-	MajorFrame *newMajorFrame,
+	MajorFrame *new_major_frame,
 	const FnOverloadingObject *fn,
 	const Value *args,
-	uint32_t nArgs) {
-	if (nArgs < fn->paramTypes.size()) {
-		return allocOutOfMemoryErrorIfAllocFailed(InvalidArgumentNumberError::alloc(getFixedAlloc(), nArgs));
+	uint32_t num_args) {
+	if (num_args < fn->param_types.size()) {
+		return alloc_out_of_memory_error_if_alloc_failed(InvalidArgumentNumberError::alloc(get_fixed_alloc(), num_args));
 	}
 
-	for (size_t i = 0; i < fn->paramTypes.size(); ++i) {
-		TypeRef t = fn->paramTypes.at(i);
-		if (!isCompatible(t, args[i]))
-			return MismatchedVarTypeError::alloc(getFixedAlloc());
+	for (size_t i = 0; i < fn->param_types.size(); ++i) {
+		TypeRef t = fn->param_types.at(i);
+		if (!is_compatible(t, args[i]))
+			return MismatchedVarTypeError::alloc(get_fixed_alloc());
 	}
-	char *pArgs = context->alignedStackAlloc(sizeof(Value) * nArgs, alignof(Value));
-	if (!pArgs)
-		return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
-	size_t offArgs = newMajorFrame->curCoroutine ? context->stackTop - newMajorFrame->curCoroutine->offStackTop : context->stackTop;
-	memcpy(pArgs, args, sizeof(Value) * nArgs);
-	newMajorFrame->resumableContextData.offArgs = offArgs;
-	newMajorFrame->resumableContextData.nArgs = nArgs;
+	char *p_args = context->aligned_stack_alloc(sizeof(Value) * num_args, alignof(Value));
+	if (!p_args)
+		return alloc_out_of_memory_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
+	size_t off_args = new_major_frame->cur_coroutine ? context->stack_top - new_major_frame->cur_coroutine->off_stack_top : context->stack_top;
+	memcpy(p_args, args, sizeof(Value) * num_args);
+	new_major_frame->resumable_context_data.off_args = off_args;
+	new_major_frame->resumable_context_data.num_args = num_args;
 
 	return {};
 }
 
-SLAKE_API AllocaRecord *Runtime::_allocAllocaRecord(Context *context, const MajorFrame *frame, uint32_t outputReg) {
-	MinorFrame *mf = _fetchMinorFrame(context, frame, frame->resumableContextData.offCurMinorFrame);
-	char *pRecord;
-	if (!(pRecord = context->alignedStackAlloc(sizeof(AllocaRecord), alignof(AllocaRecord))))
+SLAKE_API AllocaRecord *Runtime::_alloc_alloca_record(Context *context, const MajorFrame *frame, uint32_t output_reg) {
+	MinorFrame *mf = _fetch_minor_frame(context, frame, frame->resumable_context_data.off_cur_minor_frame);
+	char *p_record;
+	if (!(p_record = context->aligned_stack_alloc(sizeof(AllocaRecord), alignof(AllocaRecord))))
 		return nullptr;
-	AllocaRecord *record = (AllocaRecord *)pRecord;
-	record->defReg = outputReg;
-	record->offNext = mf->offAllocaRecords;
-	mf->offAllocaRecords = frame->curCoroutine
-							   ? context->stackTop - frame->curCoroutine->offStackTop
-							   : context->stackTop;
+	AllocaRecord *record = (AllocaRecord *)p_record;
+	record->def_reg = output_reg;
+	record->off_next = mf->off_alloca_records;
+	mf->off_alloca_records = frame->cur_coroutine
+							   ? context->stack_top - frame->cur_coroutine->off_stack_top
+							   : context->stack_top;
 	return record;
 }
 
-SLAKE_API MinorFrame *Runtime::_fetchMinorFrame(
+SLAKE_API MinorFrame *Runtime::_fetch_minor_frame(
 	Context *context,
-	const MajorFrame *majorFrame,
-	size_t stackOffset) {
-	MinorFrame *mf = (MinorFrame *)_fetchMinorFrameUnchecked(context, majorFrame, stackOffset);
+	const MajorFrame *major_frame,
+	size_t stack_offset) {
+	MinorFrame *mf = (MinorFrame *)_fetch_minor_frame_unchecked(context, major_frame, stack_offset);
 	assert(mf->magic == MINOR_FRAME_MAGIC);
 	return mf;
 }
 
-SLAKE_API MinorFrame *Runtime::_fetchMinorFrameUnchecked(
+SLAKE_API MinorFrame *Runtime::_fetch_minor_frame_unchecked(
 	Context *context,
-	const MajorFrame *majorFrame,
-	size_t stackOffset) {
+	const MajorFrame *major_frame,
+	size_t stack_offset) {
 	size_t offset;
-	if (majorFrame->curCoroutine) {
-		offset = stackOffset + majorFrame->curCoroutine->offStackTop;
+	if (major_frame->cur_coroutine) {
+		offset = stack_offset + major_frame->cur_coroutine->off_stack_top;
 	} else {
-		offset = stackOffset;
+		offset = stack_offset;
 	}
 
-	return (MinorFrame *)calcStackAddr(context->dataStack,
-		context->stackSize,
+	return (MinorFrame *)calc_stack_addr(context->data_stack,
+		context->stack_size,
 		offset);
 }
 
-SLAKE_API Value *Runtime::_fetchArgStack(
-	char *dataStack,
-	size_t stackSize,
-	const MajorFrame *majorFrame,
-	size_t stackOffset) {
+SLAKE_API Value *Runtime::_fetch_arg_stack(
+	char *data_stack,
+	size_t stack_size,
+	const MajorFrame *major_frame,
+	size_t stack_offset) {
 	size_t offset;
-	if (majorFrame && majorFrame->curCoroutine) {
-		offset = stackOffset + majorFrame->curCoroutine->offStackTop;
+	if (major_frame && major_frame->cur_coroutine) {
+		offset = stack_offset + major_frame->cur_coroutine->off_stack_top;
 	} else {
-		offset = stackOffset;
+		offset = stack_offset;
 	}
 
-	return (Value *)calcStackAddr(dataStack,
-		stackSize,
+	return (Value *)calc_stack_addr(data_stack,
+		stack_size,
 		offset);
 }
 
-SLAKE_API AllocaRecord *Runtime::_fetchAllocaRecord(
+SLAKE_API AllocaRecord *Runtime::_fetch_alloca_record(
 	Context *context,
-	const MajorFrame *majorFrame,
-	size_t stackOffset) {
+	const MajorFrame *major_frame,
+	size_t stack_offset) {
 	size_t offset;
-	if (majorFrame->curCoroutine) {
-		offset = stackOffset + majorFrame->curCoroutine->offStackTop;
+	if (major_frame->cur_coroutine) {
+		offset = stack_offset + major_frame->cur_coroutine->off_stack_top;
 	} else {
-		offset = stackOffset;
+		offset = stack_offset;
 	}
 
-	return (AllocaRecord *)calcStackAddr(context->dataStack,
-		context->stackSize,
+	return (AllocaRecord *)calc_stack_addr(context->data_stack,
+		context->stack_size,
 		offset);
 }
 
-SLAKE_API MajorFrame *Runtime::_fetchMajorFrame(
+SLAKE_API MajorFrame *Runtime::_fetch_major_frame(
 	Context *context,
-	size_t stackOffset) {
-	MajorFrame *mf = _fetchMajorFrameUnchecked(context, stackOffset);
+	size_t stack_offset) {
+	MajorFrame *mf = _fetch_major_frame_unchecked(context, stack_offset);
 	assert(mf->magic == MAJOR_FRAME_MAGIC);
 	return mf;
 }
 
-SLAKE_API MajorFrame *Runtime::_fetchMajorFrameUnchecked(
+SLAKE_API MajorFrame *Runtime::_fetch_major_frame_unchecked(
 	Context *context,
-	size_t stackOffset) {
-	return (MajorFrame *)calcStackAddr(context->dataStack,
-		context->stackSize,
-		stackOffset);
+	size_t stack_offset) {
+	return (MajorFrame *)calc_stack_addr(context->data_stack,
+		context->stack_size,
+		stack_offset);
 }
 
-SLAKE_API ExceptHandler *Runtime::_fetchExceptHandler(
+SLAKE_API ExceptHandler *Runtime::_fetch_except_handler(
 	Context *context,
-	MajorFrame *majorFrame,
-	size_t stackOffset) {
+	MajorFrame *major_frame,
+	size_t stack_offset) {
 	size_t offset;
-	if (majorFrame->curCoroutine) {
-		offset = stackOffset + majorFrame->curCoroutine->offStackTop;
+	if (major_frame->cur_coroutine) {
+		offset = stack_offset + major_frame->cur_coroutine->off_stack_top;
 	} else {
-		offset = stackOffset;
+		offset = stack_offset;
 	}
 
-	return (ExceptHandler *)calcStackAddr(context->dataStack,
-		context->stackSize,
+	return (ExceptHandler *)calc_stack_addr(context->data_stack,
+		context->stack_size,
 		offset);
 }
 
-SLAKE_API InternalExceptionPointer Runtime::_createNewCoroutineMajorFrame(
+SLAKE_API InternalExceptionPointer Runtime::_create_new_coroutine_major_frame(
 	Context *context,
 	CoroutineObject *coroutine,
-	uint32_t returnValueOut,
-	const Reference *returnStructRef) noexcept {
-	HostRefHolder holder(context->runtime->getFixedAlloc());
+	uint32_t return_value_out,
+	const Reference *return_struct_ref) noexcept {
+	HostRefHolder holder(context->runtime->get_fixed_alloc());
 
-	size_t prevStackTop = context->stackTop;
-	peff::ScopeGuard restoreStackTopGuard([context, prevStackTop, coroutine]() noexcept {
-		context->stackTop = prevStackTop;
-		coroutine->offStackTop = 0;
+	size_t prev_stack_top = context->stack_top;
+	peff::ScopeGuard restore_stack_top_guard([context, prev_stack_top, coroutine]() noexcept {
+		context->stack_top = prev_stack_top;
+		coroutine->off_stack_top = 0;
 	});
 
 	// TODO: Restore resumable context data.
 
-	char *pMajorFrame;
-	if (!(pMajorFrame = context->alignedStackAlloc(sizeof(MajorFrame), alignof(MajorFrame))))
-		return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
-	peff::constructAt<MajorFrame>((MajorFrame *)pMajorFrame, this);
-	MajorFrame &newMajorFrame = *(MajorFrame *)pMajorFrame;
-	newMajorFrame.offPrevFrame = context->offCurMajorFrame;
+	char *p_major_frame;
+	if (!(p_major_frame = context->aligned_stack_alloc(sizeof(MajorFrame), alignof(MajorFrame))))
+		return alloc_out_of_memory_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
+	peff::construct_at<MajorFrame>((MajorFrame *)p_major_frame, this);
+	MajorFrame &new_major_frame = *(MajorFrame *)p_major_frame;
+	new_major_frame.off_prev_frame = context->off_cur_major_frame;
 
-	if (coroutine->resumable.hasValue()) {
-		newMajorFrame.resumableContextData = coroutine->resumable.move();
+	if (coroutine->resumable.has_value()) {
+		new_major_frame.resumable_context_data = coroutine->resumable.move();
 	} else {
-		peff::constructAt<ResumableContextData>(&newMajorFrame.resumableContextData);
+		peff::construct_at<ResumableContextData>(&new_major_frame.resumable_context_data);
 	}
 
-	newMajorFrame.curFn = coroutine->overloading;
-	newMajorFrame.curCoroutine = coroutine;
+	new_major_frame.cur_fn = coroutine->overloading;
+	new_major_frame.cur_coroutine = coroutine;
 
-	size_t offMajorFrame = context->stackTop;
+	size_t off_major_frame = context->stack_top;
 
-	if (coroutine->stackData) {
+	if (coroutine->stack_data) {
 		// Note: code commented causes stack addressing error, fix them and re-enable them.
-		if (!context->alignStack(alignof(std::max_align_t)))
-			return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
-		coroutine->offStackTop = context->stackTop;
-		newMajorFrame.offRegs = context->stackTop + coroutine->offRegs;
-		char *initialData = context->alignedStackAlloc(coroutine->lenStackData, alignof(std::max_align_t));
-		if (!initialData) {
-			return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
+		if (!context->align_stack(alignof(std::max_align_t)))
+			return alloc_out_of_memory_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
+		coroutine->off_stack_top = context->stack_top;
+		new_major_frame.off_regs = context->stack_top + coroutine->off_regs;
+		char *initial_data = context->aligned_stack_alloc(coroutine->len_stack_data, alignof(std::max_align_t));
+		if (!initial_data) {
+			return alloc_out_of_memory_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
 		}
-		memcpy(initialData, coroutine->stackData, coroutine->lenStackData);
-		coroutine->releaseStackData();
+		memcpy(initial_data, coroutine->stack_data, coroutine->len_stack_data);
+		coroutine->release_stack_data();
 	} else {
 		// Create minor frame.
-		if (!context->alignedStackAlloc(sizeof(MinorFrame), alignof(MinorFrame)))
-			return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
+		if (!context->aligned_stack_alloc(sizeof(MinorFrame), alignof(MinorFrame)))
+			return alloc_out_of_memory_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
 
-		size_t mfStackOff = context->stackTop;
+		size_t mf_stack_off = context->stack_top;
 
-		MinorFrame *mf = _fetchMinorFrameUnchecked(context, &newMajorFrame, context->stackTop);
+		MinorFrame *mf = _fetch_minor_frame_unchecked(context, &new_major_frame, context->stack_top);
 
-		peff::constructAt<MinorFrame>(mf);
+		peff::construct_at<MinorFrame>(mf);
 
-		if (newMajorFrame.curCoroutine) {
-			mfStackOff -= newMajorFrame.curCoroutine->offStackTop;
+		if (new_major_frame.cur_coroutine) {
+			mf_stack_off -= new_major_frame.cur_coroutine->off_stack_top;
 		}
 
-		mf->offLastMinorFrame = newMajorFrame.resumableContextData.offCurMinorFrame;
-		mf->stackBase = newMajorFrame.curCoroutine ? prevStackTop - newMajorFrame.curCoroutine->offStackTop : prevStackTop;
-		newMajorFrame.resumableContextData.offCurMinorFrame = mfStackOff;
+		mf->off_last_minor_frame = new_major_frame.resumable_context_data.off_cur_minor_frame;
+		mf->stack_base = new_major_frame.cur_coroutine ? prev_stack_top - new_major_frame.cur_coroutine->off_stack_top : prev_stack_top;
+		new_major_frame.resumable_context_data.off_cur_minor_frame = mf_stack_off;
 
-		switch (coroutine->overloading->overloadingKind) {
+		switch (coroutine->overloading->overloading_kind) {
 			case FnOverloadingKind::Regular: {
 				RegularFnOverloadingObject *ol = (RegularFnOverloadingObject *)coroutine->overloading;
-				newMajorFrame.resumableContextData.nRegs = ol->nRegisters;
-				Value *regs = (Value *)context->alignedStackAlloc(sizeof(Value) * ol->nRegisters, alignof(Value));
-				newMajorFrame.offRegs = context->stackTop;
+				new_major_frame.resumable_context_data.num_regs = ol->num_registers;
+				Value *regs = (Value *)context->aligned_stack_alloc(sizeof(Value) * ol->num_registers, alignof(Value));
+				new_major_frame.off_regs = context->stack_top;
 				if (!regs)
-					return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
-				for (size_t i = 0; i < ol->nRegisters; ++i)
+					return alloc_out_of_memory_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
+				for (size_t i = 0; i < ol->num_registers; ++i)
 					regs[i] = Value(ValueType::Undefined);
 				break;
 			}
@@ -390,96 +390,96 @@ SLAKE_API InternalExceptionPointer Runtime::_createNewCoroutineMajorFrame(
 		}
 	}
 
-	newMajorFrame.returnValueOutReg = returnValueOut;
-	if (returnStructRef)
-		newMajorFrame.returnStructRef = *returnStructRef;
+	new_major_frame.return_value_out_reg = return_value_out;
+	if (return_struct_ref)
+		new_major_frame.return_struct_ref = *return_struct_ref;
 
-	newMajorFrame.prevStackTop = prevStackTop;
+	new_major_frame.prev_stack_top = prev_stack_top;
 
-	coroutine->bindToContext(context, &newMajorFrame);
+	coroutine->bind_to_context(context, &new_major_frame);
 
-	restoreStackTopGuard.release();
+	restore_stack_top_guard.release();
 
-	if (context->offCurMajorFrame != SIZE_MAX) {
-		MajorFrame *pmf = _fetchMajorFrame(context, context->offCurMajorFrame);
-		assert(context->offCurMajorFrame != offMajorFrame);
-		pmf->offNextFrame = offMajorFrame;
+	if (context->off_cur_major_frame != SIZE_MAX) {
+		MajorFrame *pmf = _fetch_major_frame(context, context->off_cur_major_frame);
+		assert(context->off_cur_major_frame != off_major_frame);
+		pmf->off_next_frame = off_major_frame;
 	}
-	context->offCurMajorFrame = offMajorFrame;
-	++context->nMajorFrames;
+	context->off_cur_major_frame = off_major_frame;
+	++context->num_major_frames;
 	return {};
 }
 
-SLAKE_API InternalExceptionPointer slake::Runtime::_createNewMajorFrame(
-	ContextObject *contextObject,
-	Object *thisObject,
+SLAKE_API InternalExceptionPointer slake::Runtime::_create_new_major_frame(
+	ContextObject *context_object,
+	Object *this_object,
 	const FnOverloadingObject *fn,
 	const Value *args,
-	size_t offArgs,
-	uint32_t nArgs,
-	uint32_t returnValueOut,
-	const Reference *returnStructRef) noexcept {
-	Context *const context = &contextObject->_context;
+	size_t off_args,
+	uint32_t num_args,
+	uint32_t return_value_out,
+	const Reference *return_struct_ref) noexcept {
+	Context *const context = &context_object->_context;
 
-	size_t prevStackTop = context->stackTop;
-	peff::ScopeGuard restoreStackTopGuard([context, prevStackTop]() noexcept {
-		context->stackTop = prevStackTop;
+	size_t prev_stack_top = context->stack_top;
+	peff::ScopeGuard restore_stack_top_guard([context, prev_stack_top]() noexcept {
+		context->stack_top = prev_stack_top;
 	});
 
 	// TODO: Restore resumable context data.
 
-	char *pMajorFrame;
-	if (!(pMajorFrame = context->alignedStackAlloc(sizeof(MajorFrame), alignof(MajorFrame))))
-		return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
-	peff::constructAt<MajorFrame>((MajorFrame *)pMajorFrame, this);
-	MajorFrame &newMajorFrame = *(MajorFrame *)pMajorFrame;
-	newMajorFrame.offPrevFrame = context->offCurMajorFrame;
+	char *p_major_frame;
+	if (!(p_major_frame = context->aligned_stack_alloc(sizeof(MajorFrame), alignof(MajorFrame))))
+		return alloc_out_of_memory_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
+	peff::construct_at<MajorFrame>((MajorFrame *)p_major_frame, this);
+	MajorFrame &new_major_frame = *(MajorFrame *)p_major_frame;
+	new_major_frame.off_prev_frame = context->off_cur_major_frame;
 
-	newMajorFrame.curContext = contextObject;
-	peff::constructAt<ResumableContextData>(&newMajorFrame.resumableContextData);
+	new_major_frame.cur_context = context_object;
+	peff::construct_at<ResumableContextData>(&new_major_frame.resumable_context_data);
 
-	size_t offMajorFrame = context->stackTop;
+	size_t off_major_frame = context->stack_top;
 
 	// Create minor frame.
-	if (!context->alignedStackAlloc(sizeof(MinorFrame), alignof(MinorFrame)))
-		return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
+	if (!context->aligned_stack_alloc(sizeof(MinorFrame), alignof(MinorFrame)))
+		return alloc_out_of_memory_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
 
-	size_t mfStackOff = context->stackTop;
+	size_t mf_stack_off = context->stack_top;
 
-	MinorFrame *mf = _fetchMinorFrameUnchecked(context, &newMajorFrame, context->stackTop);
+	MinorFrame *mf = _fetch_minor_frame_unchecked(context, &new_major_frame, context->stack_top);
 
-	peff::constructAt<MinorFrame>(mf);
+	peff::construct_at<MinorFrame>(mf);
 
-	mf->offLastMinorFrame = newMajorFrame.resumableContextData.offCurMinorFrame;
-	mf->stackBase = prevStackTop;
-	newMajorFrame.resumableContextData.offCurMinorFrame = mfStackOff;
+	mf->off_last_minor_frame = new_major_frame.resumable_context_data.off_cur_minor_frame;
+	mf->stack_base = prev_stack_top;
+	new_major_frame.resumable_context_data.off_cur_minor_frame = mf_stack_off;
 
 	if (!fn) {
 		// Used in the creation of top major frame.
-		newMajorFrame.curFn = nullptr;
-		newMajorFrame.resumableContextData.nRegs = 1;
-		Value *regs = (Value *)context->alignedStackAlloc(sizeof(Value) * 1, alignof(Value));
-		newMajorFrame.offRegs = context->stackTop;
+		new_major_frame.cur_fn = nullptr;
+		new_major_frame.resumable_context_data.num_regs = 1;
+		Value *regs = (Value *)context->aligned_stack_alloc(sizeof(Value) * 1, alignof(Value));
+		new_major_frame.off_regs = context->stack_top;
 		*regs = Value(ValueType::Undefined);
 	} else {
-		newMajorFrame.curFn = fn;
-		newMajorFrame.resumableContextData.thisObject = thisObject;
+		new_major_frame.cur_fn = fn;
+		new_major_frame.resumable_context_data.this_object = this_object;
 
 		if (args)
-			SLAKE_RETURN_IF_EXCEPT(_fillArgs(context, &newMajorFrame, fn, args, nArgs));
+			SLAKE_RETURN_IF_EXCEPT(_fill_args(context, &new_major_frame, fn, args, num_args));
 		else {
-			if (nArgs)
-				newMajorFrame.resumableContextData.offArgs = offArgs;
-			newMajorFrame.resumableContextData.nArgs = nArgs;
+			if (num_args)
+				new_major_frame.resumable_context_data.off_args = off_args;
+			new_major_frame.resumable_context_data.num_args = num_args;
 		}
 
-		switch (fn->overloadingKind) {
+		switch (fn->overloading_kind) {
 			case FnOverloadingKind::Regular: {
 				RegularFnOverloadingObject *ol = (RegularFnOverloadingObject *)fn;
-				newMajorFrame.resumableContextData.nRegs = ol->nRegisters;
-				Value *regs = (Value *)context->alignedStackAlloc(sizeof(Value) * ol->nRegisters, alignof(Value));
-				memset(regs, 0, sizeof(Value) * ol->nRegisters);
-				newMajorFrame.offRegs = context->stackTop;
+				new_major_frame.resumable_context_data.num_regs = ol->num_registers;
+				Value *regs = (Value *)context->aligned_stack_alloc(sizeof(Value) * ol->num_registers, alignof(Value));
+				memset(regs, 0, sizeof(Value) * ol->num_registers);
+				new_major_frame.off_regs = context->stack_top;
 				break;
 			}
 			default:
@@ -487,78 +487,78 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_createNewMajorFrame(
 		}
 	}
 
-	newMajorFrame.returnValueOutReg = returnValueOut;
-	if (returnStructRef)
-		newMajorFrame.returnStructRef = *returnStructRef;
-	newMajorFrame.prevStackTop = prevStackTop;
+	new_major_frame.return_value_out_reg = return_value_out;
+	if (return_struct_ref)
+		new_major_frame.return_struct_ref = *return_struct_ref;
+	new_major_frame.prev_stack_top = prev_stack_top;
 
-	restoreStackTopGuard.release();
+	restore_stack_top_guard.release();
 
-	if (context->offCurMajorFrame != SIZE_MAX) {
-		MajorFrame *pmf = _fetchMajorFrame(context, context->offCurMajorFrame);
-		assert(context->offCurMajorFrame != offMajorFrame);
-		pmf->offNextFrame = offMajorFrame;
-		mf->stackBase = pmf->resumableContextData.offNextArgsBegin;
-		pmf->resumableContextData.offNextArgsBegin = SIZE_MAX;
+	if (context->off_cur_major_frame != SIZE_MAX) {
+		MajorFrame *pmf = _fetch_major_frame(context, context->off_cur_major_frame);
+		assert(context->off_cur_major_frame != off_major_frame);
+		pmf->off_next_frame = off_major_frame;
+		mf->stack_base = pmf->resumable_context_data.off_next_args_begin;
+		pmf->resumable_context_data.off_next_args_begin = SIZE_MAX;
 	}
-	context->offCurMajorFrame = offMajorFrame;
-	++context->nMajorFrames;
+	context->off_cur_major_frame = off_major_frame;
+	++context->num_major_frames;
 
 	return {};
 }
 
-SLAKE_API void Runtime::_leaveMajorFrame(Context *context) noexcept {
-	MajorFrame *mf = _fetchMajorFrame(context, context->offCurMajorFrame), *pmf;
+SLAKE_API void Runtime::_leave_major_frame(Context *context) noexcept {
+	MajorFrame *mf = _fetch_major_frame(context, context->off_cur_major_frame), *pmf;
 
-	assert(mf->offNextFrame == SIZE_MAX);
+	assert(mf->off_next_frame == SIZE_MAX);
 
-	if (mf->offPrevFrame != SIZE_MAX) {
-		pmf = _fetchMajorFrame(context, mf->offPrevFrame);
+	if (mf->off_prev_frame != SIZE_MAX) {
+		pmf = _fetch_major_frame(context, mf->off_prev_frame);
 
-		pmf->offNextFrame = SIZE_MAX;
+		pmf->off_next_frame = SIZE_MAX;
 	}
 
-	context->offCurMajorFrame = mf->offPrevFrame;
-	assert(mf->prevStackTop <= context->stackTop);
-	context->stackTop = mf->prevStackTop;
-	--context->nMajorFrames;
+	context->off_cur_major_frame = mf->off_prev_frame;
+	assert(mf->prev_stack_top <= context->stack_top);
+	context->stack_top = mf->prev_stack_top;
+	--context->num_major_frames;
 
 	std::destroy_at<MajorFrame>(mf);
 }
 
-SLAKE_FORCEINLINE InternalExceptionPointer slake::Runtime::_addLocalVar(Context *context, const MajorFrame *frame, TypeRef type, uint32_t outputReg, Reference &objectRefOut) noexcept {
-	size_t originalStackTop = context->stackTop;
+SLAKE_FORCEINLINE InternalExceptionPointer slake::Runtime::_add_local_var(Context *context, const MajorFrame *frame, TypeRef type, uint32_t output_reg, Reference &object_ref_out) noexcept {
+	size_t original_stack_top = context->stack_top;
 
-	peff::ScopeGuard restoreStackTopGuard([originalStackTop, context]() noexcept {
-		context->stackTop = originalStackTop;
+	peff::ScopeGuard restore_stack_top_guard([original_stack_top, context]() noexcept {
+		context->stack_top = original_stack_top;
 	});
 
-	switch (type.typeId) {
+	switch (type.type_id) {
 		case TypeId::StructInstance: {
-			assert(type.getCustomTypeDef()->typeObject->getObjectKind() == ObjectKind::Struct);
-			SLAKE_RETURN_IF_EXCEPT(prepareStructForInstantiation((StructObject *)type.getCustomTypeDef()->typeObject));
+			assert(type.get_custom_type_def()->type_object->get_object_kind() == ObjectKind::Struct);
+			SLAKE_RETURN_IF_EXCEPT(prepare_struct_for_instantiation((StructObject *)type.get_custom_type_def()->type_object));
 			break;
 		}
 		case TypeId::UnionEnum: {
-			assert(type.getCustomTypeDef()->typeObject->getObjectKind() == ObjectKind::UnionEnum);
-			SLAKE_RETURN_IF_EXCEPT(prepareUnionEnumForInstantiation((UnionEnumObject *)type.getCustomTypeDef()->typeObject));
+			assert(type.get_custom_type_def()->type_object->get_object_kind() == ObjectKind::UnionEnum);
+			SLAKE_RETURN_IF_EXCEPT(prepare_union_enum_for_instantiation((UnionEnumObject *)type.get_custom_type_def()->type_object));
 			break;
 		}
 		case TypeId::UnionEnumItem: {
-			assert(type.getCustomTypeDef()->typeObject->getObjectKind() == ObjectKind::UnionEnumItem);
-			SLAKE_RETURN_IF_EXCEPT(prepareUnionEnumItemForInstantiation((UnionEnumItemObject *)type.getCustomTypeDef()->typeObject));
+			assert(type.get_custom_type_def()->type_object->get_object_kind() == ObjectKind::UnionEnumItem);
+			SLAKE_RETURN_IF_EXCEPT(prepare_union_enum_item_for_instantiation((UnionEnumItemObject *)type.get_custom_type_def()->type_object));
 			break;
 		}
 		default:
 			break;
 	}
 
-	size_t size = sizeofType(type), align = alignofType(type);
+	size_t size = sizeof_type(type), align = alignof_type(type);
 
-	if (!context->alignedStackAlloc(size, align))
-		return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
+	if (!context->aligned_stack_alloc(size, align))
+		return alloc_out_of_memory_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
 
-	switch (type.typeId) {
+	switch (type.type_id) {
 		case TypeId::I8:
 		case TypeId::I16:
 		case TypeId::I32:
@@ -572,1300 +572,1300 @@ SLAKE_FORCEINLINE InternalExceptionPointer slake::Runtime::_addLocalVar(Context 
 		case TypeId::Bool:
 		case TypeId::String:
 		case TypeId::Any:
-			if (type.isNullable())
-				context->stackAlloc(sizeof(bool));
+			if (type.is_nullable())
+				context->stack_alloc(sizeof(bool));
 			break;
 		case TypeId::Instance:
 		case TypeId::GenericArg:
 		case TypeId::Array:
 		case TypeId::Ref: {
 			// The data is already aligned, just directly assign to them.
-			Object **typeInfo = (Object **)context->stackAlloc(sizeof(void *));
-			if (!typeInfo)
-				return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
+			Object **type_info = (Object **)context->stack_alloc(sizeof(void *));
+			if (!type_info)
+				return alloc_out_of_memory_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
 #ifndef _NDEBUG
-			const size_t diff = alignof(void *) - ((uintptr_t)(calcStackAddr(context->dataStack, context->stackSize, context->stackTop)) % alignof(void *));
+			const size_t diff = alignof(void *) - ((uintptr_t)(calc_stack_addr(context->data_stack, context->stack_size, context->stack_top)) % alignof(void *));
 			assert((diff == alignof(void *) || (!diff)));
 #endif
-			*typeInfo = type.typeDef;
+			*type_info = type.type_def;
 			break;
 		}
 		case TypeId::ScopedEnum: {
-			TypeDefObject **typeInfo = (TypeDefObject **)context->stackAlloc(sizeof(void *));
-			if (!typeInfo)
-				return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
-			memcpy(typeInfo, &type.typeDef, sizeof(void *));
+			TypeDefObject **type_info = (TypeDefObject **)context->stack_alloc(sizeof(void *));
+			if (!type_info)
+				return alloc_out_of_memory_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
+			memcpy(type_info, &type.type_def, sizeof(void *));
 			break;
 		}
 		case TypeId::TypelessScopedEnum: {
-			TypeDefObject **typeInfo = (TypeDefObject **)context->stackAlloc(sizeof(void *));
-			if (!typeInfo)
-				return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
-			memcpy(typeInfo, &type.typeDef, sizeof(void *));
+			TypeDefObject **type_info = (TypeDefObject **)context->stack_alloc(sizeof(void *));
+			if (!type_info)
+				return alloc_out_of_memory_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
+			memcpy(type_info, &type.type_def, sizeof(void *));
 			break;
 		}
 		case TypeId::StructInstance:
 		case TypeId::UnionEnum:
 		case TypeId::UnionEnumItem: {
-			TypeDefObject **typeInfo = (TypeDefObject **)context->stackAlloc(sizeof(void *));
-			if (!typeInfo)
-				return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
-			memcpy(typeInfo, &type.typeDef, sizeof(void *));
+			TypeDefObject **type_info = (TypeDefObject **)context->stack_alloc(sizeof(void *));
+			if (!type_info)
+				return alloc_out_of_memory_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
+			memcpy(type_info, &type.type_def, sizeof(void *));
 			break;
 		}
 		default:
 			std::terminate();
 	}
 
-	TypeModifier *typeModifier = (TypeModifier *)context->stackAlloc(sizeof(TypeModifier));
-	if (!typeModifier)
-		return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
-	*typeModifier = type.typeModifier;
+	TypeModifier *type_modifier = (TypeModifier *)context->stack_alloc(sizeof(TypeModifier));
+	if (!type_modifier)
+		return alloc_out_of_memory_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
+	*type_modifier = type.type_modifier;
 
-	TypeId *typeId = (TypeId *)context->stackAlloc(sizeof(TypeId));
-	if (!typeId)
-		return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
-	*typeId = type.typeId;
+	TypeId *type_id = (TypeId *)context->stack_alloc(sizeof(TypeId));
+	if (!type_id)
+		return alloc_out_of_memory_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
+	*type_id = type.type_id;
 
-	size_t offOut = context->stackTop;
+	size_t off_out = context->stack_top;
 
-	if (!_allocAllocaRecord(context, frame, outputReg))
-		return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
+	if (!_alloc_alloca_record(context, frame, output_reg))
+		return alloc_out_of_memory_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
 
-	restoreStackTopGuard.release();
+	restore_stack_top_guard.release();
 
-	if (frame->curCoroutine)
-		objectRefOut = CoroutineLocalVarRef(frame->curCoroutine, offOut - frame->curCoroutine->offStackTop);
+	if (frame->cur_coroutine)
+		object_ref_out = CoroutineLocalVarRef(frame->cur_coroutine, off_out - frame->cur_coroutine->off_stack_top);
 	else
-		objectRefOut = LocalVarRef(context, offOut);
+		object_ref_out = LocalVarRef(context, off_out);
 	return {};
 }
 
-SLAKE_FORCEINLINE InternalExceptionPointer larg(Context *context, MajorFrame *majorFrame, Runtime *rt, uint32_t off, Reference &objectRefOut) {
-	if (off >= majorFrame->resumableContextData.nArgs) {
-		return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(rt->getFixedAlloc()));
+SLAKE_FORCEINLINE InternalExceptionPointer larg(Context *context, MajorFrame *major_frame, Runtime *rt, uint32_t off, Reference &object_ref_out) {
+	if (off >= major_frame->resumable_context_data.num_args) {
+		return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(rt->get_fixed_alloc()));
 	}
 
-	if (majorFrame->curCoroutine) {
-		objectRefOut = CoroutineArgRef(majorFrame->curCoroutine, off);
+	if (major_frame->cur_coroutine) {
+		object_ref_out = CoroutineArgRef(major_frame->cur_coroutine, off);
 	} else {
-		objectRefOut = ArgRef(majorFrame, off);
+		object_ref_out = ArgRef(major_frame, off);
 	}
 	return {};
 }
 
-InternalExceptionPointer Runtime::_execIns(ContextObject *const context, MajorFrame *const curMajorFrame, const Opcode opcode, const size_t output, const size_t nOperands, const Value *const operands, bool &isContextChangedOut) noexcept {
-	InternalExceptionPointer exceptPtr;
-	char *const dataStack = context->_context.dataStack;
-	const size_t stackSize = context->_context.stackSize;
+InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorFrame *const cur_major_frame, const Opcode opcode, const size_t output, const size_t num_operands, const Value *const operands, bool &is_context_changed_out) noexcept {
+	InternalExceptionPointer except_ptr;
+	char *const data_stack = context->_context.data_stack;
+	const size_t stack_size = context->_context.stack_size;
 
 	switch (opcode) {
 		case Opcode::LVALUE: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 1>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 1>(this, output, num_operands));
 
 			const Value *dest;
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[0], dest));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::Reference>(this, *dest));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], dest));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_type<ValueType::Reference>(this, *dest));
 
-			if ((!_isRegisterValid(curMajorFrame, output)) || (dest->isInvalid()))
+			if ((!_is_register_valid(cur_major_frame, output)) || (dest->is_invalid()))
 				// The register does not present.
-				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
-			readVar(dest->getReference(), *_calcRegPtr(dataStack, stackSize, curMajorFrame, output));
+				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+			read_var(dest->get_reference(), *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output));
 
 			break;
 		}
 		case Opcode::LARGV: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 1>(this, output, nOperands));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::U32>(this, operands[0]));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 1>(this, output, num_operands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_type<ValueType::U32>(this, operands[0]));
 
 			Reference ref;
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, larg(&context->getContext(), curMajorFrame, this, operands[0].getU32(), ref));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, larg(&context->get_context(), cur_major_frame, this, operands[0].get_u32(), ref));
 
-			if (!_isRegisterValid(curMajorFrame, output))
+			if (!_is_register_valid(cur_major_frame, output))
 				// The register does not present.
-				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
-			readVar(ref, *_calcRegPtr(dataStack, stackSize, curMajorFrame, output));
+				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+			read_var(ref, *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output));
 
 			break;
 		}
 		case Opcode::STORE: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<false, 2>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<false, 2>(this, output, num_operands));
 
-			const Value *destValue;
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[0], destValue));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::Reference>(this, *destValue));
+			const Value *dest_value;
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], dest_value));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_type<ValueType::Reference>(this, *dest_value));
 
 			const Value *data;
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[1], data));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], data));
 
-			const Reference &ref = destValue->getReference();
-			TypeRef t = typeofVar(ref);
-			if (!isCompatible(t, *data))
-				return MismatchedVarTypeError::alloc(getFixedAlloc());
-			writeVarWithType(ref, t, *data);
+			const Reference &ref = dest_value->get_reference();
+			TypeRef t = typeof_var(ref);
+			if (!is_compatible(t, *data))
+				return MismatchedVarTypeError::alloc(get_fixed_alloc());
+			write_var_with_type(ref, t, *data);
 			break;
 		}
 		case Opcode::JMP: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<false, 1>(this, output, nOperands));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::U32>(this, operands[0]));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<false, 1>(this, output, num_operands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_type<ValueType::U32>(this, operands[0]));
 
-			curMajorFrame->resumableContextData.lastJumpSrc = curMajorFrame->resumableContextData.curIns;
-			curMajorFrame->resumableContextData.curIns = operands[0].getU32();
+			cur_major_frame->resumable_context_data.last_jump_src = cur_major_frame->resumable_context_data.cur_ins;
+			cur_major_frame->resumable_context_data.cur_ins = operands[0].get_u32();
 			return {};
 		}
 		case Opcode::BR: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<false, 3>(this, output, nOperands));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::U32>(this, operands[1]));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::U32>(this, operands[2]));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<false, 3>(this, output, num_operands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_type<ValueType::U32>(this, operands[1]));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_type<ValueType::U32>(this, operands[2]));
 			const Value *condition;
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[0], condition));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::Bool>(this, *condition));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], condition));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_type<ValueType::Bool>(this, *condition));
 
-			curMajorFrame->resumableContextData.lastJumpSrc = curMajorFrame->resumableContextData.curIns;
-			curMajorFrame->resumableContextData.curIns = operands[((uint8_t)!condition->getBool()) + 1].getU32();
+			cur_major_frame->resumable_context_data.last_jump_src = cur_major_frame->resumable_context_data.cur_ins;
+			cur_major_frame->resumable_context_data.cur_ins = operands[((uint8_t)!condition->get_bool()) + 1].get_u32();
 			return {};
 		}
 		case Opcode::ADD: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 2>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 2>(this, output, num_operands));
 
-			if (!_isRegisterValid(curMajorFrame, output)) {
-				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+			if (!_is_register_valid(cur_major_frame, output)) {
+				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
-			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
+			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
 
 			const Value *x, *y;
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[0], x));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[1], y));
-			if (x->valueType != y->valueType) {
-				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y));
+			if (x->value_type != y->value_type) {
+				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
-			switch (x->valueType) {
+			switch (x->value_type) {
 				case ValueType::I8:
-					valueOut = (int8_t)(x->getI8() + y->getI8());
+					value_out = (int8_t)(x->get_i8() + y->get_i8());
 					break;
 				case ValueType::I16:
-					valueOut = (int16_t)(x->getI16() + y->getI16());
+					value_out = (int16_t)(x->get_i16() + y->get_i16());
 					break;
 				case ValueType::I32:
-					valueOut = (int32_t)(x->getI32() + y->getI32());
+					value_out = (int32_t)(x->get_i32() + y->get_i32());
 					break;
 				case ValueType::I64:
-					valueOut = (int64_t)(x->getI64() + y->getI64());
+					value_out = (int64_t)(x->get_i64() + y->get_i64());
 					break;
 				case ValueType::U8:
-					valueOut = (uint8_t)(x->getU8() + y->getU8());
+					value_out = (uint8_t)(x->get_u8() + y->get_u8());
 					break;
 				case ValueType::U16:
-					valueOut = (uint16_t)(x->getU16() + y->getU16());
+					value_out = (uint16_t)(x->get_u16() + y->get_u16());
 					break;
 				case ValueType::U32:
-					valueOut = (uint32_t)(x->getU32() + y->getU32());
+					value_out = (uint32_t)(x->get_u32() + y->get_u32());
 					break;
 				case ValueType::U64:
-					valueOut = (uint64_t)(x->getU64() + y->getU64());
+					value_out = (uint64_t)(x->get_u64() + y->get_u64());
 					break;
 				case ValueType::F32:
-					valueOut = (float)(x->getF32() + y->getF32());
+					value_out = (float)(x->get_f32() + y->get_f32());
 					break;
 				case ValueType::F64:
-					valueOut = (double)(x->getF64() + y->getF64());
+					value_out = (double)(x->get_f64() + y->get_f64());
 					break;
 				default:
-					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
 			break;
 		}
 		case Opcode::SUB: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 2>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 2>(this, output, num_operands));
 
-			if (!_isRegisterValid(curMajorFrame, output)) {
-				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+			if (!_is_register_valid(cur_major_frame, output)) {
+				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
-			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
+			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
 
 			const Value *x, *y;
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[0], x));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[1], y));
-			if (x->valueType != y->valueType) {
-				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y));
+			if (x->value_type != y->value_type) {
+				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
-			switch (x->valueType) {
+			switch (x->value_type) {
 				case ValueType::I8:
-					valueOut = (int8_t)(x->getI8() - y->getI8());
+					value_out = (int8_t)(x->get_i8() - y->get_i8());
 					break;
 				case ValueType::I16:
-					valueOut = (int16_t)(x->getI16() - y->getI16());
+					value_out = (int16_t)(x->get_i16() - y->get_i16());
 					break;
 				case ValueType::I32:
-					valueOut = (int32_t)(x->getI32() - y->getI32());
+					value_out = (int32_t)(x->get_i32() - y->get_i32());
 					break;
 				case ValueType::I64:
-					valueOut = (int64_t)(x->getI64() - y->getI64());
+					value_out = (int64_t)(x->get_i64() - y->get_i64());
 					break;
 				case ValueType::U8:
-					valueOut = (uint8_t)(x->getU8() - y->getU8());
+					value_out = (uint8_t)(x->get_u8() - y->get_u8());
 					break;
 				case ValueType::U16:
-					valueOut = (uint16_t)(x->getU16() - y->getU16());
+					value_out = (uint16_t)(x->get_u16() - y->get_u16());
 					break;
 				case ValueType::U32:
-					valueOut = (uint32_t)(x->getU32() - y->getU32());
+					value_out = (uint32_t)(x->get_u32() - y->get_u32());
 					break;
 				case ValueType::U64:
-					valueOut = (uint64_t)(x->getU64() - y->getU64());
+					value_out = (uint64_t)(x->get_u64() - y->get_u64());
 					break;
 				case ValueType::F32:
-					valueOut = (float)(x->getF32() - y->getF32());
+					value_out = (float)(x->get_f32() - y->get_f32());
 					break;
 				case ValueType::F64:
-					valueOut = (double)(x->getF64() - y->getF64());
+					value_out = (double)(x->get_f64() - y->get_f64());
 					break;
 				default:
-					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			break;
 		}
 		case Opcode::MUL: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 2>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 2>(this, output, num_operands));
 
-			if (!_isRegisterValid(curMajorFrame, output)) {
-				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+			if (!_is_register_valid(cur_major_frame, output)) {
+				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
-			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
+			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
 
 			const Value *x, *y;
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[0], x));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[1], y));
-			if (x->valueType != y->valueType) {
-				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y));
+			if (x->value_type != y->value_type) {
+				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
-			switch (x->valueType) {
+			switch (x->value_type) {
 				case ValueType::I8:
-					valueOut = (int8_t)(x->getI8() * y->getI8());
+					value_out = (int8_t)(x->get_i8() * y->get_i8());
 					break;
 				case ValueType::I16:
-					valueOut = (int16_t)(x->getI16() * y->getI16());
+					value_out = (int16_t)(x->get_i16() * y->get_i16());
 					break;
 				case ValueType::I32:
-					valueOut = (int32_t)(x->getI32() * y->getI32());
+					value_out = (int32_t)(x->get_i32() * y->get_i32());
 					break;
 				case ValueType::I64:
-					valueOut = (int64_t)(x->getI64() * y->getI64());
+					value_out = (int64_t)(x->get_i64() * y->get_i64());
 					break;
 				case ValueType::U8:
-					valueOut = (uint8_t)(x->getU8() * y->getU8());
+					value_out = (uint8_t)(x->get_u8() * y->get_u8());
 					break;
 				case ValueType::U16:
-					valueOut = (uint16_t)(x->getU16() * y->getU16());
+					value_out = (uint16_t)(x->get_u16() * y->get_u16());
 					break;
 				case ValueType::U32:
-					valueOut = (uint32_t)(x->getU32() * y->getU32());
+					value_out = (uint32_t)(x->get_u32() * y->get_u32());
 					break;
 				case ValueType::U64:
-					valueOut = (uint64_t)(x->getU64() * y->getU64());
+					value_out = (uint64_t)(x->get_u64() * y->get_u64());
 					break;
 				case ValueType::F32:
-					valueOut = (float)(x->getF32() * y->getF32());
+					value_out = (float)(x->get_f32() * y->get_f32());
 					break;
 				case ValueType::F64:
-					valueOut = (double)(x->getF64() * y->getF64());
+					value_out = (double)(x->get_f64() * y->get_f64());
 					break;
 				default:
-					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			break;
 		}
 		case Opcode::DIV: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 2>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 2>(this, output, num_operands));
 
-			if (!_isRegisterValid(curMajorFrame, output)) {
-				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+			if (!_is_register_valid(cur_major_frame, output)) {
+				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
-			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
+			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
 
 			const Value *x, *y;
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[0], x));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[1], y));
-			if (x->valueType != y->valueType) {
-				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y));
+			if (x->value_type != y->value_type) {
+				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
-			switch (x->valueType) {
+			switch (x->value_type) {
 				case ValueType::I8:
-					valueOut = (int8_t)(x->getI8() / y->getI8());
+					value_out = (int8_t)(x->get_i8() / y->get_i8());
 					break;
 				case ValueType::I16:
-					valueOut = (int16_t)(x->getI16() / y->getI16());
+					value_out = (int16_t)(x->get_i16() / y->get_i16());
 					break;
 				case ValueType::I32:
-					valueOut = (int32_t)(x->getI32() / y->getI32());
+					value_out = (int32_t)(x->get_i32() / y->get_i32());
 					break;
 				case ValueType::I64:
-					valueOut = (int64_t)(x->getI64() / y->getI64());
+					value_out = (int64_t)(x->get_i64() / y->get_i64());
 					break;
 				case ValueType::U8:
-					valueOut = (uint8_t)(x->getU8() / y->getU8());
+					value_out = (uint8_t)(x->get_u8() / y->get_u8());
 					break;
 				case ValueType::U16:
-					valueOut = (uint16_t)(x->getU16() / y->getU16());
+					value_out = (uint16_t)(x->get_u16() / y->get_u16());
 					break;
 				case ValueType::U32:
-					valueOut = (uint32_t)(x->getU32() / y->getU32());
+					value_out = (uint32_t)(x->get_u32() / y->get_u32());
 					break;
 				case ValueType::U64:
-					valueOut = (uint64_t)(x->getU64() / y->getU64());
+					value_out = (uint64_t)(x->get_u64() / y->get_u64());
 					break;
 				case ValueType::F32:
-					valueOut = (float)(x->getF32() / y->getF32());
+					value_out = (float)(x->get_f32() / y->get_f32());
 					break;
 				case ValueType::F64:
-					valueOut = (double)(x->getF64() / y->getF64());
+					value_out = (double)(x->get_f64() / y->get_f64());
 					break;
 				default:
-					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			break;
 		}
 		case Opcode::MOD: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 2>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 2>(this, output, num_operands));
 
-			if (!_isRegisterValid(curMajorFrame, output)) {
-				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+			if (!_is_register_valid(cur_major_frame, output)) {
+				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
-			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
+			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
 
 			const Value *x, *y;
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[0], x));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[1], y));
-			if (x->valueType != y->valueType) {
-				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y));
+			if (x->value_type != y->value_type) {
+				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
-			switch (x->valueType) {
+			switch (x->value_type) {
 				case ValueType::I8:
-					valueOut = (int8_t)(x->getI8() % y->getI8());
+					value_out = (int8_t)(x->get_i8() % y->get_i8());
 					break;
 				case ValueType::I16:
-					valueOut = (int16_t)(x->getI16() % y->getI16());
+					value_out = (int16_t)(x->get_i16() % y->get_i16());
 					break;
 				case ValueType::I32:
-					valueOut = (int32_t)(x->getI32() % y->getI32());
+					value_out = (int32_t)(x->get_i32() % y->get_i32());
 					break;
 				case ValueType::I64:
-					valueOut = (int64_t)(x->getI64() % y->getI64());
+					value_out = (int64_t)(x->get_i64() % y->get_i64());
 					break;
 				case ValueType::U8:
-					valueOut = (uint8_t)(x->getU8() % y->getU8());
+					value_out = (uint8_t)(x->get_u8() % y->get_u8());
 					break;
 				case ValueType::U16:
-					valueOut = (uint16_t)(x->getU16() % y->getU16());
+					value_out = (uint16_t)(x->get_u16() % y->get_u16());
 					break;
 				case ValueType::U32:
-					valueOut = (uint32_t)(x->getU32() % y->getU32());
+					value_out = (uint32_t)(x->get_u32() % y->get_u32());
 					break;
 				case ValueType::U64:
-					valueOut = (uint64_t)(x->getU64() % y->getU64());
+					value_out = (uint64_t)(x->get_u64() % y->get_u64());
 					break;
 				case ValueType::F32:
-					valueOut = (float)flib::fmodf(x->getF32(), y->getF32());
+					value_out = (float)flib::fmodf(x->get_f32(), y->get_f32());
 					break;
 				case ValueType::F64:
-					valueOut = (double)flib::fmod(x->getF64(), y->getF64());
+					value_out = (double)flib::fmod(x->get_f64(), y->get_f64());
 					break;
 				default:
-					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			break;
 		}
 		case Opcode::AND: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 2>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 2>(this, output, num_operands));
 
-			if (!_isRegisterValid(curMajorFrame, output)) {
-				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+			if (!_is_register_valid(cur_major_frame, output)) {
+				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
-			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
+			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
 
 			const Value *x, *y;
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[0], x));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[1], y));
-			if (x->valueType != y->valueType) {
-				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y));
+			if (x->value_type != y->value_type) {
+				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
-			switch (x->valueType) {
+			switch (x->value_type) {
 				case ValueType::I8:
-					valueOut = (int8_t)(x->getI8() & y->getI8());
+					value_out = (int8_t)(x->get_i8() & y->get_i8());
 					break;
 				case ValueType::I16:
-					valueOut = (int16_t)(x->getI16() & y->getI16());
+					value_out = (int16_t)(x->get_i16() & y->get_i16());
 					break;
 				case ValueType::I32:
-					valueOut = (int32_t)(x->getI32() & y->getI32());
+					value_out = (int32_t)(x->get_i32() & y->get_i32());
 					break;
 				case ValueType::I64:
-					valueOut = (int64_t)(x->getI64() & y->getI64());
+					value_out = (int64_t)(x->get_i64() & y->get_i64());
 					break;
 				case ValueType::U8:
-					valueOut = (uint8_t)(x->getU8() & y->getU8());
+					value_out = (uint8_t)(x->get_u8() & y->get_u8());
 					break;
 				case ValueType::U16:
-					valueOut = (uint16_t)(x->getU16() & y->getU16());
+					value_out = (uint16_t)(x->get_u16() & y->get_u16());
 					break;
 				case ValueType::U32:
-					valueOut = (uint32_t)(x->getU32() & y->getU32());
+					value_out = (uint32_t)(x->get_u32() & y->get_u32());
 					break;
 				case ValueType::U64:
-					valueOut = (uint64_t)(x->getU64() & y->getU64());
+					value_out = (uint64_t)(x->get_u64() & y->get_u64());
 					break;
 				default:
-					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			break;
 		}
 		case Opcode::OR: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 2>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 2>(this, output, num_operands));
 
-			if (!_isRegisterValid(curMajorFrame, output)) {
-				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+			if (!_is_register_valid(cur_major_frame, output)) {
+				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
-			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
+			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
 
 			const Value *x, *y;
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[0], x));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[1], y));
-			if (x->valueType != y->valueType) {
-				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y));
+			if (x->value_type != y->value_type) {
+				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
-			switch (x->valueType) {
+			switch (x->value_type) {
 				case ValueType::I8:
-					valueOut = (int8_t)(x->getI8() | y->getI8());
+					value_out = (int8_t)(x->get_i8() | y->get_i8());
 					break;
 				case ValueType::I16:
-					valueOut = (int16_t)(x->getI16() | y->getI16());
+					value_out = (int16_t)(x->get_i16() | y->get_i16());
 					break;
 				case ValueType::I32:
-					valueOut = (int32_t)(x->getI32() | y->getI32());
+					value_out = (int32_t)(x->get_i32() | y->get_i32());
 					break;
 				case ValueType::I64:
-					valueOut = (int64_t)(x->getI64() | y->getI64());
+					value_out = (int64_t)(x->get_i64() | y->get_i64());
 					break;
 				case ValueType::U8:
-					valueOut = (uint8_t)(x->getU8() | y->getU8());
+					value_out = (uint8_t)(x->get_u8() | y->get_u8());
 					break;
 				case ValueType::U16:
-					valueOut = (uint16_t)(x->getU16() | y->getU16());
+					value_out = (uint16_t)(x->get_u16() | y->get_u16());
 					break;
 				case ValueType::U32:
-					valueOut = (uint32_t)(x->getU32() | y->getU32());
+					value_out = (uint32_t)(x->get_u32() | y->get_u32());
 					break;
 				case ValueType::U64:
-					valueOut = (uint64_t)(x->getU64() | y->getU64());
+					value_out = (uint64_t)(x->get_u64() | y->get_u64());
 					break;
 				default:
-					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			break;
 		}
 		case Opcode::XOR: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 2>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 2>(this, output, num_operands));
 
-			if (!_isRegisterValid(curMajorFrame, output)) {
-				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+			if (!_is_register_valid(cur_major_frame, output)) {
+				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
-			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
+			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
 
 			const Value *x, *y;
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[0], x));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[1], y));
-			if (x->valueType != y->valueType) {
-				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y));
+			if (x->value_type != y->value_type) {
+				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
-			switch (x->valueType) {
+			switch (x->value_type) {
 				case ValueType::I8:
-					valueOut = (int8_t)(x->getI8() ^ y->getI8());
+					value_out = (int8_t)(x->get_i8() ^ y->get_i8());
 					break;
 				case ValueType::I16:
-					valueOut = (int16_t)(x->getI16() ^ y->getI16());
+					value_out = (int16_t)(x->get_i16() ^ y->get_i16());
 					break;
 				case ValueType::I32:
-					valueOut = (int32_t)(x->getI32() ^ y->getI32());
+					value_out = (int32_t)(x->get_i32() ^ y->get_i32());
 					break;
 				case ValueType::I64:
-					valueOut = (int64_t)(x->getI64() ^ y->getI64());
+					value_out = (int64_t)(x->get_i64() ^ y->get_i64());
 					break;
 				case ValueType::U8:
-					valueOut = (uint8_t)(x->getU8() ^ y->getU8());
+					value_out = (uint8_t)(x->get_u8() ^ y->get_u8());
 					break;
 				case ValueType::U16:
-					valueOut = (uint16_t)(x->getU16() ^ y->getU16());
+					value_out = (uint16_t)(x->get_u16() ^ y->get_u16());
 					break;
 				case ValueType::U32:
-					valueOut = (uint32_t)(x->getU32() ^ y->getU32());
+					value_out = (uint32_t)(x->get_u32() ^ y->get_u32());
 					break;
 				case ValueType::U64:
-					valueOut = (uint64_t)(x->getU64() ^ y->getU64());
+					value_out = (uint64_t)(x->get_u64() ^ y->get_u64());
 					break;
 				default:
-					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			break;
 		}
 		case Opcode::LAND: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 2>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 2>(this, output, num_operands));
 
-			if (!_isRegisterValid(curMajorFrame, output)) {
-				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+			if (!_is_register_valid(cur_major_frame, output)) {
+				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
-			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
+			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
 
 			const Value *x, *y;
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[0], x));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[1], y));
-			if (x->valueType != y->valueType) {
-				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y));
+			if (x->value_type != y->value_type) {
+				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
-			switch (x->valueType) {
+			switch (x->value_type) {
 				case ValueType::Bool:
-					valueOut = Value((int16_t)(x->getBool() && y->getBool()));
+					value_out = Value((int16_t)(x->get_bool() && y->get_bool()));
 					break;
 				default:
-					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			break;
 		}
 		case Opcode::LOR: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 2>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 2>(this, output, num_operands));
 
-			if (!_isRegisterValid(curMajorFrame, output)) {
-				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+			if (!_is_register_valid(cur_major_frame, output)) {
+				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
-			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
+			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
 
 			const Value *x, *y;
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[0], x));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[1], y));
-			if (x->valueType != y->valueType) {
-				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y));
+			if (x->value_type != y->value_type) {
+				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
-			switch (x->valueType) {
+			switch (x->value_type) {
 				case ValueType::Bool:
-					valueOut = Value((int16_t)(x->getBool() || y->getBool()));
+					value_out = Value((int16_t)(x->get_bool() || y->get_bool()));
 					break;
 				default:
-					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			break;
 		}
 		case Opcode::EQ: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 2>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 2>(this, output, num_operands));
 
-			if (!_isRegisterValid(curMajorFrame, output)) {
-				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+			if (!_is_register_valid(cur_major_frame, output)) {
+				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
-			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
+			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
 
 			const Value *x, *y;
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[0], x));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[1], y));
-			if (x->valueType != y->valueType) {
-				if ((!x->isNull()) || (!y->isNull()))
-					valueOut = false;
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y));
+			if (x->value_type != y->value_type) {
+				if ((!x->is_null()) || (!y->is_null()))
+					value_out = false;
 				else
-					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			} else {
-				switch (x->valueType) {
+				switch (x->value_type) {
 					case ValueType::I8:
-						valueOut = (bool)(x->getI8() == y->getI8());
+						value_out = (bool)(x->get_i8() == y->get_i8());
 						break;
 					case ValueType::I16:
-						valueOut = (bool)(x->getI16() == y->getI16());
+						value_out = (bool)(x->get_i16() == y->get_i16());
 						break;
 					case ValueType::I32:
-						valueOut = (bool)(x->getI32() == y->getI32());
+						value_out = (bool)(x->get_i32() == y->get_i32());
 						break;
 					case ValueType::I64:
-						valueOut = (bool)(x->getI64() == y->getI64());
+						value_out = (bool)(x->get_i64() == y->get_i64());
 						break;
 					case ValueType::U8:
-						valueOut = (bool)(x->getU8() == y->getU8());
+						value_out = (bool)(x->get_u8() == y->get_u8());
 						break;
 					case ValueType::U16:
-						valueOut = (bool)(x->getU16() == y->getU16());
+						value_out = (bool)(x->get_u16() == y->get_u16());
 						break;
 					case ValueType::U32:
-						valueOut = (bool)(x->getU32() == y->getU32());
+						value_out = (bool)(x->get_u32() == y->get_u32());
 						break;
 					case ValueType::U64:
-						valueOut = (bool)(x->getU64() == y->getU64());
+						value_out = (bool)(x->get_u64() == y->get_u64());
 						break;
 					case ValueType::F32:
-						valueOut = (bool)(x->getF32() == y->getF32());
+						value_out = (bool)(x->get_f32() == y->get_f32());
 						break;
 					case ValueType::F64:
-						valueOut = (bool)(x->getF64() == y->getF64());
+						value_out = (bool)(x->get_f64() == y->get_f64());
 						break;
 					case ValueType::Bool:
-						valueOut = (bool)(x->getBool() == y->getBool());
+						value_out = (bool)(x->get_bool() == y->get_bool());
 						break;
 					default:
-						return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+						return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 				}
 			}
 			break;
 		}
 		case Opcode::NEQ: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 2>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 2>(this, output, num_operands));
 
-			if (!_isRegisterValid(curMajorFrame, output)) {
-				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+			if (!_is_register_valid(cur_major_frame, output)) {
+				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
-			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
+			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
 
 			const Value *x, *y;
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[0], x));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[1], y));
-			if (x->valueType != y->valueType) {
-				if ((!x->isNull()) || (!y->isNull()))
-					valueOut = true;
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y));
+			if (x->value_type != y->value_type) {
+				if ((!x->is_null()) || (!y->is_null()))
+					value_out = true;
 				else
-					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			} else {
-				switch (x->valueType) {
+				switch (x->value_type) {
 					case ValueType::I8:
-						valueOut = (bool)(x->getI8() != y->getI8());
+						value_out = (bool)(x->get_i8() != y->get_i8());
 						break;
 					case ValueType::I16:
-						valueOut = (bool)(x->getI16() != y->getI16());
+						value_out = (bool)(x->get_i16() != y->get_i16());
 						break;
 					case ValueType::I32:
-						valueOut = (bool)(x->getI32() != y->getI32());
+						value_out = (bool)(x->get_i32() != y->get_i32());
 						break;
 					case ValueType::I64:
-						valueOut = (bool)(x->getI64() != y->getI64());
+						value_out = (bool)(x->get_i64() != y->get_i64());
 						break;
 					case ValueType::U8:
-						valueOut = (bool)(x->getU8() != y->getU8());
+						value_out = (bool)(x->get_u8() != y->get_u8());
 						break;
 					case ValueType::U16:
-						valueOut = (bool)(x->getU16() != y->getU16());
+						value_out = (bool)(x->get_u16() != y->get_u16());
 						break;
 					case ValueType::U32:
-						valueOut = (bool)(x->getU32() != y->getU32());
+						value_out = (bool)(x->get_u32() != y->get_u32());
 						break;
 					case ValueType::U64:
-						valueOut = (bool)(x->getU64() != y->getU64());
+						value_out = (bool)(x->get_u64() != y->get_u64());
 						break;
 					case ValueType::F32:
-						valueOut = (bool)(x->getF32() != y->getF32());
+						value_out = (bool)(x->get_f32() != y->get_f32());
 						break;
 					case ValueType::F64:
-						valueOut = (bool)(x->getF64() != y->getF64());
+						value_out = (bool)(x->get_f64() != y->get_f64());
 						break;
 					case ValueType::Bool:
-						valueOut = (bool)(x->getBool() != y->getBool());
+						value_out = (bool)(x->get_bool() != y->get_bool());
 						break;
 					default:
-						return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+						return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 				}
 			}
 			break;
 		}
 		case Opcode::LT: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 2>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 2>(this, output, num_operands));
 
-			if (!_isRegisterValid(curMajorFrame, output)) {
-				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+			if (!_is_register_valid(cur_major_frame, output)) {
+				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
-			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
+			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
 
 			const Value *x, *y;
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[0], x));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[1], y));
-			if (x->valueType != y->valueType) {
-				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y));
+			if (x->value_type != y->value_type) {
+				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
-			switch (x->valueType) {
+			switch (x->value_type) {
 				case ValueType::I8:
-					valueOut = (bool)(x->getI8() < y->getI8());
+					value_out = (bool)(x->get_i8() < y->get_i8());
 					break;
 				case ValueType::I16:
-					valueOut = (bool)(x->getI16() < y->getI16());
+					value_out = (bool)(x->get_i16() < y->get_i16());
 					break;
 				case ValueType::I32:
-					valueOut = (bool)(x->getI32() < y->getI32());
+					value_out = (bool)(x->get_i32() < y->get_i32());
 					break;
 				case ValueType::I64:
-					valueOut = (bool)(x->getI64() < y->getI64());
+					value_out = (bool)(x->get_i64() < y->get_i64());
 					break;
 				case ValueType::U8:
-					valueOut = (bool)(x->getU8() < y->getU8());
+					value_out = (bool)(x->get_u8() < y->get_u8());
 					break;
 				case ValueType::U16:
-					valueOut = (bool)(x->getU16() < y->getU16());
+					value_out = (bool)(x->get_u16() < y->get_u16());
 					break;
 				case ValueType::U32:
-					valueOut = (bool)(x->getU32() < y->getU32());
+					value_out = (bool)(x->get_u32() < y->get_u32());
 					break;
 				case ValueType::U64:
-					valueOut = (bool)(x->getU64() < y->getU64());
+					value_out = (bool)(x->get_u64() < y->get_u64());
 					break;
 				case ValueType::F32:
-					valueOut = (bool)(x->getF32() < y->getF32());
+					value_out = (bool)(x->get_f32() < y->get_f32());
 					break;
 				case ValueType::F64:
-					valueOut = (bool)(x->getF64() < y->getF64());
+					value_out = (bool)(x->get_f64() < y->get_f64());
 					break;
 				default:
-					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			break;
 		}
 		case Opcode::GT: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 2>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 2>(this, output, num_operands));
 
-			if (!_isRegisterValid(curMajorFrame, output)) {
-				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+			if (!_is_register_valid(cur_major_frame, output)) {
+				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
-			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
+			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
 
 			const Value *x, *y;
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[0], x));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[1], y));
-			if (x->valueType != y->valueType) {
-				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y));
+			if (x->value_type != y->value_type) {
+				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
-			switch (x->valueType) {
+			switch (x->value_type) {
 				case ValueType::I8:
-					valueOut = (bool)(x->getI8() > y->getI8());
+					value_out = (bool)(x->get_i8() > y->get_i8());
 					break;
 				case ValueType::I16:
-					valueOut = (bool)(x->getI16() > y->getI16());
+					value_out = (bool)(x->get_i16() > y->get_i16());
 					break;
 				case ValueType::I32:
-					valueOut = (bool)(x->getI32() > y->getI32());
+					value_out = (bool)(x->get_i32() > y->get_i32());
 					break;
 				case ValueType::I64:
-					valueOut = (bool)(x->getI64() > y->getI64());
+					value_out = (bool)(x->get_i64() > y->get_i64());
 					break;
 				case ValueType::U8:
-					valueOut = (bool)(x->getU8() > y->getU8());
+					value_out = (bool)(x->get_u8() > y->get_u8());
 					break;
 				case ValueType::U16:
-					valueOut = (bool)(x->getU16() > y->getU16());
+					value_out = (bool)(x->get_u16() > y->get_u16());
 					break;
 				case ValueType::U32:
-					valueOut = (bool)(x->getU32() > y->getU32());
+					value_out = (bool)(x->get_u32() > y->get_u32());
 					break;
 				case ValueType::U64:
-					valueOut = (bool)(x->getU64() > y->getU64());
+					value_out = (bool)(x->get_u64() > y->get_u64());
 					break;
 				case ValueType::F32:
-					valueOut = (bool)(x->getF32() > y->getF32());
+					value_out = (bool)(x->get_f32() > y->get_f32());
 					break;
 				case ValueType::F64:
-					valueOut = (bool)(x->getF64() > y->getF64());
+					value_out = (bool)(x->get_f64() > y->get_f64());
 					break;
 				default:
-					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			break;
 		}
 		case Opcode::LTEQ: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 2>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 2>(this, output, num_operands));
 
-			if (!_isRegisterValid(curMajorFrame, output)) {
-				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+			if (!_is_register_valid(cur_major_frame, output)) {
+				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
-			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
+			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
 
 			const Value *x, *y;
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[0], x));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[1], y));
-			if (x->valueType != y->valueType) {
-				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y));
+			if (x->value_type != y->value_type) {
+				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
-			switch (x->valueType) {
+			switch (x->value_type) {
 				case ValueType::I8:
-					valueOut = (bool)(x->getI8() <= y->getI8());
+					value_out = (bool)(x->get_i8() <= y->get_i8());
 					break;
 				case ValueType::I16:
-					valueOut = (bool)(x->getI16() <= y->getI16());
+					value_out = (bool)(x->get_i16() <= y->get_i16());
 					break;
 				case ValueType::I32:
-					valueOut = (bool)(x->getI32() <= y->getI32());
+					value_out = (bool)(x->get_i32() <= y->get_i32());
 					break;
 				case ValueType::I64:
-					valueOut = (bool)(x->getI64() <= y->getI64());
+					value_out = (bool)(x->get_i64() <= y->get_i64());
 					break;
 				case ValueType::U8:
-					valueOut = (bool)(x->getU8() <= y->getU8());
+					value_out = (bool)(x->get_u8() <= y->get_u8());
 					break;
 				case ValueType::U16:
-					valueOut = (bool)(x->getU16() <= y->getU16());
+					value_out = (bool)(x->get_u16() <= y->get_u16());
 					break;
 				case ValueType::U32:
-					valueOut = (bool)(x->getU32() <= y->getU32());
+					value_out = (bool)(x->get_u32() <= y->get_u32());
 					break;
 				case ValueType::U64:
-					valueOut = (bool)(x->getU64() <= y->getU64());
+					value_out = (bool)(x->get_u64() <= y->get_u64());
 					break;
 				case ValueType::F32:
-					valueOut = (bool)(x->getF32() <= y->getF32());
+					value_out = (bool)(x->get_f32() <= y->get_f32());
 					break;
 				case ValueType::F64:
-					valueOut = (bool)(x->getF64() <= y->getF64());
+					value_out = (bool)(x->get_f64() <= y->get_f64());
 					break;
 				default:
-					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			break;
 		}
 		case Opcode::GTEQ: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 2>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 2>(this, output, num_operands));
 
-			if (!_isRegisterValid(curMajorFrame, output)) {
-				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+			if (!_is_register_valid(cur_major_frame, output)) {
+				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
-			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
+			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
 
 			const Value *x, *y;
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[0], x));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[1], y));
-			if (x->valueType != y->valueType) {
-				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y));
+			if (x->value_type != y->value_type) {
+				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
-			switch (x->valueType) {
+			switch (x->value_type) {
 				case ValueType::I8:
-					valueOut = (bool)(x->getI8() >= y->getI8());
+					value_out = (bool)(x->get_i8() >= y->get_i8());
 					break;
 				case ValueType::I16:
-					valueOut = (bool)(x->getI16() >= y->getI16());
+					value_out = (bool)(x->get_i16() >= y->get_i16());
 					break;
 				case ValueType::I32:
-					valueOut = (bool)(x->getI32() >= y->getI32());
+					value_out = (bool)(x->get_i32() >= y->get_i32());
 					break;
 				case ValueType::I64:
-					valueOut = (bool)(x->getI64() >= y->getI64());
+					value_out = (bool)(x->get_i64() >= y->get_i64());
 					break;
 				case ValueType::U8:
-					valueOut = (bool)(x->getU8() >= y->getU8());
+					value_out = (bool)(x->get_u8() >= y->get_u8());
 					break;
 				case ValueType::U16:
-					valueOut = (bool)(x->getU16() >= y->getU16());
+					value_out = (bool)(x->get_u16() >= y->get_u16());
 					break;
 				case ValueType::U32:
-					valueOut = (bool)(x->getU32() >= y->getU32());
+					value_out = (bool)(x->get_u32() >= y->get_u32());
 					break;
 				case ValueType::U64:
-					valueOut = (bool)(x->getU64() >= y->getU64());
+					value_out = (bool)(x->get_u64() >= y->get_u64());
 					break;
 				case ValueType::F32:
-					valueOut = (bool)(x->getF32() >= y->getF32());
+					value_out = (bool)(x->get_f32() >= y->get_f32());
 					break;
 				case ValueType::F64:
-					valueOut = (bool)(x->getF64() >= y->getF64());
+					value_out = (bool)(x->get_f64() >= y->get_f64());
 					break;
 				default:
-					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
-			uint64_t lhs = x->getU64(), rhs = y->getU64();
+			uint64_t lhs = x->get_u64(), rhs = y->get_u64();
 			if (lhs > rhs) {
-				valueOut = Value((int32_t)1);
+				value_out = Value((int32_t)1);
 			} else if (lhs < rhs) {
-				valueOut = Value((int32_t)-1);
+				value_out = Value((int32_t)-1);
 			} else
-				valueOut = Value((int32_t)0);
+				value_out = Value((int32_t)0);
 			break;
 		}
 		case Opcode::CMP: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 2>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 2>(this, output, num_operands));
 
-			if (!_isRegisterValid(curMajorFrame, output)) {
-				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+			if (!_is_register_valid(cur_major_frame, output)) {
+				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
-			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
+			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
 
 			const Value *x, *y;
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[0], x));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[1], y));
-			if (x->valueType != y->valueType) {
-				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y));
+			if (x->value_type != y->value_type) {
+				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
-			switch (x->valueType) {
+			switch (x->value_type) {
 				case ValueType::I8:
-					valueOut = (int32_t)flib::compareI8(x->getI8(), y->getI8());
+					value_out = (int32_t)flib::compare_i8(x->get_i8(), y->get_i8());
 					break;
 				case ValueType::I16:
-					valueOut = (int32_t)flib::compareI16(x->getI16(), y->getI16());
+					value_out = (int32_t)flib::compare_i16(x->get_i16(), y->get_i16());
 					break;
 				case ValueType::I32:
-					valueOut = (int32_t)flib::compareI32(x->getI32(), y->getI32());
+					value_out = (int32_t)flib::compare_i32(x->get_i32(), y->get_i32());
 					break;
 				case ValueType::I64:
-					valueOut = (int32_t)flib::compareI64(x->getI64(), y->getI64());
+					value_out = (int32_t)flib::compare_i64(x->get_i64(), y->get_i64());
 					break;
 				case ValueType::U8:
-					valueOut = (int32_t)flib::compareU8(x->getU8(), y->getU8());
+					value_out = (int32_t)flib::compare_u8(x->get_u8(), y->get_u8());
 					break;
 				case ValueType::U16:
-					valueOut = (int32_t)flib::compareU16(x->getU16(), y->getU16());
+					value_out = (int32_t)flib::compare_u16(x->get_u16(), y->get_u16());
 					break;
 				case ValueType::U32:
-					valueOut = (int32_t)flib::compareU32(x->getU32(), y->getU32());
+					value_out = (int32_t)flib::compare_u32(x->get_u32(), y->get_u32());
 					break;
 				case ValueType::U64:
-					valueOut = (int32_t)flib::compareU64(x->getU64(), y->getU64());
+					value_out = (int32_t)flib::compare_u64(x->get_u64(), y->get_u64());
 					break;
 				case ValueType::F32:
-					valueOut = (int32_t)flib::compareF32(x->getF32(), y->getF32());
+					value_out = (int32_t)flib::compare_f32(x->get_f32(), y->get_f32());
 					break;
 				case ValueType::F64:
-					valueOut = (int32_t)flib::compareF64(x->getF64(), y->getF64());
+					value_out = (int32_t)flib::compare_f64(x->get_f64(), y->get_f64());
 					break;
 				default:
-					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
 			break;
 		}
 		case Opcode::LSH: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 2>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 2>(this, output, num_operands));
 
-			if (!_isRegisterValid(curMajorFrame, output)) {
-				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+			if (!_is_register_valid(cur_major_frame, output)) {
+				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
-			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
+			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
 
 			const Value *x, *y;
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[0], x));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[1], y));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y));
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::U32>(this, *y));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_type<ValueType::U32>(this, *y));
 
-			uint32_t rhs = y->getU32();
+			uint32_t rhs = y->get_u32();
 
-			switch (x->valueType) {
+			switch (x->value_type) {
 				case ValueType::I8:
-					valueOut = flib::shlSigned8(x->getI8(), rhs);
+					value_out = flib::shl_signed8(x->get_i8(), rhs);
 					break;
 				case ValueType::I16:
-					valueOut = flib::shlSigned16(x->getI16(), rhs);
+					value_out = flib::shl_signed16(x->get_i16(), rhs);
 					break;
 				case ValueType::I32:
-					valueOut = flib::shlSigned32(x->getI32(), rhs);
+					value_out = flib::shl_signed32(x->get_i32(), rhs);
 					break;
 				case ValueType::I64:
-					valueOut = flib::shlSigned64(x->getI64(), rhs);
+					value_out = flib::shl_signed64(x->get_i64(), rhs);
 					break;
 				case ValueType::U8:
-					valueOut = flib::shlUnsigned8(x->getU8(), rhs);
+					value_out = flib::shl_unsigned8(x->get_u8(), rhs);
 					break;
 				case ValueType::U16:
-					valueOut = flib::shlUnsigned16(x->getU16(), rhs);
+					value_out = flib::shl_unsigned16(x->get_u16(), rhs);
 					break;
 				case ValueType::U32:
-					valueOut = flib::shlUnsigned32(x->getU32(), rhs);
+					value_out = flib::shl_unsigned32(x->get_u32(), rhs);
 					break;
 				case ValueType::U64:
-					valueOut = flib::shlUnsigned64(x->getU64(), rhs);
+					value_out = flib::shl_unsigned64(x->get_u64(), rhs);
 					break;
 				default:
-					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			break;
 		}
 		case Opcode::RSH: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 2>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 2>(this, output, num_operands));
 
-			if (!_isRegisterValid(curMajorFrame, output)) {
-				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+			if (!_is_register_valid(cur_major_frame, output)) {
+				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
-			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
+			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
 
 			const Value *x, *y;
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[0], x));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[1], y));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y));
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::U32>(this, *y));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_type<ValueType::U32>(this, *y));
 
-			uint32_t rhs = y->getU32();
+			uint32_t rhs = y->get_u32();
 
-			switch (x->valueType) {
+			switch (x->value_type) {
 				case ValueType::I8:
-					valueOut = flib::shrSigned8(x->getI8(), rhs);
+					value_out = flib::shr_signed8(x->get_i8(), rhs);
 					break;
 				case ValueType::I16:
-					valueOut = flib::shrSigned16(x->getI16(), rhs);
+					value_out = flib::shr_signed16(x->get_i16(), rhs);
 					break;
 				case ValueType::I32:
-					valueOut = flib::shrSigned32(x->getI32(), rhs);
+					value_out = flib::shr_signed32(x->get_i32(), rhs);
 					break;
 				case ValueType::I64:
-					valueOut = flib::shrSigned64(x->getI64(), rhs);
+					value_out = flib::shr_signed64(x->get_i64(), rhs);
 					break;
 				case ValueType::U8:
-					valueOut = flib::shrUnsigned8(x->getU8(), rhs);
+					value_out = flib::shr_unsigned8(x->get_u8(), rhs);
 					break;
 				case ValueType::U16:
-					valueOut = flib::shrUnsigned16(x->getU16(), rhs);
+					value_out = flib::shr_unsigned16(x->get_u16(), rhs);
 					break;
 				case ValueType::U32:
-					valueOut = flib::shrUnsigned32(x->getU32(), rhs);
+					value_out = flib::shr_unsigned32(x->get_u32(), rhs);
 					break;
 				case ValueType::U64:
-					valueOut = flib::shrUnsigned64(x->getU64(), rhs);
+					value_out = flib::shr_unsigned64(x->get_u64(), rhs);
 					break;
 				default:
-					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			break;
 		}
 		case Opcode::NOT: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 1>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 1>(this, output, num_operands));
 
-			if (!_isRegisterValid(curMajorFrame, output)) {
-				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+			if (!_is_register_valid(cur_major_frame, output)) {
+				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
-			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
+			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
 
 			const Value *x;
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[1], x));
-			switch (x->valueType) {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], x));
+			switch (x->value_type) {
 				case ValueType::I8:
-					valueOut = (int8_t)(~x->getI8());
+					value_out = (int8_t)(~x->get_i8());
 					break;
 				case ValueType::I16:
-					valueOut = (int16_t)(~x->getI16());
+					value_out = (int16_t)(~x->get_i16());
 					break;
 				case ValueType::I32:
-					valueOut = (int32_t)(~x->getI32());
+					value_out = (int32_t)(~x->get_i32());
 					break;
 				case ValueType::I64:
-					valueOut = (int64_t)(~x->getI64());
+					value_out = (int64_t)(~x->get_i64());
 					break;
 				case ValueType::U8:
-					valueOut = (uint8_t)(~x->getU8());
+					value_out = (uint8_t)(~x->get_u8());
 					break;
 				case ValueType::U16:
-					valueOut = (uint16_t)(~x->getU16());
+					value_out = (uint16_t)(~x->get_u16());
 					break;
 				case ValueType::U32:
-					valueOut = (uint32_t)(~x->getU32());
+					value_out = (uint32_t)(~x->get_u32());
 					break;
 				case ValueType::U64:
-					valueOut = (uint64_t)(~x->getU64());
+					value_out = (uint64_t)(~x->get_u64());
 					break;
 				default:
-					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			break;
 		}
 		case Opcode::LNOT: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 1>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 1>(this, output, num_operands));
 
-			if (!_isRegisterValid(curMajorFrame, output)) {
-				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+			if (!_is_register_valid(cur_major_frame, output)) {
+				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
-			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
+			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
 
 			const Value *x;
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[1], x));
-			switch (x->valueType) {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], x));
+			switch (x->value_type) {
 				case ValueType::I8:
-					valueOut = (bool)(!x->getI8());
+					value_out = (bool)(!x->get_i8());
 					break;
 				case ValueType::I16:
-					valueOut = (bool)(!x->getI16());
+					value_out = (bool)(!x->get_i16());
 					break;
 				case ValueType::I32:
-					valueOut = (bool)(!x->getI32());
+					value_out = (bool)(!x->get_i32());
 					break;
 				case ValueType::I64:
-					valueOut = (bool)(!x->getI64());
+					value_out = (bool)(!x->get_i64());
 					break;
 				case ValueType::U8:
-					valueOut = (bool)(!x->getI8());
+					value_out = (bool)(!x->get_i8());
 					break;
 				case ValueType::U16:
-					valueOut = (bool)(!x->getU16());
+					value_out = (bool)(!x->get_u16());
 					break;
 				case ValueType::U32:
-					valueOut = (bool)(!x->getU32());
+					value_out = (bool)(!x->get_u32());
 					break;
 				case ValueType::U64:
-					valueOut = (bool)(!x->getU64());
+					value_out = (bool)(!x->get_u64());
 					break;
 				case ValueType::F32:
-					valueOut = (bool)(!x->getF32());
+					value_out = (bool)(!x->get_f32());
 					break;
 				case ValueType::F64:
-					valueOut = (bool)(!x->getF64());
+					value_out = (bool)(!x->get_f64());
 					break;
 				case ValueType::Bool:
-					valueOut = (bool)(!x->getU64());
+					value_out = (bool)(!x->get_u64());
 					break;
 				default:
-					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			break;
 		}
 		case Opcode::NEG: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 1>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 1>(this, output, num_operands));
 
-			if (!_isRegisterValid(curMajorFrame, output)) {
-				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+			if (!_is_register_valid(cur_major_frame, output)) {
+				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
-			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
+			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
 
 			const Value *x;
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[1], x));
-			switch (x->valueType) {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], x));
+			switch (x->value_type) {
 				case ValueType::I8:
-					valueOut = (int8_t)(-x->getI8());
+					value_out = (int8_t)(-x->get_i8());
 					break;
 				case ValueType::I16:
-					valueOut = (int16_t)(-x->getI16());
+					value_out = (int16_t)(-x->get_i16());
 					break;
 				case ValueType::I32:
-					valueOut = (int32_t)(-x->getI32());
+					value_out = (int32_t)(-x->get_i32());
 					break;
 				case ValueType::I64:
-					valueOut = (int64_t)(-x->getI64());
+					value_out = (int64_t)(-x->get_i64());
 					break;
 				case ValueType::U8:
-					valueOut = (uint8_t)(x->getU8());
+					value_out = (uint8_t)(x->get_u8());
 					break;
 				case ValueType::U16:
-					valueOut = (uint16_t)(x->getU16());
+					value_out = (uint16_t)(x->get_u16());
 					break;
 				case ValueType::U32:
-					valueOut = (uint32_t)(x->getU32());
+					value_out = (uint32_t)(x->get_u32());
 					break;
 				case ValueType::U64:
-					valueOut = (uint64_t)(x->getU64());
+					value_out = (uint64_t)(x->get_u64());
 					break;
 				case ValueType::F32:
-					valueOut = (float)(-x->getF32());
+					value_out = (float)(-x->get_f32());
 					break;
 				case ValueType::F64:
-					valueOut = (double)(-x->getF64());
+					value_out = (double)(-x->get_f64());
 					break;
 				default:
-					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			break;
 		}
 		case Opcode::AT: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 2>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 2>(this, output, num_operands));
 
-			Value arrayValue;
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, operands[0], arrayValue));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::Reference>(this, arrayValue));
+			Value array_value;
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand(this, data_stack, stack_size, cur_major_frame, operands[0], array_value));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_type<ValueType::Reference>(this, array_value));
 
 			Value index;
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, operands[1], index));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::U32>(this, index));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand(this, data_stack, stack_size, cur_major_frame, operands[1], index));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_type<ValueType::U32>(this, index));
 
-			auto arrayIn = arrayValue.getReference();
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkObjectRefOperandType<ReferenceKind::ObjectRef>(this, arrayIn));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkObjectOperandType<ObjectKind::Array>(this, arrayIn.asObject));
-			ArrayObject *arrayObject = (ArrayObject *)arrayIn.asObject;
+			auto array_in = array_value.get_reference();
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_object_ref_operand_type<ReferenceKind::ObjectRef>(this, array_in));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_object_operand_type<ObjectKind::Array>(this, array_in.as_object));
+			ArrayObject *array_object = (ArrayObject *)array_in.as_object;
 
-			uint32_t indexIn = index.getU32();
+			uint32_t index_in = index.get_u32();
 
-			if (indexIn > arrayObject->length) {
-				return allocOutOfMemoryErrorIfAllocFailed(InvalidArrayIndexError::alloc(getFixedAlloc(), indexIn));
+			if (index_in > array_object->length) {
+				return alloc_out_of_memory_error_if_alloc_failed(InvalidArrayIndexError::alloc(get_fixed_alloc(), index_in));
 			}
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, stackSize, curMajorFrame, output, Value(Reference(ArrayElementRef(arrayObject, indexIn)))));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _set_register_value(this, data_stack, stack_size, cur_major_frame, output, Value(Reference(ArrayElementRef(array_object, index_in)))));
 
 			break;
 		}
 		case Opcode::LOAD: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 1>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 1>(this, output, num_operands));
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::Reference>(this, operands[0]));
-			auto refPtr = operands[0].getReference();
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkObjectRefOperandType<ReferenceKind::ObjectRef>(this, refPtr));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkObjectOperandType<ObjectKind::IdRef>(this, refPtr.asObject));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_type<ValueType::Reference>(this, operands[0]));
+			auto ref_ptr = operands[0].get_reference();
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_object_ref_operand_type<ReferenceKind::ObjectRef>(this, ref_ptr));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_object_operand_type<ObjectKind::IdRef>(this, ref_ptr.as_object));
 
-			Reference entityRef;
+			Reference entity_ref;
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, resolveIdRef((IdRefObject *)refPtr.asObject, entityRef));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, resolve_id_ref((IdRefObject *)ref_ptr.as_object, entity_ref));
 
-			if (entityRef.kind == ReferenceKind::Invalid)
+			if (entity_ref.kind == ReferenceKind::Invalid)
 				// TODO: Use a proper one instead.
-				return allocOutOfMemoryErrorIfAllocFailed(ReferencedMemberNotFoundError::alloc(getFixedAlloc(), (IdRefObject *)refPtr.asObject));
+				return alloc_out_of_memory_error_if_alloc_failed(ReferencedMemberNotFoundError::alloc(get_fixed_alloc(), (IdRefObject *)ref_ptr.as_object));
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, stackSize, curMajorFrame, output, Value(entityRef)));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _set_register_value(this, data_stack, stack_size, cur_major_frame, output, Value(entity_ref)));
 			break;
 		}
 		case Opcode::RLOAD: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 2>(this, output, nOperands));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::RegIndex>(this, operands[0]));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 2>(this, output, num_operands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_type<ValueType::RegIndex>(this, operands[0]));
 
 			Value lhs;
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, operands[0], lhs));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::Reference>(this, lhs));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand(this, data_stack, stack_size, cur_major_frame, operands[0], lhs));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_type<ValueType::Reference>(this, lhs));
 
 			Value rhs;
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, operands[1], rhs));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::Reference>(this, rhs));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand(this, data_stack, stack_size, cur_major_frame, operands[1], rhs));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_type<ValueType::Reference>(this, rhs));
 
-			auto &lhsEntityRef = lhs.getReference();
+			auto &lhs_entity_ref = lhs.get_reference();
 
-			auto &idRefEntityRef = rhs.getReference();
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkObjectRefOperandType<ReferenceKind::ObjectRef>(this, idRefEntityRef));
+			auto &id_ref_entity_ref = rhs.get_reference();
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_object_ref_operand_type<ReferenceKind::ObjectRef>(this, id_ref_entity_ref));
 
-			if (!lhsEntityRef) {
-				return allocOutOfMemoryErrorIfAllocFailed(NullRefError::alloc(getFixedAlloc()));
+			if (!lhs_entity_ref) {
+				return alloc_out_of_memory_error_if_alloc_failed(NullRefError::alloc(get_fixed_alloc()));
 			}
 
-			if (!idRefEntityRef) {
-				return allocOutOfMemoryErrorIfAllocFailed(NullRefError::alloc(getFixedAlloc()));
+			if (!id_ref_entity_ref) {
+				return alloc_out_of_memory_error_if_alloc_failed(NullRefError::alloc(get_fixed_alloc()));
 			}
 
-			if (idRefEntityRef.asObject->getObjectKind() != ObjectKind::IdRef) {
-				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+			if (id_ref_entity_ref.as_object->get_object_kind() != ObjectKind::IdRef) {
+				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
-			IdRefObject *idRef = (IdRefObject *)idRefEntityRef.asObject;
+			IdRefObject *id_ref = (IdRefObject *)id_ref_entity_ref.as_object;
 
-			Reference entityRef;
+			Reference entity_ref;
 
-			switch (lhsEntityRef.kind) {
+			switch (lhs_entity_ref.kind) {
 				case ReferenceKind::StaticFieldRef:
 				case ReferenceKind::LocalVarRef:
 				case ReferenceKind::CoroutineLocalVarRef:
@@ -1873,27 +1873,27 @@ InternalExceptionPointer Runtime::_execIns(ContextObject *const context, MajorFr
 				case ReferenceKind::ArrayElementRef:
 				case ReferenceKind::ArgRef:
 				case ReferenceKind::CoroutineArgRef: {
-					TypeRef type = typeofVar(lhsEntityRef);
+					TypeRef type = typeof_var(lhs_entity_ref);
 
-					if (type.typeId == TypeId::StructInstance) {
-						StructObject *structObject = (StructObject *)(((CustomTypeDefObject *)type.typeDef)->typeObject);
-						IdRefEntry &curName = idRef->entries.at(0);
+					if (type.type_id == TypeId::StructInstance) {
+						StructObject *struct_object = (StructObject *)(((CustomTypeDefObject *)type.type_def)->type_object);
+						IdRefEntry &cur_name = id_ref->entries.at(0);
 
-						if (auto it = structObject->cachedObjectLayout->fieldNameMap.find(curName.name); it != structObject->cachedObjectLayout->fieldNameMap.end()) {
-							entityRef = lhsEntityRef;
-							((uint8_t &)entityRef.kind) |= 0x80;
-							entityRef.structFieldIndex = it.value();
+						if (auto it = struct_object->cached_object_layout->field_name_map.find(cur_name.name); it != struct_object->cached_object_layout->field_name_map.end()) {
+							entity_ref = lhs_entity_ref;
+							((uint8_t &)entity_ref.kind) |= 0x80;
+							entity_ref.struct_field_index = it.value();
 						} else {
-							entityRef = structObject->getMember(curName.name);
+							entity_ref = struct_object->get_member(cur_name.name);
 
-							if (curName.genericArgs.size()) {
-								peff::NullAlloc nullAlloc;
-								GenericInstantiationContext genericInstantiationContext(&nullAlloc, getFixedAlloc());
+							if (cur_name.generic_args.size()) {
+								peff::NullAlloc null_alloc;
+								GenericInstantiationContext generic_instantiation_context(&null_alloc, get_fixed_alloc());
 
-								genericInstantiationContext.genericArgs = &curName.genericArgs;
+								generic_instantiation_context.generic_args = &cur_name.generic_args;
 								MemberObject *m;
-								SLAKE_RETURN_IF_EXCEPT(instantiateGenericObject((MemberObject *)entityRef.asObject, m, &genericInstantiationContext));
-								entityRef = Reference(m);
+								SLAKE_RETURN_IF_EXCEPT(instantiate_generic_object((MemberObject *)entity_ref.as_object, m, &generic_instantiation_context));
+								entity_ref = Reference(m);
 							}
 						}
 					}
@@ -1901,320 +1901,320 @@ InternalExceptionPointer Runtime::_execIns(ContextObject *const context, MajorFr
 					break;
 				}
 				case ReferenceKind::ObjectRef:
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, resolveIdRef(idRef, entityRef, lhsEntityRef.asObject));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, resolve_id_ref(id_ref, entity_ref, lhs_entity_ref.as_object));
 					break;
 				default:
-					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
-			if (!entityRef) {
+			if (!entity_ref) {
 				std::terminate();
 			}
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, stackSize, curMajorFrame, output, Value(entityRef)));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _set_register_value(this, data_stack, stack_size, cur_major_frame, output, Value(entity_ref)));
 			break;
 		}
 		case Opcode::LCURFN: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 0>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 0>(this, output, num_operands));
 
-			if (_isRegisterValid(curMajorFrame, output)) {
-				Value &outputReg = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
-				outputReg.valueType = ValueType::Reference;
-				outputReg.getReference().kind = ReferenceKind::ObjectRef;
-				outputReg.getReference().asObject = const_cast<FnOverloadingObject *>(curMajorFrame->curFn);
+			if (_is_register_valid(cur_major_frame, output)) {
+				Value &output_reg = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
+				output_reg.value_type = ValueType::Reference;
+				output_reg.get_reference().kind = ReferenceKind::ObjectRef;
+				output_reg.get_reference().as_object = const_cast<FnOverloadingObject *>(cur_major_frame->cur_fn);
 			}
 			break;
 		}
 		case Opcode::COPYI8: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 1>(this, output, nOperands));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::I8>(this, operands[0]));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 1>(this, output, num_operands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_type<ValueType::I8>(this, operands[0]));
 
 			if (output != UINT32_MAX) {
-				if (!_isRegisterValid(curMajorFrame, output)) {
+				if (!_is_register_valid(cur_major_frame, output)) {
 					// The register does not present.
-					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 				}
-				*_calcRegPtr(dataStack, stackSize, curMajorFrame, output) = operands[0].getI8();
+				*_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output) = operands[0].get_i8();
 			}
 			break;
 		}
 		case Opcode::COPYI16: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 1>(this, output, nOperands));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::I16>(this, operands[0]));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 1>(this, output, num_operands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_type<ValueType::I16>(this, operands[0]));
 
 			if (output != UINT32_MAX) {
-				if (!_isRegisterValid(curMajorFrame, output)) {
+				if (!_is_register_valid(cur_major_frame, output)) {
 					// The register does not present.
-					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 				}
-				*_calcRegPtr(dataStack, stackSize, curMajorFrame, output) = operands[0].getI16();
+				*_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output) = operands[0].get_i16();
 			}
 			break;
 		}
 		case Opcode::COPYI32: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 1>(this, output, nOperands));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::I32>(this, operands[0]));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 1>(this, output, num_operands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_type<ValueType::I32>(this, operands[0]));
 
 			if (output != UINT32_MAX) {
-				if (!_isRegisterValid(curMajorFrame, output)) {
+				if (!_is_register_valid(cur_major_frame, output)) {
 					// The register does not present.
-					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 				}
-				*_calcRegPtr(dataStack, stackSize, curMajorFrame, output) = operands[0].getI32();
+				*_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output) = operands[0].get_i32();
 			}
 			break;
 		}
 		case Opcode::COPYI64: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 1>(this, output, nOperands));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::I64>(this, operands[0]));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 1>(this, output, num_operands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_type<ValueType::I64>(this, operands[0]));
 
 			if (output != UINT32_MAX) {
-				if (!_isRegisterValid(curMajorFrame, output)) {
+				if (!_is_register_valid(cur_major_frame, output)) {
 					// The register does not present.
-					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 				}
-				*_calcRegPtr(dataStack, stackSize, curMajorFrame, output) = operands[0].getI64();
+				*_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output) = operands[0].get_i64();
 			}
 			break;
 		}
 		case Opcode::COPYISIZE: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 1>(this, output, nOperands));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::ISize>(this, operands[0]));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 1>(this, output, num_operands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_type<ValueType::ISize>(this, operands[0]));
 
 			if (output != UINT32_MAX) {
-				if (!_isRegisterValid(curMajorFrame, output)) {
+				if (!_is_register_valid(cur_major_frame, output)) {
 					// The register does not present.
-					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 				}
-				Value *const val = _calcRegPtr(dataStack, stackSize, curMajorFrame, output);
-				val->asUSize = operands[0].getISize();
-				val->valueType = ValueType::ISize;
-				val->valueFlags = 0;
+				Value *const val = _calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
+				val->as_usize = operands[0].get_isize();
+				val->value_type = ValueType::ISize;
+				val->value_flags = 0;
 			}
 			break;
 		}
 		case Opcode::COPYU8: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 1>(this, output, nOperands));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::U8>(this, operands[0]));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 1>(this, output, num_operands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_type<ValueType::U8>(this, operands[0]));
 
 			if (output != UINT32_MAX) {
-				if (!_isRegisterValid(curMajorFrame, output)) {
+				if (!_is_register_valid(cur_major_frame, output)) {
 					// The register does not present.
-					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 				}
-				*_calcRegPtr(dataStack, stackSize, curMajorFrame, output) = operands[0].getU8();
+				*_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output) = operands[0].get_u8();
 			}
 			break;
 		}
 		case Opcode::COPYU16: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 1>(this, output, nOperands));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::U16>(this, operands[0]));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 1>(this, output, num_operands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_type<ValueType::U16>(this, operands[0]));
 
 			if (output != UINT32_MAX) {
-				if (!_isRegisterValid(curMajorFrame, output)) {
+				if (!_is_register_valid(cur_major_frame, output)) {
 					// The register does not present.
-					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 				}
-				*_calcRegPtr(dataStack, stackSize, curMajorFrame, output) = operands[0].getU16();
+				*_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output) = operands[0].get_u16();
 			}
 			break;
 		}
 		case Opcode::COPYU32: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 1>(this, output, nOperands));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::U32>(this, operands[0]));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 1>(this, output, num_operands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_type<ValueType::U32>(this, operands[0]));
 
 			if (output != UINT32_MAX) {
-				if (!_isRegisterValid(curMajorFrame, output)) {
+				if (!_is_register_valid(cur_major_frame, output)) {
 					// The register does not present.
-					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 				}
-				*_calcRegPtr(dataStack, stackSize, curMajorFrame, output) = operands[0].getU32();
+				*_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output) = operands[0].get_u32();
 			}
 			break;
 		}
 		case Opcode::COPYU64: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 1>(this, output, nOperands));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::U64>(this, operands[0]));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 1>(this, output, num_operands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_type<ValueType::U64>(this, operands[0]));
 
 			if (output != UINT32_MAX) {
-				if (!_isRegisterValid(curMajorFrame, output)) {
+				if (!_is_register_valid(cur_major_frame, output)) {
 					// The register does not present.
-					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 				}
-				*_calcRegPtr(dataStack, stackSize, curMajorFrame, output) = operands[0].getU64();
+				*_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output) = operands[0].get_u64();
 			}
 			break;
 		}
 		case Opcode::COPYUSIZE: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 1>(this, output, nOperands));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::USize>(this, operands[0]));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 1>(this, output, num_operands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_type<ValueType::USize>(this, operands[0]));
 
 			if (output != UINT32_MAX) {
-				if (!_isRegisterValid(curMajorFrame, output)) {
+				if (!_is_register_valid(cur_major_frame, output)) {
 					// The register does not present.
-					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 				}
-				Value *const val = _calcRegPtr(dataStack, stackSize, curMajorFrame, output);
-				val->asUSize = operands[0].getUSize();
-				val->valueType = ValueType::USize;
-				val->valueFlags = 0;
+				Value *const val = _calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
+				val->as_usize = operands[0].get_usize();
+				val->value_type = ValueType::USize;
+				val->value_flags = 0;
 			}
 			break;
 		}
 		case Opcode::COPYF32: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 1>(this, output, nOperands));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::F32>(this, operands[0]));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 1>(this, output, num_operands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_type<ValueType::F32>(this, operands[0]));
 
 			if (output != UINT32_MAX) {
-				if (!_isRegisterValid(curMajorFrame, output)) {
+				if (!_is_register_valid(cur_major_frame, output)) {
 					// The register does not present.
-					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 				}
-				*_calcRegPtr(dataStack, stackSize, curMajorFrame, output) = operands[0].getF32();
+				*_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output) = operands[0].get_f32();
 			}
 			break;
 		}
 		case Opcode::COPYF64: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 1>(this, output, nOperands));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::F64>(this, operands[0]));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 1>(this, output, num_operands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_type<ValueType::F64>(this, operands[0]));
 
 			if (output != UINT32_MAX) {
-				if (!_isRegisterValid(curMajorFrame, output)) {
+				if (!_is_register_valid(cur_major_frame, output)) {
 					// The register does not present.
-					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 				}
-				*_calcRegPtr(dataStack, stackSize, curMajorFrame, output) = operands[0].getF64();
+				*_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output) = operands[0].get_f64();
 			}
 			break;
 		}
 		case Opcode::COPYBOOL: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 1>(this, output, nOperands));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::Bool>(this, operands[0]));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 1>(this, output, num_operands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_type<ValueType::Bool>(this, operands[0]));
 
 			if (output != UINT32_MAX) {
-				if (!_isRegisterValid(curMajorFrame, output)) {
+				if (!_is_register_valid(cur_major_frame, output)) {
 					// The register does not present.
-					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 				}
-				*_calcRegPtr(dataStack, stackSize, curMajorFrame, output) = operands[0].getBool();
+				*_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output) = operands[0].get_bool();
 			}
 			break;
 		}
 		case Opcode::COPYNULL: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 0>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 0>(this, output, num_operands));
 
 			if (output != UINT32_MAX) {
-				if (!_isRegisterValid(curMajorFrame, output)) {
+				if (!_is_register_valid(cur_major_frame, output)) {
 					// The register does not present.
-					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 				}
-				*_calcRegPtr(dataStack, stackSize, curMajorFrame, output) = nullptr;
+				*_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output) = nullptr;
 			}
 			break;
 		}
 		case Opcode::COPY: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 1>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 1>(this, output, num_operands));
 
 			const Value *value;
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[0], value));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], value));
 
 			if (output != UINT32_MAX) {
-				if (!_isRegisterValid(curMajorFrame, output)) {
+				if (!_is_register_valid(cur_major_frame, output)) {
 					// The register does not present.
-					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 				}
-				Value *outputReg = _calcRegPtr(dataStack, stackSize, curMajorFrame, output);
-				outputReg->valueFlags = value->valueFlags;
-				switch (value->valueType) {
+				Value *output_reg = _calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
+				output_reg->value_flags = value->value_flags;
+				switch (value->value_type) {
 					case ValueType::I8:
-						outputReg->asI8 = value->getI8();
-						outputReg->valueType = ValueType::I8;
+						output_reg->as_i8 = value->get_i8();
+						output_reg->value_type = ValueType::I8;
 						break;
 					case ValueType::I16:
-						outputReg->asI16 = value->getI16();
-						outputReg->valueType = ValueType::I16;
+						output_reg->as_i16 = value->get_i16();
+						output_reg->value_type = ValueType::I16;
 						break;
 					case ValueType::I32:
-						outputReg->asI32 = value->getI32();
-						outputReg->valueType = ValueType::I32;
+						output_reg->as_i32 = value->get_i32();
+						output_reg->value_type = ValueType::I32;
 						break;
 					case ValueType::I64:
-						outputReg->asI64 = value->getI64();
-						outputReg->valueType = ValueType::I64;
+						output_reg->as_i64 = value->get_i64();
+						output_reg->value_type = ValueType::I64;
 						break;
 					case ValueType::ISize:
-						outputReg->asISize = value->getISize();
-						outputReg->valueType = ValueType::ISize;
+						output_reg->as_isize = value->get_isize();
+						output_reg->value_type = ValueType::ISize;
 						break;
 					case ValueType::U8:
-						outputReg->asU8 = value->getU8();
-						outputReg->valueType = ValueType::U8;
+						output_reg->as_u8 = value->get_u8();
+						output_reg->value_type = ValueType::U8;
 						break;
 					case ValueType::U16:
-						outputReg->asU16 = value->getU16();
-						outputReg->valueType = ValueType::U16;
+						output_reg->as_u16 = value->get_u16();
+						output_reg->value_type = ValueType::U16;
 						break;
 					case ValueType::U32:
-						outputReg->asU32 = value->getU32();
-						outputReg->valueType = ValueType::U32;
+						output_reg->as_u32 = value->get_u32();
+						output_reg->value_type = ValueType::U32;
 						break;
 					case ValueType::U64:
-						outputReg->asU64 = value->getU64();
-						outputReg->valueType = ValueType::U64;
+						output_reg->as_u64 = value->get_u64();
+						output_reg->value_type = ValueType::U64;
 						break;
 					case ValueType::USize:
-						outputReg->asUSize = value->getUSize();
-						outputReg->valueType = ValueType::USize;
+						output_reg->as_usize = value->get_usize();
+						output_reg->value_type = ValueType::USize;
 						break;
 					case ValueType::F32:
-						outputReg->asF32 = value->getF32();
-						outputReg->valueType = ValueType::F32;
+						output_reg->as_f32 = value->get_f32();
+						output_reg->value_type = ValueType::F32;
 						break;
 					case ValueType::F64:
-						outputReg->asF64 = value->getF64();
-						outputReg->valueType = ValueType::F64;
+						output_reg->as_f64 = value->get_f64();
+						output_reg->value_type = ValueType::F64;
 						break;
 					case ValueType::Bool:
-						outputReg->asBool = value->getBool();
-						outputReg->valueType = ValueType::Bool;
+						output_reg->as_bool = value->get_bool();
+						output_reg->value_type = ValueType::Bool;
 						break;
 					case ValueType::Reference: {
-						const Reference &ref = value->getReference();
+						const Reference &ref = value->get_reference();
 						switch (ref.kind) {
 							case ReferenceKind::Invalid:
-								return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+								return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 							case ReferenceKind::LocalVarRef:
-								// if (value->asReference.asLocalVar.stackOff >= curMajorFrame->stackBase)
-								return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+								// if (value->as_reference.as_local_var.stack_off >= cur_major_frame->stack_base)
+								return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 								break;
 							case ReferenceKind::CoroutineLocalVarRef: {
-								// if ((value->asReference.asCoroutineLocalVar.stackOff + value->asReference.asCoroutineLocalVar.coroutine->offStackTop) >=
-								//(curMajorFrame->curCoroutine ? curMajorFrame->stackBase + curMajorFrame->curCoroutine->offStackTop : curMajorFrame->stackBase))
-								return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+								// if ((value->as_reference.as_coroutine_local_var.stack_off + value->as_reference.as_coroutine_local_var.coroutine->off_stack_top) >=
+								//(cur_major_frame->cur_coroutine ? cur_major_frame->stack_base + cur_major_frame->cur_coroutine->off_stack_top : cur_major_frame->stack_base))
+								return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 								break;
 							}
 							default:
-								outputReg->asReference = ref;
+								output_reg->as_reference = ref;
 								break;
 						}
-						outputReg->valueType = ValueType::Reference;
+						output_reg->value_type = ValueType::Reference;
 						break;
 					}
 					case ValueType::TypelessScopedEnum:
-						outputReg->asTypelessScopedEnum = value->getTypelessScopedEnum();
-						outputReg->valueType = ValueType::Bool;
+						output_reg->as_typeless_scoped_enum = value->get_typeless_scoped_enum();
+						output_reg->value_type = ValueType::Bool;
 						break;
 					case ValueType::RegIndex:
-						outputReg->asU32 = value->getRegIndex();
-						outputReg->valueType = ValueType::RegIndex;
+						output_reg->as_u32 = value->get_reg_index();
+						output_reg->value_type = ValueType::RegIndex;
 						break;
 					case ValueType::TypeName:
-						outputReg->asU32 = value->getRegIndex();
-						outputReg->valueType = ValueType::TypeName;
+						output_reg->as_u32 = value->get_reg_index();
+						output_reg->value_type = ValueType::TypeName;
 						break;
 					case ValueType::Label:
-						outputReg->asU32 = value->getLabel();
-						outputReg->valueType = ValueType::Label;
+						output_reg->as_u32 = value->get_label();
+						output_reg->value_type = ValueType::Label;
 						break;
 					default:
 						std::terminate();
@@ -2223,114 +2223,114 @@ InternalExceptionPointer Runtime::_execIns(ContextObject *const context, MajorFr
 			break;
 		}
 		case Opcode::LARG: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 1>(this, output, nOperands));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::U32>(this, operands[0]));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 1>(this, output, num_operands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_type<ValueType::U32>(this, operands[0]));
 
-			Reference entityRef;
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, larg(&context->getContext(), curMajorFrame, this, operands[0].getU32(), entityRef));
-			if (!_isRegisterValid(curMajorFrame, output)) {
+			Reference entity_ref;
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, larg(&context->get_context(), cur_major_frame, this, operands[0].get_u32(), entity_ref));
+			if (!_is_register_valid(cur_major_frame, output)) {
 				// The register does not present.
-				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
-			Value *outputReg = _calcRegPtr(dataStack, stackSize, curMajorFrame, output);
-			outputReg->valueType = ValueType::Reference;
-			outputReg->getReference() = entityRef;
+			Value *output_reg = _calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
+			output_reg->value_type = ValueType::Reference;
+			output_reg->get_reference() = entity_ref;
 			break;
 		}
 		case Opcode::LAPARG:
-			return InvalidOpcodeError::alloc(getFixedAlloc(), opcode);
+			return InvalidOpcodeError::alloc(get_fixed_alloc(), opcode);
 		case Opcode::LVAR: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 1>(this, output, nOperands));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::TypeName>(this, operands[0]));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 1>(this, output, num_operands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_type<ValueType::TypeName>(this, operands[0]));
 
-			TypeRef type = operands[0].getTypeName();
+			TypeRef type = operands[0].get_type_name();
 
-			Reference entityRef;
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _addLocalVar(&context->_context, curMajorFrame, type, output, entityRef));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, stackSize, curMajorFrame, output, entityRef));
+			Reference entity_ref;
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _add_local_var(&context->_context, cur_major_frame, type, output, entity_ref));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _set_register_value(this, data_stack, stack_size, cur_major_frame, output, entity_ref));
 			break;
 		}
 		case Opcode::ALLOCA:
-			return InvalidOpcodeError::alloc(getFixedAlloc(), opcode);
+			return InvalidOpcodeError::alloc(get_fixed_alloc(), opcode);
 		case Opcode::ENTER: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<false, 0>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<false, 0>(this, output, num_operands));
 
-			size_t prevStackTop = context->getContext().stackTop;
+			size_t prev_stack_top = context->get_context().stack_top;
 
-			if (!context->_context.alignedStackAlloc(sizeof(MinorFrame), alignof(MinorFrame)))
-				return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
+			if (!context->_context.aligned_stack_alloc(sizeof(MinorFrame), alignof(MinorFrame)))
+				return alloc_out_of_memory_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
 
-			size_t mfStackOff = context->_context.stackTop;
+			size_t mf_stack_off = context->_context.stack_top;
 
-			if (curMajorFrame->curCoroutine) {
-				mfStackOff -= curMajorFrame->curCoroutine->offStackTop;
+			if (cur_major_frame->cur_coroutine) {
+				mf_stack_off -= cur_major_frame->cur_coroutine->off_stack_top;
 			}
 
-			MinorFrame *mf = _fetchMinorFrameUnchecked(&context->getContext(), curMajorFrame, mfStackOff);
+			MinorFrame *mf = _fetch_minor_frame_unchecked(&context->get_context(), cur_major_frame, mf_stack_off);
 
-			peff::constructAt<MinorFrame>(mf);
+			peff::construct_at<MinorFrame>(mf);
 
-			mf->offLastMinorFrame = curMajorFrame->resumableContextData.offCurMinorFrame;
-			mf->stackBase = curMajorFrame->curCoroutine ? prevStackTop - curMajorFrame->curCoroutine->offStackTop : prevStackTop;
-			curMajorFrame->resumableContextData.offCurMinorFrame = mfStackOff;
+			mf->off_last_minor_frame = cur_major_frame->resumable_context_data.off_cur_minor_frame;
+			mf->stack_base = cur_major_frame->cur_coroutine ? prev_stack_top - cur_major_frame->cur_coroutine->off_stack_top : prev_stack_top;
+			cur_major_frame->resumable_context_data.off_cur_minor_frame = mf_stack_off;
 			break;
 		}
 		case Opcode::LEAVE: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<false, 1>(this, output, nOperands));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::U32>(this, operands[0]));
-			uint32_t level = operands[0].getU32();
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<false, 1>(this, output, num_operands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_type<ValueType::U32>(this, operands[0]));
+			uint32_t level = operands[0].get_u32();
 			for (uint32_t i = 0; i < level; ++i) {
-				MinorFrame *mf = _fetchMinorFrame(&context->_context, curMajorFrame, curMajorFrame->resumableContextData.offCurMinorFrame);
+				MinorFrame *mf = _fetch_minor_frame(&context->_context, cur_major_frame, cur_major_frame->resumable_context_data.off_cur_minor_frame);
 
-				if (mf->offLastMinorFrame == SIZE_MAX)
-					return allocOutOfMemoryErrorIfAllocFailed(FrameBoundaryExceededError::alloc(getFixedAlloc()));
+				if (mf->off_last_minor_frame == SIZE_MAX)
+					return alloc_out_of_memory_error_if_alloc_failed(FrameBoundaryExceededError::alloc(get_fixed_alloc()));
 
 				// Invalidate alloca records to prevent the runtime from dangling references.
-				size_t offAllocaRecord = mf->offAllocaRecords;
-				while (offAllocaRecord != SIZE_MAX) {
-					AllocaRecord *ar = _fetchAllocaRecord(&context->getContext(), curMajorFrame, offAllocaRecord);
+				size_t off_alloca_record = mf->off_alloca_records;
+				while (off_alloca_record != SIZE_MAX) {
+					AllocaRecord *ar = _fetch_alloca_record(&context->get_context(), cur_major_frame, off_alloca_record);
 
-					if (!_isRegisterValid(curMajorFrame, ar->defReg)) {
-						return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+					if (!_is_register_valid(cur_major_frame, ar->def_reg)) {
+						return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 						// TODO: Use a more proper kind of exception.
 					}
-					_calcRegPtr(dataStack, stackSize, curMajorFrame, ar->defReg)->valueType = ValueType::Invalid;
+					_calc_reg_ptr(data_stack, stack_size, cur_major_frame, ar->def_reg)->value_type = ValueType::Invalid;
 
-					offAllocaRecord = ar->offNext;
+					off_alloca_record = ar->off_next;
 				}
 
-				size_t offLastMinorFrame = mf->offLastMinorFrame;
-				context->_context.stackTop = curMajorFrame->curCoroutine
-												 ? curMajorFrame->curCoroutine->offStackTop + mf->stackBase
-												 : mf->stackBase;
-				curMajorFrame->resumableContextData.offCurMinorFrame = offLastMinorFrame;
+				size_t off_last_minor_frame = mf->off_last_minor_frame;
+				context->_context.stack_top = cur_major_frame->cur_coroutine
+												 ? cur_major_frame->cur_coroutine->off_stack_top + mf->stack_base
+												 : mf->stack_base;
+				cur_major_frame->resumable_context_data.off_cur_minor_frame = off_last_minor_frame;
 			}
 			break;
 		}
 		case Opcode::PUSHARG: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<false, 1>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<false, 1>(this, output, num_operands));
 
 			const Value *value;
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[0], value));
-			/* if (curMajorFrame->resumableContextData.nNextArgs) {
-				if (curMajorFrame->resumableContextData.offNextArgs + sizeof(Value) * curMajorFrame->resumableContextData.nNextArgs != context->getContext().stackTop)
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], value));
+			/* if (cur_major_frame->resumable_context_data.num_next_args) {
+				if (cur_major_frame->resumable_context_data.off_next_args + sizeof(Value) * cur_major_frame->resumable_context_data.num_next_args != context->get_context().stack_top)
 					std::terminate();
 			}*/
-			size_t prevStackTop = curMajorFrame->curCoroutine ? context->getContext().stackTop - curMajorFrame->curCoroutine->offStackTop : context->getContext().stackTop;
-			if (char *p = context->getContext().alignedStackAlloc(sizeof(Value), alignof(Value)); p) {
+			size_t prev_stack_top = cur_major_frame->cur_coroutine ? context->get_context().stack_top - cur_major_frame->cur_coroutine->off_stack_top : context->get_context().stack_top;
+			if (char *p = context->get_context().aligned_stack_alloc(sizeof(Value), alignof(Value)); p) {
 				*(Value *)p = *value;
 			} else
-				return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
-			const size_t newOff = curMajorFrame->curCoroutine ? context->getContext().stackTop - curMajorFrame->curCoroutine->offStackTop : context->getContext().stackTop;
-			if (curMajorFrame->resumableContextData.nNextArgs) {
-				if (newOff - curMajorFrame->resumableContextData.offNextArgs != sizeof(Value))
+				return alloc_out_of_memory_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
+			const size_t new_off = cur_major_frame->cur_coroutine ? context->get_context().stack_top - cur_major_frame->cur_coroutine->off_stack_top : context->get_context().stack_top;
+			if (cur_major_frame->resumable_context_data.num_next_args) {
+				if (new_off - cur_major_frame->resumable_context_data.off_next_args != sizeof(Value))
 					// TODO: Use a proper one.
-					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			} else {
-				curMajorFrame->resumableContextData.offNextArgsBegin = prevStackTop;
+				cur_major_frame->resumable_context_data.off_next_args_begin = prev_stack_top;
 			}
-			curMajorFrame->resumableContextData.offNextArgs = newOff;
-			++curMajorFrame->resumableContextData.nNextArgs;
+			cur_major_frame->resumable_context_data.off_next_args = new_off;
+			++cur_major_frame->resumable_context_data.num_next_args;
 			break;
 		}
 		case Opcode::PUSHAP:
@@ -2339,39 +2339,39 @@ InternalExceptionPointer Runtime::_execIns(ContextObject *const context, MajorFr
 		case Opcode::MCALL:
 		case Opcode::CALL: {
 			FnOverloadingObject *fn;
-			Object *thisObject = nullptr;
+			Object *this_object = nullptr;
 
 			switch (opcode) {
 				case Opcode::CTORCALL:
 				case Opcode::MCALL: {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<false, 2>(this, output, nOperands));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<false, 2>(this, output, num_operands));
 
-					Value fnValue;
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, operands[0], fnValue));
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::Reference>(this, fnValue));
-					const Reference &fnObjectRef = fnValue.getReference();
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkObjectRefOperandType<ReferenceKind::ObjectRef>(this, fnObjectRef));
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkObjectOperandType<ObjectKind::FnOverloading>(this, fnObjectRef.asObject));
-					fn = (FnOverloadingObject *)fnObjectRef.asObject;
+					Value fn_value;
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand(this, data_stack, stack_size, cur_major_frame, operands[0], fn_value));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_type<ValueType::Reference>(this, fn_value));
+					const Reference &fn_object_ref = fn_value.get_reference();
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_object_ref_operand_type<ReferenceKind::ObjectRef>(this, fn_object_ref));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_object_operand_type<ObjectKind::FnOverloading>(this, fn_object_ref.as_object));
+					fn = (FnOverloadingObject *)fn_object_ref.as_object;
 
-					const Value *thisObjectValue;
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[1], thisObjectValue));
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::Reference>(this, *thisObjectValue));
-					const Reference &thisObjectRef = thisObjectValue->getReference();
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkObjectRefOperandType<ReferenceKind::ObjectRef>(this, thisObjectRef));
-					thisObject = thisObjectRef.asObject;
+					const Value *this_object_value;
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], this_object_value));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_type<ValueType::Reference>(this, *this_object_value));
+					const Reference &this_object_ref = this_object_value->get_reference();
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_object_ref_operand_type<ReferenceKind::ObjectRef>(this, this_object_ref));
+					this_object = this_object_ref.as_object;
 					break;
 				}
 				case Opcode::CALL: {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<false, 1>(this, output, nOperands));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<false, 1>(this, output, num_operands));
 
-					const Value *fnValue;
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[0], fnValue));
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::Reference>(this, *fnValue));
-					const Reference &fnObjectRef = fnValue->getReference();
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkObjectRefOperandType<ReferenceKind::ObjectRef>(this, fnObjectRef));
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkObjectOperandType<ObjectKind::FnOverloading>(this, fnObjectRef.asObject));
-					fn = (FnOverloadingObject *)fnObjectRef.asObject;
+					const Value *fn_value;
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], fn_value));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_type<ValueType::Reference>(this, *fn_value));
+					const Reference &fn_object_ref = fn_value->get_reference();
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_object_ref_operand_type<ReferenceKind::ObjectRef>(this, fn_object_ref));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_object_operand_type<ObjectKind::FnOverloading>(this, fn_object_ref.as_object));
+					fn = (FnOverloadingObject *)fn_object_ref.as_object;
 					break;
 				}
 				default:
@@ -2379,149 +2379,149 @@ InternalExceptionPointer Runtime::_execIns(ContextObject *const context, MajorFr
 			}
 
 			if (!fn)
-				return allocOutOfMemoryErrorIfAllocFailed(NullRefError::alloc(getFixedAlloc()));
+				return alloc_out_of_memory_error_if_alloc_failed(NullRefError::alloc(get_fixed_alloc()));
 
-			ResumableContextData &resumableContextData = curMajorFrame->resumableContextData;
+			ResumableContextData &resumable_context_data = cur_major_frame->resumable_context_data;
 
-			if (fn->returnType.typeId == TypeId::StructInstance) {
+			if (fn->return_type.type_id == TypeId::StructInstance) {
 				if (output != UINT32_MAX) {
 					// TODO: Untested!!!
-					Reference allocaRef;
+					Reference alloca_ref;
 
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _addLocalVar(&context->getContext(), curMajorFrame, fn->returnType, output, allocaRef));
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, stackSize, curMajorFrame, output, allocaRef));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _add_local_var(&context->get_context(), cur_major_frame, fn->return_type, output, alloca_ref));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _set_register_value(this, data_stack, stack_size, cur_major_frame, output, alloca_ref));
 
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _createNewMajorFrame(
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _create_new_major_frame(
 																	context,
-																	thisObject,
+																	this_object,
 																	fn,
 																	nullptr,
-																	curMajorFrame->curCoroutine
-																		? resumableContextData.offNextArgs + curMajorFrame->curCoroutine->offStackTop
-																		: resumableContextData.offNextArgs,
-																	curMajorFrame->resumableContextData.nNextArgs,
+																	cur_major_frame->cur_coroutine
+																		? resumable_context_data.off_next_args + cur_major_frame->cur_coroutine->off_stack_top
+																		: resumable_context_data.off_next_args,
+																	cur_major_frame->resumable_context_data.num_next_args,
 																	UINT32_MAX,
-																	&allocaRef));
+																	&alloca_ref));
 				} else
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _createNewMajorFrame(
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _create_new_major_frame(
 																	context,
-																	thisObject,
+																	this_object,
 																	fn,
 																	nullptr,
-																	curMajorFrame->curCoroutine
-																		? resumableContextData.offNextArgs + curMajorFrame->curCoroutine->offStackTop
-																		: resumableContextData.offNextArgs,
-																	resumableContextData.nNextArgs,
+																	cur_major_frame->cur_coroutine
+																		? resumable_context_data.off_next_args + cur_major_frame->cur_coroutine->off_stack_top
+																		: resumable_context_data.off_next_args,
+																	resumable_context_data.num_next_args,
 																	output,
 																	nullptr));
 			} else {
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _createNewMajorFrame(
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _create_new_major_frame(
 																context,
-																thisObject,
+																this_object,
 																fn,
 																nullptr,
-																curMajorFrame->curCoroutine
-																	? resumableContextData.offNextArgs + curMajorFrame->curCoroutine->offStackTop
-																	: resumableContextData.offNextArgs,
-																resumableContextData.nNextArgs,
+																cur_major_frame->cur_coroutine
+																	? resumable_context_data.off_next_args + cur_major_frame->cur_coroutine->off_stack_top
+																	: resumable_context_data.off_next_args,
+																resumable_context_data.num_next_args,
 																output,
 																nullptr));
 			}
 
-			resumableContextData.offNextArgs = SIZE_MAX;
-			resumableContextData.nNextArgs = 0;
+			resumable_context_data.off_next_args = SIZE_MAX;
+			resumable_context_data.num_next_args = 0;
 
-			isContextChangedOut = true;
+			is_context_changed_out = true;
 			break;
 		}
 		case Opcode::RET: {
-			const uint32_t returnValueOutReg = curMajorFrame->returnValueOutReg;
+			const uint32_t return_value_out_reg = cur_major_frame->return_value_out_reg;
 
-			const Value *returnValue;
+			const Value *return_value;
 
-			switch (nOperands) {
+			switch (num_operands) {
 				case 0:
 					break;
 				case 1:
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[0], returnValue));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], return_value));
 					break;
 				default:
-					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
-			if (CoroutineObject *co = curMajorFrame->curCoroutine; co) {
-				co->resumable = std::move(curMajorFrame->resumableContextData);
+			if (CoroutineObject *co = cur_major_frame->cur_coroutine; co) {
+				co->resumable = std::move(cur_major_frame->resumable_context_data);
 				// TODO: Implement returning structure.
-				if (returnValue->valueType != ValueType::Invalid)
-					co->finalResult = returnValue;
-				co->setDone();
+				if (return_value->value_type != ValueType::Invalid)
+					co->final_result = return_value;
+				co->set_done();
 			}
 
-			TypeRef returnType = curMajorFrame->curFn->returnType;
+			TypeRef return_type = cur_major_frame->cur_fn->return_type;
 
-			if ((!returnValue) || returnValue->valueType == ValueType::Invalid) {
-				if (returnType.typeId != TypeId::Void)
+			if ((!return_value) || return_value->value_type == ValueType::Invalid) {
+				if (return_type.type_id != TypeId::Void)
 					// TODO: Handle this.
 					std::terminate();
-				if (returnValueOutReg != UINT32_MAX)
-					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
-				_leaveMajorFrame(&context->getContext());
+				if (return_value_out_reg != UINT32_MAX)
+					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+				_leave_major_frame(&context->get_context());
 			} else {
-				if (!isCompatible(returnType, *returnValue))
+				if (!is_compatible(return_type, *return_value))
 					// TODO: Handle this.
 					std::terminate();
-				_leaveMajorFrame(&context->getContext());
-				if (returnType.typeId == TypeId::StructInstance) {
-					writeVar(curMajorFrame->returnStructRef, *returnValue);
-				} else if (returnValueOutReg != UINT32_MAX) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, stackSize, _fetchMajorFrame(&context->getContext(), curMajorFrame->offPrevFrame), returnValueOutReg, *returnValue));
+				_leave_major_frame(&context->get_context());
+				if (return_type.type_id == TypeId::StructInstance) {
+					write_var(cur_major_frame->return_struct_ref, *return_value);
+				} else if (return_value_out_reg != UINT32_MAX) {
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _set_register_value(this, data_stack, stack_size, _fetch_major_frame(&context->get_context(), cur_major_frame->off_prev_frame), return_value_out_reg, *return_value));
 				}
 			}
 
-			isContextChangedOut = true;
+			is_context_changed_out = true;
 			return {};
 		}
 		case Opcode::COCALL:
 		case Opcode::COMCALL: {
 			// stub
 			FnOverloadingObject *fn;
-			Object *thisObject = nullptr;
-			uint32_t returnValueOutputReg = UINT32_MAX;
+			Object *this_object = nullptr;
+			uint32_t return_value_output_reg = UINT32_MAX;
 
 			if (output != UINT32_MAX) {
-				returnValueOutputReg = output;
+				return_value_output_reg = output;
 			}
 
 			switch (opcode) {
 				case Opcode::COMCALL: {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<false, 2>(this, output, nOperands));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<false, 2>(this, output, num_operands));
 
-					Value fnValue;
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, operands[0], fnValue));
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::Reference>(this, fnValue));
-					const Reference &fnObjectRef = fnValue.getReference();
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkObjectRefOperandType<ReferenceKind::ObjectRef>(this, fnObjectRef));
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkObjectOperandType<ObjectKind::FnOverloading>(this, fnObjectRef.asObject));
-					fn = (FnOverloadingObject *)fnObjectRef.asObject;
+					Value fn_value;
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand(this, data_stack, stack_size, cur_major_frame, operands[0], fn_value));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_type<ValueType::Reference>(this, fn_value));
+					const Reference &fn_object_ref = fn_value.get_reference();
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_object_ref_operand_type<ReferenceKind::ObjectRef>(this, fn_object_ref));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_object_operand_type<ObjectKind::FnOverloading>(this, fn_object_ref.as_object));
+					fn = (FnOverloadingObject *)fn_object_ref.as_object;
 
-					Value thisObjectValue;
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, operands[1], thisObjectValue));
-					const Reference &thisObjectRef = thisObjectValue.getReference();
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::Reference>(this, thisObjectValue));
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkObjectRefOperandType<ReferenceKind::ObjectRef>(this, thisObjectRef));
-					thisObject = thisObjectRef.asObject;
+					Value this_object_value;
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand(this, data_stack, stack_size, cur_major_frame, operands[1], this_object_value));
+					const Reference &this_object_ref = this_object_value.get_reference();
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_type<ValueType::Reference>(this, this_object_value));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_object_ref_operand_type<ReferenceKind::ObjectRef>(this, this_object_ref));
+					this_object = this_object_ref.as_object;
 					break;
 				}
 				case Opcode::COCALL: {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<false, 1>(this, output, nOperands));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<false, 1>(this, output, num_operands));
 
-					Value fnValue;
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, operands[0], fnValue));
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::Reference>(this, fnValue));
-					const Reference &fnObjectRef = fnValue.getReference();
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkObjectRefOperandType<ReferenceKind::ObjectRef>(this, fnObjectRef));
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkObjectOperandType<ObjectKind::FnOverloading>(this, fnObjectRef.asObject));
-					fn = (FnOverloadingObject *)fnObjectRef.asObject;
+					Value fn_value;
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand(this, data_stack, stack_size, cur_major_frame, operands[0], fn_value));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_type<ValueType::Reference>(this, fn_value));
+					const Reference &fn_object_ref = fn_value.get_reference();
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_object_ref_operand_type<ReferenceKind::ObjectRef>(this, fn_object_ref));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_object_operand_type<ObjectKind::FnOverloading>(this, fn_object_ref.as_object));
+					fn = (FnOverloadingObject *)fn_object_ref.as_object;
 					break;
 				}
 				default:
@@ -2529,372 +2529,372 @@ InternalExceptionPointer Runtime::_execIns(ContextObject *const context, MajorFr
 			}
 
 			if (!fn) {
-				return allocOutOfMemoryErrorIfAllocFailed(NullRefError::alloc(getFixedAlloc()));
+				return alloc_out_of_memory_error_if_alloc_failed(NullRefError::alloc(get_fixed_alloc()));
 			}
 
 			HostObjectRef<CoroutineObject> co;
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, createCoroutineInstance(
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, create_coroutine_instance(
 															fn,
-															thisObject,
-															_fetchArgStack(context->getContext().dataStack, context->getContext().stackSize, curMajorFrame, curMajorFrame->resumableContextData.offNextArgs),
-															curMajorFrame->resumableContextData.nNextArgs,
+															this_object,
+															_fetch_arg_stack(context->get_context().data_stack, context->get_context().stack_size, cur_major_frame, cur_major_frame->resumable_context_data.off_next_args),
+															cur_major_frame->resumable_context_data.num_next_args,
 															co));
-			curMajorFrame->resumableContextData.offNextArgs = SIZE_MAX;
-			curMajorFrame->resumableContextData.nNextArgs = 0;
+			cur_major_frame->resumable_context_data.off_next_args = SIZE_MAX;
+			cur_major_frame->resumable_context_data.num_next_args = 0;
 
-			if (returnValueOutputReg != UINT32_MAX) {
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, stackSize, curMajorFrame, returnValueOutputReg, Reference(co.get())));
+			if (return_value_output_reg != UINT32_MAX) {
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _set_register_value(this, data_stack, stack_size, cur_major_frame, return_value_output_reg, Reference(co.get())));
 			}
 			break;
 		}
 		case Opcode::YIELD: {
-			if (!curMajorFrame->curCoroutine) {
+			if (!cur_major_frame->cur_coroutine) {
 				// TODO: Return an exception,
 				std::terminate();
 			}
 
-			uint32_t returnValueOutReg = curMajorFrame->returnValueOutReg;
-			Value returnValue = Value(ValueType::Invalid);
+			uint32_t return_value_out_reg = cur_major_frame->return_value_out_reg;
+			Value return_value = Value(ValueType::Invalid);
 
-			switch (nOperands) {
+			switch (num_operands) {
 				case 0:
 					break;
 				case 1:
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, operands[0], returnValue));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand(this, data_stack, stack_size, cur_major_frame, operands[0], return_value));
 					break;
 				default:
-					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
-			if (size_t szFrame = context->_context.stackTop - curMajorFrame->curCoroutine->offStackTop; szFrame) {
-				char *p = curMajorFrame->curCoroutine->allocStackData(szFrame);
+			if (size_t sz_frame = context->_context.stack_top - cur_major_frame->cur_coroutine->off_stack_top; sz_frame) {
+				char *p = cur_major_frame->cur_coroutine->alloc_stack_data(sz_frame);
 				if (!p) {
 					return OutOfMemoryError::alloc();
 				}
-				memcpy(p, calcStackAddr(context->_context.dataStack, context->_context.stackSize, context->_context.stackTop), szFrame);
+				memcpy(p, calc_stack_addr(context->_context.data_stack, context->_context.stack_size, context->_context.stack_top), sz_frame);
 			}
 
-			curMajorFrame->curCoroutine->unbindContext();
-			++curMajorFrame->resumableContextData.curIns;
+			cur_major_frame->cur_coroutine->unbind_context();
+			++cur_major_frame->resumable_context_data.cur_ins;
 
-			curMajorFrame->curCoroutine->offRegs = curMajorFrame->offRegs - curMajorFrame->curCoroutine->offStackTop;
-			curMajorFrame->curCoroutine->resumable = std::move(curMajorFrame->resumableContextData);
+			cur_major_frame->cur_coroutine->off_regs = cur_major_frame->off_regs - cur_major_frame->cur_coroutine->off_stack_top;
+			cur_major_frame->cur_coroutine->resumable = std::move(cur_major_frame->resumable_context_data);
 
-			if (returnValue == ValueType::Invalid) {
-				if (returnValueOutReg != UINT32_MAX) {
-					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+			if (return_value == ValueType::Invalid) {
+				if (return_value_out_reg != UINT32_MAX) {
+					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 				}
-				_leaveMajorFrame(&context->getContext());
+				_leave_major_frame(&context->get_context());
 			} else {
-				_leaveMajorFrame(&context->getContext());
-				MajorFrame *prevFrame = _fetchMajorFrame(&context->getContext(), curMajorFrame->offPrevFrame);
-				if (returnValueOutReg != UINT32_MAX) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, stackSize, prevFrame, returnValueOutReg, returnValue));
+				_leave_major_frame(&context->get_context());
+				MajorFrame *prev_frame = _fetch_major_frame(&context->get_context(), cur_major_frame->off_prev_frame);
+				if (return_value_out_reg != UINT32_MAX) {
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _set_register_value(this, data_stack, stack_size, prev_frame, return_value_out_reg, return_value));
 				}
 			}
 
-			isContextChangedOut = true;
+			is_context_changed_out = true;
 			return {};
 		}
 		case Opcode::RESUME: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 1>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 1>(this, output, num_operands));
 
 			HostObjectRef<CoroutineObject> co;
 
-			Value fnValue;
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, operands[0], fnValue));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::Reference>(this, fnValue));
-			const Reference &fnObjectRef = fnValue.getReference();
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkObjectRefOperandType<ReferenceKind::ObjectRef>(this, fnObjectRef));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkObjectOperandType<ObjectKind::FnOverloading>(this, fnObjectRef.asObject));
-			co = (CoroutineObject *)fnObjectRef.asObject;
+			Value fn_value;
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand(this, data_stack, stack_size, cur_major_frame, operands[0], fn_value));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_type<ValueType::Reference>(this, fn_value));
+			const Reference &fn_object_ref = fn_value.get_reference();
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_object_ref_operand_type<ReferenceKind::ObjectRef>(this, fn_object_ref));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_object_operand_type<ObjectKind::FnOverloading>(this, fn_object_ref.as_object));
+			co = (CoroutineObject *)fn_object_ref.as_object;
 
-			if (co->isDone()) {
+			if (co->is_done()) {
 				if (output != UINT32_MAX) {
-					SLAKE_RETURN_IF_EXCEPT(_setRegisterValue(this, dataStack, stackSize, curMajorFrame, output, co->finalResult));
+					SLAKE_RETURN_IF_EXCEPT(_set_register_value(this, data_stack, stack_size, cur_major_frame, output, co->final_result));
 				}
 			} else {
-				if (co->overloading->returnType.typeId == TypeId::StructInstance) {
+				if (co->overloading->return_type.type_id == TypeId::StructInstance) {
 					Reference ref;
 
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _addLocalVar(&context->getContext(), curMajorFrame, co->overloading->returnType, output, ref));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _add_local_var(&context->get_context(), cur_major_frame, co->overloading->return_type, output, ref));
 
-					SLAKE_RETURN_IF_EXCEPT(_createNewCoroutineMajorFrame(&context->_context, co.get(), output, &ref));
+					SLAKE_RETURN_IF_EXCEPT(_create_new_coroutine_major_frame(&context->_context, co.get(), output, &ref));
 				} else
-					SLAKE_RETURN_IF_EXCEPT(_createNewCoroutineMajorFrame(&context->_context, co.get(), output, nullptr));
+					SLAKE_RETURN_IF_EXCEPT(_create_new_coroutine_major_frame(&context->_context, co.get(), output, nullptr));
 			}
 
-			isContextChangedOut = true;
+			is_context_changed_out = true;
 			break;
 		}
 		case Opcode::CODONE: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 1>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 1>(this, output, num_operands));
 
 			HostObjectRef<CoroutineObject> co;
 
-			Value fnValue;
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, operands[0], fnValue));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::Reference>(this, fnValue));
-			const Reference &fnObjectRef = fnValue.getReference();
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkObjectRefOperandType<ReferenceKind::ObjectRef>(this, fnObjectRef));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkObjectOperandType<ObjectKind::FnOverloading>(this, fnObjectRef.asObject));
-			co = (CoroutineObject *)fnObjectRef.asObject;
+			Value fn_value;
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand(this, data_stack, stack_size, cur_major_frame, operands[0], fn_value));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_type<ValueType::Reference>(this, fn_value));
+			const Reference &fn_object_ref = fn_value.get_reference();
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_object_ref_operand_type<ReferenceKind::ObjectRef>(this, fn_object_ref));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_object_operand_type<ObjectKind::FnOverloading>(this, fn_object_ref.as_object));
+			co = (CoroutineObject *)fn_object_ref.as_object;
 
-			SLAKE_RETURN_IF_EXCEPT(_setRegisterValue(this, dataStack, stackSize, curMajorFrame, output, co->isDone()));
+			SLAKE_RETURN_IF_EXCEPT(_set_register_value(this, data_stack, stack_size, cur_major_frame, output, co->is_done()));
 			break;
 		}
 		case Opcode::LTHIS: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 0>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 0>(this, output, num_operands));
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, stackSize, curMajorFrame, output, Reference(curMajorFrame->resumableContextData.thisObject)));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _set_register_value(this, data_stack, stack_size, cur_major_frame, output, Reference(cur_major_frame->resumable_context_data.this_object)));
 			break;
 		}
 		case Opcode::NEW: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 1>(this, output, nOperands));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::TypeName>(this, operands[0]));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 1>(this, output, num_operands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_type<ValueType::TypeName>(this, operands[0]));
 
-			TypeRef type = operands[0].getTypeName();
+			TypeRef type = operands[0].get_type_name();
 
-			switch (type.typeId) {
+			switch (type.type_id) {
 				case TypeId::Instance: {
-					ClassObject *cls = (ClassObject *)(type.getCustomTypeDef())->typeObject;
-					HostObjectRef<InstanceObject> instance = newClassInstance(cls, 0);
+					ClassObject *cls = (ClassObject *)(type.get_custom_type_def())->type_object;
+					HostObjectRef<InstanceObject> instance = new_class_instance(cls, 0);
 					if (!instance)
 						// TODO: Return more detail exceptions.
-						return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, stackSize, curMajorFrame, output, Reference(instance.get())));
+						return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _set_register_value(this, data_stack, stack_size, cur_major_frame, output, Reference(instance.get())));
 					break;
 				}
 				default:
-					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			break;
 		}
 		case Opcode::ARRNEW: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 2>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 2>(this, output, num_operands));
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::TypeName>(this, operands[0]));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::U32>(this, operands[1]));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_type<ValueType::TypeName>(this, operands[0]));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_type<ValueType::U32>(this, operands[1]));
 
-			TypeRef type = operands[0].getTypeName();
-			uint32_t size = operands[1].getU32();
+			TypeRef type = operands[0].get_type_name();
+			uint32_t size = operands[1].get_u32();
 
-			auto instance = newArrayInstance(this, type, size);
+			auto instance = new_array_instance(this, type, size);
 			if (!instance)
 				// TODO: Return more detailed exceptions.
-				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, stackSize, curMajorFrame, output, Reference(instance.get())));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _set_register_value(this, data_stack, stack_size, cur_major_frame, output, Reference(instance.get())));
 
 			break;
 		}
 		// case Opcode::THROW: {
 		//  TODO: Implement it.
-		//  return allocOutOfMemoryErrorIfAllocFailed(UncaughtExceptionError::alloc(getFixedAlloc(), x));
+		//  return alloc_out_of_memory_error_if_alloc_failed(UncaughtExceptionError::alloc(get_fixed_alloc(), x));
 		//}
 		case Opcode::PUSHEH: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<false, 2>(this, output, nOperands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<false, 2>(this, output, num_operands));
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::TypeName>(this, operands[0]));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::U32>(this, operands[1]));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_type<ValueType::TypeName>(this, operands[0]));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_type<ValueType::U32>(this, operands[1]));
 
-			MinorFrame *mf = _fetchMinorFrame(&context->getContext(), curMajorFrame, curMajorFrame->resumableContextData.offCurMinorFrame);
+			MinorFrame *mf = _fetch_minor_frame(&context->get_context(), cur_major_frame, cur_major_frame->resumable_context_data.off_cur_minor_frame);
 
-			if (!context->_context.alignedStackAlloc(sizeof(ExceptHandler), alignof(ExceptHandler)))
-				return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(getFixedAlloc()));
+			if (!context->_context.aligned_stack_alloc(sizeof(ExceptHandler), alignof(ExceptHandler)))
+				return alloc_out_of_memory_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
 
-			size_t ehStackOff = context->_context.stackTop;
+			size_t eh_stack_off = context->_context.stack_top;
 
-			if (curMajorFrame->curCoroutine) {
-				ehStackOff -= curMajorFrame->curCoroutine->offStackTop;
+			if (cur_major_frame->cur_coroutine) {
+				eh_stack_off -= cur_major_frame->cur_coroutine->off_stack_top;
 			}
 
-			ExceptHandler *eh = _fetchExceptHandler(&context->getContext(), curMajorFrame, context->getContext().stackTop);
+			ExceptHandler *eh = _fetch_except_handler(&context->get_context(), cur_major_frame, context->get_context().stack_top);
 
-			eh->type = operands[0].getTypeName();
-			eh->offNext = mf->offExceptHandler;
+			eh->type = operands[0].get_type_name();
+			eh->off_next = mf->off_except_handler;
 
-			mf->offExceptHandler = ehStackOff;
+			mf->off_except_handler = eh_stack_off;
 			break;
 		}
 		case Opcode::CAST: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount<true, 2>(this, output, nOperands));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::TypeName>(this, operands[0]));
-			if (!_isRegisterValid(curMajorFrame, output)) {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 2>(this, output, num_operands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_type<ValueType::TypeName>(this, operands[0]));
+			if (!_is_register_valid(cur_major_frame, output)) {
 				// The register does not present.
-				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
 			const Value *v;
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperandIntoPtr(this, dataStack, stackSize, curMajorFrame, operands[1], v));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], v));
 
-			auto t = operands[0].getTypeName();
-			Value &valueOut = *_calcRegPtr(dataStack, stackSize, curMajorFrame, output);
+			auto t = operands[0].get_type_name();
+			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
 
-			switch (t.typeId) {
+			switch (t.type_id) {
 				case TypeId::I8:
-					_castToLiteralValue<int8_t>(t.isNullable(), *v, valueOut);
+					_cast_to_literal_value<int8_t>(t.is_nullable(), *v, value_out);
 					break;
 				case TypeId::I16:
-					_castToLiteralValue<int16_t>(t.isNullable(), *v, valueOut);
+					_cast_to_literal_value<int16_t>(t.is_nullable(), *v, value_out);
 					break;
 				case TypeId::I32:
-					_castToLiteralValue<int32_t>(t.isNullable(), *v, valueOut);
+					_cast_to_literal_value<int32_t>(t.is_nullable(), *v, value_out);
 					break;
 				case TypeId::I64:
-					_castToLiteralValue<int64_t>(t.isNullable(), *v, valueOut);
+					_cast_to_literal_value<int64_t>(t.is_nullable(), *v, value_out);
 					break;
 				case TypeId::U8:
-					_castToLiteralValue<uint8_t>(t.isNullable(), *v, valueOut);
+					_cast_to_literal_value<uint8_t>(t.is_nullable(), *v, value_out);
 					break;
 				case TypeId::U16:
-					_castToLiteralValue<uint16_t>(t.isNullable(), *v, valueOut);
+					_cast_to_literal_value<uint16_t>(t.is_nullable(), *v, value_out);
 					break;
 				case TypeId::U32:
-					_castToLiteralValue<uint32_t>(t.isNullable(), *v, valueOut);
+					_cast_to_literal_value<uint32_t>(t.is_nullable(), *v, value_out);
 					break;
 				case TypeId::U64:
-					_castToLiteralValue<uint64_t>(t.isNullable(), *v, valueOut);
+					_cast_to_literal_value<uint64_t>(t.is_nullable(), *v, value_out);
 					break;
 				case TypeId::Bool:
-					_castToLiteralValue<bool>(t.isNullable(), *v, valueOut);
+					_cast_to_literal_value<bool>(t.is_nullable(), *v, value_out);
 					break;
 				case TypeId::F32:
-					_castToLiteralValue<float>(t.isNullable(), *v, valueOut);
+					_cast_to_literal_value<float>(t.is_nullable(), *v, value_out);
 					break;
 				case TypeId::F64:
-					_castToLiteralValue<double>(t.isNullable(), *v, valueOut);
+					_cast_to_literal_value<double>(t.is_nullable(), *v, value_out);
 					break;
 				case TypeId::Instance:
-					valueOut.asReference = v->getReference();
-					valueOut.valueType = ValueType::Reference;
+					value_out.as_reference = v->get_reference();
+					value_out.value_type = ValueType::Reference;
 					break;
 				default:
-					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
 			break;
 		}
 		case Opcode::PHI: {
 			if (output == UINT32_MAX) {
-				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
-			if ((nOperands < 2) || ((nOperands & 1))) {
-				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+			if ((num_operands < 2) || ((num_operands & 1))) {
+				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
 			Value v;
 
-			for (size_t i = 0; i < nOperands; i += 2) {
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType<ValueType::U32>(this, operands[i]));
+			for (size_t i = 0; i < num_operands; i += 2) {
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_type<ValueType::U32>(this, operands[i]));
 
-				uint32_t off = operands[i].getU32();
+				uint32_t off = operands[i].get_u32();
 
-				if (off == curMajorFrame->resumableContextData.lastJumpSrc) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, stackSize, curMajorFrame, operands[i + 1], v));
+				if (off == cur_major_frame->resumable_context_data.last_jump_src) {
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand(this, data_stack, stack_size, cur_major_frame, operands[i + 1], v));
 
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, stackSize, curMajorFrame, output, v));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _set_register_value(this, data_stack, stack_size, cur_major_frame, output, v));
 
 					goto succeeded;
 				}
 			}
 
-			return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+			return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 
 		succeeded:
 			break;
 		}
 		default:
-			return allocOutOfMemoryErrorIfAllocFailed(InvalidOpcodeError::alloc(getFixedAlloc(), opcode));
+			return alloc_out_of_memory_error_if_alloc_failed(InvalidOpcodeError::alloc(get_fixed_alloc(), opcode));
 	}
-	++curMajorFrame->resumableContextData.curIns;
+	++cur_major_frame->resumable_context_data.cur_ins;
 	return {};
 }
 
-SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) noexcept {
-	size_t initialMajorFrameDepth = context->_context.nMajorFrames;
-	InternalExceptionPointer exceptPtr;
-	ExecutionRunnable *const managedThread = managedThreadRunnables.at(currentThreadHandle());
+SLAKE_API InternalExceptionPointer Runtime::exec_context(ContextObject *context) noexcept {
+	size_t initial_major_frame_depth = context->_context.num_major_frames;
+	InternalExceptionPointer except_ptr;
+	ExecutionRunnable *const managed_thread = managed_thread_runnables.at(current_thread_handle());
 
-	while (context->getContext().nMajorFrames >= initialMajorFrameDepth) {
-		MajorFrame *const curMajorFrame = _fetchMajorFrame(&context->getContext(), context->getContext().offCurMajorFrame);
-		const FnOverloadingObject *const curFn = curMajorFrame->curFn;
+	while (context->get_context().num_major_frames >= initial_major_frame_depth) {
+		MajorFrame *const cur_major_frame = _fetch_major_frame(&context->get_context(), context->get_context().off_cur_major_frame);
+		const FnOverloadingObject *const cur_fn = cur_major_frame->cur_fn;
 
-		if (!curFn) {
+		if (!cur_fn) {
 			break;
 		}
 
 		// Pause if the runtime is in GC
 		/*while (_flags & _RT_INGC)
-			yieldCurrentThread();*/
+			yield_current_thread();*/
 
-		switch (curFn->overloadingKind) {
+		switch (cur_fn->overloading_kind) {
 			case FnOverloadingKind::Regular: {
-				const RegularFnOverloadingObject *const ol = (RegularFnOverloadingObject *)curFn;
+				const RegularFnOverloadingObject *const ol = (RegularFnOverloadingObject *)cur_fn;
 
-				const size_t nIns = ol->instructions.size();
+				const size_t num_ins = ol->instructions.size();
 
-				bool isContextChanged = false;
-				while (!isContextChanged) {
-					const size_t idxCurIns = curMajorFrame->resumableContextData.curIns;
-					if (idxCurIns >=
-						nIns) {
+				bool is_context_changed = false;
+				while (!is_context_changed) {
+					const size_t idx_cur_ins = cur_major_frame->resumable_context_data.cur_ins;
+					if (idx_cur_ins >=
+						num_ins) {
 						// Raise out of fn body error.
 						std::terminate();
 					}
 
 					// Interrupt execution if the thread is explicitly specified to be killed.
-					if (managedThread->status == ThreadStatus::Dead) {
+					if (managed_thread->status == ThreadStatus::Dead) {
 						return {};
 					}
 
-					if ((fixedAlloc.szAllocated > _szComputedGcLimit)) {
+					if ((fixed_alloc.sz_allocated > _sz_computed_gc_limit)) {
 						gc();
 					}
 
-					const Instruction *const instruction = ol->instructions.data() + idxCurIns;
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _execIns(context, curMajorFrame, instruction->opcode, instruction->output, instruction->nOperands, instruction->operands, isContextChanged));
+					const Instruction *const instruction = ol->instructions.data() + idx_cur_ins;
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _exec_ins(context, cur_major_frame, instruction->opcode, instruction->output, instruction->num_operands, instruction->operands, is_context_changed));
 				}
 
 				break;
 			}
 			case FnOverloadingKind::Native: {
-				NativeFnOverloadingObject *ol = (NativeFnOverloadingObject *)curFn;
+				NativeFnOverloadingObject *ol = (NativeFnOverloadingObject *)cur_fn;
 
-				MinorFrame *mf = _fetchMinorFrame(&context->getContext(), curMajorFrame, curMajorFrame->resumableContextData.offCurMinorFrame);
-				const Value *args = _fetchArgStack(
-					context->getContext().dataStack,
-					context->getContext().stackSize,
-					curMajorFrame,
-					curMajorFrame->resumableContextData.offArgs);
-				Value returnValue;
+				MinorFrame *mf = _fetch_minor_frame(&context->get_context(), cur_major_frame, cur_major_frame->resumable_context_data.off_cur_minor_frame);
+				const Value *args = _fetch_arg_stack(
+					context->get_context().data_stack,
+					context->get_context().stack_size,
+					cur_major_frame,
+					cur_major_frame->resumable_context_data.off_args);
+				Value return_value;
 				{
-					peff::ScopeGuard decRefArgsGuard([this, curMajorFrame, args]() noexcept {
-						for (size_t i = 0; i < curMajorFrame->resumableContextData.nArgs; ++i) {
-							if (args[i].isReference()) {
-								const Reference &ref = args[i].getReference();
-								if (ref.isObjectRef())
-									ref.getObjectRef()->decHostRef();
+					peff::ScopeGuard dec_ref_args_guard([this, cur_major_frame, args]() noexcept {
+						for (size_t i = 0; i < cur_major_frame->resumable_context_data.num_args; ++i) {
+							if (args[i].is_reference()) {
+								const Reference &ref = args[i].get_reference();
+								if (ref.is_object_ref())
+									ref.get_object_ref()->dec_host_ref();
 							}
 						}
 					});
-					for (size_t i = 0; i < curMajorFrame->resumableContextData.nArgs; ++i) {
-						if (args[i].isReference()) {
-							const Reference &ref = args[i].getReference();
-							if (ref.isObjectRef())
-								ref.getObjectRef()->incHostRef();
+					for (size_t i = 0; i < cur_major_frame->resumable_context_data.num_args; ++i) {
+						if (args[i].is_reference()) {
+							const Reference &ref = args[i].get_reference();
+							if (ref.is_object_ref())
+								ref.get_object_ref()->inc_host_ref();
 						}
 					}
-					returnValue = ol->callback(
-						&context->getContext(),
-						curMajorFrame);
+					return_value = ol->callback(
+						&context->get_context(),
+						cur_major_frame);
 				}
-				uint32_t returnValueOutReg = curMajorFrame->returnValueOutReg;
-				_leaveMajorFrame(&context->getContext());
-				if (returnValueOutReg != UINT32_MAX) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, context->_context.dataStack, context->_context.stackSize, curMajorFrame, returnValueOutReg, returnValue));
+				uint32_t return_value_out_reg = cur_major_frame->return_value_out_reg;
+				_leave_major_frame(&context->get_context());
+				if (return_value_out_reg != UINT32_MAX) {
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _set_register_value(this, context->_context.data_stack, context->_context.stack_size, cur_major_frame, return_value_out_reg, return_value));
 				}
 
 				break;
@@ -2908,101 +2908,101 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 	return {};
 }
 
-SLAKE_API InternalExceptionPointer Runtime::execFn(
+SLAKE_API InternalExceptionPointer Runtime::exec_fn(
 	const FnOverloadingObject *overloading,
-	ContextObject *prevContext,
-	Object *thisObject,
+	ContextObject *prev_context,
+	Object *this_object,
 	const Value *args,
-	uint32_t nArgs,
-	Value &valueOut) {
-	HostObjectRef<ContextObject> context(prevContext);
+	uint32_t num_args,
+	Value &value_out) {
+	HostObjectRef<ContextObject> context(prev_context);
 
-	Context &ctxt = context->getContext();
+	Context &ctxt = context->get_context();
 
-	SLAKE_RETURN_IF_EXCEPT(_createNewMajorFrame(prevContext, nullptr, nullptr, nullptr, SIZE_MAX, 0, UINT32_MAX, nullptr));
-	MajorFrame &bottomFrame = *_fetchMajorFrame(&ctxt, ctxt.offCurMajorFrame);
-	if (overloading->returnType.typeId == TypeId::StructInstance) {
-		Reference structRef;
-		SLAKE_RETURN_IF_EXCEPT(_addLocalVar(&ctxt, &bottomFrame, overloading->returnType, 0, structRef));
-		SLAKE_RETURN_IF_EXCEPT(_setRegisterValue(this, ctxt.dataStack, ctxt.stackSize, &bottomFrame, 0, Value(structRef)));
-		SLAKE_RETURN_IF_EXCEPT(_createNewMajorFrame(prevContext, thisObject, overloading, args, SIZE_MAX, nArgs, 0, &structRef));
+	SLAKE_RETURN_IF_EXCEPT(_create_new_major_frame(prev_context, nullptr, nullptr, nullptr, SIZE_MAX, 0, UINT32_MAX, nullptr));
+	MajorFrame &bottom_frame = *_fetch_major_frame(&ctxt, ctxt.off_cur_major_frame);
+	if (overloading->return_type.type_id == TypeId::StructInstance) {
+		Reference struct_ref;
+		SLAKE_RETURN_IF_EXCEPT(_add_local_var(&ctxt, &bottom_frame, overloading->return_type, 0, struct_ref));
+		SLAKE_RETURN_IF_EXCEPT(_set_register_value(this, ctxt.data_stack, ctxt.stack_size, &bottom_frame, 0, Value(struct_ref)));
+		SLAKE_RETURN_IF_EXCEPT(_create_new_major_frame(prev_context, this_object, overloading, args, SIZE_MAX, num_args, 0, &struct_ref));
 	} else {
-		SLAKE_RETURN_IF_EXCEPT(_createNewMajorFrame(prevContext, thisObject, overloading, args, SIZE_MAX, nArgs, 0, nullptr));
+		SLAKE_RETURN_IF_EXCEPT(_create_new_major_frame(prev_context, this_object, overloading, args, SIZE_MAX, num_args, 0, nullptr));
 	}
 
 	ExecutionRunnable runnable;
 
 	runnable.context = context;
 
-	if (!managedThreadRunnables.insert(currentThreadHandle(), &runnable)) {
+	if (!managed_thread_runnables.insert(current_thread_handle(), &runnable)) {
 		return OutOfMemoryError::alloc();
 	}
 
-	NativeThreadHandle threadHandle = currentThreadHandle();
+	NativeThreadHandle thread_handle = current_thread_handle();
 
-	peff::ScopeGuard removeManagedThreadRunnablesGuard([this, threadHandle]() noexcept {
-		managedThreadRunnables.remove(threadHandle);
+	peff::ScopeGuard remove_managed_thread_runnables_guard([this, thread_handle]() noexcept {
+		managed_thread_runnables.remove(thread_handle);
 	});
 
 	runnable.run();
 
-	InternalExceptionPointer exceptPtr = std::move(runnable.exceptPtr);
+	InternalExceptionPointer except_ptr = std::move(runnable.except_ptr);
 
-	return exceptPtr;
+	return except_ptr;
 }
 
-SLAKE_API InternalExceptionPointer Runtime::execFnWithSeparatedExecutionThread(
+SLAKE_API InternalExceptionPointer Runtime::exec_fn_with_separated_execution_thread(
 	const FnOverloadingObject *overloading,
-	ContextObject *prevContext,
-	Object *thisObject,
+	ContextObject *prev_context,
+	Object *this_object,
 	const Value *args,
-	uint32_t nArgs,
-	HostObjectRef<ContextObject> &contextOut) {
-	HostObjectRef<ContextObject> context(prevContext);
+	uint32_t num_args,
+	HostObjectRef<ContextObject> &context_out) {
+	HostObjectRef<ContextObject> context(prev_context);
 
-	Context &ctxt = context->getContext();
+	Context &ctxt = context->get_context();
 
-	SLAKE_RETURN_IF_EXCEPT(_createNewMajorFrame(prevContext, nullptr, nullptr, nullptr, SIZE_MAX, 0, UINT32_MAX, nullptr));
-	MajorFrame &bottomFrame = *_fetchMajorFrame(&ctxt, ctxt.offCurMajorFrame);
-	if (overloading->returnType.typeId == TypeId::StructInstance) {
-		Reference structRef;
-		SLAKE_RETURN_IF_EXCEPT(_addLocalVar(&ctxt, &bottomFrame, overloading->returnType, 0, structRef));
-		SLAKE_RETURN_IF_EXCEPT(_setRegisterValue(this, ctxt.dataStack, ctxt.stackSize, &bottomFrame, 0, Value(structRef)));
-		SLAKE_RETURN_IF_EXCEPT(_createNewMajorFrame(prevContext, thisObject, overloading, args, SIZE_MAX, nArgs, 0, &structRef));
+	SLAKE_RETURN_IF_EXCEPT(_create_new_major_frame(prev_context, nullptr, nullptr, nullptr, SIZE_MAX, 0, UINT32_MAX, nullptr));
+	MajorFrame &bottom_frame = *_fetch_major_frame(&ctxt, ctxt.off_cur_major_frame);
+	if (overloading->return_type.type_id == TypeId::StructInstance) {
+		Reference struct_ref;
+		SLAKE_RETURN_IF_EXCEPT(_add_local_var(&ctxt, &bottom_frame, overloading->return_type, 0, struct_ref));
+		SLAKE_RETURN_IF_EXCEPT(_set_register_value(this, ctxt.data_stack, ctxt.stack_size, &bottom_frame, 0, Value(struct_ref)));
+		SLAKE_RETURN_IF_EXCEPT(_create_new_major_frame(prev_context, this_object, overloading, args, SIZE_MAX, num_args, 0, &struct_ref));
 	} else {
-		SLAKE_RETURN_IF_EXCEPT(_createNewMajorFrame(prevContext, thisObject, overloading, args, SIZE_MAX, nArgs, 0, nullptr));
+		SLAKE_RETURN_IF_EXCEPT(_create_new_major_frame(prev_context, this_object, overloading, args, SIZE_MAX, num_args, 0, nullptr));
 	}
 
 	ExecutionRunnable runnable;
 
 	runnable.context = context;
 
-	if (!managedThreadRunnables.insert(currentThreadHandle(), &runnable)) {
+	if (!managed_thread_runnables.insert(current_thread_handle(), &runnable)) {
 		return OutOfMemoryError::alloc();
 	}
 
-	NativeThreadHandle threadHandle = currentThreadHandle();
+	NativeThreadHandle thread_handle = current_thread_handle();
 
-	peff::ScopeGuard removeManagedThreadRunnablesGuard([this, threadHandle]() noexcept {
-		managedThreadRunnables.remove(threadHandle);
+	peff::ScopeGuard remove_managed_thread_runnables_guard([this, thread_handle]() noexcept {
+		managed_thread_runnables.remove(thread_handle);
 	});
 
-	std::unique_ptr<Thread, peff::DeallocableDeleter<Thread>> t(Thread::alloc(getFixedAlloc(), &runnable, SLAKE_NATIVE_STACK_SIZE_MAX));
+	std::unique_ptr<Thread, peff::DeallocableDeleter<Thread>> t(Thread::alloc(get_fixed_alloc(), &runnable, SLAKE_NATIVE_STACK_SIZE_MAX));
 
 	t->join();
 
-	InternalExceptionPointer exceptPtr = std::move(runnable.exceptPtr);
+	InternalExceptionPointer except_ptr = std::move(runnable.except_ptr);
 
-	return exceptPtr;
+	return except_ptr;
 }
 
-SLAKE_API InternalExceptionPointer Runtime::createCoroutineInstance(
+SLAKE_API InternalExceptionPointer Runtime::create_coroutine_instance(
 	const FnOverloadingObject *fn,
-	Object *thisObject,
+	Object *this_object,
 	const Value *args,
-	uint32_t nArgs,
-	HostObjectRef<CoroutineObject> &coroutineOut) {
-	HostRefHolder holder(getFixedAlloc());
+	uint32_t num_args,
+	HostObjectRef<CoroutineObject> &coroutine_out) {
+	HostRefHolder holder(get_fixed_alloc());
 	HostObjectRef<CoroutineObject> co = CoroutineObject::alloc(this);
 
 	if (!co)
@@ -3010,46 +3010,46 @@ SLAKE_API InternalExceptionPointer Runtime::createCoroutineInstance(
 
 	co->overloading = fn;
 
-	MajorFrame newMajorFrame(this);
+	MajorFrame new_major_frame(this);
 
-	peff::constructAt<ResumableContextData>(&newMajorFrame.resumableContextData);
+	peff::construct_at<ResumableContextData>(&new_major_frame.resumable_context_data);
 
-	if (nArgs) {
-		char *p = co->allocStackData(sizeof(Value) * nArgs);
+	if (num_args) {
+		char *p = co->alloc_stack_data(sizeof(Value) * num_args);
 		if (!p)
 			return OutOfMemoryError::alloc();
 		// TODO: Check if the arguments and the parameters are matched.
-		memcpy(p, args, sizeof(Value) * nArgs);
+		memcpy(p, args, sizeof(Value) * num_args);
 	}
-	newMajorFrame.resumableContextData.thisObject = thisObject;
+	new_major_frame.resumable_context_data.this_object = this_object;
 
-	coroutineOut = co;
+	coroutine_out = co;
 	return {};
 }
 
-SLAKE_API InternalExceptionPointer Runtime::resumeCoroutine(
+SLAKE_API InternalExceptionPointer Runtime::resume_coroutine(
 	ContextObject *context,
 	CoroutineObject *coroutine,
-	Value &resultOut,
-	void *nativeStackBaseCurrentPtr,
-	size_t nativeStackSize) {
-	if (coroutine->isDone()) {
-		resultOut = coroutine->finalResult;
+	Value &result_out,
+	void *native_stack_base_current_ptr,
+	size_t native_stack_size) {
+	if (coroutine->is_done()) {
+		result_out = coroutine->final_result;
 		return {};
 	}
 
-	HostObjectRef<ContextObject> contextRef(context);
-	Context &ctxt = context->getContext();
+	HostObjectRef<ContextObject> context_ref(context);
+	Context &ctxt = context->get_context();
 
-	SLAKE_RETURN_IF_EXCEPT(_createNewMajorFrame(context, nullptr, nullptr, nullptr, SIZE_MAX, 0, UINT32_MAX, nullptr));
-	MajorFrame &bottomFrame = *_fetchMajorFrame(&ctxt, ctxt.offCurMajorFrame);
-	if (coroutine->overloading->returnType.typeId == TypeId::StructInstance) {
-		Reference structRef;
-		SLAKE_RETURN_IF_EXCEPT(_addLocalVar(&ctxt, &bottomFrame, coroutine->overloading->returnType, 0, structRef));
-		SLAKE_RETURN_IF_EXCEPT(_setRegisterValue(this, ctxt.dataStack, ctxt.stackSize, &bottomFrame, 0, Value(structRef)));
-		SLAKE_RETURN_IF_EXCEPT(_createNewCoroutineMajorFrame(&context->_context, coroutine, 0, &structRef));
+	SLAKE_RETURN_IF_EXCEPT(_create_new_major_frame(context, nullptr, nullptr, nullptr, SIZE_MAX, 0, UINT32_MAX, nullptr));
+	MajorFrame &bottom_frame = *_fetch_major_frame(&ctxt, ctxt.off_cur_major_frame);
+	if (coroutine->overloading->return_type.type_id == TypeId::StructInstance) {
+		Reference struct_ref;
+		SLAKE_RETURN_IF_EXCEPT(_add_local_var(&ctxt, &bottom_frame, coroutine->overloading->return_type, 0, struct_ref));
+		SLAKE_RETURN_IF_EXCEPT(_set_register_value(this, ctxt.data_stack, ctxt.stack_size, &bottom_frame, 0, Value(struct_ref)));
+		SLAKE_RETURN_IF_EXCEPT(_create_new_coroutine_major_frame(&context->_context, coroutine, 0, &struct_ref));
 	} else
-		SLAKE_RETURN_IF_EXCEPT(_createNewCoroutineMajorFrame(&context->_context, coroutine, 0, nullptr));
+		SLAKE_RETURN_IF_EXCEPT(_create_new_coroutine_major_frame(&context->_context, coroutine, 0, nullptr));
 
 	{
 		ExecutionRunnable runnable;
@@ -3057,30 +3057,30 @@ SLAKE_API InternalExceptionPointer Runtime::resumeCoroutine(
 		runnable.context = context;
 
 		{
-			if (!managedThreadRunnables.insert(currentThreadHandle(), &runnable)) {
-				_leaveMajorFrame(&context->getContext());
+			if (!managed_thread_runnables.insert(current_thread_handle(), &runnable)) {
+				_leave_major_frame(&context->get_context());
 
 				return OutOfMemoryError::alloc();
 			}
 
-			NativeThreadHandle threadHandle = currentThreadHandle();
+			NativeThreadHandle thread_handle = current_thread_handle();
 
-			peff::ScopeGuard removeManagedThreadRunnablesGuard([this, threadHandle]() noexcept {
-				managedThreadRunnables.remove(threadHandle);
+			peff::ScopeGuard remove_managed_thread_runnables_guard([this, thread_handle]() noexcept {
+				managed_thread_runnables.remove(thread_handle);
 			});
 
 			runnable.run();
 		}
 
-		InternalExceptionPointer exceptPtr = std::move(runnable.exceptPtr);
+		InternalExceptionPointer except_ptr = std::move(runnable.except_ptr);
 
-		if (exceptPtr) {
-			return exceptPtr;
+		if (except_ptr) {
+			return except_ptr;
 		}
 
-		resultOut = *_calcRegPtr(context->_context.dataStack, context->_context.stackSize, &bottomFrame, 0);
+		result_out = *_calc_reg_ptr(context->_context.data_stack, context->_context.stack_size, &bottom_frame, 0);
 
-		_leaveMajorFrame(&context->getContext());
+		_leave_major_frame(&context->get_context());
 	}
 
 	return {};

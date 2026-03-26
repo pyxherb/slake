@@ -7,7 +7,7 @@
 
 #define DEF_INS_BUFFER(name, ...) uint8_t name[] = { __VA_ARGS__ }
 #define REX_PREFIX(w, r, x, b) ((uint8_t)(0b01000000 | ((w) << 3) | ((r) << 2) | ((x) << 1) | (b)))
-#define MODRM_BYTE(mode, regOrOpcode, value) ((uint8_t)(((mode) << 6) | ((regOrOpcode) << 3) | (value)))
+#define MODRM_BYTE(mode, reg_or_opcode, value) ((uint8_t)(((mode) << 6) | ((reg_or_opcode) << 3) | (value)))
 
 namespace slake {
 	namespace jit {
@@ -38,20 +38,20 @@ namespace slake {
 			struct DiscreteInstruction {
 				union {
 					struct {
-						size_t szIns;
+						size_t sz_ins;
 						uint8_t buffer[16];
-					} asRawInsData;
+					} as_raw_ins_data;
 					struct {
 						void *dest;
-					} asJumpInsData;
+					} as_jump_ins_data;
 					struct {
 						void *dest;
-					} asCallInsData;
+					} as_call_ins_data;
 					struct {
 						const char *dest;
-					} asLabelledJumpInsData;
+					} as_labelled_jump_ins_data;
 				} data;
-				DiscreteInstructionType insType;
+				DiscreteInstructionType ins_type;
 			};
 
 			enum RegisterId : uint8_t {
@@ -118,48 +118,48 @@ namespace slake {
 				REG_MAX,
 			};
 
-			/// @brief The memory structure which represents x86-64 address in [base + disp + scaleIndex * scale]
+			/// @brief The memory structure which represents x86-64 address in [base + disp + scale_index * scale]
 			struct MemoryLocation {
 				RegisterId base;
 				int32_t disp;
-				RegisterId scaleIndex;
+				RegisterId scale_index;
 				uint8_t scale;
 			};
 
-			SLAKE_FORCEINLINE bool memoryToModRmAndSib(const MemoryLocation &mem, uint8_t &modRm, uint8_t &sib, uint8_t &rexPrefix) {
+			SLAKE_FORCEINLINE bool memory_to_mod_rm_and_sib(const MemoryLocation &mem, uint8_t &mod_rm, uint8_t &sib, uint8_t &rex_prefix) {
 				if (!mem.disp) {
-					modRm &= 0b00111000;
+					mod_rm &= 0b00111000;
 				} else if (mem.disp <= UINT8_MAX) {
-					modRm &= 0b01111000;
+					mod_rm &= 0b01111000;
 				} else {
-					modRm &= 0b10111000;
+					mod_rm &= 0b10111000;
 				}
 
 				if (mem.scale == REG_MAX) {
 					switch (mem.base) {
 						case REG_RAX:
-							modRm |= 0b00000000;
+							mod_rm |= 0b00000000;
 							break;
 						case REG_RCX:
-							modRm |= 0b00000001;
+							mod_rm |= 0b00000001;
 							break;
 						case REG_RDX:
-							modRm |= 0b00000010;
+							mod_rm |= 0b00000010;
 							break;
 						case REG_RBX:
-							modRm |= 0b00000011;
+							mod_rm |= 0b00000011;
 							break;
 						case REG_RBP:
 							if (!mem.disp) {
 								goto fallback;
 							}
-							modRm |= 0b00000101;
+							mod_rm |= 0b00000101;
 							break;
 						case REG_RSI:
-							modRm |= 0b00000110;
+							mod_rm |= 0b00000110;
 							break;
 						case REG_RDI:
-							modRm |= 0b00000111;
+							mod_rm |= 0b00000111;
 							break;
 						default:
 							goto fallback;
@@ -169,11 +169,11 @@ namespace slake {
 				}
 
 			fallback:
-				modRm |= 0b00000100;
+				mod_rm |= 0b00000100;
 
 				sib = 0;
 
-				switch (mem.scaleIndex) {
+				switch (mem.scale_index) {
 					case 0:
 						break;
 					case 1:
@@ -219,35 +219,35 @@ namespace slake {
 						sib |= 0b00000111;
 						break;
 					case REG_R8:
-						rexPrefix |= REX_PREFIX(0, 0, 0, 1);
+						rex_prefix |= REX_PREFIX(0, 0, 0, 1);
 						sib |= 0b00000000;
 						break;
 					case REG_R9:
-						rexPrefix |= REX_PREFIX(0, 0, 0, 1);
+						rex_prefix |= REX_PREFIX(0, 0, 0, 1);
 						sib |= 0b00000001;
 						break;
 					case REG_R10:
-						rexPrefix |= REX_PREFIX(0, 0, 0, 1);
+						rex_prefix |= REX_PREFIX(0, 0, 0, 1);
 						sib |= 0b00000010;
 						break;
 					case REG_R11:
-						rexPrefix |= REX_PREFIX(0, 0, 0, 1);
+						rex_prefix |= REX_PREFIX(0, 0, 0, 1);
 						sib |= 0b00000011;
 						break;
 					case REG_R12:
-						rexPrefix |= REX_PREFIX(0, 0, 0, 1);
+						rex_prefix |= REX_PREFIX(0, 0, 0, 1);
 						sib |= 0b00000100;
 						break;
 					case REG_R13:
-						rexPrefix |= REX_PREFIX(0, 0, 0, 1);
+						rex_prefix |= REX_PREFIX(0, 0, 0, 1);
 						sib |= 0b00000101;
 						break;
 					case REG_R14:
-						rexPrefix |= REX_PREFIX(0, 0, 0, 1);
+						rex_prefix |= REX_PREFIX(0, 0, 0, 1);
 						sib |= 0b00000110;
 						break;
 					case REG_R15:
-						rexPrefix |= REX_PREFIX(0, 0, 0, 1);
+						rex_prefix |= REX_PREFIX(0, 0, 0, 1);
 						sib |= 0b00000111;
 						break;
 					default:
@@ -255,7 +255,7 @@ namespace slake {
 						std::terminate();
 				}
 
-				switch (mem.scaleIndex) {
+				switch (mem.scale_index) {
 					case REG_RAX:
 						sib |= 0b00000000;
 						break;
@@ -281,35 +281,35 @@ namespace slake {
 						sib |= 0b00100000;
 						break;
 					case REG_R8:
-						rexPrefix |= REX_PREFIX(0, 0, 1, 0);
+						rex_prefix |= REX_PREFIX(0, 0, 1, 0);
 						sib |= 0b00000000;
 						break;
 					case REG_R9:
-						rexPrefix |= REX_PREFIX(0, 0, 1, 0);
+						rex_prefix |= REX_PREFIX(0, 0, 1, 0);
 						sib |= 0b00001000;
 						break;
 					case REG_R10:
-						rexPrefix |= REX_PREFIX(0, 0, 1, 0);
+						rex_prefix |= REX_PREFIX(0, 0, 1, 0);
 						sib |= 0b00010000;
 						break;
 					case REG_R11:
-						rexPrefix |= REX_PREFIX(0, 0, 1, 0);
+						rex_prefix |= REX_PREFIX(0, 0, 1, 0);
 						sib |= 0b00011000;
 						break;
 					case REG_R12:
-						rexPrefix |= REX_PREFIX(0, 0, 1, 0);
+						rex_prefix |= REX_PREFIX(0, 0, 1, 0);
 						sib |= 0b00100000;
 						break;
 					case REG_R13:
-						rexPrefix |= REX_PREFIX(0, 0, 1, 0);
+						rex_prefix |= REX_PREFIX(0, 0, 1, 0);
 						sib |= 0b00101000;
 						break;
 					case REG_R14:
-						rexPrefix |= REX_PREFIX(0, 0, 1, 0);
+						rex_prefix |= REX_PREFIX(0, 0, 1, 0);
 						sib |= 0b00110000;
 						break;
 					case REG_R15:
-						rexPrefix |= REX_PREFIX(0, 0, 1, 0);
+						rex_prefix |= REX_PREFIX(0, 0, 1, 0);
 						sib |= 0b00111000;
 						break;
 					default:

@@ -2,58 +2,58 @@
 
 using namespace slkc;
 
-static peff::Option<CompilationError> _determineWithCurrentSlot(
-	CompileEnv *compileEnv,
-	AstNodePtr<FnNode> fnSlot,
-	const AstNodePtr<TypeNameNode> *argTypes,
-	size_t nArgTypes,
-	bool isStatic,
-	peff::DynArray<AstNodePtr<FnOverloadingNode>> &matchedOverloadings,
-	peff::Set<AstNodePtr<MemberNode>> *walkedParents) {
-	SLKC_RETURN_IF_COMP_ERROR(checkStackBounds(1024 * 8));
+static peff::Option<CompilationError> _determine_with_current_slot(
+	CompileEnv *compile_env,
+	AstNodePtr<FnNode> fn_slot,
+	const AstNodePtr<TypeNameNode> *arg_types,
+	size_t num_arg_types,
+	bool is_static,
+	peff::DynArray<AstNodePtr<FnOverloadingNode>> &matched_overloadings,
+	peff::Set<AstNodePtr<MemberNode>> *walked_parents) {
+	SLKC_RETURN_IF_COMP_ERROR(check_stack_bounds(1024 * 8));
 
-	for (size_t i = 0; i < fnSlot->overloadings.size(); ++i) {
-		bool exactlyMatched = true;
-		AstNodePtr<FnOverloadingNode> currentOverloading = fnSlot->overloadings.at(i);
+	for (size_t i = 0; i < fn_slot->overloadings.size(); ++i) {
+		bool exactly_matched = true;
+		AstNodePtr<FnOverloadingNode> current_overloading = fn_slot->overloadings.at(i);
 
-		if (isStatic != ((currentOverloading->accessModifier & slake::ACCESS_STATIC) == slake::ACCESS_STATIC)) {
+		if (is_static != ((current_overloading->access_modifier & slake::ACCESS_STATIC) == slake::ACCESS_STATIC)) {
 			continue;
 		}
 
-		if (nArgTypes < currentOverloading->params.size()) {
+		if (num_arg_types < current_overloading->params.size()) {
 			continue;
-		} else if (nArgTypes > currentOverloading->params.size()) {
-			if (!(currentOverloading->fnFlags & FN_VARG)) {
+		} else if (num_arg_types > current_overloading->params.size()) {
+			if (!(current_overloading->fn_flags & FN_VARG)) {
 				continue;
 			}
 		}
 
-		for (size_t j = 0; j < currentOverloading->params.size(); ++j) {
-			AstNodePtr<VarNode> currentParam = currentOverloading->params.at(j);
+		for (size_t j = 0; j < current_overloading->params.size(); ++j) {
+			AstNodePtr<VarNode> current_param = current_overloading->params.at(j);
 
 			bool whether = false;
-			SLKC_RETURN_IF_COMP_ERROR(isSameType(currentParam->type, argTypes[j], whether));
+			SLKC_RETURN_IF_COMP_ERROR(is_same_type(current_param->type, arg_types[j], whether));
 
 			if (!whether) {
-				SLKC_RETURN_IF_COMP_ERROR(isConvertible(argTypes[j], currentParam->type, true, whether));
+				SLKC_RETURN_IF_COMP_ERROR(is_convertible(arg_types[j], current_param->type, true, whether));
 				if (!whether) {
 					goto mismatched;
 				}
-				exactlyMatched = false;
+				exactly_matched = false;
 			}
 		}
 
-		if (exactlyMatched) {
-			matchedOverloadings.clearAndShrink();
+		if (exactly_matched) {
+			matched_overloadings.clear_and_shrink();
 
-			if (!matchedOverloadings.pushBack(AstNodePtr<FnOverloadingNode>(currentOverloading))) {
-				return genOutOfMemoryCompError();
+			if (!matched_overloadings.push_back(AstNodePtr<FnOverloadingNode>(current_overloading))) {
+				return gen_out_of_memory_comp_error();
 			}
 
 			return {};
 		} else {
-			if (!matchedOverloadings.pushBack(AstNodePtr<FnOverloadingNode>(currentOverloading))) {
-				return genOutOfMemoryCompError();
+			if (!matched_overloadings.push_back(AstNodePtr<FnOverloadingNode>(current_overloading))) {
+				return gen_out_of_memory_comp_error();
 			}
 		}
 
@@ -62,52 +62,52 @@ static peff::Option<CompilationError> _determineWithCurrentSlot(
 	return {};
 }
 
-static peff::Option<CompilationError> _determineWithParentClass(
-	CompileEnv *compileEnv,
-	AstNodePtr<FnNode> fnSlot,
-	const AstNodePtr<TypeNameNode> *argTypes,
-	size_t nArgTypes,
-	bool isStatic,
-	peff::DynArray<AstNodePtr<FnOverloadingNode>> &matchedOverloadings,
-	peff::Set<AstNodePtr<MemberNode>> *walkedParents) {
-	SLKC_RETURN_IF_COMP_ERROR(checkStackBounds(1024 * 8));
+static peff::Option<CompilationError> _determine_with_parent_class(
+	CompileEnv *compile_env,
+	AstNodePtr<FnNode> fn_slot,
+	const AstNodePtr<TypeNameNode> *arg_types,
+	size_t num_arg_types,
+	bool is_static,
+	peff::DynArray<AstNodePtr<FnOverloadingNode>> &matched_overloadings,
+	peff::Set<AstNodePtr<MemberNode>> *walked_parents) {
+	SLKC_RETURN_IF_COMP_ERROR(check_stack_bounds(1024 * 8));
 
-	AstNodePtr<ClassNode> m = fnSlot->parent->sharedFromThis().castTo<ClassNode>();
+	AstNodePtr<ClassNode> m = fn_slot->parent->shared_from_this().cast_to<ClassNode>();
 	{
-		AstNodePtr<ClassNode> baseType;
-		SLKC_RETURN_IF_COMP_ERROR(visitBaseClass(m->baseType, baseType, nullptr));
-		if (baseType) {
-			if (auto it = baseType->memberIndices.find(fnSlot->name); it != baseType->memberIndices.end()) {
-				if (baseType->members.at(it.value())->getAstNodeType() != AstNodeType::Fn) {
-					goto classBaseClassMalformed;
+		AstNodePtr<ClassNode> base_type;
+		SLKC_RETURN_IF_COMP_ERROR(visit_base_class(m->base_type, base_type, nullptr));
+		if (base_type) {
+			if (auto it = base_type->member_indices.find(fn_slot->name); it != base_type->member_indices.end()) {
+				if (base_type->members.at(it.value())->get_ast_node_type() != AstNodeType::Fn) {
+					goto class_base_class_malformed;
 				}
 
-				if (!walkedParents) {
-					peff::Set<AstNodePtr<MemberNode>> walkedParentsSet(compileEnv->allocator.get());
-					SLKC_RETURN_IF_COMP_ERROR(determineFnOverloading(compileEnv, baseType->members.at(it.value()).castTo<FnNode>(), argTypes, nArgTypes, isStatic, matchedOverloadings, walkedParents));
+				if (!walked_parents) {
+					peff::Set<AstNodePtr<MemberNode>> walked_parents_set(compile_env->allocator.get());
+					SLKC_RETURN_IF_COMP_ERROR(determine_fn_overloading(compile_env, base_type->members.at(it.value()).cast_to<FnNode>(), arg_types, num_arg_types, is_static, matched_overloadings, walked_parents));
 				} else {
-					SLKC_RETURN_IF_COMP_ERROR(determineFnOverloading(compileEnv, baseType->members.at(it.value()).castTo<FnNode>(), argTypes, nArgTypes, isStatic, matchedOverloadings));
+					SLKC_RETURN_IF_COMP_ERROR(determine_fn_overloading(compile_env, base_type->members.at(it.value()).cast_to<FnNode>(), arg_types, num_arg_types, is_static, matched_overloadings));
 				}
 			}
 		}
 	}
 
-classBaseClassMalformed:
-	for (auto &i : m->implTypes) {
+class_base_class_malformed:
+	for (auto &i : m->impl_types) {
 		{
-			AstNodePtr<InterfaceNode> baseType;
-			SLKC_RETURN_IF_COMP_ERROR(visitBaseInterface(i, baseType, nullptr));
-			if (baseType) {
-				if (auto it = baseType->memberIndices.find(fnSlot->name); it != baseType->memberIndices.end()) {
-					if (baseType->members.at(it.value())->getAstNodeType() != AstNodeType::Fn) {
+			AstNodePtr<InterfaceNode> base_type;
+			SLKC_RETURN_IF_COMP_ERROR(visit_base_interface(i, base_type, nullptr));
+			if (base_type) {
+				if (auto it = base_type->member_indices.find(fn_slot->name); it != base_type->member_indices.end()) {
+					if (base_type->members.at(it.value())->get_ast_node_type() != AstNodeType::Fn) {
 						continue;
 					}
 
-					if (!walkedParents) {
-						peff::Set<AstNodePtr<MemberNode>> walkedParentsSet(compileEnv->allocator.get());
-						SLKC_RETURN_IF_COMP_ERROR(determineFnOverloading(compileEnv, baseType->members.at(it.value()).castTo<FnNode>(), argTypes, nArgTypes, isStatic, matchedOverloadings, walkedParents));
+					if (!walked_parents) {
+						peff::Set<AstNodePtr<MemberNode>> walked_parents_set(compile_env->allocator.get());
+						SLKC_RETURN_IF_COMP_ERROR(determine_fn_overloading(compile_env, base_type->members.at(it.value()).cast_to<FnNode>(), arg_types, num_arg_types, is_static, matched_overloadings, walked_parents));
 					} else {
-						SLKC_RETURN_IF_COMP_ERROR(determineFnOverloading(compileEnv, baseType->members.at(it.value()).castTo<FnNode>(), argTypes, nArgTypes, isStatic, matchedOverloadings));
+						SLKC_RETURN_IF_COMP_ERROR(determine_fn_overloading(compile_env, base_type->members.at(it.value()).cast_to<FnNode>(), arg_types, num_arg_types, is_static, matched_overloadings));
 					}
 				}
 			}
@@ -116,30 +116,30 @@ classBaseClassMalformed:
 	return {};
 }
 
-static peff::Option<CompilationError> _determineWithParentInterface(
-	CompileEnv *compileEnv,
-	AstNodePtr<FnNode> fnSlot,
-	const AstNodePtr<TypeNameNode> *argTypes,
-	size_t nArgTypes,
-	bool isStatic,
-	peff::DynArray<AstNodePtr<FnOverloadingNode>> &matchedOverloadings,
-	peff::Set<AstNodePtr<MemberNode>> *walkedParents) {
-	AstNodePtr<InterfaceNode> m = fnSlot->parent->sharedFromThis().castTo<InterfaceNode>();
-	for (auto &i : m->implTypes) {
+static peff::Option<CompilationError> _determine_with_parent_interface(
+	CompileEnv *compile_env,
+	AstNodePtr<FnNode> fn_slot,
+	const AstNodePtr<TypeNameNode> *arg_types,
+	size_t num_arg_types,
+	bool is_static,
+	peff::DynArray<AstNodePtr<FnOverloadingNode>> &matched_overloadings,
+	peff::Set<AstNodePtr<MemberNode>> *walked_parents) {
+	AstNodePtr<InterfaceNode> m = fn_slot->parent->shared_from_this().cast_to<InterfaceNode>();
+	for (auto &i : m->impl_types) {
 		{
-			AstNodePtr<InterfaceNode> baseType;
-			SLKC_RETURN_IF_COMP_ERROR(visitBaseInterface(i, baseType, nullptr));
-			if (baseType) {
-				if (auto it = baseType->memberIndices.find(fnSlot->name); it != baseType->memberIndices.end()) {
-					if (baseType->members.at(it.value())->getAstNodeType() != AstNodeType::Fn) {
+			AstNodePtr<InterfaceNode> base_type;
+			SLKC_RETURN_IF_COMP_ERROR(visit_base_interface(i, base_type, nullptr));
+			if (base_type) {
+				if (auto it = base_type->member_indices.find(fn_slot->name); it != base_type->member_indices.end()) {
+					if (base_type->members.at(it.value())->get_ast_node_type() != AstNodeType::Fn) {
 						continue;
 					}
 
-					if (!walkedParents) {
-						peff::Set<AstNodePtr<MemberNode>> walkedParentsSet(compileEnv->allocator.get());
-						SLKC_RETURN_IF_COMP_ERROR(determineFnOverloading(compileEnv, baseType->members.at(it.value()).castTo<FnNode>(), argTypes, nArgTypes, isStatic, matchedOverloadings, walkedParents));
+					if (!walked_parents) {
+						peff::Set<AstNodePtr<MemberNode>> walked_parents_set(compile_env->allocator.get());
+						SLKC_RETURN_IF_COMP_ERROR(determine_fn_overloading(compile_env, base_type->members.at(it.value()).cast_to<FnNode>(), arg_types, num_arg_types, is_static, matched_overloadings, walked_parents));
 					} else {
-						SLKC_RETURN_IF_COMP_ERROR(determineFnOverloading(compileEnv, baseType->members.at(it.value()).castTo<FnNode>(), argTypes, nArgTypes, isStatic, matchedOverloadings));
+						SLKC_RETURN_IF_COMP_ERROR(determine_fn_overloading(compile_env, base_type->members.at(it.value()).cast_to<FnNode>(), arg_types, num_arg_types, is_static, matched_overloadings));
 					}
 				}
 			}
@@ -148,27 +148,27 @@ static peff::Option<CompilationError> _determineWithParentInterface(
 	return {};
 }
 
-SLKC_API peff::Option<CompilationError> slkc::determineFnOverloading(
-	CompileEnv *compileEnv,
-	AstNodePtr<FnNode> fnSlot,
-	const AstNodePtr<TypeNameNode> *argTypes,
-	size_t nArgTypes,
-	bool isStatic,
-	peff::DynArray<AstNodePtr<FnOverloadingNode>> &matchedOverloadings,
-	peff::Set<AstNodePtr<MemberNode>> *walkedParents) {
-	SLKC_RETURN_IF_COMP_ERROR(checkStackBounds(1024 * 1));
+SLKC_API peff::Option<CompilationError> slkc::determine_fn_overloading(
+	CompileEnv *compile_env,
+	AstNodePtr<FnNode> fn_slot,
+	const AstNodePtr<TypeNameNode> *arg_types,
+	size_t num_arg_types,
+	bool is_static,
+	peff::DynArray<AstNodePtr<FnOverloadingNode>> &matched_overloadings,
+	peff::Set<AstNodePtr<MemberNode>> *walked_parents) {
+	SLKC_RETURN_IF_COMP_ERROR(check_stack_bounds(1024 * 1));
 
-	SLKC_RETURN_IF_COMP_ERROR(_determineWithCurrentSlot(compileEnv, fnSlot, argTypes, nArgTypes, isStatic, matchedOverloadings, walkedParents));
+	SLKC_RETURN_IF_COMP_ERROR(_determine_with_current_slot(compile_env, fn_slot, arg_types, num_arg_types, is_static, matched_overloadings, walked_parents));
 
-	if (isStatic) {
+	if (is_static) {
 		// ...
 	} else
-		switch (fnSlot->parent->getAstNodeType()) {
+		switch (fn_slot->parent->get_ast_node_type()) {
 			case AstNodeType::Class:
-				SLKC_RETURN_IF_COMP_ERROR(_determineWithParentClass(compileEnv, fnSlot, argTypes, nArgTypes, isStatic, matchedOverloadings, walkedParents));
+				SLKC_RETURN_IF_COMP_ERROR(_determine_with_parent_class(compile_env, fn_slot, arg_types, num_arg_types, is_static, matched_overloadings, walked_parents));
 				break;
 			case AstNodeType::Interface:
-				SLKC_RETURN_IF_COMP_ERROR(_determineWithParentInterface(compileEnv, fnSlot, argTypes, nArgTypes, isStatic, matchedOverloadings, walkedParents));
+				SLKC_RETURN_IF_COMP_ERROR(_determine_with_parent_interface(compile_env, fn_slot, arg_types, num_arg_types, is_static, matched_overloadings, walked_parents));
 				break;
 		}
 

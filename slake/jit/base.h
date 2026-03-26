@@ -10,8 +10,8 @@ namespace slake {
 	class CodePage {
 	public:
 		virtual ~CodePage() = default;
-		virtual size_t getSize() = 0;
-		virtual void *getPtr() = 0;
+		virtual size_t get_size() = 0;
+		virtual void *get_ptr() = 0;
 		virtual void lock() = 0;
 		virtual void jump() = 0;
 	};
@@ -23,8 +23,8 @@ namespace slake {
 		}
 	};
 
-	CodePage *genCodePage(size_t size);
-	[[nodiscard]] InternalExceptionPointer compileRegularFn(RegularFnOverloadingObject *fn, peff::Alloc *resourceAllocator, const JITCompilerOptions &options);
+	CodePage *gen_code_page(size_t size);
+	[[nodiscard]] InternalExceptionPointer compile_regular_fn(RegularFnOverloadingObject *fn, peff::Alloc *resource_allocator, const JITCompilerOptions &options);
 }
 
 #endif

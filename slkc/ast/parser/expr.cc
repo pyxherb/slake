@@ -4,31 +4,31 @@
 using namespace slkc;
 
 template <typename T>
-SLAKE_FORCEINLINE peff::Option<SyntaxError> _parseInt(Parser *parser, Token *token, bool isNegative, const std::string_view &bodyView, T &dataOut) {
-	peff::Option<SyntaxError> syntaxError;
+SLAKE_FORCEINLINE peff::Option<SyntaxError> _parse_int(Parser *parser, Token *token, bool is_negative, const std::string_view &body_view, T &data_out) {
+	peff::Option<SyntaxError> syntax_error;
 
-	bool overflowWarned = false;
+	bool overflow_warned = false;
 	char c;
 	T data = 0;
 	size_t i = 0;
 
-	switch (((IntTokenExtension *)token->exData.get())->tokenType) {
+	switch (((IntTokenExtension *)token->ex_data.get())->token_type) {
 		case IntTokenType::Decimal:
-			while (i < bodyView.size()) {
-				c = bodyView.at(i);
-				if (isNegative) {
-					if ((!overflowWarned) && (std::numeric_limits<T>::min() / 10 > data)) {
-						if ((syntaxError = parser->pushLiteralOverflowedError(token)))
-							return syntaxError;
-						overflowWarned = true;
+			while (i < body_view.size()) {
+				c = body_view.at(i);
+				if (is_negative) {
+					if ((!overflow_warned) && (std::numeric_limits<T>::min() / 10 > data)) {
+						if ((syntax_error = parser->push_literal_overflowed_error(token)))
+							return syntax_error;
+						overflow_warned = true;
 					}
 					data *= 10;
 					data -= c - '0';
 				} else {
-					if ((!overflowWarned) && (std::numeric_limits<T>::max() / 10 < data)) {
-						if ((syntaxError = parser->pushLiteralOverflowedError(token)))
-							return syntaxError;
-						overflowWarned = true;
+					if ((!overflow_warned) && (std::numeric_limits<T>::max() / 10 < data)) {
+						if ((syntax_error = parser->push_literal_overflowed_error(token)))
+							return syntax_error;
+						overflow_warned = true;
 					}
 					data *= 10;
 					data += c - '0';
@@ -37,13 +37,13 @@ SLAKE_FORCEINLINE peff::Option<SyntaxError> _parseInt(Parser *parser, Token *tok
 			}
 			break;
 		case IntTokenType::Hexadecimal:
-			while (i < bodyView.size()) {
-				char c = bodyView.at(i);
-				if (isNegative) {
-					if ((!overflowWarned) && (std::numeric_limits<T>::min() / 16 > data)) {
-						if ((syntaxError = parser->pushLiteralOverflowedError(token)))
-							return syntaxError;
-						overflowWarned = true;
+			while (i < body_view.size()) {
+				char c = body_view.at(i);
+				if (is_negative) {
+					if ((!overflow_warned) && (std::numeric_limits<T>::min() / 16 > data)) {
+						if ((syntax_error = parser->push_literal_overflowed_error(token)))
+							return syntax_error;
+						overflow_warned = true;
 					}
 					data *= 16;
 					switch (c) {
@@ -77,10 +77,10 @@ SLAKE_FORCEINLINE peff::Option<SyntaxError> _parseInt(Parser *parser, Token *tok
 							break;
 					}
 				} else {
-					if ((!overflowWarned) && (std::numeric_limits<T>::max() / 10 < data)) {
-						if ((syntaxError = parser->pushLiteralOverflowedError(token)))
-							return syntaxError;
-						overflowWarned = true;
+					if ((!overflow_warned) && (std::numeric_limits<T>::max() / 10 < data)) {
+						if ((syntax_error = parser->push_literal_overflowed_error(token)))
+							return syntax_error;
+						overflow_warned = true;
 					}
 					data *= 16;
 					switch (c) {
@@ -118,21 +118,21 @@ SLAKE_FORCEINLINE peff::Option<SyntaxError> _parseInt(Parser *parser, Token *tok
 			}
 			break;
 		case IntTokenType::Octal:
-			while (i < bodyView.size()) {
-				c = bodyView.at(i);
-				if (isNegative) {
-					if ((!overflowWarned) && (std::numeric_limits<T>::min() / 8 > data)) {
-						if ((syntaxError = parser->pushLiteralOverflowedError(token)))
-							return syntaxError;
-						overflowWarned = true;
+			while (i < body_view.size()) {
+				c = body_view.at(i);
+				if (is_negative) {
+					if ((!overflow_warned) && (std::numeric_limits<T>::min() / 8 > data)) {
+						if ((syntax_error = parser->push_literal_overflowed_error(token)))
+							return syntax_error;
+						overflow_warned = true;
 					}
 					data *= 8;
 					data -= c - '0';
 				} else {
-					if ((!overflowWarned) && (std::numeric_limits<T>::max() / 8 < data)) {
-						if ((syntaxError = parser->pushLiteralOverflowedError(token)))
-							return syntaxError;
-						overflowWarned = true;
+					if ((!overflow_warned) && (std::numeric_limits<T>::max() / 8 < data)) {
+						if ((syntax_error = parser->push_literal_overflowed_error(token)))
+							return syntax_error;
+						overflow_warned = true;
 					}
 					data *= 8;
 					data += c - '0';
@@ -141,21 +141,21 @@ SLAKE_FORCEINLINE peff::Option<SyntaxError> _parseInt(Parser *parser, Token *tok
 			}
 			break;
 		case IntTokenType::Binary:
-			while (i < bodyView.size()) {
-				c = bodyView.at(i);
-				if (isNegative) {
-					if ((!overflowWarned) && ((std::numeric_limits<T>::min() >> 1) > data)) {
-						if ((syntaxError = parser->pushLiteralOverflowedError(token)))
-							return syntaxError;
-						overflowWarned = true;
+			while (i < body_view.size()) {
+				c = body_view.at(i);
+				if (is_negative) {
+					if ((!overflow_warned) && ((std::numeric_limits<T>::min() >> 1) > data)) {
+						if ((syntax_error = parser->push_literal_overflowed_error(token)))
+							return syntax_error;
+						overflow_warned = true;
 					}
 					data <<= 1;
 					data -= c - '0';
 				} else {
-					if ((!overflowWarned) && ((std::numeric_limits<T>::max() >> 1) < data)) {
-						if ((syntaxError = parser->pushLiteralOverflowedError(token)))
-							return syntaxError;
-						overflowWarned = true;
+					if ((!overflow_warned) && ((std::numeric_limits<T>::max() >> 1) < data)) {
+						if ((syntax_error = parser->push_literal_overflowed_error(token)))
+							return syntax_error;
+						overflow_warned = true;
 					}
 					data <<= 1;
 					data += c - '0';
@@ -167,615 +167,615 @@ SLAKE_FORCEINLINE peff::Option<SyntaxError> _parseInt(Parser *parser, Token *tok
 			std::terminate();
 	}
 
-	dataOut = data;
+	data_out = data;
 
 	return {};
 }
 
-SLKC_API peff::Option<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr<ExprNode> &exprOut) {
-	Token *prefixToken;
+SLKC_API peff::Option<SyntaxError> Parser::parse_expr(int precedence, AstNodePtr<ExprNode> &expr_out) {
+	Token *prefix_token;
 
-	peff::Option<SyntaxError> syntaxError;
+	peff::Option<SyntaxError> syntax_error;
 	AstNodePtr<ExprNode> lhs, rhs;
 
-	if ((syntaxError = expectToken((prefixToken = peekToken()))))
-		goto genBadExpr;
+	if ((syntax_error = expect_token((prefix_token = peek_token()))))
+		goto gen_bad_expr;
 
 	{
 		{
-			peff::ScopeGuard setTokenRangeGuard([this, prefixToken, &lhs]() noexcept {
+			peff::ScopeGuard set_token_range_guard([this, prefix_token, &lhs]() noexcept {
 				if (lhs) {
-					lhs->tokenRange = TokenRange{ document->mainModule, prefixToken->index, parseContext.idxPrevToken };
+					lhs->token_range = TokenRange{ document->main_module, prefix_token->index, parse_context.idx_prev_token };
 				}
 			});
 
-			switch (prefixToken->tokenId) {
+			switch (prefix_token->token_id) {
 				case TokenId::ThisKeyword:
 				case TokenId::ScopeOp:
 				case TokenId::Id: {
-					IdRefPtr idRefPtr;
-					if ((syntaxError = parseIdRef(idRefPtr)))
-						goto genBadExpr;
-					if (!(lhs = makeAstNode<IdRefExprNode>(resourceAllocator.get(), resourceAllocator.get(), document, std::move(idRefPtr)).castTo<ExprNode>()))
-						return genOutOfMemorySyntaxError();
+					IdRefPtr id_ref_ptr;
+					if ((syntax_error = parse_id_ref(id_ref_ptr)))
+						goto gen_bad_expr;
+					if (!(lhs = make_ast_node<IdRefExprNode>(resource_allocator.get(), resource_allocator.get(), document, std::move(id_ref_ptr)).cast_to<ExprNode>()))
+						return gen_out_of_memory_syntax_error();
 					break;
 				}
 				case TokenId::LParenthese: {
-					nextToken();
+					next_token();
 
 					AstNodePtr<WrapperExprNode> expr;
 
-					if (!(expr = makeAstNode<WrapperExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document)))
-						return genOutOfMemorySyntaxError();
+					if (!(expr = make_ast_node<WrapperExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document)))
+						return gen_out_of_memory_syntax_error();
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.cast_to<ExprNode>();
 
-					if ((syntaxError = parseExpr(0, expr->target)))
-						goto genBadExpr;
+					if ((syntax_error = parse_expr(0, expr->target)))
+						goto gen_bad_expr;
 
-					Token *rParentheseToken;
+					Token *r_parenthese_token;
 
-					if ((syntaxError = expectToken((rParentheseToken = nextToken()), TokenId::RParenthese)))
-						goto genBadExpr;
+					if ((syntax_error = expect_token((r_parenthese_token = next_token()), TokenId::RParenthese)))
+						goto gen_bad_expr;
 					break;
 				}
 				case TokenId::AllocaKeyword: {
-					nextToken();
+					next_token();
 
 					AstNodePtr<AllocaExprNode> expr;
 
-					if (!(expr = makeAstNode<AllocaExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document)))
-						return genOutOfMemorySyntaxError();
+					if (!(expr = make_ast_node<AllocaExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document)))
+						return gen_out_of_memory_syntax_error();
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.cast_to<ExprNode>();
 
-					if ((syntaxError = parseTypeName(expr->targetType, false)))
-						goto genBadExpr;
+					if ((syntax_error = parse_type_name(expr->target_type, false)))
+						goto gen_bad_expr;
 
-					Token *lBracketToken;
+					Token *l_bracket_token;
 
-					if ((lBracketToken = peekToken())->tokenId == TokenId::LBracket) {
-						nextToken();
+					if ((l_bracket_token = peek_token())->token_id == TokenId::LBracket) {
+						next_token();
 
-						if ((syntaxError = parseExpr(0, expr->countExpr)))
-							goto genBadExpr;
+						if ((syntax_error = parse_expr(0, expr->count_expr)))
+							goto gen_bad_expr;
 
-						if ((syntaxError = splitRDBracketsToken()))
-							goto genBadExpr;
+						if ((syntax_error = split_rdbrackets_token()))
+							goto gen_bad_expr;
 
-						Token *rBracketToken;
+						Token *r_bracket_token;
 
-						if ((syntaxError = expectToken((rBracketToken = peekToken()), TokenId::RBracket)))
-							goto genBadExpr;
+						if ((syntax_error = expect_token((r_bracket_token = peek_token()), TokenId::RBracket)))
+							goto gen_bad_expr;
 
-						nextToken();
+						next_token();
 					}
 					break;
 				}
 				case TokenId::NewKeyword: {
-					nextToken();
+					next_token();
 
 					AstNodePtr<NewExprNode> expr;
 
-					if (!(expr = makeAstNode<NewExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document)))
-						return genOutOfMemorySyntaxError();
+					if (!(expr = make_ast_node<NewExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document)))
+						return gen_out_of_memory_syntax_error();
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.cast_to<ExprNode>();
 
-					if ((syntaxError = parseTypeName(expr->targetType)))
-						goto genBadExpr;
+					if ((syntax_error = parse_type_name(expr->target_type)))
+						goto gen_bad_expr;
 
-					Token *lParentheseToken;
+					Token *l_parenthese_token;
 
-					if ((syntaxError = expectToken((lParentheseToken = peekToken()), TokenId::LParenthese)))
-						goto genBadExpr;
+					if ((syntax_error = expect_token((l_parenthese_token = peek_token()), TokenId::LParenthese)))
+						goto gen_bad_expr;
 
-					nextToken();
+					next_token();
 
-					if ((syntaxError = parseArgs(expr->args, expr->idxCommaTokens)))
-						goto genBadExpr;
+					if ((syntax_error = parse_args(expr->args, expr->idx_comma_tokens)))
+						goto gen_bad_expr;
 
-					Token *rParentheseToken;
+					Token *r_parenthese_token;
 
-					if ((syntaxError = expectToken((rParentheseToken = peekToken()), TokenId::RParenthese)))
-						goto genBadExpr;
+					if ((syntax_error = expect_token((r_parenthese_token = peek_token()), TokenId::RParenthese)))
+						goto gen_bad_expr;
 
-					nextToken();
+					next_token();
 					break;
 				}
 				case TokenId::I8Literal: {
-					nextToken();
+					next_token();
 
 					int8_t data = 0;
-					bool isNegative = false;
+					bool is_negative = false;
 
-					if (prefixToken->sourceText.at(0) == '-')
-						isNegative = true;
+					if (prefix_token->source_text.at(0) == '-')
+						is_negative = true;
 
-					std::string_view bodyView = prefixToken->sourceText.substr(isNegative ? 1 : 0, prefixToken->sourceText.size() - (isNegative ? 1 : 0) - (sizeof("i8") - 1));
+					std::string_view body_view = prefix_token->source_text.substr(is_negative ? 1 : 0, prefix_token->source_text.size() - (is_negative ? 1 : 0) - (sizeof("i8") - 1));
 
-					if ((syntaxError = _parseInt<int8_t>(this, prefixToken, isNegative, bodyView, data)))
-						return syntaxError;
+					if ((syntax_error = _parse_int<int8_t>(this, prefix_token, is_negative, body_view, data)))
+						return syntax_error;
 
-					if (!(lhs = makeAstNode<I8LiteralExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document,
+					if (!(lhs = make_ast_node<I8LiteralExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document,
 							  data)
-								.castTo<ExprNode>()))
-						return genOutOfMemorySyntaxError();
+								.cast_to<ExprNode>()))
+						return gen_out_of_memory_syntax_error();
 					break;
 				}
 				case TokenId::I16Literal: {
-					nextToken();
+					next_token();
 
 					int16_t data = 0;
-					bool isNegative = false;
+					bool is_negative = false;
 
-					if (prefixToken->sourceText.at(0) == '-')
-						isNegative = true;
+					if (prefix_token->source_text.at(0) == '-')
+						is_negative = true;
 
-					std::string_view bodyView = prefixToken->sourceText.substr(isNegative ? 1 : 0, prefixToken->sourceText.size() - (isNegative ? 1 : 0) - (sizeof("i16") - 1));
+					std::string_view body_view = prefix_token->source_text.substr(is_negative ? 1 : 0, prefix_token->source_text.size() - (is_negative ? 1 : 0) - (sizeof("i16") - 1));
 
-					if ((syntaxError = _parseInt<int16_t>(this, prefixToken, isNegative, bodyView, data)))
-						return syntaxError;
+					if ((syntax_error = _parse_int<int16_t>(this, prefix_token, is_negative, body_view, data)))
+						return syntax_error;
 
-					if (!(lhs = makeAstNode<I16LiteralExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document,
+					if (!(lhs = make_ast_node<I16LiteralExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document,
 							  data)
-								.castTo<ExprNode>()))
-						return genOutOfMemorySyntaxError();
+								.cast_to<ExprNode>()))
+						return gen_out_of_memory_syntax_error();
 					break;
 				}
 				case TokenId::I32Literal: {
-					nextToken();
+					next_token();
 
 					int32_t data = 0;
-					bool isNegative = false;
+					bool is_negative = false;
 
-					if (prefixToken->sourceText.at(0) == '-')
-						isNegative = true;
+					if (prefix_token->source_text.at(0) == '-')
+						is_negative = true;
 
-					std::string_view bodyView = prefixToken->sourceText.substr(isNegative ? 1 : 0, prefixToken->sourceText.size() - (isNegative ? 1 : 0));
+					std::string_view body_view = prefix_token->source_text.substr(is_negative ? 1 : 0, prefix_token->source_text.size() - (is_negative ? 1 : 0));
 
-					if ((syntaxError = _parseInt<int32_t>(this, prefixToken, isNegative, bodyView, data)))
-						return syntaxError;
+					if ((syntax_error = _parse_int<int32_t>(this, prefix_token, is_negative, body_view, data)))
+						return syntax_error;
 
-					if (!(lhs = makeAstNode<I32LiteralExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document,
+					if (!(lhs = make_ast_node<I32LiteralExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document,
 							  data)
-								.castTo<ExprNode>()))
-						return genOutOfMemorySyntaxError();
+								.cast_to<ExprNode>()))
+						return gen_out_of_memory_syntax_error();
 					break;
 				}
 				case TokenId::I64Literal: {
-					nextToken();
+					next_token();
 
 					int64_t data = 0;
-					bool isNegative = false;
+					bool is_negative = false;
 
-					if (prefixToken->sourceText.at(0) == '-')
-						isNegative = true;
+					if (prefix_token->source_text.at(0) == '-')
+						is_negative = true;
 
-					std::string_view bodyView = prefixToken->sourceText.substr(isNegative ? 1 : 0, prefixToken->sourceText.size() - (isNegative ? 1 : 0) - (sizeof("L") - 1));
+					std::string_view body_view = prefix_token->source_text.substr(is_negative ? 1 : 0, prefix_token->source_text.size() - (is_negative ? 1 : 0) - (sizeof("L") - 1));
 
-					if ((syntaxError = _parseInt<int64_t>(this, prefixToken, isNegative, bodyView, data)))
-						return syntaxError;
+					if ((syntax_error = _parse_int<int64_t>(this, prefix_token, is_negative, body_view, data)))
+						return syntax_error;
 
-					if (!(lhs = makeAstNode<I64LiteralExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document,
+					if (!(lhs = make_ast_node<I64LiteralExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document,
 							  data)
-								.castTo<ExprNode>()))
-						return genOutOfMemorySyntaxError();
+								.cast_to<ExprNode>()))
+						return gen_out_of_memory_syntax_error();
 					break;
 				}
 				case TokenId::U8Literal: {
-					nextToken();
+					next_token();
 
 					uint8_t data = 0;
-					bool isNegative = false;
+					bool is_negative = false;
 
-					if (prefixToken->sourceText.at(0) == '-')
-						isNegative = true;
+					if (prefix_token->source_text.at(0) == '-')
+						is_negative = true;
 
-					std::string_view bodyView = prefixToken->sourceText.substr(isNegative ? 1 : 0, prefixToken->sourceText.size() - (isNegative ? 1 : 0) - (sizeof("Ui8") - 1));
+					std::string_view body_view = prefix_token->source_text.substr(is_negative ? 1 : 0, prefix_token->source_text.size() - (is_negative ? 1 : 0) - (sizeof("Ui8") - 1));
 
-					if ((syntaxError = _parseInt<uint8_t>(this, prefixToken, isNegative, bodyView, data)))
-						return syntaxError;
+					if ((syntax_error = _parse_int<uint8_t>(this, prefix_token, is_negative, body_view, data)))
+						return syntax_error;
 
-					if (!(lhs = makeAstNode<U8LiteralExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document,
+					if (!(lhs = make_ast_node<U8LiteralExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document,
 							  data)
-								.castTo<ExprNode>()))
-						return genOutOfMemorySyntaxError();
+								.cast_to<ExprNode>()))
+						return gen_out_of_memory_syntax_error();
 					break;
 				}
 				case TokenId::U16Literal: {
-					nextToken();
+					next_token();
 
 					uint16_t data = 0;
-					bool isNegative = false;
+					bool is_negative = false;
 
-					if (prefixToken->sourceText.at(0) == '-')
-						isNegative = true;
+					if (prefix_token->source_text.at(0) == '-')
+						is_negative = true;
 
-					std::string_view bodyView = prefixToken->sourceText.substr(isNegative ? 1 : 0, prefixToken->sourceText.size() - (isNegative ? 1 : 0) - (sizeof("Ui16") - 1));
+					std::string_view body_view = prefix_token->source_text.substr(is_negative ? 1 : 0, prefix_token->source_text.size() - (is_negative ? 1 : 0) - (sizeof("Ui16") - 1));
 
-					if ((syntaxError = _parseInt<uint16_t>(this, prefixToken, isNegative, bodyView, data)))
-						return syntaxError;
+					if ((syntax_error = _parse_int<uint16_t>(this, prefix_token, is_negative, body_view, data)))
+						return syntax_error;
 
-					if (!(lhs = makeAstNode<U16LiteralExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document,
+					if (!(lhs = make_ast_node<U16LiteralExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document,
 							  data)
-								.castTo<ExprNode>()))
-						return genOutOfMemorySyntaxError();
+								.cast_to<ExprNode>()))
+						return gen_out_of_memory_syntax_error();
 					break;
 				}
 				case TokenId::U32Literal: {
-					nextToken();
+					next_token();
 
 					uint32_t data = 0;
-					bool isNegative = false;
+					bool is_negative = false;
 
-					if (prefixToken->sourceText.at(0) == '-')
-						isNegative = true;
+					if (prefix_token->source_text.at(0) == '-')
+						is_negative = true;
 
-					std::string_view bodyView = prefixToken->sourceText.substr(isNegative ? 1 : 0, prefixToken->sourceText.size() - (isNegative ? 1 : 0) - (sizeof("U") - 1));
+					std::string_view body_view = prefix_token->source_text.substr(is_negative ? 1 : 0, prefix_token->source_text.size() - (is_negative ? 1 : 0) - (sizeof("U") - 1));
 
-					if ((syntaxError = _parseInt<uint32_t>(this, prefixToken, isNegative, bodyView, data)))
-						return syntaxError;
+					if ((syntax_error = _parse_int<uint32_t>(this, prefix_token, is_negative, body_view, data)))
+						return syntax_error;
 
-					if (!(lhs = makeAstNode<U32LiteralExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document,
+					if (!(lhs = make_ast_node<U32LiteralExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document,
 							  data)
-								.castTo<ExprNode>()))
-						return genOutOfMemorySyntaxError();
+								.cast_to<ExprNode>()))
+						return gen_out_of_memory_syntax_error();
 					break;
 				}
 				case TokenId::U64Literal: {
-					nextToken();
+					next_token();
 
 					uint64_t data = 0;
-					bool isNegative = false;
+					bool is_negative = false;
 
-					if (prefixToken->sourceText.at(0) == '-')
-						isNegative = true;
+					if (prefix_token->source_text.at(0) == '-')
+						is_negative = true;
 
-					std::string_view bodyView = prefixToken->sourceText.substr(isNegative ? 1 : 0, prefixToken->sourceText.size() - (isNegative ? 1 : 0) - (sizeof("UL") - 1));
+					std::string_view body_view = prefix_token->source_text.substr(is_negative ? 1 : 0, prefix_token->source_text.size() - (is_negative ? 1 : 0) - (sizeof("UL") - 1));
 
-					if ((syntaxError = _parseInt<uint64_t>(this, prefixToken, isNegative, bodyView, data)))
-						return syntaxError;
+					if ((syntax_error = _parse_int<uint64_t>(this, prefix_token, is_negative, body_view, data)))
+						return syntax_error;
 
-					if (!(lhs = makeAstNode<U64LiteralExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document,
+					if (!(lhs = make_ast_node<U64LiteralExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document,
 							  data)
-								.castTo<ExprNode>()))
-						return genOutOfMemorySyntaxError();
+								.cast_to<ExprNode>()))
+						return gen_out_of_memory_syntax_error();
 					break;
 				}
 				case TokenId::StringLiteral: {
-					nextToken();
-					peff::String s(resourceAllocator.get());
+					next_token();
+					peff::String s(resource_allocator.get());
 
-					if (!s.build(((StringTokenExtension *)prefixToken->exData.get())->data)) {
-						return genOutOfMemorySyntaxError();
+					if (!s.build(((StringTokenExtension *)prefix_token->ex_data.get())->data)) {
+						return gen_out_of_memory_syntax_error();
 					}
 
-					if (!(lhs = makeAstNode<StringLiteralExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document,
+					if (!(lhs = make_ast_node<StringLiteralExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document,
 							  std::move(s))
-								.castTo<ExprNode>()))
-						return genOutOfMemorySyntaxError();
+								.cast_to<ExprNode>()))
+						return gen_out_of_memory_syntax_error();
 					break;
 				}
 				case TokenId::F32Literal: {
-					nextToken();
+					next_token();
 
-					if (!(lhs = peff::makeSharedWithControlBlock<F32LiteralExprNode, AstNodeControlBlock<F32LiteralExprNode>>(
-							  resourceAllocator.get(), resourceAllocator.get(), document,
-							  strtof(prefixToken->sourceText.data(), nullptr))
-								.castTo<ExprNode>()))
-						return genOutOfMemorySyntaxError();
+					if (!(lhs = peff::make_shared_with_control_block<F32LiteralExprNode, AstNodeControlBlock<F32LiteralExprNode>>(
+							  resource_allocator.get(), resource_allocator.get(), document,
+							  strtof(prefix_token->source_text.data(), nullptr))
+								.cast_to<ExprNode>()))
+						return gen_out_of_memory_syntax_error();
 					break;
 				}
 				case TokenId::F64Literal: {
-					nextToken();
-					if (!(lhs = peff::makeSharedWithControlBlock<F64LiteralExprNode, AstNodeControlBlock<F64LiteralExprNode>>(
-							  resourceAllocator.get(), resourceAllocator.get(), document,
-							  strtod(prefixToken->sourceText.data(), nullptr))
-								.castTo<ExprNode>()))
-						return genOutOfMemorySyntaxError();
+					next_token();
+					if (!(lhs = peff::make_shared_with_control_block<F64LiteralExprNode, AstNodeControlBlock<F64LiteralExprNode>>(
+							  resource_allocator.get(), resource_allocator.get(), document,
+							  strtod(prefix_token->source_text.data(), nullptr))
+								.cast_to<ExprNode>()))
+						return gen_out_of_memory_syntax_error();
 					break;
 				}
 				case TokenId::TrueKeyword: {
-					nextToken();
-					if (!(lhs = makeAstNode<BoolLiteralExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document,
+					next_token();
+					if (!(lhs = make_ast_node<BoolLiteralExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document,
 							  true)
-								.castTo<ExprNode>()))
-						return genOutOfMemorySyntaxError();
+								.cast_to<ExprNode>()))
+						return gen_out_of_memory_syntax_error();
 					break;
 				}
 				case TokenId::FalseKeyword: {
-					nextToken();
-					if (!(lhs = makeAstNode<BoolLiteralExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document,
+					next_token();
+					if (!(lhs = make_ast_node<BoolLiteralExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document,
 							  false)
-								.castTo<ExprNode>()))
-						return genOutOfMemorySyntaxError();
+								.cast_to<ExprNode>()))
+						return gen_out_of_memory_syntax_error();
 					break;
 				}
 				case TokenId::NullKeyword: {
-					nextToken();
-					if (!(lhs = makeAstNode<NullLiteralExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document)
-								.castTo<ExprNode>()))
-						return genOutOfMemorySyntaxError();
+					next_token();
+					if (!(lhs = make_ast_node<NullLiteralExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document)
+								.cast_to<ExprNode>()))
+						return gen_out_of_memory_syntax_error();
 					break;
 				}
 				case TokenId::VarArg: {
-					nextToken();
+					next_token();
 
 					AstNodePtr<UnaryExprNode> expr;
 
-					if (!(expr = makeAstNode<UnaryExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document)))
-						return genOutOfMemorySyntaxError();
+					if (!(expr = make_ast_node<UnaryExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document)))
+						return gen_out_of_memory_syntax_error();
 
-					expr->unaryOp = UnaryOp::Unpacking;
+					expr->unary_op = UnaryOp::Unpacking;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.cast_to<ExprNode>();
 
-					if ((syntaxError = parseExpr(131, expr->operand))) {
-						goto genBadExpr;
+					if ((syntax_error = parse_expr(131, expr->operand))) {
+						goto gen_bad_expr;
 					}
 					break;
 				}
 				case TokenId::LBrace: {
-					nextToken();
+					next_token();
 
-					AstNodePtr<InitializerListExprNode> initializerExpr;
+					AstNodePtr<InitializerListExprNode> initializer_expr;
 
-					if (!(initializerExpr = makeAstNode<InitializerListExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document)))
-						return genOutOfMemorySyntaxError();
+					if (!(initializer_expr = make_ast_node<InitializerListExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document)))
+						return gen_out_of_memory_syntax_error();
 
-					lhs = initializerExpr.castTo<ExprNode>();
+					lhs = initializer_expr.cast_to<ExprNode>();
 
-					AstNodePtr<ExprNode> curExpr;
+					AstNodePtr<ExprNode> cur_expr;
 
-					static TokenId matchingTokens[] = {
+					static TokenId matching_tokens[] = {
 						TokenId::RBrace,
 						TokenId::Semicolon
 					};
 
-					Token *currentToken;
+					Token *current_token;
 
 					for (;;) {
-						if ((syntaxError = parseExpr(0, curExpr))) {
-							if (!syntaxErrors.pushBack(std::move(syntaxError.value())))
-								return genOutOfMemorySyntaxError();
-							syntaxError.reset();
-							goto genBadExpr;
+						if ((syntax_error = parse_expr(0, cur_expr))) {
+							if (!syntax_errors.push_back(std::move(syntax_error.value())))
+								return gen_out_of_memory_syntax_error();
+							syntax_error.reset();
+							goto gen_bad_expr;
 						}
 
-						if (!initializerExpr->elements.pushBack(std::move(curExpr))) {
-							return genOutOfMemorySyntaxError();
+						if (!initializer_expr->elements.push_back(std::move(cur_expr))) {
+							return gen_out_of_memory_syntax_error();
 						}
 
-						currentToken = peekToken();
+						current_token = peek_token();
 
-						if (currentToken->tokenId != TokenId::Comma)
+						if (current_token->token_id != TokenId::Comma)
 							break;
 
-						nextToken();
+						next_token();
 					}
 
-					if ((syntaxError = expectToken(currentToken = peekToken(), TokenId::RBrace))) {
-						if (!syntaxErrors.pushBack(std::move(syntaxError.value())))
-							return genOutOfMemorySyntaxError();
-						syntaxError.reset();
-						if ((syntaxError = lookaheadUntil(std::size(matchingTokens), matchingTokens)))
-							goto genBadExpr;
+					if ((syntax_error = expect_token(current_token = peek_token(), TokenId::RBrace))) {
+						if (!syntax_errors.push_back(std::move(syntax_error.value())))
+							return gen_out_of_memory_syntax_error();
+						syntax_error.reset();
+						if ((syntax_error = lookahead_until(std::size(matching_tokens), matching_tokens)))
+							goto gen_bad_expr;
 					}
 
-					nextToken();
+					next_token();
 
 					break;
 				}
 				case TokenId::SubOp: {
-					nextToken();
+					next_token();
 
 					AstNodePtr<UnaryExprNode> expr;
 
-					if (!(expr = makeAstNode<UnaryExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document)))
-						return genOutOfMemorySyntaxError();
+					if (!(expr = make_ast_node<UnaryExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document)))
+						return gen_out_of_memory_syntax_error();
 
-					expr->unaryOp = UnaryOp::Neg;
+					expr->unary_op = UnaryOp::Neg;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.cast_to<ExprNode>();
 
-					if ((syntaxError = parseExpr(131, expr->operand))) {
-						goto genBadExpr;
+					if ((syntax_error = parse_expr(131, expr->operand))) {
+						goto gen_bad_expr;
 					}
 					break;
 				}
 				case TokenId::NotOp: {
-					nextToken();
+					next_token();
 
 					AstNodePtr<UnaryExprNode> expr;
 
-					if (!(expr = makeAstNode<UnaryExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document)))
-						return genOutOfMemorySyntaxError();
+					if (!(expr = make_ast_node<UnaryExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document)))
+						return gen_out_of_memory_syntax_error();
 
-					expr->unaryOp = UnaryOp::Not;
+					expr->unary_op = UnaryOp::Not;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.cast_to<ExprNode>();
 
-					if ((syntaxError = parseExpr(131, expr->operand))) {
-						goto genBadExpr;
+					if ((syntax_error = parse_expr(131, expr->operand))) {
+						goto gen_bad_expr;
 					}
 					break;
 				}
 				case TokenId::LNotOp: {
-					nextToken();
+					next_token();
 
 					AstNodePtr<UnaryExprNode> expr;
 
-					if (!(expr = makeAstNode<UnaryExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document)))
-						return genOutOfMemorySyntaxError();
+					if (!(expr = make_ast_node<UnaryExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document)))
+						return gen_out_of_memory_syntax_error();
 
-					expr->unaryOp = UnaryOp::LNot;
+					expr->unary_op = UnaryOp::LNot;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.cast_to<ExprNode>();
 
-					if ((syntaxError = parseExpr(131, expr->operand))) {
-						goto genBadExpr;
+					if ((syntax_error = parse_expr(131, expr->operand))) {
+						goto gen_bad_expr;
 					}
 
 					break;
 				}
 				case TokenId::MatchKeyword: {
-					nextToken();
+					next_token();
 
 					AstNodePtr<MatchExprNode> expr;
 
-					if (!(expr = makeAstNode<MatchExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document)))
-						return genOutOfMemorySyntaxError();
+					if (!(expr = make_ast_node<MatchExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document)))
+						return gen_out_of_memory_syntax_error();
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.cast_to<ExprNode>();
 
-					Token *lParentheseToken;
+					Token *l_parenthese_token;
 
-					if ((syntaxError = expectToken((lParentheseToken = peekToken()), TokenId::LParenthese)))
-						goto genBadExpr;
+					if ((syntax_error = expect_token((l_parenthese_token = peek_token()), TokenId::LParenthese)))
+						goto gen_bad_expr;
 
-					nextToken();
+					next_token();
 
-					if ((syntaxError = parseExpr(0, expr->condition)))
-						goto genBadExpr;
+					if ((syntax_error = parse_expr(0, expr->condition)))
+						goto gen_bad_expr;
 
-					Token *rParentheseToken;
+					Token *r_parenthese_token;
 
-					if ((syntaxError = expectToken((rParentheseToken = peekToken()), TokenId::RParenthese)))
-						goto genBadExpr;
+					if ((syntax_error = expect_token((r_parenthese_token = peek_token()), TokenId::RParenthese)))
+						goto gen_bad_expr;
 
-					nextToken();
+					next_token();
 
-					Token *returnTypeToken;
-					if ((returnTypeToken = peekToken())->tokenId == TokenId::ReturnTypeOp) {
-						nextToken();
-						SLKC_RETURN_IF_PARSE_ERROR((parseTypeName(expr->returnType)));
+					Token *return_type_token;
+					if ((return_type_token = peek_token())->token_id == TokenId::ReturnTypeOp) {
+						next_token();
+						SLKC_RETURN_IF_PARSE_ERROR((parse_type_name(expr->return_type)));
 					}
 
-					Token *lBraceToken = peekToken();
+					Token *l_brace_token = peek_token();
 
-					if ((syntaxError = expectToken(lBraceToken, TokenId::LBrace))) {
-						goto genBadExpr;
+					if ((syntax_error = expect_token(l_brace_token, TokenId::LBrace))) {
+						goto gen_bad_expr;
 					}
 
-					nextToken();
+					next_token();
 
 					while (true) {
-						AstNodePtr<ExprNode> conditionExpr, resultExpr;
+						AstNodePtr<ExprNode> condition_expr, result_expr;
 
-						if (peekToken()->tokenId == TokenId::DefaultKeyword) {
-							nextToken();
+						if (peek_token()->token_id == TokenId::DefaultKeyword) {
+							next_token();
 						} else {
-							if ((syntaxError = parseExpr(0, conditionExpr))) {
-								goto genBadExpr;
+							if ((syntax_error = parse_expr(0, condition_expr))) {
+								goto gen_bad_expr;
 							}
 						}
 
-						Token *colonToken = peekToken();
+						Token *colon_token = peek_token();
 
-						if ((syntaxError = expectToken(colonToken, TokenId::Colon))) {
-							goto genBadExpr;
+						if ((syntax_error = expect_token(colon_token, TokenId::Colon))) {
+							goto gen_bad_expr;
 						}
 
-						nextToken();
+						next_token();
 
-						if ((syntaxError = parseExpr(0, resultExpr))) {
-							goto genBadExpr;
+						if ((syntax_error = parse_expr(0, result_expr))) {
+							goto gen_bad_expr;
 						}
 
-						if (!expr->cases.pushBack({ conditionExpr, resultExpr })) {
-							return genOutOfMemorySyntaxError();
+						if (!expr->cases.push_back({ condition_expr, result_expr })) {
+							return gen_out_of_memory_syntax_error();
 						}
 
-						if (peekToken()->tokenId != TokenId::Comma)
+						if (peek_token()->token_id != TokenId::Comma)
 							break;
 
-						Token *commaToken = nextToken();
+						Token *comma_token = next_token();
 					}
 
-					Token *rBraceToken = peekToken();
+					Token *r_brace_token = peek_token();
 
-					if ((syntaxError = expectToken(rBraceToken, TokenId::RBrace))) {
-						goto genBadExpr;
+					if ((syntax_error = expect_token(r_brace_token, TokenId::RBrace))) {
+						goto gen_bad_expr;
 					}
 
-					nextToken();
+					next_token();
 
 					break;
 				}
 				default:
-					nextToken();
+					next_token();
 					return SyntaxError(
-						TokenRange{ document->mainModule, prefixToken->index },
+						TokenRange{ document->main_module, prefix_token->index },
 						SyntaxErrorKind::ExpectingExpr);
 			}
 		}
 
-		Token *infixToken;
+		Token *infix_token;
 
 		for (;;) {
-			peff::ScopeGuard setTokenRangeGuard([this, prefixToken, &lhs]() noexcept {
+			peff::ScopeGuard set_token_range_guard([this, prefix_token, &lhs]() noexcept {
 				if (lhs) {
-					lhs->tokenRange = TokenRange{ document->mainModule, prefixToken->index, parseContext.idxPrevToken };
+					lhs->token_range = TokenRange{ document->main_module, prefix_token->index, parse_context.idx_prev_token };
 				}
 			});
 
-			switch ((infixToken = peekToken())->tokenId) {
+			switch ((infix_token = peek_token())->token_id) {
 				case TokenId::LParenthese: {
 					if (precedence > 140)
 						goto end;
-					nextToken();
+					next_token();
 
 					AstNodePtr<CallExprNode> expr;
 
-					if (!(expr = makeAstNode<CallExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document, AstNodePtr<ExprNode>(), peff::DynArray<AstNodePtr<ExprNode>>{ resourceAllocator.get() })))
-						return genOutOfMemorySyntaxError();
+					if (!(expr = make_ast_node<CallExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document, AstNodePtr<ExprNode>(), peff::DynArray<AstNodePtr<ExprNode>>{ resource_allocator.get() })))
+						return gen_out_of_memory_syntax_error();
 
 					expr->target = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.cast_to<ExprNode>();
 
-					expr->lParentheseTokenIndex = infixToken->index;
+					expr->l_parenthese_token_index = infix_token->index;
 
-					if ((syntaxError = parseArgs(expr->args, expr->idxCommaTokens))) {
-						goto genBadExpr;
+					if ((syntax_error = parse_args(expr->args, expr->idx_comma_tokens))) {
+						goto gen_bad_expr;
 					}
 
-					Token *rParentheseToken;
+					Token *r_parenthese_token;
 
-					if ((syntaxError = expectToken((rParentheseToken = peekToken()), TokenId::RParenthese)))
-						goto genBadExpr;
+					if ((syntax_error = expect_token((r_parenthese_token = peek_token()), TokenId::RParenthese)))
+						goto gen_bad_expr;
 
-					nextToken();
+					next_token();
 
-					expr->rParentheseTokenIndex = rParentheseToken->index;
+					expr->r_parenthese_token_index = r_parenthese_token->index;
 
-					if (peekToken()->tokenId == TokenId::WithKeyword) {
-						nextToken();
+					if (peek_token()->token_id == TokenId::WithKeyword) {
+						next_token();
 
-						if (auto e = parseExpr(121, expr->withObject); e)
+						if (auto e = parse_expr(121, expr->with_object); e)
 							return e;
 					}
 
@@ -784,71 +784,71 @@ SLKC_API peff::Option<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr<
 				case TokenId::LBracket: {
 					if (precedence > 140)
 						goto end;
-					nextToken();
+					next_token();
 
 					AstNodePtr<BinaryExprNode> expr;
 
-					if (!(expr = makeAstNode<BinaryExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document)))
-						return genOutOfMemorySyntaxError();
+					if (!(expr = make_ast_node<BinaryExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document)))
+						return gen_out_of_memory_syntax_error();
 
-					expr->binaryOp = BinaryOp::Subscript;
+					expr->binary_op = BinaryOp::Subscript;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.cast_to<ExprNode>();
 
-					if ((syntaxError = parseExpr(0, expr->rhs)))
-						goto genBadExpr;
+					if ((syntax_error = parse_expr(0, expr->rhs)))
+						goto gen_bad_expr;
 
-					if ((syntaxError = splitRDBracketsToken()))
-						goto genBadExpr;
+					if ((syntax_error = split_rdbrackets_token()))
+						goto gen_bad_expr;
 
-					Token *rBracketToken;
+					Token *r_bracket_token;
 
-					if ((syntaxError = expectToken((rBracketToken = nextToken()), TokenId::RBracket)))
-						goto genBadExpr;
+					if ((syntax_error = expect_token((r_bracket_token = next_token()), TokenId::RBracket)))
+						goto gen_bad_expr;
 
 					break;
 				}
 				case TokenId::Dot: {
 					if (precedence > 140)
 						goto end;
-					nextToken();
+					next_token();
 
 					AstNodePtr<HeadedIdRefExprNode> expr;
 
-					if (!(expr = makeAstNode<HeadedIdRefExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document, lhs, IdRefPtr{})))
-						return genOutOfMemorySyntaxError();
+					if (!(expr = make_ast_node<HeadedIdRefExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document, lhs, IdRefPtr{})))
+						return gen_out_of_memory_syntax_error();
 
 					expr->head = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.cast_to<ExprNode>();
 
-					if ((syntaxError = parseIdRef(expr->idRefPtr)))
-						goto genBadExpr;
+					if ((syntax_error = parse_id_ref(expr->id_ref_ptr)))
+						goto gen_bad_expr;
 
 					break;
 				}
 				case TokenId::AsKeyword: {
 					if (precedence > 130)
 						goto end;
-					nextToken();
+					next_token();
 
 					AstNodePtr<CastExprNode> expr;
 
-					if (!(expr = makeAstNode<CastExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document)))
-						return genOutOfMemorySyntaxError();
+					if (!(expr = make_ast_node<CastExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document)))
+						return gen_out_of_memory_syntax_error();
 
 					expr->source = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.cast_to<ExprNode>();
 
-					if ((syntaxError = parseTypeName(expr->targetType)))
-						goto genBadExpr;
+					if ((syntax_error = parse_type_name(expr->target_type)))
+						goto gen_bad_expr;
 
-					expr->tokenRange.endIndex = expr->targetType->tokenRange.endIndex;
+					expr->token_range.end_index = expr->target_type->token_range.end_index;
 
 					break;
 				}
@@ -856,63 +856,63 @@ SLKC_API peff::Option<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr<
 				case TokenId::MulOp: {
 					if (precedence > 120)
 						goto end;
-					nextToken();
+					next_token();
 
 					AstNodePtr<BinaryExprNode> expr;
 
-					if (!(expr = makeAstNode<BinaryExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document)))
-						return genOutOfMemorySyntaxError();
+					if (!(expr = make_ast_node<BinaryExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document)))
+						return gen_out_of_memory_syntax_error();
 
-					expr->binaryOp = BinaryOp::Mul;
+					expr->binary_op = BinaryOp::Mul;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.cast_to<ExprNode>();
 
-					if ((syntaxError = parseExpr(121, expr->rhs)))
-						goto genBadExpr;
+					if ((syntax_error = parse_expr(121, expr->rhs)))
+						goto gen_bad_expr;
 
 					break;
 				}
 				case TokenId::DivOp: {
 					if (precedence > 120)
 						goto end;
-					nextToken();
+					next_token();
 
 					AstNodePtr<BinaryExprNode> expr;
 
-					if (!(expr = makeAstNode<BinaryExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document)))
-						return genOutOfMemorySyntaxError();
+					if (!(expr = make_ast_node<BinaryExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document)))
+						return gen_out_of_memory_syntax_error();
 
-					expr->binaryOp = BinaryOp::Div;
+					expr->binary_op = BinaryOp::Div;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.cast_to<ExprNode>();
 
-					if ((syntaxError = parseExpr(121, expr->rhs)))
-						goto genBadExpr;
+					if ((syntax_error = parse_expr(121, expr->rhs)))
+						goto gen_bad_expr;
 
 					break;
 				}
 				case TokenId::ModOp: {
 					if (precedence > 120)
 						goto end;
-					nextToken();
+					next_token();
 
 					AstNodePtr<BinaryExprNode> expr;
 
-					if (!(expr = makeAstNode<BinaryExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document)))
-						return genOutOfMemorySyntaxError();
+					if (!(expr = make_ast_node<BinaryExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document)))
+						return gen_out_of_memory_syntax_error();
 
-					expr->binaryOp = BinaryOp::Mod;
+					expr->binary_op = BinaryOp::Mod;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.cast_to<ExprNode>();
 
-					if ((syntaxError = parseExpr(121, expr->rhs)))
-						goto genBadExpr;
+					if ((syntax_error = parse_expr(121, expr->rhs)))
+						goto gen_bad_expr;
 
 					break;
 				}
@@ -920,42 +920,42 @@ SLKC_API peff::Option<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr<
 				case TokenId::AddOp: {
 					if (precedence > 110)
 						goto end;
-					nextToken();
+					next_token();
 
 					AstNodePtr<BinaryExprNode> expr;
 
-					if (!(expr = makeAstNode<BinaryExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document)))
-						return genOutOfMemorySyntaxError();
+					if (!(expr = make_ast_node<BinaryExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document)))
+						return gen_out_of_memory_syntax_error();
 
-					expr->binaryOp = BinaryOp::Add;
+					expr->binary_op = BinaryOp::Add;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.cast_to<ExprNode>();
 
-					if ((syntaxError = parseExpr(111, expr->rhs)))
-						goto genBadExpr;
+					if ((syntax_error = parse_expr(111, expr->rhs)))
+						goto gen_bad_expr;
 
 					break;
 				}
 				case TokenId::SubOp: {
 					if (precedence > 110)
 						goto end;
-					nextToken();
+					next_token();
 
 					AstNodePtr<BinaryExprNode> expr;
 
-					if (!(expr = makeAstNode<BinaryExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document)))
-						return genOutOfMemorySyntaxError();
+					if (!(expr = make_ast_node<BinaryExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document)))
+						return gen_out_of_memory_syntax_error();
 
-					expr->binaryOp = BinaryOp::Sub;
+					expr->binary_op = BinaryOp::Sub;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.cast_to<ExprNode>();
 
-					if ((syntaxError = parseExpr(111, expr->rhs)))
-						goto genBadExpr;
+					if ((syntax_error = parse_expr(111, expr->rhs)))
+						goto gen_bad_expr;
 
 					break;
 				}
@@ -963,42 +963,42 @@ SLKC_API peff::Option<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr<
 				case TokenId::ShlOp: {
 					if (precedence > 100)
 						goto end;
-					nextToken();
+					next_token();
 
 					AstNodePtr<BinaryExprNode> expr;
 
-					if (!(expr = makeAstNode<BinaryExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document)))
-						return genOutOfMemorySyntaxError();
+					if (!(expr = make_ast_node<BinaryExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document)))
+						return gen_out_of_memory_syntax_error();
 
-					expr->binaryOp = BinaryOp::Shl;
+					expr->binary_op = BinaryOp::Shl;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.cast_to<ExprNode>();
 
-					if ((syntaxError = parseExpr(101, expr->rhs)))
-						goto genBadExpr;
+					if ((syntax_error = parse_expr(101, expr->rhs)))
+						goto gen_bad_expr;
 
 					break;
 				}
 				case TokenId::ShrOp: {
 					if (precedence > 100)
 						goto end;
-					nextToken();
+					next_token();
 
 					AstNodePtr<BinaryExprNode> expr;
 
-					if (!(expr = makeAstNode<BinaryExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document)))
-						return genOutOfMemorySyntaxError();
+					if (!(expr = make_ast_node<BinaryExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document)))
+						return gen_out_of_memory_syntax_error();
 
-					expr->binaryOp = BinaryOp::Shr;
+					expr->binary_op = BinaryOp::Shr;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.cast_to<ExprNode>();
 
-					if ((syntaxError = parseExpr(101, expr->rhs)))
-						goto genBadExpr;
+					if ((syntax_error = parse_expr(101, expr->rhs)))
+						goto gen_bad_expr;
 
 					break;
 				}
@@ -1006,21 +1006,21 @@ SLKC_API peff::Option<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr<
 				case TokenId::CmpOp: {
 					if (precedence > 90)
 						goto end;
-					nextToken();
+					next_token();
 
 					AstNodePtr<BinaryExprNode> expr;
 
-					if (!(expr = makeAstNode<BinaryExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document)))
-						return genOutOfMemorySyntaxError();
+					if (!(expr = make_ast_node<BinaryExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document)))
+						return gen_out_of_memory_syntax_error();
 
-					expr->binaryOp = BinaryOp::Cmp;
+					expr->binary_op = BinaryOp::Cmp;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.cast_to<ExprNode>();
 
-					if ((syntaxError = parseExpr(91, expr->rhs)))
-						goto genBadExpr;
+					if ((syntax_error = parse_expr(91, expr->rhs)))
+						goto gen_bad_expr;
 
 					break;
 				}
@@ -1028,84 +1028,84 @@ SLKC_API peff::Option<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr<
 				case TokenId::GtOp: {
 					if (precedence > 80)
 						goto end;
-					nextToken();
+					next_token();
 
 					AstNodePtr<BinaryExprNode> expr;
 
-					if (!(expr = makeAstNode<BinaryExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document)))
-						return genOutOfMemorySyntaxError();
+					if (!(expr = make_ast_node<BinaryExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document)))
+						return gen_out_of_memory_syntax_error();
 
-					expr->binaryOp = BinaryOp::Gt;
+					expr->binary_op = BinaryOp::Gt;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.cast_to<ExprNode>();
 
-					if ((syntaxError = parseExpr(81, expr->rhs)))
-						goto genBadExpr;
+					if ((syntax_error = parse_expr(81, expr->rhs)))
+						goto gen_bad_expr;
 
 					break;
 				}
 				case TokenId::GtEqOp: {
 					if (precedence > 80)
 						goto end;
-					nextToken();
+					next_token();
 
 					AstNodePtr<BinaryExprNode> expr;
 
-					if (!(expr = makeAstNode<BinaryExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document)))
-						return genOutOfMemorySyntaxError();
+					if (!(expr = make_ast_node<BinaryExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document)))
+						return gen_out_of_memory_syntax_error();
 
-					expr->binaryOp = BinaryOp::GtEq;
+					expr->binary_op = BinaryOp::GtEq;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.cast_to<ExprNode>();
 
-					if ((syntaxError = parseExpr(81, expr->rhs)))
-						goto genBadExpr;
+					if ((syntax_error = parse_expr(81, expr->rhs)))
+						goto gen_bad_expr;
 
 					break;
 				}
 				case TokenId::LtOp: {
 					if (precedence > 80)
 						goto end;
-					nextToken();
+					next_token();
 
 					AstNodePtr<BinaryExprNode> expr;
 
-					if (!(expr = makeAstNode<BinaryExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document)))
-						return genOutOfMemorySyntaxError();
+					if (!(expr = make_ast_node<BinaryExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document)))
+						return gen_out_of_memory_syntax_error();
 
-					expr->binaryOp = BinaryOp::Lt;
+					expr->binary_op = BinaryOp::Lt;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.cast_to<ExprNode>();
 
-					if ((syntaxError = parseExpr(81, expr->rhs)))
-						goto genBadExpr;
+					if ((syntax_error = parse_expr(81, expr->rhs)))
+						goto gen_bad_expr;
 
 					break;
 				}
 				case TokenId::LtEqOp: {
 					if (precedence > 80)
 						goto end;
-					nextToken();
+					next_token();
 
 					AstNodePtr<BinaryExprNode> expr;
 
-					if (!(expr = makeAstNode<BinaryExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document)))
-						return genOutOfMemorySyntaxError();
+					if (!(expr = make_ast_node<BinaryExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document)))
+						return gen_out_of_memory_syntax_error();
 
-					expr->binaryOp = BinaryOp::LtEq;
+					expr->binary_op = BinaryOp::LtEq;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.cast_to<ExprNode>();
 
-					if ((syntaxError = parseExpr(81, expr->rhs)))
-						goto genBadExpr;
+					if ((syntax_error = parse_expr(81, expr->rhs)))
+						goto gen_bad_expr;
 
 					break;
 				}
@@ -1113,84 +1113,84 @@ SLKC_API peff::Option<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr<
 				case TokenId::EqOp: {
 					if (precedence > 70)
 						goto end;
-					nextToken();
+					next_token();
 
 					AstNodePtr<BinaryExprNode> expr;
 
-					if (!(expr = makeAstNode<BinaryExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document)))
-						return genOutOfMemorySyntaxError();
+					if (!(expr = make_ast_node<BinaryExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document)))
+						return gen_out_of_memory_syntax_error();
 
-					expr->binaryOp = BinaryOp::Eq;
+					expr->binary_op = BinaryOp::Eq;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.cast_to<ExprNode>();
 
-					if ((syntaxError = parseExpr(71, expr->rhs)))
-						goto genBadExpr;
+					if ((syntax_error = parse_expr(71, expr->rhs)))
+						goto gen_bad_expr;
 
 					break;
 				}
 				case TokenId::NeqOp: {
 					if (precedence > 70)
 						goto end;
-					nextToken();
+					next_token();
 
 					AstNodePtr<BinaryExprNode> expr;
 
-					if (!(expr = makeAstNode<BinaryExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document)))
-						return genOutOfMemorySyntaxError();
+					if (!(expr = make_ast_node<BinaryExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document)))
+						return gen_out_of_memory_syntax_error();
 
-					expr->binaryOp = BinaryOp::Neq;
+					expr->binary_op = BinaryOp::Neq;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.cast_to<ExprNode>();
 
-					if ((syntaxError = parseExpr(71, expr->rhs)))
-						goto genBadExpr;
+					if ((syntax_error = parse_expr(71, expr->rhs)))
+						goto gen_bad_expr;
 
 					break;
 				}
 				case TokenId::StrictEqOp: {
 					if (precedence > 70)
 						goto end;
-					nextToken();
+					next_token();
 
 					AstNodePtr<BinaryExprNode> expr;
 
-					if (!(expr = makeAstNode<BinaryExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document)))
-						return genOutOfMemorySyntaxError();
+					if (!(expr = make_ast_node<BinaryExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document)))
+						return gen_out_of_memory_syntax_error();
 
-					expr->binaryOp = BinaryOp::StrictEq;
+					expr->binary_op = BinaryOp::StrictEq;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.cast_to<ExprNode>();
 
-					if ((syntaxError = parseExpr(71, expr->rhs)))
-						goto genBadExpr;
+					if ((syntax_error = parse_expr(71, expr->rhs)))
+						goto gen_bad_expr;
 
 					break;
 				}
 				case TokenId::StrictNeqOp: {
 					if (precedence > 70)
 						goto end;
-					nextToken();
+					next_token();
 
 					AstNodePtr<BinaryExprNode> expr;
 
-					if (!(expr = makeAstNode<BinaryExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document)))
-						return genOutOfMemorySyntaxError();
+					if (!(expr = make_ast_node<BinaryExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document)))
+						return gen_out_of_memory_syntax_error();
 
-					expr->binaryOp = BinaryOp::StrictNeq;
+					expr->binary_op = BinaryOp::StrictNeq;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.cast_to<ExprNode>();
 
-					if ((syntaxError = parseExpr(71, expr->rhs)))
-						goto genBadExpr;
+					if ((syntax_error = parse_expr(71, expr->rhs)))
+						goto gen_bad_expr;
 
 					break;
 				}
@@ -1198,21 +1198,21 @@ SLKC_API peff::Option<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr<
 				case TokenId::AndOp: {
 					if (precedence > 60)
 						goto end;
-					nextToken();
+					next_token();
 
 					AstNodePtr<BinaryExprNode> expr;
 
-					if (!(expr = makeAstNode<BinaryExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document)))
-						return genOutOfMemorySyntaxError();
+					if (!(expr = make_ast_node<BinaryExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document)))
+						return gen_out_of_memory_syntax_error();
 
-					expr->binaryOp = BinaryOp::And;
+					expr->binary_op = BinaryOp::And;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.cast_to<ExprNode>();
 
-					if ((syntaxError = parseExpr(61, expr->rhs)))
-						goto genBadExpr;
+					if ((syntax_error = parse_expr(61, expr->rhs)))
+						goto gen_bad_expr;
 
 					break;
 				}
@@ -1220,21 +1220,21 @@ SLKC_API peff::Option<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr<
 				case TokenId::XorOp: {
 					if (precedence > 50)
 						goto end;
-					nextToken();
+					next_token();
 
 					AstNodePtr<BinaryExprNode> expr;
 
-					if (!(expr = makeAstNode<BinaryExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document)))
-						return genOutOfMemorySyntaxError();
+					if (!(expr = make_ast_node<BinaryExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document)))
+						return gen_out_of_memory_syntax_error();
 
-					expr->binaryOp = BinaryOp::Xor;
+					expr->binary_op = BinaryOp::Xor;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.cast_to<ExprNode>();
 
-					if ((syntaxError = parseExpr(51, expr->rhs)))
-						goto genBadExpr;
+					if ((syntax_error = parse_expr(51, expr->rhs)))
+						goto gen_bad_expr;
 
 					break;
 				}
@@ -1242,21 +1242,21 @@ SLKC_API peff::Option<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr<
 				case TokenId::OrOp: {
 					if (precedence > 40)
 						goto end;
-					nextToken();
+					next_token();
 
 					AstNodePtr<BinaryExprNode> expr;
 
-					if (!(expr = makeAstNode<BinaryExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document)))
-						return genOutOfMemorySyntaxError();
+					if (!(expr = make_ast_node<BinaryExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document)))
+						return gen_out_of_memory_syntax_error();
 
-					expr->binaryOp = BinaryOp::Or;
+					expr->binary_op = BinaryOp::Or;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.cast_to<ExprNode>();
 
-					if ((syntaxError = parseExpr(41, expr->rhs)))
-						goto genBadExpr;
+					if ((syntax_error = parse_expr(41, expr->rhs)))
+						goto gen_bad_expr;
 
 					break;
 				}
@@ -1264,21 +1264,21 @@ SLKC_API peff::Option<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr<
 				case TokenId::LAndOp: {
 					if (precedence > 30)
 						goto end;
-					nextToken();
+					next_token();
 
 					AstNodePtr<BinaryExprNode> expr;
 
-					if (!(expr = makeAstNode<BinaryExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document)))
-						return genOutOfMemorySyntaxError();
+					if (!(expr = make_ast_node<BinaryExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document)))
+						return gen_out_of_memory_syntax_error();
 
-					expr->binaryOp = BinaryOp::LAnd;
+					expr->binary_op = BinaryOp::LAnd;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.cast_to<ExprNode>();
 
-					if ((syntaxError = parseExpr(31, expr->rhs)))
-						goto genBadExpr;
+					if ((syntax_error = parse_expr(31, expr->rhs)))
+						goto gen_bad_expr;
 
 					break;
 				}
@@ -1286,21 +1286,21 @@ SLKC_API peff::Option<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr<
 				case TokenId::LOrOp: {
 					if (precedence > 20)
 						goto end;
-					nextToken();
+					next_token();
 
 					AstNodePtr<BinaryExprNode> expr;
 
-					if (!(expr = makeAstNode<BinaryExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document)))
-						return genOutOfMemorySyntaxError();
+					if (!(expr = make_ast_node<BinaryExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document)))
+						return gen_out_of_memory_syntax_error();
 
-					expr->binaryOp = BinaryOp::LOr;
+					expr->binary_op = BinaryOp::LOr;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.cast_to<ExprNode>();
 
-					if ((syntaxError = parseExpr(21, expr->rhs)))
-						goto genBadExpr;
+					if ((syntax_error = parse_expr(21, expr->rhs)))
+						goto gen_bad_expr;
 
 					break;
 				}
@@ -1308,31 +1308,31 @@ SLKC_API peff::Option<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr<
 				case TokenId::Question: {
 					if (precedence > 10)
 						goto end;
-					nextToken();
+					next_token();
 
 					AstNodePtr<TernaryExprNode> expr;
 
-					if (!(expr = makeAstNode<TernaryExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document)))
-						return genOutOfMemorySyntaxError();
+					if (!(expr = make_ast_node<TernaryExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document)))
+						return gen_out_of_memory_syntax_error();
 
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.cast_to<ExprNode>();
 
-					if ((syntaxError = parseExpr(10, expr->lhs)))
-						goto genBadExpr;
+					if ((syntax_error = parse_expr(10, expr->lhs)))
+						goto gen_bad_expr;
 
-					expr->tokenRange.endIndex = expr->lhs->tokenRange.endIndex;
+					expr->token_range.end_index = expr->lhs->token_range.end_index;
 
-					Token *colonToken;
-					if ((syntaxError = expectToken((colonToken = nextToken()), TokenId::Colon)))
-						goto genBadExpr;
+					Token *colon_token;
+					if ((syntax_error = expect_token((colon_token = next_token()), TokenId::Colon)))
+						goto gen_bad_expr;
 
-					expr->tokenRange.endIndex = colonToken->index;
+					expr->token_range.end_index = colon_token->index;
 
-					if ((syntaxError = parseExpr(10, expr->rhs)))
-						goto genBadExpr;
+					if ((syntax_error = parse_expr(10, expr->rhs)))
+						goto gen_bad_expr;
 
 					break;
 				}
@@ -1340,231 +1340,231 @@ SLKC_API peff::Option<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr<
 				case TokenId::AssignOp: {
 					if (precedence > 1)
 						goto end;
-					nextToken();
+					next_token();
 
 					AstNodePtr<BinaryExprNode> expr;
 
-					if (!(expr = makeAstNode<BinaryExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document)))
-						return genOutOfMemorySyntaxError();
+					if (!(expr = make_ast_node<BinaryExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document)))
+						return gen_out_of_memory_syntax_error();
 
-					expr->binaryOp = BinaryOp::Assign;
+					expr->binary_op = BinaryOp::Assign;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.cast_to<ExprNode>();
 
-					if ((syntaxError = parseExpr(0, expr->rhs)))
-						goto genBadExpr;
+					if ((syntax_error = parse_expr(0, expr->rhs)))
+						goto gen_bad_expr;
 
 					break;
 				}
 				case TokenId::AddAssignOp: {
 					if (precedence > 1)
 						goto end;
-					nextToken();
+					next_token();
 
 					AstNodePtr<BinaryExprNode> expr;
 
-					if (!(expr = makeAstNode<BinaryExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document)))
-						return genOutOfMemorySyntaxError();
+					if (!(expr = make_ast_node<BinaryExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document)))
+						return gen_out_of_memory_syntax_error();
 
-					expr->binaryOp = BinaryOp::AddAssign;
+					expr->binary_op = BinaryOp::AddAssign;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.cast_to<ExprNode>();
 
-					if ((syntaxError = parseExpr(0, expr->rhs)))
-						goto genBadExpr;
+					if ((syntax_error = parse_expr(0, expr->rhs)))
+						goto gen_bad_expr;
 
 					break;
 				}
 				case TokenId::SubAssignOp: {
 					if (precedence > 1)
 						goto end;
-					nextToken();
+					next_token();
 
 					AstNodePtr<BinaryExprNode> expr;
 
-					if (!(expr = makeAstNode<BinaryExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document)))
-						return genOutOfMemorySyntaxError();
+					if (!(expr = make_ast_node<BinaryExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document)))
+						return gen_out_of_memory_syntax_error();
 
-					expr->binaryOp = BinaryOp::SubAssign;
+					expr->binary_op = BinaryOp::SubAssign;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.cast_to<ExprNode>();
 
-					if ((syntaxError = parseExpr(0, expr->rhs)))
-						goto genBadExpr;
+					if ((syntax_error = parse_expr(0, expr->rhs)))
+						goto gen_bad_expr;
 
 					break;
 				}
 				case TokenId::MulAssignOp: {
 					if (precedence > 1)
 						goto end;
-					nextToken();
+					next_token();
 
 					AstNodePtr<BinaryExprNode> expr;
 
-					if (!(expr = makeAstNode<BinaryExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document)))
-						return genOutOfMemorySyntaxError();
+					if (!(expr = make_ast_node<BinaryExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document)))
+						return gen_out_of_memory_syntax_error();
 
-					expr->binaryOp = BinaryOp::MulAssign;
+					expr->binary_op = BinaryOp::MulAssign;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.cast_to<ExprNode>();
 
-					if ((syntaxError = parseExpr(0, expr->rhs)))
-						goto genBadExpr;
+					if ((syntax_error = parse_expr(0, expr->rhs)))
+						goto gen_bad_expr;
 
 					break;
 				}
 				case TokenId::DivAssignOp: {
 					if (precedence > 1)
 						goto end;
-					nextToken();
+					next_token();
 
 					AstNodePtr<BinaryExprNode> expr;
 
-					if (!(expr = makeAstNode<BinaryExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document)))
-						return genOutOfMemorySyntaxError();
+					if (!(expr = make_ast_node<BinaryExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document)))
+						return gen_out_of_memory_syntax_error();
 
-					expr->binaryOp = BinaryOp::DivAssign;
+					expr->binary_op = BinaryOp::DivAssign;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.cast_to<ExprNode>();
 
-					if ((syntaxError = parseExpr(0, expr->rhs)))
-						goto genBadExpr;
+					if ((syntax_error = parse_expr(0, expr->rhs)))
+						goto gen_bad_expr;
 
 					break;
 				}
 				case TokenId::AndAssignOp: {
 					if (precedence > 1)
 						goto end;
-					nextToken();
+					next_token();
 
 					AstNodePtr<BinaryExprNode> expr;
 
-					if (!(expr = makeAstNode<BinaryExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document)))
-						return genOutOfMemorySyntaxError();
+					if (!(expr = make_ast_node<BinaryExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document)))
+						return gen_out_of_memory_syntax_error();
 
-					expr->binaryOp = BinaryOp::AndAssign;
+					expr->binary_op = BinaryOp::AndAssign;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.cast_to<ExprNode>();
 
-					if ((syntaxError = parseExpr(0, expr->rhs)))
-						goto genBadExpr;
+					if ((syntax_error = parse_expr(0, expr->rhs)))
+						goto gen_bad_expr;
 
 					break;
 				}
 				case TokenId::OrAssignOp: {
 					if (precedence > 1)
 						goto end;
-					nextToken();
+					next_token();
 
 					AstNodePtr<BinaryExprNode> expr;
 
-					if (!(expr = makeAstNode<BinaryExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document)))
-						return genOutOfMemorySyntaxError();
+					if (!(expr = make_ast_node<BinaryExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document)))
+						return gen_out_of_memory_syntax_error();
 
-					expr->binaryOp = BinaryOp::OrAssign;
+					expr->binary_op = BinaryOp::OrAssign;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.cast_to<ExprNode>();
 
-					if ((syntaxError = parseExpr(0, expr->rhs)))
-						goto genBadExpr;
+					if ((syntax_error = parse_expr(0, expr->rhs)))
+						goto gen_bad_expr;
 
 					break;
 				}
 				case TokenId::XorAssignOp: {
 					if (precedence > 1)
 						goto end;
-					nextToken();
+					next_token();
 
 					AstNodePtr<BinaryExprNode> expr;
 
-					if (!(expr = makeAstNode<BinaryExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document)))
-						return genOutOfMemorySyntaxError();
+					if (!(expr = make_ast_node<BinaryExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document)))
+						return gen_out_of_memory_syntax_error();
 
-					expr->binaryOp = BinaryOp::XorAssign;
+					expr->binary_op = BinaryOp::XorAssign;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.cast_to<ExprNode>();
 
-					if ((syntaxError = parseExpr(0, expr->rhs)))
-						goto genBadExpr;
+					if ((syntax_error = parse_expr(0, expr->rhs)))
+						goto gen_bad_expr;
 
 					break;
 				}
 				case TokenId::ShlAssignOp: {
 					if (precedence > 1)
 						goto end;
-					nextToken();
+					next_token();
 
 					AstNodePtr<BinaryExprNode> expr;
 
-					if (!(expr = makeAstNode<BinaryExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document)))
-						return genOutOfMemorySyntaxError();
+					if (!(expr = make_ast_node<BinaryExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document)))
+						return gen_out_of_memory_syntax_error();
 
-					expr->binaryOp = BinaryOp::ShlAssign;
+					expr->binary_op = BinaryOp::ShlAssign;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.cast_to<ExprNode>();
 
-					if ((syntaxError = parseExpr(0, expr->rhs)))
-						goto genBadExpr;
+					if ((syntax_error = parse_expr(0, expr->rhs)))
+						goto gen_bad_expr;
 
 					break;
 				}
 				case TokenId::ShrAssignOp: {
 					if (precedence > 1)
 						goto end;
-					nextToken();
+					next_token();
 
 					AstNodePtr<BinaryExprNode> expr;
 
-					if (!(expr = makeAstNode<BinaryExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document)))
-						return genOutOfMemorySyntaxError();
+					if (!(expr = make_ast_node<BinaryExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document)))
+						return gen_out_of_memory_syntax_error();
 
-					expr->binaryOp = BinaryOp::ShrAssign;
+					expr->binary_op = BinaryOp::ShrAssign;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.cast_to<ExprNode>();
 
-					if ((syntaxError = parseExpr(0, expr->rhs)))
-						goto genBadExpr;
+					if ((syntax_error = parse_expr(0, expr->rhs)))
+						goto gen_bad_expr;
 
 					break;
 				}
 				case TokenId::Comma: {
 					if (precedence > -9)
 						goto end;
-					nextToken();
+					next_token();
 
 					AstNodePtr<BinaryExprNode> expr;
 
-					if (!(expr = makeAstNode<BinaryExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document)))
-						return genOutOfMemorySyntaxError();
+					if (!(expr = make_ast_node<BinaryExprNode>(
+							  resource_allocator.get(), resource_allocator.get(), document)))
+						return gen_out_of_memory_syntax_error();
 
-					expr->binaryOp = BinaryOp::Comma;
+					expr->binary_op = BinaryOp::Comma;
 					expr->lhs = lhs;
 
-					lhs = expr.castTo<ExprNode>();
+					lhs = expr.cast_to<ExprNode>();
 
-					if ((syntaxError = parseExpr(-10, expr->rhs)))
-						goto genBadExpr;
+					if ((syntax_error = parse_expr(-10, expr->rhs)))
+						goto gen_bad_expr;
 
 					break;
 				}
@@ -1575,13 +1575,13 @@ SLKC_API peff::Option<SyntaxError> Parser::parseExpr(int precedence, AstNodePtr<
 	}
 
 end:
-	exprOut = lhs;
+	expr_out = lhs;
 
 	return {};
 
-genBadExpr:
-	if (!(exprOut = makeAstNode<BadExprNode>(resourceAllocator.get(), resourceAllocator.get(), document, lhs).castTo<ExprNode>()))
-		return genOutOfMemorySyntaxError();
-	exprOut->tokenRange = { document->mainModule, prefixToken->index, parseContext.idxCurrentToken };
-	return syntaxError;
+gen_bad_expr:
+	if (!(expr_out = make_ast_node<BadExprNode>(resource_allocator.get(), resource_allocator.get(), document, lhs).cast_to<ExprNode>()))
+		return gen_out_of_memory_syntax_error();
+	expr_out->token_range = { document->main_module, prefix_token->index, parse_context.idx_current_token };
+	return syntax_error;
 }

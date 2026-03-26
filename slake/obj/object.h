@@ -49,9 +49,9 @@ namespace slake {
 		Coroutine,	 // Coroutine
 	};
 
-	SLAKE_FORCEINLINE bool verifyObjectKind(const Object *object);
+	SLAKE_FORCEINLINE bool verify_object_kind(const Object *object);
 
-	SLAKE_FORCEINLINE bool verifyObjectKind(const Object *object, ObjectKind objectKind);
+	SLAKE_FORCEINLINE bool verify_object_kind(const Object *object, ObjectKind object_kind);
 
 	using ObjectFlags = uint8_t;
 	constexpr static ObjectFlags
@@ -102,16 +102,16 @@ namespace slake {
 
 	struct DuplicationTask {
 		union {
-			NormalDuplicationTask asNormal;
-			ModuleMemberDuplicationTask asModuleMember;
-			TypeDuplicationTask asType;
+			NormalDuplicationTask as_normal;
+			ModuleMemberDuplicationTask as_module_member;
+			TypeDuplicationTask as_type;
 		};
 
-		DuplicationTaskType taskType;
+		DuplicationTaskType task_type;
 
-		SLAKE_API static DuplicationTask makeNormal(Object **dest, Object *src);
-		SLAKE_API static DuplicationTask makeModuleMember(BasicModuleObject *mod, MemberObject *src);
-		SLAKE_API static DuplicationTask makeType(TypeRef *type, const TypeRef &src);
+		SLAKE_API static DuplicationTask make_normal(Object **dest, Object *src);
+		SLAKE_API static DuplicationTask make_module_member(BasicModuleObject *mod, MemberObject *src);
+		SLAKE_API static DuplicationTask make_type(TypeRef *type, const TypeRef &src);
 	};
 
 	class Duplicator {
@@ -121,7 +121,7 @@ namespace slake {
 
 		SLAKE_API Duplicator(Runtime *runtime, peff::Alloc *allocator);
 
-		[[nodiscard]] SLAKE_API bool insertTask(DuplicationTask &&task);
+		[[nodiscard]] SLAKE_API bool insert_task(DuplicationTask &&task);
 
 		[[nodiscard]] SLAKE_API bool exec();
 	};
@@ -130,31 +130,31 @@ namespace slake {
 
 	class Object {
 	public:
-		peff::RcObjectPtr<peff::Alloc> selfAllocator;
+		peff::RcObjectPtr<peff::Alloc> self_allocator;
 		// The object will never be freed if its host reference count is not 0.
-		mutable std::atomic_size_t hostRefCount = 0;
+		mutable std::atomic_size_t host_ref_count = 0;
 
 		/// @brief The basic constructor.
 		/// @param rt Runtime that the value belongs to.
-		SLAKE_API Object(Runtime *rt, peff::Alloc *selfAllocator, ObjectKind objectKind);
+		SLAKE_API Object(Runtime *rt, peff::Alloc *self_allocator, ObjectKind object_kind);
 		SLAKE_API Object(const Object &x, peff::Alloc *allocator);
 		SLAKE_API virtual ~Object();
 
-		Object *nextSameGenObject = nullptr;
-		Object *prevSameGenObject = nullptr;
+		Object *next_same_gen_object = nullptr;
+		Object *prev_same_gen_object = nullptr;
 
-		Object *prevSameGCSet;
-		Object *nextSameGCSet;
+		Object *prev_same_gcset;
+		Object *next_same_gcset;
 
-		Runtime *associatedRuntime;
+		Runtime *associated_runtime;
 
-		ObjectFlags objectFlags = 0;
-		ObjectGeneration objectGeneration = ObjectGeneration::Young;
-		Spinlock gcSpinlock;
-		ObjectGCStatus gcStatus;
+		ObjectFlags object_flags = 0;
+		ObjectGeneration object_generation = ObjectGeneration::Young;
+		Spinlock gc_spinlock;
+		ObjectGCStatus gc_status;
 
 	private:
-		ObjectKind _objectKind;
+		ObjectKind _object_kind;
 
 	public:
 		/// @brief Dulplicate the value if supported.
@@ -163,29 +163,29 @@ namespace slake {
 
 		virtual void dealloc() = 0;
 
-		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept;
+		SLAKE_API virtual void replace_allocator(peff::Alloc *allocator) noexcept;
 
-		SLAKE_FORCEINLINE Runtime *getRuntime() const noexcept { return associatedRuntime; }
+		SLAKE_FORCEINLINE Runtime *get_runtime() const noexcept { return associated_runtime; }
 
-		SLAKE_FORCEINLINE ObjectKind getObjectKindUnchecked() const noexcept {
-			return _objectKind;
+		SLAKE_FORCEINLINE ObjectKind get_object_kind_unchecked() const noexcept {
+			return _object_kind;
 		}
 
-		SLAKE_FORCEINLINE ObjectKind getObjectKind() const noexcept {
-			assert(verifyObjectKind(this));
-			return _objectKind;
+		SLAKE_FORCEINLINE ObjectKind get_object_kind() const noexcept {
+			assert(verify_object_kind(this));
+			return _object_kind;
 		}
 
-		SLAKE_FORCEINLINE void incHostRef() const noexcept {
-			++hostRefCount;
+		SLAKE_FORCEINLINE void inc_host_ref() const noexcept {
+			++host_ref_count;
 		}
 
-		SLAKE_FORCEINLINE void decHostRef() const noexcept {
-			assert(hostRefCount > 0);
-			--hostRefCount;
+		SLAKE_FORCEINLINE void dec_host_ref() const noexcept {
+			assert(host_ref_count > 0);
+			--host_ref_count;
 		}
 
-		SLAKE_API virtual Reference getMember(const std::string_view &name) const;
+		SLAKE_API virtual Reference get_member(const std::string_view &name) const;
 	};
 
 	template <typename T = Object>
@@ -193,21 +193,21 @@ namespace slake {
 	public:
 		T *_value = nullptr;
 
-		SLAKE_FORCEINLINE void _assertEphemeral(T *ptr) {
+		SLAKE_FORCEINLINE void _assert_ephemeral(T *ptr) {
 			if (ptr)
-				assert(ptr->hostRefCount != HOSTREF_EPHEMERAL);
+				assert(ptr->host_ref_count != HOSTREF_EPHEMERAL);
 		}
 
 		SLAKE_FORCEINLINE void reset() noexcept {
 			if (_value) {
-				--_value->hostRefCount;
+				--_value->host_ref_count;
 				_value = nullptr;
 			}
 		}
 
 		SLAKE_FORCEINLINE T *release() noexcept {
 			T *v = _value;
-			--_value->hostRefCount;
+			--_value->host_ref_count;
 			_value = nullptr;
 			return v;
 		}
@@ -216,7 +216,7 @@ namespace slake {
 
 		SLAKE_FORCEINLINE HostObjectRef(const HostObjectRef<T> &x) noexcept : _value(x._value) {
 			if (x._value) {
-				++_value->hostRefCount;
+				++_value->host_ref_count;
 			}
 		}
 		SLAKE_FORCEINLINE HostObjectRef(HostObjectRef<T> &&x) noexcept : _value(x._value) {
@@ -225,9 +225,9 @@ namespace slake {
 			}
 		}
 		SLAKE_FORCEINLINE HostObjectRef(T *value = nullptr) noexcept : _value(value) {
-			_assertEphemeral(value);
+			_assert_ephemeral(value);
 			if (_value) {
-				++_value->hostRefCount;
+				++_value->host_ref_count;
 			}
 		}
 		SLAKE_FORCEINLINE ~HostObjectRef() {
@@ -243,7 +243,7 @@ namespace slake {
 			reset();
 
 			if ((_value = x._value)) {
-				++_value->hostRefCount;
+				++_value->host_ref_count;
 			}
 
 			return *this;
@@ -261,9 +261,9 @@ namespace slake {
 		SLAKE_FORCEINLINE HostObjectRef<T> &operator=(T *other) noexcept {
 			reset();
 
-			_assertEphemeral(other);
+			_assert_ephemeral(other);
 			if ((_value = other)) {
-				++_value->hostRefCount;
+				++_value->host_ref_count;
 			}
 
 			return *this;
@@ -286,22 +286,22 @@ namespace slake {
 
 	class HostRefHolder final {
 	public:
-		peff::Set<Object *> holdedObjects;
+		peff::Set<Object *> holded_objects;
 
 		SLAKE_API HostRefHolder(
-			peff::Alloc *selfAllocator);
+			peff::Alloc *self_allocator);
 		SLAKE_API ~HostRefHolder();
 
-		[[nodiscard]] SLAKE_API bool addObject(Object *object);
-		SLAKE_API void removeObject(Object *object) noexcept;
+		[[nodiscard]] SLAKE_API bool add_object(Object *object);
+		SLAKE_API void remove_object(Object *object) noexcept;
 	};
 
-	SLAKE_FORCEINLINE bool verifyObjectKind(const Object *object) {
-		return (object->getObjectKindUnchecked() >= ObjectKind::String) && (object->getObjectKindUnchecked() <= ObjectKind::Coroutine);
+	SLAKE_FORCEINLINE bool verify_object_kind(const Object *object) {
+		return (object->get_object_kind_unchecked() >= ObjectKind::String) && (object->get_object_kind_unchecked() <= ObjectKind::Coroutine);
 	}
 
-	SLAKE_FORCEINLINE bool verifyObjectKind(const Object *object, ObjectKind objectKind) {
-		return object->getObjectKindUnchecked() == objectKind;
+	SLAKE_FORCEINLINE bool verify_object_kind(const Object *object, ObjectKind object_kind) {
+		return object->get_object_kind_unchecked() == object_kind;
 	}
 }
 

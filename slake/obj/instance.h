@@ -15,16 +15,16 @@ namespace slake {
 	class InstanceObject final : public Object {
 	public:
 		ClassObject *_class = nullptr;
-		char *rawFieldData = nullptr;
-		size_t szRawFieldData = 0;
+		char *raw_field_data = nullptr;
+		size_t sz_raw_field_data = 0;
 
-		SLAKE_API InstanceObject(Runtime *rt, peff::Alloc *selfAllocator);
+		SLAKE_API InstanceObject(Runtime *rt, peff::Alloc *self_allocator);
 		SLAKE_API InstanceObject(const InstanceObject &x, peff::Alloc *allocator);
 		SLAKE_API virtual ~InstanceObject();
 
 		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
 
-		SLAKE_API virtual Reference getMember(
+		SLAKE_API virtual Reference get_member(
 			const std::string_view &name) const override;
 
 		SLAKE_API static HostObjectRef<InstanceObject> alloc(Runtime *rt);

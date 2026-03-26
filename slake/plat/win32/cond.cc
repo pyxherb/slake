@@ -3,21 +3,21 @@
 using namespace slake;
 
 SLAKE_API Cond::Cond() {
-	InitializeCriticalSection(&criticalSection);
-	InitializeConditionVariable(&nativeHandle);
+	InitializeCriticalSection(&critical_section);
+	InitializeConditionVariable(&native_handle);
 }
 SLAKE_API Cond::~Cond() {
-	DeleteCriticalSection(&criticalSection);
+	DeleteCriticalSection(&critical_section);
 }
 
 SLAKE_API void Cond::wait() {
-	SleepConditionVariableCS(&nativeHandle, &criticalSection, INFINITE);
+	SleepConditionVariableCS(&native_handle, &critical_section, INFINITE);
 }
 
 SLAKE_API void Cond::notify() {
-	WakeConditionVariable(&nativeHandle);
+	WakeConditionVariable(&native_handle);
 }
 
-SLAKE_API void Cond::notifyAll() {
-	WakeAllConditionVariable(&nativeHandle);
+SLAKE_API void Cond::notify_all() {
+	WakeAllConditionVariable(&native_handle);
 }

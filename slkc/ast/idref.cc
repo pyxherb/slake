@@ -3,68 +3,68 @@
 using namespace slkc;
 
 SLKC_API IdRef::IdRef(
-	peff::Alloc *selfAllocator)
-	: selfAllocator(selfAllocator),
-	  entries(selfAllocator) {
+	peff::Alloc *self_allocator)
+	: self_allocator(self_allocator),
+	  entries(self_allocator) {
 }
 
 SLKC_API IdRef::~IdRef() {
 }
 
 SLKC_API void IdRef::dealloc() noexcept {
-	peff::destroyAndRelease<IdRef>(selfAllocator.get(), this, ASTNODE_ALIGNMENT);
+	peff::destroy_and_release<IdRef>(self_allocator.get(), this, ASTNODE_ALIGNMENT);
 }
 
-SLKC_API peff::Option<IdRefEntry> slkc::duplicateIdRefEntry(peff::Alloc *selfAllocator, const IdRefEntry &rhs) {
-	IdRefEntry newIdRefEntry(selfAllocator);
+SLKC_API peff::Option<IdRefEntry> slkc::duplicate_id_ref_entry(peff::Alloc *self_allocator, const IdRefEntry &rhs) {
+	IdRefEntry new_id_ref_entry(self_allocator);
 
-	if (!newIdRefEntry.genericArgs.build(rhs.genericArgs)) {
+	if (!new_id_ref_entry.generic_args.build(rhs.generic_args)) {
 		return {};
 	}
 
-	if (!newIdRefEntry.name.build(rhs.name)) {
+	if (!new_id_ref_entry.name.build(rhs.name)) {
 		return {};
 	}
 
-	newIdRefEntry.nameTokenIndex = rhs.nameTokenIndex;
-	newIdRefEntry.genericScopeTokenIndex = rhs.genericScopeTokenIndex;
-	newIdRefEntry.leftAngleBracketTokenIndex = rhs.leftAngleBracketTokenIndex;
-	newIdRefEntry.rightAngleBracketTokenIndex = rhs.rightAngleBracketTokenIndex;
-	newIdRefEntry.accessOpTokenIndex = rhs.accessOpTokenIndex;
+	new_id_ref_entry.name_token_index = rhs.name_token_index;
+	new_id_ref_entry.generic_scope_token_index = rhs.generic_scope_token_index;
+	new_id_ref_entry.left_angle_bracket_token_index = rhs.left_angle_bracket_token_index;
+	new_id_ref_entry.right_angle_bracket_token_index = rhs.right_angle_bracket_token_index;
+	new_id_ref_entry.access_op_token_index = rhs.access_op_token_index;
 
-	if (!newIdRefEntry.commaTokenIndices.build(rhs.commaTokenIndices)) {
+	if (!new_id_ref_entry.comma_token_indices.build(rhs.comma_token_indices)) {
 		return {};
 	}
 
-	return std::move(newIdRefEntry);
+	return std::move(new_id_ref_entry);
 }
 
-SLKC_API IdRefPtr slkc::duplicateIdRef(peff::Alloc *selfAllocator, IdRef *rhs) {
+SLKC_API IdRefPtr slkc::duplicate_id_ref(peff::Alloc *self_allocator, IdRef *rhs) {
 	if (!rhs) {
 		return {};
 	}
 
-	IdRefPtr newIdRefPtr = IdRefPtr(
-		peff::allocAndConstruct<IdRef>(
-			selfAllocator,
+	IdRefPtr new_id_ref_ptr = IdRefPtr(
+		peff::alloc_and_construct<IdRef>(
+			self_allocator,
 			ASTNODE_ALIGNMENT,
-			selfAllocator));
+			self_allocator));
 
-	if (!newIdRefPtr->entries.resizeUninitialized(rhs->entries.size())) {
+	if (!new_id_ref_ptr->entries.resize_uninit(rhs->entries.size())) {
 		return {};
 	}
 
 	for (size_t i = 0; i < rhs->entries.size(); ++i) {
-		peff::Option<IdRefEntry> duplicatedEntry = duplicateIdRefEntry(selfAllocator, rhs->entries.at(i));
+		peff::Option<IdRefEntry> duplicated_entry = duplicate_id_ref_entry(self_allocator, rhs->entries.at(i));
 
-		if (!duplicatedEntry.hasValue())
+		if (!duplicated_entry.has_value())
 			return {};
 
-		peff::constructAt<IdRefEntry>(&newIdRefPtr->entries.at(i), std::move(*duplicatedEntry));
-		duplicatedEntry.reset();
+		peff::construct_at<IdRefEntry>(&new_id_ref_ptr->entries.at(i), std::move(*duplicated_entry));
+		duplicated_entry.reset();
 	}
 
-	newIdRefPtr->tokenRange = rhs->tokenRange;
+	new_id_ref_ptr->token_range = rhs->token_range;
 
-	return newIdRefPtr;
+	return new_id_ref_ptr;
 }

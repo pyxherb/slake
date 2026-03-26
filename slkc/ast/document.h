@@ -101,14 +101,14 @@ namespace slkc {
 	class FnOverloadingNode;
 
 	struct IncompatibleOperandErrorExData {
-		AstNodePtr<TypeNameNode> desiredType;
+		AstNodePtr<TypeNameNode> desired_type;
 	};
 
 	struct ErrorParsingImportedModuleErrorExData {
-		peff::Option<LexicalError> lexicalError;
+		peff::Option<LexicalError> lexical_error;
 		AstNodePtr<ModuleNode> mod;
 
-		SLAKE_FORCEINLINE ErrorParsingImportedModuleErrorExData(LexicalError &&lexicalError) : lexicalError(std::move(lexicalError)) {}
+		SLAKE_FORCEINLINE ErrorParsingImportedModuleErrorExData(LexicalError &&lexical_error) : lexical_error(std::move(lexical_error)) {}
 		SLAKE_FORCEINLINE ErrorParsingImportedModuleErrorExData(AstNodePtr<ModuleNode> mod) : mod(mod) {}
 	};
 
@@ -117,63 +117,63 @@ namespace slkc {
 	};
 
 	struct CompilationError {
-		TokenRange tokenRange;
-		CompilationErrorKind errorKind;
-		std::variant<std::monostate, IncompatibleOperandErrorExData, ErrorParsingImportedModuleErrorExData, AbstractMethodNotImplementedErrorExData> exData;
+		TokenRange token_range;
+		CompilationErrorKind error_kind;
+		std::variant<std::monostate, IncompatibleOperandErrorExData, ErrorParsingImportedModuleErrorExData, AbstractMethodNotImplementedErrorExData> ex_data;
 
 		SLAKE_FORCEINLINE CompilationError(
-			const TokenRange &tokenRange,
-			CompilationErrorKind errorKind)
-			: tokenRange(tokenRange),
-			  errorKind(errorKind) {
-			assert(tokenRange);
+			const TokenRange &token_range,
+			CompilationErrorKind error_kind)
+			: token_range(token_range),
+			  error_kind(error_kind) {
+			assert(token_range);
 		}
 
 		SLAKE_FORCEINLINE CompilationError(
-			const TokenRange &tokenRange,
-			IncompatibleOperandErrorExData &&exData)
-			: tokenRange(tokenRange),
-			  errorKind(CompilationErrorKind::IncompatibleOperand),
-			  exData(exData) {
-			assert(tokenRange);
+			const TokenRange &token_range,
+			IncompatibleOperandErrorExData &&ex_data)
+			: token_range(token_range),
+			  error_kind(CompilationErrorKind::IncompatibleOperand),
+			  ex_data(ex_data) {
+			assert(token_range);
 		}
 
 		SLAKE_FORCEINLINE CompilationError(
-			const TokenRange &tokenRange,
-			ErrorParsingImportedModuleErrorExData &&exData)
-			: tokenRange(tokenRange),
-			  errorKind(CompilationErrorKind::ErrorParsingImportedModule),
-			  exData(std::move(exData)) {
-			assert(tokenRange);
+			const TokenRange &token_range,
+			ErrorParsingImportedModuleErrorExData &&ex_data)
+			: token_range(token_range),
+			  error_kind(CompilationErrorKind::ErrorParsingImportedModule),
+			  ex_data(std::move(ex_data)) {
+			assert(token_range);
 		}
 
 		SLAKE_FORCEINLINE CompilationError(
-			const TokenRange &tokenRange,
-			AbstractMethodNotImplementedErrorExData &&exData)
-			: tokenRange(tokenRange),
-			  errorKind(CompilationErrorKind::AbstractMethodNotImplemented),
-			  exData(exData) {
-			assert(tokenRange);
+			const TokenRange &token_range,
+			AbstractMethodNotImplementedErrorExData &&ex_data)
+			: token_range(token_range),
+			  error_kind(CompilationErrorKind::AbstractMethodNotImplemented),
+			  ex_data(ex_data) {
+			assert(token_range);
 		}
 
 		SLAKE_FORCEINLINE bool operator<(const CompilationError &rhs) const noexcept {
-			return tokenRange < rhs.tokenRange;
+			return token_range < rhs.token_range;
 		}
 
 		SLAKE_FORCEINLINE bool operator>(const CompilationError &rhs) const noexcept {
-			return tokenRange > rhs.tokenRange;
+			return token_range > rhs.token_range;
 		}
 	};
 
-	SLAKE_FORCEINLINE CompilationError genOutOfMemoryCompError() {
+	SLAKE_FORCEINLINE CompilationError gen_out_of_memory_comp_error() {
 		return CompilationError(TokenRange{ 0, 0 }, CompilationErrorKind::OutOfMemory);
 	}
 
-	SLAKE_FORCEINLINE CompilationError genStackOverflow() {
+	SLAKE_FORCEINLINE CompilationError gen_stack_overflow() {
 		return CompilationError(TokenRange{ 0, 0 }, CompilationErrorKind::StackOverflow);
 	}
 
-	SLAKE_FORCEINLINE CompilationError genOutOfRuntimeMemoryCompError() {
+	SLAKE_FORCEINLINE CompilationError gen_out_of_runtime_memory_comp_error() {
 		return CompilationError(TokenRange{ 0, 0 }, CompilationErrorKind::OutOfRuntimeMemory);
 	}
 
@@ -182,25 +182,25 @@ namespace slkc {
 	};
 
 	struct CompilationWarning {
-		TokenRange tokenRange;
-		CompilationWarningKind warningKind;
-		std::variant<std::monostate> exData;
+		TokenRange token_range;
+		CompilationWarningKind warning_kind;
+		std::variant<std::monostate> ex_data;
 
 		SLAKE_FORCEINLINE CompilationWarning(
-			const TokenRange &tokenRange,
-			CompilationWarningKind warningKind)
-			: tokenRange(tokenRange),
-			  warningKind(warningKind) {
+			const TokenRange &token_range,
+			CompilationWarningKind warning_kind)
+			: token_range(token_range),
+			  warning_kind(warning_kind) {
 		}
 	};
 
 	struct CompileEnv;
 	struct GenericArgListCmp {
 		Document *document;
-		peff::RcObjectPtr<CompileEnv> compileEnv;
-		mutable peff::Option<slkc::CompilationError> storedError;
+		peff::RcObjectPtr<CompileEnv> compile_env;
+		mutable peff::Option<slkc::CompilationError> stored_error;
 
-		SLAKE_API GenericArgListCmp(Document *document, CompileEnv *compileEnv);
+		SLAKE_API GenericArgListCmp(Document *document, CompileEnv *compile_env);
 		SLAKE_API GenericArgListCmp(const GenericArgListCmp &r);
 		SLAKE_API ~GenericArgListCmp();
 
@@ -225,7 +225,7 @@ namespace slkc {
 
 	struct TypeSlotGenericInstantiationTask {
 		peff::SharedPtr<GenericInstantiationContext> context;
-		AstNodePtr<TypeNameNode> &typeName;
+		AstNodePtr<TypeNameNode> &type_name;
 	};
 
 	struct AstNodeGenericInstantiationTask {
@@ -238,41 +238,41 @@ namespace slkc {
 
 	struct GenericInstantiationDispatcher {
 		peff::RcObjectPtr<peff::Alloc> allocator;
-		peff::List<MemberGenericInstantiationTask> memberTasks;
-		peff::List<TypeSlotGenericInstantiationTask> typeTasks;
-		peff::List<AstNodeGenericInstantiationTask> astNodeTasks;
-		peff::Set<AstNodePtr<FnOverloadingNode>> collectedFnOverloadings;
-		peff::Set<AstNodePtr<FnNode>> collectedFns;
+		peff::List<MemberGenericInstantiationTask> member_tasks;
+		peff::List<TypeSlotGenericInstantiationTask> type_tasks;
+		peff::List<AstNodeGenericInstantiationTask> ast_node_tasks;
+		peff::Set<AstNodePtr<FnOverloadingNode>> collected_fn_overloadings;
+		peff::Set<AstNodePtr<FnNode>> collected_fns;
 
-		SLAKE_FORCEINLINE GenericInstantiationDispatcher(peff::Alloc *allocator) : allocator(allocator), memberTasks(allocator), astNodeTasks(allocator), typeTasks(allocator), collectedFnOverloadings(allocator), collectedFns(allocator) {}
+		SLAKE_FORCEINLINE GenericInstantiationDispatcher(peff::Alloc *allocator) : allocator(allocator), member_tasks(allocator), ast_node_tasks(allocator), type_tasks(allocator), collected_fn_overloadings(allocator), collected_fns(allocator) {}
 
-		[[nodiscard]] SLAKE_FORCEINLINE peff::Option<CompilationError> pushMemberTask(MemberGenericInstantiationTask &&task) noexcept {
-			return memberTasks.pushBack(std::move(task)) ? peff::Option<CompilationError>{} : genOutOfMemoryCompError();
+		[[nodiscard]] SLAKE_FORCEINLINE peff::Option<CompilationError> push_member_task(MemberGenericInstantiationTask &&task) noexcept {
+			return member_tasks.push_back(std::move(task)) ? peff::Option<CompilationError>{} : gen_out_of_memory_comp_error();
 		}
 
-		[[nodiscard]] SLAKE_FORCEINLINE peff::Option<CompilationError> pushTypeSlotTask(TypeSlotGenericInstantiationTask &&task) noexcept {
-			return typeTasks.pushBack(std::move(task)) ? peff::Option<CompilationError>{} : genOutOfMemoryCompError();
+		[[nodiscard]] SLAKE_FORCEINLINE peff::Option<CompilationError> push_type_slot_task(TypeSlotGenericInstantiationTask &&task) noexcept {
+			return type_tasks.push_back(std::move(task)) ? peff::Option<CompilationError>{} : gen_out_of_memory_comp_error();
 		}
 
-		[[nodiscard]] SLAKE_FORCEINLINE peff::Option<CompilationError> pushAstNodeTask(AstNodeGenericInstantiationTask &&task) noexcept {
-			return astNodeTasks.pushBack(std::move(task)) ? peff::Option<CompilationError>{} : genOutOfMemoryCompError();
+		[[nodiscard]] SLAKE_FORCEINLINE peff::Option<CompilationError> push_ast_node_task(AstNodeGenericInstantiationTask &&task) noexcept {
+			return ast_node_tasks.push_back(std::move(task)) ? peff::Option<CompilationError>{} : gen_out_of_memory_comp_error();
 		}
 	};
 
 	struct GenericInstantiationContext : public peff::SharedFromThis<GenericInstantiationContext> {
 		peff::RcObjectPtr<peff::Alloc> allocator;
-		const peff::DynArray<AstNodePtr<AstNode>> *genericArgs;
-		peff::HashMap<std::string_view, AstNodePtr<AstNode>> mappedGenericArgs;
-		AstNodePtr<MemberNode> mappedNode;
+		const peff::DynArray<AstNodePtr<AstNode>> *generic_args;
+		peff::HashMap<std::string_view, AstNodePtr<AstNode>> mapped_generic_args;
+		AstNodePtr<MemberNode> mapped_node;
 		GenericInstantiationDispatcher *dispatcher = nullptr;
 
 		SLAKE_FORCEINLINE GenericInstantiationContext(
 			peff::Alloc *allocator,
-			const peff::DynArray<AstNodePtr<AstNode>> *genericArgs,
+			const peff::DynArray<AstNodePtr<AstNode>> *generic_args,
 			GenericInstantiationDispatcher *dispatcher)
 			: allocator(allocator),
-			  genericArgs(genericArgs),
-			  mappedGenericArgs(allocator),
+			  generic_args(generic_args),
+			  mapped_generic_args(allocator),
 			  dispatcher(dispatcher) {
 		}
 	};
@@ -281,44 +281,44 @@ namespace slkc {
 
 	class Document : public peff::SharedFromThis<Document> {
 	private:
-		SLKC_API void _doClearDeferredDestructibleAstNodes();
+		SLKC_API void _do_clear_deferred_destructible_ast_nodes();
 
 	public:
 		peff::RcObjectPtr<peff::Alloc> allocator;
-		AstNodePtr<ModuleNode> rootModule;
-		ModuleNode *mainModule = nullptr;
-		peff::DynArray<peff::SharedPtr<ExternalModuleProvider>> externalModuleProviders;
+		AstNodePtr<ModuleNode> root_module;
+		ModuleNode *main_module = nullptr;
+		peff::DynArray<peff::SharedPtr<ExternalModuleProvider>> external_module_providers;
 		peff::Map<
 			MemberNode *,
 			GenericCacheTable>
-			genericCacheDir;
+			generic_cache_dir;
 
-		AstNode *destructibleAstNodeList = nullptr;
+		AstNode *destructible_ast_node_list = nullptr;
 
 		SLKC_API Document(peff::Alloc *allocator);
 		SLKC_API virtual ~Document();
 
-		SLKC_API peff::Option<CompilationError> lookupGenericCacheTable(AstNodePtr<MemberNode> originalObject, GenericCacheTable *&tableOut);
+		SLKC_API peff::Option<CompilationError> lookup_generic_cache_table(AstNodePtr<MemberNode> original_object, GenericCacheTable *&table_out);
 
-		SLKC_API peff::Option<CompilationError> lookupGenericCacheTable(
-			AstNodePtr<MemberNode> originalObject,
-			const GenericCacheTable *&tableOut) const {
-			return const_cast<Document *>(this)->lookupGenericCacheTable(originalObject, const_cast<GenericCacheTable *&>(tableOut));
+		SLKC_API peff::Option<CompilationError> lookup_generic_cache_table(
+			AstNodePtr<MemberNode> original_object,
+			const GenericCacheTable *&table_out) const {
+			return const_cast<Document *>(this)->lookup_generic_cache_table(original_object, const_cast<GenericCacheTable *&>(table_out));
 		}
 
-		SLKC_API peff::Option<CompilationError> lookupGenericCache(
-			AstNodePtr<MemberNode> originalObject,
-			const peff::DynArray<AstNodePtr<AstNode>> &genericArgs,
-			AstNodePtr<MemberNode> &memberOut) const;
+		SLKC_API peff::Option<CompilationError> lookup_generic_cache(
+			AstNodePtr<MemberNode> original_object,
+			const peff::DynArray<AstNodePtr<AstNode>> &generic_args,
+			AstNodePtr<MemberNode> &member_out) const;
 
-		SLKC_API peff::Option<CompilationError> instantiateGenericObject(
-			AstNodePtr<MemberNode> originalObject,
-			const peff::DynArray<AstNodePtr<AstNode>> &genericArgs,
-			AstNodePtr<MemberNode> &memberOut);
+		SLKC_API peff::Option<CompilationError> instantiate_generic_object(
+			AstNodePtr<MemberNode> original_object,
+			const peff::DynArray<AstNodePtr<AstNode>> &generic_args,
+			AstNodePtr<MemberNode> &member_out);
 
-		SLAKE_FORCEINLINE void clearDeferredDestructibleAstNodes() {
-			if (destructibleAstNodeList) {
-				_doClearDeferredDestructibleAstNodes();
+		SLAKE_FORCEINLINE void clear_deferred_destructible_ast_nodes() {
+			if (destructible_ast_node_list) {
+				_do_clear_deferred_destructible_ast_nodes();
 			}
 		}
 	};

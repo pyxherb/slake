@@ -44,63 +44,63 @@ namespace slkc {
 
 	class TypeNameNode : public AstNode {
 	public:
-		const TypeNameKind typeNameKind;
-		bool isFinal = false;
-		bool isLocal = false;
-		bool isNullable = false;
+		const TypeNameKind type_name_kind;
+		bool is_final = false;
+		bool is_local = false;
+		bool is_nullable = false;
 
-		size_t idxFinalToken = SIZE_MAX, idxLocalToken = SIZE_MAX, idxNullableToken = SIZE_MAX;
+		size_t idx_final_token = SIZE_MAX, idx_local_token = SIZE_MAX, idx_nullable_token = SIZE_MAX;
 
-		SLKC_API TypeNameNode(TypeNameKind typeNameKind, peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
-		SLKC_API TypeNameNode(const TypeNameNode &rhs, peff::Alloc *selfAllocator, DuplicationContext &context);
+		SLKC_API TypeNameNode(TypeNameKind type_name_kind, peff::Alloc *self_allocator, const peff::SharedPtr<Document> &document);
+		SLKC_API TypeNameNode(const TypeNameNode &rhs, peff::Alloc *self_allocator, DuplicationContext &context);
 		SLKC_API virtual ~TypeNameNode();
 
-		SLAKE_FORCEINLINE void setFinal() noexcept {
-			isFinal = true;
+		SLAKE_FORCEINLINE void set_final() noexcept {
+			is_final = true;
 		}
 
-		SLAKE_FORCEINLINE void setLocal() noexcept {
-			isLocal = true;
+		SLAKE_FORCEINLINE void set_local() noexcept {
+			is_local = true;
 		}
 
-		SLAKE_FORCEINLINE void setNullable() noexcept {
-			isNullable = true;
+		SLAKE_FORCEINLINE void set_nullable() noexcept {
+			is_nullable = true;
 		}
 
-		SLAKE_FORCEINLINE void clearFinal() noexcept {
-			isFinal = false;
+		SLAKE_FORCEINLINE void clear_final() noexcept {
+			is_final = false;
 		}
 
-		SLAKE_FORCEINLINE void clearLocal() noexcept {
-			isLocal = false;
+		SLAKE_FORCEINLINE void clear_local() noexcept {
+			is_local = false;
 		}
 
-		SLAKE_FORCEINLINE void clearNullable() noexcept {
-			isNullable = false;
+		SLAKE_FORCEINLINE void clear_nullable() noexcept {
+			is_nullable = false;
 		}
 
-		SLAKE_FORCEINLINE bool isExplicitFinal() const noexcept {
-			return idxFinalToken != SIZE_MAX;
+		SLAKE_FORCEINLINE bool is_explicit_final() const noexcept {
+			return idx_final_token != SIZE_MAX;
 		}
 
-		SLAKE_FORCEINLINE bool isExplicitLocal() const noexcept {
-			return idxLocalToken != SIZE_MAX;
+		SLAKE_FORCEINLINE bool is_explicit_local() const noexcept {
+			return idx_local_token != SIZE_MAX;
 		}
 
-		SLAKE_FORCEINLINE bool isExplicitNullable() const noexcept {
-			return idxNullableToken != SIZE_MAX;
+		SLAKE_FORCEINLINE bool is_explicit_nullable() const noexcept {
+			return idx_nullable_token != SIZE_MAX;
 		}
 
-		SLAKE_FORCEINLINE bool isImplicitFinal() const noexcept {
-			return idxFinalToken == SIZE_MAX;
+		SLAKE_FORCEINLINE bool is_implicit_final() const noexcept {
+			return idx_final_token == SIZE_MAX;
 		}
 
-		SLAKE_FORCEINLINE bool isImplicitLocal() const noexcept {
-			return idxLocalToken == SIZE_MAX;
+		SLAKE_FORCEINLINE bool is_implicit_local() const noexcept {
+			return idx_local_token == SIZE_MAX;
 		}
 
-		SLAKE_FORCEINLINE bool isImplicitNullable() const noexcept {
-			return idxNullableToken == SIZE_MAX;
+		SLAKE_FORCEINLINE bool is_implicit_nullable() const noexcept {
+			return idx_nullable_token == SIZE_MAX;
 		}
 	};
 }

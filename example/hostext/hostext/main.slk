@@ -331,7 +331,6 @@ public async main() -> i32 {
 		nonnullable = nullable;
 
 		while (nonnullable < 300) {
-			nonnullable = nullable;
 			nonnullable += 1;
 		}
 

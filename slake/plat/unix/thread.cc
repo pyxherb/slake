@@ -2,53 +2,53 @@
 
 using namespace slake;
 
-void *Thread::_threadWrapperProc(void *arg) {
+void *Thread::_thread_wrapper_proc(void *arg) {
 	// Initial run to collect neccessary information.
 #if !SLAKE_IS_GET_THREAD_STACK_INFO_SUPPORTED
-	((ExecutionThread *)arg)->nativeExecStackBase = estimateCurrentStackPointer();
+	((ExecutionThread *)arg)->native_exec_stack_base = estimate_current_stack_pointer();
 #endif
 
 	Thread *self = ((Thread *)arg);
-	MutexGuard doneMutexGuard(self->_doneMutex);
-	self->_initialRunMutex.lock();
-	self->_initialRunMutex.unlock();
+	MutexGuard done_mutex_guard(self->_done_mutex);
+	self->_initial_run_mutex.lock();
+	self->_initial_run_mutex.unlock();
 
 	self->runnable->run();
 
 	return nullptr;
 }
 
-SLAKE_API Thread::Thread(peff::Alloc* selfAllocator, Runnable* runnable): selfAllocator(selfAllocator), nativeThreadHandle((pthread_t)-1), runnable(runnable) {
+SLAKE_API Thread::Thread(peff::Alloc* self_allocator, Runnable* runnable): self_allocator(self_allocator), native_thread_handle((pthread_t)-1), runnable(runnable) {
 }
 
 SLAKE_API Thread::~Thread() {}
 
 SLAKE_API void Thread::start() {
-	_initialRunMutex.unlock();
+	_initial_run_mutex.unlock();
 }
 
 SLAKE_API void Thread::join() {
 	start();
-	_doneMutex.lock();
-	_doneMutex.unlock();
+	_done_mutex.lock();
+	_done_mutex.unlock();
 }
 
 SLAKE_API void Thread::dealloc() {
-	peff::destroyAndRelease<Thread>(selfAllocator.get(), this, alignof(Thread));
+	peff::destroy_and_release<Thread>(self_allocator.get(), this, alignof(Thread));
 }
 
-SLAKE_API Thread* Thread::alloc(peff::Alloc* selfAllocator, Runnable* runnable, size_t stackSize) {
+SLAKE_API Thread* Thread::alloc(peff::Alloc* self_allocator, Runnable* runnable, size_t stack_size) {
 	std::unique_ptr<Thread, peff::DeallocableDeleter<Thread>>
-		executionThread(peff::allocAndConstruct<Thread>(selfAllocator, alignof(Thread), selfAllocator, runnable));
+		execution_thread(peff::alloc_and_construct<Thread>(self_allocator, alignof(Thread), self_allocator, runnable));
 
-	executionThread->_initialRunMutex.lock();
+	execution_thread->_initial_run_mutex.lock();
 
 	{
 		pthread_attr_t attr = {};
 
-		pthread_attr_setstacksize(&attr, stackSize);
+		pthread_attr_setstacksize(&attr, stack_size);
 
-		if (pthread_create(&executionThread->nativeThreadHandle, &attr, _threadWrapperProc, (void *)executionThread.get())) {
+		if (pthread_create(&execution_thread->native_thread_handle, &attr, _thread_wrapper_proc, (void *)execution_thread.get())) {
 			pthread_attr_destroy(&attr);
 			return nullptr;
 		}
@@ -56,14 +56,14 @@ SLAKE_API Thread* Thread::alloc(peff::Alloc* selfAllocator, Runnable* runnable, 
 		pthread_attr_destroy(&attr);
 	}
 
-	return executionThread.release();
+	return execution_thread.release();
 }
 
-NativeThreadHandle slake::currentThreadHandle() {
+NativeThreadHandle slake::current_thread_handle() {
 	return pthread_self();
 }
 
-void slake::yieldCurrentThread() {
+void slake::yield_current_thread() {
 #if _POSIX_PRIORITY_SCHEDULING
 	sched_yield();
 #else
@@ -71,16 +71,16 @@ void slake::yieldCurrentThread() {
 #endif
 }
 
-void slake::getCurrentThreadStackBounds(void *&baseOut, size_t &sizeOut) {
+void slake::get_current_thread_stack_bounds(void *&base_out, size_t &size_out) {
 	pthread_attr_t attr;
-	void *stackAddr;
-	size_t stackSize;
+	void *stack_addr;
+	size_t stack_size;
 
-	if (!pthread_attr_getstack(&attr, &stackAddr, &stackSize)) {
-		baseOut = nullptr;
-		sizeOut = SIZE_MAX;
+	if (!pthread_attr_getstack(&attr, &stack_addr, &stack_size)) {
+		base_out = nullptr;
+		size_out = SIZE_MAX;
 	}
 
-	baseOut = stackAddr;
-	sizeOut = stackSize;
+	base_out = stack_addr;
+	size_out = stack_size;
 }

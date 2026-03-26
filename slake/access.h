@@ -11,8 +11,8 @@ namespace slake {
 		ACCESS_STATIC = 0x02,
 		ACCESS_NATIVE = 0x04;
 
-	constexpr SLAKE_FORCEINLINE bool isValidAccessModifier(AccessModifier accessModifier) {
-		return !(accessModifier & ~(ACCESS_PUBLIC | ACCESS_STATIC | ACCESS_NATIVE));
+	constexpr SLAKE_FORCEINLINE bool is_valid_access_modifier(AccessModifier access_modifier) {
+		return !(access_modifier & ~(ACCESS_PUBLIC | ACCESS_STATIC | ACCESS_NATIVE));
 	}
 }
 

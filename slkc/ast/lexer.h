@@ -49,8 +49,8 @@ namespace slkc {
 	class ModuleNode;
 
 	struct SourceLocation {
-		ModuleNode *moduleNode;
-		SourcePosition beginPosition, endPosition;
+		ModuleNode *module_node;
+		SourcePosition begin_position, end_position;
 	};
 
 	class Lexer;
@@ -220,8 +220,8 @@ namespace slkc {
 		MaxToken
 	};
 
-	SLAKE_FORCEINLINE bool isValidToken(TokenId tokenId) {
-		return (((int)tokenId) >= 0) && (((int)tokenId) < (int)TokenId::MaxToken);
+	SLAKE_FORCEINLINE bool is_valid_token(TokenId token_id) {
+		return (((int)token_id) >= 0) && (((int)token_id) < (int)TokenId::MaxToken);
 	}
 
 	class TokenExtension {
@@ -240,10 +240,10 @@ namespace slkc {
 
 	class IntTokenExtension : public TokenExtension {
 	public:
-		IntTokenType tokenType;
+		IntTokenType token_type;
 		peff::RcObjectPtr<peff::Alloc> allocator;
 
-		SLKC_API IntTokenExtension(peff::Alloc *allocator, IntTokenType tokenType);
+		SLKC_API IntTokenExtension(peff::Alloc *allocator, IntTokenType token_type);
 		SLKC_API virtual ~IntTokenExtension();
 
 		SLKC_API virtual void dealloc() override;
@@ -264,12 +264,12 @@ namespace slkc {
 
 	class Token {
 	public:
-		TokenId tokenId;
+		TokenId token_id;
 		peff::RcObjectPtr<peff::Alloc> allocator;
-		std::string_view sourceText;
+		std::string_view source_text;
 		peff::WeakPtr<Document> document;
-		SourceLocation sourceLocation;
-		std::unique_ptr<TokenExtension, peff::DeallocableDeleter<TokenExtension>> exData;
+		SourceLocation source_location;
+		std::unique_ptr<TokenExtension, peff::DeallocableDeleter<TokenExtension>> ex_data;
 		size_t index = SIZE_MAX;
 
 		SLKC_API Token(peff::Alloc *allocator, const peff::WeakPtr<Document> &document);
@@ -296,15 +296,15 @@ namespace slkc {
 
 	class Lexer {
 	public:
-		TokenList tokenList;
-		peff::Option<LexicalError> lexicalError;
+		TokenList token_list;
+		peff::Option<LexicalError> lexical_error;
 
-		SLAKE_FORCEINLINE Lexer(peff::Alloc *allocator) : tokenList(allocator) {
+		SLAKE_FORCEINLINE Lexer(peff::Alloc *allocator) : token_list(allocator) {
 		}
-		[[nodiscard]] SLKC_API peff::Option<LexicalError> lex(ModuleNode *moduleNode, const std::string_view &src, peff::Alloc *allocator, const peff::SharedPtr<Document> &document);
+		[[nodiscard]] SLKC_API peff::Option<LexicalError> lex(ModuleNode *module_node, const std::string_view &src, peff::Alloc *allocator, const peff::SharedPtr<Document> &document);
 	};
 
-	SLKC_API const char *getTokenName(TokenId tokenId);
+	SLKC_API const char *get_token_name(TokenId token_id);
 }
 
 #endif

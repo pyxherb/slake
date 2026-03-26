@@ -3,7 +3,7 @@
 using namespace slake;
 using namespace slake::opti;
 
-bool opti::isInsHasSideEffect(Opcode opcode) {
+bool opti::is_ins_has_side_effect(Opcode opcode) {
 	switch (opcode) {
 		case Opcode::STORE:
 		case Opcode::LVAR:
@@ -33,8 +33,8 @@ bool opti::isInsHasSideEffect(Opcode opcode) {
 	return false;
 }
 
-bool opti::isInsSimplifiable(Opcode opcode) {
-	if (!isInsHasSideEffect(opcode))
+bool opti::is_ins_simplifiable(Opcode opcode) {
+	if (!is_ins_has_side_effect(opcode))
 		return true;
 
 	switch (opcode) {
@@ -47,155 +47,155 @@ bool opti::isInsSimplifiable(Opcode opcode) {
 	return false;
 }
 
-void slake::opti::markRegAsForOutput(ProgramAnalyzeContext &analyzeContext, uint32_t i) {
-	switch (auto &regInfo = analyzeContext.analyzedInfoOut.analyzedRegInfo.at(i); regInfo.storageType) {
+void slake::opti::mark_reg_as_for_output(ProgramAnalyzeContext &analyze_context, uint32_t i) {
+	switch (auto &reg_info = analyze_context.analyzed_info_out.analyzed_reg_info.at(i); reg_info.storage_type) {
 		case opti::RegStorageType::None:
 			break;
 		case opti::RegStorageType::FieldVar:
-			regInfo.storageInfo.asFieldVar.isUsedForOutput = true;
+			reg_info.storage_info.as_field_var.is_used_for_output = true;
 			break;
 		case opti::RegStorageType::LocalVar:
-			regInfo.storageInfo.asLocalVar.isUsedForOutput = true;
+			reg_info.storage_info.as_local_var.is_used_for_output = true;
 			break;
 		case opti::RegStorageType::ArgRef:
-			regInfo.storageInfo.asArgRef.isUsedForOutput = true;
+			reg_info.storage_info.as_arg_ref.is_used_for_output = true;
 			break;
 	}
 }
 
-InternalExceptionPointer slake::opti::wrapIntoHeapType(
+InternalExceptionPointer slake::opti::wrap_into_heap_type(
 	Runtime *runtime,
 	TypeRef type,
-	HostRefHolder &hostRefHolder,
-	HeapTypeObject *&heapTypeOut) {
-	HostObjectRef<HeapTypeObject> heapType = HeapTypeObject::alloc(runtime);
-	if (!heapType)
+	HostRefHolder &host_ref_holder,
+	HeapTypeObject *&heap_type_out) {
+	HostObjectRef<HeapTypeObject> heap_type = HeapTypeObject::alloc(runtime);
+	if (!heap_type)
 		return OutOfMemoryError::alloc();
-	heapType->typeRef = type;
+	heap_type->type_ref = type;
 
-	if (!hostRefHolder.addObject(heapType.get()))
+	if (!host_ref_holder.add_object(heap_type.get()))
 		return OutOfMemoryError::alloc();
-	heapTypeOut = heapType.get();
+	heap_type_out = heap_type.get();
 
 	return {};
 }
 
-InternalExceptionPointer slake::opti::wrapIntoRefType(
+InternalExceptionPointer slake::opti::wrap_into_ref_type(
 	Runtime *runtime,
 	TypeRef type,
-	HostRefHolder &hostRefHolder,
-	TypeRef &typeOut) {
-	HostObjectRef<RefTypeDefObject> typeDef = RefTypeDefObject::alloc(runtime);
-	if (!typeDef)
+	HostRefHolder &host_ref_holder,
+	TypeRef &type_out) {
+	HostObjectRef<RefTypeDefObject> type_def = RefTypeDefObject::alloc(runtime);
+	if (!type_def)
 		return OutOfMemoryError::alloc();
-	HostObjectRef<HeapTypeObject> heapType = HeapTypeObject::alloc(runtime);
-	if (!heapType)
+	HostObjectRef<HeapTypeObject> heap_type = HeapTypeObject::alloc(runtime);
+	if (!heap_type)
 		return OutOfMemoryError::alloc();
 
-	heapType->typeRef = type;
-	typeDef->referencedType = heapType.get();
+	heap_type->type_ref = type;
+	type_def->referenced_type = heap_type.get();
 
-	if (auto td = runtime->getEqualTypeDef(typeDef.get()); td) {
-		typeOut = TypeRef(TypeId::Ref, td);
+	if (auto td = runtime->get_equal_type_def(type_def.get()); td) {
+		type_out = TypeRef(TypeId::Ref, td);
 	} else {
-		if (!hostRefHolder.addObject(typeDef.get()))
+		if (!host_ref_holder.add_object(type_def.get()))
 			return OutOfMemoryError::alloc();
-		typeOut = TypeRef(TypeId::Ref, typeDef.get());
+		type_out = TypeRef(TypeId::Ref, type_def.get());
 	}
 
 	return {};
 }
 
-InternalExceptionPointer slake::opti::wrapIntoArrayType(
+InternalExceptionPointer slake::opti::wrap_into_array_type(
 	Runtime *runtime,
 	TypeRef type,
-	HostRefHolder &hostRefHolder,
-	TypeRef &typeOut) {
-	HostObjectRef<ArrayTypeDefObject> typeDef = ArrayTypeDefObject::alloc(runtime);
-	if (!typeDef)
+	HostRefHolder &host_ref_holder,
+	TypeRef &type_out) {
+	HostObjectRef<ArrayTypeDefObject> type_def = ArrayTypeDefObject::alloc(runtime);
+	if (!type_def)
 		return OutOfMemoryError::alloc();
-	HostObjectRef<HeapTypeObject> heapType = HeapTypeObject::alloc(runtime);
-	if (!heapType)
+	HostObjectRef<HeapTypeObject> heap_type = HeapTypeObject::alloc(runtime);
+	if (!heap_type)
 		return OutOfMemoryError::alloc();
 
-	heapType->typeRef = type;
-	typeDef->elementType = heapType.get();
+	heap_type->type_ref = type;
+	type_def->element_type = heap_type.get();
 
-	if (auto td = runtime->getEqualTypeDef(typeDef.get()); td) {
-		typeOut = TypeRef(TypeId::Array, td);
+	if (auto td = runtime->get_equal_type_def(type_def.get()); td) {
+		type_out = TypeRef(TypeId::Array, td);
 	} else {
-		if (!hostRefHolder.addObject(typeDef.get()))
+		if (!host_ref_holder.add_object(type_def.get()))
 			return OutOfMemoryError::alloc();
-		typeOut = TypeRef(TypeId::Array, typeDef.get());
+		type_out = TypeRef(TypeId::Array, type_def.get());
 	}
 
 	return {};
 }
 
-InternalExceptionPointer slake::opti::evalObjectType(
-	ProgramAnalyzeContext &analyzeContext,
-	const Reference &entityRef,
-	TypeRef &typeOut) {
-	switch (entityRef.kind) {
+InternalExceptionPointer slake::opti::eval_object_type(
+	ProgramAnalyzeContext &analyze_context,
+	const Reference &entity_ref,
+	TypeRef &type_out) {
+	switch (entity_ref.kind) {
 		case ReferenceKind::StaticFieldRef:
 		case ReferenceKind::ArrayElementRef:
 		case ReferenceKind::LocalVarRef:
 		case ReferenceKind::ArgRef:
 		case ReferenceKind::ObjectFieldRef: {
-			TypeRef varType = Runtime::typeofVar(entityRef);
+			TypeRef var_type = Runtime::typeof_var(entity_ref);
 
 			SLAKE_RETURN_IF_EXCEPT(
-				wrapIntoRefType(
-					analyzeContext.runtime,
-					varType,
-					analyzeContext.hostRefHolder,
-					typeOut));
+				wrap_into_ref_type(
+					analyze_context.runtime,
+					var_type,
+					analyze_context.host_ref_holder,
+					type_out));
 			break;
 		}
 		case ReferenceKind::ObjectRef: {
-			Object *object = entityRef.asObject;
-			switch (object->getObjectKind()) {
+			Object *object = entity_ref.as_object;
+			switch (object->get_object_kind()) {
 				case ObjectKind::String: {
-					typeOut = TypeRef(TypeId::String);
+					type_out = TypeRef(TypeId::String);
 					break;
 				}
 				case ObjectKind::Array: {
-					SLAKE_RETURN_IF_EXCEPT(wrapIntoArrayType(
-						analyzeContext.runtime,
-						((ArrayObject *)object)->elementType,
-						analyzeContext.hostRefHolder,
-						typeOut));
+					SLAKE_RETURN_IF_EXCEPT(wrap_into_array_type(
+						analyze_context.runtime,
+						((ArrayObject *)object)->element_type,
+						analyze_context.host_ref_holder,
+						type_out));
 					break;
 				}
 				case ObjectKind::FnOverloading: {
-					FnOverloadingObject *fnOverloadingObject = (FnOverloadingObject *)object;
+					FnOverloadingObject *fn_overloading_object = (FnOverloadingObject *)object;
 
-					auto typeDef = FnTypeDefObject::alloc(
-						analyzeContext.runtime);
+					auto type_def = FnTypeDefObject::alloc(
+						analyze_context.runtime);
 
-					SLAKE_RETURN_IF_EXCEPT(wrapIntoHeapType(analyzeContext.runtime, fnOverloadingObject->returnType, analyzeContext.hostRefHolder, typeDef->returnType));
+					SLAKE_RETURN_IF_EXCEPT(wrap_into_heap_type(analyze_context.runtime, fn_overloading_object->return_type, analyze_context.host_ref_holder, type_def->return_type));
 
-					if (!typeDef->paramTypes.resize(fnOverloadingObject->paramTypes.size())) {
+					if (!type_def->param_types.resize(fn_overloading_object->param_types.size())) {
 						return OutOfMemoryError::alloc();
 					}
 
-					for (size_t i = 0; i < fnOverloadingObject->paramTypes.size(); ++i) {
-						SLAKE_RETURN_IF_EXCEPT(wrapIntoHeapType(analyzeContext.runtime, TypeId::Void, analyzeContext.hostRefHolder, typeDef->returnType));
+					for (size_t i = 0; i < fn_overloading_object->param_types.size(); ++i) {
+						SLAKE_RETURN_IF_EXCEPT(wrap_into_heap_type(analyze_context.runtime, TypeId::Void, analyze_context.host_ref_holder, type_def->return_type));
 					}
 
-					for (size_t i = 0; i < fnOverloadingObject->paramTypes.size(); ++i) {
-						SLAKE_RETURN_IF_EXCEPT(wrapIntoHeapType(analyzeContext.runtime, fnOverloadingObject->paramTypes.at(i), analyzeContext.hostRefHolder, typeDef->paramTypes.at(i)));
+					for (size_t i = 0; i < fn_overloading_object->param_types.size(); ++i) {
+						SLAKE_RETURN_IF_EXCEPT(wrap_into_heap_type(analyze_context.runtime, fn_overloading_object->param_types.at(i), analyze_context.host_ref_holder, type_def->param_types.at(i)));
 					}
 
-					if (!analyzeContext.hostRefHolder.addObject(typeDef.get()))
+					if (!analyze_context.host_ref_holder.add_object(type_def.get()))
 						return OutOfMemoryError::alloc();
-					typeOut = TypeRef(TypeId::Fn, typeDef.get());
+					type_out = TypeRef(TypeId::Fn, type_def.get());
 					break;
 				}
 				default:
-					return allocOutOfMemoryErrorIfAllocFailed(
+					return alloc_out_of_memory_error_if_alloc_failed(
 						ErrorEvaluatingObjectTypeError::alloc(
-							object->associatedRuntime->getFixedAlloc(),
+							object->associated_runtime->get_fixed_alloc(),
 							object));
 			}
 			break;
@@ -205,80 +205,80 @@ InternalExceptionPointer slake::opti::evalObjectType(
 	return {};
 }
 
-InternalExceptionPointer slake::opti::evalValueType(
-	ProgramAnalyzeContext &analyzeContext,
+InternalExceptionPointer slake::opti::eval_value_type(
+	ProgramAnalyzeContext &analyze_context,
 	const Value &value,
-	TypeRef &typeOut) {
-	switch (value.valueType) {
+	TypeRef &type_out) {
+	switch (value.value_type) {
 		case ValueType::I8:
-			typeOut = TypeId::I8;
+			type_out = TypeId::I8;
 			break;
 		case ValueType::I16:
-			typeOut = TypeId::I16;
+			type_out = TypeId::I16;
 			break;
 		case ValueType::I32:
-			typeOut = TypeId::I32;
+			type_out = TypeId::I32;
 			break;
 		case ValueType::I64:
-			typeOut = TypeId::I64;
+			type_out = TypeId::I64;
 			break;
 		case ValueType::U8:
-			typeOut = TypeId::U8;
+			type_out = TypeId::U8;
 			break;
 		case ValueType::U16:
-			typeOut = TypeId::U16;
+			type_out = TypeId::U16;
 			break;
 		case ValueType::U32:
-			typeOut = TypeId::U32;
+			type_out = TypeId::U32;
 			break;
 		case ValueType::U64:
-			typeOut = TypeId::U64;
+			type_out = TypeId::U64;
 			break;
 		case ValueType::F32:
-			typeOut = TypeId::F32;
+			type_out = TypeId::F32;
 			break;
 		case ValueType::F64:
-			typeOut = TypeId::F64;
+			type_out = TypeId::F64;
 			break;
 		case ValueType::Bool:
-			typeOut = TypeId::Bool;
+			type_out = TypeId::Bool;
 			break;
 		case ValueType::Reference: {
-			const Reference &entityRef = value.getReference();
+			const Reference &entity_ref = value.get_reference();
 
-			SLAKE_RETURN_IF_EXCEPT(evalObjectType(analyzeContext, entityRef, typeOut));
+			SLAKE_RETURN_IF_EXCEPT(eval_object_type(analyze_context, entity_ref, type_out));
 			break;
 		}
 		case ValueType::RegIndex: {
-			uint32_t regIndex = value.getRegIndex();
+			uint32_t reg_index = value.get_reg_index();
 
-			if (!analyzeContext.analyzedInfoOut.analyzedRegInfo.contains(regIndex)) {
-				return allocOutOfMemoryErrorIfAllocFailed(
+			if (!analyze_context.analyzed_info_out.analyzed_reg_info.contains(reg_index)) {
+				return alloc_out_of_memory_error_if_alloc_failed(
 					MalformedProgramError::alloc(
-						analyzeContext.runtime->getFixedAlloc(),
-						analyzeContext.fnObject,
-						analyzeContext.idxCurIns));
+						analyze_context.runtime->get_fixed_alloc(),
+						analyze_context.fn_object,
+						analyze_context.idx_cur_ins));
 			}
 
-			typeOut = analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).type;
+			type_out = analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).type;
 			break;
 		}
 		default: {
-			return allocOutOfMemoryErrorIfAllocFailed(
+			return alloc_out_of_memory_error_if_alloc_failed(
 				MalformedProgramError::alloc(
-					analyzeContext.runtime->getFixedAlloc(),
-					analyzeContext.fnObject,
-					analyzeContext.idxCurIns));
+					analyze_context.runtime->get_fixed_alloc(),
+					analyze_context.fn_object,
+					analyze_context.idx_cur_ins));
 		}
 	}
 	return {};
 }
 
-InternalExceptionPointer slake::opti::evalConstValue(
-	ProgramAnalyzeContext &analyzeContext,
+InternalExceptionPointer slake::opti::eval_const_value(
+	ProgramAnalyzeContext &analyze_context,
 	const Value &value,
-	Value &constValueOut) {
-	switch (value.valueType) {
+	Value &const_value_out) {
+	switch (value.value_type) {
 		case ValueType::I8:
 		case ValueType::I16:
 		case ValueType::I32:
@@ -290,175 +290,175 @@ InternalExceptionPointer slake::opti::evalConstValue(
 		case ValueType::F32:
 		case ValueType::F64:
 		case ValueType::Bool:
-			constValueOut = value;
+			const_value_out = value;
 			break;
 		case ValueType::RegIndex: {
-			uint32_t idxReg = value.getRegIndex();
+			uint32_t idx_reg = value.get_reg_index();
 
-			if (!analyzeContext.analyzedInfoOut.analyzedRegInfo.contains(idxReg)) {
-				return allocOutOfMemoryErrorIfAllocFailed(
+			if (!analyze_context.analyzed_info_out.analyzed_reg_info.contains(idx_reg)) {
+				return alloc_out_of_memory_error_if_alloc_failed(
 					MalformedProgramError::alloc(
-						analyzeContext.runtime->getFixedAlloc(),
-						analyzeContext.fnObject,
-						analyzeContext.idxCurIns));
+						analyze_context.runtime->get_fixed_alloc(),
+						analyze_context.fn_object,
+						analyze_context.idx_cur_ins));
 			}
 
-			constValueOut = analyzeContext.analyzedInfoOut.analyzedRegInfo.at(idxReg).expectedValue;
+			const_value_out = analyze_context.analyzed_info_out.analyzed_reg_info.at(idx_reg).expected_value;
 			break;
 		} /*
 		case ValueType::VarRef: {
-			VarRef varRef = value.getVarRef();
+			VarRef var_ref = value.get_var_ref();
 
-			SLAKE_RETURN_IF_EXCEPT(varRef.varPtr->getData(varRef.context, constValueOut));
+			SLAKE_RETURN_IF_EXCEPT(var_ref.var_ptr->get_data(var_ref.context, const_value_out));
 			break;
 		}*/
 		default:
-			constValueOut = Value(ValueType::Undefined);
+			const_value_out = Value(ValueType::Undefined);
 	}
 	return {};
 }
 
-InternalExceptionPointer slake::opti::analyzeProgramInfoPass(
+InternalExceptionPointer slake::opti::analyze_program_info_pass(
 	Runtime *runtime,
-	peff::Alloc *resourceAllocator,
-	RegularFnOverloadingObject *fnObject,
-	ProgramAnalyzedInfo &analyzedInfoOut,
-	HostRefHolder &hostRefHolder) {
-	if (fnObject->instructions.size() > UINT32_MAX) {
+	peff::Alloc *resource_allocator,
+	RegularFnOverloadingObject *fn_object,
+	ProgramAnalyzedInfo &analyzed_info_out,
+	HostRefHolder &host_ref_holder) {
+	if (fn_object->instructions.size() > UINT32_MAX) {
 		// TODO: Deal with this case elegently.
 		std::terminate();
 	}
-	uint32_t nIns = (uint32_t)fnObject->instructions.size();
-	analyzedInfoOut.contextObject = ContextObject::alloc(runtime, SLAKE_STACK_SIZE_MAX);
+	uint32_t num_ins = (uint32_t)fn_object->instructions.size();
+	analyzed_info_out.context_object = ContextObject::alloc(runtime, SLAKE_STACK_SIZE_MAX);
 	{
-		SLAKE_RETURN_IF_EXCEPT(runtime->_createNewMajorFrame(analyzedInfoOut.contextObject.get(), nullptr, nullptr, nullptr, SIZE_MAX, 0, UINT32_MAX, nullptr));
+		SLAKE_RETURN_IF_EXCEPT(runtime->_create_new_major_frame(analyzed_info_out.context_object.get(), nullptr, nullptr, nullptr, SIZE_MAX, 0, UINT32_MAX, nullptr));
 	}
 
-	ProgramAnalyzeContext analyzeContext = {
+	ProgramAnalyzeContext analyze_context = {
 		runtime,
-		resourceAllocator,
-		fnObject,
-		analyzedInfoOut,
-		hostRefHolder
+		resource_allocator,
+		fn_object,
+		analyzed_info_out,
+		host_ref_holder
 	};
 
-	//if (!pseudoMajorFrame->resumableContextData.argStack.resizeUninitialized(fnObject->paramTypes.size()))
+	//if (!pseudo_major_frame->resumable_context_data.arg_stack.resize_uninit(fn_object->param_types.size()))
 	//	return OutOfMemoryError::alloc();
-	//for (size_t i = 0; i < fnObject->paramTypes.size(); ++i)
-	//	pseudoMajorFrame->resumableContextData.argStack.at(i) = Value();
+	//for (size_t i = 0; i < fn_object->param_types.size(); ++i)
+	//	pseudo_major_frame->resumable_context_data.arg_stack.at(i) = Value();
 
 	// Analyze lifetime of virtual registers.
-	bool newExpectableRegFound;
-	auto setExpectedValue = [&analyzedInfoOut, &newExpectableRegFound](uint32_t regIndex, const Value &value) {
-		analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = value;
-		newExpectableRegFound = true;
+	bool new_expectable_reg_found;
+	auto set_expected_value = [&analyzed_info_out, &new_expectable_reg_found](uint32_t reg_index, const Value &value) {
+		analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = value;
+		new_expectable_reg_found = true;
 	};
 	do {
-		newExpectableRegFound = false;
-		for (uint32_t &i = analyzeContext.idxCurIns; i < nIns; ++i) {
-			const Instruction &curIns = fnObject->instructions.at(i);
+		new_expectable_reg_found = false;
+		for (uint32_t &i = analyze_context.idx_cur_ins; i < num_ins; ++i) {
+			const Instruction &cur_ins = fn_object->instructions.at(i);
 
-			uint32_t regIndex = UINT32_MAX;
+			uint32_t reg_index = UINT32_MAX;
 
-			if (curIns.output != UINT32_MAX) {
-				regIndex = curIns.output;
+			if (cur_ins.output != UINT32_MAX) {
+				reg_index = cur_ins.output;
 
-				if (analyzedInfoOut.analyzedRegInfo.contains(regIndex)) {
+				if (analyzed_info_out.analyzed_reg_info.contains(reg_index)) {
 					// Malformed program, return.
-					return allocOutOfMemoryErrorIfAllocFailed(
+					return alloc_out_of_memory_error_if_alloc_failed(
 						MalformedProgramError::alloc(
-							runtime->getFixedAlloc(),
-							fnObject,
+							runtime->get_fixed_alloc(),
+							fn_object,
 							i));
 				}
 
-				if (!analyzedInfoOut.analyzedRegInfo.insert(+regIndex, { resourceAllocator }))
+				if (!analyzed_info_out.analyzed_reg_info.insert(+reg_index, { resource_allocator }))
 					return OutOfMemoryError::alloc();
-				if (!analyzedInfoOut.analyzedRegInfo.at(regIndex).usePoints.insert(+i))
+				if (!analyzed_info_out.analyzed_reg_info.at(reg_index).use_points.insert(+i))
 					return OutOfMemoryError::alloc();
-				analyzedInfoOut.analyzedRegInfo.at(regIndex).lifetime = { i, i };
+				analyzed_info_out.analyzed_reg_info.at(reg_index).lifetime = { i, i };
 			}
 
-			for (size_t j = 0; j < curIns.nOperands; ++j) {
-				if (curIns.operands[j].valueType == ValueType::RegIndex) {
-					uint32_t index = curIns.operands[j].getRegIndex();
+			for (size_t j = 0; j < cur_ins.num_operands; ++j) {
+				if (cur_ins.operands[j].value_type == ValueType::RegIndex) {
+					uint32_t index = cur_ins.operands[j].get_reg_index();
 
-					if (!analyzedInfoOut.analyzedRegInfo.contains(index)) {
+					if (!analyzed_info_out.analyzed_reg_info.contains(index)) {
 						// Malformed program, return.
-						return allocOutOfMemoryErrorIfAllocFailed(
+						return alloc_out_of_memory_error_if_alloc_failed(
 							MalformedProgramError::alloc(
-								runtime->getFixedAlloc(),
-								fnObject,
+								runtime->get_fixed_alloc(),
+								fn_object,
 								i));
 					}
 
-					analyzedInfoOut.analyzedRegInfo.at(index).lifetime.offEndIns = i;
+					analyzed_info_out.analyzed_reg_info.at(index).lifetime.off_end_ins = i;
 				}
 			}
 
-			switch (curIns.opcode) {
+			switch (cur_ins.opcode) {
 				case Opcode::LOAD: {
-					if (regIndex != UINT32_MAX) {
-						if (curIns.nOperands != 1) {
-							return allocOutOfMemoryErrorIfAllocFailed(
+					if (reg_index != UINT32_MAX) {
+						if (cur_ins.num_operands != 1) {
+							return alloc_out_of_memory_error_if_alloc_failed(
 								MalformedProgramError::alloc(
-									runtime->getFixedAlloc(),
-									fnObject,
+									runtime->get_fixed_alloc(),
+									fn_object,
 									i));
 						}
 
-						if (curIns.operands[0].valueType != ValueType::Reference) {
-							return allocOutOfMemoryErrorIfAllocFailed(
+						if (cur_ins.operands[0].value_type != ValueType::Reference) {
+							return alloc_out_of_memory_error_if_alloc_failed(
 								MalformedProgramError::alloc(
-									runtime->getFixedAlloc(),
-									fnObject,
+									runtime->get_fixed_alloc(),
+									fn_object,
 									i));
 						}
 
-						IdRefObject *idRef;
+						IdRefObject *id_ref;
 						{
-							Reference object = curIns.operands[0].getReference();
+							Reference object = cur_ins.operands[0].get_reference();
 
 							if ((object.kind != ReferenceKind::ObjectRef) ||
-								(object.asObject->getObjectKind() != ObjectKind::IdRef)) {
-								return allocOutOfMemoryErrorIfAllocFailed(
+								(object.as_object->get_object_kind() != ObjectKind::IdRef)) {
+								return alloc_out_of_memory_error_if_alloc_failed(
 									MalformedProgramError::alloc(
-										runtime->getFixedAlloc(),
-										fnObject,
+										runtime->get_fixed_alloc(),
+										fn_object,
 										i));
 							}
-							idRef = (IdRefObject *)object.asObject;
+							id_ref = (IdRefObject *)object.as_object;
 						}
 
-						Reference entityRef;
+						Reference entity_ref;
 						SLAKE_RETURN_IF_EXCEPT(
-							runtime->resolveIdRef(
-								idRef,
-								entityRef));
+							runtime->resolve_id_ref(
+								id_ref,
+								entity_ref));
 
-						InternalExceptionPointer e = evalObjectType(
-							analyzeContext,
-							entityRef,
-							analyzedInfoOut.analyzedRegInfo.at(regIndex).type);
+						InternalExceptionPointer e = eval_object_type(
+							analyze_context,
+							entity_ref,
+							analyzed_info_out.analyzed_reg_info.at(reg_index).type);
 						if (e) {
 							if (e->kind != ErrorKind::OptimizerError) {
 								return e;
 							} else {
 								e.reset();
-								return allocOutOfMemoryErrorIfAllocFailed(
+								return alloc_out_of_memory_error_if_alloc_failed(
 									MalformedProgramError::alloc(
-										runtime->getFixedAlloc(),
-										fnObject,
+										runtime->get_fixed_alloc(),
+										fn_object,
 										i));
 							}
 						}
 
-						switch (entityRef.kind) {
+						switch (entity_ref.kind) {
 							case ReferenceKind::StaticFieldRef:
-								analyzedInfoOut.analyzedRegInfo.at(regIndex).storageType = RegStorageType::FieldVar;
+								analyzed_info_out.analyzed_reg_info.at(reg_index).storage_type = RegStorageType::FieldVar;
 								break;
 							case ReferenceKind::ObjectFieldRef:
-								analyzedInfoOut.analyzedRegInfo.at(regIndex).storageType = RegStorageType::InstanceFieldVar;
+								analyzed_info_out.analyzed_reg_info.at(reg_index).storage_type = RegStorageType::InstanceFieldVar;
 								break;
 							case ReferenceKind::ObjectRef: {
 								break;
@@ -467,113 +467,113 @@ InternalExceptionPointer slake::opti::analyzeProgramInfoPass(
 								std::terminate();
 						}
 
-						setExpectedValue(regIndex, entityRef);
-						SLAKE_RETURN_IF_EXCEPT(evalObjectType(analyzeContext, entityRef, analyzedInfoOut.analyzedRegInfo.at(regIndex).type));
+						set_expected_value(reg_index, entity_ref);
+						SLAKE_RETURN_IF_EXCEPT(eval_object_type(analyze_context, entity_ref, analyzed_info_out.analyzed_reg_info.at(reg_index).type));
 					}
 
 					break;
 				}
 				case Opcode::RLOAD: {
-					if (regIndex != UINT32_MAX) {
-						if (curIns.nOperands != 2) {
-							return allocOutOfMemoryErrorIfAllocFailed(
+					if (reg_index != UINT32_MAX) {
+						if (cur_ins.num_operands != 2) {
+							return alloc_out_of_memory_error_if_alloc_failed(
 								MalformedProgramError::alloc(
-									runtime->getFixedAlloc(),
-									fnObject,
+									runtime->get_fixed_alloc(),
+									fn_object,
 									i));
 						}
 
-						if (curIns.operands[0].valueType != ValueType::RegIndex) {
-							return allocOutOfMemoryErrorIfAllocFailed(
+						if (cur_ins.operands[0].value_type != ValueType::RegIndex) {
+							return alloc_out_of_memory_error_if_alloc_failed(
 								MalformedProgramError::alloc(
-									runtime->getFixedAlloc(),
-									fnObject,
+									runtime->get_fixed_alloc(),
+									fn_object,
 									i));
 						}
 
-						if (curIns.operands[1].valueType != ValueType::Reference) {
-							return allocOutOfMemoryErrorIfAllocFailed(
+						if (cur_ins.operands[1].value_type != ValueType::Reference) {
+							return alloc_out_of_memory_error_if_alloc_failed(
 								MalformedProgramError::alloc(
-									runtime->getFixedAlloc(),
-									fnObject,
+									runtime->get_fixed_alloc(),
+									fn_object,
 									i));
 						}
 
-						IdRefObject *idRef;
+						IdRefObject *id_ref;
 						{
-							const Reference &object = curIns.operands[1].getReference();
+							const Reference &object = cur_ins.operands[1].get_reference();
 
 							if ((object.kind != ReferenceKind::ObjectRef) ||
-								(object.asObject->getObjectKind() != ObjectKind::IdRef)) {
-								return allocOutOfMemoryErrorIfAllocFailed(
+								(object.as_object->get_object_kind() != ObjectKind::IdRef)) {
+								return alloc_out_of_memory_error_if_alloc_failed(
 									MalformedProgramError::alloc(
-										runtime->getFixedAlloc(),
-										fnObject,
+										runtime->get_fixed_alloc(),
+										fn_object,
 										i));
 							}
-							idRef = (IdRefObject *)object.asObject;
+							id_ref = (IdRefObject *)object.as_object;
 						}
 
-						uint32_t callTargetRegIndex = curIns.operands[0].getRegIndex();
-						TypeRef type = analyzeContext.analyzedInfoOut.analyzedRegInfo.at(callTargetRegIndex).type;
+						uint32_t call_target_reg_index = cur_ins.operands[0].get_reg_index();
+						TypeRef type = analyze_context.analyzed_info_out.analyzed_reg_info.at(call_target_reg_index).type;
 
-						switch (type.typeId) {
+						switch (type.type_id) {
 							case TypeId::Instance: {
-								Reference entityRef;
+								Reference entity_ref;
 
 								SLAKE_RETURN_IF_EXCEPT(
-									runtime->resolveIdRef(
-										idRef,
-										entityRef,
-										(MemberObject *)type.getCustomTypeDef()));
+									runtime->resolve_id_ref(
+										id_ref,
+										entity_ref,
+										(MemberObject *)type.get_custom_type_def()));
 
-								switch (entityRef.kind) {
+								switch (entity_ref.kind) {
 									case ReferenceKind::ObjectRef: {
-										Object *object = entityRef.asObject;
-										switch (object->getObjectKind()) {
+										Object *object = entity_ref.as_object;
+										switch (object->get_object_kind()) {
 											case ObjectKind::FnOverloading:
 												if (((FnOverloadingObject *)object)->access & ACCESS_STATIC) {
-													return allocOutOfMemoryErrorIfAllocFailed(
+													return alloc_out_of_memory_error_if_alloc_failed(
 														MalformedProgramError::alloc(
-															runtime->getFixedAlloc(),
-															fnObject,
+															runtime->get_fixed_alloc(),
+															fn_object,
 															i));
 												}
 												break;
 											default: {
-												return allocOutOfMemoryErrorIfAllocFailed(
+												return alloc_out_of_memory_error_if_alloc_failed(
 													MalformedProgramError::alloc(
-														runtime->getFixedAlloc(),
-														fnObject,
+														runtime->get_fixed_alloc(),
+														fn_object,
 														i));
 											}
 										}
 										break;
 									}
 									case ReferenceKind::ObjectFieldRef:
-										analyzedInfoOut.analyzedRegInfo.at(regIndex).storageType = RegStorageType::InstanceFieldVar;
+										analyzed_info_out.analyzed_reg_info.at(reg_index).storage_type = RegStorageType::InstanceFieldVar;
 										break;
 									case ReferenceKind::StaticFieldRef:
-										analyzedInfoOut.analyzedRegInfo.at(regIndex).storageType = RegStorageType::FieldVar;
+										analyzed_info_out.analyzed_reg_info.at(reg_index).storage_type = RegStorageType::FieldVar;
 										break;
 									default: {
-										return allocOutOfMemoryErrorIfAllocFailed(
+										return alloc_out_of_memory_error_if_alloc_failed(
 											MalformedProgramError::alloc(
-												runtime->getFixedAlloc(),
-												fnObject,
+												runtime->get_fixed_alloc(),
+												fn_object,
 												i));
 									}
 								}
 
-								setExpectedValue(regIndex, entityRef);
-								SLAKE_RETURN_IF_EXCEPT(evalObjectType(analyzeContext, entityRef, analyzedInfoOut.analyzedRegInfo.at(regIndex).type));
+								set_expected_value(reg_index, entity_ref);
+								SLAKE_RETURN_IF_EXCEPT(eval_object_type(analyze_context, entity_ref, analyzed_info_out.analyzed_reg_info.at(reg_index).type));
 								break;
 							}
 							default: {
-								return allocOutOfMemoryErrorIfAllocFailed(
+								return alloc_out_of_memory_error_if_alloc_failed(
 									MalformedProgramError::alloc(
-										runtime->getFixedAlloc(),
-										fnObject,
+										runtime->get_fixed_alloc(),
+										fn_object,
 										i));
 							}
 						}
@@ -582,82 +582,82 @@ InternalExceptionPointer slake::opti::analyzeProgramInfoPass(
 					break;
 				}
 				case Opcode::STORE: {
-					if (regIndex != UINT32_MAX) {
-						return allocOutOfMemoryErrorIfAllocFailed(
+					if (reg_index != UINT32_MAX) {
+						return alloc_out_of_memory_error_if_alloc_failed(
 							MalformedProgramError::alloc(
-								runtime->getFixedAlloc(),
-								fnObject,
+								runtime->get_fixed_alloc(),
+								fn_object,
 								i));
 					}
 
 					break;
 				}
 				case Opcode::COPY: {
-					if (regIndex != UINT32_MAX) {
-						switch (curIns.operands[0].valueType) {
+					if (reg_index != UINT32_MAX) {
+						switch (cur_ins.operands[0].value_type) {
 							case ValueType::I8:
-								setExpectedValue(regIndex, curIns.operands[0]);
-								analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::I8;
+								set_expected_value(reg_index, cur_ins.operands[0]);
+								analyzed_info_out.analyzed_reg_info.at(reg_index).type = TypeId::I8;
 								break;
 							case ValueType::I16:
-								setExpectedValue(regIndex, curIns.operands[0]);
-								analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::I16;
+								set_expected_value(reg_index, cur_ins.operands[0]);
+								analyzed_info_out.analyzed_reg_info.at(reg_index).type = TypeId::I16;
 								break;
 							case ValueType::I32:
-								setExpectedValue(regIndex, curIns.operands[0]);
-								analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::I32;
+								set_expected_value(reg_index, cur_ins.operands[0]);
+								analyzed_info_out.analyzed_reg_info.at(reg_index).type = TypeId::I32;
 								break;
 							case ValueType::I64:
-								setExpectedValue(regIndex, curIns.operands[0]);
-								analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::I64;
+								set_expected_value(reg_index, cur_ins.operands[0]);
+								analyzed_info_out.analyzed_reg_info.at(reg_index).type = TypeId::I64;
 								break;
 							case ValueType::U8:
-								setExpectedValue(regIndex, curIns.operands[0]);
-								analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::U8;
+								set_expected_value(reg_index, cur_ins.operands[0]);
+								analyzed_info_out.analyzed_reg_info.at(reg_index).type = TypeId::U8;
 								break;
 							case ValueType::U16:
-								setExpectedValue(regIndex, curIns.operands[0]);
-								analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::U16;
+								set_expected_value(reg_index, cur_ins.operands[0]);
+								analyzed_info_out.analyzed_reg_info.at(reg_index).type = TypeId::U16;
 								break;
 							case ValueType::U32:
-								setExpectedValue(regIndex, curIns.operands[0]);
-								analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::U32;
+								set_expected_value(reg_index, cur_ins.operands[0]);
+								analyzed_info_out.analyzed_reg_info.at(reg_index).type = TypeId::U32;
 								break;
 							case ValueType::U64:
-								setExpectedValue(regIndex, curIns.operands[0]);
-								analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::U64;
+								set_expected_value(reg_index, cur_ins.operands[0]);
+								analyzed_info_out.analyzed_reg_info.at(reg_index).type = TypeId::U64;
 								break;
 							case ValueType::F32:
-								setExpectedValue(regIndex, curIns.operands[0]);
-								analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::F32;
+								set_expected_value(reg_index, cur_ins.operands[0]);
+								analyzed_info_out.analyzed_reg_info.at(reg_index).type = TypeId::F32;
 								break;
 							case ValueType::F64:
-								setExpectedValue(regIndex, curIns.operands[0]);
-								analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::F64;
+								set_expected_value(reg_index, cur_ins.operands[0]);
+								analyzed_info_out.analyzed_reg_info.at(reg_index).type = TypeId::F64;
 								break;
 							case ValueType::Bool:
-								setExpectedValue(regIndex, curIns.operands[0]);
-								analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::Bool;
+								set_expected_value(reg_index, cur_ins.operands[0]);
+								analyzed_info_out.analyzed_reg_info.at(reg_index).type = TypeId::Bool;
 								break;
 							case ValueType::Reference: {
-								setExpectedValue(regIndex, curIns.operands[0]);
-								SLAKE_RETURN_IF_EXCEPT(evalObjectType(
-									analyzeContext,
-									curIns.operands[0].getReference(),
-									analyzedInfoOut.analyzedRegInfo.at(regIndex).type));
+								set_expected_value(reg_index, cur_ins.operands[0]);
+								SLAKE_RETURN_IF_EXCEPT(eval_object_type(
+									analyze_context,
+									cur_ins.operands[0].get_reference(),
+									analyzed_info_out.analyzed_reg_info.at(reg_index).type));
 								break;
 							}
 							case ValueType::RegIndex:
-								setExpectedValue(regIndex, Value(ValueType::RegIndex, curIns.operands[0].getRegIndex()));
-								analyzedInfoOut.analyzedRegInfo.at(regIndex).storageInfo = analyzedInfoOut.analyzedRegInfo.at(curIns.operands[0].getRegIndex()).storageInfo;
-								analyzedInfoOut.analyzedRegInfo.at(regIndex).storageType = analyzedInfoOut.analyzedRegInfo.at(curIns.operands[0].getRegIndex()).storageType;
-								analyzedInfoOut.analyzedRegInfo.at(regIndex).type = analyzedInfoOut.analyzedRegInfo.at(curIns.operands[0].getRegIndex()).type;
+								set_expected_value(reg_index, Value(ValueType::RegIndex, cur_ins.operands[0].get_reg_index()));
+								analyzed_info_out.analyzed_reg_info.at(reg_index).storage_info = analyzed_info_out.analyzed_reg_info.at(cur_ins.operands[0].get_reg_index()).storage_info;
+								analyzed_info_out.analyzed_reg_info.at(reg_index).storage_type = analyzed_info_out.analyzed_reg_info.at(cur_ins.operands[0].get_reg_index()).storage_type;
+								analyzed_info_out.analyzed_reg_info.at(reg_index).type = analyzed_info_out.analyzed_reg_info.at(cur_ins.operands[0].get_reg_index()).type;
 								break;
 							default: {
-								return allocOutOfMemoryErrorIfAllocFailed(
+								return alloc_out_of_memory_error_if_alloc_failed(
 									MalformedProgramError::alloc(
-										runtime->getFixedAlloc(),
-										fnObject,
+										runtime->get_fixed_alloc(),
+										fn_object,
 										i));
 							}
 						}
@@ -666,152 +666,152 @@ InternalExceptionPointer slake::opti::analyzeProgramInfoPass(
 					break;
 				}
 				case Opcode::LARG: {
-					if (regIndex != UINT32_MAX) {
-						if (curIns.nOperands != 1) {
-							return allocOutOfMemoryErrorIfAllocFailed(
+					if (reg_index != UINT32_MAX) {
+						if (cur_ins.num_operands != 1) {
+							return alloc_out_of_memory_error_if_alloc_failed(
 								MalformedProgramError::alloc(
-									runtime->getFixedAlloc(),
-									fnObject,
+									runtime->get_fixed_alloc(),
+									fn_object,
 									i));
 						}
 
-						if (curIns.operands[0].valueType != ValueType::U32) {
-							return allocOutOfMemoryErrorIfAllocFailed(
+						if (cur_ins.operands[0].value_type != ValueType::U32) {
+							return alloc_out_of_memory_error_if_alloc_failed(
 								MalformedProgramError::alloc(
-									runtime->getFixedAlloc(),
-									fnObject,
+									runtime->get_fixed_alloc(),
+									fn_object,
 									i));
 						}
 
-						uint32_t index = curIns.operands[0].getU32();
+						uint32_t index = cur_ins.operands[0].get_u32();
 						TypeRef type;
 
-						if (fnObject->overloadingFlags & OL_VARG) {
-							if (index > fnObject->paramTypes.size()) {
-								return allocOutOfMemoryErrorIfAllocFailed(
+						if (fn_object->overloading_flags & OL_VARG) {
+							if (index > fn_object->param_types.size()) {
+								return alloc_out_of_memory_error_if_alloc_failed(
 									MalformedProgramError::alloc(
-										runtime->getFixedAlloc(),
-										fnObject,
+										runtime->get_fixed_alloc(),
+										fn_object,
 										i));
-							} else if (index == fnObject->paramTypes.size()) {
-								TypeRef varArgTypeRef;
+							} else if (index == fn_object->param_types.size()) {
+								TypeRef var_arg_type_ref;
 
-								wrapIntoArrayType(analyzeContext.runtime, TypeId::Any, analyzeContext.hostRefHolder, varArgTypeRef);
+								wrap_into_array_type(analyze_context.runtime, TypeId::Any, analyze_context.host_ref_holder, var_arg_type_ref);
 								SLAKE_RETURN_IF_EXCEPT(
-									wrapIntoRefType(
+									wrap_into_ref_type(
 										runtime,
-										varArgTypeRef,
-										hostRefHolder,
+										var_arg_type_ref,
+										host_ref_holder,
 										type));
 							} else {
 								SLAKE_RETURN_IF_EXCEPT(
-									wrapIntoRefType(
+									wrap_into_ref_type(
 										runtime,
-										fnObject->paramTypes.at(index),
-										hostRefHolder,
+										fn_object->param_types.at(index),
+										host_ref_holder,
 										type));
 							}
 						} else {
-							if (index >= fnObject->paramTypes.size()) {
-								return allocOutOfMemoryErrorIfAllocFailed(
+							if (index >= fn_object->param_types.size()) {
+								return alloc_out_of_memory_error_if_alloc_failed(
 									MalformedProgramError::alloc(
-										runtime->getFixedAlloc(),
-										fnObject,
+										runtime->get_fixed_alloc(),
+										fn_object,
 										i));
 							} else {
 								SLAKE_RETURN_IF_EXCEPT(
-									wrapIntoRefType(
+									wrap_into_ref_type(
 										runtime,
-										fnObject->paramTypes.at(index),
-										hostRefHolder,
+										fn_object->param_types.at(index),
+										host_ref_holder,
 										type));
 							}
 						}
 
-						analyzedInfoOut.analyzedRegInfo.at(regIndex).type = type;
+						analyzed_info_out.analyzed_reg_info.at(reg_index).type = type;
 
-						analyzedInfoOut.analyzedRegInfo.at(regIndex).storageType = RegStorageType::ArgRef;
-						analyzedInfoOut.analyzedRegInfo.at(regIndex).storageInfo.asArgRef = {};
-						analyzedInfoOut.analyzedRegInfo.at(regIndex).storageInfo.asArgRef.idxArg = index;
-						//setExpectedValue(regIndex, Value(ArgRef(pseudoMajorFrame.get(), /*stub*/nullptr, 0, index)));
+						analyzed_info_out.analyzed_reg_info.at(reg_index).storage_type = RegStorageType::ArgRef;
+						analyzed_info_out.analyzed_reg_info.at(reg_index).storage_info.as_arg_ref = {};
+						analyzed_info_out.analyzed_reg_info.at(reg_index).storage_info.as_arg_ref.idx_arg = index;
+						//set_expected_value(reg_index, Value(ArgRef(pseudo_major_frame.get(), /*stub*/nullptr, 0, index)));
 					}
 					break;
 				}
 				case Opcode::LVAR: {
-					if (regIndex == UINT32_MAX) {
-						return allocOutOfMemoryErrorIfAllocFailed(
+					if (reg_index == UINT32_MAX) {
+						return alloc_out_of_memory_error_if_alloc_failed(
 							MalformedProgramError::alloc(
-								runtime->getFixedAlloc(),
-								fnObject,
+								runtime->get_fixed_alloc(),
+								fn_object,
 								i));
 					}
 
-					if (curIns.nOperands != 1) {
-						return allocOutOfMemoryErrorIfAllocFailed(
+					if (cur_ins.num_operands != 1) {
+						return alloc_out_of_memory_error_if_alloc_failed(
 							MalformedProgramError::alloc(
-								runtime->getFixedAlloc(),
-								fnObject,
+								runtime->get_fixed_alloc(),
+								fn_object,
 								i));
 					}
 
-					if (curIns.operands[0].valueType != ValueType::TypeName) {
-						return allocOutOfMemoryErrorIfAllocFailed(
+					if (cur_ins.operands[0].value_type != ValueType::TypeName) {
+						return alloc_out_of_memory_error_if_alloc_failed(
 							MalformedProgramError::alloc(
-								runtime->getFixedAlloc(),
-								fnObject,
+								runtime->get_fixed_alloc(),
+								fn_object,
 								i));
 					}
 
-					TypeRef typeName = curIns.operands[0].getTypeName();
+					TypeRef type_name = cur_ins.operands[0].get_type_name();
 
-					if (curIns.output != UINT32_MAX) {
-						Reference entityRef;
-						//SLAKE_RETURN_IF_EXCEPT(runtime->_addLocalVar(&analyzedInfoOut.contextObject->_context, pseudoMajorFrame.get(), typeName, curIns.output, entityRef));
+					if (cur_ins.output != UINT32_MAX) {
+						Reference entity_ref;
+						//SLAKE_RETURN_IF_EXCEPT(runtime->_add_local_var(&analyzed_info_out.context_object->_context, pseudo_major_frame.get(), type_name, cur_ins.output, entity_ref));
 
 						SLAKE_RETURN_IF_EXCEPT(
-							wrapIntoRefType(
+							wrap_into_ref_type(
 								runtime,
-								typeName,
-								hostRefHolder,
-								analyzedInfoOut.analyzedRegInfo.at(regIndex).type));
+								type_name,
+								host_ref_holder,
+								analyzed_info_out.analyzed_reg_info.at(reg_index).type));
 
-						analyzedInfoOut.analyzedRegInfo.at(regIndex).storageType = RegStorageType::LocalVar;
-						analyzedInfoOut.analyzedRegInfo.at(regIndex).storageInfo.asLocalVar.definitionReg = curIns.output;
-						setExpectedValue(regIndex, Value(entityRef));
+						analyzed_info_out.analyzed_reg_info.at(reg_index).storage_type = RegStorageType::LocalVar;
+						analyzed_info_out.analyzed_reg_info.at(reg_index).storage_info.as_local_var.definition_reg = cur_ins.output;
+						set_expected_value(reg_index, Value(entity_ref));
 					}
 					break;
 				}
 				case Opcode::LVALUE: {
-					if (regIndex != UINT32_MAX) {
-						if (curIns.nOperands != 1) {
-							return allocOutOfMemoryErrorIfAllocFailed(
+					if (reg_index != UINT32_MAX) {
+						if (cur_ins.num_operands != 1) {
+							return alloc_out_of_memory_error_if_alloc_failed(
 								MalformedProgramError::alloc(
-									runtime->getFixedAlloc(),
-									fnObject,
+									runtime->get_fixed_alloc(),
+									fn_object,
 									i));
 						}
 
-						if (curIns.operands[0].valueType != ValueType::RegIndex) {
-							return allocOutOfMemoryErrorIfAllocFailed(
+						if (cur_ins.operands[0].value_type != ValueType::RegIndex) {
+							return alloc_out_of_memory_error_if_alloc_failed(
 								MalformedProgramError::alloc(
-									runtime->getFixedAlloc(),
-									fnObject,
+									runtime->get_fixed_alloc(),
+									fn_object,
 									i));
 						}
 
-						uint32_t index = curIns.operands[0].getRegIndex();
-						TypeRef type = analyzedInfoOut.analyzedRegInfo.at(index).type;
+						uint32_t index = cur_ins.operands[0].get_reg_index();
+						TypeRef type = analyzed_info_out.analyzed_reg_info.at(index).type;
 
-						if (type.typeId != TypeId::Ref) {
-							return allocOutOfMemoryErrorIfAllocFailed(
+						if (type.type_id != TypeId::Ref) {
+							return alloc_out_of_memory_error_if_alloc_failed(
 								MalformedProgramError::alloc(
-									runtime->getFixedAlloc(),
-									fnObject,
+									runtime->get_fixed_alloc(),
+									fn_object,
 									i));
 						}
 
-						TypeRef unwrappedType = type.getRefTypeDef()->referencedType->typeRef;
-						analyzedInfoOut.analyzedRegInfo.at(regIndex).type = unwrappedType;
+						TypeRef unwrapped_type = type.get_ref_type_def()->referenced_type->type_ref;
+						analyzed_info_out.analyzed_reg_info.at(reg_index).type = unwrapped_type;
 					}
 					break;
 				}
@@ -842,78 +842,78 @@ InternalExceptionPointer slake::opti::analyzeProgramInfoPass(
 				case Opcode::NOT:
 				case Opcode::LNOT:
 				case Opcode::NEG:
-					SLAKE_RETURN_IF_EXCEPT(analyzeArithmeticIns(analyzeContext, regIndex));
+					SLAKE_RETURN_IF_EXCEPT(analyze_arithmetic_ins(analyze_context, reg_index));
 					break;
 				case Opcode::AT: {
-					if (regIndex != UINT32_MAX) {
-						if (curIns.nOperands != 2) {
-							return allocOutOfMemoryErrorIfAllocFailed(
+					if (reg_index != UINT32_MAX) {
+						if (cur_ins.num_operands != 2) {
+							return alloc_out_of_memory_error_if_alloc_failed(
 								MalformedProgramError::alloc(
-									runtime->getFixedAlloc(),
-									fnObject,
+									runtime->get_fixed_alloc(),
+									fn_object,
 									i));
 						}
 
-						if (curIns.operands[0].valueType != ValueType::RegIndex) {
-							return allocOutOfMemoryErrorIfAllocFailed(
+						if (cur_ins.operands[0].value_type != ValueType::RegIndex) {
+							return alloc_out_of_memory_error_if_alloc_failed(
 								MalformedProgramError::alloc(
-									runtime->getFixedAlloc(),
-									fnObject,
+									runtime->get_fixed_alloc(),
+									fn_object,
 									i));
 						}
 
-						uint32_t index = curIns.operands[0].getRegIndex();
-						TypeRef type = analyzedInfoOut.analyzedRegInfo.at(index).type;
+						uint32_t index = cur_ins.operands[0].get_reg_index();
+						TypeRef type = analyzed_info_out.analyzed_reg_info.at(index).type;
 
-						if (type.typeId != TypeId::Array) {
-							return allocOutOfMemoryErrorIfAllocFailed(
+						if (type.type_id != TypeId::Array) {
+							return alloc_out_of_memory_error_if_alloc_failed(
 								MalformedProgramError::alloc(
-									runtime->getFixedAlloc(),
-									fnObject,
+									runtime->get_fixed_alloc(),
+									fn_object,
 									i));
 						}
 
-						TypeRef unwrappedType = type.getArrayTypeDef()->elementType->typeRef;
-						SLAKE_RETURN_IF_EXCEPT(wrapIntoRefType(
-							analyzeContext.runtime,
-							unwrappedType,
-							analyzeContext.hostRefHolder,
-							analyzedInfoOut.analyzedRegInfo.at(regIndex).type));
+						TypeRef unwrapped_type = type.get_array_type_def()->element_type->type_ref;
+						SLAKE_RETURN_IF_EXCEPT(wrap_into_ref_type(
+							analyze_context.runtime,
+							unwrapped_type,
+							analyze_context.host_ref_holder,
+							analyzed_info_out.analyzed_reg_info.at(reg_index).type));
 
-						analyzedInfoOut.analyzedRegInfo.at(regIndex).storageType = RegStorageType::ArrayElement;
+						analyzed_info_out.analyzed_reg_info.at(reg_index).storage_type = RegStorageType::ArrayElement;
 					}
 					break;
 				}
 				case Opcode::JMP:
-					if (regIndex != UINT32_MAX) {
-						return allocOutOfMemoryErrorIfAllocFailed(
+					if (reg_index != UINT32_MAX) {
+						return alloc_out_of_memory_error_if_alloc_failed(
 							MalformedProgramError::alloc(
-								runtime->getFixedAlloc(),
-								fnObject,
+								runtime->get_fixed_alloc(),
+								fn_object,
 								i));
 					}
 
-					if (!analyzeContext.analyzedInfoOut.codeBlockBoundaries.insert(i + 1))
+					if (!analyze_context.analyzed_info_out.code_block_boundaries.insert(i + 1))
 						return OutOfMemoryError::alloc();
-					if (!analyzeContext.analyzedInfoOut.codeBlockBoundaries.insert(curIns.operands[0].getU32()))
+					if (!analyze_context.analyzed_info_out.code_block_boundaries.insert(cur_ins.operands[0].get_u32()))
 						return OutOfMemoryError::alloc();
 					break;
 				case Opcode::PUSHARG: {
-					if (regIndex != UINT32_MAX) {
-						return allocOutOfMemoryErrorIfAllocFailed(
+					if (reg_index != UINT32_MAX) {
+						return alloc_out_of_memory_error_if_alloc_failed(
 							MalformedProgramError::alloc(
-								runtime->getFixedAlloc(),
-								fnObject,
+								runtime->get_fixed_alloc(),
+								fn_object,
 								i));
 					}
-					if (curIns.nOperands != 1) {
-						return allocOutOfMemoryErrorIfAllocFailed(
+					if (cur_ins.num_operands != 1) {
+						return alloc_out_of_memory_error_if_alloc_failed(
 							MalformedProgramError::alloc(
-								runtime->getFixedAlloc(),
-								fnObject,
+								runtime->get_fixed_alloc(),
+								fn_object,
 								i));
 					}
-					switch (curIns.operands[0].valueType) {
+					switch (cur_ins.operands[0].value_type) {
 						case ValueType::I8:
 						case ValueType::I16:
 						case ValueType::I32:
@@ -928,76 +928,76 @@ InternalExceptionPointer slake::opti::analyzeProgramInfoPass(
 						case ValueType::Reference:
 							break;
 						case ValueType::RegIndex:
-							markRegAsForOutput(analyzeContext, curIns.operands[0].getRegIndex());
+							mark_reg_as_for_output(analyze_context, cur_ins.operands[0].get_reg_index());
 							break;
 						default:
-							return allocOutOfMemoryErrorIfAllocFailed(
+							return alloc_out_of_memory_error_if_alloc_failed(
 								MalformedProgramError::alloc(
-									runtime->getFixedAlloc(),
-									fnObject,
+									runtime->get_fixed_alloc(),
+									fn_object,
 									i));
 					}
-					if (!analyzeContext.argPushInsOffs.pushBack(+i))
+					if (!analyze_context.arg_push_ins_offs.push_back(+i))
 						return OutOfMemoryError::alloc();
 					break;
 				}
 				case Opcode::CALL: {
-					if (curIns.nOperands != 1) {
-						return allocOutOfMemoryErrorIfAllocFailed(
+					if (cur_ins.num_operands != 1) {
+						return alloc_out_of_memory_error_if_alloc_failed(
 							MalformedProgramError::alloc(
-								runtime->getFixedAlloc(),
-								fnObject,
+								runtime->get_fixed_alloc(),
+								fn_object,
 								i));
 					}
 
-					Value callTarget = curIns.operands[0];
-					if (callTarget.valueType != ValueType::RegIndex) {
-						return allocOutOfMemoryErrorIfAllocFailed(
+					Value call_target = cur_ins.operands[0];
+					if (call_target.value_type != ValueType::RegIndex) {
+						return alloc_out_of_memory_error_if_alloc_failed(
 							MalformedProgramError::alloc(
-								runtime->getFixedAlloc(),
-								fnObject,
+								runtime->get_fixed_alloc(),
+								fn_object,
 								i));
 					}
 
-					uint32_t callTargetRegIndex = callTarget.getRegIndex();
-					if (!analyzedInfoOut.analyzedRegInfo.contains(callTargetRegIndex)) {
-						return allocOutOfMemoryErrorIfAllocFailed(
+					uint32_t call_target_reg_index = call_target.get_reg_index();
+					if (!analyzed_info_out.analyzed_reg_info.contains(call_target_reg_index)) {
+						return alloc_out_of_memory_error_if_alloc_failed(
 							MalformedProgramError::alloc(
-								runtime->getFixedAlloc(),
-								fnObject,
+								runtime->get_fixed_alloc(),
+								fn_object,
 								i));
 					}
 
-					TypeRef callTargetType = analyzedInfoOut.analyzedRegInfo.at(callTargetRegIndex).type;
+					TypeRef call_target_type = analyzed_info_out.analyzed_reg_info.at(call_target_reg_index).type;
 
-					switch (callTargetType.typeId) {
+					switch (call_target_type.type_id) {
 						case TypeId::Fn:
-							if (regIndex != UINT32_MAX) {
-								FnTypeDefObject *typeDef = (FnTypeDefObject *)callTargetType.getCustomTypeDef();
-								analyzedInfoOut.analyzedRegInfo.at(regIndex).type = typeDef->returnType->typeRef;
+							if (reg_index != UINT32_MAX) {
+								FnTypeDefObject *type_def = (FnTypeDefObject *)call_target_type.get_custom_type_def();
+								analyzed_info_out.analyzed_reg_info.at(reg_index).type = type_def->return_type->type_ref;
 							}
 							break;
 						default: {
-							return allocOutOfMemoryErrorIfAllocFailed(
+							return alloc_out_of_memory_error_if_alloc_failed(
 								MalformedProgramError::alloc(
-									runtime->getFixedAlloc(),
-									fnObject,
+									runtime->get_fixed_alloc(),
+									fn_object,
 									i));
 						}
 					}
 
-					analyzeContext.analyzedInfoOut.analyzedFnCallInfo.insert(+i, FnCallAnalyzedInfo(analyzeContext.resourceAllocator.get()));
-					analyzeContext.analyzedInfoOut.analyzedFnCallInfo.at(i).argPushInsOffs = std::move(analyzeContext.argPushInsOffs);
-					analyzeContext.argPushInsOffs = peff::DynArray<uint32_t>(analyzeContext.resourceAllocator.get());
+					analyze_context.analyzed_info_out.analyzed_fn_call_info.insert(+i, FnCallAnalyzedInfo(analyze_context.resource_allocator.get()));
+					analyze_context.analyzed_info_out.analyzed_fn_call_info.at(i).arg_push_ins_offs = std::move(analyze_context.arg_push_ins_offs);
+					analyze_context.arg_push_ins_offs = peff::DynArray<uint32_t>(analyze_context.resource_allocator.get());
 
-					Value expectedFnValue = analyzedInfoOut.analyzedRegInfo.at(callTargetRegIndex).expectedValue;
+					Value expected_fn_value = analyzed_info_out.analyzed_reg_info.at(call_target_reg_index).expected_value;
 
-					if (expectedFnValue.valueType != ValueType::Undefined) {
-						FnOverloadingObject *expectedFnObject = (FnOverloadingObject *)expectedFnValue.getReference().asObject;
-						if (!analyzeContext.analyzedInfoOut.fnCallMap.contains(expectedFnObject)) {
-							analyzeContext.analyzedInfoOut.fnCallMap.insert(+expectedFnObject, peff::DynArray<uint32_t>(analyzeContext.runtime->getFixedAlloc()));
+					if (expected_fn_value.value_type != ValueType::Undefined) {
+						FnOverloadingObject *expected_fn_object = (FnOverloadingObject *)expected_fn_value.get_reference().as_object;
+						if (!analyze_context.analyzed_info_out.fn_call_map.contains(expected_fn_object)) {
+							analyze_context.analyzed_info_out.fn_call_map.insert(+expected_fn_object, peff::DynArray<uint32_t>(analyze_context.runtime->get_fixed_alloc()));
 						}
-						if (!analyzeContext.analyzedInfoOut.fnCallMap.at(expectedFnObject).pushBack(+i))
+						if (!analyze_context.analyzed_info_out.fn_call_map.at(expected_fn_object).push_back(+i))
 							return OutOfMemoryError::alloc();
 					}
 
@@ -1005,82 +1005,82 @@ InternalExceptionPointer slake::opti::analyzeProgramInfoPass(
 				}
 				case Opcode::MCALL:
 				case Opcode::CTORCALL: {
-					if (curIns.nOperands != 2) {
-						return allocOutOfMemoryErrorIfAllocFailed(
+					if (cur_ins.num_operands != 2) {
+						return alloc_out_of_memory_error_if_alloc_failed(
 							MalformedProgramError::alloc(
-								runtime->getFixedAlloc(),
-								fnObject,
+								runtime->get_fixed_alloc(),
+								fn_object,
 								i));
 					}
 
-					Value callTarget = curIns.operands[0];
-					if (callTarget.valueType != ValueType::RegIndex) {
-						return allocOutOfMemoryErrorIfAllocFailed(
+					Value call_target = cur_ins.operands[0];
+					if (call_target.value_type != ValueType::RegIndex) {
+						return alloc_out_of_memory_error_if_alloc_failed(
 							MalformedProgramError::alloc(
-								runtime->getFixedAlloc(),
-								fnObject,
+								runtime->get_fixed_alloc(),
+								fn_object,
 								i));
 					}
 
-					uint32_t callTargetRegIndex = callTarget.getRegIndex();
-					if (!analyzedInfoOut.analyzedRegInfo.contains(callTargetRegIndex)) {
-						return allocOutOfMemoryErrorIfAllocFailed(
+					uint32_t call_target_reg_index = call_target.get_reg_index();
+					if (!analyzed_info_out.analyzed_reg_info.contains(call_target_reg_index)) {
+						return alloc_out_of_memory_error_if_alloc_failed(
 							MalformedProgramError::alloc(
-								runtime->getFixedAlloc(),
-								fnObject,
+								runtime->get_fixed_alloc(),
+								fn_object,
 								i));
 					}
 
-					TypeRef callTargetType = analyzedInfoOut.analyzedRegInfo.at(callTargetRegIndex).type;
+					TypeRef call_target_type = analyzed_info_out.analyzed_reg_info.at(call_target_reg_index).type;
 
-					switch (callTargetType.typeId) {
+					switch (call_target_type.type_id) {
 						case TypeId::Fn:
-							if (regIndex != UINT32_MAX) {
-								FnTypeDefObject *typeDef = (FnTypeDefObject *)callTargetType.getCustomTypeDef();
-								analyzedInfoOut.analyzedRegInfo.at(regIndex).type = typeDef->returnType->typeRef;
+							if (reg_index != UINT32_MAX) {
+								FnTypeDefObject *type_def = (FnTypeDefObject *)call_target_type.get_custom_type_def();
+								analyzed_info_out.analyzed_reg_info.at(reg_index).type = type_def->return_type->type_ref;
 							}
 							break;
 						default: {
-							return allocOutOfMemoryErrorIfAllocFailed(
+							return alloc_out_of_memory_error_if_alloc_failed(
 								MalformedProgramError::alloc(
-									runtime->getFixedAlloc(),
-									fnObject,
+									runtime->get_fixed_alloc(),
+									fn_object,
 									i));
 						}
 					}
-					analyzeContext.analyzedInfoOut.analyzedFnCallInfo.insert(+i, FnCallAnalyzedInfo(analyzeContext.resourceAllocator.get()));
-					analyzeContext.analyzedInfoOut.analyzedFnCallInfo.at(i).argPushInsOffs = std::move(analyzeContext.argPushInsOffs);
-					analyzeContext.argPushInsOffs = peff::DynArray<uint32_t>(analyzeContext.resourceAllocator.get());
+					analyze_context.analyzed_info_out.analyzed_fn_call_info.insert(+i, FnCallAnalyzedInfo(analyze_context.resource_allocator.get()));
+					analyze_context.analyzed_info_out.analyzed_fn_call_info.at(i).arg_push_ins_offs = std::move(analyze_context.arg_push_ins_offs);
+					analyze_context.arg_push_ins_offs = peff::DynArray<uint32_t>(analyze_context.resource_allocator.get());
 
-					Value expectedFnValue = analyzedInfoOut.analyzedRegInfo.at(callTargetRegIndex).expectedValue;
+					Value expected_fn_value = analyzed_info_out.analyzed_reg_info.at(call_target_reg_index).expected_value;
 
-					if (expectedFnValue.valueType != ValueType::Undefined) {
-						FnOverloadingObject *expectedFnObject = (FnOverloadingObject *)expectedFnValue.getReference().asObject;
-						if (!analyzeContext.analyzedInfoOut.fnCallMap.contains(expectedFnObject)) {
-							analyzeContext.analyzedInfoOut.fnCallMap.insert(+expectedFnObject, peff::DynArray<uint32_t>(analyzeContext.resourceAllocator.get()));
+					if (expected_fn_value.value_type != ValueType::Undefined) {
+						FnOverloadingObject *expected_fn_object = (FnOverloadingObject *)expected_fn_value.get_reference().as_object;
+						if (!analyze_context.analyzed_info_out.fn_call_map.contains(expected_fn_object)) {
+							analyze_context.analyzed_info_out.fn_call_map.insert(+expected_fn_object, peff::DynArray<uint32_t>(analyze_context.resource_allocator.get()));
 						}
-						if (!analyzeContext.analyzedInfoOut.fnCallMap.at(expectedFnObject).pushBack(+i))
+						if (!analyze_context.analyzed_info_out.fn_call_map.at(expected_fn_object).push_back(+i))
 							return OutOfMemoryError::alloc();
 					}
 
 					break;
 				}
 				case Opcode::RET:
-					if (regIndex != UINT32_MAX) {
-						return allocOutOfMemoryErrorIfAllocFailed(
+					if (reg_index != UINT32_MAX) {
+						return alloc_out_of_memory_error_if_alloc_failed(
 							MalformedProgramError::alloc(
-								runtime->getFixedAlloc(),
-								fnObject,
+								runtime->get_fixed_alloc(),
+								fn_object,
 								i));
 					}
-					if (curIns.nOperands != 1) {
-						return allocOutOfMemoryErrorIfAllocFailed(
+					if (cur_ins.num_operands != 1) {
+						return alloc_out_of_memory_error_if_alloc_failed(
 							MalformedProgramError::alloc(
-								runtime->getFixedAlloc(),
-								fnObject,
+								runtime->get_fixed_alloc(),
+								fn_object,
 								i));
 					}
-					switch (curIns.operands[0].valueType) {
+					switch (cur_ins.operands[0].value_type) {
 						case ValueType::I8:
 						case ValueType::I16:
 						case ValueType::I32:
@@ -1095,131 +1095,131 @@ InternalExceptionPointer slake::opti::analyzeProgramInfoPass(
 						case ValueType::Reference:
 							break;
 						case ValueType::RegIndex:
-							markRegAsForOutput(analyzeContext, curIns.operands[0].getRegIndex());
+							mark_reg_as_for_output(analyze_context, cur_ins.operands[0].get_reg_index());
 							break;
 						default:
-							return allocOutOfMemoryErrorIfAllocFailed(
+							return alloc_out_of_memory_error_if_alloc_failed(
 								MalformedProgramError::alloc(
-									runtime->getFixedAlloc(),
-									fnObject,
+									runtime->get_fixed_alloc(),
+									fn_object,
 									i));
 					}
-					if (!analyzeContext.analyzedInfoOut.codeBlockBoundaries.insert(i + 1))
+					if (!analyze_context.analyzed_info_out.code_block_boundaries.insert(i + 1))
 						return OutOfMemoryError::alloc();
 					break;
 				case Opcode::YIELD:
-					if (regIndex != UINT32_MAX) {
-						return allocOutOfMemoryErrorIfAllocFailed(
+					if (reg_index != UINT32_MAX) {
+						return alloc_out_of_memory_error_if_alloc_failed(
 							MalformedProgramError::alloc(
-								runtime->getFixedAlloc(),
-								fnObject,
+								runtime->get_fixed_alloc(),
+								fn_object,
 								i));
 					}
-					if (!analyzeContext.analyzedInfoOut.codeBlockBoundaries.insert(i + 1))
+					if (!analyze_context.analyzed_info_out.code_block_boundaries.insert(i + 1))
 						return OutOfMemoryError::alloc();
 					break;
 				case Opcode::LTHIS:
-					if (regIndex == UINT32_MAX) {
-						return allocOutOfMemoryErrorIfAllocFailed(
+					if (reg_index == UINT32_MAX) {
+						return alloc_out_of_memory_error_if_alloc_failed(
 							MalformedProgramError::alloc(
-								runtime->getFixedAlloc(),
-								fnObject,
+								runtime->get_fixed_alloc(),
+								fn_object,
 								i));
 					}
 
-					if (analyzeContext.fnObject->thisType.typeId == TypeId::Void) {
-						return allocOutOfMemoryErrorIfAllocFailed(
+					if (analyze_context.fn_object->this_type.type_id == TypeId::Void) {
+						return alloc_out_of_memory_error_if_alloc_failed(
 							MalformedProgramError::alloc(
-								runtime->getFixedAlloc(),
-								fnObject,
+								runtime->get_fixed_alloc(),
+								fn_object,
 								i));
 					}
-					analyzedInfoOut.analyzedRegInfo.at(regIndex).type = analyzeContext.fnObject->thisType;
+					analyzed_info_out.analyzed_reg_info.at(reg_index).type = analyze_context.fn_object->this_type;
 					break;
 				case Opcode::NEW:
-					if (regIndex == UINT32_MAX) {
-						return allocOutOfMemoryErrorIfAllocFailed(
+					if (reg_index == UINT32_MAX) {
+						return alloc_out_of_memory_error_if_alloc_failed(
 							MalformedProgramError::alloc(
-								runtime->getFixedAlloc(),
-								fnObject,
+								runtime->get_fixed_alloc(),
+								fn_object,
 								i));
 					}
 
-					if (curIns.nOperands != 1) {
-						return allocOutOfMemoryErrorIfAllocFailed(
+					if (cur_ins.num_operands != 1) {
+						return alloc_out_of_memory_error_if_alloc_failed(
 							MalformedProgramError::alloc(
-								runtime->getFixedAlloc(),
-								fnObject,
+								runtime->get_fixed_alloc(),
+								fn_object,
 								i));
 					}
 
-					if (curIns.operands[0].valueType != ValueType::TypeName) {
-						return allocOutOfMemoryErrorIfAllocFailed(
+					if (cur_ins.operands[0].value_type != ValueType::TypeName) {
+						return alloc_out_of_memory_error_if_alloc_failed(
 							MalformedProgramError::alloc(
-								runtime->getFixedAlloc(),
-								fnObject,
+								runtime->get_fixed_alloc(),
+								fn_object,
 								i));
 					}
 
-					analyzedInfoOut.analyzedRegInfo.at(regIndex).type = curIns.operands[0].getTypeName();
+					analyzed_info_out.analyzed_reg_info.at(reg_index).type = cur_ins.operands[0].get_type_name();
 					break;
 				case Opcode::ARRNEW: {
-					if (regIndex == UINT32_MAX) {
-						return allocOutOfMemoryErrorIfAllocFailed(
+					if (reg_index == UINT32_MAX) {
+						return alloc_out_of_memory_error_if_alloc_failed(
 							MalformedProgramError::alloc(
-								runtime->getFixedAlloc(),
-								fnObject,
+								runtime->get_fixed_alloc(),
+								fn_object,
 								i));
 					}
 
-					if (curIns.nOperands != 2) {
-						return allocOutOfMemoryErrorIfAllocFailed(
+					if (cur_ins.num_operands != 2) {
+						return alloc_out_of_memory_error_if_alloc_failed(
 							MalformedProgramError::alloc(
-								runtime->getFixedAlloc(),
-								fnObject,
+								runtime->get_fixed_alloc(),
+								fn_object,
 								i));
 					}
 
-					if (curIns.operands[0].valueType != ValueType::TypeName) {
-						return allocOutOfMemoryErrorIfAllocFailed(
+					if (cur_ins.operands[0].value_type != ValueType::TypeName) {
+						return alloc_out_of_memory_error_if_alloc_failed(
 							MalformedProgramError::alloc(
-								runtime->getFixedAlloc(),
-								fnObject,
+								runtime->get_fixed_alloc(),
+								fn_object,
 								i));
 					}
 
-					TypeRef lengthType;
-					SLAKE_RETURN_IF_EXCEPT(evalValueType(analyzeContext, curIns.operands[1], lengthType));
-					if (!isValueTypeCompatibleTypeId(lengthType.typeId)) {
-						return allocOutOfMemoryErrorIfAllocFailed(
+					TypeRef length_type;
+					SLAKE_RETURN_IF_EXCEPT(eval_value_type(analyze_context, cur_ins.operands[1], length_type));
+					if (!is_value_type_compatible_type_id(length_type.type_id)) {
+						return alloc_out_of_memory_error_if_alloc_failed(
 							MalformedProgramError::alloc(
-								runtime->getFixedAlloc(),
-								fnObject,
+								runtime->get_fixed_alloc(),
+								fn_object,
 								i));
 					}
 
-					if (lengthType.comparesTo(TypeId::U32)) {
-						return allocOutOfMemoryErrorIfAllocFailed(
+					if (length_type.compares_to(TypeId::U32)) {
+						return alloc_out_of_memory_error_if_alloc_failed(
 							MalformedProgramError::alloc(
-								runtime->getFixedAlloc(),
-								fnObject,
+								runtime->get_fixed_alloc(),
+								fn_object,
 								i));
 					}
 
-					SLAKE_RETURN_IF_EXCEPT(wrapIntoArrayType(
+					SLAKE_RETURN_IF_EXCEPT(wrap_into_array_type(
 						runtime,
-						curIns.operands[0].getTypeName(),
-						hostRefHolder,
-						analyzedInfoOut.analyzedRegInfo.at(regIndex).type));
+						cur_ins.operands[0].get_type_name(),
+						host_ref_holder,
+						analyzed_info_out.analyzed_reg_info.at(reg_index).type));
 					break;
 				}
 				case Opcode::THROW:
 				case Opcode::PUSHEH:
-					if (regIndex != UINT32_MAX) {
-						return allocOutOfMemoryErrorIfAllocFailed(
+					if (reg_index != UINT32_MAX) {
+						return alloc_out_of_memory_error_if_alloc_failed(
 							MalformedProgramError::alloc(
-								runtime->getFixedAlloc(),
-								fnObject,
+								runtime->get_fixed_alloc(),
+								fn_object,
 								i));
 					}
 					break;
@@ -1227,28 +1227,28 @@ InternalExceptionPointer slake::opti::analyzeProgramInfoPass(
 					// stub
 					break;
 				case Opcode::CAST: {
-					SLAKE_RETURN_IF_EXCEPT(analyzeCastIns(analyzeContext, regIndex));
+					SLAKE_RETURN_IF_EXCEPT(analyze_cast_ins(analyze_context, reg_index));
 					break;
 				}
 				default: {
 					// Malformed program, return.
-					return allocOutOfMemoryErrorIfAllocFailed(
+					return alloc_out_of_memory_error_if_alloc_failed(
 						MalformedProgramError::alloc(
-							runtime->getFixedAlloc(),
-							fnObject,
+							runtime->get_fixed_alloc(),
+							fn_object,
 							i));
 				}
 			}
 		}
-	} while (newExpectableRegFound);
+	} while (new_expectable_reg_found);
 
 	// A well-formed program should not have unused argument pushing instructions.
-	if (analyzeContext.argPushInsOffs.size()) {
-		return allocOutOfMemoryErrorIfAllocFailed(
+	if (analyze_context.arg_push_ins_offs.size()) {
+		return alloc_out_of_memory_error_if_alloc_failed(
 			MalformedProgramError::alloc(
-				runtime->getFixedAlloc(),
-				fnObject,
-				nIns - 1));
+				runtime->get_fixed_alloc(),
+				fn_object,
+				num_ins - 1));
 	}
 
 	return {};

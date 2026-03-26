@@ -79,12 +79,12 @@ namespace slake {
 		Unknown,  // Unknown
 	};
 
-	SLAKE_API TypeId valueTypeToTypeId(ValueType valueType) noexcept;
-	SLAKE_API bool isValueTypeCompatibleTypeId(TypeId typeId) noexcept;
-	SLAKE_API ValueType typeIdToValueType(TypeId typeId) noexcept;
+	SLAKE_API TypeId value_type_to_type_id(ValueType value_type) noexcept;
+	SLAKE_API bool is_value_type_compatible_type_id(TypeId type_id) noexcept;
+	SLAKE_API ValueType type_id_to_value_type(TypeId type_id) noexcept;
 
-	SLAKE_FORCEINLINE constexpr bool isFundamentalType(TypeId typeId) {
-		switch (typeId) {
+	SLAKE_FORCEINLINE constexpr bool is_fundamental_type(TypeId type_id) {
+		switch (type_id) {
 			case TypeId::Void:
 			case TypeId::I8:
 			case TypeId::I16:
@@ -129,109 +129,109 @@ namespace slake {
 	class SIMDTypeDefObject;
 	class UnpackingTypeDefObject;
 
-	SLAKE_API bool isTypeDefObject(Object *object);
+	SLAKE_API bool is_type_def_object(Object *object);
 
 	using TypeModifier = uint8_t;
 	constexpr static TypeModifier TYPE_FINAL = 0x01, TYPE_LOCAL = 0x02, TYPE_NULLABLE = 0x04;
 
 	struct TypeRef {
-		TypeId typeId;
-		TypeModifier typeModifier;
-		TypeDefObject *typeDef;
+		TypeId type_id;
+		TypeModifier type_modifier;
+		TypeDefObject *type_def;
 
 		TypeRef() noexcept = default;
 		TypeRef(const TypeRef &) noexcept = default;
-		SLAKE_FORCEINLINE TypeRef(TypeId typeId) : typeId(typeId), typeModifier(0), typeDef(nullptr) {
+		SLAKE_FORCEINLINE TypeRef(TypeId type_id) : type_id(type_id), type_modifier(0), type_def(nullptr) {
 		}
-		SLAKE_FORCEINLINE TypeRef(TypeId typeId, TypeModifier typeModifier) : typeId(typeId), typeModifier(typeModifier), typeDef(nullptr) {
+		SLAKE_FORCEINLINE TypeRef(TypeId type_id, TypeModifier type_modifier) : type_id(type_id), type_modifier(type_modifier), type_def(nullptr) {
 		}
-		SLAKE_FORCEINLINE TypeRef(TypeId typeId, TypeDefObject *typeDef) : typeId(typeId), typeModifier(0), typeDef(typeDef) {
-			assert(isTypeDefObject((Object *)typeDef));
+		SLAKE_FORCEINLINE TypeRef(TypeId type_id, TypeDefObject *type_def) : type_id(type_id), type_modifier(0), type_def(type_def) {
+			assert(is_type_def_object((Object *)type_def));
 		}
-		SLAKE_FORCEINLINE TypeRef(TypeId typeId, TypeDefObject *typeDef, TypeModifier typeModifier) : typeId(typeId), typeModifier(typeModifier), typeDef(typeDef) {
-			assert(isTypeDefObject((Object *)typeDef));
+		SLAKE_FORCEINLINE TypeRef(TypeId type_id, TypeDefObject *type_def, TypeModifier type_modifier) : type_id(type_id), type_modifier(type_modifier), type_def(type_def) {
+			assert(is_type_def_object((Object *)type_def));
 		}
 		~TypeRef() = default;
 
 		TypeRef &operator=(const TypeRef &) noexcept = default;
 
-		SLAKE_API int comparesTo(const TypeRef &rhs) const noexcept;
+		SLAKE_API int compares_to(const TypeRef &rhs) const noexcept;
 
 		SLAKE_FORCEINLINE bool operator==(const TypeRef &rhs) const {
-			return comparesTo(rhs) == 0;
+			return compares_to(rhs) == 0;
 		}
 
 		SLAKE_FORCEINLINE bool operator!=(const TypeRef &rhs) const {
-			return comparesTo(rhs) != 0;
+			return compares_to(rhs) != 0;
 		}
 
 		SLAKE_FORCEINLINE bool operator<(const TypeRef &rhs) const {
-			return comparesTo(rhs) < 0;
+			return compares_to(rhs) < 0;
 		}
 
 		SLAKE_FORCEINLINE bool operator>(const TypeRef &rhs) const {
-			return comparesTo(rhs) > 0;
+			return compares_to(rhs) > 0;
 		}
 
 		SLAKE_FORCEINLINE explicit operator bool() const {
-			return typeId != TypeId::Invalid;
+			return type_id != TypeId::Invalid;
 		}
 
-		SLAKE_API TypeRef duplicate(bool &succeededOut) const;
+		SLAKE_API TypeRef duplicate(bool &succeeded_out) const;
 
-		SLAKE_FORCEINLINE bool isFinal() const noexcept {
-			return typeModifier & TYPE_FINAL;
+		SLAKE_FORCEINLINE bool is_final() const noexcept {
+			return type_modifier & TYPE_FINAL;
 		}
 
-		SLAKE_FORCEINLINE bool isLocal() const noexcept {
-			return typeModifier & TYPE_LOCAL;
+		SLAKE_FORCEINLINE bool is_local() const noexcept {
+			return type_modifier & TYPE_LOCAL;
 		}
 
-		SLAKE_FORCEINLINE bool isNullable() const noexcept {
-			return typeModifier & TYPE_NULLABLE;
+		SLAKE_FORCEINLINE bool is_nullable() const noexcept {
+			return type_modifier & TYPE_NULLABLE;
 		}
 
-		SLAKE_FORCEINLINE void setFinal() noexcept {
-			typeModifier |= TYPE_FINAL;
+		SLAKE_FORCEINLINE void set_final() noexcept {
+			type_modifier |= TYPE_FINAL;
 		}
 
-		SLAKE_FORCEINLINE void setLocal() noexcept {
-			typeModifier |= TYPE_LOCAL;
+		SLAKE_FORCEINLINE void set_local() noexcept {
+			type_modifier |= TYPE_LOCAL;
 		}
 
-		SLAKE_FORCEINLINE void setNullable() noexcept {
-			typeModifier |= TYPE_NULLABLE;
+		SLAKE_FORCEINLINE void set_nullable() noexcept {
+			type_modifier |= TYPE_NULLABLE;
 		}
 
-		SLAKE_FORCEINLINE void clearFinal() noexcept {
-			typeModifier &= ~TYPE_FINAL;
+		SLAKE_FORCEINLINE void clear_final() noexcept {
+			type_modifier &= ~TYPE_FINAL;
 		}
 
-		SLAKE_FORCEINLINE void clearLocal() noexcept {
-			typeModifier &= ~TYPE_LOCAL;
+		SLAKE_FORCEINLINE void clear_local() noexcept {
+			type_modifier &= ~TYPE_LOCAL;
 		}
 
-		SLAKE_FORCEINLINE void clearNullable() noexcept {
-			typeModifier &= ~TYPE_NULLABLE;
+		SLAKE_FORCEINLINE void clear_nullable() noexcept {
+			type_modifier &= ~TYPE_NULLABLE;
 		}
 
-		SLAKE_FORCEINLINE CustomTypeDefObject *getCustomTypeDef() const;
-		SLAKE_FORCEINLINE ArrayTypeDefObject *getArrayTypeDef() const;
-		SLAKE_FORCEINLINE RefTypeDefObject *getRefTypeDef() const;
-		SLAKE_FORCEINLINE GenericArgTypeDefObject *getGenericArgTypeDef() const;
-		SLAKE_FORCEINLINE FnTypeDefObject *getFnTypeDef() const;
-		SLAKE_FORCEINLINE ParamTypeListTypeDefObject *getParamTypeListTypeDef() const;
-		SLAKE_FORCEINLINE TupleTypeDefObject *getTupleTypeDef() const;
-		SLAKE_FORCEINLINE SIMDTypeDefObject *getSIMDTypeDef() const;
-		SLAKE_FORCEINLINE UnpackingTypeDefObject *getUnpackingTypeDef() const;
+		SLAKE_FORCEINLINE CustomTypeDefObject *get_custom_type_def() const;
+		SLAKE_FORCEINLINE ArrayTypeDefObject *get_array_type_def() const;
+		SLAKE_FORCEINLINE RefTypeDefObject *get_ref_type_def() const;
+		SLAKE_FORCEINLINE GenericArgTypeDefObject *get_generic_arg_type_def() const;
+		SLAKE_FORCEINLINE FnTypeDefObject *get_fn_type_def() const;
+		SLAKE_FORCEINLINE ParamTypeListTypeDefObject *get_param_type_list_type_def() const;
+		SLAKE_FORCEINLINE TupleTypeDefObject *get_tuple_type_def() const;
+		SLAKE_FORCEINLINE SIMDTypeDefObject *get_simdtype_def() const;
+		SLAKE_FORCEINLINE UnpackingTypeDefObject *get_unpacking_type_def() const;
 	};
 
 	static_assert(std::is_trivially_copyable_v<TypeRef>, "TypeRef must be trivially copyable");
 	static_assert(std::is_trivially_copy_assignable_v<TypeRef>, "TypeRef must be trivially copy-assignable");
 	static_assert(std::is_trivially_destructible_v<TypeRef>, "TypeRef must be trivially destructible");
 
-	SLAKE_FORCEINLINE bool isFundamentalType(TypeRef type) {
-		return isFundamentalType(type.typeId);
+	SLAKE_FORCEINLINE bool is_fundamental_type(TypeRef type) {
+		return is_fundamental_type(type.type_id);
 	}
 
 	class ClassObject;
@@ -244,10 +244,10 @@ namespace slake {
 	};
 
 	struct TypeRefLtComparator {
-		TypeRefComparator innerComparator;
+		TypeRefComparator inner_comparator;
 
 		SLAKE_FORCEINLINE bool operator()(const TypeRef &lhs, const TypeRef &rhs) const noexcept {
-			return innerComparator(lhs, rhs) < 0;
+			return inner_comparator(lhs, rhs) < 0;
 		}
 	};
 }

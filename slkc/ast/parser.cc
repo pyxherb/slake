@@ -2,1033 +2,1033 @@
 
 using namespace slkc;
 
-SLKC_API Parser::Parser(peff::SharedPtr<Document> document, TokenList &&tokenList, peff::Alloc *resourceAllocator) : document(document), tokenList(std::move(tokenList)), resourceAllocator(resourceAllocator), syntaxErrors(resourceAllocator) {
+SLKC_API Parser::Parser(peff::SharedPtr<Document> document, TokenList &&token_list, peff::Alloc *resource_allocator) : document(document), token_list(std::move(token_list)), resource_allocator(resource_allocator), syntax_errors(resource_allocator) {
 }
 
 SLKC_API Parser::~Parser() {
 	assert(!document);
 }
 
-SLKC_API peff::Option<SyntaxError> Parser::parseOperatorName(std::string_view &nameOut) {
-	peff::Option<SyntaxError> syntaxError;
+SLKC_API peff::Option<SyntaxError> Parser::parse_operator_name(std::string_view &name_out) {
+	peff::Option<SyntaxError> syntax_error;
 
-	Token *t = peekToken();
+	Token *t = peek_token();
 
-	switch (t->tokenId) {
+	switch (t->token_id) {
 		case TokenId::LAndOp:
-			nameOut = "&&";
-			nextToken();
+			name_out = "&&";
+			next_token();
 			break;
 		case TokenId::LOrOp:
-			nameOut = "||";
-			nextToken();
+			name_out = "||";
+			next_token();
 			break;
 		case TokenId::AddOp:
-			nameOut = "+";
-			nextToken();
+			name_out = "+";
+			next_token();
 			break;
 		case TokenId::SubOp:
-			nameOut = "-";
-			nextToken();
+			name_out = "-";
+			next_token();
 			break;
 		case TokenId::MulOp:
-			nameOut = "*";
-			nextToken();
+			name_out = "*";
+			next_token();
 			break;
 		case TokenId::DivOp:
-			nameOut = "/";
-			nextToken();
+			name_out = "/";
+			next_token();
 			break;
 		case TokenId::ModOp:
-			nameOut = "%";
-			nextToken();
+			name_out = "%";
+			next_token();
 			break;
 		case TokenId::AndOp:
-			nameOut = "&";
-			nextToken();
+			name_out = "&";
+			next_token();
 			break;
 		case TokenId::OrOp:
-			nameOut = "|";
-			nextToken();
+			name_out = "|";
+			next_token();
 			break;
 		case TokenId::XorOp:
-			nameOut = "^";
-			nextToken();
+			name_out = "^";
+			next_token();
 			break;
 		case TokenId::LNotOp:
-			nameOut = "!";
-			nextToken();
+			name_out = "!";
+			next_token();
 			break;
 		case TokenId::NotOp:
-			nameOut = "~";
-			nextToken();
+			name_out = "~";
+			next_token();
 			break;
 		case TokenId::AddAssignOp:
-			nameOut = "+=";
-			nextToken();
+			name_out = "+=";
+			next_token();
 			break;
 		case TokenId::SubAssignOp:
-			nameOut = "-=";
-			nextToken();
+			name_out = "-=";
+			next_token();
 			break;
 		case TokenId::MulAssignOp:
-			nameOut = "*=";
-			nextToken();
+			name_out = "*=";
+			next_token();
 			break;
 		case TokenId::DivAssignOp:
-			nameOut = "/=";
-			nextToken();
+			name_out = "/=";
+			next_token();
 			break;
 		case TokenId::ModAssignOp:
-			nameOut = "%=";
-			nextToken();
+			name_out = "%=";
+			next_token();
 			break;
 		case TokenId::AndAssignOp:
-			nameOut = "&=";
-			nextToken();
+			name_out = "&=";
+			next_token();
 			break;
 		case TokenId::OrAssignOp:
-			nameOut = "|=";
-			nextToken();
+			name_out = "|=";
+			next_token();
 			break;
 		case TokenId::XorAssignOp:
-			nameOut = "^=";
-			nextToken();
+			name_out = "^=";
+			next_token();
 			break;
 		case TokenId::ShlAssignOp:
-			nameOut = "<<=";
-			nextToken();
+			name_out = "<<=";
+			next_token();
 			break;
 		case TokenId::ShrAssignOp:
-			nameOut = ">>=";
-			nextToken();
+			name_out = ">>=";
+			next_token();
 			break;
 		case TokenId::EqOp:
-			nameOut = "==";
-			nextToken();
+			name_out = "==";
+			next_token();
 			break;
 		case TokenId::NeqOp:
-			nameOut = "!=";
-			nextToken();
+			name_out = "!=";
+			next_token();
 			break;
 		case TokenId::ShlOp:
-			nameOut = "<<";
-			nextToken();
+			name_out = "<<";
+			next_token();
 			break;
 		case TokenId::ShrOp:
-			nameOut = ">>";
-			nextToken();
+			name_out = ">>";
+			next_token();
 			break;
 		case TokenId::LtEqOp:
-			nameOut = "<=";
-			nextToken();
+			name_out = "<=";
+			next_token();
 			break;
 		case TokenId::GtEqOp:
-			nameOut = ">=";
-			nextToken();
+			name_out = ">=";
+			next_token();
 			break;
 		case TokenId::CmpOp:
-			nameOut = "<=>";
-			nextToken();
+			name_out = "<=>";
+			next_token();
 			break;
 		case TokenId::LParenthese:
-			nextToken();
+			next_token();
 
-			SLKC_RETURN_IF_PARSE_ERROR((expectToken(peekToken(), TokenId::RParenthese)));
+			SLKC_RETURN_IF_PARSE_ERROR((expect_token(peek_token(), TokenId::RParenthese)));
 
-			nameOut = "()";
+			name_out = "()";
 			break;
 		case TokenId::LBracket:
-			nextToken();
+			next_token();
 
-			SLKC_RETURN_IF_PARSE_ERROR((expectToken(peekToken(), TokenId::RBracket)));
+			SLKC_RETURN_IF_PARSE_ERROR((expect_token(peek_token(), TokenId::RBracket)));
 
-			nameOut = "[]";
+			name_out = "[]";
 			break;
 		case TokenId::NewKeyword:
-			nameOut = "new";
-			nextToken();
+			name_out = "new";
+			next_token();
 			break;
 		case TokenId::DeleteKeyword:
-			nameOut = "delete";
-			nextToken();
+			name_out = "delete";
+			next_token();
 			break;
 		default:
-			return SyntaxError(TokenRange{ document->mainModule, t->index }, SyntaxErrorKind::ExpectingOperatorName);
+			return SyntaxError(TokenRange{ document->main_module, t->index }, SyntaxErrorKind::ExpectingOperatorName);
 	}
 	return {};
 }
 
-SLKC_API peff::Option<SyntaxError> Parser::parseIdName(peff::String &nameOut) {
-	peff::Option<SyntaxError> syntaxError;
-	Token *t = peekToken();
+SLKC_API peff::Option<SyntaxError> Parser::parse_id_name(peff::String &name_out) {
+	peff::Option<SyntaxError> syntax_error;
+	Token *t = peek_token();
 
-	switch (t->tokenId) {
+	switch (t->token_id) {
 		case TokenId::Id:
-			if (!nameOut.build(t->sourceText)) {
-				return genOutOfMemorySyntaxError();
+			if (!name_out.build(t->source_text)) {
+				return gen_out_of_memory_syntax_error();
 			}
-			nextToken();
+			next_token();
 			break;
 		default:
-			return SyntaxError(TokenRange{ document->mainModule, t->index }, SyntaxErrorKind::ExpectingId);
+			return SyntaxError(TokenRange{ document->main_module, t->index }, SyntaxErrorKind::ExpectingId);
 	}
 	return {};
 }
 
-SLKC_API peff::Option<SyntaxError> Parser::parseIdRef(IdRefPtr &idRefOut) {
-	peff::Option<SyntaxError> syntaxError;
-	IdRefPtr idRefPtr(peff::allocAndConstruct<IdRef>(resourceAllocator.get(), ASTNODE_ALIGNMENT, resourceAllocator.get()));
-	if (!idRefPtr)
-		return genOutOfMemorySyntaxError();
-	Token *t = peekToken();
+SLKC_API peff::Option<SyntaxError> Parser::parse_id_ref(IdRefPtr &id_ref_out) {
+	peff::Option<SyntaxError> syntax_error;
+	IdRefPtr id_ref_ptr(peff::alloc_and_construct<IdRef>(resource_allocator.get(), ASTNODE_ALIGNMENT, resource_allocator.get()));
+	if (!id_ref_ptr)
+		return gen_out_of_memory_syntax_error();
+	Token *t = peek_token();
 
-	idRefPtr->tokenRange = TokenRange{ document->mainModule, t->index };
+	id_ref_ptr->token_range = TokenRange{ document->main_module, t->index };
 
-	if (t->tokenId == TokenId::ThisKeyword) {
-		nextToken();
+	if (t->token_id == TokenId::ThisKeyword) {
+		next_token();
 
-		IdRefEntry entry(resourceAllocator.get());
-		peff::String idText(resourceAllocator.get());
-		if (!idText.build("this")) {
-			return genOutOfMemorySyntaxError();
+		IdRefEntry entry(resource_allocator.get());
+		peff::String id_text(resource_allocator.get());
+		if (!id_text.build("this")) {
+			return gen_out_of_memory_syntax_error();
 		}
 
-		entry.name = std::move(idText);
-		entry.nameTokenIndex = t->index;
+		entry.name = std::move(id_text);
+		entry.name_token_index = t->index;
 
-		if (!idRefPtr->entries.pushBack(std::move(entry)))
-			return genOutOfMemorySyntaxError();
+		if (!id_ref_ptr->entries.push_back(std::move(entry)))
+			return gen_out_of_memory_syntax_error();
 
-		if ((t = peekToken())->tokenId != TokenId::Dot) {
+		if ((t = peek_token())->token_id != TokenId::Dot) {
 			goto end;
 		}
 
-		nextToken();
+		next_token();
 
-		entry.accessOpTokenIndex = t->index;
-		idRefPtr->tokenRange.endIndex = t->index;
-	} else if (t->tokenId == TokenId::ScopeOp) {
-		nextToken();
+		entry.access_op_token_index = t->index;
+		id_ref_ptr->token_range.end_index = t->index;
+	} else if (t->token_id == TokenId::ScopeOp) {
+		next_token();
 
-		IdRefEntry entry(resourceAllocator.get());
-		peff::String idText(resourceAllocator.get());
+		IdRefEntry entry(resource_allocator.get());
+		peff::String id_text(resource_allocator.get());
 
-		entry.name = std::move(idText);
+		entry.name = std::move(id_text);
 
-		entry.accessOpTokenIndex = t->index;
+		entry.access_op_token_index = t->index;
 
-		if (!idRefPtr->entries.pushBack(std::move(entry)))
-			return genOutOfMemorySyntaxError();
+		if (!id_ref_ptr->entries.push_back(std::move(entry)))
+			return gen_out_of_memory_syntax_error();
 	}
 
 	for (;;) {
-		SLKC_RETURN_IF_PARSE_ERROR(expectToken(t = peekToken(), TokenId::Id));
-		nextToken();
+		SLKC_RETURN_IF_PARSE_ERROR(expect_token(t = peek_token(), TokenId::Id));
+		next_token();
 
-		IdRefEntry entry(resourceAllocator.get());
-		peff::String idText(resourceAllocator.get());
-		if (!idText.build(t->sourceText)) {
-			return genOutOfMemorySyntaxError();
+		IdRefEntry entry(resource_allocator.get());
+		peff::String id_text(resource_allocator.get());
+		if (!id_text.build(t->source_text)) {
+			return gen_out_of_memory_syntax_error();
 		}
 
-		entry.name = std::move(idText);
-		entry.nameTokenIndex = t->index;
-		idRefPtr->tokenRange.endIndex = t->index;
+		entry.name = std::move(id_text);
+		entry.name_token_index = t->index;
+		id_ref_ptr->token_range.end_index = t->index;
 
-		if ((t = peekToken())->tokenId == TokenId::ScopeOp) {
-			nextToken();
+		if ((t = peek_token())->token_id == TokenId::ScopeOp) {
+			next_token();
 
-			entry.genericScopeTokenIndex = t->index;
+			entry.generic_scope_token_index = t->index;
 
-			SLKC_RETURN_IF_PARSE_ERROR(expectToken(t = peekToken(), TokenId::LtOp));
-			nextToken();
+			SLKC_RETURN_IF_PARSE_ERROR(expect_token(t = peek_token(), TokenId::LtOp));
+			next_token();
 
 			for (;;) {
-				AstNodePtr<AstNode> genericArg;
-				SLKC_RETURN_IF_PARSE_ERROR(parseGenericArg(genericArg));
-				if (!entry.genericArgs.pushBack(std::move(genericArg))) {
-					return genOutOfMemorySyntaxError();
+				AstNodePtr<AstNode> generic_arg;
+				SLKC_RETURN_IF_PARSE_ERROR(parse_generic_arg(generic_arg));
+				if (!entry.generic_args.push_back(std::move(generic_arg))) {
+					return gen_out_of_memory_syntax_error();
 				}
 
-				if ((t = peekToken())->tokenId != TokenId::Comma) {
+				if ((t = peek_token())->token_id != TokenId::Comma) {
 					break;
 				}
 
-				nextToken();
+				next_token();
 			}
 
-			SLKC_RETURN_IF_PARSE_ERROR(expectToken(t = peekToken(), TokenId::GtOp));
-			idRefPtr->tokenRange.endIndex = t->index;
+			SLKC_RETURN_IF_PARSE_ERROR(expect_token(t = peek_token(), TokenId::GtOp));
+			id_ref_ptr->token_range.end_index = t->index;
 
-			nextToken();
+			next_token();
 		}
 
-		if (!idRefPtr->entries.pushBack(std::move(entry)))
-			return genOutOfMemorySyntaxError();
+		if (!id_ref_ptr->entries.push_back(std::move(entry)))
+			return gen_out_of_memory_syntax_error();
 
-		if ((t = peekToken())->tokenId != TokenId::Dot) {
+		if ((t = peek_token())->token_id != TokenId::Dot) {
 			break;
 		}
 
-		entry.accessOpTokenIndex = t->index;
-		idRefPtr->tokenRange.endIndex = t->index;
+		entry.access_op_token_index = t->index;
+		id_ref_ptr->token_range.end_index = t->index;
 
-		nextToken();
+		next_token();
 	}
 
 end:
-	idRefOut = std::move(idRefPtr);
+	id_ref_out = std::move(id_ref_ptr);
 
 	return {};
 }
 
-[[nodiscard]] SLKC_API peff::Option<SyntaxError> Parser::parseArgs(peff::DynArray<AstNodePtr<ExprNode>> &argsOut, peff::DynArray<size_t> &idxCommaTokensOut) {
+[[nodiscard]] SLKC_API peff::Option<SyntaxError> Parser::parse_args(peff::DynArray<AstNodePtr<ExprNode>> &args_out, peff::DynArray<size_t> &idx_comma_tokens_out) {
 	while (true) {
-		if (peekToken()->tokenId == TokenId::RParenthese) {
+		if (peek_token()->token_id == TokenId::RParenthese) {
 			break;
 		}
 
 		AstNodePtr<ExprNode> arg;
 
-		SLKC_RETURN_IF_PARSE_ERROR(parseExpr(0, arg));
+		SLKC_RETURN_IF_PARSE_ERROR(parse_expr(0, arg));
 
-		if (!argsOut.pushBack(std::move(arg)))
-			return genOutOfMemorySyntaxError();
+		if (!args_out.push_back(std::move(arg)))
+			return gen_out_of_memory_syntax_error();
 
-		if (peekToken()->tokenId != TokenId::Comma) {
+		if (peek_token()->token_id != TokenId::Comma) {
 			break;
 		}
 
-		Token *commaToken = nextToken();
-		if (!idxCommaTokensOut.pushBack(+commaToken->index))
-			return genOutOfMemorySyntaxError();
+		Token *comma_token = next_token();
+		if (!idx_comma_tokens_out.push_back(+comma_token->index))
+			return gen_out_of_memory_syntax_error();
 	}
 
 	return {};
 }
 
-SLKC_API peff::Option<SyntaxError> Parser::parseFn(AstNodePtr<FnOverloadingNode> &fnNodeOut) {
-	peff::Option<SyntaxError> syntaxError;
+SLKC_API peff::Option<SyntaxError> Parser::parse_fn(AstNodePtr<FnOverloadingNode> &fn_node_out) {
+	peff::Option<SyntaxError> syntax_error;
 
-	Token *fnToken;
-	Token *lvalueMarkerToken = nullptr;
+	Token *fn_token;
+	Token *lvalue_marker_token = nullptr;
 
-	peff::String name(resourceAllocator.get());
+	peff::String name(resource_allocator.get());
 
-	if (!(fnNodeOut = makeAstNode<FnOverloadingNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
-		return genOutOfMemorySyntaxError();
+	if (!(fn_node_out = make_ast_node<FnOverloadingNode>(resource_allocator.get(), resource_allocator.get(), document))) {
+		return gen_out_of_memory_syntax_error();
 	}
 
-	switch ((fnToken = peekToken())->tokenId) {
+	switch ((fn_token = peek_token())->token_id) {
 		case TokenId::FnKeyword: {
-			nextToken();
+			next_token();
 
-			fnNodeOut->overloadingKind = FnOverloadingKind::Regular;
+			fn_node_out->overloading_kind = FnOverloadingKind::Regular;
 
-			SLKC_RETURN_IF_PARSE_ERROR(parseIdName(name));
+			SLKC_RETURN_IF_PARSE_ERROR(parse_id_name(name));
 			break;
 		}
 		case TokenId::AsyncKeyword: {
-			nextToken();
+			next_token();
 
-			fnNodeOut->overloadingKind = FnOverloadingKind::Coroutine;
+			fn_node_out->overloading_kind = FnOverloadingKind::Coroutine;
 
-			SLKC_RETURN_IF_PARSE_ERROR(parseIdName(name));
+			SLKC_RETURN_IF_PARSE_ERROR(parse_id_name(name));
 			break;
 		}
 		case TokenId::OperatorKeyword: {
-			nextToken();
+			next_token();
 
-			fnNodeOut->overloadingKind = FnOverloadingKind::Regular;
+			fn_node_out->overloading_kind = FnOverloadingKind::Regular;
 
-			Token *lvalueMarkerToken;
-			if ((lvalueMarkerToken = peekToken())->tokenId == TokenId::AssignOp) {
-				fnNodeOut->fnFlags |= FN_LVALUE;
-				nextToken();
+			Token *lvalue_marker_token;
+			if ((lvalue_marker_token = peek_token())->token_id == TokenId::AssignOp) {
+				fn_node_out->fn_flags |= FN_LVALUE;
+				next_token();
 			}
 
-			std::string_view operatorName;
-			SLKC_RETURN_IF_PARSE_ERROR(parseOperatorName(operatorName));
+			std::string_view operator_name;
+			SLKC_RETURN_IF_PARSE_ERROR(parse_operator_name(operator_name));
 
-			if (!name.build(operatorName)) {
-				return genOutOfMemorySyntaxError();
+			if (!name.build(operator_name)) {
+				return gen_out_of_memory_syntax_error();
 			}
 
-			if (fnNodeOut->fnFlags & FN_LVALUE) {
+			if (fn_node_out->fn_flags & FN_LVALUE) {
 				if (!name.append(LVALUE_OPERATOR_NAME_SUFFIX))
-					return genOutOfMemorySyntaxError();
+					return gen_out_of_memory_syntax_error();
 			}
 			break;
 		}
 		case TokenId::DefKeyword: {
-			nextToken();
+			next_token();
 
-			fnNodeOut->overloadingKind = FnOverloadingKind::Pure;
+			fn_node_out->overloading_kind = FnOverloadingKind::Pure;
 
-			SLKC_RETURN_IF_PARSE_ERROR(parseIdName(name));
+			SLKC_RETURN_IF_PARSE_ERROR(parse_id_name(name));
 			break;
 		}
 		default:
-			return SyntaxError(TokenRange{ document->mainModule, fnToken->index }, SyntaxErrorKind::UnexpectedToken);
+			return SyntaxError(TokenRange{ document->main_module, fn_token->index }, SyntaxErrorKind::UnexpectedToken);
 	}
 
-	switch (curParent->getAstNodeType()) {
+	switch (cur_parent->get_ast_node_type()) {
 		case AstNodeType::Interface:
-			fnNodeOut->fnFlags = FN_VIRTUAL;
+			fn_node_out->fn_flags = FN_VIRTUAL;
 			break;
 		default:
 			break;
 	}
 
-	AstNodePtr<MemberNode> prevParent = curParent;
-	peff::ScopeGuard restoreParentGuard([this, prevParent]() noexcept {
-		curParent = prevParent;
+	AstNodePtr<MemberNode> prev_parent = cur_parent;
+	peff::ScopeGuard restore_parent_guard([this, prev_parent]() noexcept {
+		cur_parent = prev_parent;
 	});
-	curParent = fnNodeOut.castTo<MemberNode>();
+	cur_parent = fn_node_out.cast_to<MemberNode>();
 
-	peff::ScopeGuard setTokenRangeGuard([this, fnToken, fnNodeOut]() noexcept {
-		fnNodeOut->tokenRange = TokenRange{ document->mainModule, fnToken->index, parseContext.idxPrevToken };
+	peff::ScopeGuard set_token_range_guard([this, fn_token, fn_node_out]() noexcept {
+		fn_node_out->token_range = TokenRange{ document->main_module, fn_token->index, parse_context.idx_prev_token };
 	});
 
-	fnNodeOut->name = std::move(name);
+	fn_node_out->name = std::move(name);
 
-	SLKC_RETURN_IF_PARSE_ERROR(parseGenericParams(fnNodeOut->genericParams, fnNodeOut->idxGenericParamCommaTokens, fnNodeOut->lAngleBracketIndex, fnNodeOut->rAngleBracketIndex));
-	for (size_t i = 0; i < fnNodeOut->genericParams.size(); ++i) {
-		auto gp = fnNodeOut->genericParams.at(i);
-		if (fnNodeOut->genericParamIndices.contains(gp->name)) {
-			peff::String s(resourceAllocator.get());
+	SLKC_RETURN_IF_PARSE_ERROR(parse_generic_params(fn_node_out->generic_params, fn_node_out->idx_generic_param_comma_tokens, fn_node_out->l_angle_bracket_index, fn_node_out->r_angle_bracket_index));
+	for (size_t i = 0; i < fn_node_out->generic_params.size(); ++i) {
+		auto gp = fn_node_out->generic_params.at(i);
+		if (fn_node_out->generic_param_indices.contains(gp->name)) {
+			peff::String s(resource_allocator.get());
 
 			if (!s.build(gp->name)) {
-				return genOutOfMemorySyntaxError();
+				return gen_out_of_memory_syntax_error();
 			}
 
-			ConflictingDefinitionsErrorExData exData(std::move(s));
+			ConflictingDefinitionsErrorExData ex_data(std::move(s));
 
-			return SyntaxError(gp->tokenRange, std::move(exData));
+			return SyntaxError(gp->token_range, std::move(ex_data));
 		}
-		if (!fnNodeOut->genericParamIndices.insert(gp->name, +i))
-			return genOutOfMemorySyntaxError();
+		if (!fn_node_out->generic_param_indices.insert(gp->name, +i))
+			return gen_out_of_memory_syntax_error();
 	}
 
-	bool hasVarArg = false;
-	SLKC_RETURN_IF_PARSE_ERROR(parseParams(fnNodeOut->params, hasVarArg, fnNodeOut->idxParamCommaTokens, fnNodeOut->lParentheseIndex, fnNodeOut->rParentheseIndex));
-	if (hasVarArg) {
-		fnNodeOut->fnFlags |= FN_VARG;
+	bool has_var_arg = false;
+	SLKC_RETURN_IF_PARSE_ERROR(parse_params(fn_node_out->params, has_var_arg, fn_node_out->idx_param_comma_tokens, fn_node_out->l_parenthese_index, fn_node_out->r_parenthese_index));
+	if (has_var_arg) {
+		fn_node_out->fn_flags |= FN_VARG;
 	}
 	// Index the parameters.
-	for (size_t i = 0; i < fnNodeOut->params.size(); ++i) {
-		AstNodePtr<VarNode> &curParam = fnNodeOut->params.at(i);
-		if (fnNodeOut->paramIndices.contains(curParam->name)) {
-			peff::String s(resourceAllocator.get());
+	for (size_t i = 0; i < fn_node_out->params.size(); ++i) {
+		AstNodePtr<VarNode> &cur_param = fn_node_out->params.at(i);
+		if (fn_node_out->param_indices.contains(cur_param->name)) {
+			peff::String s(resource_allocator.get());
 
-			if (!s.build(curParam->name)) {
-				return genOutOfMemorySyntaxError();
+			if (!s.build(cur_param->name)) {
+				return gen_out_of_memory_syntax_error();
 			}
 
-			ConflictingDefinitionsErrorExData exData(std::move(s));
+			ConflictingDefinitionsErrorExData ex_data(std::move(s));
 
-			if (!syntaxErrors.pushBack(SyntaxError(curParam->tokenRange, std::move(exData))))
-				return genOutOfMemorySyntaxError();
+			if (!syntax_errors.push_back(SyntaxError(cur_param->token_range, std::move(ex_data))))
+				return gen_out_of_memory_syntax_error();
 		}
 
-		if (!fnNodeOut->paramIndices.insert(curParam->name, +i)) {
-			return genOutOfMemorySyntaxError();
+		if (!fn_node_out->param_indices.insert(cur_param->name, +i)) {
+			return gen_out_of_memory_syntax_error();
 		}
 	}
 
-	Token *virtualToken;
-	if ((virtualToken = peekToken())->tokenId == TokenId::VirtualKeyword) {
-		fnNodeOut->fnFlags |= FN_VIRTUAL;
-		nextToken();
+	Token *virtual_token;
+	if ((virtual_token = peek_token())->token_id == TokenId::VirtualKeyword) {
+		fn_node_out->fn_flags |= FN_VIRTUAL;
+		next_token();
 	}
 
-	Token *overrideToken;
-	if ((overrideToken = peekToken())->tokenId == TokenId::OverrideKeyword) {
-		nextToken();
+	Token *override_token;
+	if ((override_token = peek_token())->token_id == TokenId::OverrideKeyword) {
+		next_token();
 
-		Token *lookaheadToken = peekToken();
-		switch (lookaheadToken->tokenId) {
+		Token *lookahead_token = peek_token();
+		switch (lookahead_token->token_id) {
 			case TokenId::ReturnTypeOp:
 			case TokenId::Semicolon:
 			case TokenId::LBrace:
 				break;
 			default:
-				SLKC_RETURN_IF_PARSE_ERROR(parseTypeName(fnNodeOut->overridenType));
+				SLKC_RETURN_IF_PARSE_ERROR(parse_type_name(fn_node_out->overriden_type));
 				break;
 		}
 	}
 
-	Token *returnTypeToken;
-	if ((returnTypeToken = peekToken())->tokenId == TokenId::ReturnTypeOp) {
-		nextToken();
-		SLKC_RETURN_IF_PARSE_ERROR(parseTypeName(fnNodeOut->returnType));
+	Token *return_type_token;
+	if ((return_type_token = peek_token())->token_id == TokenId::ReturnTypeOp) {
+		next_token();
+		SLKC_RETURN_IF_PARSE_ERROR(parse_type_name(fn_node_out->return_type));
 	} else {
-		if (!(fnNodeOut->returnType = makeAstNode<VoidTypeNameNode>(resourceAllocator.get(), resourceAllocator.get(), document).castTo<TypeNameNode>())) {
-			return genOutOfMemorySyntaxError();
+		if (!(fn_node_out->return_type = make_ast_node<VoidTypeNameNode>(resource_allocator.get(), resource_allocator.get(), document).cast_to<TypeNameNode>())) {
+			return gen_out_of_memory_syntax_error();
 		}
 	}
 
-	Token *bodyToken = peekToken();
+	Token *body_token = peek_token();
 
-	switch (bodyToken->tokenId) {
+	switch (body_token->token_id) {
 		case TokenId::Semicolon: {
-			nextToken();
+			next_token();
 
 			break;
 		}
 		case TokenId::LBrace: {
-			nextToken();
+			next_token();
 
-			AstNodePtr<StmtNode> curStmt;
+			AstNodePtr<StmtNode> cur_stmt;
 
-			if (!(fnNodeOut->body = makeAstNode<CodeBlockStmtNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
-				return genOutOfMemorySyntaxError();
+			if (!(fn_node_out->body = make_ast_node<CodeBlockStmtNode>(resource_allocator.get(), resource_allocator.get(), document))) {
+				return gen_out_of_memory_syntax_error();
 			}
 
 			while (true) {
-				SLKC_RETURN_IF_PARSE_ERROR(expectToken(peekToken()));
+				SLKC_RETURN_IF_PARSE_ERROR(expect_token(peek_token()));
 
-				if (peekToken()->tokenId == TokenId::RBrace) {
+				if (peek_token()->token_id == TokenId::RBrace) {
 					break;
 				}
 
-				if ((syntaxError = parseStmt(curStmt))) {
-					if (!syntaxErrors.pushBack(std::move(syntaxError.value())))
-						return genOutOfMemorySyntaxError();
+				if ((syntax_error = parse_stmt(cur_stmt))) {
+					if (!syntax_errors.push_back(std::move(syntax_error.value())))
+						return gen_out_of_memory_syntax_error();
 				}
 
-				if (curStmt) {
-					if (!fnNodeOut->body->body.pushBack(std::move(curStmt))) {
-						return genOutOfMemorySyntaxError();
+				if (cur_stmt) {
+					if (!fn_node_out->body->body.push_back(std::move(cur_stmt))) {
+						return gen_out_of_memory_syntax_error();
 					}
 				}
 			}
 
-			Token *rBraceToken;
+			Token *r_brace_token;
 
-			SLKC_RETURN_IF_PARSE_ERROR((expectToken((rBraceToken = peekToken()), TokenId::RBrace)));
+			SLKC_RETURN_IF_PARSE_ERROR((expect_token((r_brace_token = peek_token()), TokenId::RBrace)));
 
-			nextToken();
+			next_token();
 			break;
 		}
 		default:
 			return SyntaxError(
-				TokenRange{ document->mainModule, bodyToken->index },
+				TokenRange{ document->main_module, body_token->index },
 				SyntaxErrorKind::UnexpectedToken);
 	}
 
 	return {};
 }
 
-SLKC_API peff::Option<SyntaxError> Parser::parseUnionEnumItem(AstNodePtr<ModuleNode> enumOut) {
-	peff::Option<SyntaxError> syntaxError;
+SLKC_API peff::Option<SyntaxError> Parser::parse_union_enum_item(AstNodePtr<ModuleNode> enum_out) {
+	peff::Option<SyntaxError> syntax_error;
 
-	Token *nameToken;
-	SLKC_RETURN_IF_PARSE_ERROR((expectToken((nameToken = peekToken()), TokenId::Id)));
+	Token *name_token;
+	SLKC_RETURN_IF_PARSE_ERROR((expect_token((name_token = peek_token()), TokenId::Id)));
 
-	nextToken();
+	next_token();
 
-	switch (Token *token = peekToken(); token->tokenId) {
+	switch (Token *token = peek_token(); token->token_id) {
 		case TokenId::LParenthese: {
-			AstNodePtr<UnionEnumItemNode> enumItem;
-			if (!(enumItem = makeAstNode<UnionEnumItemNode>(resourceAllocator.get(), resourceAllocator.get(), document)))
-				return genOutOfMemorySyntaxError();
-			nextToken();
+			AstNodePtr<UnionEnumItemNode> enum_item;
+			if (!(enum_item = make_ast_node<UnionEnumItemNode>(resource_allocator.get(), resource_allocator.get(), document)))
+				return gen_out_of_memory_syntax_error();
+			next_token();
 
-			if (!enumItem->name.build(nameToken->sourceText))
-				return genOutOfMemorySyntaxError();
+			if (!enum_item->name.build(name_token->source_text))
+				return gen_out_of_memory_syntax_error();
 
-			size_t idxMember;
+			size_t idx_member;
 			{
-				peff::ScopeGuard setTokenRangeGuard([this, token, enumItem]() noexcept {
-					enumItem->tokenRange = TokenRange{ document->mainModule, token->index, parseContext.idxPrevToken };
+				peff::ScopeGuard set_token_range_guard([this, token, enum_item]() noexcept {
+					enum_item->token_range = TokenRange{ document->main_module, token->index, parse_context.idx_prev_token };
 				});
 
-				if ((idxMember = enumOut->pushMember(enumItem.castTo<MemberNode>())) == SIZE_MAX)
-					return genOutOfMemorySyntaxError();
+				if ((idx_member = enum_out->push_member(enum_item.cast_to<MemberNode>())) == SIZE_MAX)
+					return gen_out_of_memory_syntax_error();
 
 				while (true) {
-					AstNodePtr<VarNode> enumItemEntry;
+					AstNodePtr<VarNode> enum_item_entry;
 
-					if (!(enumItemEntry = makeAstNode<VarNode>(resourceAllocator.get(), resourceAllocator.get(), document)))
-						return genOutOfMemorySyntaxError();
+					if (!(enum_item_entry = make_ast_node<VarNode>(resource_allocator.get(), resource_allocator.get(), document)))
+						return gen_out_of_memory_syntax_error();
 
-					size_t idxEntryMember;
+					size_t idx_entry_member;
 					{
-						peff::ScopeGuard setEnumItemTokenRangeGuard([this, token, enumItem]() noexcept {
-							enumItem->tokenRange = TokenRange{ document->mainModule, token->index, parseContext.idxPrevToken };
+						peff::ScopeGuard set_enum_item_token_range_guard([this, token, enum_item]() noexcept {
+							enum_item->token_range = TokenRange{ document->main_module, token->index, parse_context.idx_prev_token };
 						});
-						if ((idxEntryMember = enumItem->pushMember(enumItemEntry.castTo<MemberNode>())) == SIZE_MAX) {
-							return genOutOfMemorySyntaxError();
+						if ((idx_entry_member = enum_item->push_member(enum_item_entry.cast_to<MemberNode>())) == SIZE_MAX) {
+							return gen_out_of_memory_syntax_error();
 						}
 
-						Token *entryNameToken;
-						SLKC_RETURN_IF_PARSE_ERROR((expectToken((entryNameToken = peekToken()), TokenId::Id)));
+						Token *entry_name_token;
+						SLKC_RETURN_IF_PARSE_ERROR((expect_token((entry_name_token = peek_token()), TokenId::Id)));
 
-						nextToken();
+						next_token();
 
-						if (!enumItemEntry->name.build(entryNameToken->sourceText))
-							return genOutOfMemorySyntaxError();
+						if (!enum_item_entry->name.build(entry_name_token->source_text))
+							return gen_out_of_memory_syntax_error();
 
-						Token *colonToken;
-						SLKC_RETURN_IF_PARSE_ERROR((expectToken((colonToken = peekToken()), TokenId::Colon)));
+						Token *colon_token;
+						SLKC_RETURN_IF_PARSE_ERROR((expect_token((colon_token = peek_token()), TokenId::Colon)));
 
-						nextToken();
+						next_token();
 
-						SLKC_RETURN_IF_PARSE_ERROR(parseTypeName(enumItemEntry->type));
+						SLKC_RETURN_IF_PARSE_ERROR(parse_type_name(enum_item_entry->type));
 					}
 
-					if (auto it = enumItem->memberIndices.find(enumItemEntry->name); it != enumItem->memberIndices.end()) {
-						peff::String s(resourceAllocator.get());
+					if (auto it = enum_item->member_indices.find(enum_item_entry->name); it != enum_item->member_indices.end()) {
+						peff::String s(resource_allocator.get());
 
-						if (!s.build(enumItemEntry->name)) {
-							return genOutOfMemorySyntaxError();
+						if (!s.build(enum_item_entry->name)) {
+							return gen_out_of_memory_syntax_error();
 						}
 
-						ConflictingDefinitionsErrorExData exData(std::move(s));
+						ConflictingDefinitionsErrorExData ex_data(std::move(s));
 
-						return SyntaxError(enumItem->tokenRange, std::move(exData));
+						return SyntaxError(enum_item->token_range, std::move(ex_data));
 					} else {
-						if (!(enumItem->indexMember(idxEntryMember))) {
-							return genOutOfMemorySyntaxError();
+						if (!(enum_item->index_member(idx_entry_member))) {
+							return gen_out_of_memory_syntax_error();
 						}
 					}
 
-					if (peekToken()->tokenId != TokenId::Comma)
+					if (peek_token()->token_id != TokenId::Comma)
 						break;
-					Token *commaToken = nextToken();
+					Token *comma_token = next_token();
 				}
 			}
-			Token *rBraceToken;
-			SLKC_RETURN_IF_PARSE_ERROR(expectToken((rBraceToken = peekToken()), TokenId::RParenthese));
-			nextToken();
+			Token *r_brace_token;
+			SLKC_RETURN_IF_PARSE_ERROR(expect_token((r_brace_token = peek_token()), TokenId::RParenthese));
+			next_token();
 
-			if (auto it = enumOut->memberIndices.find(enumItem->name); it != enumOut->memberIndices.end()) {
-				peff::String s(resourceAllocator.get());
+			if (auto it = enum_out->member_indices.find(enum_item->name); it != enum_out->member_indices.end()) {
+				peff::String s(resource_allocator.get());
 
-				if (!s.build(enumItem->name)) {
-					return genOutOfMemorySyntaxError();
+				if (!s.build(enum_item->name)) {
+					return gen_out_of_memory_syntax_error();
 				}
 
-				ConflictingDefinitionsErrorExData exData(std::move(s));
+				ConflictingDefinitionsErrorExData ex_data(std::move(s));
 
-				return SyntaxError(enumItem->tokenRange, std::move(exData));
+				return SyntaxError(enum_item->token_range, std::move(ex_data));
 			} else {
-				if (!(enumOut->indexMember(idxMember))) {
-					return genOutOfMemorySyntaxError();
+				if (!(enum_out->index_member(idx_member))) {
+					return gen_out_of_memory_syntax_error();
 				}
 			}
 			break;
 		}
 		default:
-			return SyntaxError(TokenRange{ document->mainModule, token->index }, SyntaxErrorKind::UnexpectedToken);
+			return SyntaxError(TokenRange{ document->main_module, token->index }, SyntaxErrorKind::UnexpectedToken);
 	}
 
 	return {};
 }
 
-SLKC_API peff::Option<SyntaxError> Parser::parseEnumItem(AstNodePtr<ModuleNode> enumOut) {
-	peff::Option<SyntaxError> syntaxError;
+SLKC_API peff::Option<SyntaxError> Parser::parse_enum_item(AstNodePtr<ModuleNode> enum_out) {
+	peff::Option<SyntaxError> syntax_error;
 
-	AstNodePtr<EnumItemNode> enumItem;
-	if (!(enumItem = makeAstNode<EnumItemNode>(resourceAllocator.get(), resourceAllocator.get(), document)))
-		return genOutOfMemorySyntaxError();
+	AstNodePtr<EnumItemNode> enum_item;
+	if (!(enum_item = make_ast_node<EnumItemNode>(resource_allocator.get(), resource_allocator.get(), document)))
+		return gen_out_of_memory_syntax_error();
 
-	size_t idxMember;
+	size_t idx_member;
 	{
-		peff::ScopeGuard setTokenRangeGuard([this, token = peekToken(), enumItem]() noexcept {
-			enumItem->tokenRange = TokenRange{ document->mainModule, token->index, parseContext.idxPrevToken };
+		peff::ScopeGuard set_token_range_guard([this, token = peek_token(), enum_item]() noexcept {
+			enum_item->token_range = TokenRange{ document->main_module, token->index, parse_context.idx_prev_token };
 		});
 
-		if ((idxMember = enumOut->pushMember(enumItem.castTo<MemberNode>())) == SIZE_MAX) {
-			return genOutOfMemorySyntaxError();
+		if ((idx_member = enum_out->push_member(enum_item.cast_to<MemberNode>())) == SIZE_MAX) {
+			return gen_out_of_memory_syntax_error();
 		}
 
-		Token *nameToken;
-		SLKC_RETURN_IF_PARSE_ERROR((expectToken((nameToken = peekToken()), TokenId::Id)));
+		Token *name_token;
+		SLKC_RETURN_IF_PARSE_ERROR((expect_token((name_token = peek_token()), TokenId::Id)));
 
-		nextToken();
+		next_token();
 
-		if (!enumItem->name.build(nameToken->sourceText))
-			return genOutOfMemorySyntaxError();
+		if (!enum_item->name.build(name_token->source_text))
+			return gen_out_of_memory_syntax_error();
 
-		if (Token *token = peekToken(); token->tokenId == TokenId::AssignOp) {
-			nextToken();
-			SLKC_RETURN_IF_PARSE_ERROR(parseExpr(0, enumItem->enumValue));
+		if (Token *token = peek_token(); token->token_id == TokenId::AssignOp) {
+			next_token();
+			SLKC_RETURN_IF_PARSE_ERROR(parse_expr(0, enum_item->enum_value));
 		}
 	}
 
-	if (auto it = enumOut->memberIndices.find(enumItem->name); it != enumOut->memberIndices.end()) {
-		peff::String s(resourceAllocator.get());
+	if (auto it = enum_out->member_indices.find(enum_item->name); it != enum_out->member_indices.end()) {
+		peff::String s(resource_allocator.get());
 
-		if (!s.build(enumItem->name)) {
-			return genOutOfMemorySyntaxError();
+		if (!s.build(enum_item->name)) {
+			return gen_out_of_memory_syntax_error();
 		}
 
-		ConflictingDefinitionsErrorExData exData(std::move(s));
+		ConflictingDefinitionsErrorExData ex_data(std::move(s));
 
-		return SyntaxError(enumItem->tokenRange, std::move(exData));
+		return SyntaxError(enum_item->token_range, std::move(ex_data));
 	} else {
-		if (!(enumOut->indexMember(idxMember))) {
-			return genOutOfMemorySyntaxError();
+		if (!(enum_out->index_member(idx_member))) {
+			return gen_out_of_memory_syntax_error();
 		}
 	}
 
 	return {};
 }
 
-SLKC_API peff::Option<SyntaxError> Parser::parseProgramStmt() {
-	peff::Option<SyntaxError> syntaxError;
+SLKC_API peff::Option<SyntaxError> Parser::parse_program_stmt() {
+	peff::Option<SyntaxError> syntax_error;
 
-	peff::DynArray<AstNodePtr<AttributeNode>> attributes(resourceAllocator.get());
+	peff::DynArray<AstNodePtr<AttributeNode>> attributes(resource_allocator.get());
 
-	SLKC_RETURN_IF_PARSE_ERROR(parseAttributes(attributes));
+	SLKC_RETURN_IF_PARSE_ERROR(parse_attributes(attributes));
 
 	slake::AccessModifier access = 0;
-	Token *currentToken;
+	Token *current_token;
 
 	for (;;) {
-		switch ((currentToken = peekToken())->tokenId) {
+		switch ((current_token = peek_token())->token_id) {
 			case TokenId::PublicKeyword:
 				access |= slake::ACCESS_PUBLIC;
-				nextToken();
+				next_token();
 				break;
 			case TokenId::StaticKeyword:
 				access |= slake::ACCESS_STATIC;
-				nextToken();
+				next_token();
 				break;
 			case TokenId::NativeKeyword:
 				access |= slake::ACCESS_NATIVE;
-				nextToken();
+				next_token();
 				break;
 			default:
-				goto accessModifierParseEnd;
+				goto access_modifier_parse_end;
 		}
 	}
 
-accessModifierParseEnd:
-	Token *token = peekToken();
+access_modifier_parse_end:
+	Token *token = peek_token();
 
-	AstNodePtr<ModuleNode> p = curParent.castTo<ModuleNode>();
+	AstNodePtr<ModuleNode> p = cur_parent.cast_to<ModuleNode>();
 
-	if (p->getAstNodeType() == AstNodeType::Module) {
+	if (p->get_ast_node_type() == AstNodeType::Module) {
 		access |= slake::ACCESS_STATIC;
 	}
 
-	switch (token->tokenId) {
+	switch (token->token_id) {
 		case TokenId::EnumKeyword: {
-			nextToken();
-			switch (peekToken()->tokenId) {
+			next_token();
+			switch (peek_token()->token_id) {
 				case TokenId::UnionKeyword: {
-					nextToken();
-					AstNodePtr<UnionEnumNode> enumNode;
+					next_token();
+					AstNodePtr<UnionEnumNode> enum_node;
 
-					if (!(enumNode = makeAstNode<UnionEnumNode>(resourceAllocator.get(), resourceAllocator.get(), document)))
-						return genOutOfMemorySyntaxError();
+					if (!(enum_node = make_ast_node<UnionEnumNode>(resource_allocator.get(), resource_allocator.get(), document)))
+						return gen_out_of_memory_syntax_error();
 
-					peff::ScopeGuard setTokenRangeGuard([this, token, enumNode]() noexcept {
-						enumNode->tokenRange = TokenRange{ document->mainModule, token->index, parseContext.idxPrevToken };
+					peff::ScopeGuard set_token_range_guard([this, token, enum_node]() noexcept {
+						enum_node->token_range = TokenRange{ document->main_module, token->index, parse_context.idx_prev_token };
 					});
 
-					Token *nameToken;
-					SLKC_RETURN_IF_PARSE_ERROR((expectToken((nameToken = peekToken()), TokenId::Id)));
+					Token *name_token;
+					SLKC_RETURN_IF_PARSE_ERROR((expect_token((name_token = peek_token()), TokenId::Id)));
 
-					nextToken();
+					next_token();
 
-					size_t idxMember;
-					if ((idxMember = p->pushMember(enumNode.castTo<MemberNode>())) == SIZE_MAX) {
-						return genOutOfMemorySyntaxError();
+					size_t idx_member;
+					if ((idx_member = p->push_member(enum_node.cast_to<MemberNode>())) == SIZE_MAX) {
+						return gen_out_of_memory_syntax_error();
 					}
 
-					if (!enumNode->name.build(nameToken->sourceText)) {
-						return genOutOfMemorySyntaxError();
+					if (!enum_node->name.build(name_token->source_text)) {
+						return gen_out_of_memory_syntax_error();
 					}
 
-					Token *lBraceToken;
-					SLKC_RETURN_IF_PARSE_ERROR((expectToken((lBraceToken = peekToken()), TokenId::LBrace)));
+					Token *l_brace_token;
+					SLKC_RETURN_IF_PARSE_ERROR((expect_token((l_brace_token = peek_token()), TokenId::LBrace)));
 
-					nextToken();
+					next_token();
 
 					while (true) {
-						if (peekToken()->tokenId == TokenId::RBrace)
+						if (peek_token()->token_id == TokenId::RBrace)
 							break;
 
-						if ((syntaxError = parseUnionEnumItem(enumNode.castTo<ModuleNode>()))) {
-							if (syntaxError->errorKind == SyntaxErrorKind::OutOfMemory)
-								return syntaxError;
-							if (!syntaxErrors.pushBack(syntaxError.move()))
-								return genOutOfMemorySyntaxError();
+						if ((syntax_error = parse_union_enum_item(enum_node.cast_to<ModuleNode>()))) {
+							if (syntax_error->error_kind == SyntaxErrorKind::OutOfMemory)
+								return syntax_error;
+							if (!syntax_errors.push_back(syntax_error.move()))
+								return gen_out_of_memory_syntax_error();
 						}
 
-						if (peekToken()->tokenId != TokenId::Comma)
+						if (peek_token()->token_id != TokenId::Comma)
 							break;
-						Token *commaToken = nextToken();
+						Token *comma_token = next_token();
 					}
 
-					Token *rBraceToken;
-					SLKC_RETURN_IF_PARSE_ERROR((expectToken((rBraceToken = peekToken()), TokenId::RBrace)));
+					Token *r_brace_token;
+					SLKC_RETURN_IF_PARSE_ERROR((expect_token((r_brace_token = peek_token()), TokenId::RBrace)));
 
-					nextToken();
+					next_token();
 
-					if (auto it = p->memberIndices.find(enumNode->name); it != p->memberIndices.end()) {
-						peff::String s(resourceAllocator.get());
+					if (auto it = p->member_indices.find(enum_node->name); it != p->member_indices.end()) {
+						peff::String s(resource_allocator.get());
 
-						if (!s.build(enumNode->name)) {
-							return genOutOfMemorySyntaxError();
+						if (!s.build(enum_node->name)) {
+							return gen_out_of_memory_syntax_error();
 						}
 
-						ConflictingDefinitionsErrorExData exData(std::move(s));
+						ConflictingDefinitionsErrorExData ex_data(std::move(s));
 
-						return SyntaxError(enumNode->tokenRange, std::move(exData));
+						return SyntaxError(enum_node->token_range, std::move(ex_data));
 					} else {
-						if (!(p->indexMember(idxMember))) {
-							return genOutOfMemorySyntaxError();
+						if (!(p->index_member(idx_member))) {
+							return gen_out_of_memory_syntax_error();
 						}
 					}
 					break;
 				}
 				case TokenId::ConstKeyword: {
-					nextToken();
-					AstNodePtr<ConstEnumNode> enumNode;
+					next_token();
+					AstNodePtr<ConstEnumNode> enum_node;
 
-					if (!(enumNode = makeAstNode<ConstEnumNode>(resourceAllocator.get(), resourceAllocator.get(), document)))
-						return genOutOfMemorySyntaxError();
+					if (!(enum_node = make_ast_node<ConstEnumNode>(resource_allocator.get(), resource_allocator.get(), document)))
+						return gen_out_of_memory_syntax_error();
 
-					peff::ScopeGuard setTokenRangeGuard([this, token, enumNode]() noexcept {
-						enumNode->tokenRange = TokenRange{ document->mainModule, token->index, parseContext.idxPrevToken };
+					peff::ScopeGuard set_token_range_guard([this, token, enum_node]() noexcept {
+						enum_node->token_range = TokenRange{ document->main_module, token->index, parse_context.idx_prev_token };
 					});
 
-					Token *nameToken;
-					SLKC_RETURN_IF_PARSE_ERROR((expectToken((nameToken = peekToken()), TokenId::Id)));
+					Token *name_token;
+					SLKC_RETURN_IF_PARSE_ERROR((expect_token((name_token = peek_token()), TokenId::Id)));
 
-					nextToken();
+					next_token();
 
-					size_t idxMember;
-					if ((idxMember = p->pushMember(enumNode.castTo<MemberNode>())) == SIZE_MAX) {
-						return genOutOfMemorySyntaxError();
+					size_t idx_member;
+					if ((idx_member = p->push_member(enum_node.cast_to<MemberNode>())) == SIZE_MAX) {
+						return gen_out_of_memory_syntax_error();
 					}
 
-					if (!enumNode->name.build(nameToken->sourceText)) {
-						return genOutOfMemorySyntaxError();
+					if (!enum_node->name.build(name_token->source_text)) {
+						return gen_out_of_memory_syntax_error();
 					}
 
-					if (Token *lParentheseToken = peekToken(); lParentheseToken->tokenId == TokenId::LParenthese) {
-						nextToken();
+					if (Token *l_parenthese_token = peek_token(); l_parenthese_token->token_id == TokenId::LParenthese) {
+						next_token();
 
-						SLKC_RETURN_IF_PARSE_ERROR(parseTypeName(enumNode->baseType));
+						SLKC_RETURN_IF_PARSE_ERROR(parse_type_name(enum_node->base_type));
 
-						Token *rParentheseToken;
-						SLKC_RETURN_IF_PARSE_ERROR((expectToken((rParentheseToken = peekToken()), TokenId::RParenthese)));
+						Token *r_parenthese_token;
+						SLKC_RETURN_IF_PARSE_ERROR((expect_token((r_parenthese_token = peek_token()), TokenId::RParenthese)));
 
-						nextToken();
+						next_token();
 					}
 
-					Token *lBraceToken;
-					SLKC_RETURN_IF_PARSE_ERROR((expectToken((lBraceToken = peekToken()), TokenId::LBrace)));
+					Token *l_brace_token;
+					SLKC_RETURN_IF_PARSE_ERROR((expect_token((l_brace_token = peek_token()), TokenId::LBrace)));
 
-					nextToken();
+					next_token();
 
 					while (true) {
-						if (peekToken()->tokenId == TokenId::RBrace)
+						if (peek_token()->token_id == TokenId::RBrace)
 							break;
 
-						if ((syntaxError = parseEnumItem(enumNode.castTo<ModuleNode>()))) {
-							if (syntaxError->errorKind == SyntaxErrorKind::OutOfMemory)
-								return syntaxError;
-							if (!syntaxErrors.pushBack(syntaxError.move()))
-								return genOutOfMemorySyntaxError();
+						if ((syntax_error = parse_enum_item(enum_node.cast_to<ModuleNode>()))) {
+							if (syntax_error->error_kind == SyntaxErrorKind::OutOfMemory)
+								return syntax_error;
+							if (!syntax_errors.push_back(syntax_error.move()))
+								return gen_out_of_memory_syntax_error();
 						}
 
-						if (peekToken()->tokenId != TokenId::Comma)
+						if (peek_token()->token_id != TokenId::Comma)
 							break;
-						Token *commaToken = nextToken();
+						Token *comma_token = next_token();
 					}
 
-					Token *rBraceToken;
-					SLKC_RETURN_IF_PARSE_ERROR((expectToken((rBraceToken = peekToken()), TokenId::RBrace)));
+					Token *r_brace_token;
+					SLKC_RETURN_IF_PARSE_ERROR((expect_token((r_brace_token = peek_token()), TokenId::RBrace)));
 
-					nextToken();
+					next_token();
 
-					if (auto it = p->memberIndices.find(enumNode->name); it != p->memberIndices.end()) {
-						peff::String s(resourceAllocator.get());
+					if (auto it = p->member_indices.find(enum_node->name); it != p->member_indices.end()) {
+						peff::String s(resource_allocator.get());
 
-						if (!s.build(enumNode->name)) {
-							return genOutOfMemorySyntaxError();
+						if (!s.build(enum_node->name)) {
+							return gen_out_of_memory_syntax_error();
 						}
 
-						ConflictingDefinitionsErrorExData exData(std::move(s));
+						ConflictingDefinitionsErrorExData ex_data(std::move(s));
 
-						return SyntaxError(enumNode->tokenRange, std::move(exData));
+						return SyntaxError(enum_node->token_range, std::move(ex_data));
 					} else {
-						if (!(p->indexMember(idxMember))) {
-							return genOutOfMemorySyntaxError();
+						if (!(p->index_member(idx_member))) {
+							return gen_out_of_memory_syntax_error();
 						}
 					}
 					break;
 				}
 				case TokenId::Id: {
-					Token *nameToken = nextToken();
-					AstNodePtr<ScopedEnumNode> enumNode;
+					Token *name_token = next_token();
+					AstNodePtr<ScopedEnumNode> enum_node;
 
-					if (!(enumNode = makeAstNode<ScopedEnumNode>(resourceAllocator.get(), resourceAllocator.get(), document)))
-						return genOutOfMemorySyntaxError();
+					if (!(enum_node = make_ast_node<ScopedEnumNode>(resource_allocator.get(), resource_allocator.get(), document)))
+						return gen_out_of_memory_syntax_error();
 
-					size_t idxMember;
+					size_t idx_member;
 					{
-						peff::ScopeGuard setTokenRangeGuard([this, token, enumNode]() noexcept {
-							enumNode->tokenRange = TokenRange{ document->mainModule, token->index, parseContext.idxPrevToken };
+						peff::ScopeGuard set_token_range_guard([this, token, enum_node]() noexcept {
+							enum_node->token_range = TokenRange{ document->main_module, token->index, parse_context.idx_prev_token };
 						});
-						if ((idxMember = p->pushMember(enumNode.castTo<MemberNode>())) == SIZE_MAX) {
-							return genOutOfMemorySyntaxError();
+						if ((idx_member = p->push_member(enum_node.cast_to<MemberNode>())) == SIZE_MAX) {
+							return gen_out_of_memory_syntax_error();
 						}
 
-						if (!enumNode->name.build(nameToken->sourceText)) {
-							return genOutOfMemorySyntaxError();
+						if (!enum_node->name.build(name_token->source_text)) {
+							return gen_out_of_memory_syntax_error();
 						}
 
-						if (Token *lParentheseToken = peekToken(); lParentheseToken->tokenId == TokenId::LParenthese) {
-							nextToken();
+						if (Token *l_parenthese_token = peek_token(); l_parenthese_token->token_id == TokenId::LParenthese) {
+							next_token();
 
-							SLKC_RETURN_IF_PARSE_ERROR(parseTypeName(enumNode->baseType));
+							SLKC_RETURN_IF_PARSE_ERROR(parse_type_name(enum_node->base_type));
 
-							Token *rParentheseToken;
-							SLKC_RETURN_IF_PARSE_ERROR((expectToken((rParentheseToken = peekToken()), TokenId::RParenthese)));
+							Token *r_parenthese_token;
+							SLKC_RETURN_IF_PARSE_ERROR((expect_token((r_parenthese_token = peek_token()), TokenId::RParenthese)));
 
-							nextToken();
+							next_token();
 						}
 					}
 
-					Token *lBraceToken;
-					SLKC_RETURN_IF_PARSE_ERROR((expectToken((lBraceToken = peekToken()), TokenId::LBrace)));
+					Token *l_brace_token;
+					SLKC_RETURN_IF_PARSE_ERROR((expect_token((l_brace_token = peek_token()), TokenId::LBrace)));
 
-					nextToken();
+					next_token();
 
 					while (true) {
-						if (peekToken()->tokenId == TokenId::RBrace)
+						if (peek_token()->token_id == TokenId::RBrace)
 							break;
 
-						if ((syntaxError = parseEnumItem(enumNode.castTo<ModuleNode>()))) {
-							if (syntaxError->errorKind == SyntaxErrorKind::OutOfMemory)
-								return syntaxError;
-							if (!syntaxErrors.pushBack(syntaxError.move()))
-								return genOutOfMemorySyntaxError();
+						if ((syntax_error = parse_enum_item(enum_node.cast_to<ModuleNode>()))) {
+							if (syntax_error->error_kind == SyntaxErrorKind::OutOfMemory)
+								return syntax_error;
+							if (!syntax_errors.push_back(syntax_error.move()))
+								return gen_out_of_memory_syntax_error();
 						}
 
-						if (peekToken()->tokenId != TokenId::Comma)
+						if (peek_token()->token_id != TokenId::Comma)
 							break;
-						Token *commaToken = nextToken();
+						Token *comma_token = next_token();
 					}
 
-					Token *rBraceToken;
-					SLKC_RETURN_IF_PARSE_ERROR((expectToken((rBraceToken = peekToken()), TokenId::RBrace)));
+					Token *r_brace_token;
+					SLKC_RETURN_IF_PARSE_ERROR((expect_token((r_brace_token = peek_token()), TokenId::RBrace)));
 
-					nextToken();
+					next_token();
 
-					if (auto it = p->memberIndices.find(enumNode->name); it != p->memberIndices.end()) {
-						peff::String s(resourceAllocator.get());
+					if (auto it = p->member_indices.find(enum_node->name); it != p->member_indices.end()) {
+						peff::String s(resource_allocator.get());
 
-						if (!s.build(enumNode->name)) {
-							return genOutOfMemorySyntaxError();
+						if (!s.build(enum_node->name)) {
+							return gen_out_of_memory_syntax_error();
 						}
 
-						ConflictingDefinitionsErrorExData exData(std::move(s));
+						ConflictingDefinitionsErrorExData ex_data(std::move(s));
 
-						return SyntaxError(enumNode->tokenRange, std::move(exData));
+						return SyntaxError(enum_node->token_range, std::move(ex_data));
 					} else {
-						if (!(p->indexMember(idxMember))) {
-							return genOutOfMemorySyntaxError();
+						if (!(p->index_member(idx_member))) {
+							return gen_out_of_memory_syntax_error();
 						}
 					}
 					break;
 				}
 				default:
-					return SyntaxError(TokenRange{ document->mainModule, token->index }, SyntaxErrorKind::UnexpectedToken);
+					return SyntaxError(TokenRange{ document->main_module, token->index }, SyntaxErrorKind::UnexpectedToken);
 			}
 			break;
 		}
 		case TokenId::AttributeKeyword: {
 			// Attribute definition.
-			nextToken();
+			next_token();
 
-			AstNodePtr<AttributeDefNode> attributeNode;
+			AstNodePtr<AttributeDefNode> attribute_node;
 
-			if (!(attributeNode = makeAstNode<AttributeDefNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
-				return genOutOfMemorySyntaxError();
+			if (!(attribute_node = make_ast_node<AttributeDefNode>(resource_allocator.get(), resource_allocator.get(), document))) {
+				return gen_out_of_memory_syntax_error();
 			}
 
-			attributeNode->accessModifier = access;
+			attribute_node->access_modifier = access;
 
-			Token *nameToken;
+			Token *name_token;
 
-			SLKC_RETURN_IF_PARSE_ERROR((expectToken((nameToken = peekToken()), TokenId::Id)));
+			SLKC_RETURN_IF_PARSE_ERROR((expect_token((name_token = peek_token()), TokenId::Id)));
 
-			nextToken();
+			next_token();
 
-			size_t idxMember;
-			if ((idxMember = p->pushMember(attributeNode.castTo<MemberNode>())) == SIZE_MAX) {
-				return genOutOfMemorySyntaxError();
+			size_t idx_member;
+			if ((idx_member = p->push_member(attribute_node.cast_to<MemberNode>())) == SIZE_MAX) {
+				return gen_out_of_memory_syntax_error();
 			}
 
-			if (!attributeNode->name.build(nameToken->sourceText)) {
-				return genOutOfMemorySyntaxError();
+			if (!attribute_node->name.build(name_token->source_text)) {
+				return gen_out_of_memory_syntax_error();
 			}
 
 			{
-				peff::ScopeGuard setTokenRangeGuard([this, token, attributeNode]() noexcept {
-					attributeNode->tokenRange = TokenRange{ document->mainModule, token->index, parseContext.idxPrevToken };
+				peff::ScopeGuard set_token_range_guard([this, token, attribute_node]() noexcept {
+					attribute_node->token_range = TokenRange{ document->main_module, token->index, parse_context.idx_prev_token };
 				});
 
-				AstNodePtr<MemberNode> prevParent;
-				prevParent = curParent;
-				peff::ScopeGuard restorePrevModGuard([this, prevParent]() noexcept {
-					curParent = prevParent;
+				AstNodePtr<MemberNode> prev_parent;
+				prev_parent = cur_parent;
+				peff::ScopeGuard restore_prev_mod_guard([this, prev_parent]() noexcept {
+					cur_parent = prev_parent;
 				});
-				curParent = attributeNode.castTo<MemberNode>();
+				cur_parent = attribute_node.cast_to<MemberNode>();
 
-				Token *lBraceToken;
+				Token *l_brace_token;
 
-				SLKC_RETURN_IF_PARSE_ERROR((expectToken((lBraceToken = peekToken()), TokenId::LBrace)));
+				SLKC_RETURN_IF_PARSE_ERROR((expect_token((l_brace_token = peek_token()), TokenId::LBrace)));
 
-				nextToken();
+				next_token();
 
-				Token *currentToken;
+				Token *current_token;
 				while (true) {
-					SLKC_RETURN_IF_PARSE_ERROR(expectToken(currentToken = peekToken()));
+					SLKC_RETURN_IF_PARSE_ERROR(expect_token(current_token = peek_token()));
 
-					if (currentToken->tokenId == TokenId::RBrace) {
+					if (current_token->token_id == TokenId::RBrace) {
 						break;
 					}
 
-					if ((syntaxError = parseProgramStmt())) {
+					if ((syntax_error = parse_program_stmt())) {
 						// Parse the rest to make sure that we have gained all of the information,
 						// instead of ignoring them.
-						if (!syntaxErrors.pushBack(std::move(syntaxError.value())))
-							return genOutOfMemorySyntaxError();
-						syntaxError.reset();
+						if (!syntax_errors.push_back(std::move(syntax_error.value())))
+							return gen_out_of_memory_syntax_error();
+						syntax_error.reset();
 					}
 				}
 
-				Token *rBraceToken;
+				Token *r_brace_token;
 
-				SLKC_RETURN_IF_PARSE_ERROR((expectToken((rBraceToken = peekToken()), TokenId::RBrace)));
+				SLKC_RETURN_IF_PARSE_ERROR((expect_token((r_brace_token = peek_token()), TokenId::RBrace)));
 
-				nextToken();
+				next_token();
 			}
 
-			if (auto it = p->memberIndices.find(attributeNode->name); it != p->memberIndices.end()) {
-				peff::String s(resourceAllocator.get());
+			if (auto it = p->member_indices.find(attribute_node->name); it != p->member_indices.end()) {
+				peff::String s(resource_allocator.get());
 
-				if (!s.build(attributeNode->name)) {
-					return genOutOfMemorySyntaxError();
+				if (!s.build(attribute_node->name)) {
+					return gen_out_of_memory_syntax_error();
 				}
 
-				ConflictingDefinitionsErrorExData exData(std::move(s));
+				ConflictingDefinitionsErrorExData ex_data(std::move(s));
 
-				return SyntaxError(attributeNode->tokenRange, std::move(exData));
+				return SyntaxError(attribute_node->token_range, std::move(ex_data));
 			} else {
-				if (!(p->indexMember(idxMember))) {
-					return genOutOfMemorySyntaxError();
+				if (!(p->index_member(idx_member))) {
+					return gen_out_of_memory_syntax_error();
 				}
 			}
 
@@ -1041,181 +1041,181 @@ accessModifierParseEnd:
 			// Function.
 			AstNodePtr<FnOverloadingNode> fn;
 
-			SLKC_RETURN_IF_PARSE_ERROR(parseFn(fn));
+			SLKC_RETURN_IF_PARSE_ERROR(parse_fn(fn));
 
-			fn->accessModifier = access;
+			fn->access_modifier = access;
 
-			if (auto it = p->memberIndices.find(fn->name); it != p->memberIndices.end()) {
-				if (p->members.at(it.value())->getAstNodeType() != AstNodeType::Fn) {
-					peff::String s(resourceAllocator.get());
+			if (auto it = p->member_indices.find(fn->name); it != p->member_indices.end()) {
+				if (p->members.at(it.value())->get_ast_node_type() != AstNodeType::Fn) {
+					peff::String s(resource_allocator.get());
 
 					if (!s.build(fn->name)) {
-						return genOutOfMemorySyntaxError();
+						return gen_out_of_memory_syntax_error();
 					}
 
-					ConflictingDefinitionsErrorExData exData(std::move(s));
+					ConflictingDefinitionsErrorExData ex_data(std::move(s));
 
-					return SyntaxError(fn->tokenRange, std::move(exData));
+					return SyntaxError(fn->token_range, std::move(ex_data));
 				}
-				FnNode *fnSlot = (FnNode *)p->members.at(it.value()).get();
-				fn->setParent(fnSlot);
-				if (!fnSlot->overloadings.pushBack(std::move(fn))) {
-					return genOutOfMemorySyntaxError();
+				FnNode *fn_slot = (FnNode *)p->members.at(it.value()).get();
+				fn->set_parent(fn_slot);
+				if (!fn_slot->overloadings.push_back(std::move(fn))) {
+					return gen_out_of_memory_syntax_error();
 				}
 			} else {
-				AstNodePtr<FnNode> fnSlot;
+				AstNodePtr<FnNode> fn_slot;
 
-				if (!(fnSlot = makeAstNode<FnNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
-					return genOutOfMemorySyntaxError();
+				if (!(fn_slot = make_ast_node<FnNode>(resource_allocator.get(), resource_allocator.get(), document))) {
+					return gen_out_of_memory_syntax_error();
 				}
 
-				if (!fnSlot->name.build(fn->name)) {
-					return genOutOfMemorySyntaxError();
+				if (!fn_slot->name.build(fn->name)) {
+					return gen_out_of_memory_syntax_error();
 				}
 
-				if (!(p->addMember(fnSlot.castTo<MemberNode>()))) {
-					return genOutOfMemorySyntaxError();
+				if (!(p->add_member(fn_slot.cast_to<MemberNode>()))) {
+					return gen_out_of_memory_syntax_error();
 				}
 
-				fn->setParent(fnSlot.get());
+				fn->set_parent(fn_slot.get());
 
-				if (!fnSlot->overloadings.pushBack(std::move(fn))) {
-					return genOutOfMemorySyntaxError();
+				if (!fn_slot->overloadings.push_back(std::move(fn))) {
+					return gen_out_of_memory_syntax_error();
 				}
 			}
 			break;
 		}
 		case TokenId::ClassKeyword: {
 			// Class.
-			nextToken();
+			next_token();
 
-			AstNodePtr<ClassNode> classNode;
+			AstNodePtr<ClassNode> class_node;
 
-			if (!(classNode = makeAstNode<ClassNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
-				return genOutOfMemorySyntaxError();
+			if (!(class_node = make_ast_node<ClassNode>(resource_allocator.get(), resource_allocator.get(), document))) {
+				return gen_out_of_memory_syntax_error();
 			}
 
-			classNode->accessModifier = access;
+			class_node->access_modifier = access;
 
-			Token *nameToken;
+			Token *name_token;
 
-			SLKC_RETURN_IF_PARSE_ERROR((expectToken((nameToken = peekToken()), TokenId::Id)));
+			SLKC_RETURN_IF_PARSE_ERROR((expect_token((name_token = peek_token()), TokenId::Id)));
 
-			nextToken();
+			next_token();
 
-			if (!classNode->name.build(nameToken->sourceText)) {
-				return genOutOfMemorySyntaxError();
+			if (!class_node->name.build(name_token->source_text)) {
+				return gen_out_of_memory_syntax_error();
 			}
 
-			size_t idxMember;
-			if ((idxMember = p->pushMember(classNode.castTo<MemberNode>())) == SIZE_MAX) {
-				return genOutOfMemorySyntaxError();
+			size_t idx_member;
+			if ((idx_member = p->push_member(class_node.cast_to<MemberNode>())) == SIZE_MAX) {
+				return gen_out_of_memory_syntax_error();
 			}
 
 			{
-				peff::ScopeGuard setTokenRangeGuard([this, token, classNode]() noexcept {
-					classNode->tokenRange = TokenRange{ document->mainModule, token->index, parseContext.idxPrevToken };
+				peff::ScopeGuard set_token_range_guard([this, token, class_node]() noexcept {
+					class_node->token_range = TokenRange{ document->main_module, token->index, parse_context.idx_prev_token };
 				});
 
-				AstNodePtr<MemberNode> prevParent;
-				prevParent = curParent;
-				peff::ScopeGuard restorePrevModGuard([this, prevParent]() noexcept {
-					curParent = prevParent;
+				AstNodePtr<MemberNode> prev_parent;
+				prev_parent = cur_parent;
+				peff::ScopeGuard restore_prev_mod_guard([this, prev_parent]() noexcept {
+					cur_parent = prev_parent;
 				});
-				curParent = classNode.castTo<MemberNode>();
+				cur_parent = class_node.cast_to<MemberNode>();
 
-				SLKC_RETURN_IF_PARSE_ERROR(parseGenericParams(classNode->genericParams, classNode->idxGenericParamCommaTokens, classNode->idxLAngleBracketToken, classNode->idxRAngleBracketToken));
-				for (size_t i = 0; i < classNode->genericParams.size(); ++i) {
-					auto gp = classNode->genericParams.at(i);
-					if (classNode->genericParamIndices.contains(gp->name)) {
-						peff::String s(resourceAllocator.get());
+				SLKC_RETURN_IF_PARSE_ERROR(parse_generic_params(class_node->generic_params, class_node->idx_generic_param_comma_tokens, class_node->idx_langle_bracket_token, class_node->idx_rangle_bracket_token));
+				for (size_t i = 0; i < class_node->generic_params.size(); ++i) {
+					auto gp = class_node->generic_params.at(i);
+					if (class_node->generic_param_indices.contains(gp->name)) {
+						peff::String s(resource_allocator.get());
 
 						if (!s.build(gp->name)) {
-							return genOutOfMemorySyntaxError();
+							return gen_out_of_memory_syntax_error();
 						}
 
-						ConflictingDefinitionsErrorExData exData(std::move(s));
+						ConflictingDefinitionsErrorExData ex_data(std::move(s));
 
-						return SyntaxError(gp->tokenRange, std::move(exData));
+						return SyntaxError(gp->token_range, std::move(ex_data));
 					}
-					if (!classNode->genericParamIndices.insert(gp->name, +i))
-						return genOutOfMemorySyntaxError();
+					if (!class_node->generic_param_indices.insert(gp->name, +i))
+						return gen_out_of_memory_syntax_error();
 				}
 
-				if (Token *lParentheseToken = peekToken(); lParentheseToken->tokenId == TokenId::LParenthese) {
-					nextToken();
+				if (Token *l_parenthese_token = peek_token(); l_parenthese_token->token_id == TokenId::LParenthese) {
+					next_token();
 
-					SLKC_RETURN_IF_PARSE_ERROR(parseTypeName(classNode->baseType));
+					SLKC_RETURN_IF_PARSE_ERROR(parse_type_name(class_node->base_type));
 
-					Token *rParentheseToken;
-					SLKC_RETURN_IF_PARSE_ERROR((expectToken((rParentheseToken = peekToken()), TokenId::RParenthese)));
+					Token *r_parenthese_token;
+					SLKC_RETURN_IF_PARSE_ERROR((expect_token((r_parenthese_token = peek_token()), TokenId::RParenthese)));
 
-					nextToken();
+					next_token();
 				}
 
-				if (Token *colonToken = peekToken(); colonToken->tokenId == TokenId::Colon) {
-					nextToken();
+				if (Token *colon_token = peek_token(); colon_token->token_id == TokenId::Colon) {
+					next_token();
 
 					while (true) {
 						AstNodePtr<TypeNameNode> tn;
 
-						SLKC_RETURN_IF_PARSE_ERROR(parseTypeName(tn));
+						SLKC_RETURN_IF_PARSE_ERROR(parse_type_name(tn));
 
-						if (!classNode->implTypes.pushBack(std::move(tn))) {
-							return genOutOfMemorySyntaxError();
+						if (!class_node->impl_types.push_back(std::move(tn))) {
+							return gen_out_of_memory_syntax_error();
 						}
 
-						if (peekToken()->tokenId != TokenId::AddOp) {
+						if (peek_token()->token_id != TokenId::AddOp) {
 							break;
 						}
 
-						Token *orOpToken = nextToken();
+						Token *or_op_token = next_token();
 					}
 				}
 
-				Token *lBraceToken;
+				Token *l_brace_token;
 
-				SLKC_RETURN_IF_PARSE_ERROR((expectToken((lBraceToken = peekToken()), TokenId::LBrace)));
+				SLKC_RETURN_IF_PARSE_ERROR((expect_token((l_brace_token = peek_token()), TokenId::LBrace)));
 
-				nextToken();
+				next_token();
 
-				Token *currentToken;
+				Token *current_token;
 				while (true) {
-					SLKC_RETURN_IF_PARSE_ERROR(expectToken(currentToken = peekToken()));
+					SLKC_RETURN_IF_PARSE_ERROR(expect_token(current_token = peek_token()));
 
-					if (currentToken->tokenId == TokenId::RBrace) {
+					if (current_token->token_id == TokenId::RBrace) {
 						break;
 					}
 
-					if ((syntaxError = parseProgramStmt())) {
+					if ((syntax_error = parse_program_stmt())) {
 						// Parse the rest to make sure that we have gained all of the information,
 						// instead of ignoring them.
-						if (!syntaxErrors.pushBack(std::move(syntaxError.value())))
-							return genOutOfMemorySyntaxError();
-						syntaxError.reset();
+						if (!syntax_errors.push_back(std::move(syntax_error.value())))
+							return gen_out_of_memory_syntax_error();
+						syntax_error.reset();
 					}
 				}
 
-				Token *rBraceToken;
+				Token *r_brace_token;
 
-				SLKC_RETURN_IF_PARSE_ERROR((expectToken((rBraceToken = peekToken()), TokenId::RBrace)));
+				SLKC_RETURN_IF_PARSE_ERROR((expect_token((r_brace_token = peek_token()), TokenId::RBrace)));
 
-				nextToken();
+				next_token();
 			}
 
-			if (auto it = p->memberIndices.find(classNode->name); it != p->memberIndices.end()) {
-				peff::String s(resourceAllocator.get());
+			if (auto it = p->member_indices.find(class_node->name); it != p->member_indices.end()) {
+				peff::String s(resource_allocator.get());
 
-				if (!s.build(classNode->name)) {
-					return genOutOfMemorySyntaxError();
+				if (!s.build(class_node->name)) {
+					return gen_out_of_memory_syntax_error();
 				}
 
-				ConflictingDefinitionsErrorExData exData(std::move(s));
+				ConflictingDefinitionsErrorExData ex_data(std::move(s));
 
-				return SyntaxError(classNode->tokenRange, std::move(exData));
+				return SyntaxError(class_node->token_range, std::move(ex_data));
 			} else {
-				if (!(p->indexMember(idxMember))) {
-					return genOutOfMemorySyntaxError();
+				if (!(p->index_member(idx_member))) {
+					return gen_out_of_memory_syntax_error();
 				}
 			}
 
@@ -1223,124 +1223,124 @@ accessModifierParseEnd:
 		}
 		case TokenId::StructKeyword: {
 			// Struct.
-			nextToken();
+			next_token();
 
-			AstNodePtr<StructNode> structNode;
+			AstNodePtr<StructNode> struct_node;
 
-			if (!(structNode = makeAstNode<StructNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
-				return genOutOfMemorySyntaxError();
+			if (!(struct_node = make_ast_node<StructNode>(resource_allocator.get(), resource_allocator.get(), document))) {
+				return gen_out_of_memory_syntax_error();
 			}
 
-			structNode->accessModifier = access;
+			struct_node->access_modifier = access;
 
-			Token *nameToken;
+			Token *name_token;
 
-			SLKC_RETURN_IF_PARSE_ERROR((expectToken((nameToken = peekToken()), TokenId::Id)));
+			SLKC_RETURN_IF_PARSE_ERROR((expect_token((name_token = peek_token()), TokenId::Id)));
 
-			nextToken();
+			next_token();
 
-			if (!structNode->name.build(nameToken->sourceText)) {
-				return genOutOfMemorySyntaxError();
+			if (!struct_node->name.build(name_token->source_text)) {
+				return gen_out_of_memory_syntax_error();
 			}
 
-			size_t idxMember;
-			if ((idxMember = p->pushMember(structNode.castTo<MemberNode>())) == SIZE_MAX) {
-				return genOutOfMemorySyntaxError();
+			size_t idx_member;
+			if ((idx_member = p->push_member(struct_node.cast_to<MemberNode>())) == SIZE_MAX) {
+				return gen_out_of_memory_syntax_error();
 			}
 
 			{
-				peff::ScopeGuard setTokenRangeGuard([this, token, structNode]() noexcept {
-					structNode->tokenRange = TokenRange{ document->mainModule, token->index, parseContext.idxPrevToken };
+				peff::ScopeGuard set_token_range_guard([this, token, struct_node]() noexcept {
+					struct_node->token_range = TokenRange{ document->main_module, token->index, parse_context.idx_prev_token };
 				});
 
-				AstNodePtr<MemberNode> prevParent;
-				prevParent = curParent;
-				peff::ScopeGuard restorePrevModGuard([this, prevParent]() noexcept {
-					curParent = prevParent;
+				AstNodePtr<MemberNode> prev_parent;
+				prev_parent = cur_parent;
+				peff::ScopeGuard restore_prev_mod_guard([this, prev_parent]() noexcept {
+					cur_parent = prev_parent;
 				});
-				curParent = structNode.castTo<MemberNode>();
+				cur_parent = struct_node.cast_to<MemberNode>();
 
-				SLKC_RETURN_IF_PARSE_ERROR(parseGenericParams(structNode->genericParams, structNode->idxGenericParamCommaTokens, structNode->idxLAngleBracketToken, structNode->idxRAngleBracketToken));
-				for (size_t i = 0; i < structNode->genericParams.size(); ++i) {
-					auto gp = structNode->genericParams.at(i);
-					if (structNode->genericParamIndices.contains(gp->name)) {
-						peff::String s(resourceAllocator.get());
+				SLKC_RETURN_IF_PARSE_ERROR(parse_generic_params(struct_node->generic_params, struct_node->idx_generic_param_comma_tokens, struct_node->idx_langle_bracket_token, struct_node->idx_rangle_bracket_token));
+				for (size_t i = 0; i < struct_node->generic_params.size(); ++i) {
+					auto gp = struct_node->generic_params.at(i);
+					if (struct_node->generic_param_indices.contains(gp->name)) {
+						peff::String s(resource_allocator.get());
 
 						if (!s.build(gp->name)) {
-							return genOutOfMemorySyntaxError();
+							return gen_out_of_memory_syntax_error();
 						}
 
-						ConflictingDefinitionsErrorExData exData(std::move(s));
+						ConflictingDefinitionsErrorExData ex_data(std::move(s));
 
-						return SyntaxError(gp->tokenRange, std::move(exData));
+						return SyntaxError(gp->token_range, std::move(ex_data));
 					}
-					if (!structNode->genericParamIndices.insert(gp->name, +i))
-						return genOutOfMemorySyntaxError();
+					if (!struct_node->generic_param_indices.insert(gp->name, +i))
+						return gen_out_of_memory_syntax_error();
 				}
 
-				if (Token *colonToken = peekToken(); colonToken->tokenId == TokenId::Colon) {
-					nextToken();
+				if (Token *colon_token = peek_token(); colon_token->token_id == TokenId::Colon) {
+					next_token();
 
 					while (true) {
 						AstNodePtr<TypeNameNode> tn;
 
-						SLKC_RETURN_IF_PARSE_ERROR(parseTypeName(tn));
+						SLKC_RETURN_IF_PARSE_ERROR(parse_type_name(tn));
 
-						if (!structNode->implTypes.pushBack(std::move(tn))) {
-							return genOutOfMemorySyntaxError();
+						if (!struct_node->impl_types.push_back(std::move(tn))) {
+							return gen_out_of_memory_syntax_error();
 						}
 
-						if (peekToken()->tokenId != TokenId::AddOp) {
+						if (peek_token()->token_id != TokenId::AddOp) {
 							break;
 						}
 
-						Token *orOpToken = nextToken();
+						Token *or_op_token = next_token();
 					}
 				}
 
-				Token *lBraceToken;
+				Token *l_brace_token;
 
-				SLKC_RETURN_IF_PARSE_ERROR((expectToken((lBraceToken = peekToken()), TokenId::LBrace)));
+				SLKC_RETURN_IF_PARSE_ERROR((expect_token((l_brace_token = peek_token()), TokenId::LBrace)));
 
-				nextToken();
+				next_token();
 
-				Token *currentToken;
+				Token *current_token;
 				while (true) {
-					SLKC_RETURN_IF_PARSE_ERROR(expectToken(currentToken = peekToken()));
+					SLKC_RETURN_IF_PARSE_ERROR(expect_token(current_token = peek_token()));
 
-					if (currentToken->tokenId == TokenId::RBrace) {
+					if (current_token->token_id == TokenId::RBrace) {
 						break;
 					}
 
-					if ((syntaxError = parseProgramStmt())) {
+					if ((syntax_error = parse_program_stmt())) {
 						// Parse the rest to make sure that we have gained all of the information,
 						// instead of ignoring them.
-						if (!syntaxErrors.pushBack(std::move(syntaxError.value())))
-							return genOutOfMemorySyntaxError();
-						syntaxError.reset();
+						if (!syntax_errors.push_back(std::move(syntax_error.value())))
+							return gen_out_of_memory_syntax_error();
+						syntax_error.reset();
 					}
 				}
 
-				Token *rBraceToken;
+				Token *r_brace_token;
 
-				SLKC_RETURN_IF_PARSE_ERROR((expectToken((rBraceToken = peekToken()), TokenId::RBrace)));
+				SLKC_RETURN_IF_PARSE_ERROR((expect_token((r_brace_token = peek_token()), TokenId::RBrace)));
 
-				nextToken();
+				next_token();
 			}
 
-			if (auto it = p->memberIndices.find(structNode->name); it != p->memberIndices.end()) {
-				peff::String s(resourceAllocator.get());
+			if (auto it = p->member_indices.find(struct_node->name); it != p->member_indices.end()) {
+				peff::String s(resource_allocator.get());
 
-				if (!s.build(structNode->name)) {
-					return genOutOfMemorySyntaxError();
+				if (!s.build(struct_node->name)) {
+					return gen_out_of_memory_syntax_error();
 				}
 
-				ConflictingDefinitionsErrorExData exData(std::move(s));
+				ConflictingDefinitionsErrorExData ex_data(std::move(s));
 
-				return SyntaxError(structNode->tokenRange, std::move(exData));
+				return SyntaxError(struct_node->token_range, std::move(ex_data));
 			} else {
-				if (!(p->indexMember(idxMember))) {
-					return genOutOfMemorySyntaxError();
+				if (!(p->index_member(idx_member))) {
+					return gen_out_of_memory_syntax_error();
 				}
 			}
 
@@ -1348,126 +1348,126 @@ accessModifierParseEnd:
 		}
 		case TokenId::InterfaceKeyword: {
 			// Interface.
-			nextToken();
+			next_token();
 
-			AstNodePtr<InterfaceNode> interfaceNode;
+			AstNodePtr<InterfaceNode> interface_node;
 
-			if (!(interfaceNode = makeAstNode<InterfaceNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
-				return genOutOfMemorySyntaxError();
+			if (!(interface_node = make_ast_node<InterfaceNode>(resource_allocator.get(), resource_allocator.get(), document))) {
+				return gen_out_of_memory_syntax_error();
 			}
 
-			interfaceNode->accessModifier = access;
+			interface_node->access_modifier = access;
 
-			Token *nameToken;
+			Token *name_token;
 
-			SLKC_RETURN_IF_PARSE_ERROR((expectToken((nameToken = peekToken()), TokenId::Id)));
+			SLKC_RETURN_IF_PARSE_ERROR((expect_token((name_token = peek_token()), TokenId::Id)));
 
-			nextToken();
+			next_token();
 
-			if (!interfaceNode->name.build(nameToken->sourceText)) {
-				return genOutOfMemorySyntaxError();
+			if (!interface_node->name.build(name_token->source_text)) {
+				return gen_out_of_memory_syntax_error();
 			}
 
-			size_t idxMember;
-			if ((idxMember = p->pushMember(interfaceNode.castTo<MemberNode>())) == SIZE_MAX) {
-				return genOutOfMemorySyntaxError();
+			size_t idx_member;
+			if ((idx_member = p->push_member(interface_node.cast_to<MemberNode>())) == SIZE_MAX) {
+				return gen_out_of_memory_syntax_error();
 			}
 
 			Token *t;
 
 			{
-				peff::ScopeGuard setTokenRangeGuard([this, token, interfaceNode]() noexcept {
-					interfaceNode->tokenRange = TokenRange{ document->mainModule, token->index, parseContext.idxPrevToken };
+				peff::ScopeGuard set_token_range_guard([this, token, interface_node]() noexcept {
+					interface_node->token_range = TokenRange{ document->main_module, token->index, parse_context.idx_prev_token };
 				});
 
-				AstNodePtr<MemberNode> prevMember;
-				prevMember = curParent;
-				peff::ScopeGuard restorePrevModGuard([this, prevMember]() noexcept {
-					curParent = prevMember;
+				AstNodePtr<MemberNode> prev_member;
+				prev_member = cur_parent;
+				peff::ScopeGuard restore_prev_mod_guard([this, prev_member]() noexcept {
+					cur_parent = prev_member;
 				});
-				curParent = interfaceNode.castTo<MemberNode>();
+				cur_parent = interface_node.cast_to<MemberNode>();
 
-				SLKC_RETURN_IF_PARSE_ERROR(parseGenericParams(interfaceNode->genericParams, interfaceNode->idxGenericParamCommaTokens, interfaceNode->idxLAngleBracketToken, interfaceNode->idxRAngleBracketToken));
-				for (size_t i = 0; i < interfaceNode->genericParams.size(); ++i) {
-					auto gp = interfaceNode->genericParams.at(i);
-					if (interfaceNode->genericParamIndices.contains(gp->name)) {
-						peff::String s(resourceAllocator.get());
+				SLKC_RETURN_IF_PARSE_ERROR(parse_generic_params(interface_node->generic_params, interface_node->idx_generic_param_comma_tokens, interface_node->idx_langle_bracket_token, interface_node->idx_rangle_bracket_token));
+				for (size_t i = 0; i < interface_node->generic_params.size(); ++i) {
+					auto gp = interface_node->generic_params.at(i);
+					if (interface_node->generic_param_indices.contains(gp->name)) {
+						peff::String s(resource_allocator.get());
 
 						if (!s.build(gp->name)) {
-							return genOutOfMemorySyntaxError();
+							return gen_out_of_memory_syntax_error();
 						}
 
-						ConflictingDefinitionsErrorExData exData(std::move(s));
+						ConflictingDefinitionsErrorExData ex_data(std::move(s));
 
-						return SyntaxError(gp->tokenRange, std::move(exData));
+						return SyntaxError(gp->token_range, std::move(ex_data));
 					}
-					if (!interfaceNode->genericParamIndices.insert(gp->name, +i))
-						return genOutOfMemorySyntaxError();
+					if (!interface_node->generic_param_indices.insert(gp->name, +i))
+						return gen_out_of_memory_syntax_error();
 				}
 
-				if (Token *colonToken = peekToken(); colonToken->tokenId == TokenId::Colon) {
-					nextToken();
+				if (Token *colon_token = peek_token(); colon_token->token_id == TokenId::Colon) {
+					next_token();
 
 					while (true) {
 						AstNodePtr<TypeNameNode> tn;
 
-						SLKC_RETURN_IF_PARSE_ERROR(parseTypeName(tn));
+						SLKC_RETURN_IF_PARSE_ERROR(parse_type_name(tn));
 
-						if (!interfaceNode->implTypes.pushBack(std::move(tn))) {
-							return genOutOfMemorySyntaxError();
+						if (!interface_node->impl_types.push_back(std::move(tn))) {
+							return gen_out_of_memory_syntax_error();
 						}
 
-						if (peekToken()->tokenId != TokenId::AddOp) {
+						if (peek_token()->token_id != TokenId::AddOp) {
 							break;
 						}
 
-						Token *orOpToken = nextToken();
+						Token *or_op_token = next_token();
 					}
 				}
 
-				Token *lBraceToken;
+				Token *l_brace_token;
 
-				SLKC_RETURN_IF_PARSE_ERROR((expectToken((lBraceToken = peekToken()), TokenId::LBrace)));
+				SLKC_RETURN_IF_PARSE_ERROR((expect_token((l_brace_token = peek_token()), TokenId::LBrace)));
 
-				nextToken();
+				next_token();
 
-				Token *currentToken;
+				Token *current_token;
 				while (true) {
-					SLKC_RETURN_IF_PARSE_ERROR(expectToken(currentToken = peekToken()));
+					SLKC_RETURN_IF_PARSE_ERROR(expect_token(current_token = peek_token()));
 
-					if (currentToken->tokenId == TokenId::RBrace) {
+					if (current_token->token_id == TokenId::RBrace) {
 						break;
 					}
 
-					if ((syntaxError = parseProgramStmt())) {
+					if ((syntax_error = parse_program_stmt())) {
 						// Parse the rest to make sure that we have gained all of the information,
 						// instead of ignoring them.
-						if (!syntaxErrors.pushBack(std::move(syntaxError.value())))
-							return genOutOfMemorySyntaxError();
-						syntaxError.reset();
+						if (!syntax_errors.push_back(std::move(syntax_error.value())))
+							return gen_out_of_memory_syntax_error();
+						syntax_error.reset();
 					}
 				}
 
-				Token *rBraceToken;
+				Token *r_brace_token;
 
-				SLKC_RETURN_IF_PARSE_ERROR((expectToken((rBraceToken = peekToken()), TokenId::RBrace)));
+				SLKC_RETURN_IF_PARSE_ERROR((expect_token((r_brace_token = peek_token()), TokenId::RBrace)));
 
-				nextToken();
+				next_token();
 			}
 
-			if (auto it = p->memberIndices.find(interfaceNode->name); it != p->memberIndices.end()) {
-				peff::String s(resourceAllocator.get());
+			if (auto it = p->member_indices.find(interface_node->name); it != p->member_indices.end()) {
+				peff::String s(resource_allocator.get());
 
-				if (!s.build(interfaceNode->name)) {
-					return genOutOfMemorySyntaxError();
+				if (!s.build(interface_node->name)) {
+					return gen_out_of_memory_syntax_error();
 				}
 
-				ConflictingDefinitionsErrorExData exData(std::move(s));
+				ConflictingDefinitionsErrorExData ex_data(std::move(s));
 
-				return SyntaxError(interfaceNode->tokenRange, std::move(exData));
+				return SyntaxError(interface_node->token_range, std::move(ex_data));
 			} else {
-				if (!(p->indexMember(idxMember))) {
-					return genOutOfMemorySyntaxError();
+				if (!(p->index_member(idx_member))) {
+					return gen_out_of_memory_syntax_error();
 				}
 			}
 
@@ -1475,158 +1475,158 @@ accessModifierParseEnd:
 		}
 		case TokenId::ImportKeyword: {
 			// Import item.
-			nextToken();
+			next_token();
 
-			AstNodePtr<ImportNode> importNode;
+			AstNodePtr<ImportNode> import_node;
 
-			if (!(importNode = makeAstNode<ImportNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
-				return genOutOfMemorySyntaxError();
+			if (!(import_node = make_ast_node<ImportNode>(resource_allocator.get(), resource_allocator.get(), document))) {
+				return gen_out_of_memory_syntax_error();
 			}
 
-			SLKC_RETURN_IF_PARSE_ERROR(parseIdRef(importNode->idRef));
-			size_t idxMember;
-			if ((idxMember = p->pushMember(importNode.castTo<MemberNode>())) == SIZE_MAX) {
-				return genOutOfMemorySyntaxError();
+			SLKC_RETURN_IF_PARSE_ERROR(parse_id_ref(import_node->id_ref));
+			size_t idx_member;
+			if ((idx_member = p->push_member(import_node.cast_to<MemberNode>())) == SIZE_MAX) {
+				return gen_out_of_memory_syntax_error();
 			}
 
-			if (Token *asToken = peekToken(); asToken->tokenId == TokenId::AsKeyword) {
-				nextToken();
+			if (Token *as_token = peek_token(); as_token->token_id == TokenId::AsKeyword) {
+				next_token();
 
-				Token *nameToken;
+				Token *name_token;
 
-				SLKC_RETURN_IF_PARSE_ERROR((expectToken((nameToken = peekToken()), TokenId::Id)));
+				SLKC_RETURN_IF_PARSE_ERROR((expect_token((name_token = peek_token()), TokenId::Id)));
 
-				if (!importNode->name.build(nameToken->sourceText)) {
-					return genOutOfMemorySyntaxError();
+				if (!import_node->name.build(name_token->source_text)) {
+					return gen_out_of_memory_syntax_error();
 				}
 
-				if (!p->indexMember(idxMember)) {
-					return genOutOfMemorySyntaxError();
+				if (!p->index_member(idx_member)) {
+					return gen_out_of_memory_syntax_error();
 				}
 			} else {
-				if (!p->anonymousImports.pushBack(AstNodePtr<ImportNode>(importNode))) {
-					return genOutOfMemorySyntaxError();
+				if (!p->anonymous_imports.push_back(AstNodePtr<ImportNode>(import_node))) {
+					return gen_out_of_memory_syntax_error();
 				}
 			}
 
-			Token *semicolonToken;
+			Token *semicolon_token;
 
-			SLKC_RETURN_IF_PARSE_ERROR((expectToken((semicolonToken = peekToken()), TokenId::Semicolon)));
+			SLKC_RETURN_IF_PARSE_ERROR((expect_token((semicolon_token = peek_token()), TokenId::Semicolon)));
 
-			nextToken();
+			next_token();
 
 			break;
 		}
 		case TokenId::LetKeyword: {
 			// Global variable.
-			nextToken();
+			next_token();
 
 			AstNodePtr<VarDefStmtNode> stmt;
 
-			if (!(stmt = makeAstNode<VarDefStmtNode>(
-					  resourceAllocator.get(),
-					  resourceAllocator.get(),
+			if (!(stmt = make_ast_node<VarDefStmtNode>(
+					  resource_allocator.get(),
+					  resource_allocator.get(),
 					  document,
-					  peff::DynArray<VarDefEntryPtr>(resourceAllocator.get())))) {
-				return genOutOfMemorySyntaxError();
+					  peff::DynArray<VarDefEntryPtr>(resource_allocator.get())))) {
+				return gen_out_of_memory_syntax_error();
 			}
 
-			stmt->accessModifier = access;
+			stmt->access_modifier = access;
 
-			if (!p->varDefStmts.pushBack(AstNodePtr<VarDefStmtNode>(stmt))) {
-				return genOutOfMemorySyntaxError();
+			if (!p->var_def_stmts.push_back(AstNodePtr<VarDefStmtNode>(stmt))) {
+				return gen_out_of_memory_syntax_error();
 			}
 
-			peff::ScopeGuard setTokenRangeGuard([this, token, stmt]() noexcept {
-				stmt->tokenRange = TokenRange{ document->mainModule, token->index, parseContext.idxPrevToken };
+			peff::ScopeGuard set_token_range_guard([this, token, stmt]() noexcept {
+				stmt->token_range = TokenRange{ document->main_module, token->index, parse_context.idx_prev_token };
 			});
 
-			SLKC_RETURN_IF_PARSE_ERROR(parseVarDefs(stmt->varDefEntries));
+			SLKC_RETURN_IF_PARSE_ERROR(parse_var_defs(stmt->var_def_entries));
 
-			Token *semicolonToken;
+			Token *semicolon_token;
 
-			SLKC_RETURN_IF_PARSE_ERROR((expectToken((semicolonToken = peekToken()), TokenId::Semicolon)));
+			SLKC_RETURN_IF_PARSE_ERROR((expect_token((semicolon_token = peek_token()), TokenId::Semicolon)));
 
-			nextToken();
+			next_token();
 
-			for (auto &i : stmt->varDefEntries) {
-				if (p->memberIndices.contains(i->name)) {
-					peff::String s(resourceAllocator.get());
+			for (auto &i : stmt->var_def_entries) {
+				if (p->member_indices.contains(i->name)) {
+					peff::String s(resource_allocator.get());
 
 					if (!s.build(i->name))
-						return genOutOfMemorySyntaxError();
+						return gen_out_of_memory_syntax_error();
 
-					ConflictingDefinitionsErrorExData exData(std::move(s));
+					ConflictingDefinitionsErrorExData ex_data(std::move(s));
 
-					if (syntaxErrors.pushBack(SyntaxError(TokenRange(p.get(), i->idxNameToken), std::move(exData))))
-						return genOutOfMemorySyntaxError();
+					if (syntax_errors.push_back(SyntaxError(TokenRange(p.get(), i->idx_name_token), std::move(ex_data))))
+						return gen_out_of_memory_syntax_error();
 				}
-				AstNodePtr<VarNode> varNode;
+				AstNodePtr<VarNode> var_node;
 
-				if (!(varNode = makeAstNode<VarNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
-					return genOutOfMemorySyntaxError();
+				if (!(var_node = make_ast_node<VarNode>(resource_allocator.get(), resource_allocator.get(), document))) {
+					return gen_out_of_memory_syntax_error();
 				}
 
-				if (!varNode->name.build(i->name))
-					return genOutOfMemorySyntaxError();
-				varNode->initialValue = i->initialValue;
-				varNode->type = i->type;
-				varNode->accessModifier = stmt->accessModifier;
+				if (!var_node->name.build(i->name))
+					return gen_out_of_memory_syntax_error();
+				var_node->initial_value = i->initial_value;
+				var_node->type = i->type;
+				var_node->access_modifier = stmt->access_modifier;
 
-				if (!p->addMember(varNode.castTo<MemberNode>()))
-					return genOutOfMemorySyntaxError();
+				if (!p->add_member(var_node.cast_to<MemberNode>()))
+					return gen_out_of_memory_syntax_error();
 			}
 
 			break;
 		}
 		default:
-			nextToken();
+			next_token();
 			return SyntaxError(
-				TokenRange{ document->mainModule, token->index },
+				TokenRange{ document->main_module, token->index },
 				SyntaxErrorKind::ExpectingDecl);
 	}
 
 	return {};
 }
 
-SLKC_API peff::Option<SyntaxError> Parser::parseProgram(const AstNodePtr<ModuleNode> &initialMod, IdRefPtr &moduleNameOut) {
-	peff::Option<SyntaxError> syntaxError;
+SLKC_API peff::Option<SyntaxError> Parser::parse_program(const AstNodePtr<ModuleNode> &initial_mod, IdRefPtr &module_name_out) {
+	peff::Option<SyntaxError> syntax_error;
 
 	Token *t;
 
-	curParent = initialMod.castTo<MemberNode>();
+	cur_parent = initial_mod.cast_to<MemberNode>();
 
-	moduleNameOut = {};
-	if ((t = peekToken())->tokenId == TokenId::ModuleKeyword) {
-		nextToken();
+	module_name_out = {};
+	if ((t = peek_token())->token_id == TokenId::ModuleKeyword) {
+		next_token();
 
-		IdRefPtr moduleName;
+		IdRefPtr module_name;
 
-		if ((syntaxError = parseIdRef(moduleName))) {
-			if (!syntaxErrors.pushBack(std::move(syntaxError.value())))
-				return genOutOfMemorySyntaxError();
-			syntaxError.reset();
+		if ((syntax_error = parse_id_ref(module_name))) {
+			if (!syntax_errors.push_back(std::move(syntax_error.value())))
+				return gen_out_of_memory_syntax_error();
+			syntax_error.reset();
 		}
 
-		Token *semicolonToken;
-		SLKC_RETURN_IF_PARSE_ERROR((expectToken((semicolonToken = peekToken()), TokenId::Semicolon)));
+		Token *semicolon_token;
+		SLKC_RETURN_IF_PARSE_ERROR((expect_token((semicolon_token = peek_token()), TokenId::Semicolon)));
 
-		nextToken();
+		next_token();
 
-		moduleNameOut = std::move(moduleName);
+		module_name_out = std::move(module_name);
 	}
 
-	while ((t = peekToken())->tokenId != TokenId::End) {
-		if ((syntaxError = parseProgramStmt())) {
+	while ((t = peek_token())->token_id != TokenId::End) {
+		if ((syntax_error = parse_program_stmt())) {
 			// Parse the rest to make sure that we have gained all of the information,
 			// instead of ignoring them.
-			if (!syntaxErrors.pushBack(std::move(syntaxError.value())))
-				return genOutOfMemorySyntaxError();
-			syntaxError.reset();
+			if (!syntax_errors.push_back(std::move(syntax_error.value())))
+				return gen_out_of_memory_syntax_error();
+			syntax_error.reset();
 		}
 	}
 
-	initialMod->setParser(sharedFromThis());
+	initial_mod->set_parser(shared_from_this());
 
 	return {};
 }

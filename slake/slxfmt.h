@@ -28,8 +28,8 @@ namespace slake {
 		struct ImgHeader final {
 			uint8_t magic[4];	// Magic number
 			uint8_t flags;		// Flags
-			uint8_t fmtVer;		// Format version
-			uint16_t nImports;	// Number of imported modules
+			uint8_t fmt_ver;		// Format version
+			uint16_t num_imports;	// Number of imported modules
 		};
 		constexpr static uint8_t IMH_MAGIC[] = { 'S', 'L', 'A', 'X' };
 
@@ -40,7 +40,7 @@ namespace slake {
 		/// @brief Instruction Header (IH)
 		///
 		struct InsHeader final {
-			uint32_t nOperands;	 // Number of operands
+			uint32_t num_operands;	 // Number of operands
 			Opcode opcode;		 // Operation code
 			uint8_t flags;		 // Determines if the instruction has an output.
 		};
@@ -110,11 +110,11 @@ namespace slake {
 			uint8_t flags;
 			uint8_t reserved[3];
 			/// @brief Number of generic parameters
-			uint32_t nGenericParams;
+			uint32_t num_generic_params;
 			/// @brief Length of class name
-			uint32_t lenName;
+			uint32_t len_name;
 			/// @brief Number of implemented interfaces (for classes), or number of parents (interfaces).
-			uint32_t nImpls;
+			uint32_t num_impls;
 		};
 		constexpr static uint8_t
 			CTD_FINAL = 0x01,	// Final
@@ -125,51 +125,51 @@ namespace slake {
 		struct InterfaceTypeDesc final {
 			uint8_t flags;
 			uint8_t reserved[3];
-			uint32_t nGenericParams;
-			uint32_t lenName;
-			uint32_t nParents;
+			uint32_t num_generic_params;
+			uint32_t len_name;
+			uint32_t num_parents;
 		};
 
 		/// @brief Structure Type Descriptor (STD)
 		struct StructTypeDesc final {
 			uint8_t flags;
 			uint8_t reserved[3];
-			uint32_t nGenericParams;
-			uint32_t lenName;
-			uint32_t nImpls;
+			uint32_t num_generic_params;
+			uint32_t len_name;
+			uint32_t num_impls;
 		};
 
 		/// @brief Scoped Enumeration Type Descriptor (SETD)
 		struct ScopedEnumTypeDesc final {
 			uint8_t flags;
 			uint8_t reserved[3];
-			uint32_t lenName;
+			uint32_t len_name;
 		};
 		constexpr static uint8_t
 			SETD_BASE = 0x01;
 
 		/// @brief Enumeration Item Descriptor (EID)
 		struct EnumItemDesc final {
-			uint32_t lenName;
+			uint32_t len_name;
 		};
 
 		/// @brief Union Enumeration Type Descriptor (UETD)
 		struct UnionEnumTypeDesc final {
 			uint8_t flags;
 			uint8_t reserved[3];
-			uint32_t nGenericParams;
-			uint32_t lenName;
+			uint32_t num_generic_params;
+			uint32_t len_name;
 		};
 
 		/// @brief Function Descriptor (FND)
 		struct FnDesc final {
 			uint16_t flags;			   // Flags
-			uint8_t nGenericParams;	   // Number of generic parameters
-			uint8_t nParams;		   // Number of parameters
-			uint32_t lenBody;		   // Length of body
-			uint32_t nSourceLocDescs;  // Number of SLDs
-			uint32_t nRegisters;	   // Number of registers
-			uint32_t nConstObjects;	   // Number of constant objects
+			uint8_t num_generic_params;	   // Number of generic parameters
+			uint8_t num_params;		   // Number of parameters
+			uint32_t len_body;		   // Length of body
+			uint32_t num_source_loc_descs;  // Number of SLDs
+			uint32_t num_registers;	   // Number of registers
+			uint32_t num_const_objects;	   // Number of constant objects
 		};
 		constexpr static uint16_t
 			FND_FINAL = 0x0001,		 // Final
@@ -185,24 +185,24 @@ namespace slake {
 		};
 
 		struct LocalVarInfo {
-			uint32_t validLineStart, validLineEnd;
+			uint32_t valid_line_start, valid_line_end;
 		};
 
 		/// @brief Variable Descriptonr (VAD)
 		struct VarDesc final {
-			uint8_t lenName;
+			uint8_t len_name;
 			uint8_t flags;
 		};
 
 		struct IdRefHeader final {
-			uint8_t nEntries;
-			uint8_t hasVarArgs;
-			uint16_t nParams;
+			uint8_t num_entries;
+			uint8_t has_var_args;
+			uint16_t num_params;
 		};
 		/// @brief Reference Entry Descriptor (RED)
 		struct IdRefEntryDesc final {
-			uint16_t lenName;
-			uint8_t nGenericArgs;
+			uint16_t len_name;
+			uint8_t num_generic_args;
 			uint8_t reserved;
 		};
 
@@ -211,15 +211,15 @@ namespace slake {
 
 		/// @brief Generic Parameter Descriptor (GPD)
 		struct GenericParamDesc final {
-			uint8_t lenName;
+			uint8_t len_name;
 			uint8_t flags;
-			uint8_t nInterfaces;
+			uint8_t num_interfaces;
 		};
 
 		// @brief Variable Debugging Descriptor (VDD)
 		struct VarDebugDesc final {
 			uint32_t line;
-			uint32_t nLine;
+			uint32_t num_line;
 		};
 
 		// @brief Source Location Descriptor (SLD)
@@ -227,7 +227,7 @@ namespace slake {
 			uint32_t line;
 			uint32_t column;
 
-			SLAKE_FORCEINLINE int comparesTo(const SourceLocDesc &rhs) const noexcept {
+			SLAKE_FORCEINLINE int compares_to(const SourceLocDesc &rhs) const noexcept {
 				if (line < rhs.line)
 					return -1;
 				if (line > rhs.line)
@@ -244,11 +244,11 @@ namespace slake {
 			}
 
 			SLAKE_FORCEINLINE bool operator<(const SourceLocDesc &rhs) const noexcept {
-				return comparesTo(rhs) < 0;
+				return compares_to(rhs) < 0;
 			}
 
 			SLAKE_FORCEINLINE bool operator>(const SourceLocDesc &rhs) const noexcept {
-				return comparesTo(rhs) > 0;
+				return compares_to(rhs) > 0;
 			}
 		};
 	}

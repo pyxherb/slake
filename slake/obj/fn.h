@@ -18,12 +18,12 @@ namespace slake {
 
 	class Instruction final {
 	public:
-		size_t offSourceLocDesc = SIZE_MAX;
+		size_t off_source_loc_desc = SIZE_MAX;
 		Opcode opcode;
 		uint32_t output;
-		uint32_t nOperands;
+		uint32_t num_operands;
 		Value *operands;
-		peff::RcObjectPtr<peff::Alloc> operandsAllocator;
+		peff::RcObjectPtr<peff::Alloc> operands_allocator;
 
 		SLAKE_API Instruction();
 		SLAKE_API Instruction(Instruction &&rhs);
@@ -38,18 +38,18 @@ namespace slake {
 
 		SLAKE_API Instruction &operator=(Instruction &&rhs);
 
-		SLAKE_FORCEINLINE void setOpcode(Opcode opcode) {
+		SLAKE_FORCEINLINE void set_opcode(Opcode opcode) {
 			this->opcode = opcode;
 		}
 
-		SLAKE_FORCEINLINE void setOutput(uint32_t output) {
+		SLAKE_FORCEINLINE void set_output(uint32_t output) {
 			this->output = output;
 		}
 
-		SLAKE_API void clearOperands();
-		[[nodiscard]] SLAKE_API bool reserveOperands(peff::Alloc *allocator, uint32_t nOperands);
+		SLAKE_API void clear_operands();
+		[[nodiscard]] SLAKE_API bool reserve_operands(peff::Alloc *allocator, uint32_t num_operands);
 
-		SLAKE_API void replaceAllocator(peff::Alloc *allocator) noexcept;
+		SLAKE_API void replace_allocator(peff::Alloc *allocator) noexcept;
 	};
 
 	enum class FnOverloadingKind {
@@ -71,191 +71,191 @@ namespace slake {
 
 	class FnOverloadingObject : public Object {
 	public:
-		FnOverloadingKind overloadingKind;
+		FnOverloadingKind overloading_kind;
 
-		FnObject *fnObject;
+		FnObject *fn_object;
 
 		AccessModifier access = 0;
 
-		GenericParamList genericParams;
-		peff::HashMap<std::string_view, size_t> mappedGenericParams;
-		peff::HashMap<std::string_view, TypeRef> mappedGenericArgs;
+		GenericParamList generic_params;
+		peff::HashMap<std::string_view, size_t> mapped_generic_params;
+		peff::HashMap<std::string_view, TypeRef> mapped_generic_args;
 
-		peff::DynArray<TypeRef> paramTypes;
-		TypeRef returnType;
+		peff::DynArray<TypeRef> param_types;
+		TypeRef return_type;
 
-		TypeRef overridenType;
+		TypeRef overriden_type;
 
-		OverloadingFlags overloadingFlags = 0;
+		OverloadingFlags overloading_flags = 0;
 
 		SLAKE_API FnOverloadingObject(
-			FnOverloadingKind overloadingKind,
-			FnObject *fnObject,
-			peff::Alloc *selfAllocator);
-		SLAKE_API FnOverloadingObject(const FnOverloadingObject &other, peff::Alloc *allocator, bool &succeededOut);
+			FnOverloadingKind overloading_kind,
+			FnObject *fn_object,
+			peff::Alloc *self_allocator);
+		SLAKE_API FnOverloadingObject(const FnOverloadingObject &other, peff::Alloc *allocator, bool &succeeded_out);
 		SLAKE_API virtual ~FnOverloadingObject();
 
-		SLAKE_FORCEINLINE void setAccess(AccessModifier accessModifier) {
-			this->access = accessModifier;
+		SLAKE_FORCEINLINE void set_access(AccessModifier access_modifier) {
+			this->access = access_modifier;
 		}
 
-		SLAKE_FORCEINLINE void setParamTypes(peff::DynArray<TypeRef> &&paramTypes) noexcept {
-			this->paramTypes = std::move(paramTypes);
+		SLAKE_FORCEINLINE void set_param_types(peff::DynArray<TypeRef> &&param_types) noexcept {
+			this->param_types = std::move(param_types);
 		}
 
-		SLAKE_FORCEINLINE void setReturnType(TypeRef returnType) noexcept {
-			this->returnType = returnType;
+		SLAKE_FORCEINLINE void set_return_type(TypeRef return_type) noexcept {
+			this->return_type = return_type;
 		}
 
-		SLAKE_FORCEINLINE TypeRef getReturnType() noexcept {
-			return returnType;
+		SLAKE_FORCEINLINE TypeRef get_return_type() noexcept {
+			return return_type;
 		}
 
-		SLAKE_FORCEINLINE void setVarArgs() noexcept {
-			overloadingFlags |= OL_VARG;
+		SLAKE_FORCEINLINE void set_var_args() noexcept {
+			overloading_flags |= OL_VARG;
 		}
 
-		SLAKE_FORCEINLINE void clearVarArgs() noexcept {
-			overloadingFlags &= ~OL_VARG;
+		SLAKE_FORCEINLINE void clear_var_args() noexcept {
+			overloading_flags &= ~OL_VARG;
 		}
 
-		SLAKE_FORCEINLINE bool isWithVarArgs() const noexcept {
-			return overloadingFlags & OL_VARG;
+		SLAKE_FORCEINLINE bool is_with_var_args() const noexcept {
+			return overloading_flags & OL_VARG;
 		}
 
-		SLAKE_FORCEINLINE void setCoroutine() noexcept {
-			overloadingFlags |= OL_GENERATOR;
+		SLAKE_FORCEINLINE void set_coroutine() noexcept {
+			overloading_flags |= OL_GENERATOR;
 		}
 
-		SLAKE_FORCEINLINE void clearCoroutine() noexcept {
-			overloadingFlags &= ~OL_GENERATOR;
+		SLAKE_FORCEINLINE void clear_coroutine() noexcept {
+			overloading_flags &= ~OL_GENERATOR;
 		}
 
-		SLAKE_FORCEINLINE bool isCoroutine() const noexcept {
-			return overloadingFlags & OL_GENERATOR;
+		SLAKE_FORCEINLINE bool is_coroutine() const noexcept {
+			return overloading_flags & OL_GENERATOR;
 		}
 
-		SLAKE_FORCEINLINE void setVirtualFlag() noexcept {
-			overloadingFlags |= OL_VIRTUAL;
+		SLAKE_FORCEINLINE void set_virtual_flag() noexcept {
+			overloading_flags |= OL_VIRTUAL;
 		}
 
-		SLAKE_FORCEINLINE void clearVirtualFlag() noexcept {
-			overloadingFlags &= ~OL_VIRTUAL;
+		SLAKE_FORCEINLINE void clear_virtual_flag() noexcept {
+			overloading_flags &= ~OL_VIRTUAL;
 		}
 
-		SLAKE_FORCEINLINE bool isVirtual() noexcept {
-			return overloadingFlags & OL_VIRTUAL;
+		SLAKE_FORCEINLINE bool is_virtual() noexcept {
+			return overloading_flags & OL_VIRTUAL;
 		}
 
-		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;
+		SLAKE_API virtual void replace_allocator(peff::Alloc *allocator) noexcept override;
 	};
 
 	class RegularFnOverloadingObject : public FnOverloadingObject {
 	public:
-		peff::DynArray<slxfmt::SourceLocDesc> sourceLocDescs;
+		peff::DynArray<slxfmt::SourceLocDesc> source_loc_descs;
 		peff::DynArray<Instruction> instructions;
-		TypeRef thisType = TypeId::Void;
-		uint32_t nRegisters;
+		TypeRef this_type = TypeId::Void;
+		uint32_t num_registers;
 
 		SLAKE_API RegularFnOverloadingObject(
-			FnObject *fnObject,
-			peff::Alloc *selfAllocator);
-		SLAKE_API RegularFnOverloadingObject(const RegularFnOverloadingObject &other, peff::Alloc *allocator, bool &succeededOut);
+			FnObject *fn_object,
+			peff::Alloc *self_allocator);
+		SLAKE_API RegularFnOverloadingObject(const RegularFnOverloadingObject &other, peff::Alloc *allocator, bool &succeeded_out);
 		SLAKE_API virtual ~RegularFnOverloadingObject();
 
 		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
 
 		SLAKE_API static HostObjectRef<RegularFnOverloadingObject> alloc(
-			FnObject *fnObject);
+			FnObject *fn_object);
 		SLAKE_API static HostObjectRef<RegularFnOverloadingObject> alloc(const RegularFnOverloadingObject *other);
 		SLAKE_API virtual void dealloc() override;
 
-		SLAKE_FORCEINLINE void setThisType(TypeRef thisType) noexcept {
-			this->thisType = thisType;
+		SLAKE_FORCEINLINE void set_this_type(TypeRef this_type) noexcept {
+			this->this_type = this_type;
 		}
 
-		SLAKE_FORCEINLINE TypeRef getThisType() noexcept {
-			return thisType;
+		SLAKE_FORCEINLINE TypeRef get_this_type() noexcept {
+			return this_type;
 		}
 
-		SLAKE_FORCEINLINE void setRegisterNumber(uint32_t nRegisters) noexcept {
-			this->nRegisters = nRegisters;
+		SLAKE_FORCEINLINE void set_register_number(uint32_t num_registers) noexcept {
+			this->num_registers = num_registers;
 		}
 
-		SLAKE_FORCEINLINE uint32_t getRegisterNumber() noexcept {
-			return nRegisters;
+		SLAKE_FORCEINLINE uint32_t get_register_number() noexcept {
+			return num_registers;
 		}
 
-		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;
+		SLAKE_API virtual void replace_allocator(peff::Alloc *allocator) noexcept override;
 	};
 
 	class JITCompiledFnOverloadingObject : public FnOverloadingObject {
 	public:
-		RegularFnOverloadingObject *uncompiledVersion;
-		peff::Set<Object *> referencedObjects;
+		RegularFnOverloadingObject *uncompiled_version;
+		peff::Set<Object *> referenced_objects;
 
 		SLAKE_API JITCompiledFnOverloadingObject(
-			FnObject *fnObject,
-			peff::Alloc *selfAllocator,
+			FnObject *fn_object,
+			peff::Alloc *self_allocator,
 			AccessModifier access);
-		SLAKE_API JITCompiledFnOverloadingObject(const RegularFnOverloadingObject &other, peff::Alloc *allocator, bool &succeededOut);
+		SLAKE_API JITCompiledFnOverloadingObject(const RegularFnOverloadingObject &other, peff::Alloc *allocator, bool &succeeded_out);
 		SLAKE_API virtual ~JITCompiledFnOverloadingObject();
 
 		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
 
 		SLAKE_API static HostObjectRef<JITCompiledFnOverloadingObject> alloc(
-			FnObject *fnObject,
+			FnObject *fn_object,
 			AccessModifier access);
 		SLAKE_API static HostObjectRef<JITCompiledFnOverloadingObject> alloc(const RegularFnOverloadingObject *other);
 		SLAKE_API virtual void dealloc() override;
 
-		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;
+		SLAKE_API virtual void replace_allocator(peff::Alloc *allocator) noexcept override;
 	};
 
 	class NativeFnOverloadingObject;
 	using NativeFnCallback =
-		std::function<Value(Context *context, MajorFrame *curMajorFrame)>;
+		std::function<Value(Context *context, MajorFrame *cur_major_frame)>;
 
 	class NativeFnOverloadingObject : public FnOverloadingObject {
 	public:
 		NativeFnCallback callback;
 
 		SLAKE_API NativeFnOverloadingObject(
-			FnObject *fnObject,
-			peff::Alloc *selfAllocator,
+			FnObject *fn_object,
+			peff::Alloc *self_allocator,
 			NativeFnCallback callback);
-		SLAKE_API NativeFnOverloadingObject(const NativeFnOverloadingObject &other, peff::Alloc *allocator, bool &succeededOut);
+		SLAKE_API NativeFnOverloadingObject(const NativeFnOverloadingObject &other, peff::Alloc *allocator, bool &succeeded_out);
 		SLAKE_API virtual ~NativeFnOverloadingObject();
 
 		SLAKE_API virtual FnOverloadingObject *duplicate(Duplicator *duplicator) const override;
 
 		SLAKE_API static HostObjectRef<NativeFnOverloadingObject> alloc(
-			FnObject *fnObject,
+			FnObject *fn_object,
 			NativeFnCallback callback);
 		SLAKE_API static HostObjectRef<NativeFnOverloadingObject> alloc(const NativeFnOverloadingObject *other);
 		SLAKE_API virtual void dealloc() override;
 	};
 
 	struct FnSignature {
-		const peff::DynArray<TypeRef> &paramTypes;
-		bool hasVarArg;
-		size_t nGenericParams;
-		TypeRef overridenType;
+		const peff::DynArray<TypeRef> &param_types;
+		bool has_var_arg;
+		size_t num_generic_params;
+		TypeRef overriden_type;
 
-		SLAKE_FORCEINLINE FnSignature(const peff::DynArray<TypeRef> &paramTypes, bool hasVarArg, size_t nGenericParams, const TypeRef &overridenType) : paramTypes(paramTypes), hasVarArg(hasVarArg), nGenericParams(nGenericParams), overridenType(overridenType) {}
+		SLAKE_FORCEINLINE FnSignature(const peff::DynArray<TypeRef> &param_types, bool has_var_arg, size_t num_generic_params, const TypeRef &overriden_type) : param_types(param_types), has_var_arg(has_var_arg), num_generic_params(num_generic_params), overriden_type(overriden_type) {}
 	};
 
 	struct FnSignatureComparator {
-		ParamListComparator innerComparator;
+		ParamListComparator inner_comparator;
 
 		SLAKE_API int operator()(const FnSignature &lhs, const FnSignature &rhs) const noexcept;
 	};
 
 	struct FnSignatureLtComparator {
-		FnSignatureComparator innerComparator;
+		FnSignatureComparator inner_comparator;
 
 		SLAKE_FORCEINLINE bool operator()(const FnSignature &lhs, const FnSignature &rhs) const noexcept {
-			return innerComparator(lhs, rhs) < 0;
+			return inner_comparator(lhs, rhs) < 0;
 		}
 	};
 
@@ -263,8 +263,8 @@ namespace slake {
 	public:
 		peff::Map<FnSignature, FnOverloadingObject *, FnSignatureComparator, true> overloadings;
 
-		SLAKE_API FnObject(Runtime *rt, peff::Alloc *selfAllocator);
-		SLAKE_API FnObject(const FnObject &x, peff::Alloc *allocator, bool &succeededOut);
+		SLAKE_API FnObject(Runtime *rt, peff::Alloc *self_allocator);
+		SLAKE_API FnObject(const FnObject &x, peff::Alloc *allocator, bool &succeeded_out);
 		SLAKE_API virtual ~FnObject();
 
 		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
@@ -273,9 +273,9 @@ namespace slake {
 		SLAKE_API static HostObjectRef<FnObject> alloc(const FnObject *other);
 		SLAKE_API virtual void dealloc() override;
 
-		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;
+		SLAKE_API virtual void replace_allocator(peff::Alloc *allocator) noexcept override;
 
-		SLAKE_API InternalExceptionPointer resortOverloadings() noexcept;
+		SLAKE_API InternalExceptionPointer resort_overloadings() noexcept;
 	};
 }
 

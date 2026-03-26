@@ -27,8 +27,8 @@ public:
 		mprotect(ptr, size, PROT_READ);
 		free(ptr);
 	}
-	virtual inline size_t getSize() override { return size; }
-	virtual inline void *getPtr() override { return ptr; }
+	virtual inline size_t get_size() override { return size; }
+	virtual inline void *get_ptr() override { return ptr; }
 
 	virtual void lock() override {
 		mprotect(ptr, size, PROT_EXEC | PROT_READ);
@@ -40,6 +40,6 @@ public:
 	}
 };
 
-slake::CodePage *slake::genCodePage(size_t size) {
+slake::CodePage *slake::gen_code_page(size_t size) {
 	return new LinuxCodePage(size);
 }

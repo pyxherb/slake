@@ -816,21 +816,37 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 				main_operation_type = decayed_lhs_type;
 				break;
 			default: {
-				// If the both conversions of sides are viable, choose their common type.
-				// If only one side is viable, choose the viable side.
-				// Or else, choose the left side to generate the error message.
-				bool lhs_to_rhs_viability, rhs_to_lhs_viability;
-				SLKC_RETURN_IF_COMP_ERROR(is_convertible(decayed_lhs_type, decayed_rhs_type, true, lhs_to_rhs_viability));
-				SLKC_RETURN_IF_COMP_ERROR(is_convertible(decayed_rhs_type, decayed_lhs_type, true, rhs_to_lhs_viability));
-				if (lhs_to_rhs_viability && rhs_to_lhs_viability) {
-					SLKC_RETURN_IF_COMP_ERROR(deduce_common_type(decayed_lhs_type, decayed_rhs_type, main_operation_type));
-				}
-				if (!main_operation_type) {
-					if (lhs_to_rhs_viability)
-						main_operation_type = decayed_rhs_type;
-					else
-						main_operation_type = decayed_lhs_type;
-				}
+				do {
+					{
+						bool lhs_pre, rhs_pre;
+						SLKC_RETURN_IF_COMP_ERROR(is_unsigned(decayed_lhs_type, lhs_pre));
+						SLKC_RETURN_IF_COMP_ERROR(is_unsigned(decayed_rhs_type, rhs_pre));
+						if (lhs_pre && rhs_pre) {
+							SLKC_RETURN_IF_COMP_ERROR(deduce_common_type(decayed_lhs_type, decayed_rhs_type, main_operation_type));
+							break;
+						}
+
+						SLKC_RETURN_IF_COMP_ERROR(is_signed(decayed_lhs_type, lhs_pre));
+						SLKC_RETURN_IF_COMP_ERROR(is_signed(decayed_rhs_type, rhs_pre));
+						if (lhs_pre && rhs_pre) {
+							SLKC_RETURN_IF_COMP_ERROR(deduce_common_type(decayed_lhs_type, decayed_rhs_type, main_operation_type));
+							break;
+						}
+
+						SLKC_RETURN_IF_COMP_ERROR(is_floating_point(decayed_lhs_type, lhs_pre));
+						SLKC_RETURN_IF_COMP_ERROR(is_floating_point(decayed_rhs_type, rhs_pre));
+						if (lhs_pre && rhs_pre) {
+							SLKC_RETURN_IF_COMP_ERROR(deduce_common_type(decayed_lhs_type, decayed_rhs_type, main_operation_type));
+							break;
+						}
+					}
+
+					{
+						bool convertible_pre;
+						SLKC_RETURN_IF_COMP_ERROR(is_convertible(decayed_rhs_type, decayed_lhs_type, true, convertible_pre));
+						main_operation_type = convertible_pre ? decayed_lhs_type : decayed_rhs_type;
+					}
+				} while (false);
 			}
 		}
 
@@ -2240,7 +2256,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								break;
 							}
 							case ExprEvalPurpose::Unpacking:
-			return CompilationError(expr->token_range, CompilationErrorKind::TargetIsNotUnpackable);
+								return CompilationError(expr->token_range, CompilationErrorKind::TargetIsNotUnpackable);
 						}
 						result_out.evaluated_type = matched_overloading->return_type;
 						break;
@@ -2292,8 +2308,8 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 							}
 							case ExprEvalPurpose::Call:
 								return CompilationError(expr->token_range, CompilationErrorKind::TargetIsNotCallable);
-								case ExprEvalPurpose::Unpacking:
-			return CompilationError(expr->token_range, CompilationErrorKind::TargetIsNotUnpackable);
+							case ExprEvalPurpose::Unpacking:
+								return CompilationError(expr->token_range, CompilationErrorKind::TargetIsNotUnpackable);
 						}
 						break;
 					case BinaryOp::StrictNeq:
@@ -2343,8 +2359,8 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 							}
 							case ExprEvalPurpose::Call:
 								return CompilationError(expr->token_range, CompilationErrorKind::TargetIsNotCallable);
-								case ExprEvalPurpose::Unpacking:
-			return CompilationError(expr->token_range, CompilationErrorKind::TargetIsNotUnpackable);
+							case ExprEvalPurpose::Unpacking:
+								return CompilationError(expr->token_range, CompilationErrorKind::TargetIsNotUnpackable);
 						}
 						break;
 					default:

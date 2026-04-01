@@ -285,11 +285,6 @@ recheck:
 				case TypeNameKind::I8:
 					result_out = true;
 					break;
-				case TypeNameKind::I16:
-				case TypeNameKind::I32:
-				case TypeNameKind::I64:
-					result_out = true;
-					break;
 				case TypeNameKind::Any:
 					result_out = true;
 					break;
@@ -300,14 +295,7 @@ recheck:
 			break;
 		case TypeNameKind::I16:
 			switch (base_type->type_name_kind) {
-				case TypeNameKind::I8:
-					result_out = false;
-					break;
 				case TypeNameKind::I16:
-					result_out = true;
-					break;
-				case TypeNameKind::I32:
-				case TypeNameKind::I64:
 					result_out = true;
 					break;
 				case TypeNameKind::Any:
@@ -320,14 +308,7 @@ recheck:
 			break;
 		case TypeNameKind::I32:
 			switch (base_type->type_name_kind) {
-				case TypeNameKind::I8:
-				case TypeNameKind::I16:
-					result_out = false;
-					break;
 				case TypeNameKind::I32:
-					result_out = true;
-					break;
-				case TypeNameKind::I64:
 					result_out = true;
 					break;
 				case TypeNameKind::Any:
@@ -340,11 +321,6 @@ recheck:
 			break;
 		case TypeNameKind::I64:
 			switch (base_type->type_name_kind) {
-				case TypeNameKind::I8:
-				case TypeNameKind::I16:
-				case TypeNameKind::I32:
-					result_out = false;
-					break;
 				case TypeNameKind::I64:
 					result_out = true;
 					break;
@@ -358,12 +334,6 @@ recheck:
 			break;
 		case TypeNameKind::ISize:
 			switch (base_type->type_name_kind) {
-				case TypeNameKind::I8:
-				case TypeNameKind::I16:
-				case TypeNameKind::I32:
-				case TypeNameKind::I64:
-					result_out = false;
-					break;
 				case TypeNameKind::ISize:
 					result_out = true;
 					break;
@@ -380,11 +350,6 @@ recheck:
 				case TypeNameKind::U8:
 					result_out = true;
 					break;
-				case TypeNameKind::U16:
-				case TypeNameKind::U32:
-				case TypeNameKind::U64:
-					result_out = true;
-					break;
 				case TypeNameKind::Any:
 					result_out = true;
 					break;
@@ -395,14 +360,7 @@ recheck:
 			break;
 		case TypeNameKind::U16:
 			switch (base_type->type_name_kind) {
-				case TypeNameKind::U8:
-					result_out = false;
-					break;
 				case TypeNameKind::U16:
-					result_out = true;
-					break;
-				case TypeNameKind::U32:
-				case TypeNameKind::U64:
 					result_out = true;
 					break;
 				case TypeNameKind::Any:
@@ -415,14 +373,7 @@ recheck:
 			break;
 		case TypeNameKind::U32:
 			switch (base_type->type_name_kind) {
-				case TypeNameKind::U8:
-				case TypeNameKind::U16:
-					result_out = false;
-					break;
 				case TypeNameKind::U32:
-					result_out = true;
-					break;
-				case TypeNameKind::U64:
 					result_out = true;
 					break;
 				case TypeNameKind::Any:
@@ -435,11 +386,6 @@ recheck:
 			break;
 		case TypeNameKind::U64:
 			switch (base_type->type_name_kind) {
-				case TypeNameKind::U8:
-				case TypeNameKind::U16:
-				case TypeNameKind::U32:
-					result_out = false;
-					break;
 				case TypeNameKind::U64:
 					result_out = true;
 					break;
@@ -453,12 +399,6 @@ recheck:
 			break;
 		case TypeNameKind::USize:
 			switch (base_type->type_name_kind) {
-				case TypeNameKind::U8:
-				case TypeNameKind::U16:
-				case TypeNameKind::U32:
-				case TypeNameKind::U64:
-					result_out = false;
-					break;
 				case TypeNameKind::USize:
 					result_out = true;
 					break;
@@ -475,9 +415,6 @@ recheck:
 				case TypeNameKind::F32:
 					result_out = true;
 					break;
-				case TypeNameKind::F64:
-					result_out = true;
-					break;
 				case TypeNameKind::Any:
 					result_out = true;
 					break;
@@ -488,9 +425,6 @@ recheck:
 			break;
 		case TypeNameKind::F64:
 			switch (base_type->type_name_kind) {
-				case TypeNameKind::F32:
-					result_out = false;
-					break;
 				case TypeNameKind::F64:
 					result_out = true;
 					break;

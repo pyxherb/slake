@@ -122,7 +122,7 @@ peff::Option<CompilationError> slkc::_compile_simple_assign_expr(
 				{ slake::Value(slake::ValueType::RegIndex, result_out.idx_result_reg_out), slake::Value(slake::ValueType::RegIndex, rhs_reg) }));
 
 			if (lhs_result.evaluated_final_member && (lhs_result.evaluated_final_member->get_ast_node_type() == AstNodeType::Var)) {
-				if (rhs_result.evaluated_type->type_name_kind == TypeNameKind::Null) {
+				if (rhs_result.evaluated_type->tn_kind == TypeNameKind::Null) {
 					SLKC_RETURN_IF_COMP_ERROR(path_env->set_local_var_null_override(lhs_result.evaluated_final_member.cast_to<VarNode>(), NullOverrideType::Nullify));
 				} else {
 					if (rhs_result.evaluated_type->is_nullable) {
@@ -175,7 +175,7 @@ peff::Option<CompilationError> slkc::_compile_simple_assign_expr(
 			result_out.idx_result_reg_out = rhs_reg;
 
 			if (lhs_result.evaluated_final_member && (lhs_result.evaluated_final_member->get_ast_node_type() == AstNodeType::Var)) {
-				if (rhs_result.evaluated_type->type_name_kind == TypeNameKind::Null) {
+				if (rhs_result.evaluated_type->tn_kind == TypeNameKind::Null) {
 					SLKC_RETURN_IF_COMP_ERROR(path_env->set_local_var_null_override(lhs_result.evaluated_final_member.cast_to<VarNode>(), NullOverrideType::Nullify));
 				} else {
 					if (rhs_result.evaluated_type->is_nullable) {
@@ -331,8 +331,16 @@ peff::Option<CompilationError> slkc::_compile_simple_lor_binary_expr(
 			uint32_t cmp_end_label_id;
 			SLKC_RETURN_IF_COMP_ERROR(compilation_context->alloc_label(cmp_end_label_id));
 
-			if ((e = _compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, bool_type.cast_to<TypeNameNode>(), expr->lhs, lhs_type, result))) {
-				if (auto re = _compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, bool_type.cast_to<TypeNameNode>(), expr->rhs, rhs_type, result); re) {
+			PathEnv sub_path_envs[2] = {
+				PathEnv(compile_env->allocator.get()),
+				PathEnv(compile_env->allocator.get())
+			};
+
+			sub_path_envs[0].set_parent(path_env);
+			sub_path_envs[1].set_parent(path_env);
+
+			if ((e = _compile_or_cast_operand(compile_env, compilation_context, &sub_path_envs[0], ExprEvalPurpose::RValue, bool_type.cast_to<TypeNameNode>(), expr->lhs, lhs_type, result))) {
+				if (auto re = _compile_or_cast_operand(compile_env, compilation_context, &sub_path_envs[1], ExprEvalPurpose::RValue, bool_type.cast_to<TypeNameNode>(), expr->rhs, rhs_type, result); re) {
 					if (!compile_env->errors.push_back(std::move(*e))) {
 						return gen_out_of_memory_comp_error();
 					}
@@ -357,7 +365,7 @@ peff::Option<CompilationError> slkc::_compile_simple_lor_binary_expr(
 
 			compilation_context->set_label_offset(post_branch_label_id, compilation_context->get_cur_ins_off());
 
-			SLKC_RETURN_IF_COMP_ERROR(_compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, bool_type.cast_to<TypeNameNode>(), expr->rhs, rhs_type, result));
+			SLKC_RETURN_IF_COMP_ERROR(_compile_or_cast_operand(compile_env, compilation_context, &sub_path_envs[1], ExprEvalPurpose::RValue, bool_type.cast_to<TypeNameNode>(), expr->rhs, rhs_type, result));
 			rhs_reg = result.idx_result_reg_out;
 			SLKC_RETURN_IF_COMP_ERROR(compilation_context->emit_ins(
 				idx_sld,
@@ -382,6 +390,8 @@ peff::Option<CompilationError> slkc::_compile_simple_lor_binary_expr(
 				{ slake::Value((uint32_t)post_branch_phi_src_off), slake::Value(slake::ValueType::RegIndex, lhs_reg),
 					slake::Value((uint32_t)cmp_end_phi_src_off), slake::Value(slake::ValueType::RegIndex, tmp_result_reg) }));
 			result_out.idx_result_reg_out = tmp_result_reg;
+
+			SLKC_RETURN_IF_COMP_ERROR(combine_parallel_path_env(compile_env->allocator.get(), compile_env, compilation_context, *path_env, sub_path_envs, 2));
 
 			break;
 		}
@@ -559,8 +569,8 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 	}
 
 	// Deal with the RHS to LHS user binary operator.
-	if ((decayed_rhs_type->type_name_kind == TypeNameKind::Custom) &&
-		(decayed_lhs_type->type_name_kind != TypeNameKind::Custom)) {
+	if ((decayed_rhs_type->tn_kind == TypeNameKind::Custom) &&
+		(decayed_lhs_type->tn_kind != TypeNameKind::Custom)) {
 		switch (expr->binary_op) {
 			case BinaryOp::Add:
 			case BinaryOp::Sub:
@@ -822,21 +832,21 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 						SLKC_RETURN_IF_COMP_ERROR(is_unsigned(decayed_lhs_type, lhs_pre));
 						SLKC_RETURN_IF_COMP_ERROR(is_unsigned(decayed_rhs_type, rhs_pre));
 						if (lhs_pre && rhs_pre) {
-							SLKC_RETURN_IF_COMP_ERROR(deduce_common_type(decayed_lhs_type, decayed_rhs_type, main_operation_type));
+							SLKC_RETURN_IF_COMP_ERROR(infer_common_type(decayed_lhs_type, decayed_rhs_type, main_operation_type));
 							break;
 						}
 
 						SLKC_RETURN_IF_COMP_ERROR(is_signed(decayed_lhs_type, lhs_pre));
 						SLKC_RETURN_IF_COMP_ERROR(is_signed(decayed_rhs_type, rhs_pre));
 						if (lhs_pre && rhs_pre) {
-							SLKC_RETURN_IF_COMP_ERROR(deduce_common_type(decayed_lhs_type, decayed_rhs_type, main_operation_type));
+							SLKC_RETURN_IF_COMP_ERROR(infer_common_type(decayed_lhs_type, decayed_rhs_type, main_operation_type));
 							break;
 						}
 
 						SLKC_RETURN_IF_COMP_ERROR(is_floating_point(decayed_lhs_type, lhs_pre));
 						SLKC_RETURN_IF_COMP_ERROR(is_floating_point(decayed_rhs_type, rhs_pre));
 						if (lhs_pre && rhs_pre) {
-							SLKC_RETURN_IF_COMP_ERROR(deduce_common_type(decayed_lhs_type, decayed_rhs_type, main_operation_type));
+							SLKC_RETURN_IF_COMP_ERROR(infer_common_type(decayed_lhs_type, decayed_rhs_type, main_operation_type));
 							break;
 						}
 					}
@@ -850,7 +860,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 			}
 		}
 
-		switch (main_operation_type->type_name_kind) {
+		switch (main_operation_type->tn_kind) {
 			case TypeNameKind::I8:
 			case TypeNameKind::I16:
 			case TypeNameKind::I32:

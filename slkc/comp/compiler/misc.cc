@@ -9,7 +9,7 @@ SLKC_API peff::Option<CompilationError> slkc::get_succeeding_enum_value(
 	AstNodePtr<ExprNode> last_value,
 	AstNodePtr<ExprNode> &value_out) {
 	if (last_value) {
-		switch (base_type->type_name_kind) {
+		switch (base_type->tn_kind) {
 			case TypeNameKind::I8:
 				if (!(value_out = make_ast_node<I8LiteralExprNode>(
 						  compile_env->allocator.get(),
@@ -113,7 +113,7 @@ SLKC_API peff::Option<CompilationError> slkc::get_succeeding_enum_value(
 				std::terminate();
 		}
 	} else {
-		switch (base_type->type_name_kind) {
+		switch (base_type->tn_kind) {
 			case TypeNameKind::I8:
 				if (!(value_out = make_ast_node<I8LiteralExprNode>(
 						  compile_env->allocator.get(),

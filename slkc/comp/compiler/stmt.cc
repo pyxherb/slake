@@ -434,7 +434,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_if_stmt(
 	SLKC_RETURN_IF_COMP_ERROR(eval_expr_type(compile_env, compilation_context, path_env, s->cond, expr_type, bool_type.cast_to<TypeNameNode>()));
 
 	PathEnv cond_env(compile_env->allocator.get());
-	cond_env.set_parent_env(path_env);
+	cond_env.set_parent(path_env);
 
 	PathEnv inner_path_env[2] = {
 		PathEnv(compile_env->allocator.get()),
@@ -480,7 +480,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_if_stmt(
 		compilation_context->set_label_offset(true_label, compilation_context->get_cur_ins_off());
 
 		{
-			inner_path_env[0].set_parent_env(&cond_env);
+			inner_path_env[0].set_parent(&cond_env);
 			inner_path_env[0].exec_possibility =
 				const_cond_expr
 					? (const_cond_expr.cast_to<BoolLiteralExprNode>()->data
@@ -499,7 +499,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_if_stmt(
 		compilation_context->set_label_offset(false_label, compilation_context->get_cur_ins_off());
 
 		if (s->false_body) {
-			inner_path_env[1].set_parent_env(path_env);
+			inner_path_env[1].set_parent(path_env);
 			inner_path_env[1].exec_possibility =
 				const_cond_expr
 					? (const_cond_expr.cast_to<BoolLiteralExprNode>()->data
@@ -605,7 +605,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_while_stmt(
 
 	{
 		PathEnv body_path_env(compile_env->allocator.get());
-		body_path_env.set_parent_env(path_env);
+		body_path_env.set_parent(path_env);
 		body_path_env.exec_possibility =
 			const_cond_expr
 				? (const_cond_expr.cast_to<BoolLiteralExprNode>()->data
@@ -1075,7 +1075,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_return_stmt(
 	uint32_t reg;
 
 	if (s->value) {
-		if (compile_env->cur_overloading->return_type->type_name_kind == TypeNameKind::Void)
+		if (compile_env->cur_overloading->return_type->tn_kind == TypeNameKind::Void)
 			return CompilationError(s->value->token_range, CompilationErrorKind::ReturnValueTypeDoesNotMatch);
 		CompileExprResult result(compile_env->allocator.get());
 

@@ -301,7 +301,7 @@ peff::Option<CompilationError> select_single_matching_overloading(CompileEnv *co
 				token_range,
 				CompilationErrorKind::MemberIsNotAccessible);
 	} else {
-		if (desired_type && (desired_type->type_name_kind == TypeNameKind::Fn)) {
+		if (desired_type && (desired_type->tn_kind == TypeNameKind::Fn)) {
 			AstNodePtr<FnTypeNameNode> tn = desired_type.cast_to<FnTypeNameNode>();
 			peff::DynArray<AstNodePtr<FnOverloadingNode>> matched_overloadings(compile_env->allocator.get());
 
@@ -363,7 +363,7 @@ static peff::Option<CompilationError> _determine_node_type(CompileEnv *compile_e
 
 			SLKC_RETURN_IF_COMP_ERROR(get_unpacked_type_of(original_type, unpacked_type_name_node));
 
-			if ((original_type->type_name_kind != TypeNameKind::Ref) && (!unpacked_type_name_node)) {
+			if ((original_type->tn_kind != TypeNameKind::Ref) && (!unpacked_type_name_node)) {
 				AstNodePtr<RefTypeNameNode> t;
 
 				if (!(t = make_ast_node<RefTypeNameNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->document, AstNodePtr<TypeNameNode>()))) {
@@ -487,7 +487,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 			AstNodePtr<TypeNameNode> tn = result.evaluated_type;
 
 		determine_initial_member:
-			switch (tn->type_name_kind) {
+			switch (tn->tn_kind) {
 				case TypeNameKind::Void:
 				case TypeNameKind::I8:
 				case TypeNameKind::I16:
@@ -637,7 +637,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 
 					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error, remove_ref_of_type(result_out.evaluated_type, decayed_target_type));
 
-					if (decayed_target_type->type_name_kind != TypeNameKind::Fn) {
+					if (decayed_target_type->tn_kind != TypeNameKind::Fn) {
 						return CompilationError(e->id_ref_ptr->token_range, CompilationErrorKind::TargetIsNotCallable);
 					}
 
@@ -931,7 +931,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 
 					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error, remove_ref_of_type(result_out.evaluated_type, decayed_target_type));
 
-					if (decayed_target_type->type_name_kind != TypeNameKind::Fn) {
+					if (decayed_target_type->tn_kind != TypeNameKind::Fn) {
 						return CompilationError(e->id_ref_ptr->token_range, CompilationErrorKind::TargetIsNotCallable);
 					}
 
@@ -1101,7 +1101,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 
 					if (t) {
 						if (tn) {
-							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error, deduce_common_type(t, tn, tn));
+							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error, infer_common_type(t, tn, tn));
 							if (!tn)
 								break;
 						} else {
@@ -1118,7 +1118,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 					return gen_out_of_memory_comp_error();
 				}
 			} else {
-				switch (desired_type->type_name_kind) {
+				switch (desired_type->tn_kind) {
 					case TypeNameKind::Array:
 						tn = desired_type.cast_to<ArrayTypeNameNode>()->element_type;
 						break;
@@ -1213,7 +1213,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 				for (size_t i = 0, j = 0; i < e->args.size(); ++i, ++j) {
 					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error, eval_expr_type(compile_env, compilation_context, path_env, e->args.at(i), arg_types.at(j)));
 
-					if (arg_types.at(j)->type_name_kind == TypeNameKind::UnpackedArgs) {
+					if (arg_types.at(j)->tn_kind == TypeNameKind::UnpackedArgs) {
 						AstNodePtr<UnpackedArgsTypeNameNode> t = arg_types.at(i).cast_to<UnpackedArgsTypeNameNode>();
 
 						if (!arg_types.resize(arg_types.size() + t->param_types.size() - 1)) {
@@ -1271,7 +1271,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 
 					// SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error, simplify_param_list_type_name_tree(arg_types.at(j), compile_env->allocator.get(), arg_types.at(j)));
 
-					if (arg_types.at(j)->type_name_kind == TypeNameKind::UnpackedArgs) {
+					if (arg_types.at(j)->tn_kind == TypeNameKind::UnpackedArgs) {
 						AstNodePtr<UnpackedArgsTypeNameNode> t = arg_types.at(i).cast_to<UnpackedArgsTypeNameNode>();
 
 						if (!arg_types.resize(arg_types.size() + t->param_types.size() - 1)) {
@@ -1354,7 +1354,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 
 			for (size_t i = e->args.size(); i; --i) {
 				const auto &passing_info = arg_passing_info.at(i - 1);
-				switch (passing_info.first->type_name_kind) {
+				switch (passing_info.first->tn_kind) {
 					case TypeNameKind::UnpackedArgs:
 						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error,
 							compilation_context->emit_ins(
@@ -1476,7 +1476,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 		case ExprKind::New: {
 			AstNodePtr<NewExprNode> e = expr.cast_to<NewExprNode>();
 
-			if (e->target_type->type_name_kind != TypeNameKind::Custom) {
+			if (e->target_type->tn_kind != TypeNameKind::Custom) {
 				return CompilationError(e->target_type->token_range, CompilationErrorKind::TypeIsNotConstructible);
 			}
 
@@ -1721,7 +1721,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 
 						if (t) {
 							if (common_type) {
-								SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error, deduce_common_type(t, common_type, common_type));
+								SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error, infer_common_type(t, common_type, common_type));
 								if (!common_type)
 									break;
 							} else {
@@ -1736,7 +1736,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 				}
 			}
 
-			// Check if the return value requires a L-Value expression.
+			// Check if the return value requires an L-Value expression.
 			bool is_lvalue;
 			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error, is_lvalue_type(return_type, is_lvalue));
 			switch (eval_purpose) {
@@ -1878,7 +1878,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 
 				{
 					PathEnv &body_path_env = body_path_envs.at(i);
-					body_path_env.set_parent_env(path_env);
+					body_path_env.set_parent(path_env);
 					body_path_env.exec_possibility = PathPossibility::May;	 // TODO: Check if the path will always reached hit after an assignment (if exists).
 					body_path_env.no_return_possibility = PathPossibility::May;
 					body_path_env.break_possibility = PathPossibility::Never;

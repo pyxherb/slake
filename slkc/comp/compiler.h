@@ -64,7 +64,7 @@ namespace slkc {
 		PathEnv(PathEnv &&) noexcept = default;
 		SLAKE_FORCEINLINE ~PathEnv() {}
 
-		SLAKE_FORCEINLINE void set_parent_env(PathEnv *parent) noexcept {
+		SLAKE_FORCEINLINE void set_parent(PathEnv *parent) noexcept {
 			this->parent = parent;
 		}
 		SLAKE_API peff::Option<NullOverrideType> lookup_var_null_override(const AstNodePtr<VarNode> &var_node);
@@ -578,7 +578,7 @@ namespace slkc {
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> is_scoped_enum_base_type(
 		AstNodePtr<TypeNameNode> lhs,
 		bool &result_out);
-	[[nodiscard]] SLKC_API peff::Option<CompilationError> deduce_common_type(
+	[[nodiscard]] SLKC_API peff::Option<CompilationError> infer_common_type(
 		AstNodePtr<TypeNameNode> lhs,
 		AstNodePtr<TypeNameNode> rhs,
 		AstNodePtr<TypeNameNode> &type_name_out);

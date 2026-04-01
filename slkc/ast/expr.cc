@@ -793,6 +793,8 @@ SLKC_API CastExprNode::CastExprNode(const CastExprNode &rhs, peff::Alloc *alloca
 		return;
 	}
 
+	nullable_token_index = rhs.nullable_token_index;
+
 	as_keyword_token_index = rhs.as_keyword_token_index;
 
 	succeeded_out = true;

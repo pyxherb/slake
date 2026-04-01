@@ -66,7 +66,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_unary_expr(
 	uint32_t sld_index;
 	SLKC_RETURN_IF_COMP_ERROR(compilation_context->register_source_loc_desc(token_range_to_sld(expr->token_range), sld_index));
 
-	switch (decayed_operand_type->type_name_kind) {
+	switch (decayed_operand_type->tn_kind) {
 		case TypeNameKind::I8:
 		case TypeNameKind::I16:
 		case TypeNameKind::I32:

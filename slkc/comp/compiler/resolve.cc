@@ -295,7 +295,7 @@ SLKC_API peff::Option<CompilationError> slkc::resolve_instance_member(
 		case AstNodeType::Var: {
 			AstNodePtr<VarNode> m = member_node.cast_to<VarNode>();
 
-			if (m->type->type_name_kind != TypeNameKind::Custom) {
+			if (m->type->tn_kind != TypeNameKind::Custom) {
 				result = {};
 				break;
 			}
@@ -848,7 +848,7 @@ resolved:
 				if (c->base_type) {
 					auto bt = c->base_type;
 
-					switch (bt->type_name_kind) {
+					switch (bt->tn_kind) {
 						case TypeNameKind::I8:
 						case TypeNameKind::I16:
 						case TypeNameKind::I32:
@@ -881,7 +881,7 @@ resolved:
 }
 
 SLKC_API peff::Option<CompilationError> slkc::visit_base_class(AstNodePtr<TypeNameNode> cls, AstNodePtr<ClassNode> &class_out, peff::Set<AstNodePtr<MemberNode>> *walked_nodes) {
-	if (cls && (cls->type_name_kind == TypeNameKind::Custom)) {
+	if (cls && (cls->tn_kind == TypeNameKind::Custom)) {
 		AstNodePtr<MemberNode> base_type;
 
 		SLKC_RETURN_IF_COMP_ERROR(resolve_custom_type_name(nullptr, cls->document->shared_from_this(), cls.cast_to<CustomTypeNameNode>(), base_type, walked_nodes));
@@ -902,7 +902,7 @@ SLKC_API peff::Option<CompilationError> slkc::visit_base_class(AstNodePtr<TypeNa
 }
 
 SLKC_API peff::Option<CompilationError> slkc::visit_base_interface(AstNodePtr<TypeNameNode> cls, AstNodePtr<InterfaceNode> &class_out, peff::Set<AstNodePtr<MemberNode>> *walked_nodes) {
-	if (cls && (cls->type_name_kind == TypeNameKind::Custom)) {
+	if (cls && (cls->tn_kind == TypeNameKind::Custom)) {
 		AstNodePtr<MemberNode> base_type;
 
 		SLKC_RETURN_IF_COMP_ERROR(resolve_custom_type_name(nullptr, cls->document->shared_from_this(), cls.cast_to<CustomTypeNameNode>(), base_type, walked_nodes));

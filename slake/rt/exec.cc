@@ -2771,6 +2771,34 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 					value_out.value_type = ValueType::Reference;
 					break;
 				default:
+					// TODO: Use InvalidTypeCastError instead.
+					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+			}
+
+			break;
+		}
+		case Opcode::NULLCAST: {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 2>(this, output, num_operands));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_type<ValueType::TypeName>(this, operands[0]));
+			if (!_is_register_valid(cur_major_frame, output)) {
+				// The register does not present.
+				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+			}
+
+			const Value *v;
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], v));
+
+			auto t = operands[0].get_type_name();
+			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
+
+			switch (t.type_id) {
+				case TypeId::Instance:
+					// TODO: Implement it.
+					value_out.as_reference = v->get_reference();
+					value_out.value_type = ValueType::Reference;
+					break;
+				default:
+					// TODO: Use InvalidTypeCastError instead.
 					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 

@@ -100,7 +100,8 @@ namespace slake {
 		PUSHEH,	  // Push an exception handler
 		LEXCEPT,  // Load current exception
 
-		CAST,  // Cast
+		CAST,	   // Cast
+		NULLCAST,  // Nullable cast
 
 		APTOTUPLE,	// Cast an argument pack to a tuple
 

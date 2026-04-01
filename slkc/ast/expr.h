@@ -536,11 +536,15 @@ namespace slkc {
 	public:
 		AstNodePtr<TypeNameNode> target_type;
 		AstNodePtr<ExprNode> source;
-		size_t as_keyword_token_index = SIZE_MAX;
+		size_t nullable_token_index = SIZE_MAX, as_keyword_token_index = SIZE_MAX;
 
 		SLKC_API CastExprNode(peff::Alloc *self_allocator, const peff::SharedPtr<Document> &document);
 		SLKC_API CastExprNode(const CastExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeeded_out);
 		SLKC_API virtual ~CastExprNode();
+
+		SLAKE_FORCEINLINE bool is_nullable_cast() const noexcept {
+			return nullable_token_index != SIZE_MAX;
+		}
 	};
 
 	class MatchExprNode : public ExprNode {

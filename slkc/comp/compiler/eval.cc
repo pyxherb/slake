@@ -1039,7 +1039,7 @@ reeval:
 					SLKC_RETURN_IF_COMP_ERROR(is_convertible(decayed_lhs_type, decayed_rhs_type, true, lhs_to_rhs_viability));
 					SLKC_RETURN_IF_COMP_ERROR(is_convertible(decayed_rhs_type, decayed_lhs_type, true, rhs_to_lhs_viability));
 					if (lhs_to_rhs_viability && rhs_to_lhs_viability) {
-						SLKC_RETURN_IF_COMP_ERROR(deduce_common_type(decayed_lhs_type, decayed_rhs_type, main_operation_type));
+						SLKC_RETURN_IF_COMP_ERROR(infer_common_type(decayed_lhs_type, decayed_rhs_type, main_operation_type));
 					}
 					if (!main_operation_type) {
 						if (lhs_to_rhs_viability)
@@ -1050,7 +1050,7 @@ reeval:
 				}
 			}
 
-			switch (main_operation_type->type_name_kind) {
+			switch (main_operation_type->tn_kind) {
 				case TypeNameKind::I8:
 					SLKC_RETURN_IF_COMP_ERROR(eval_integral_binary_op_expr<I8LiteralExprNode>(
 						compile_env, compilation_context, path_env,
@@ -1180,7 +1180,7 @@ reeval:
 			}
 
 			// The type may be nullable, but the value will still be non-nullable.
-			switch (e->target_type->type_name_kind) {
+			switch (e->target_type->tn_kind) {
 				case TypeNameKind::I8: {
 					AstNodePtr<I8LiteralExprNode> l;
 

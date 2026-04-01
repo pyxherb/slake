@@ -526,7 +526,7 @@ static peff::Option<CompilationError> _is_struct_recursed(
 
 					AstNodePtr<MemberNode> m;
 
-					if (auto t = var_member->type; t->type_name_kind == TypeNameKind::Custom) {
+					if (auto t = var_member->type; t->tn_kind == TypeNameKind::Custom) {
 						SLKC_RETURN_IF_COMP_ERROR(resolve_custom_type_name(nullptr, document, t.cast_to<CustomTypeNameNode>(), m));
 
 						switch (m->get_ast_node_type()) {
@@ -605,7 +605,7 @@ static peff::Option<CompilationError> _is_struct_recursed(
 
 					AstNodePtr<MemberNode> m;
 
-					if (auto t = var_member->type; t->type_name_kind == TypeNameKind::Custom) {
+					if (auto t = var_member->type; t->tn_kind == TypeNameKind::Custom) {
 						SLKC_RETURN_IF_COMP_ERROR(resolve_custom_type_name(nullptr, document, t.cast_to<CustomTypeNameNode>(), m));
 
 						switch (m->get_ast_node_type()) {
@@ -693,7 +693,7 @@ SLKC_API peff::Option<CompilationError> slkc::is_implemented_by_class(
 	AstNodePtr<TypeNameNode> current_type = derived->base_type;
 
 	while (current_type) {
-		if (current_type->type_name_kind != TypeNameKind::Custom) {
+		if (current_type->tn_kind != TypeNameKind::Custom) {
 			goto malformed;
 		}
 
@@ -769,7 +769,7 @@ SLKC_API peff::Option<CompilationError> slkc::is_base_of(
 	AstNodePtr<TypeNameNode> current_type;
 
 	while ((current_type = current_class->base_type)) {
-		if (current_type->type_name_kind != TypeNameKind::Custom) {
+		if (current_type->tn_kind != TypeNameKind::Custom) {
 			goto malformed;
 		}
 

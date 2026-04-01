@@ -44,14 +44,14 @@ namespace slkc {
 
 	class TypeNameNode : public AstNode {
 	public:
-		const TypeNameKind type_name_kind;
+		const TypeNameKind tn_kind;
 		bool is_final = false;
 		bool is_local = false;
 		bool is_nullable = false;
 
 		size_t idx_final_token = SIZE_MAX, idx_local_token = SIZE_MAX, idx_nullable_token = SIZE_MAX;
 
-		SLKC_API TypeNameNode(TypeNameKind type_name_kind, peff::Alloc *self_allocator, const peff::SharedPtr<Document> &document);
+		SLKC_API TypeNameNode(TypeNameKind tn_kind, peff::Alloc *self_allocator, const peff::SharedPtr<Document> &document);
 		SLKC_API TypeNameNode(const TypeNameNode &rhs, peff::Alloc *self_allocator, DuplicationContext &context);
 		SLKC_API virtual ~TypeNameNode();
 

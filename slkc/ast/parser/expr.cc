@@ -845,6 +845,11 @@ SLKC_API peff::Option<SyntaxError> Parser::parse_expr(int precedence, AstNodePtr
 
 					lhs = expr.cast_to<ExprNode>();
 
+					if (auto t = peek_token(); t->token_id == TokenId::Question) {
+						next_token();
+						expr->nullable_token_index = t->index;
+					}
+
 					if ((syntax_error = parse_type_name(expr->target_type)))
 						goto gen_bad_expr;
 

@@ -303,16 +303,20 @@ namespace slkc {
 		AstNodePtr<TypeNameNode> evaluated_type;
 		AstNodePtr<MemberNode> evaluated_final_member;
 
+		peff::Set<AstNodePtr<VarNode>> null_cmp_vars, nonnull_cmp_vars;
+
 		// For parameter name query, etc, if exists.
 		AstNodePtr<FnNode> call_target_fn_slot;
 		peff::DynArray<AstNodePtr<FnOverloadingNode>> call_target_matched_overloadings;
 		uint32_t idx_this_reg_out = UINT32_MAX, idx_result_reg_out = UINT32_MAX;
 
-		SLAKE_FORCEINLINE CompileExprResult(peff::Alloc *allocator) : call_target_matched_overloadings(allocator) {}
+		SLAKE_FORCEINLINE CompileExprResult(peff::Alloc *allocator) : call_target_matched_overloadings(allocator), null_cmp_vars(allocator), nonnull_cmp_vars(allocator) {}
 
 		SLAKE_FORCEINLINE void reset() {
 			evaluated_type = {};
 			evaluated_final_member = {};
+			null_cmp_vars.clear();
+			nonnull_cmp_vars.clear();
 			call_target_fn_slot = {};
 			call_target_matched_overloadings.clear_and_shrink();
 			idx_this_reg_out = UINT32_MAX;

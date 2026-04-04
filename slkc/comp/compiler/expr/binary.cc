@@ -50,6 +50,77 @@ peff::Option<CompilationError> slkc::_compile_simple_binary_expr(
 			SLKC_RETURN_IF_COMP_ERROR(_compile_or_cast_operand(compile_env, compilation_context, path_env, rhs_eval_purpose, desired_rhs_type, expr->rhs, rhs_type, rhs_result));
 			rhs_reg = rhs_result.idx_result_reg_out;
 
+			//
+			// Apply variable nullity overrides.
+			// TODO: Use another method that does not spread to unrelated outer PathEnv in the statement instead of this way.
+			//
+			switch (expr->binary_op) {
+				case BinaryOp::StrictEq:
+				case BinaryOp::Eq: {
+					if (lhs_result.evaluated_final_member && (lhs_result.evaluated_final_member->get_ast_node_type() == AstNodeType::Var)) {
+						AstNodePtr<VarNode> v = lhs_result.evaluated_final_member.cast_to<VarNode>();
+						if (v->type->is_nullable) {
+							if (rhs_type->tn_kind == TypeNameKind::Null) {
+								// v == null
+								SLKC_RETURN_IF_COMP_ERROR(path_env->set_local_var_null_override(v, NullOverrideType::Nullify));
+							} else if (rhs_type->is_nullable) {
+								// v == T?
+								SLKC_RETURN_IF_COMP_ERROR(path_env->set_local_var_null_override(v, NullOverrideType::Uncertain));
+							} else {
+								// v == T
+								SLKC_RETURN_IF_COMP_ERROR(path_env->set_local_var_null_override(v, NullOverrideType::Denullify));
+							}
+						}
+					} else {
+						if (rhs_result.evaluated_final_member && (rhs_result.evaluated_final_member->get_ast_node_type() == AstNodeType::Var)) {
+							AstNodePtr<VarNode> v = rhs_result.evaluated_final_member.cast_to<VarNode>();
+							if (v->type->is_nullable) {
+								if (lhs_type->tn_kind == TypeNameKind::Null) {
+									// null == v
+									SLKC_RETURN_IF_COMP_ERROR(path_env->set_local_var_null_override(v, NullOverrideType::Nullify));
+								} else if (lhs_type->is_nullable) {
+									// T? == v
+									SLKC_RETURN_IF_COMP_ERROR(path_env->set_local_var_null_override(v, NullOverrideType::Uncertain));
+								} else {
+									// T == v
+									SLKC_RETURN_IF_COMP_ERROR(path_env->set_local_var_null_override(v, NullOverrideType::Denullify));
+								}
+							}
+						}
+					}
+					break;
+				}
+				case BinaryOp::StrictNeq:
+				case BinaryOp::Neq: {
+					if (lhs_result.evaluated_final_member && (lhs_result.evaluated_final_member->get_ast_node_type() == AstNodeType::Var)) {
+						AstNodePtr<VarNode> v = lhs_result.evaluated_final_member.cast_to<VarNode>();
+						if (v->type->is_nullable) {
+							if (rhs_type->tn_kind == TypeNameKind::Null) {
+								// v != null
+								SLKC_RETURN_IF_COMP_ERROR(path_env->set_local_var_null_override(v, NullOverrideType::Denullify));
+							} else {
+								// v != T? and v != T are undeterminable
+							}
+						}
+					} else {
+						if (rhs_result.evaluated_final_member && (rhs_result.evaluated_final_member->get_ast_node_type() == AstNodeType::Var)) {
+							AstNodePtr<VarNode> v = rhs_result.evaluated_final_member.cast_to<VarNode>();
+							if (v->type->is_nullable) {
+								if (lhs_type->tn_kind == TypeNameKind::Null) {
+									// null != v
+									SLKC_RETURN_IF_COMP_ERROR(path_env->set_local_var_null_override(v, NullOverrideType::Denullify));
+								} else {
+									// T? != v and T != v are undeterminable
+								}
+							}
+						}
+					}
+					break;
+				}
+				default:
+					break;
+			}
+
 			uint32_t output_reg;
 			SLKC_RETURN_IF_COMP_ERROR(compilation_context->alloc_reg(output_reg));
 			result_out.idx_result_reg_out = output_reg;
@@ -803,60 +874,64 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 		}
 	}
 
+	SLKC_RETURN_IF_COMP_ERROR(
+		eval_actual_expr_type(compile_env, compilation_context, path_env, expr->lhs, actual_lhs_type));
+	SLKC_RETURN_IF_COMP_ERROR(
+		eval_actual_expr_type(compile_env, compilation_context, path_env, expr->rhs, actual_rhs_type));
+	SLKC_RETURN_IF_COMP_ERROR(
+		remove_ref_of_type(actual_lhs_type, decayed_actual_lhs_type));
+	SLKC_RETURN_IF_COMP_ERROR(
+		remove_ref_of_type(actual_rhs_type, decayed_actual_rhs_type));
 	{
 		AstNodePtr<TypeNameNode> main_operation_type;
 
-		switch (expr->binary_op) {
-			case BinaryOp::Assign:
-				SLKC_RETURN_IF_COMP_ERROR(
-					eval_actual_expr_type(compile_env, compilation_context, path_env, expr->lhs, actual_lhs_type));
-				SLKC_RETURN_IF_COMP_ERROR(
-					eval_actual_expr_type(compile_env, compilation_context, path_env, expr->rhs, actual_rhs_type));
-				SLKC_RETURN_IF_COMP_ERROR(
-					remove_ref_of_type(actual_lhs_type, decayed_actual_lhs_type));
-				SLKC_RETURN_IF_COMP_ERROR(
-					remove_ref_of_type(actual_rhs_type, decayed_actual_rhs_type));
-				main_operation_type = decayed_lhs_type;
-				break;
-			case BinaryOp::Shl:
-			case BinaryOp::Shr:
-			case BinaryOp::ShlAssign:
-			case BinaryOp::ShrAssign:
-			case BinaryOp::Subscript:
-				main_operation_type = decayed_lhs_type;
-				break;
-			default: {
-				do {
-					{
-						bool lhs_pre, rhs_pre;
-						SLKC_RETURN_IF_COMP_ERROR(is_unsigned(decayed_lhs_type, lhs_pre));
-						SLKC_RETURN_IF_COMP_ERROR(is_unsigned(decayed_rhs_type, rhs_pre));
-						if (lhs_pre && rhs_pre) {
-							SLKC_RETURN_IF_COMP_ERROR(infer_common_type(decayed_lhs_type, decayed_rhs_type, main_operation_type));
-							break;
+		if (decayed_lhs_type->tn_kind == TypeNameKind::Custom) {
+			main_operation_type = decayed_lhs_type;
+		} else {
+			switch (expr->binary_op) {
+				case BinaryOp::Assign:
+					main_operation_type = decayed_lhs_type;
+					break;
+				case BinaryOp::Shl:
+				case BinaryOp::Shr:
+				case BinaryOp::ShlAssign:
+				case BinaryOp::ShrAssign:
+				case BinaryOp::Subscript:
+					main_operation_type = decayed_lhs_type;
+					break;
+				default: {
+					do {
+						{
+							bool lhs_pre, rhs_pre;
+							SLKC_RETURN_IF_COMP_ERROR(is_unsigned(decayed_lhs_type, lhs_pre));
+							SLKC_RETURN_IF_COMP_ERROR(is_unsigned(decayed_rhs_type, rhs_pre));
+							if (lhs_pre && rhs_pre) {
+								SLKC_RETURN_IF_COMP_ERROR(infer_common_type(decayed_lhs_type, decayed_actual_rhs_type, main_operation_type));
+								break;
+							}
+
+							SLKC_RETURN_IF_COMP_ERROR(is_signed(decayed_lhs_type, lhs_pre));
+							SLKC_RETURN_IF_COMP_ERROR(is_signed(decayed_rhs_type, rhs_pre));
+							if (lhs_pre && rhs_pre) {
+								SLKC_RETURN_IF_COMP_ERROR(infer_common_type(decayed_lhs_type, decayed_actual_rhs_type, main_operation_type));
+								break;
+							}
+
+							SLKC_RETURN_IF_COMP_ERROR(is_floating_point(decayed_lhs_type, lhs_pre));
+							SLKC_RETURN_IF_COMP_ERROR(is_floating_point(decayed_rhs_type, rhs_pre));
+							if (lhs_pre && rhs_pre) {
+								SLKC_RETURN_IF_COMP_ERROR(infer_common_type(decayed_lhs_type, decayed_actual_rhs_type, main_operation_type));
+								break;
+							}
 						}
 
-						SLKC_RETURN_IF_COMP_ERROR(is_signed(decayed_lhs_type, lhs_pre));
-						SLKC_RETURN_IF_COMP_ERROR(is_signed(decayed_rhs_type, rhs_pre));
-						if (lhs_pre && rhs_pre) {
-							SLKC_RETURN_IF_COMP_ERROR(infer_common_type(decayed_lhs_type, decayed_rhs_type, main_operation_type));
-							break;
+						{
+							bool convertible_pre;
+							SLKC_RETURN_IF_COMP_ERROR(is_convertible(decayed_rhs_type, decayed_lhs_type, true, convertible_pre));
+							main_operation_type = convertible_pre ? decayed_lhs_type : decayed_rhs_type;
 						}
-
-						SLKC_RETURN_IF_COMP_ERROR(is_floating_point(decayed_lhs_type, lhs_pre));
-						SLKC_RETURN_IF_COMP_ERROR(is_floating_point(decayed_rhs_type, rhs_pre));
-						if (lhs_pre && rhs_pre) {
-							SLKC_RETURN_IF_COMP_ERROR(infer_common_type(decayed_lhs_type, decayed_rhs_type, main_operation_type));
-							break;
-						}
-					}
-
-					{
-						bool convertible_pre;
-						SLKC_RETURN_IF_COMP_ERROR(is_convertible(decayed_rhs_type, decayed_lhs_type, true, convertible_pre));
-						main_operation_type = convertible_pre ? decayed_lhs_type : decayed_rhs_type;
-					}
-				} while (false);
+					} while (false);
+				}
 			}
 		}
 
@@ -878,8 +953,8 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								path_env,
 								expr,
 								eval_purpose,
-								decayed_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
-								decayed_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
 								result_out,
 								slake::Opcode::ADD,
 								sld_index));
@@ -893,8 +968,8 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								path_env,
 								expr,
 								eval_purpose,
-								decayed_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
-								decayed_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
 								result_out,
 								slake::Opcode::SUB,
 								sld_index));
@@ -908,8 +983,8 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								path_env,
 								expr,
 								eval_purpose,
-								decayed_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
-								decayed_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
 								result_out,
 								slake::Opcode::MUL,
 								sld_index));
@@ -923,8 +998,8 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								path_env,
 								expr,
 								eval_purpose,
-								decayed_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
-								decayed_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
 								result_out,
 								slake::Opcode::DIV,
 								sld_index));
@@ -938,8 +1013,8 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								path_env,
 								expr,
 								eval_purpose,
-								decayed_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
-								decayed_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
 								result_out,
 								slake::Opcode::MOD,
 								sld_index));
@@ -953,8 +1028,8 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								path_env,
 								expr,
 								eval_purpose,
-								decayed_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
-								decayed_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
 								result_out,
 								slake::Opcode::AND,
 								sld_index));
@@ -968,8 +1043,8 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								path_env,
 								expr,
 								eval_purpose,
-								decayed_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
-								decayed_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
 								result_out,
 								slake::Opcode::OR,
 								sld_index));
@@ -983,8 +1058,8 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								path_env,
 								expr,
 								eval_purpose,
-								decayed_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
-								decayed_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
 								result_out,
 								slake::Opcode::XOR,
 								sld_index));
@@ -1030,7 +1105,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								path_env,
 								expr,
 								eval_purpose,
-								decayed_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
 								decayed_rhs_type,
 								u32_type.cast_to<TypeNameNode>(),
 								ExprEvalPurpose::RValue,
@@ -1047,7 +1122,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								path_env,
 								expr,
 								eval_purpose,
-								decayed_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
 								decayed_rhs_type,
 								u32_type.cast_to<TypeNameNode>(),
 								ExprEvalPurpose::RValue,
@@ -1081,7 +1156,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								expr,
 								eval_purpose,
 								lhs_type,
-								decayed_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
 								result_out,
 								slake::Opcode::ADD,
 								sld_index));
@@ -1096,7 +1171,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								expr,
 								eval_purpose,
 								lhs_type,
-								decayed_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
 								result_out,
 								slake::Opcode::SUB,
 								sld_index));
@@ -1111,7 +1186,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								expr,
 								eval_purpose,
 								lhs_type,
-								decayed_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
 								result_out,
 								slake::Opcode::MUL,
 								sld_index));
@@ -1126,7 +1201,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								expr,
 								eval_purpose,
 								lhs_type,
-								decayed_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
 								result_out,
 								slake::Opcode::DIV,
 								sld_index));
@@ -1141,7 +1216,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								expr,
 								eval_purpose,
 								lhs_type,
-								decayed_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
 								result_out,
 								slake::Opcode::MOD,
 								sld_index));
@@ -1156,7 +1231,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								expr,
 								eval_purpose,
 								lhs_type,
-								decayed_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
 								result_out,
 								slake::Opcode::AND,
 								sld_index));
@@ -1171,7 +1246,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								expr,
 								eval_purpose,
 								lhs_type,
-								decayed_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
 								result_out,
 								slake::Opcode::OR,
 								sld_index));
@@ -1186,7 +1261,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								expr,
 								eval_purpose,
 								lhs_type,
-								decayed_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
 								result_out,
 								slake::Opcode::XOR,
 								sld_index));
@@ -1243,8 +1318,8 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								path_env,
 								expr,
 								eval_purpose,
-								decayed_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
-								decayed_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
 								result_out,
 								slake::Opcode::EQ,
 								sld_index));
@@ -1259,8 +1334,8 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								path_env,
 								expr,
 								eval_purpose,
-								decayed_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
-								decayed_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
 								result_out,
 								slake::Opcode::NEQ,
 								sld_index));
@@ -1274,8 +1349,8 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								path_env,
 								expr,
 								eval_purpose,
-								decayed_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
-								decayed_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
 								result_out,
 								slake::Opcode::LT,
 								sld_index));
@@ -1289,8 +1364,8 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								path_env,
 								expr,
 								eval_purpose,
-								decayed_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
-								decayed_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
 								result_out,
 								slake::Opcode::GT,
 								sld_index));
@@ -1304,8 +1379,8 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								path_env,
 								expr,
 								eval_purpose,
-								decayed_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
-								decayed_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
 								result_out,
 								slake::Opcode::LTEQ,
 								sld_index));
@@ -1319,8 +1394,8 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								path_env,
 								expr,
 								eval_purpose,
-								decayed_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
-								decayed_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
 								result_out,
 								slake::Opcode::GTEQ,
 								sld_index));
@@ -1334,8 +1409,8 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								path_env,
 								expr,
 								eval_purpose,
-								decayed_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
-								decayed_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
 								result_out,
 								slake::Opcode::CMP,
 								sld_index));
@@ -1357,8 +1432,8 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								path_env,
 								expr,
 								eval_purpose,
-								decayed_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
-								decayed_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
 								result_out,
 								slake::Opcode::ADD,
 								sld_index));
@@ -1372,8 +1447,8 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								path_env,
 								expr,
 								eval_purpose,
-								decayed_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
-								decayed_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
 								result_out,
 								slake::Opcode::SUB,
 								sld_index));
@@ -1387,8 +1462,8 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								path_env,
 								expr,
 								eval_purpose,
-								decayed_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
-								decayed_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
 								result_out,
 								slake::Opcode::MUL,
 								sld_index));
@@ -1402,8 +1477,8 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								path_env,
 								expr,
 								eval_purpose,
-								decayed_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
-								decayed_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
 								result_out,
 								slake::Opcode::DIV,
 								sld_index));
@@ -1417,8 +1492,8 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								path_env,
 								expr,
 								eval_purpose,
-								decayed_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
-								decayed_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
 								result_out,
 								slake::Opcode::MOD,
 								sld_index));
@@ -1465,7 +1540,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								expr,
 								eval_purpose,
 								lhs_type,
-								decayed_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
 								result_out,
 								slake::Opcode::ADD,
 								sld_index));
@@ -1480,7 +1555,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								expr,
 								eval_purpose,
 								lhs_type,
-								decayed_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
 								result_out,
 								slake::Opcode::SUB,
 								sld_index));
@@ -1495,7 +1570,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								expr,
 								eval_purpose,
 								lhs_type,
-								decayed_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
 								result_out,
 								slake::Opcode::MUL,
 								sld_index));
@@ -1510,7 +1585,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								expr,
 								eval_purpose,
 								lhs_type,
-								decayed_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
 								result_out,
 								slake::Opcode::DIV,
 								sld_index));
@@ -1525,7 +1600,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								expr,
 								eval_purpose,
 								lhs_type,
-								decayed_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
 								result_out,
 								slake::Opcode::MOD,
 								sld_index));
@@ -1582,8 +1657,8 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								path_env,
 								expr,
 								eval_purpose,
-								decayed_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
-								decayed_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
 								result_out,
 								slake::Opcode::EQ,
 								sld_index));
@@ -1598,8 +1673,8 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								path_env,
 								expr,
 								eval_purpose,
-								decayed_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
-								decayed_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
 								result_out,
 								slake::Opcode::NEQ,
 								sld_index));
@@ -1613,8 +1688,8 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								path_env,
 								expr,
 								eval_purpose,
-								decayed_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
-								decayed_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
 								result_out,
 								slake::Opcode::LT,
 								sld_index));
@@ -1628,8 +1703,8 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								path_env,
 								expr,
 								eval_purpose,
-								decayed_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
-								decayed_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
 								result_out,
 								slake::Opcode::GT,
 								sld_index));
@@ -1643,8 +1718,8 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								path_env,
 								expr,
 								eval_purpose,
-								decayed_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
-								decayed_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
 								result_out,
 								slake::Opcode::LTEQ,
 								sld_index));
@@ -1658,8 +1733,8 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								path_env,
 								expr,
 								eval_purpose,
-								decayed_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
-								decayed_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
 								result_out,
 								slake::Opcode::GTEQ,
 								sld_index));
@@ -1673,8 +1748,8 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								path_env,
 								expr,
 								eval_purpose,
-								decayed_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
-								decayed_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
 								result_out,
 								slake::Opcode::CMP,
 								sld_index));
@@ -1695,8 +1770,8 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								path_env,
 								expr,
 								eval_purpose,
-								decayed_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
-								decayed_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
 								result_out,
 								slake::Opcode::AND,
 								sld_index));
@@ -1710,8 +1785,8 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								path_env,
 								expr,
 								eval_purpose,
-								decayed_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
-								decayed_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
 								result_out,
 								slake::Opcode::OR,
 								sld_index));
@@ -1725,8 +1800,8 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								path_env,
 								expr,
 								eval_purpose,
-								decayed_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
-								decayed_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
 								result_out,
 								slake::Opcode::XOR,
 								sld_index));
@@ -1789,7 +1864,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								expr,
 								eval_purpose,
 								lhs_type,
-								decayed_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
 								result_out,
 								slake::Opcode::AND,
 								sld_index));
@@ -1804,7 +1879,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								expr,
 								eval_purpose,
 								lhs_type,
-								decayed_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
 								result_out,
 								slake::Opcode::OR,
 								sld_index));
@@ -1819,7 +1894,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								expr,
 								eval_purpose,
 								lhs_type,
-								decayed_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
 								result_out,
 								slake::Opcode::XOR,
 								sld_index));
@@ -1834,8 +1909,8 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								path_env,
 								expr,
 								eval_purpose,
-								decayed_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
-								decayed_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
 								result_out,
 								slake::Opcode::EQ,
 								sld_index));
@@ -1850,8 +1925,8 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								path_env,
 								expr,
 								eval_purpose,
-								decayed_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
-								decayed_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
 								result_out,
 								slake::Opcode::NEQ,
 								sld_index));
@@ -1872,8 +1947,8 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								path_env,
 								expr,
 								eval_purpose,
-								decayed_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
-								decayed_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
 								result_out,
 								slake::Opcode::EQ,
 								sld_index));
@@ -1887,8 +1962,8 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								path_env,
 								expr,
 								eval_purpose,
-								decayed_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
-								decayed_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
 								result_out,
 								slake::Opcode::NEQ,
 								sld_index));
@@ -1909,8 +1984,8 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								path_env,
 								expr,
 								eval_purpose,
-								decayed_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
-								decayed_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
 								result_out,
 								slake::Opcode::EQ,
 								sld_index));
@@ -1924,8 +1999,8 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								path_env,
 								expr,
 								eval_purpose,
-								decayed_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
-								decayed_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_lhs_type, main_operation_type, ExprEvalPurpose::RValue,
+								decayed_actual_rhs_type, main_operation_type, ExprEvalPurpose::RValue,
 								result_out,
 								slake::Opcode::NEQ,
 								sld_index));

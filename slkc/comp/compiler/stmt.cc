@@ -289,7 +289,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_for_stmt(
 	}
 
 	if (s->cond) {
-		CompileExprResult result(compile_env->allocator.get());
+		CompileExprResult cond_result(compile_env->allocator.get()), step_result(compile_env->allocator.get());
 
 		uint32_t condition_reg;
 
@@ -319,8 +319,8 @@ SLKC_API peff::Option<CompilationError> slkc::compile_for_stmt(
 
 		compilation_context->set_label_offset(cond_label, compilation_context->get_cur_ins_off());
 
-		SLKC_RETURN_IF_COMP_ERROR(_compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, bool_type.cast_to<TypeNameNode>(), s->cond, expr_type, result));
-		condition_reg = result.idx_result_reg_out;
+		SLKC_RETURN_IF_COMP_ERROR(_compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, bool_type.cast_to<TypeNameNode>(), s->cond, expr_type, cond_result));
+		condition_reg = cond_result.idx_result_reg_out;
 
 		SLKC_RETURN_IF_COMP_ERROR(
 			compilation_context->emit_ins(
@@ -346,13 +346,15 @@ SLKC_API peff::Option<CompilationError> slkc::compile_for_stmt(
 					: PathPossibility::May;
 			body_path_env.break_possibility = PathPossibility::May;
 
+			SLKC_RETURN_IF_COMP_ERROR(combine_path_env(body_path_env, cond_result.var_nullity_override_path_env));
+
 			SLKC_RETURN_IF_COMP_ERROR(compile_stmt(compile_env, compilation_context, path_env, s->body));
 
 			compilation_context->set_label_offset(step_label, compilation_context->get_cur_ins_off());
 
 			if (s->step) {
 				PathEnv step_path_env(compile_env->allocator.get());
-				SLKC_RETURN_IF_COMP_ERROR(compile_expr(compile_env, compilation_context, path_env, s->step, ExprEvalPurpose::Stmt, {}, result));
+				SLKC_RETURN_IF_COMP_ERROR(compile_expr(compile_env, compilation_context, path_env, s->step, ExprEvalPurpose::Stmt, {}, step_result));
 				SLKC_RETURN_IF_COMP_ERROR(combine_path_env(body_path_env, step_path_env));
 			}
 
@@ -365,7 +367,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_for_stmt(
 				UINT32_MAX,
 				{ slake::Value(slake::ValueType::Label, cond_label) }));
 	} else {
-		CompileExprResult result(compile_env->allocator.get());
+		CompileExprResult step_result(compile_env->allocator.get());
 
 		compilation_context->set_label_offset(cond_label, compilation_context->get_cur_ins_off());
 
@@ -383,7 +385,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_for_stmt(
 
 			if (s->step) {
 				PathEnv step_path_env(compile_env->allocator.get());
-				SLKC_RETURN_IF_COMP_ERROR(compile_expr(compile_env, compilation_context, path_env, s->step, ExprEvalPurpose::Stmt, {}, result));
+				SLKC_RETURN_IF_COMP_ERROR(compile_expr(compile_env, compilation_context, path_env, s->step, ExprEvalPurpose::Stmt, {}, step_result));
 				SLKC_RETURN_IF_COMP_ERROR(combine_path_env(body_path_env, step_path_env));
 			}
 
@@ -427,7 +429,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_if_stmt(
 
 	uint32_t condition_reg;
 
-	CompileExprResult result(compile_env->allocator.get());
+	CompileExprResult cond_result(compile_env->allocator.get());
 
 	AstNodePtr<TypeNameNode> expr_type;
 
@@ -436,14 +438,18 @@ SLKC_API peff::Option<CompilationError> slkc::compile_if_stmt(
 	PathEnv cond_env(compile_env->allocator.get());
 	cond_env.set_parent(path_env);
 
-	PathEnv inner_path_env[2] = {
-		PathEnv(compile_env->allocator.get()),
-		PathEnv(compile_env->allocator.get())
+	PathEnv true_path_env(compile_env->allocator.get());
+	PathEnv false_path_env(compile_env->allocator.get());
+	PathEnv *inner_path_env[2] = {
+		&true_path_env,
+		&false_path_env
 	};
 
-	SLKC_RETURN_IF_COMP_ERROR(_compile_or_cast_operand(compile_env, compilation_context, &cond_env, ExprEvalPurpose::RValue, bool_type.cast_to<TypeNameNode>(), s->cond, expr_type, result));
+	SLKC_RETURN_IF_COMP_ERROR(_compile_or_cast_operand(compile_env, compilation_context, &cond_env, ExprEvalPurpose::RValue, bool_type.cast_to<TypeNameNode>(), s->cond, expr_type, cond_result));
 
-	condition_reg = result.idx_result_reg_out;
+	SLKC_RETURN_IF_COMP_ERROR(combine_path_env(true_path_env, cond_result.var_nullity_override_path_env));
+
+	condition_reg = cond_result.idx_result_reg_out;
 
 	uint32_t end_label, true_label, false_label;
 	SLKC_RETURN_IF_COMP_ERROR(compilation_context->alloc_label(end_label));
@@ -480,14 +486,14 @@ SLKC_API peff::Option<CompilationError> slkc::compile_if_stmt(
 		compilation_context->set_label_offset(true_label, compilation_context->get_cur_ins_off());
 
 		{
-			inner_path_env[0].set_parent(&cond_env);
-			inner_path_env[0].exec_possibility =
+			true_path_env.set_parent(&cond_env);
+			true_path_env.exec_possibility =
 				const_cond_expr
 					? (const_cond_expr.cast_to<BoolLiteralExprNode>()->data
 							  ? PathPossibility::Must
 							  : PathPossibility::Never)
 					: PathPossibility::May;
-			SLKC_RETURN_IF_COMP_ERROR(compile_stmt(compile_env, compilation_context, &inner_path_env[0], s->true_body));
+			SLKC_RETURN_IF_COMP_ERROR(compile_stmt(compile_env, compilation_context, &true_path_env, s->true_body));
 		}
 
 		SLKC_RETURN_IF_COMP_ERROR(
@@ -498,15 +504,15 @@ SLKC_API peff::Option<CompilationError> slkc::compile_if_stmt(
 
 		compilation_context->set_label_offset(false_label, compilation_context->get_cur_ins_off());
 
+		false_path_env.set_parent(path_env);
+		false_path_env.exec_possibility =
+			const_cond_expr
+				? (const_cond_expr.cast_to<BoolLiteralExprNode>()->data
+						  ? PathPossibility::Never
+						  : PathPossibility::Must)
+				: PathPossibility::May;
 		if (s->false_body) {
-			inner_path_env[1].set_parent(path_env);
-			inner_path_env[1].exec_possibility =
-				const_cond_expr
-					? (const_cond_expr.cast_to<BoolLiteralExprNode>()->data
-							  ? PathPossibility::Never
-							  : PathPossibility::Must)
-					: PathPossibility::May;
-			SLKC_RETURN_IF_COMP_ERROR(compile_stmt(compile_env, compilation_context, &inner_path_env[1], s->false_body));
+			SLKC_RETURN_IF_COMP_ERROR(compile_stmt(compile_env, compilation_context, &false_path_env, s->false_body));
 		}
 
 		SLKC_RETURN_IF_COMP_ERROR(combine_parallel_path_env(compile_env->allocator.get(), compile_env, compilation_context, cond_env, inner_path_env, 2));
@@ -534,7 +540,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_while_stmt(
 		return gen_out_of_memory_comp_error();
 	}
 
-	CompileExprResult result(compile_env->allocator.get());
+	CompileExprResult cond_result(compile_env->allocator.get());
 
 	AstNodePtr<TypeNameNode> expr_type;
 
@@ -588,9 +594,9 @@ SLKC_API peff::Option<CompilationError> slkc::compile_while_stmt(
 	{
 		compilation_context->set_label_offset(continue_label, compilation_context->get_cur_ins_off());
 
-		SLKC_RETURN_IF_COMP_ERROR(_compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, bool_type.cast_to<TypeNameNode>(), s->cond, expr_type, result));
+		SLKC_RETURN_IF_COMP_ERROR(_compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, bool_type.cast_to<TypeNameNode>(), s->cond, expr_type, cond_result));
 
-		condition_reg = result.idx_result_reg_out;
+		condition_reg = cond_result.idx_result_reg_out;
 
 		SLKC_RETURN_IF_COMP_ERROR(
 			compilation_context->emit_ins(
@@ -619,6 +625,8 @@ SLKC_API peff::Option<CompilationError> slkc::compile_while_stmt(
 						  : PathPossibility::Never)
 				: PathPossibility::May;
 		body_path_env.break_possibility = PathPossibility::May;
+
+		SLKC_RETURN_IF_COMP_ERROR(combine_path_env(body_path_env, cond_result.var_nullity_override_path_env));
 
 		SLKC_RETURN_IF_COMP_ERROR(try_compile_stmt(compile_env, compilation_context, &body_path_env, s->body));
 		SLKC_RETURN_IF_COMP_ERROR(compile_stmt(compile_env, compilation_context, &body_path_env, s->body));
@@ -658,7 +666,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_do_while_stmt(
 		return gen_out_of_memory_comp_error();
 	}
 
-	CompileExprResult result(compile_env->allocator.get());
+	CompileExprResult cond_result(compile_env->allocator.get());
 
 	AstNodePtr<TypeNameNode> expr_type;
 
@@ -721,14 +729,16 @@ SLKC_API peff::Option<CompilationError> slkc::compile_do_while_stmt(
 			: PathPossibility::May;
 	body_path_env.break_possibility = PathPossibility::May;
 
+	SLKC_RETURN_IF_COMP_ERROR(combine_path_env(body_path_env, cond_result.var_nullity_override_path_env));
+
 	SLKC_RETURN_IF_COMP_ERROR(compile_stmt(compile_env, compilation_context, &body_path_env, s->body));
 
 	SLKC_RETURN_IF_COMP_ERROR(combine_path_env(*path_env, body_path_env));
 
 	compilation_context->set_label_offset(continue_label, compilation_context->get_cur_ins_off());
 
-	SLKC_RETURN_IF_COMP_ERROR(_compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, bool_type.cast_to<TypeNameNode>(), s->cond, expr_type, result));
-	condition_reg = result.idx_result_reg_out;
+	SLKC_RETURN_IF_COMP_ERROR(_compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, bool_type.cast_to<TypeNameNode>(), s->cond, expr_type, cond_result));
+	condition_reg = cond_result.idx_result_reg_out;
 
 	SLKC_RETURN_IF_COMP_ERROR(
 		compilation_context->emit_ins(

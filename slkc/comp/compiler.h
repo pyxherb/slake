@@ -46,7 +46,7 @@ namespace slkc {
 
 	struct PathEnv {
 		const PathEnv *parent = nullptr;
-		peff::Map<AstNodePtr<VarNode>, NullOverrideType> local_var_null_overrides;
+		peff::Map<AstNodePtr<VarNode>, NullOverrideType> local_var_nullity_overrides;
 
 		/// @brief Indicates if the path will be executed at least one times.
 		PathPossibility exec_possibility = PathPossibility::Must;
@@ -67,15 +67,23 @@ namespace slkc {
 		SLAKE_FORCEINLINE void set_parent(PathEnv *parent) noexcept {
 			this->parent = parent;
 		}
-		SLAKE_API peff::Option<NullOverrideType> lookup_var_null_override(const AstNodePtr<VarNode> &var_node);
-		SLAKE_API peff::Option<CompilationError> set_local_var_null_override(AstNodePtr<VarNode> var_node, NullOverrideType type);
-		SLAKE_API void remove_var_null_override(const AstNodePtr<VarNode> &var_node);
+		SLAKE_API peff::Option<NullOverrideType> lookup_var_nullity_override(const AstNodePtr<VarNode> &var_node);
+		SLAKE_API peff::Option<CompilationError> set_local_var_nullity_override(AstNodePtr<VarNode> var_node, NullOverrideType type);
+		SLAKE_API void remove_var_nullity_override(const AstNodePtr<VarNode> &var_node);
+
+		SLAKE_FORCEINLINE void reset() {
+			local_var_nullity_overrides.clear();
+			exec_possibility = PathPossibility::Must;
+			return_possibility = PathPossibility::Never;
+			no_return_possibility = PathPossibility::Never;
+			break_possibility = PathPossibility::Never;
+		}
 	};
 
 	class CompilationContext;
 
 	SLKC_API peff::Option<CompilationError> combine_path_env(PathEnv &outer, const PathEnv &inner) noexcept;
-	SLKC_API peff::Option<CompilationError> combine_parallel_path_env(peff::Alloc *allocator, CompileEnv *compile_env, CompilationContext *compilation_context, PathEnv &outer, const PathEnv *inners, size_t num_inners) noexcept;
+	SLKC_API peff::Option<CompilationError> combine_parallel_path_env(peff::Alloc *allocator, CompileEnv *compile_env, CompilationContext *compilation_context, PathEnv &outer, PathEnv *const *inners, size_t num_inners) noexcept;
 
 	class CompilationContext {
 	protected:
@@ -303,20 +311,19 @@ namespace slkc {
 		AstNodePtr<TypeNameNode> evaluated_type;
 		AstNodePtr<MemberNode> evaluated_final_member;
 
-		peff::Set<AstNodePtr<VarNode>> null_cmp_vars, nonnull_cmp_vars;
+		PathEnv var_nullity_override_path_env;
 
 		// For parameter name query, etc, if exists.
 		AstNodePtr<FnNode> call_target_fn_slot;
 		peff::DynArray<AstNodePtr<FnOverloadingNode>> call_target_matched_overloadings;
 		uint32_t idx_this_reg_out = UINT32_MAX, idx_result_reg_out = UINT32_MAX;
 
-		SLAKE_FORCEINLINE CompileExprResult(peff::Alloc *allocator) : call_target_matched_overloadings(allocator), null_cmp_vars(allocator), nonnull_cmp_vars(allocator) {}
+		SLAKE_FORCEINLINE CompileExprResult(peff::Alloc *allocator) : call_target_matched_overloadings(allocator), var_nullity_override_path_env(allocator) {}
 
 		SLAKE_FORCEINLINE void reset() {
 			evaluated_type = {};
 			evaluated_final_member = {};
-			null_cmp_vars.clear();
-			nonnull_cmp_vars.clear();
+			var_nullity_override_path_env.reset();
 			call_target_fn_slot = {};
 			call_target_matched_overloadings.clear_and_shrink();
 			idx_this_reg_out = UINT32_MAX;

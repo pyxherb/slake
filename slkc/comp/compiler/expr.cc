@@ -373,10 +373,10 @@ static peff::Option<CompilationError> _determine_node_type(CompileEnv *compile_e
 
 				if ((eval_purpose != ExprEvalPurpose::LValue) &&
 					(eval_purpose != ExprEvalPurpose::EvalTypeActual)) {
-					auto null_override = path_env->lookup_var_null_override(node.cast_to<VarNode>());
+					auto nullity_override = path_env->lookup_var_nullity_override(node.cast_to<VarNode>());
 
-					if (null_override.has_value()) {
-						switch (*null_override) {
+					if (nullity_override.has_value()) {
+						switch (*nullity_override) {
 							case NullOverrideType::Nullify:
 								if (!(t->referenced_type = t->referenced_type->duplicate<TypeNameNode>(compile_env->allocator.get())))
 									return gen_out_of_memory_comp_error();
@@ -399,10 +399,10 @@ static peff::Option<CompilationError> _determine_node_type(CompileEnv *compile_e
 
 				if ((eval_purpose != ExprEvalPurpose::LValue) &&
 					(eval_purpose != ExprEvalPurpose::EvalTypeActual)) {
-					auto null_override = path_env->lookup_var_null_override(node.cast_to<VarNode>());
+					auto nullity_override = path_env->lookup_var_nullity_override(node.cast_to<VarNode>());
 
-					if (null_override.has_value()) {
-						switch (*null_override) {
+					if (nullity_override.has_value()) {
+						switch (*nullity_override) {
 							case NullOverrideType::Nullify:
 								if (!(type_name_out = type_name_out->duplicate<TypeNameNode>(compile_env->allocator.get())))
 									return gen_out_of_memory_comp_error();
@@ -602,7 +602,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 					break;
 				case ExprEvalPurpose::Stmt:
 					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error, compile_env->push_warning(
-																			  CompilationWarning(e->token_range, CompilationWarningKind::UnusedExprResult)));
+																			   CompilationWarning(e->token_range, CompilationWarningKind::UnusedExprResult)));
 					break;
 				case ExprEvalPurpose::LValue: {
 					bool b = false;
@@ -700,7 +700,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 							return CompilationError(expr->token_range, CompilationErrorKind::ExpectingLValueExpr);
 						case ExprEvalPurpose::Stmt:
 							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error, compile_env->push_warning(
-																					  CompilationWarning(e->token_range, CompilationWarningKind::UnusedExprResult)));
+																					   CompilationWarning(e->token_range, CompilationWarningKind::UnusedExprResult)));
 							[[fallthrough]];
 						case ExprEvalPurpose::RValue:
 						case ExprEvalPurpose::Call: {
@@ -732,7 +732,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 							break;
 						case ExprEvalPurpose::Stmt:
 							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error, compile_env->push_warning(
-																					  CompilationWarning(e->token_range, CompilationWarningKind::UnusedExprResult)));
+																					   CompilationWarning(e->token_range, CompilationWarningKind::UnusedExprResult)));
 							[[fallthrough]];
 						case ExprEvalPurpose::LValue:
 							initial_member_reg = it->idx_reg;
@@ -772,7 +772,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 						}
 						case ExprEvalPurpose::Stmt:
 							SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error, compile_env->push_warning(
-																					  CompilationWarning(e->token_range, CompilationWarningKind::UnusedExprResult)));
+																					   CompilationWarning(e->token_range, CompilationWarningKind::UnusedExprResult)));
 							[[fallthrough]];
 						case ExprEvalPurpose::RValue:
 						case ExprEvalPurpose::Call: {
@@ -896,7 +896,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 					break;
 				case ExprEvalPurpose::Stmt:
 					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error, compile_env->push_warning(
-																			  CompilationWarning(e->token_range, CompilationWarningKind::UnusedExprResult)));
+																			   CompilationWarning(e->token_range, CompilationWarningKind::UnusedExprResult)));
 					break;
 				case ExprEvalPurpose::LValue: {
 					bool b = false;
@@ -1004,7 +1004,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 					break;
 				case ExprEvalPurpose::Stmt:
 					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error, compile_env->push_warning(
-																			  CompilationWarning(e->token_range, CompilationWarningKind::UnusedExprResult)));
+																			   CompilationWarning(e->token_range, CompilationWarningKind::UnusedExprResult)));
 					break;
 				case ExprEvalPurpose::RValue: {
 					slake::HostObjectRef<slake::StringObject> sl;
@@ -1057,7 +1057,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 					break;
 				case ExprEvalPurpose::Stmt:
 					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error, compile_env->push_warning(
-																			  CompilationWarning(e->token_range, CompilationWarningKind::UnusedExprResult)));
+																			   CompilationWarning(e->token_range, CompilationWarningKind::UnusedExprResult)));
 					break;
 				case ExprEvalPurpose::RValue: {
 					uint32_t value_reg_out;
@@ -1137,7 +1137,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 					break;
 				case ExprEvalPurpose::Stmt:
 					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error, compile_env->push_warning(
-																			  CompilationWarning(e->token_range, CompilationWarningKind::UnusedExprResult)));
+																			   CompilationWarning(e->token_range, CompilationWarningKind::UnusedExprResult)));
 					break;
 				case ExprEvalPurpose::RValue: {
 					slake::TypeRef element_type;
@@ -1299,11 +1299,11 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 				peff::DynArray<AstNodePtr<FnOverloadingNode>> matched_overloading_indices(compile_env->allocator.get());
 				auto matched_overloading = result.call_target_matched_overloadings.back();
 				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error, determine_fn_overloading(compile_env,
-																		  result.call_target_fn_slot,
-																		  arg_types.data(),
-																		  arg_types.size(),
-																		  matched_overloading->access_modifier & slake::ACCESS_STATIC,
-																		  matched_overloading_indices));
+																		   result.call_target_fn_slot,
+																		   arg_types.data(),
+																		   arg_types.size(),
+																		   matched_overloading->access_modifier & slake::ACCESS_STATIC,
+																		   matched_overloading_indices));
 				if (!matched_overloading_indices.size()) {
 					return CompilationError(e->token_range, CompilationErrorKind::ArgsMismatched);
 				}
@@ -1543,11 +1543,11 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 
 					peff::DynArray<AstNodePtr<FnOverloadingNode>> matched_overloading_indices(compile_env->allocator.get());
 					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error, determine_fn_overloading(compile_env,
-																			  constructor,
-																			  arg_types.data(),
-																			  arg_types.size(),
-																			  false,
-																			  matched_overloading_indices));
+																			   constructor,
+																			   arg_types.data(),
+																			   arg_types.size(),
+																			   false,
+																			   matched_overloading_indices));
 					if (!matched_overloading_indices.size()) {
 						return CompilationError(e->token_range, CompilationErrorKind::ArgsMismatched);
 					}
@@ -1558,11 +1558,11 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 
 					peff::DynArray<AstNodePtr<FnOverloadingNode>> matched_overloading_indices(compile_env->allocator.get());
 					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error, determine_fn_overloading(compile_env,
-																			  constructor,
-																			  arg_types.data(),
-																			  arg_types.size(),
-																			  false,
-																			  matched_overloading_indices));
+																			   constructor,
+																			   arg_types.data(),
+																			   arg_types.size(),
+																			   false,
+																			   matched_overloading_indices));
 					switch (matched_overloading_indices.size()) {
 						case 0:
 							return CompilationError(e->token_range, CompilationErrorKind::NoMatchingFnOverloading);
@@ -1665,14 +1665,13 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 			bool same_type;
 			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error, is_same_type(decayed_expr_type, target_type, same_type));
 			if (!same_type) {
-				CompileExprResult result(compile_env->allocator.get());
 				if (!left_value) {
-					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error, compile_expr(compile_env, compilation_context, path_env, e->source, ExprEvalPurpose::RValue, {}, result));
+					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error, compile_expr(compile_env, compilation_context, path_env, e->source, ExprEvalPurpose::RValue, {}, result_out));
 				} else {
-					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error, compile_expr(compile_env, compilation_context, path_env, e->source, ExprEvalPurpose::LValue, {}, result));
+					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error, compile_expr(compile_env, compilation_context, path_env, e->source, ExprEvalPurpose::LValue, {}, result_out));
 				}
 
-				uint32_t idx_reg = result.idx_result_reg_out;
+				uint32_t idx_reg = result_out.idx_result_reg_out;
 
 				slake::TypeRef type;
 				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error, compile_type_name(compile_env, compilation_context, target_type, type));
@@ -1684,7 +1683,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 
 				result_out.evaluated_type = target_type;
 
-				// Convert to subtypes may fail.
+				// Conversion to subtypes may fail.
 				bool subtype;
 				if (is_subtype_of(target_type, decayed_expr_type, subtype)) {
 					if (!(result_out.evaluated_type = result_out.evaluated_type->duplicate<TypeNameNode>(compile_env->allocator.get())))
@@ -1879,7 +1878,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 				{
 					PathEnv &body_path_env = body_path_envs.at(i);
 					body_path_env.set_parent(path_env);
-					body_path_env.exec_possibility = PathPossibility::May;	 // TODO: Check if the path will always reached hit after an assignment (if exists).
+					body_path_env.exec_possibility = PathPossibility::May;	// TODO: Check if the path will always reached hit after an assignment (if exists).
 					body_path_env.no_return_possibility = PathPossibility::May;
 					body_path_env.break_possibility = PathPossibility::Never;
 					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error, compile_expr(compile_env, compilation_context, &body_path_env, cur_case.second, eval_purpose, return_type, result));
@@ -1895,7 +1894,17 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error, compilation_context->emit_ins(sld_index, slake::Opcode::JMP, UINT32_MAX, { slake::Value(slake::ValueType::Label, end_label) }));
 			}
 
-			SLKC_RETURN_IF_COMP_ERROR(combine_parallel_path_env(compile_env->allocator.get(), compile_env, compilation_context, *path_env, body_path_envs.data(), body_path_envs.size()));
+			{
+				peff::DynArray<PathEnv *> body_path_envs_ptrs(compile_env->allocator.get());
+
+				if (!body_path_envs_ptrs.resize(body_path_envs.size()))
+					return gen_out_of_memory_comp_error();
+
+				for (size_t i = 0; i < body_path_envs_ptrs.size(); ++i)
+					body_path_envs_ptrs.at(i) = &body_path_envs.at(i);
+
+				SLKC_RETURN_IF_COMP_ERROR(combine_parallel_path_env(compile_env->allocator.get(), compile_env, compilation_context, *path_env, body_path_envs_ptrs.data(), body_path_envs_ptrs.size()));
+			}
 
 			compilation_context->set_label_offset(end_label, compilation_context->get_cur_ins_off());
 

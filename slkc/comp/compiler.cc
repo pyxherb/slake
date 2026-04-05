@@ -47,11 +47,11 @@ SLKC_API peff::Option<CompilationError> slkc::combine_path_env(PathEnv &outer, c
 			outer.return_possibility = combine_possibility(outer.return_possibility, combine_possibility(inner.exec_possibility, inner.return_possibility));
 			outer.break_possibility = combine_possibility(outer.break_possibility, combine_possibility(inner.exec_possibility, inner.break_possibility));
 
-			for (auto i : inner.local_var_null_overrides) {
+			for (auto i : inner.local_var_nullity_overrides) {
 				if (i.second == NullOverrideType::Uncertain) {
-					SLKC_RETURN_IF_COMP_ERROR(outer.set_local_var_null_override(i.first, NullOverrideType::Uncertain));
+					SLKC_RETURN_IF_COMP_ERROR(outer.set_local_var_nullity_override(i.first, NullOverrideType::Uncertain));
 				} else if (i.second == NullOverrideType::Nullify) {
-					SLKC_RETURN_IF_COMP_ERROR(outer.set_local_var_null_override(i.first, NullOverrideType::Nullify));
+					SLKC_RETURN_IF_COMP_ERROR(outer.set_local_var_nullity_override(i.first, NullOverrideType::Nullify));
 				}
 			}
 			break;
@@ -61,11 +61,11 @@ SLKC_API peff::Option<CompilationError> slkc::combine_path_env(PathEnv &outer, c
 			outer.return_possibility = combine_possibility(outer.return_possibility, inner.return_possibility);
 			outer.break_possibility = combine_possibility(outer.break_possibility, inner.break_possibility);
 
-			for (auto i : inner.local_var_null_overrides) {
+			for (auto i : inner.local_var_nullity_overrides) {
 				if (i.second == NullOverrideType::Uncertain) {
-					SLKC_RETURN_IF_COMP_ERROR(outer.set_local_var_null_override(i.first, NullOverrideType::Uncertain));
+					SLKC_RETURN_IF_COMP_ERROR(outer.set_local_var_nullity_override(i.first, NullOverrideType::Uncertain));
 				} else
-					SLKC_RETURN_IF_COMP_ERROR(outer.set_local_var_null_override(i.first, i.second));
+					SLKC_RETURN_IF_COMP_ERROR(outer.set_local_var_nullity_override(i.first, i.second));
 			}
 			break;
 		}
@@ -74,12 +74,12 @@ SLKC_API peff::Option<CompilationError> slkc::combine_path_env(PathEnv &outer, c
 	return {};
 }
 
-SLKC_API peff::Option<CompilationError> slkc::combine_parallel_path_env(peff::Alloc *allocator, CompileEnv *compile_env, CompilationContext *compilation_context, PathEnv &outer, const PathEnv *inners, size_t num_inners) noexcept {
-	peff::Map<AstNodePtr<VarNode>, NullOverrideType> local_var_null_overrides(allocator);
+SLKC_API peff::Option<CompilationError> slkc::combine_parallel_path_env(peff::Alloc *allocator, CompileEnv *compile_env, CompilationContext *compilation_context, PathEnv &outer, PathEnv *const *inners, size_t num_inners) noexcept {
+	peff::Map<AstNodePtr<VarNode>, NullOverrideType> local_var_nullity_overrides(allocator);
 	peff::Set<size_t> idx_may_paths(allocator);
 
 	for (size_t i = 0; i < num_inners; ++i) {
-		const PathEnv &inner = inners[i];
+		const PathEnv &inner = *inners[i];
 
 		switch (inner.exec_possibility) {
 			case PathPossibility::Never:
@@ -94,11 +94,11 @@ SLKC_API peff::Option<CompilationError> slkc::combine_parallel_path_env(peff::Al
 				outer.return_possibility = combine_possibility(outer.return_possibility, inner.return_possibility);
 				outer.break_possibility = combine_possibility(outer.break_possibility, inner.break_possibility);
 
-				for (auto i : inner.local_var_null_overrides) {
+				for (auto i : inner.local_var_nullity_overrides) {
 					if (i.second == NullOverrideType::Uncertain) {
-						SLKC_RETURN_IF_COMP_ERROR(outer.set_local_var_null_override(i.first, NullOverrideType::Uncertain));
+						SLKC_RETURN_IF_COMP_ERROR(outer.set_local_var_nullity_override(i.first, NullOverrideType::Uncertain));
 					} else
-						SLKC_RETURN_IF_COMP_ERROR(outer.set_local_var_null_override(i.first, i.second));
+						SLKC_RETURN_IF_COMP_ERROR(outer.set_local_var_nullity_override(i.first, i.second));
 				}
 				break;
 			}
@@ -106,47 +106,47 @@ SLKC_API peff::Option<CompilationError> slkc::combine_parallel_path_env(peff::Al
 	}
 
 	{
-		peff::Map<AstNodePtr<VarNode>, NullOverrideType> common_local_var_null_overrides(allocator);
+		peff::Map<AstNodePtr<VarNode>, NullOverrideType> common_local_var_nullity_overrides(allocator);
 
 		// Find common local variable null overrides.
 		{
-			peff::Set<AstNodePtr<VarNode>> nonunifiable_null_override_vars(allocator);
+			peff::Set<AstNodePtr<VarNode>> nonunifiable_nullity_override_vars(allocator);
 			for (auto it = idx_may_paths.begin(); it != idx_may_paths.end(); ++it) {
-				const PathEnv &inner = inners[*it];
+				const PathEnv &inner = *inners[*it];
 
-				for (auto cur_override : inner.local_var_null_overrides) {
-					if (!nonunifiable_null_override_vars.contains(cur_override.first)) {
-						if (auto prev_override = common_local_var_null_overrides.find(cur_override.first); prev_override != common_local_var_null_overrides.end()) {
+				for (auto cur_override : inner.local_var_nullity_overrides) {
+					if (!nonunifiable_nullity_override_vars.contains(cur_override.first)) {
+						if (auto prev_override = common_local_var_nullity_overrides.find(cur_override.first); prev_override != common_local_var_nullity_overrides.end()) {
 							if (prev_override.value() != cur_override.second) {
-								if (!nonunifiable_null_override_vars.insert(AstNodePtr<VarNode>(prev_override.key())))
+								if (!nonunifiable_nullity_override_vars.insert(AstNodePtr<VarNode>(prev_override.key())))
 									return gen_out_of_memory_comp_error();
-								common_local_var_null_overrides.remove(prev_override);
+								common_local_var_nullity_overrides.remove(prev_override);
 							}
 						} else {
 							auto copied_override_type = cur_override.second;
-							if (!common_local_var_null_overrides.insert(AstNodePtr<VarNode>(cur_override.first), std::move(copied_override_type)))
+							if (!common_local_var_nullity_overrides.insert(AstNodePtr<VarNode>(cur_override.first), std::move(copied_override_type)))
 								return gen_out_of_memory_comp_error();
 						}
 					}
 				}
 			}
 
-			for (auto i : nonunifiable_null_override_vars)
-				SLKC_RETURN_IF_COMP_ERROR(outer.set_local_var_null_override(i, NullOverrideType::Uncertain));
+			for (auto i : nonunifiable_nullity_override_vars)
+				SLKC_RETURN_IF_COMP_ERROR(outer.set_local_var_nullity_override(i, NullOverrideType::Uncertain));
 		}
 
-		for (auto i : common_local_var_null_overrides) {
-			SLKC_RETURN_IF_COMP_ERROR(outer.set_local_var_null_override(i.first, i.second));
+		for (auto i : common_local_var_nullity_overrides) {
+			SLKC_RETURN_IF_COMP_ERROR(outer.set_local_var_nullity_override(i.first, i.second));
 		}
 
 		// Filter out the common local variable null overrides that are not always happen.
 		for (auto it = idx_may_paths.begin(); it != idx_may_paths.end(); ++it) {
-			const PathEnv &inner = inners[*it];
+			const PathEnv &inner = *inners[*it];
 
-			for (auto i : common_local_var_null_overrides) {
+			for (auto i : common_local_var_nullity_overrides) {
 				// If a local variable null override is not always happen, its original assumption should be cancelled.
-				if (!inner.local_var_null_overrides.contains(i.first)) {
-					SLKC_RETURN_IF_COMP_ERROR(outer.set_local_var_null_override(i.first, NullOverrideType::Uncertain));
+				if (!inner.local_var_nullity_overrides.contains(i.first)) {
+					SLKC_RETURN_IF_COMP_ERROR(outer.set_local_var_nullity_override(i.first, NullOverrideType::Uncertain));
 				}
 			}
 		}
@@ -155,13 +155,13 @@ SLKC_API peff::Option<CompilationError> slkc::combine_parallel_path_env(peff::Al
 	return {};
 }
 
-SLKC_API PathEnv::PathEnv(peff::Alloc *allocator) noexcept : local_var_null_overrides(allocator) {
+SLKC_API PathEnv::PathEnv(peff::Alloc *allocator) noexcept : local_var_nullity_overrides(allocator) {
 }
 
-SLAKE_API peff::Option<NullOverrideType> PathEnv::lookup_var_null_override(const AstNodePtr<VarNode> &var_node) {
+SLAKE_API peff::Option<NullOverrideType> PathEnv::lookup_var_nullity_override(const AstNodePtr<VarNode> &var_node) {
 	for (const PathEnv *i = this; i; i = i->parent) {
-		if (auto it = i->local_var_null_overrides.find(var_node);
-			it != i->local_var_null_overrides.end()) {
+		if (auto it = i->local_var_nullity_overrides.find(var_node);
+			it != i->local_var_nullity_overrides.end()) {
 			NullOverrideType v = it.value();
 			return std::move(v);
 		}
@@ -169,16 +169,16 @@ SLAKE_API peff::Option<NullOverrideType> PathEnv::lookup_var_null_override(const
 	return {};
 }
 
-SLAKE_API peff::Option<CompilationError> PathEnv::set_local_var_null_override(AstNodePtr<VarNode> var_node, NullOverrideType type) {
-	if (auto it = local_var_null_overrides.find(var_node); it != local_var_null_overrides.end()) {
+SLAKE_API peff::Option<CompilationError> PathEnv::set_local_var_nullity_override(AstNodePtr<VarNode> var_node, NullOverrideType type) {
+	if (auto it = local_var_nullity_overrides.find(var_node); it != local_var_nullity_overrides.end()) {
 		it.value() = type;
-	} else if (!local_var_null_overrides.insert(std::move(var_node), std::move(type)))
+	} else if (!local_var_nullity_overrides.insert(std::move(var_node), std::move(type)))
 		return gen_out_of_memory_comp_error();
 	return {};
 }
 
-SLAKE_API void PathEnv::remove_var_null_override(const AstNodePtr<VarNode> &var_node) {
-	local_var_null_overrides.remove(var_node);
+SLAKE_API void PathEnv::remove_var_nullity_override(const AstNodePtr<VarNode> &var_node) {
+	local_var_nullity_overrides.remove(var_node);
 }
 
 SLKC_API CompilationContext::CompilationContext(CompilationContext *parent) : parent(parent) {

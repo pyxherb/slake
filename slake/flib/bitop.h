@@ -72,12 +72,12 @@ namespace slake {
 #if defined(__x86_64__) || defined(_M_X64) || defined(__i386__)
 			return lhs >> rhs;
 #else
-			if (*((uint64_t *)&lhs) & 0x8000000000000000_ull) {
+			if (*((uint64_t *)&lhs) & 0x8000000000000000ull) {
 				uint64_t unsigned_lhs = *((uint64_t *)&lhs);
 
 				unsigned_lhs >>= rhs;
 
-				unsigned_lhs |= 0xffffffffffffffff_ull << (64 - rhs);
+				unsigned_lhs |= 0xffffffffffffffffull << (64 - rhs);
 
 				return *(int64_t *)&unsigned_lhs;
 			} else {

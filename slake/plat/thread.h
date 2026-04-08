@@ -1,11 +1,15 @@
 #ifndef _SLAKE_PLAT_THREAD_H_
 #define _SLAKE_PLAT_THREAD_H_
 
+#include <slake/basedefs.h>
+#include <atomic>
+#include <peff/base/alloc.h>
+
 #if _WIN32
 	#define WIN32_LEAN_AND_MEAN
 	#include <Windows.h>
 	#define SLAKE_IS_GET_THREAD_STACK_INFO_SUPPORTED 1
-#elif __unix__
+#elif __APPLE__ || __unix__
 	#include <pthread.h>
 	#include <unistd.h>
 	#define SLAKE_IS_GET_THREAD_STACK_INFO_SUPPORTED 1
@@ -16,8 +20,10 @@
 namespace slake {
 #if _WIN32
 	using NativeThreadHandle = HANDLE;
-#elif __unix__
+#elif __APPLE__ || __unix__
 	using NativeThreadHandle = pthread_t;
+#else
+	#error NativeThreadHandle is not defined for this platform.
 #endif
 
 	NativeThreadHandle current_thread_handle();
@@ -29,8 +35,10 @@ namespace slake {
 	public:
 #if _WIN32
 		CRITICAL_SECTION native_handle;
-#elif __unix__
+#elif __APPLE__ || __unix__
 		pthread_mutex_t native_handle;
+#else
+		#error Mutex is not implemented for this platform.
 #endif
 
 		SLAKE_API Mutex();
@@ -132,9 +140,11 @@ namespace slake {
 #if _WIN32
 		CRITICAL_SECTION critical_section;
 		CONDITION_VARIABLE native_handle;
-#elif __unix__
+#elif __APPLE__ || __unix__
 		Mutex internal_mutex;
 		pthread_cond_t native_handle;
+#else
+		#error Cond is not implemented for this platform.
 #endif
 
 		SLAKE_API Cond();
@@ -170,7 +180,7 @@ namespace slake {
 
 #if _WIN32
 		static DWORD WINAPI _thread_wrapper_proc(LPVOID lp_thread_parameter);
-#elif __unix__
+#elif __APPLE__ || __unix__
 		static void *_thread_wrapper_proc(void *arg);
 #endif
 

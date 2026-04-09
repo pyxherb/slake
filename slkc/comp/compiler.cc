@@ -691,7 +691,7 @@ SLKC_API peff::Option<CompilationError> FileSystemExternalModuleProvider::load_m
 				}
 
 				IdRefPtr module_name;
-				if (auto e = parser->parse_program(mod, module_name); e) {
+				if (auto e = parser->parse(mod, module_name); e) {
 					if (!parser->syntax_errors.push_back(std::move(*e))) {
 						return gen_out_of_memory_comp_error();
 					}

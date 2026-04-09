@@ -2,7 +2,8 @@
 
 using namespace slkc;
 
-SLKC_API peff::Option<SyntaxError> Parser::parse_params(
+SLKC_API ParseCoroutine Parser::parse_params(
+	peff::Alloc *allocator,
 	peff::DynArray<AstNodePtr<VarNode>> &params_out,
 	bool &var_arg_out,
 	peff::DynArray<size_t> &idx_comma_tokens_out,
@@ -14,7 +15,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parse_params(
 
 	l_angle_bracket_index_out = l_parenthese_token->index;
 
-	SLKC_RETURN_IF_PARSE_ERROR(expect_token((l_parenthese_token = peek_token()), TokenId::LParenthese));
+	SLKC_CO_RETURN_IF_PARSE_ERROR(expect_token((l_parenthese_token = peek_token()), TokenId::LParenthese));
 
 	next_token();
 
@@ -26,26 +27,26 @@ SLKC_API peff::Option<SyntaxError> Parser::parse_params(
 		AstNodePtr<VarNode> param_node;
 
 		if (!(param_node = make_ast_node<VarNode>(resource_allocator.get(), resource_allocator.get(), document))) {
-			return gen_out_of_memory_syntax_error();
+			co_return gen_out_of_memory_syntax_error();
 		}
 
 		Token *name_token;
 
-		SLKC_RETURN_IF_PARSE_ERROR(expect_token((name_token = peek_token()), TokenId::Id));
+		SLKC_CO_RETURN_IF_PARSE_ERROR(expect_token((name_token = peek_token()), TokenId::Id));
 
 		if (!param_node->name.build(name_token->source_text))
-			return gen_out_of_memory_syntax_error();
+			co_return gen_out_of_memory_syntax_error();
 
 		next_token();
 
 		if (peek_token()->token_id == TokenId::Colon) {
 			Token *colon_token = next_token();
 
-			SLKC_RETURN_IF_PARSE_ERROR(parse_type_name(param_node->type));
+			SLKC_CO_RETURN_IF_CO_PARSE_ERROR(parse_type_name(this->resource_allocator.get(), param_node->type));
 		}
 
 		if (!params_out.push_back(std::move(param_node)))
-			return gen_out_of_memory_syntax_error();
+			co_return gen_out_of_memory_syntax_error();
 
 		if (peek_token()->token_id != TokenId::Comma) {
 			break;
@@ -54,7 +55,7 @@ SLKC_API peff::Option<SyntaxError> Parser::parse_params(
 		Token *comma_token = next_token();
 
 		if (!idx_comma_tokens_out.push_back(+comma_token->index))
-			return gen_out_of_memory_syntax_error();
+			co_return gen_out_of_memory_syntax_error();
 	}
 
 	Token *var_arg_token;
@@ -65,11 +66,11 @@ SLKC_API peff::Option<SyntaxError> Parser::parse_params(
 
 	Token *r_parenthese_token;
 
-	SLKC_RETURN_IF_PARSE_ERROR(expect_token((r_parenthese_token = peek_token()), TokenId::RParenthese));
+	SLKC_CO_RETURN_IF_PARSE_ERROR(expect_token((r_parenthese_token = peek_token()), TokenId::RParenthese));
 
 	next_token();
 
 	r_angle_bracket_index_out = r_parenthese_token->index;
 
-	return {};
+	co_return {};
 }

@@ -812,16 +812,9 @@ int main(int argc, char *argv[]) {
 			mod_obj->set_access(slake::ACCESS_PUBLIC | slake::ACCESS_STATIC);
 
 			peff::SharedPtr<slkc::Parser> parser;
-			if (is_bcmode) {
-				if (!(parser = peff::make_shared<slkc::bc::BCParser>(peff::default_allocator(), document, std::move(token_list), peff::default_allocator()).cast_to<slkc::Parser>())) {
-					print_error("Error allocating memory for the parser");
-					return ENOMEM;
-				}
-			} else {
-				if (!(parser = peff::make_shared<slkc::Parser>(peff::default_allocator(), document, std::move(token_list), peff::default_allocator()))) {
-					print_error("Error allocating memory for the parser");
-					return ENOMEM;
-				}
+			if (!(parser = peff::make_shared<slkc::Parser>(peff::default_allocator(), document, std::move(token_list), peff::default_allocator()))) {
+				print_error("Error allocating memory for the parser");
+				return ENOMEM;
 			}
 
 			slkc::AstNodePtr<slkc::ModuleNode> root_mod;
@@ -834,7 +827,7 @@ int main(int argc, char *argv[]) {
 			slkc::IdRefPtr module_name;
 
 			bool encountered_errors = false;
-			if (auto e = parser->parse_program(mod, module_name); e) {
+			if (auto e = parser->parse(mod, module_name); e) {
 				encountered_errors = true;
 				dump_syntax_error(parser.get(), *e);
 			}
@@ -844,9 +837,11 @@ int main(int argc, char *argv[]) {
 				dump_syntax_error(parser.get(), i);
 			}
 
-			if (auto e = complete_parent_modules(&compile_env, module_name.get(), mod); e) {
-				encountered_errors = true;
-				dump_compilation_error(parser, *e);
+			if (module_name) {
+				if (auto e = complete_parent_modules(&compile_env, module_name.get(), mod); e) {
+					encountered_errors = true;
+					dump_compilation_error(parser, *e);
+				}
 			}
 
 			/* if (auto e = index_module_var_members(&compile_env, root_mod); e) {

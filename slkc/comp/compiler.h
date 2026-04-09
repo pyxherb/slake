@@ -2,7 +2,9 @@
 #define _SLKC_COMP_COMPILER_H_
 
 #include "../ast/parser.h"
-#include "../ast/bc/parser.h"
+#include "../ast/class.h"
+#include "../ast/module.h"
+#include "../ast/import.h"
 
 namespace slkc {
 	SLKC_API peff::Option<slkc::CompilationError> type_name_cmp(AstNodePtr<TypeNameNode> lhs, AstNodePtr<TypeNameNode> rhs, int &out) noexcept;

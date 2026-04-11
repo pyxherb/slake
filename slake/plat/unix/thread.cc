@@ -18,7 +18,7 @@ void *Thread::_thread_wrapper_proc(void *arg) {
 	return nullptr;
 }
 
-SLAKE_API Thread::Thread(peff::Alloc* self_allocator, Runnable* runnable): self_allocator(self_allocator), native_thread_handle((pthread_t)-1), runnable(runnable) {
+SLAKE_API Thread::Thread(peff::Alloc *self_allocator, Runnable *runnable) : self_allocator(self_allocator), native_thread_handle((pthread_t)-1), runnable(runnable) {
 }
 
 SLAKE_API Thread::~Thread() {}
@@ -37,16 +37,17 @@ SLAKE_API void Thread::dealloc() {
 	peff::destroy_and_release<Thread>(self_allocator.get(), this, alignof(Thread));
 }
 
-SLAKE_API Thread* Thread::alloc(peff::Alloc* self_allocator, Runnable* runnable, size_t stack_size) {
+SLAKE_API Thread *Thread::alloc(peff::Alloc *self_allocator, Runnable *runnable, size_t stack_size) {
 	std::unique_ptr<Thread, peff::DeallocableDeleter<Thread>>
 		execution_thread(peff::alloc_and_construct<Thread>(self_allocator, alignof(Thread), self_allocator, runnable));
 
 	execution_thread->_initial_run_mutex.lock();
 
 	{
-		pthread_attr_t attr = {};
+		pthread_attr_t attr;
 
-		pthread_attr_setstacksize(&attr, stack_size);
+		pthread_attr_init(&attr);
+		pthread_attr_setstacksize(&attr, (std::max)((size_t)PTHREAD_STACK_MIN, stack_size));
 
 		if (pthread_create(&execution_thread->native_thread_handle, &attr, _thread_wrapper_proc, (void *)execution_thread.get())) {
 			pthread_attr_destroy(&attr);
@@ -72,13 +73,21 @@ void slake::yield_current_thread() {
 }
 
 void slake::get_current_thread_stack_bounds(void *&base_out, size_t &size_out) {
-	pthread_attr_t attr;
+	pthread_attr_t attr = {};
+
+	if(pthread_attr_init(&attr)) {
+		base_out = nullptr;
+		size_out = 0;
+		return;
+	}
+
 	void *stack_addr;
 	size_t stack_size;
 
 	if (!pthread_attr_getstack(&attr, &stack_addr, &stack_size)) {
 		base_out = nullptr;
-		size_out = SIZE_MAX;
+		size_out = 0;
+		return;
 	}
 
 	base_out = stack_addr;

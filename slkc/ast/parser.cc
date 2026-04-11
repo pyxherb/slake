@@ -51,8 +51,6 @@ SLAKE_FORCEINLINE void ParseCoroutine::Awaitable::await_suspend(Handle h) {
 		co.coro_handle.promise().result = parser->gen_out_of_memory_syntax_error();
 		return;
 	}
-
-	++scheduler->idx_new_frame;
 }
 
 SLAKE_FORCEINLINE peff::Option<SyntaxError> ParseCoroutine::Awaitable::await_resume() {

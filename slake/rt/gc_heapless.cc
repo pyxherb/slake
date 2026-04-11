@@ -906,6 +906,7 @@ rescan_deletables:
 }
 
 SLAKE_API void Runtime::ParallelGcThreadRunnable::run() {
+	thread_state = ParallelGcThreadState::Alive;
 	for (;;) {
 		while (!is_active) {
 			active_cond.wait();
@@ -969,14 +970,16 @@ SLAKE_API bool Runtime::_alloc_parallel_gc_resources() {
 }
 
 SLAKE_API void Runtime::_release_parallel_gc_resources() {
-	parallel_gc_thread_runnable->thread_state = ParallelGcThreadState::NotifyTermination;
+	if (parallel_gc_thread_runnable->thread_state != ParallelGcThreadState::Uninit) {
+		parallel_gc_thread_runnable->thread_state = ParallelGcThreadState::NotifyTermination;
 
-	parallel_gc_thread_runnable->is_active = true;
+		parallel_gc_thread_runnable->is_active = true;
 
-	parallel_gc_thread_runnable->active_cond.notify_all();
+		parallel_gc_thread_runnable->active_cond.notify_all();
 
-	while (parallel_gc_thread_runnable->thread_state == ParallelGcThreadState::NotifyTermination)
-		yield_current_thread();
+		while (parallel_gc_thread_runnable->thread_state == ParallelGcThreadState::NotifyTermination)
+			yield_current_thread();
+	}
 
 	parallel_gc_thread_runnable.reset();
 	parallel_gc_thread.reset();

@@ -259,7 +259,8 @@ namespace slake {
 		std::unique_ptr<Thread, peff::DeallocableDeleter<Thread>> parallel_gc_thread;
 
 		enum class ParallelGcThreadState : uint8_t {
-			Alive = 0,
+			Uninit = 0,
+			Alive,
 			NotifyTermination,
 			Terminated
 		};
@@ -270,7 +271,7 @@ namespace slake {
 			GCWalkContext context;
 			bool is_active = false, is_done = false;
 			Cond active_cond, done_cond;
-			ParallelGcThreadState thread_state = ParallelGcThreadState::Alive;
+			ParallelGcThreadState thread_state = ParallelGcThreadState::Uninit;
 
 			SLAKE_API ParallelGcThreadRunnable(Runtime *runtime);
 			SLAKE_API virtual void run() override;

@@ -237,7 +237,6 @@ namespace slkc {
 	class ParseCoroutineScheduler {
 	public:
 		peff::DynArray<std::coroutine_handle<ParseCoroutine::promise_type>> task_list;
-		size_t idx_new_frame = 0;
 
 		SLKC_API ParseCoroutineScheduler(peff::Alloc *allocator);
 	};

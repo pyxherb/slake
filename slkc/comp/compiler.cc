@@ -559,6 +559,8 @@ SLKC_API peff::Option<CompilationError> slkc::check_stack_bounds(size_t reserved
 
 	void *ptr = slake::estimate_current_stack_pointer();
 
+	assert(base < ptr);
+
 	if (((char *)ptr - (char *)base) < reserved_size)
 		return gen_stack_overflow();
 

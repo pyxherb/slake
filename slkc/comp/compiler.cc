@@ -230,7 +230,19 @@ SLKC_API AstNodePtr<VarNode> CompilationContext::lookup_local_var(const std::str
 SLKC_API NormalCompilationContext::BlockLayer::~BlockLayer() {
 }
 
-SLKC_API NormalCompilationContext::NormalCompilationContext(CompileEnv *compile_env, CompilationContext *parent) : CompilationContext(parent), allocator(compile_env->allocator), saved_block_layers(compile_env->allocator.get()), cur_block_layer(compile_env->allocator.get()), labels(compile_env->allocator.get()), label_name_indices(compile_env->allocator.get()), generated_instructions(compile_env->allocator.get()), document(compile_env->document), base_block_level(parent ? parent->get_block_level() : 0), base_ins_off(parent ? parent->get_cur_ins_off() : 0), source_loc_descs(compile_env->allocator.get()), source_loc_descs_map(compile_env->allocator.get()) {
+SLKC_API NormalCompilationContext::NormalCompilationContext(CompileEnv *compile_env, CompilationContext *parent)
+	: CompilationContext(parent),
+	  allocator(compile_env->allocator),
+	  saved_block_layers(compile_env->allocator.get()),
+	  cur_block_layer(compile_env->allocator.get()),
+	  labels(compile_env->allocator.get()),
+	  label_name_indices(compile_env->allocator.get()),
+	  generated_instructions(compile_env->allocator.get()),
+	  document(compile_env->get_document()),
+	  base_block_level(parent ? parent->get_block_level() : 0),
+	  base_ins_off(parent ? parent->get_cur_ins_off() : 0),
+	  source_loc_descs(compile_env->allocator.get()),
+	  source_loc_descs_map(compile_env->allocator.get()) {
 }
 SLKC_API NormalCompilationContext::~NormalCompilationContext() {
 }
@@ -426,10 +438,6 @@ SLKC_API peff::Option<CompilationError> NormalCompilationContext::register_sourc
 SLKC_API CompileEnv::~CompileEnv() {
 }
 
-SLKC_API void CompileEnv::on_ref_zero() noexcept {
-	peff::destroy_and_release<CompileEnv>(self_allocator.get(), this, sizeof(std::max_align_t));
-}
-
 SLKC_API peff::Option<CompilationError> slkc::eval_expr_type(
 	CompileEnv *compile_env,
 	CompilationContext *compilation_context,
@@ -444,6 +452,18 @@ SLKC_API peff::Option<CompilationError> slkc::eval_expr_type(
 	SLKC_RETURN_IF_COMP_ERROR(compile_expr(compile_env, &tmp_context, path_env, expr, ExprEvalPurpose::EvalType, desired_type, result));
 
 	type_out = result.evaluated_type;
+	return {};
+}
+
+[[nodiscard]] SLKC_API peff::Option<CompilationError> slkc::eval_decayed_expr_type(
+	CompileEnv *compile_env,
+	CompilationContext *compilation_context,
+	PathEnv *path_env,
+	const AstNodePtr<ExprNode> &expr,
+	AstNodePtr<TypeNameNode> &type_out,
+	AstNodePtr<TypeNameNode> desired_type) {
+	SLKC_RETURN_IF_COMP_ERROR(eval_expr_type(compile_env, compilation_context, path_env, expr, type_out, desired_type));
+	SLKC_RETURN_IF_COMP_ERROR(remove_ref_of_type(type_out, type_out));
 	return {};
 }
 
@@ -477,7 +497,7 @@ SLKC_API peff::Option<CompilationError> slkc::complete_parent_modules(
 		return gen_out_of_memory_comp_error();
 	}
 
-	AstNodePtr<ModuleNode> node = compile_env->document->root_module;
+	AstNodePtr<ModuleNode> node = compile_env->get_document()->root_module;
 
 	for (size_t i = 0; i < modules.size(); ++i) {
 		if (auto it = node->member_indices.find(module_path->entries.at(i).name); it != node->member_indices.end()) {
@@ -488,7 +508,7 @@ SLKC_API peff::Option<CompilationError> slkc::complete_parent_modules(
 			if (i + 1 == modules.size()) {
 				node = leaf;
 			} else {
-				if (!(node = make_ast_node<ModuleNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->document))) {
+				if (!(node = make_ast_node<ModuleNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->get_document()))) {
 					return gen_out_of_memory_comp_error();
 				}
 			}
@@ -513,10 +533,10 @@ SLKC_API peff::Option<CompilationError> slkc::complete_parent_modules(
 			}
 			modules.at(i)->set_parent(modules.at(i - 1).get());
 		} else {
-			if (!compile_env->document->root_module->add_member(modules.at(i).cast_to<MemberNode>())) {
+			if (!compile_env->get_document()->root_module->add_member(modules.at(i).cast_to<MemberNode>())) {
 				return gen_out_of_memory_comp_error();
 			}
-			modules.at(i)->set_parent(compile_env->document->root_module.get());
+			modules.at(i)->set_parent(compile_env->get_document()->root_module.get());
 		}
 	}
 
@@ -584,7 +604,7 @@ SLKC_API peff::Option<CompilationError> FileSystemExternalModuleProvider::load_m
 
 	{
 		bool is_loaded = true;
-		AstNodePtr<ModuleNode> node = compile_env->document->root_module;
+		AstNodePtr<ModuleNode> node = compile_env->get_document()->root_module;
 
 		for (size_t i = 0; i < module_name->entries.size(); ++i) {
 			if (auto it = node->member_indices.find(module_name->entries.at(i).name); it != node->member_indices.end()) {
@@ -668,7 +688,7 @@ SLKC_API peff::Option<CompilationError> FileSystemExternalModuleProvider::load_m
 
 				AstNodePtr<ModuleNode> mod;
 
-				if (!(mod = make_ast_node<ModuleNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->document))) {
+				if (!(mod = make_ast_node<ModuleNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->get_document()))) {
 					return gen_out_of_memory_comp_error();
 				}
 
@@ -678,7 +698,7 @@ SLKC_API peff::Option<CompilationError> FileSystemExternalModuleProvider::load_m
 
 					std::string_view sv(file_content.get(), file_size);
 
-					if (auto e = lexer.lex(mod.get(), sv, peff::default_allocator(), compile_env->document); e) {
+					if (auto e = lexer.lex(mod.get(), sv, peff::default_allocator(), compile_env->get_document()); e) {
 						auto ce = CompilationError(module_name->token_range, ErrorParsingImportedModuleErrorExData(std::move(*e)));
 						e.reset();
 						return std::move(ce);
@@ -688,7 +708,7 @@ SLKC_API peff::Option<CompilationError> FileSystemExternalModuleProvider::load_m
 				}
 
 				peff::SharedPtr<slkc::Parser> parser;
-				if (!(parser = peff::make_shared<slkc::Parser>(compile_env->allocator.get(), compile_env->document, std::move(token_list), compile_env->allocator.get()))) {
+				if (!(parser = peff::make_shared<slkc::Parser>(compile_env->allocator.get(), compile_env->get_document(), std::move(token_list), compile_env->allocator.get()))) {
 					return gen_out_of_memory_comp_error();
 				}
 

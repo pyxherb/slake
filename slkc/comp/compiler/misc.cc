@@ -14,7 +14,7 @@ SLKC_API peff::Option<CompilationError> slkc::get_succeeding_enum_value(
 				if (!(value_out = make_ast_node<I8LiteralExprNode>(
 						  compile_env->allocator.get(),
 						  compile_env->allocator.get(),
-						  compile_env->document,
+						  compile_env->get_document(),
 						  last_value.cast_to<I8LiteralExprNode>()->data + 1)
 							.cast_to<ExprNode>()))
 					return gen_out_of_memory_comp_error();
@@ -23,7 +23,7 @@ SLKC_API peff::Option<CompilationError> slkc::get_succeeding_enum_value(
 				if (!(value_out = make_ast_node<I16LiteralExprNode>(
 						  compile_env->allocator.get(),
 						  compile_env->allocator.get(),
-						  compile_env->document,
+						  compile_env->get_document(),
 						  last_value.cast_to<I16LiteralExprNode>()->data + 1)
 							.cast_to<ExprNode>()))
 					return gen_out_of_memory_comp_error();
@@ -32,7 +32,7 @@ SLKC_API peff::Option<CompilationError> slkc::get_succeeding_enum_value(
 				if (!(value_out = make_ast_node<I32LiteralExprNode>(
 						  compile_env->allocator.get(),
 						  compile_env->allocator.get(),
-						  compile_env->document,
+						  compile_env->get_document(),
 						  last_value.cast_to<I32LiteralExprNode>()->data + 1)
 							.cast_to<ExprNode>()))
 					return gen_out_of_memory_comp_error();
@@ -41,7 +41,7 @@ SLKC_API peff::Option<CompilationError> slkc::get_succeeding_enum_value(
 				if (!(value_out = make_ast_node<I64LiteralExprNode>(
 						  compile_env->allocator.get(),
 						  compile_env->allocator.get(),
-						  compile_env->document,
+						  compile_env->get_document(),
 						  last_value.cast_to<I64LiteralExprNode>()->data + 1)
 							.cast_to<ExprNode>()))
 					return gen_out_of_memory_comp_error();
@@ -50,7 +50,7 @@ SLKC_API peff::Option<CompilationError> slkc::get_succeeding_enum_value(
 				if (!(value_out = make_ast_node<U8LiteralExprNode>(
 						  compile_env->allocator.get(),
 						  compile_env->allocator.get(),
-						  compile_env->document,
+						  compile_env->get_document(),
 						  last_value.cast_to<U8LiteralExprNode>()->data + 1)
 							.cast_to<ExprNode>()))
 					return gen_out_of_memory_comp_error();
@@ -59,7 +59,7 @@ SLKC_API peff::Option<CompilationError> slkc::get_succeeding_enum_value(
 				if (!(value_out = make_ast_node<U16LiteralExprNode>(
 						  compile_env->allocator.get(),
 						  compile_env->allocator.get(),
-						  compile_env->document,
+						  compile_env->get_document(),
 						  last_value.cast_to<U16LiteralExprNode>()->data + 1)
 							.cast_to<ExprNode>()))
 					return gen_out_of_memory_comp_error();
@@ -68,7 +68,7 @@ SLKC_API peff::Option<CompilationError> slkc::get_succeeding_enum_value(
 				if (!(value_out = make_ast_node<U32LiteralExprNode>(
 						  compile_env->allocator.get(),
 						  compile_env->allocator.get(),
-						  compile_env->document,
+						  compile_env->get_document(),
 						  last_value.cast_to<U32LiteralExprNode>()->data + 1)
 							.cast_to<ExprNode>()))
 					return gen_out_of_memory_comp_error();
@@ -77,7 +77,7 @@ SLKC_API peff::Option<CompilationError> slkc::get_succeeding_enum_value(
 				if (!(value_out = make_ast_node<U8LiteralExprNode>(
 						  compile_env->allocator.get(),
 						  compile_env->allocator.get(),
-						  compile_env->document,
+						  compile_env->get_document(),
 						  last_value.cast_to<U64LiteralExprNode>()->data + 1)
 							.cast_to<ExprNode>()))
 					return gen_out_of_memory_comp_error();
@@ -86,7 +86,7 @@ SLKC_API peff::Option<CompilationError> slkc::get_succeeding_enum_value(
 				if (!(value_out = make_ast_node<F32LiteralExprNode>(
 						  compile_env->allocator.get(),
 						  compile_env->allocator.get(),
-						  compile_env->document,
+						  compile_env->get_document(),
 						  last_value.cast_to<F32LiteralExprNode>()->data + 1)
 							.cast_to<ExprNode>()))
 					return gen_out_of_memory_comp_error();
@@ -95,7 +95,7 @@ SLKC_API peff::Option<CompilationError> slkc::get_succeeding_enum_value(
 				if (!(value_out = make_ast_node<F64LiteralExprNode>(
 						  compile_env->allocator.get(),
 						  compile_env->allocator.get(),
-						  compile_env->document,
+						  compile_env->get_document(),
 						  last_value.cast_to<F64LiteralExprNode>()->data + 1)
 							.cast_to<ExprNode>()))
 					return gen_out_of_memory_comp_error();
@@ -104,7 +104,7 @@ SLKC_API peff::Option<CompilationError> slkc::get_succeeding_enum_value(
 				if (!(value_out = make_ast_node<BoolLiteralExprNode>(
 						  compile_env->allocator.get(),
 						  compile_env->allocator.get(),
-						  compile_env->document,
+						  compile_env->get_document(),
 						  !last_value.cast_to<BoolLiteralExprNode>()->data)
 							.cast_to<ExprNode>()))
 					return gen_out_of_memory_comp_error();
@@ -118,7 +118,7 @@ SLKC_API peff::Option<CompilationError> slkc::get_succeeding_enum_value(
 				if (!(value_out = make_ast_node<I8LiteralExprNode>(
 						  compile_env->allocator.get(),
 						  compile_env->allocator.get(),
-						  compile_env->document,
+						  compile_env->get_document(),
 						  0)
 							.cast_to<ExprNode>()))
 					return gen_out_of_memory_comp_error();
@@ -127,7 +127,7 @@ SLKC_API peff::Option<CompilationError> slkc::get_succeeding_enum_value(
 				if (!(value_out = make_ast_node<I16LiteralExprNode>(
 						  compile_env->allocator.get(),
 						  compile_env->allocator.get(),
-						  compile_env->document,
+						  compile_env->get_document(),
 						  0)
 							.cast_to<ExprNode>()))
 					return gen_out_of_memory_comp_error();
@@ -136,7 +136,7 @@ SLKC_API peff::Option<CompilationError> slkc::get_succeeding_enum_value(
 				if (!(value_out = make_ast_node<I32LiteralExprNode>(
 						  compile_env->allocator.get(),
 						  compile_env->allocator.get(),
-						  compile_env->document,
+						  compile_env->get_document(),
 						  0)
 							.cast_to<ExprNode>()))
 					return gen_out_of_memory_comp_error();
@@ -145,7 +145,7 @@ SLKC_API peff::Option<CompilationError> slkc::get_succeeding_enum_value(
 				if (!(value_out = make_ast_node<I64LiteralExprNode>(
 						  compile_env->allocator.get(),
 						  compile_env->allocator.get(),
-						  compile_env->document,
+						  compile_env->get_document(),
 						  0)
 							.cast_to<ExprNode>()))
 					return gen_out_of_memory_comp_error();
@@ -154,7 +154,7 @@ SLKC_API peff::Option<CompilationError> slkc::get_succeeding_enum_value(
 				if (!(value_out = make_ast_node<U8LiteralExprNode>(
 						  compile_env->allocator.get(),
 						  compile_env->allocator.get(),
-						  compile_env->document,
+						  compile_env->get_document(),
 						  0)
 							.cast_to<ExprNode>()))
 					return gen_out_of_memory_comp_error();
@@ -163,7 +163,7 @@ SLKC_API peff::Option<CompilationError> slkc::get_succeeding_enum_value(
 				if (!(value_out = make_ast_node<U16LiteralExprNode>(
 						  compile_env->allocator.get(),
 						  compile_env->allocator.get(),
-						  compile_env->document,
+						  compile_env->get_document(),
 						  0)
 							.cast_to<ExprNode>()))
 					return gen_out_of_memory_comp_error();
@@ -172,7 +172,7 @@ SLKC_API peff::Option<CompilationError> slkc::get_succeeding_enum_value(
 				if (!(value_out = make_ast_node<U32LiteralExprNode>(
 						  compile_env->allocator.get(),
 						  compile_env->allocator.get(),
-						  compile_env->document,
+						  compile_env->get_document(),
 						  0)
 							.cast_to<ExprNode>()))
 					return gen_out_of_memory_comp_error();
@@ -181,7 +181,7 @@ SLKC_API peff::Option<CompilationError> slkc::get_succeeding_enum_value(
 				if (!(value_out = make_ast_node<U8LiteralExprNode>(
 						  compile_env->allocator.get(),
 						  compile_env->allocator.get(),
-						  compile_env->document,
+						  compile_env->get_document(),
 						  0)
 							.cast_to<ExprNode>()))
 					return gen_out_of_memory_comp_error();
@@ -190,7 +190,7 @@ SLKC_API peff::Option<CompilationError> slkc::get_succeeding_enum_value(
 				if (!(value_out = make_ast_node<F32LiteralExprNode>(
 						  compile_env->allocator.get(),
 						  compile_env->allocator.get(),
-						  compile_env->document,
+						  compile_env->get_document(),
 						  0)
 							.cast_to<ExprNode>()))
 					return gen_out_of_memory_comp_error();
@@ -199,7 +199,7 @@ SLKC_API peff::Option<CompilationError> slkc::get_succeeding_enum_value(
 				if (!(value_out = make_ast_node<F64LiteralExprNode>(
 						  compile_env->allocator.get(),
 						  compile_env->allocator.get(),
-						  compile_env->document,
+						  compile_env->get_document(),
 						  0)
 							.cast_to<ExprNode>()))
 					return gen_out_of_memory_comp_error();
@@ -208,7 +208,7 @@ SLKC_API peff::Option<CompilationError> slkc::get_succeeding_enum_value(
 				if (!(value_out = make_ast_node<BoolLiteralExprNode>(
 						  compile_env->allocator.get(),
 						  compile_env->allocator.get(),
-						  compile_env->document,
+						  compile_env->get_document(),
 						  false)
 							.cast_to<ExprNode>()))
 					return gen_out_of_memory_comp_error();
@@ -257,7 +257,7 @@ SLKC_API peff::Option<CompilationError> slkc::fill_scoped_enum(
 			if (!is_same) {
 				AstNodePtr<CastExprNode> cast_expr;
 
-				if (!(cast_expr = make_ast_node<CastExprNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->document)))
+				if (!(cast_expr = make_ast_node<CastExprNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->get_document())))
 					return gen_out_of_memory_comp_error();
 
 				cast_expr->token_range = item->enum_value->token_range;
@@ -333,7 +333,7 @@ SLKC_API peff::Option<CompilationError> slkc::renormalize_module_var_def_stmts(
 			}
 			AstNodePtr<VarNode> var_node;
 
-			if (!(var_node = make_ast_node<VarNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->document))) {
+			if (!(var_node = make_ast_node<VarNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->get_document()))) {
 				return gen_out_of_memory_comp_error();
 			}
 
@@ -367,7 +367,7 @@ SLKC_API peff::Option<CompilationError> slkc::normalize_module_var_def_stmts(
 SLKC_API peff::Option<CompilationError> slkc::gen_binary_op_expr(CompileEnv *compile_env, BinaryOp binary_op, AstNodePtr<ExprNode> lhs, AstNodePtr<ExprNode> rhs, TokenRange token_range, AstNodePtr<BinaryExprNode> &result_out) {
 	AstNodePtr<BinaryExprNode> expr;
 
-	if (!(expr = make_ast_node<BinaryExprNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->document))) {
+	if (!(expr = make_ast_node<BinaryExprNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->get_document()))) {
 		return gen_out_of_memory_comp_error();
 	}
 
@@ -385,7 +385,7 @@ SLKC_API peff::Option<CompilationError> slkc::gen_binary_op_expr(CompileEnv *com
 SLKC_API peff::Option<CompilationError> slkc::eval_const_binary_op_expr(CompileEnv *compile_env, CompilationContext *compilation_context, PathEnv *path_env, BinaryOp binary_op, AstNodePtr<ExprNode> lhs, AstNodePtr<ExprNode> rhs, AstNodePtr<ExprNode> &result_out) {
 	AstNodePtr<BinaryExprNode> expr;
 
-	if (!(expr = make_ast_node<BinaryExprNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->document)))
+	if (!(expr = make_ast_node<BinaryExprNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->get_document())))
 		return gen_out_of_memory_comp_error();
 
 	expr->binary_op = binary_op;
@@ -400,7 +400,7 @@ SLKC_API peff::Option<CompilationError> slkc::eval_const_binary_op_expr(CompileE
 SLKC_API peff::Option<CompilationError> slkc::gen_implicit_cast_expr(CompileEnv *compile_env, AstNodePtr<ExprNode> source, AstNodePtr<TypeNameNode> dest_type, AstNodePtr<CastExprNode> &result_out) {
 	AstNodePtr<CastExprNode> cast_expr;
 
-	if (!(cast_expr = make_ast_node<CastExprNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->document)))
+	if (!(cast_expr = make_ast_node<CastExprNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->get_document())))
 		return gen_out_of_memory_comp_error();
 
 	cast_expr->source = source;
@@ -415,7 +415,7 @@ SLKC_API peff::Option<CompilationError> slkc::gen_implicit_cast_expr(CompileEnv 
 SLKC_API peff::Option<CompilationError> slkc::implicit_convert_const_expr(CompileEnv *compile_env, CompilationContext *compilation_context, PathEnv *path_env, AstNodePtr<ExprNode> source, AstNodePtr<TypeNameNode> dest_type, AstNodePtr<ExprNode> &result_out) {
 	AstNodePtr<CastExprNode> cast_expr;
 
-	if (!(cast_expr = make_ast_node<CastExprNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->document)))
+	if (!(cast_expr = make_ast_node<CastExprNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->get_document())))
 		return gen_out_of_memory_comp_error();
 
 	cast_expr->source = source;

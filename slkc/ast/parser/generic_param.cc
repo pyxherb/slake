@@ -109,7 +109,7 @@ SLKC_API ParseCoroutine Parser::parse_generic_params(
 		while (true) {
 			AstNodePtr<GenericParamNode> generic_param_node;
 
-			if (!(generic_param_node = make_ast_node<GenericParamNode>(resource_allocator.get(), resource_allocator.get(), document))) {
+			if (!(generic_param_node = make_ast_node<GenericParamNode>(resource_allocator.get(), resource_allocator.get(), get_document()))) {
 				co_return gen_out_of_memory_syntax_error();
 			}
 
@@ -125,7 +125,7 @@ SLKC_API ParseCoroutine Parser::parse_generic_params(
 
 				peff::ScopeGuard set_token_range_guard([this, varg_token, &generic_param_node]() noexcept {
 					if (generic_param_node) {
-						generic_param_node->token_range = TokenRange{ document->main_module, varg_token->index, parse_context.idx_prev_token };
+						generic_param_node->token_range = TokenRange{ get_document()->main_module, varg_token->index, parse_context.idx_prev_token };
 					}
 				});
 
@@ -144,7 +144,7 @@ SLKC_API ParseCoroutine Parser::parse_generic_params(
 
 				peff::ScopeGuard set_token_range_guard([this, token, &generic_param_node]() noexcept {
 					if (generic_param_node) {
-						generic_param_node->token_range = TokenRange{ document->main_module, token->index, parse_context.idx_prev_token };
+						generic_param_node->token_range = TokenRange{ get_document()->main_module, token->index, parse_context.idx_prev_token };
 					}
 				});
 
@@ -170,7 +170,7 @@ SLKC_API ParseCoroutine Parser::parse_generic_params(
 
 				peff::ScopeGuard set_token_range_guard([this, name_token, &generic_param_node]() noexcept {
 					if (generic_param_node) {
-						generic_param_node->token_range = TokenRange{ document->main_module, name_token->index, parse_context.idx_prev_token };
+						generic_param_node->token_range = TokenRange{ get_document()->main_module, name_token->index, parse_context.idx_prev_token };
 					}
 				});
 

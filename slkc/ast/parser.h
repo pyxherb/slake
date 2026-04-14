@@ -244,7 +244,7 @@ namespace slkc {
 	class Parser : public peff::SharedFromThis<Parser> {
 	public:
 		ParseCoroutineScheduler parse_coro_scheduler;
-		peff::SharedPtr<Document> document;
+		peff::WeakPtr<Document> document;
 		AstNodePtr<MemberNode> cur_parent;
 		peff::RcObjectPtr<peff::Alloc> resource_allocator;
 		TokenList token_list;
@@ -257,8 +257,12 @@ namespace slkc {
 		SLKC_API Parser(peff::SharedPtr<Document> document, TokenList &&token_list, peff::Alloc *resource_allocator);
 		SLKC_API virtual ~Parser();
 
+		SLAKE_FORCEINLINE peff::SharedPtr<Document> get_document() const noexcept {
+			return document.lock();
+		}
+
 		SLKC_API SyntaxError gen_out_of_memory_syntax_error() const noexcept {
-			return SyntaxError(TokenRange{ document->main_module, 0 }, SyntaxErrorKind::OutOfMemory);
+			return SyntaxError(TokenRange{ get_document()->main_module, 0 }, SyntaxErrorKind::OutOfMemory);
 		}
 
 		SLKC_API peff::Option<SyntaxError> lookahead_until(size_t num_token_ids, const TokenId token_ids[]);
@@ -269,7 +273,7 @@ namespace slkc {
 			if (token->token_id != token_id) {
 				ExpectingSingleTokenErrorExData ex_data = { token_id };
 
-				return SyntaxError(TokenRange{ document->main_module, token->index }, std::move(ex_data));
+				return SyntaxError(TokenRange{ get_document()->main_module, token->index }, std::move(ex_data));
 			}
 
 			return {};
@@ -279,14 +283,14 @@ namespace slkc {
 			if (token->token_id == TokenId::End) {
 				ExpectingTokensErrorExData ex_data(resource_allocator.get());
 
-				return SyntaxError(TokenRange{ document->main_module, token->index }, std::move(ex_data));
+				return SyntaxError(TokenRange{ get_document()->main_module, token->index }, std::move(ex_data));
 			}
 
 			return {};
 		}
 
 		PEFF_FORCEINLINE peff::Option<SyntaxError> push_literal_overflowed_error(Token *token) noexcept {
-			if (!syntax_errors.push_back(SyntaxError(TokenRange{ document->main_module, token->index }, SyntaxErrorKind::LiteralOverflowed)))
+			if (!syntax_errors.push_back(SyntaxError(TokenRange{ get_document()->main_module, token->index }, SyntaxErrorKind::LiteralOverflowed)))
 				return gen_out_of_memory_syntax_error();
 			return {};
 		}

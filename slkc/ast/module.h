@@ -73,7 +73,7 @@ namespace slkc {
 		/// @return Whether the member is removed successfully.
 		SLKC_API void remove_member(const std::string_view &name) noexcept;
 
-		SLKC_API void set_parser(peff::SharedPtr<Parser> parser);
+		SLKC_API void set_parser(const peff::SharedPtr<Parser> &parser);
 	};
 }
 

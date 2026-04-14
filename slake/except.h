@@ -88,14 +88,15 @@ namespace slake {
 
 	class MismatchedVarTypeError : public RuntimeExecError {
 	public:
-		SLAKE_API MismatchedVarTypeError(peff::Alloc *self_allocator);
+		TypeRef expected_type;
+		SLAKE_API MismatchedVarTypeError(peff::Alloc *self_allocator, const TypeRef &expected_type);
 		SLAKE_API virtual ~MismatchedVarTypeError();
 
 		SLAKE_API virtual const char *what() const override;
 
 		SLAKE_API virtual void dealloc() override;
 
-		SLAKE_API static MismatchedVarTypeError *alloc(peff::Alloc *self_allocator);
+		SLAKE_API static MismatchedVarTypeError *alloc(peff::Alloc *self_allocator, const TypeRef &expected_type);
 	};
 
 	class FrameBoundaryExceededError : public RuntimeExecError {

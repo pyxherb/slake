@@ -101,6 +101,9 @@ namespace slkc {
 		SLKC_API CompilationContext(CompilationContext *parent);
 		SLKC_API virtual ~CompilationContext();
 
+		CompilationContext(const CompilationContext &) = delete;
+		CompilationContext(CompilationContext &&) = delete;
+
 		[[nodiscard]] virtual peff::Option<CompilationError> alloc_label(uint32_t &label_id_out) = 0;
 		virtual void set_label_offset(uint32_t label_id, uint32_t offset) const = 0;
 		[[nodiscard]] virtual peff::Option<CompilationError> set_label_name(uint32_t label_id, const std::string_view &name) = 0;
@@ -218,12 +221,12 @@ namespace slkc {
 		SLKC_API virtual peff::Option<CompilationError> register_source_loc_desc(slake::slxfmt::SourceLocDesc sld, uint32_t &index_out) override;
 	};
 
-	struct CompileEnv {
-		std::atomic_size_t ref_count;
+	struct CompileEnv final {
 		slake::Runtime *runtime;
 		slake::HostRefHolder host_ref_holder;
-		peff::RcObjectPtr<peff::Alloc> self_allocator, allocator;
-		peff::SharedPtr<Document> document;
+		peff::RcObjectPtr<peff::Alloc> allocator;
+		// FIXME: reference to document causes the weak reference cannot become zero and thus seems to be buggy.
+		peff::WeakPtr<Document> document;
 		peff::DynArray<CompilationError> errors;
 		peff::DynArray<CompilationWarning> warnings;
 		AstNodePtr<FnOverloadingNode> cur_overloading;
@@ -240,26 +243,12 @@ namespace slkc {
 			: runtime(runtime),
 			  document(document),
 			  host_ref_holder(allocator),
-			  self_allocator(self_allocator),
 			  allocator(allocator),
 			  errors(allocator),
 			  warnings(allocator),
 			  flags(0) {}
 
 		SLKC_API virtual ~CompileEnv();
-
-		SLKC_API virtual void on_ref_zero() noexcept;
-		SLAKE_FORCEINLINE size_t inc_ref(size_t ignored) noexcept {
-			return ++ref_count;
-		}
-		SLAKE_FORCEINLINE size_t dec_ref(size_t ignored) noexcept {
-			if (!--ref_count) {
-				on_ref_zero();
-				return 0;
-			}
-
-			return ref_count;
-		}
 
 		SLAKE_FORCEINLINE peff::Option<CompilationError> push_error(CompilationError &&error) {
 			if (!errors.push_back(std::move(error)))
@@ -278,6 +267,10 @@ namespace slkc {
 		SLAKE_FORCEINLINE void reset() {
 			cur_overloading = {};
 			this_node = {};
+		}
+
+		SLAKE_FORCEINLINE peff::SharedPtr<Document> get_document() const noexcept {
+			return document.lock();
 		}
 	};
 
@@ -350,71 +343,6 @@ namespace slkc {
 		AstNodePtr<ExprNode> operand,
 		AstNodePtr<TypeNameNode> operand_type,
 		CompileExprResult &result_out);
-	[[nodiscard]] SLKC_API peff::Option<CompilationError> _compile_simple_binary_expr(
-		CompileEnv *compile_env,
-		CompilationContext *compilation_context,
-		PathEnv *path_env,
-		AstNodePtr<BinaryExprNode> expr,
-		ExprEvalPurpose eval_purpose,
-		AstNodePtr<TypeNameNode> lhs_type,
-		AstNodePtr<TypeNameNode> desired_lhs_type,
-		ExprEvalPurpose lhs_eval_purpose,
-		AstNodePtr<TypeNameNode> rhs_type,
-		AstNodePtr<TypeNameNode> desired_rhs_type,
-		ExprEvalPurpose rhs_eval_purpose,
-		CompileExprResult &result_out,
-		slake::Opcode opcode,
-		uint32_t idx_sld);
-	peff::Option<CompilationError> _compile_simple_assign_expr(
-		CompileEnv *compile_env,
-		CompilationContext *compilation_context,
-		PathEnv *path_env,
-		AstNodePtr<BinaryExprNode> expr,
-		ExprEvalPurpose eval_purpose,
-		AstNodePtr<TypeNameNode> lhs_type,
-		AstNodePtr<TypeNameNode> desired_lhs_type,
-		AstNodePtr<TypeNameNode> rhs_type,
-		AstNodePtr<TypeNameNode> desired_rhs_type,
-		ExprEvalPurpose rhs_eval_purpose,
-		CompileExprResult &result_out,
-		uint32_t idx_sld);
-	[[nodiscard]] SLKC_API peff::Option<CompilationError> _compile_simple_land_binary_expr(
-		CompileEnv *compile_env,
-		CompilationContext *compilation_context,
-		PathEnv *path_env,
-		AstNodePtr<BinaryExprNode> expr,
-		ExprEvalPurpose eval_purpose,
-		AstNodePtr<BoolTypeNameNode> bool_type,
-		AstNodePtr<TypeNameNode> lhs_type,
-		AstNodePtr<TypeNameNode> rhs_type,
-		CompileExprResult &result_out,
-		slake::Opcode opcode,
-		uint32_t idx_sld);
-	[[nodiscard]] SLKC_API peff::Option<CompilationError> _compile_simple_lor_binary_expr(
-		CompileEnv *compile_env,
-		CompilationContext *compilation_context,
-		PathEnv *path_env,
-		AstNodePtr<BinaryExprNode> expr,
-		ExprEvalPurpose eval_purpose,
-		AstNodePtr<BoolTypeNameNode> bool_type,
-		AstNodePtr<TypeNameNode> lhs_type,
-		AstNodePtr<TypeNameNode> rhs_type,
-		CompileExprResult &result_out,
-		slake::Opcode opcode,
-		uint32_t idx_sld);
-	[[nodiscard]] SLKC_API peff::Option<CompilationError> _compile_simple_compound_assign_expr(
-		CompileEnv *compile_env,
-		CompilationContext *compilation_context,
-		PathEnv *path_env,
-		AstNodePtr<BinaryExprNode> expr,
-		ExprEvalPurpose eval_purpose,
-		AstNodePtr<TypeNameNode> lhs_type,
-		AstNodePtr<TypeNameNode> rhs_type,
-		AstNodePtr<TypeNameNode> desired_rhs_type,
-		ExprEvalPurpose rhs_eval_purpose,
-		CompileExprResult &result_out,
-		slake::Opcode opcode,
-		uint32_t idx_sld);
 
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> resolve_static_member(
 		CompileEnv *compile_env,
@@ -738,6 +666,13 @@ namespace slkc {
 		PathEnv *path_env,
 		const AstNodePtr<StmtNode> &stmt);
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> eval_expr_type(
+		CompileEnv *compile_env,
+		CompilationContext *compilation_context,
+		PathEnv *path_env,
+		const AstNodePtr<ExprNode> &expr,
+		AstNodePtr<TypeNameNode> &type_out,
+		AstNodePtr<TypeNameNode> desired_type = {});
+	[[nodiscard]] SLKC_API peff::Option<CompilationError> eval_decayed_expr_type(
 		CompileEnv *compile_env,
 		CompilationContext *compilation_context,
 		PathEnv *path_env,

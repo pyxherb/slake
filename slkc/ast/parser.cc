@@ -72,7 +72,7 @@ SLKC_API ParseCoroutineScheduler::ParseCoroutineScheduler(peff::Alloc *allocator
 SLKC_API Parser::Parser(peff::SharedPtr<Document> document,
 	TokenList &&token_list,
 	peff::Alloc *resource_allocator)
-	: document(document),
+	: document(std::move(document)),
 	  token_list(std::move(token_list)),
 	  resource_allocator(resource_allocator),
 	  syntax_errors(resource_allocator),
@@ -80,7 +80,6 @@ SLKC_API Parser::Parser(peff::SharedPtr<Document> document,
 }
 
 SLKC_API Parser::~Parser() {
-	assert(!document);
 }
 
 SLKC_API ParseCoroutine Parser::parse_operator_name(peff::Alloc *allocator, std::string_view &name_out) {
@@ -228,7 +227,7 @@ SLKC_API ParseCoroutine Parser::parse_operator_name(peff::Alloc *allocator, std:
 			next_token();
 			break;
 		default:
-			co_return SyntaxError(TokenRange{ document->main_module, t->index }, SyntaxErrorKind::ExpectingOperatorName);
+			co_return SyntaxError(TokenRange{ get_document()->main_module, t->index }, SyntaxErrorKind::ExpectingOperatorName);
 	}
 	co_return {};
 }
@@ -245,7 +244,7 @@ SLKC_API ParseCoroutine Parser::parse_id_name(peff::Alloc *allocator, peff::Stri
 			next_token();
 			break;
 		default:
-			co_return SyntaxError(TokenRange{ document->main_module, t->index }, SyntaxErrorKind::ExpectingId);
+			co_return SyntaxError(TokenRange{ get_document()->main_module, t->index }, SyntaxErrorKind::ExpectingId);
 	}
 	co_return {};
 }
@@ -257,7 +256,7 @@ SLKC_API ParseCoroutine Parser::parse_id_ref(peff::Alloc *allocator, IdRefPtr &i
 		co_return gen_out_of_memory_syntax_error();
 	Token *t = peek_token();
 
-	id_ref_ptr->token_range = TokenRange{ document->main_module, t->index };
+	id_ref_ptr->token_range = TokenRange{ get_document()->main_module, t->index };
 
 	if (t->token_id == TokenId::ThisKeyword) {
 		next_token();
@@ -390,7 +389,7 @@ SLKC_API ParseCoroutine Parser::parse_fn(peff::Alloc *allocator, AstNodePtr<FnOv
 
 	peff::String name(resource_allocator.get());
 
-	if (!(fn_node_out = make_ast_node<FnOverloadingNode>(resource_allocator.get(), resource_allocator.get(), document))) {
+	if (!(fn_node_out = make_ast_node<FnOverloadingNode>(resource_allocator.get(), resource_allocator.get(), get_document()))) {
 		co_return gen_out_of_memory_syntax_error();
 	}
 
@@ -444,7 +443,7 @@ SLKC_API ParseCoroutine Parser::parse_fn(peff::Alloc *allocator, AstNodePtr<FnOv
 			break;
 		}
 		default:
-			co_return SyntaxError(TokenRange{ document->main_module, fn_token->index }, SyntaxErrorKind::UnexpectedToken);
+			co_return SyntaxError(TokenRange{ get_document()->main_module, fn_token->index }, SyntaxErrorKind::UnexpectedToken);
 	}
 
 	switch (cur_parent->get_ast_node_type()) {
@@ -462,7 +461,7 @@ SLKC_API ParseCoroutine Parser::parse_fn(peff::Alloc *allocator, AstNodePtr<FnOv
 	cur_parent = fn_node_out.cast_to<MemberNode>();
 
 	peff::ScopeGuard set_token_range_guard([this, fn_token, fn_node_out]() noexcept {
-		fn_node_out->token_range = TokenRange{ document->main_module, fn_token->index, parse_context.idx_prev_token };
+		fn_node_out->token_range = TokenRange{ get_document()->main_module, fn_token->index, parse_context.idx_prev_token };
 	});
 
 	fn_node_out->name = std::move(name);
@@ -538,7 +537,7 @@ SLKC_API ParseCoroutine Parser::parse_fn(peff::Alloc *allocator, AstNodePtr<FnOv
 		next_token();
 		SLKC_CO_RETURN_IF_CO_PARSE_ERROR(parse_type_name(this->resource_allocator.get(), fn_node_out->return_type));
 	} else {
-		if (!(fn_node_out->return_type = make_ast_node<VoidTypeNameNode>(resource_allocator.get(), resource_allocator.get(), document).cast_to<TypeNameNode>())) {
+		if (!(fn_node_out->return_type = make_ast_node<VoidTypeNameNode>(resource_allocator.get(), resource_allocator.get(), get_document()).cast_to<TypeNameNode>())) {
 			co_return gen_out_of_memory_syntax_error();
 		}
 	}
@@ -556,7 +555,7 @@ SLKC_API ParseCoroutine Parser::parse_fn(peff::Alloc *allocator, AstNodePtr<FnOv
 
 			AstNodePtr<StmtNode> cur_stmt;
 
-			if (!(fn_node_out->body = make_ast_node<CodeBlockStmtNode>(resource_allocator.get(), resource_allocator.get(), document))) {
+			if (!(fn_node_out->body = make_ast_node<CodeBlockStmtNode>(resource_allocator.get(), resource_allocator.get(), get_document()))) {
 				co_return gen_out_of_memory_syntax_error();
 			}
 
@@ -588,7 +587,7 @@ SLKC_API ParseCoroutine Parser::parse_fn(peff::Alloc *allocator, AstNodePtr<FnOv
 		}
 		default:
 			co_return SyntaxError(
-				TokenRange{ document->main_module, body_token->index },
+				TokenRange{ get_document()->main_module, body_token->index },
 				SyntaxErrorKind::UnexpectedToken);
 	}
 
@@ -606,7 +605,7 @@ SLKC_API ParseCoroutine Parser::parse_union_enum_item(peff::Alloc *allocator, As
 	switch (Token *token = peek_token(); token->token_id) {
 		case TokenId::LParenthese: {
 			AstNodePtr<UnionEnumItemNode> enum_item;
-			if (!(enum_item = make_ast_node<UnionEnumItemNode>(resource_allocator.get(), resource_allocator.get(), document)))
+			if (!(enum_item = make_ast_node<UnionEnumItemNode>(resource_allocator.get(), resource_allocator.get(), get_document())))
 				co_return gen_out_of_memory_syntax_error();
 			next_token();
 
@@ -616,7 +615,7 @@ SLKC_API ParseCoroutine Parser::parse_union_enum_item(peff::Alloc *allocator, As
 			size_t idx_member;
 			{
 				peff::ScopeGuard set_token_range_guard([this, token, enum_item]() noexcept {
-					enum_item->token_range = TokenRange{ document->main_module, token->index, parse_context.idx_prev_token };
+					enum_item->token_range = TokenRange{ get_document()->main_module, token->index, parse_context.idx_prev_token };
 				});
 
 				if ((idx_member = enum_out->push_member(enum_item.cast_to<MemberNode>())) == SIZE_MAX)
@@ -625,13 +624,13 @@ SLKC_API ParseCoroutine Parser::parse_union_enum_item(peff::Alloc *allocator, As
 				while (true) {
 					AstNodePtr<VarNode> enum_item_entry;
 
-					if (!(enum_item_entry = make_ast_node<VarNode>(resource_allocator.get(), resource_allocator.get(), document)))
+					if (!(enum_item_entry = make_ast_node<VarNode>(resource_allocator.get(), resource_allocator.get(), get_document())))
 						co_return gen_out_of_memory_syntax_error();
 
 					size_t idx_entry_member;
 					{
 						peff::ScopeGuard set_enum_item_token_range_guard([this, token, enum_item]() noexcept {
-							enum_item->token_range = TokenRange{ document->main_module, token->index, parse_context.idx_prev_token };
+							enum_item->token_range = TokenRange{ get_document()->main_module, token->index, parse_context.idx_prev_token };
 						});
 						if ((idx_entry_member = enum_item->push_member(enum_item_entry.cast_to<MemberNode>())) == SIZE_MAX) {
 							co_return gen_out_of_memory_syntax_error();
@@ -696,7 +695,7 @@ SLKC_API ParseCoroutine Parser::parse_union_enum_item(peff::Alloc *allocator, As
 			break;
 		}
 		default:
-			co_return SyntaxError(TokenRange{ document->main_module, token->index }, SyntaxErrorKind::UnexpectedToken);
+			co_return SyntaxError(TokenRange{ get_document()->main_module, token->index }, SyntaxErrorKind::UnexpectedToken);
 	}
 
 	co_return {};
@@ -706,13 +705,13 @@ SLKC_API ParseCoroutine Parser::parse_enum_item(peff::Alloc *allocator, AstNodeP
 	peff::Option<SyntaxError> syntax_error;
 
 	AstNodePtr<EnumItemNode> enum_item;
-	if (!(enum_item = make_ast_node<EnumItemNode>(resource_allocator.get(), resource_allocator.get(), document)))
+	if (!(enum_item = make_ast_node<EnumItemNode>(resource_allocator.get(), resource_allocator.get(), get_document())))
 		co_return gen_out_of_memory_syntax_error();
 
 	size_t idx_member;
 	{
 		peff::ScopeGuard set_token_range_guard([this, token = peek_token(), enum_item]() noexcept {
-			enum_item->token_range = TokenRange{ document->main_module, token->index, parse_context.idx_prev_token };
+			enum_item->token_range = TokenRange{ get_document()->main_module, token->index, parse_context.idx_prev_token };
 		});
 
 		if ((idx_member = enum_out->push_member(enum_item.cast_to<MemberNode>())) == SIZE_MAX) {
@@ -798,11 +797,11 @@ access_modifier_parse_end:
 					next_token();
 					AstNodePtr<UnionEnumNode> enum_node;
 
-					if (!(enum_node = make_ast_node<UnionEnumNode>(resource_allocator.get(), resource_allocator.get(), document)))
+					if (!(enum_node = make_ast_node<UnionEnumNode>(resource_allocator.get(), resource_allocator.get(), get_document())))
 						co_return gen_out_of_memory_syntax_error();
 
 					peff::ScopeGuard set_token_range_guard([this, token, enum_node]() noexcept {
-						enum_node->token_range = TokenRange{ document->main_module, token->index, parse_context.idx_prev_token };
+						enum_node->token_range = TokenRange{ get_document()->main_module, token->index, parse_context.idx_prev_token };
 					});
 
 					Token *name_token;
@@ -866,11 +865,11 @@ access_modifier_parse_end:
 					next_token();
 					AstNodePtr<ConstEnumNode> enum_node;
 
-					if (!(enum_node = make_ast_node<ConstEnumNode>(resource_allocator.get(), resource_allocator.get(), document)))
+					if (!(enum_node = make_ast_node<ConstEnumNode>(resource_allocator.get(), resource_allocator.get(), get_document())))
 						co_return gen_out_of_memory_syntax_error();
 
 					peff::ScopeGuard set_token_range_guard([this, token, enum_node]() noexcept {
-						enum_node->token_range = TokenRange{ document->main_module, token->index, parse_context.idx_prev_token };
+						enum_node->token_range = TokenRange{ get_document()->main_module, token->index, parse_context.idx_prev_token };
 					});
 
 					Token *name_token;
@@ -945,13 +944,13 @@ access_modifier_parse_end:
 					Token *name_token = next_token();
 					AstNodePtr<ScopedEnumNode> enum_node;
 
-					if (!(enum_node = make_ast_node<ScopedEnumNode>(resource_allocator.get(), resource_allocator.get(), document)))
+					if (!(enum_node = make_ast_node<ScopedEnumNode>(resource_allocator.get(), resource_allocator.get(), get_document())))
 						co_return gen_out_of_memory_syntax_error();
 
 					size_t idx_member;
 					{
 						peff::ScopeGuard set_token_range_guard([this, token, enum_node]() noexcept {
-							enum_node->token_range = TokenRange{ document->main_module, token->index, parse_context.idx_prev_token };
+							enum_node->token_range = TokenRange{ get_document()->main_module, token->index, parse_context.idx_prev_token };
 						});
 						if ((idx_member = p->push_member(enum_node.cast_to<MemberNode>())) == SIZE_MAX) {
 							co_return gen_out_of_memory_syntax_error();
@@ -1017,7 +1016,7 @@ access_modifier_parse_end:
 					break;
 				}
 				default:
-					co_return SyntaxError(TokenRange{ document->main_module, token->index }, SyntaxErrorKind::UnexpectedToken);
+					co_return SyntaxError(TokenRange{ get_document()->main_module, token->index }, SyntaxErrorKind::UnexpectedToken);
 			}
 			break;
 		}
@@ -1027,7 +1026,7 @@ access_modifier_parse_end:
 
 			AstNodePtr<AttributeDefNode> attribute_node;
 
-			if (!(attribute_node = make_ast_node<AttributeDefNode>(resource_allocator.get(), resource_allocator.get(), document))) {
+			if (!(attribute_node = make_ast_node<AttributeDefNode>(resource_allocator.get(), resource_allocator.get(), get_document()))) {
 				co_return gen_out_of_memory_syntax_error();
 			}
 
@@ -1050,7 +1049,7 @@ access_modifier_parse_end:
 
 			{
 				peff::ScopeGuard set_token_range_guard([this, token, attribute_node]() noexcept {
-					attribute_node->token_range = TokenRange{ document->main_module, token->index, parse_context.idx_prev_token };
+					attribute_node->token_range = TokenRange{ get_document()->main_module, token->index, parse_context.idx_prev_token };
 				});
 
 				AstNodePtr<MemberNode> prev_parent;
@@ -1139,7 +1138,7 @@ access_modifier_parse_end:
 			} else {
 				AstNodePtr<FnNode> fn_slot;
 
-				if (!(fn_slot = make_ast_node<FnNode>(resource_allocator.get(), resource_allocator.get(), document))) {
+				if (!(fn_slot = make_ast_node<FnNode>(resource_allocator.get(), resource_allocator.get(), get_document()))) {
 					co_return gen_out_of_memory_syntax_error();
 				}
 
@@ -1165,7 +1164,7 @@ access_modifier_parse_end:
 
 			AstNodePtr<ClassNode> class_node;
 
-			if (!(class_node = make_ast_node<ClassNode>(resource_allocator.get(), resource_allocator.get(), document))) {
+			if (!(class_node = make_ast_node<ClassNode>(resource_allocator.get(), resource_allocator.get(), get_document()))) {
 				co_return gen_out_of_memory_syntax_error();
 			}
 
@@ -1188,7 +1187,7 @@ access_modifier_parse_end:
 
 			{
 				peff::ScopeGuard set_token_range_guard([this, token, class_node]() noexcept {
-					class_node->token_range = TokenRange{ document->main_module, token->index, parse_context.idx_prev_token };
+					class_node->token_range = TokenRange{ get_document()->main_module, token->index, parse_context.idx_prev_token };
 				});
 
 				AstNodePtr<MemberNode> prev_parent;
@@ -1301,7 +1300,7 @@ access_modifier_parse_end:
 
 			AstNodePtr<StructNode> struct_node;
 
-			if (!(struct_node = make_ast_node<StructNode>(resource_allocator.get(), resource_allocator.get(), document))) {
+			if (!(struct_node = make_ast_node<StructNode>(resource_allocator.get(), resource_allocator.get(), get_document()))) {
 				co_return gen_out_of_memory_syntax_error();
 			}
 
@@ -1324,7 +1323,7 @@ access_modifier_parse_end:
 
 			{
 				peff::ScopeGuard set_token_range_guard([this, token, struct_node]() noexcept {
-					struct_node->token_range = TokenRange{ document->main_module, token->index, parse_context.idx_prev_token };
+					struct_node->token_range = TokenRange{ get_document()->main_module, token->index, parse_context.idx_prev_token };
 				});
 
 				AstNodePtr<MemberNode> prev_parent;
@@ -1426,7 +1425,7 @@ access_modifier_parse_end:
 
 			AstNodePtr<InterfaceNode> interface_node;
 
-			if (!(interface_node = make_ast_node<InterfaceNode>(resource_allocator.get(), resource_allocator.get(), document))) {
+			if (!(interface_node = make_ast_node<InterfaceNode>(resource_allocator.get(), resource_allocator.get(), get_document()))) {
 				co_return gen_out_of_memory_syntax_error();
 			}
 
@@ -1451,7 +1450,7 @@ access_modifier_parse_end:
 
 			{
 				peff::ScopeGuard set_token_range_guard([this, token, interface_node]() noexcept {
-					interface_node->token_range = TokenRange{ document->main_module, token->index, parse_context.idx_prev_token };
+					interface_node->token_range = TokenRange{ get_document()->main_module, token->index, parse_context.idx_prev_token };
 				});
 
 				AstNodePtr<MemberNode> prev_member;
@@ -1553,7 +1552,7 @@ access_modifier_parse_end:
 
 			AstNodePtr<ImportNode> import_node;
 
-			if (!(import_node = make_ast_node<ImportNode>(resource_allocator.get(), resource_allocator.get(), document))) {
+			if (!(import_node = make_ast_node<ImportNode>(resource_allocator.get(), resource_allocator.get(), get_document()))) {
 				co_return gen_out_of_memory_syntax_error();
 			}
 
@@ -1600,7 +1599,7 @@ access_modifier_parse_end:
 			if (!(stmt = make_ast_node<VarDefStmtNode>(
 					  resource_allocator.get(),
 					  resource_allocator.get(),
-					  document,
+					  get_document(),
 					  peff::DynArray<VarDefEntryPtr>(resource_allocator.get())))) {
 				co_return gen_out_of_memory_syntax_error();
 			}
@@ -1612,7 +1611,7 @@ access_modifier_parse_end:
 			}
 
 			peff::ScopeGuard set_token_range_guard([this, token, stmt]() noexcept {
-				stmt->token_range = TokenRange{ document->main_module, token->index, parse_context.idx_prev_token };
+				stmt->token_range = TokenRange{ get_document()->main_module, token->index, parse_context.idx_prev_token };
 			});
 
 			SLKC_CO_RETURN_IF_CO_PARSE_ERROR(parse_var_defs(this->resource_allocator.get(), stmt->var_def_entries));
@@ -1637,7 +1636,7 @@ access_modifier_parse_end:
 				}
 				AstNodePtr<VarNode> var_node;
 
-				if (!(var_node = make_ast_node<VarNode>(resource_allocator.get(), resource_allocator.get(), document))) {
+				if (!(var_node = make_ast_node<VarNode>(resource_allocator.get(), resource_allocator.get(), get_document()))) {
 					co_return gen_out_of_memory_syntax_error();
 				}
 
@@ -1656,7 +1655,7 @@ access_modifier_parse_end:
 		default:
 			next_token();
 			co_return SyntaxError(
-				TokenRange{ document->main_module, token->index },
+				TokenRange{ get_document()->main_module, token->index },
 				SyntaxErrorKind::ExpectingDecl);
 	}
 

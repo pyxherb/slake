@@ -13,7 +13,7 @@ if(CMAKE_BUILD_TYPE)
         if(${ENABLE_ADDRESS_SANITIZER})
             message(CHECK_START "Finding AddressSanitizer")
 
-            if(CMAKE_COMPILER_IS_GNUCXX OR (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang"))
+            if(CMAKE_COMPILER_IS_GNUCXX OR (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang") OR (${CMAKE_CXX_COMPILER_ID} STREQUAL "AppleClang"))
                 # GCC/Clang
                 message(CHECK_PASS "AddressSanitizer mode: GCC/Clang")
                 set(CMAKE_CXX_FLAGS "-fsanitize=address -fno-omit-frame-pointer -fsanitize-recover=address")

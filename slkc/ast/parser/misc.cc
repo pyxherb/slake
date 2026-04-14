@@ -112,7 +112,7 @@ SLKC_API peff::Option<SyntaxError> Parser::split_shr_op_token() {
 			token->source_location.end_position.column -= 1;
 
 			OwnedTokenPtr extra_closing_token;
-			if (!(extra_closing_token = OwnedTokenPtr(peff::alloc_and_construct<Token>(token->allocator.get(), ASTNODE_ALIGNMENT, token->allocator.get(), peff::WeakPtr<Document>(document))))) {
+			if (!(extra_closing_token = OwnedTokenPtr(peff::alloc_and_construct<Token>(token->allocator.get(), ASTNODE_ALIGNMENT, token->allocator.get(), peff::WeakPtr<Document>(get_document()))))) {
 				return gen_out_of_memory_syntax_error();
 			}
 
@@ -145,7 +145,7 @@ SLKC_API peff::Option<SyntaxError> Parser::split_rdbrackets_token() {
 			token->source_location.end_position.column -= 1;
 
 			OwnedTokenPtr extra_closing_token;
-			if (!(extra_closing_token = OwnedTokenPtr(peff::alloc_and_construct<Token>(token->allocator.get(), ASTNODE_ALIGNMENT, token->allocator.get(), peff::WeakPtr<Document>(document))))) {
+			if (!(extra_closing_token = OwnedTokenPtr(peff::alloc_and_construct<Token>(token->allocator.get(), ASTNODE_ALIGNMENT, token->allocator.get(), peff::WeakPtr<Document>(get_document()))))) {
 				return gen_out_of_memory_syntax_error();
 			}
 

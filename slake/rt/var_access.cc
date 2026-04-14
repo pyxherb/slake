@@ -1388,6 +1388,9 @@ SLAKE_API void Runtime::write_var_with_type(const Reference &entity_ref, const T
 						std::terminate();
 					*((Object **)(raw_data_ptr)) = value.get_reference().as_object;
 					break;
+				case TypeId::StructInstance:
+					memcpy(raw_data_ptr, locate_value_base_ptr(value.get_reference()), sizeof_type(t));
+					break;
 				default:
 					// All fields should be checked during the instantiation.
 					std::terminate();

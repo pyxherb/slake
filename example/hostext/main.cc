@@ -206,6 +206,7 @@ public:
 [[nodiscard]] SLAKE_API bool dump_type_name(peff::Alloc *allocator, DumpWriter *writer, const slake::TypeRef &type);
 [[nodiscard]] SLAKE_API bool dump_value(peff::Alloc *allocator, DumpWriter *writer, const slake::Value &value);
 [[nodiscard]] SLAKE_API bool dump_id_ref_entries(peff::Alloc *allocator, DumpWriter *writer, const peff::DynArray<slake::IdRefEntry> &id_ref_in);
+[[nodiscard]] SLAKE_API bool dump_id_ref(peff::Alloc *allocator, DumpWriter *writer, const peff::DynArray<IdRefEntry> &entries, peff::DynArray<TypeRef> *optional_param_types, bool has_var_args, peff::Option<TypeRef> overriden_type);
 [[nodiscard]] SLAKE_API bool dump_id_ref(peff::Alloc *allocator, DumpWriter *writer, slake::IdRefObject *id_ref_in);
 
 #define SLAKE_RETURN_IF_FALSE(e) \
@@ -215,61 +216,61 @@ SLAKE_API bool dump_value(peff::Alloc *allocator, DumpWriter *writer, const slak
 	switch (value.value_type) {
 		case slake::ValueType::I8: {
 			char s[8];
-			sprintf(s, "%hd", (int16_t)value.get_i8());
+			snprintf(s, sizeof(s) - 1, "%hd", (int16_t)value.get_i8());
 			SLAKE_RETURN_IF_FALSE(writer->write(s));
 			break;
 		}
 		case slake::ValueType::I16: {
 			char s[16];
-			sprintf(s, "%hd", (int16_t)value.get_i16());
+			snprintf(s, sizeof(s) - 1, "%hd", (int16_t)value.get_i16());
 			SLAKE_RETURN_IF_FALSE(writer->write(s));
 			break;
 		}
 		case slake::ValueType::I32: {
 			char s[32];
-			sprintf(s, "%d", value.get_i32());
+			snprintf(s, sizeof(s) - 1, "%d", value.get_i32());
 			SLAKE_RETURN_IF_FALSE(writer->write(s));
 			break;
 		}
 		case slake::ValueType::I64: {
 			char s[48];
-			sprintf(s, "%lld", value.get_i64());
+			snprintf(s, sizeof(s) - 1, "%lld", value.get_i64());
 			SLAKE_RETURN_IF_FALSE(writer->write(s));
 			break;
 		}
 		case slake::ValueType::U8: {
 			char s[4];
-			sprintf(s, "%hu", (uint16_t)value.get_u8());
+			snprintf(s, sizeof(s) - 1, "%hu", (uint16_t)value.get_u8());
 			SLAKE_RETURN_IF_FALSE(writer->write(s));
 			break;
 		}
 		case slake::ValueType::U16: {
 			char s[8];
-			sprintf(s, "%hu", (uint16_t)value.get_u16());
+			snprintf(s, sizeof(s) - 1, "%hu", (uint16_t)value.get_u16());
 			SLAKE_RETURN_IF_FALSE(writer->write(s));
 			break;
 		}
 		case slake::ValueType::U32: {
 			char s[16];
-			sprintf(s, "%u", value.get_u32());
+			snprintf(s, sizeof(s) - 1, "%u", value.get_u32());
 			SLAKE_RETURN_IF_FALSE(writer->write(s));
 			break;
 		}
 		case slake::ValueType::U64: {
 			char s[32];
-			sprintf(s, "%llu", value.get_u64());
+			snprintf(s, sizeof(s) - 1, "%llu", value.get_u64());
 			SLAKE_RETURN_IF_FALSE(writer->write(s));
 			break;
 		}
 		case slake::ValueType::F32: {
 			char s[16];
-			sprintf(s, "%f", value.get_f32());
+			snprintf(s, sizeof(s) - 1, "%f", value.get_f32());
 			SLAKE_RETURN_IF_FALSE(writer->write(s));
 			break;
 		}
 		case slake::ValueType::F64: {
 			char s[32];
-			sprintf(s, "%f", value.get_f64());
+			snprintf(s, sizeof(s) - 1, "%f", value.get_f64());
 			SLAKE_RETURN_IF_FALSE(writer->write(s));
 			break;
 		}
@@ -397,7 +398,7 @@ SLAKE_API bool dump_value(peff::Alloc *allocator, DumpWriter *writer, const slak
 		}
 		case slake::ValueType::RegIndex: {
 			char s[32];
-			sprintf(s, "%%%u", value.get_reg_index());
+			snprintf(s, sizeof(s) - 1, "%%%u", value.get_reg_index());
 			SLAKE_RETURN_IF_FALSE(writer->write(s));
 			break;
 		}
@@ -437,11 +438,11 @@ SLAKE_API bool dump_id_ref_entries(peff::Alloc *allocator, DumpWriter *writer, c
 	return true;
 }
 
-SLAKE_API bool dump_id_ref(peff::Alloc *allocator, DumpWriter *writer, slake::IdRefObject *id_ref_in) {
-	SLAKE_RETURN_IF_FALSE(dump_id_ref_entries(allocator, writer, id_ref_in->entries));
+SLAKE_API bool dump_id_ref(peff::Alloc *allocator, DumpWriter *writer, const peff::DynArray<IdRefEntry> &entries, peff::DynArray<TypeRef> *optional_param_types, bool has_var_args, peff::Option<TypeRef> overriden_type) {
+	SLAKE_RETURN_IF_FALSE(dump_id_ref_entries(allocator, writer, entries));
 
-	if (id_ref_in->param_types.has_value()) {
-		auto &param_types = *id_ref_in->param_types;
+	if (optional_param_types) {
+		auto &param_types = *optional_param_types;
 
 		if (param_types.size()) {
 			SLAKE_RETURN_IF_FALSE(writer->write("("));
@@ -454,28 +455,40 @@ SLAKE_API bool dump_id_ref(peff::Alloc *allocator, DumpWriter *writer, slake::Id
 				SLAKE_RETURN_IF_FALSE(dump_type_name(allocator, writer, param_types.at(i)));
 			}
 
-			if (id_ref_in->has_var_args) {
+			if (has_var_args) {
 				SLAKE_RETURN_IF_FALSE(writer->write(", ..."));
 			}
 
 			SLAKE_RETURN_IF_FALSE(writer->write(")"));
 		} else {
-			if (id_ref_in->has_var_args) {
+			if (has_var_args) {
 				SLAKE_RETURN_IF_FALSE(writer->write("(...)"));
 			} else {
 				SLAKE_RETURN_IF_FALSE(writer->write("()"));
 			}
 		}
 	} else {
-		if (id_ref_in->has_var_args) {
+		if (has_var_args) {
 			SLAKE_RETURN_IF_FALSE(writer->write("(...)"));
 		}
 	}
 
-	if (id_ref_in->overriden_type) {
+	if (overriden_type) {
 		SLAKE_RETURN_IF_FALSE(writer->write(" override "));
-		SLAKE_RETURN_IF_FALSE(dump_type_name(allocator, writer, id_ref_in->overriden_type));
+		SLAKE_RETURN_IF_FALSE(dump_type_name(allocator, writer, *overriden_type));
 	}
+
+	return true;
+}
+
+SLAKE_API bool dump_id_ref(peff::Alloc *allocator, DumpWriter *writer, IdRefObject *id_ref_object) {
+	SLAKE_RETURN_IF_FALSE(dump_id_ref(
+		allocator,
+		writer,
+		id_ref_object->entries,
+		id_ref_object->param_types ? &id_ref_object->param_types.value() : nullptr,
+		id_ref_object->has_var_args,
+		peff::Option<TypeRef>(TypeRef(id_ref_object->overriden_type))));
 
 	return true;
 }
@@ -539,6 +552,8 @@ SLAKE_API bool dump_type_name(peff::Alloc *allocator, DumpWriter *writer, const 
 					if (!runtime->get_full_ref(allocator, (slake::MemberObject *)obj->type_object, module_full_name))
 						return false;
 
+					SLAKE_RETURN_IF_FALSE(dump_id_ref(allocator, writer, module_full_name, nullptr, false, {}));
+
 					break;
 				}
 				case slake::ObjectKind::IdRef: {
@@ -564,6 +579,8 @@ SLAKE_API bool dump_type_name(peff::Alloc *allocator, DumpWriter *writer, const 
 
 					if (!runtime->get_full_ref(allocator, (slake::MemberObject *)obj->type_object, module_full_name))
 						return false;
+
+					SLAKE_RETURN_IF_FALSE(dump_id_ref(allocator, writer, module_full_name, nullptr, false, {}));
 
 					break;
 				}
@@ -591,6 +608,8 @@ SLAKE_API bool dump_type_name(peff::Alloc *allocator, DumpWriter *writer, const 
 					if (!runtime->get_full_ref(allocator, (slake::MemberObject *)obj->type_object, module_full_name))
 						return false;
 
+					SLAKE_RETURN_IF_FALSE(dump_id_ref(allocator, writer, module_full_name, nullptr, false, {}));
+
 					break;
 				}
 				case slake::ObjectKind::IdRef: {
@@ -616,6 +635,8 @@ SLAKE_API bool dump_type_name(peff::Alloc *allocator, DumpWriter *writer, const 
 
 					if (!runtime->get_full_ref(allocator, (slake::MemberObject *)obj->type_object, module_full_name))
 						return false;
+
+					SLAKE_RETURN_IF_FALSE(dump_id_ref(allocator, writer, module_full_name, nullptr, false, {}));
 
 					break;
 				}
@@ -643,6 +664,8 @@ SLAKE_API bool dump_type_name(peff::Alloc *allocator, DumpWriter *writer, const 
 					if (!runtime->get_full_ref(allocator, (slake::MemberObject *)obj->type_object, module_full_name))
 						return false;
 
+					SLAKE_RETURN_IF_FALSE(dump_id_ref(allocator, writer, module_full_name, nullptr, false, {}));
+
 					break;
 				}
 				case slake::ObjectKind::IdRef: {
@@ -668,6 +691,8 @@ SLAKE_API bool dump_type_name(peff::Alloc *allocator, DumpWriter *writer, const 
 
 					if (!runtime->get_full_ref(allocator, (slake::MemberObject *)obj->type_object, module_full_name))
 						return false;
+
+					SLAKE_RETURN_IF_FALSE(dump_id_ref(allocator, writer, module_full_name, nullptr, false, {}));
 
 					break;
 				}
@@ -757,7 +782,7 @@ SLAKE_API bool dump_type_name(peff::Alloc *allocator, DumpWriter *writer, const 
 			SLAKE_RETURN_IF_FALSE(writer->write(", "));
 
 			char s[16];
-			sprintf(s, "%u", obj->width);
+			snprintf(s, sizeof(s) - 1, "%u", obj->width);
 			SLAKE_RETURN_IF_FALSE(writer->write(s));
 
 			SLAKE_RETURN_IF_FALSE(writer->write(">"));
@@ -794,7 +819,8 @@ bool dump_exception_info(peff::Alloc *allocator, DumpWriter *writer, slake::Inte
 				case slake::RuntimeExecErrorCode::MismatchedVarType: {
 					MismatchedVarTypeError *err = (MismatchedVarTypeError *)rte;
 					SLAKE_RETURN_IF_FALSE(write_details_header());
-					SLAKE_RETURN_IF_FALSE(writer->write("Mismatched variable type"));
+					SLAKE_RETURN_IF_FALSE(writer->write("Mismatched variable type, expecting "));
+					SLAKE_RETURN_IF_FALSE(dump_type_name(allocator, writer, err->expected_type));
 					break;
 				}
 				case slake::RuntimeExecErrorCode::ReferencedMemberNotFound: {
@@ -823,7 +849,7 @@ bool dump_exception_info(peff::Alloc *allocator, DumpWriter *writer, slake::Inte
 					SLAKE_RETURN_IF_FALSE(writer->write("Invalid argument number, "));
 					{
 						char n[13];
-						sprintf(n, "%u", err->num_args);
+						snprintf(n, sizeof(n) - 1, "%u", err->num_args);
 						SLAKE_RETURN_IF_FALSE(writer->write(n));
 					}
 					SLAKE_RETURN_IF_FALSE(writer->write(" arguments does not match"));
@@ -835,7 +861,7 @@ bool dump_exception_info(peff::Alloc *allocator, DumpWriter *writer, slake::Inte
 					SLAKE_RETURN_IF_FALSE(writer->write("Invalid array index, "));
 					{
 						char n[26];
-						sprintf(n, "%zu", err->index);
+						snprintf(n, sizeof(n) - 1,"%zu", err->index);
 						SLAKE_RETURN_IF_FALSE(writer->write(n));
 					}
 					SLAKE_RETURN_IF_FALSE(writer->write(" is out of index range"));

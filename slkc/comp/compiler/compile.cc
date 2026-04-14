@@ -225,7 +225,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_type_name(
 		}
 		case TypeNameKind::Array: {
 			AstNodePtr<ArrayTypeNameNode> t = type_name.cast_to<ArrayTypeNameNode>();
-			AstNodePtr<Document> doc = t->document->shared_from_this();
+			peff::SharedPtr<Document> doc = t->document->shared_from_this();
 
 			slake::HostObjectRef<slake::ArrayTypeDefObject> type_def;
 
@@ -256,7 +256,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_type_name(
 		}
 		case TypeNameKind::Ref: {
 			AstNodePtr<RefTypeNameNode> t = type_name.cast_to<RefTypeNameNode>();
-			AstNodePtr<Document> doc = t->document->shared_from_this();
+			peff::SharedPtr<Document> doc = t->document->shared_from_this();
 
 			slake::HostObjectRef<slake::RefTypeDefObject> type_def;
 
@@ -287,7 +287,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_type_name(
 		}
 		case TypeNameKind::Tuple: {
 			AstNodePtr<TupleTypeNameNode> t = type_name.cast_to<TupleTypeNameNode>();
-			AstNodePtr<Document> doc = t->document->shared_from_this();
+			peff::SharedPtr<Document> doc = t->document->shared_from_this();
 
 			slake::HostObjectRef<slake::TupleTypeDefObject> obj;
 
@@ -322,7 +322,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_type_name(
 		}
 		case TypeNameKind::SIMD: {
 			AstNodePtr<SIMDTypeNameNode> t = type_name.cast_to<SIMDTypeNameNode>();
-			AstNodePtr<Document> doc = t->document->shared_from_this();
+			peff::SharedPtr<Document> doc = t->document->shared_from_this();
 
 			slake::HostObjectRef<slake::SIMDTypeDefObject> obj;
 
@@ -387,7 +387,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_type_name(
 		}
 		case TypeNameKind::ParamTypeList: {
 			AstNodePtr<ParamTypeListTypeNameNode> t = type_name.cast_to<ParamTypeListTypeNameNode>();
-			AstNodePtr<Document> doc = t->document->shared_from_this();
+			peff::SharedPtr<Document> doc = t->document->shared_from_this();
 
 			slake::HostObjectRef<slake::ParamTypeListTypeDefObject> obj;
 
@@ -423,7 +423,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_type_name(
 		}
 		case TypeNameKind::Unpacking: {
 			AstNodePtr<UnpackingTypeNameNode> t = type_name.cast_to<UnpackingTypeNameNode>();
-			AstNodePtr<Document> doc = t->document->shared_from_this();
+			peff::SharedPtr<Document> doc = t->document->shared_from_this();
 
 			slake::HostObjectRef<slake::UnpackingTypeDefObject> obj;
 
@@ -878,7 +878,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 
 			slake::HostObjectRef<slake::IdRefObject> id;
 
-			for (auto &j : compile_env->document->external_module_providers) {
+			for (auto &j : compile_env->get_document()->external_module_providers) {
 				SLKC_RETURN_IF_COMP_ERROR(j->load_module(compile_env, i->id_ref.get()));
 			}
 
@@ -895,7 +895,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 		if (m->get_ast_node_type() == AstNodeType::Import) {
 			AstNodePtr<ImportNode> import_node = m.cast_to<ImportNode>();
 
-			for (auto &j : compile_env->document->external_module_providers) {
+			for (auto &j : compile_env->get_document()->external_module_providers) {
 				SLKC_RETURN_IF_COMP_ERROR(j->load_module(compile_env, import_node->id_ref.get()));
 			}
 
@@ -912,7 +912,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 		}
 	}
 
-	// SLKC_RETURN_IF_COMP_ERROR(index_module_var_members(compile_env, compile_env->document->root_module));
+	// SLKC_RETURN_IF_COMP_ERROR(index_module_var_members(compile_env, compile_env->get_document()->root_module));
 
 	for (auto [k, v] : mod->member_indices) {
 		AstNodePtr<MemberNode> m = mod->members.at(v);
@@ -1066,7 +1066,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 								if (implemented_type_node->get_ast_node_type() != AstNodeType::Interface) {
 									SLKC_RETURN_IF_COMP_ERROR(compile_env->push_error(CompilationError(i->token_range, CompilationErrorKind::ExpectingInterfaceName)));
 								} else {
-									if (auto e = collect_involved_interfaces(compile_env->document, implemented_type_node.cast_to<InterfaceNode>(), involved_interfaces, true); e) {
+									if (auto e = collect_involved_interfaces(compile_env->get_document(), implemented_type_node.cast_to<InterfaceNode>(), involved_interfaces, true); e) {
 										if (e->error_kind != CompilationErrorKind::CyclicInheritedInterface)
 											return e;
 									}
@@ -1406,7 +1406,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 								if (!is_same) {
 									AstNodePtr<CastExprNode> cast_expr;
 
-									if (!(cast_expr = make_ast_node<CastExprNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->document)))
+									if (!(cast_expr = make_ast_node<CastExprNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->get_document())))
 										return gen_out_of_memory_comp_error();
 
 									cast_expr->target_type = cls_node->base_type;
@@ -1574,7 +1574,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 								if (implemented_type_node->get_ast_node_type() != AstNodeType::Interface) {
 									SLKC_RETURN_IF_COMP_ERROR(compile_env->push_error(CompilationError(i->token_range, CompilationErrorKind::ExpectingInterfaceName)));
 								} else {
-									if (auto e = collect_involved_interfaces(compile_env->document, implemented_type_node.cast_to<InterfaceNode>(), involved_interfaces, true); e) {
+									if (auto e = collect_involved_interfaces(compile_env->get_document(), implemented_type_node.cast_to<InterfaceNode>(), involved_interfaces, true); e) {
 										if (e->error_kind != CompilationErrorKind::CyclicInheritedInterface)
 											return e;
 									}
@@ -1682,7 +1682,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 						case AstNodeType::Interface:
 						case AstNodeType::Struct:
 							if (!(i->access_modifier & slake::ACCESS_STATIC)) {
-								if (!(compile_env->this_node = make_ast_node<ThisNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->document)))
+								if (!(compile_env->this_node = make_ast_node<ThisNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->get_document())))
 									return gen_out_of_memory_comp_error();
 								compile_env->this_node->this_type = mod->shared_from_this().cast_to<MemberNode>();
 							}

@@ -30,7 +30,8 @@ SLAKE_API RuntimeExecError::RuntimeExecError(
 SLAKE_API RuntimeExecError::~RuntimeExecError() {}
 
 SLAKE_API MismatchedVarTypeError::MismatchedVarTypeError(
-	peff::Alloc *self_allocator) : RuntimeExecError(self_allocator, RuntimeExecErrorCode::MismatchedVarType) {}
+	peff::Alloc *self_allocator,
+	const TypeRef &expected_type) : RuntimeExecError(self_allocator, RuntimeExecErrorCode::MismatchedVarType), expected_type(expected_type) {}
 SLAKE_API MismatchedVarTypeError::~MismatchedVarTypeError() {}
 
 SLAKE_API const char *MismatchedVarTypeError::what() const {
@@ -41,8 +42,8 @@ SLAKE_API void MismatchedVarTypeError::dealloc() {
 	peff::destroy_and_release<MismatchedVarTypeError>(self_allocator.get(), this, sizeof(std::max_align_t));
 }
 
-SLAKE_API MismatchedVarTypeError *MismatchedVarTypeError::alloc(peff::Alloc *self_allocator) {
-	return peff::alloc_and_construct<MismatchedVarTypeError>(self_allocator, sizeof(std::max_align_t), self_allocator);
+SLAKE_API MismatchedVarTypeError *MismatchedVarTypeError::alloc(peff::Alloc *self_allocator, const TypeRef &expected_type) {
+	return peff::alloc_and_construct<MismatchedVarTypeError>(self_allocator, sizeof(std::max_align_t), self_allocator, expected_type);
 }
 
 SLAKE_API FrameBoundaryExceededError::FrameBoundaryExceededError(

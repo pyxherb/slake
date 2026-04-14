@@ -7,7 +7,7 @@ SLKC_API ParseCoroutine Parser::parse_attribute(peff::Alloc *allocator, AstNodeP
 
 	AstNodePtr<AttributeNode> attribute;
 
-	if (!(attribute = make_ast_node<AttributeNode>(resource_allocator.get(), resource_allocator.get(), document))) {
+	if (!(attribute = make_ast_node<AttributeNode>(resource_allocator.get(), resource_allocator.get(), get_document()))) {
 		co_return gen_out_of_memory_syntax_error();
 	}
 

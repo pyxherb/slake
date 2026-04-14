@@ -125,28 +125,24 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 			cache_table = &it.value();
 			remove_cache_dir_entry_guard.release();
 		} else {
-			peff::RcObjectPtr<CompileEnv> compile_env;
-
-			if (!(compile_env = peff::alloc_and_construct<CompileEnv>(allocator.get(), alignof(CompileEnv), nullptr, shared_from_this(), allocator.get(), allocator.get())))
-				return gen_out_of_memory_comp_error();
 			if (!generic_cache_dir.insert(
 					original_object.get(),
 					GenericCacheTable(allocator.get(),
-						GenericArgListCmp(this, compile_env.get())))) {
+						GenericArgListCmp(this, nullptr)))) {
 				return gen_out_of_memory_comp_error();
 			}
 			cache_table = &generic_cache_dir.at(original_object.get());
 		}
 
-		auto compile_env = cache_table->comparator().compile_env.get();
-		NormalCompilationContext compilation_context(compile_env, nullptr);
+		CompileEnv compile_env(nullptr, shared_from_this(), allocator.get(), allocator.get());
+		NormalCompilationContext compilation_context(&compile_env, nullptr);
 		for (size_t i = 0; i < generic_args.size(); ++i) {
 			AstNodePtr<AstNode> cur_arg = generic_args.at(i);
 
 			if (cur_arg->get_ast_node_type() == AstNodeType::Expr) {
 				AstNodePtr<ExprNode> evaluated_arg;
-				PathEnv path_env(compile_env->allocator.get());
-				SLKC_RETURN_IF_COMP_ERROR(eval_const_expr(compile_env, &compilation_context, &path_env, cur_arg.cast_to<ExprNode>(), evaluated_arg));
+				PathEnv path_env(compile_env.allocator.get());
+				SLKC_RETURN_IF_COMP_ERROR(eval_const_expr(&compile_env, &compilation_context, &path_env, cur_arg.cast_to<ExprNode>(), evaluated_arg));
 				if (!evaluated_arg)
 					return CompilationError(
 						cur_arg->token_range,
@@ -187,8 +183,8 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 
 								AstNodePtr<TypeNameNode> arg_type;
 								{
-									PathEnv root_path_env(compile_env->allocator.get());
-									SLKC_RETURN_IF_COMP_ERROR(eval_expr_type(compile_env, &compilation_context, &root_path_env, cur_arg.cast_to<ExprNode>(), arg_type));
+									PathEnv root_path_env(compile_env.allocator.get());
+									SLKC_RETURN_IF_COMP_ERROR(eval_expr_type(&compile_env, &compilation_context, &root_path_env, cur_arg.cast_to<ExprNode>(), arg_type));
 								}
 
 								bool same = false;
@@ -251,8 +247,8 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 
 							AstNodePtr<TypeNameNode> arg_type;
 							{
-								PathEnv root_path_env(compile_env->allocator.get());
-								SLKC_RETURN_IF_COMP_ERROR(eval_expr_type(compile_env, &compilation_context, &root_path_env, cur_arg.cast_to<ExprNode>(), arg_type));
+								PathEnv root_path_env(compile_env.allocator.get());
+								SLKC_RETURN_IF_COMP_ERROR(eval_expr_type(&compile_env, &compilation_context, &root_path_env, cur_arg.cast_to<ExprNode>(), arg_type));
 							}
 
 							bool same = false;
@@ -306,8 +302,8 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 
 							AstNodePtr<TypeNameNode> arg_type;
 							{
-								PathEnv root_path_env(compile_env->allocator.get());
-								SLKC_RETURN_IF_COMP_ERROR(eval_expr_type(compile_env, &compilation_context, &root_path_env, cur_arg.cast_to<ExprNode>(), arg_type));
+								PathEnv root_path_env(compile_env.allocator.get());
+								SLKC_RETURN_IF_COMP_ERROR(eval_expr_type(&compile_env, &compilation_context, &root_path_env, cur_arg.cast_to<ExprNode>(), arg_type));
 							}
 
 							bool same = false;
@@ -431,6 +427,8 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 							}
 							break;
 						}
+						default:
+							break;
 					}
 				}
 
@@ -718,6 +716,8 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 									}
 									break;
 								}
+								default:
+									break;
 							}
 						}
 					}
@@ -754,7 +754,7 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 									constexpr static size_t len_name = sizeof("arg_") + (sizeof(size_t) << 1) + 1;
 									char name_buf[len_name] = { 0 };
 
-									sprintf(name_buf, "arg_%.02zx", i + k);
+									snprintf(name_buf, len_name - 1, "arg_%.02zx", i + k);
 
 									if (!p->name.build(name_buf)) {
 										return gen_out_of_memory_comp_error();

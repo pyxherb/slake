@@ -197,10 +197,10 @@ namespace slkc {
 	struct CompileEnv;
 	struct GenericArgListCmp {
 		Document *document;
-		peff::RcObjectPtr<CompileEnv> compile_env;
+		slake::Runtime *runtime;
 		mutable peff::Option<slkc::CompilationError> stored_error;
 
-		SLAKE_API GenericArgListCmp(Document *document, CompileEnv *compile_env);
+		SLAKE_API GenericArgListCmp(Document *document, slake::Runtime *runtime);
 		SLAKE_API GenericArgListCmp(const GenericArgListCmp &r);
 		SLAKE_API ~GenericArgListCmp();
 

@@ -104,9 +104,11 @@ SLKC_API Decompiler::~Decompiler() {
 }
 
 SLKC_API bool Decompiler::decompile_generic_param(peff::Alloc *allocator, DumpWriter *writer, const slake::GenericParam &generic_param) {
+	if(generic_param.input_type != slake::TypeId::Invalid)
+		SLKC_RETURN_IF_FALSE(writer->write("const "));
 	SLKC_RETURN_IF_FALSE(writer->write(generic_param.name));
 	if (generic_param.input_type != slake::TypeId::Invalid) {
-		SLKC_RETURN_IF_FALSE(writer->write(" as "));
+		SLKC_RETURN_IF_FALSE(writer->write(": "));
 		SLKC_RETURN_IF_FALSE(decompile_type_name(allocator, writer, generic_param.input_type));
 		if ((generic_param.base_type != slake::TypeId::Invalid) || (generic_param.interfaces.size()))
 			SLKC_RETURN_IF_FALSE(writer->write("/* With extraneous constraints */"));
@@ -406,7 +408,7 @@ SLKC_API bool Decompiler::decompile_type_name(peff::Alloc *allocator, DumpWriter
 			SLKC_RETURN_IF_FALSE(writer->write(", "));
 
 			char s[16];
-			sprintf(s, "%u", obj->width);
+			snprintf(s, sizeof(s) - 1, "%u", obj->width);
 			SLKC_RETURN_IF_FALSE(writer->write(s));
 
 			SLKC_RETURN_IF_FALSE(writer->write(">"));
@@ -431,61 +433,61 @@ SLKC_API bool Decompiler::decompile_value(peff::Alloc *allocator, DumpWriter *wr
 	switch (value.value_type) {
 		case slake::ValueType::I8: {
 			char s[8];
-			sprintf(s, "%hd", (int16_t)value.get_i8());
+			snprintf(s, sizeof(s) - 1, "%hd", (int16_t)value.get_i8());
 			SLKC_RETURN_IF_FALSE(writer->write(s));
 			break;
 		}
 		case slake::ValueType::I16: {
 			char s[16];
-			sprintf(s, "%hd", (int16_t)value.get_i16());
+			snprintf(s, sizeof(s) - 1, "%hd", (int16_t)value.get_i16());
 			SLKC_RETURN_IF_FALSE(writer->write(s));
 			break;
 		}
 		case slake::ValueType::I32: {
 			char s[32];
-			sprintf(s, "%d", value.get_i32());
+			snprintf(s, sizeof(s) - 1, "%d", value.get_i32());
 			SLKC_RETURN_IF_FALSE(writer->write(s));
 			break;
 		}
 		case slake::ValueType::I64: {
 			char s[48];
-			sprintf(s, "%lld", value.get_i64());
+			snprintf(s, sizeof(s) - 1, "%lld", value.get_i64());
 			SLKC_RETURN_IF_FALSE(writer->write(s));
 			break;
 		}
 		case slake::ValueType::U8: {
 			char s[4];
-			sprintf(s, "%hu", (uint16_t)value.get_u8());
+			snprintf(s, sizeof(s) - 1, "%hu", (uint16_t)value.get_u8());
 			SLKC_RETURN_IF_FALSE(writer->write(s));
 			break;
 		}
 		case slake::ValueType::U16: {
 			char s[8];
-			sprintf(s, "%hu", (uint16_t)value.get_u16());
+			snprintf(s, sizeof(s) - 1, "%hu", (uint16_t)value.get_u16());
 			SLKC_RETURN_IF_FALSE(writer->write(s));
 			break;
 		}
 		case slake::ValueType::U32: {
 			char s[16];
-			sprintf(s, "%u", value.get_u32());
+			snprintf(s, sizeof(s) - 1, "%u", value.get_u32());
 			SLKC_RETURN_IF_FALSE(writer->write(s));
 			break;
 		}
 		case slake::ValueType::U64: {
 			char s[32];
-			sprintf(s, "%llu", value.get_u64());
+			snprintf(s, sizeof(s) - 1, "%llu", value.get_u64());
 			SLKC_RETURN_IF_FALSE(writer->write(s));
 			break;
 		}
 		case slake::ValueType::F32: {
 			char s[16];
-			sprintf(s, "%f", value.get_f32());
+			snprintf(s, sizeof(s) - 1, "%f", value.get_f32());
 			SLKC_RETURN_IF_FALSE(writer->write(s));
 			break;
 		}
 		case slake::ValueType::F64: {
 			char s[32];
-			sprintf(s, "%f", value.get_f64());
+			snprintf(s, sizeof(s) - 1, "%f", value.get_f64());
 			SLKC_RETURN_IF_FALSE(writer->write(s));
 			break;
 		}
@@ -613,7 +615,7 @@ SLKC_API bool Decompiler::decompile_value(peff::Alloc *allocator, DumpWriter *wr
 		}
 		case slake::ValueType::RegIndex: {
 			char s[32];
-			sprintf(s, "%%%u", value.get_reg_index());
+			snprintf(s, sizeof(s) - 1, "%%%u", value.get_reg_index());
 			SLKC_RETURN_IF_FALSE(writer->write(s));
 			break;
 		}
@@ -771,7 +773,7 @@ SLKC_API bool Decompiler::decompile_module_members(peff::Alloc *allocator, DumpW
 									{
 										char s[36];
 
-										sprintf(s, "block_%u:", (uint32_t)j);
+										snprintf(s, sizeof(s) - 1, "block_%u:", (uint32_t)j);
 										SLKC_RETURN_IF_FALSE(writer->write(s));
 										SLKC_RETURN_IF_FALSE(writer->write("\n"));
 									}
@@ -790,7 +792,7 @@ SLKC_API bool Decompiler::decompile_module_members(peff::Alloc *allocator, DumpW
 										if (sld) {
 											char s[42];
 
-											sprintf(s, "(%u %u): ", sld->line, sld->column);
+											snprintf(s, sizeof(s) - 1, "(%u %u): ", sld->line, sld->column);
 
 											SLKC_RETURN_IF_FALSE(writer->write(s));
 										}
@@ -798,7 +800,7 @@ SLKC_API bool Decompiler::decompile_module_members(peff::Alloc *allocator, DumpW
 										if (cur_ins.output != UINT32_MAX) {
 											char s[32];
 
-											sprintf(s, "%%%u = ", cur_ins.output);
+											snprintf(s, sizeof(s) - 1, "%%%u = ", cur_ins.output);
 
 											SLKC_RETURN_IF_FALSE(writer->write(s));
 										}
@@ -811,7 +813,7 @@ SLKC_API bool Decompiler::decompile_module_members(peff::Alloc *allocator, DumpW
 											} else {
 												char s[13];
 
-												sprintf(s, "0x%0.2x ", (int)cur_ins.opcode);
+												snprintf(s, sizeof(s) - 1, "0x%0.2x ", (int)cur_ins.opcode);
 
 												SLKC_RETURN_IF_FALSE(writer->write(s));
 											}
@@ -824,7 +826,7 @@ SLKC_API bool Decompiler::decompile_module_members(peff::Alloc *allocator, DumpW
 											if (cur_ins.operands[k].value_type == slake::ValueType::Label) {
 												char s[18];
 
-												sprintf(s, "#block_%u", (uint32_t)cur_ins.operands[k].get_label());
+												snprintf(s, sizeof(s) - 1, "#block_%u", (uint32_t)cur_ins.operands[k].get_label());
 												SLKC_RETURN_IF_FALSE(writer->write(s));
 											} else
 												SLKC_RETURN_IF_FALSE(decompile_value(allocator, writer, cur_ins.operands[k]));
@@ -864,7 +866,7 @@ SLKC_API bool Decompiler::decompile_module_members(peff::Alloc *allocator, DumpW
 									if (sld) {
 										char s[32];
 
-										sprintf(s, "(%u, %u): ", sld->line, sld->column);
+										snprintf(s, sizeof(s) - 1, "(%u, %u): ", sld->line, sld->column);
 
 										SLKC_RETURN_IF_FALSE(writer->write(s));
 									}
@@ -872,7 +874,7 @@ SLKC_API bool Decompiler::decompile_module_members(peff::Alloc *allocator, DumpW
 									if (cur_ins.output != UINT32_MAX) {
 										char s[32];
 
-										sprintf(s, "%%%u = ", cur_ins.output);
+										snprintf(s, sizeof(s) - 1, "%%%u = ", cur_ins.output);
 
 										SLKC_RETURN_IF_FALSE(writer->write(s));
 									}
@@ -885,7 +887,7 @@ SLKC_API bool Decompiler::decompile_module_members(peff::Alloc *allocator, DumpW
 										} else {
 											char s[13];
 
-											sprintf(s, "0x%0.2x ", (int)cur_ins.opcode);
+											snprintf(s, sizeof(s) - 1, "0x%0.2x ", (int)cur_ins.opcode);
 
 											SLKC_RETURN_IF_FALSE(writer->write(s));
 										}

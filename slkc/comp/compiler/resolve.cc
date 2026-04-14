@@ -379,7 +379,7 @@ SLKC_API peff::Option<CompilationError> slkc::is_member_accessible(
 				if (access_node->get_ast_node_type() == AstNodeType::Class) {
 					bool result;
 
-					SLKC_RETURN_IF_COMP_ERROR(is_base_of(compile_env->document, access_node.cast_to<ClassNode>(), p->shared_from_this().cast_to<ClassNode>(), result));
+					SLKC_RETURN_IF_COMP_ERROR(is_base_of(compile_env->get_document(), access_node.cast_to<ClassNode>(), p->shared_from_this().cast_to<ClassNode>(), result));
 
 					if (result) {
 						// Child classes can always access parent's members.
@@ -406,6 +406,8 @@ SLKC_API peff::Option<CompilationError> slkc::is_member_accessible(
 				// Members in the same module can access each other.
 				if (p == compile_env->cur_parent_access_node.cast_to<MemberNode>())
 					goto access_check_passed;
+				break;
+			default:
 				break;
 		}
 
@@ -659,6 +661,8 @@ SLKC_API peff::Option<CompilationError> slkc::resolve_id_ref_with_scope_node(
 							if (member_out) {
 								return {};
 							}
+							break;
+						default:
 							break;
 					}
 				}

@@ -185,7 +185,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 		{
 			peff::ScopeGuard set_token_range_guard([this, prefix_token, &lhs]() noexcept {
 				if (lhs) {
-					lhs->token_range = TokenRange{ document->main_module, prefix_token->index, parse_context.idx_prev_token };
+					lhs->token_range = TokenRange{ get_document()->main_module, prefix_token->index, parse_context.idx_prev_token };
 				}
 			});
 
@@ -196,7 +196,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 					IdRefPtr id_ref_ptr;
 					if ((syntax_error = (co_await parse_id_ref(this->resource_allocator.get(), id_ref_ptr)(this))))
 						goto gen_bad_expr;
-					if (!(lhs = make_ast_node<IdRefExprNode>(resource_allocator.get(), resource_allocator.get(), document, std::move(id_ref_ptr)).cast_to<ExprNode>()))
+					if (!(lhs = make_ast_node<IdRefExprNode>(resource_allocator.get(), resource_allocator.get(), get_document(), std::move(id_ref_ptr)).cast_to<ExprNode>()))
 						co_return gen_out_of_memory_syntax_error();
 					break;
 				}
@@ -206,7 +206,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 					AstNodePtr<WrapperExprNode> expr;
 
 					if (!(expr = make_ast_node<WrapperExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document)))
+							  resource_allocator.get(), resource_allocator.get(), get_document())))
 						co_return gen_out_of_memory_syntax_error();
 
 					lhs = expr.cast_to<ExprNode>();
@@ -226,7 +226,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 					AstNodePtr<AllocaExprNode> expr;
 
 					if (!(expr = make_ast_node<AllocaExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document)))
+							  resource_allocator.get(), resource_allocator.get(), get_document())))
 						co_return gen_out_of_memory_syntax_error();
 
 					lhs = expr.cast_to<ExprNode>();
@@ -260,7 +260,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 					AstNodePtr<NewExprNode> expr;
 
 					if (!(expr = make_ast_node<NewExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document)))
+							  resource_allocator.get(), resource_allocator.get(), get_document())))
 						co_return gen_out_of_memory_syntax_error();
 
 					lhs = expr.cast_to<ExprNode>();
@@ -301,7 +301,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 						co_return syntax_error;
 
 					if (!(lhs = make_ast_node<I8LiteralExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document,
+							  resource_allocator.get(), resource_allocator.get(), get_document(),
 							  data)
 								.cast_to<ExprNode>()))
 						co_return gen_out_of_memory_syntax_error();
@@ -322,7 +322,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 						co_return syntax_error;
 
 					if (!(lhs = make_ast_node<I16LiteralExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document,
+							  resource_allocator.get(), resource_allocator.get(), get_document(),
 							  data)
 								.cast_to<ExprNode>()))
 						co_return gen_out_of_memory_syntax_error();
@@ -343,7 +343,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 						co_return syntax_error;
 
 					if (!(lhs = make_ast_node<I32LiteralExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document,
+							  resource_allocator.get(), resource_allocator.get(), get_document(),
 							  data)
 								.cast_to<ExprNode>()))
 						co_return gen_out_of_memory_syntax_error();
@@ -364,7 +364,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 						co_return syntax_error;
 
 					if (!(lhs = make_ast_node<I64LiteralExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document,
+							  resource_allocator.get(), resource_allocator.get(), get_document(),
 							  data)
 								.cast_to<ExprNode>()))
 						co_return gen_out_of_memory_syntax_error();
@@ -385,7 +385,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 						co_return syntax_error;
 
 					if (!(lhs = make_ast_node<U8LiteralExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document,
+							  resource_allocator.get(), resource_allocator.get(), get_document(),
 							  data)
 								.cast_to<ExprNode>()))
 						co_return gen_out_of_memory_syntax_error();
@@ -406,7 +406,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 						co_return syntax_error;
 
 					if (!(lhs = make_ast_node<U16LiteralExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document,
+							  resource_allocator.get(), resource_allocator.get(), get_document(),
 							  data)
 								.cast_to<ExprNode>()))
 						co_return gen_out_of_memory_syntax_error();
@@ -427,7 +427,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 						co_return syntax_error;
 
 					if (!(lhs = make_ast_node<U32LiteralExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document,
+							  resource_allocator.get(), resource_allocator.get(), get_document(),
 							  data)
 								.cast_to<ExprNode>()))
 						co_return gen_out_of_memory_syntax_error();
@@ -448,7 +448,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 						co_return syntax_error;
 
 					if (!(lhs = make_ast_node<U64LiteralExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document,
+							  resource_allocator.get(), resource_allocator.get(), get_document(),
 							  data)
 								.cast_to<ExprNode>()))
 						co_return gen_out_of_memory_syntax_error();
@@ -463,7 +463,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 					}
 
 					if (!(lhs = make_ast_node<StringLiteralExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document,
+							  resource_allocator.get(), resource_allocator.get(), get_document(),
 							  std::move(s))
 								.cast_to<ExprNode>()))
 						co_return gen_out_of_memory_syntax_error();
@@ -473,7 +473,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 					next_token();
 
 					if (!(lhs = peff::make_shared_with_control_block<F32LiteralExprNode, AstNodeControlBlock<F32LiteralExprNode>>(
-							  resource_allocator.get(), resource_allocator.get(), document,
+							  resource_allocator.get(), resource_allocator.get(), get_document(),
 							  strtof(prefix_token->source_text.data(), nullptr))
 								.cast_to<ExprNode>()))
 						co_return gen_out_of_memory_syntax_error();
@@ -482,7 +482,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 				case TokenId::F64Literal: {
 					next_token();
 					if (!(lhs = peff::make_shared_with_control_block<F64LiteralExprNode, AstNodeControlBlock<F64LiteralExprNode>>(
-							  resource_allocator.get(), resource_allocator.get(), document,
+							  resource_allocator.get(), resource_allocator.get(), get_document(),
 							  strtod(prefix_token->source_text.data(), nullptr))
 								.cast_to<ExprNode>()))
 						co_return gen_out_of_memory_syntax_error();
@@ -491,7 +491,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 				case TokenId::TrueKeyword: {
 					next_token();
 					if (!(lhs = make_ast_node<BoolLiteralExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document,
+							  resource_allocator.get(), resource_allocator.get(), get_document(),
 							  true)
 								.cast_to<ExprNode>()))
 						co_return gen_out_of_memory_syntax_error();
@@ -500,7 +500,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 				case TokenId::FalseKeyword: {
 					next_token();
 					if (!(lhs = make_ast_node<BoolLiteralExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document,
+							  resource_allocator.get(), resource_allocator.get(), get_document(),
 							  false)
 								.cast_to<ExprNode>()))
 						co_return gen_out_of_memory_syntax_error();
@@ -509,7 +509,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 				case TokenId::NullKeyword: {
 					next_token();
 					if (!(lhs = make_ast_node<NullLiteralExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document)
+							  resource_allocator.get(), resource_allocator.get(), get_document())
 								.cast_to<ExprNode>()))
 						co_return gen_out_of_memory_syntax_error();
 					break;
@@ -520,7 +520,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 					AstNodePtr<UnaryExprNode> expr;
 
 					if (!(expr = make_ast_node<UnaryExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document)))
+							  resource_allocator.get(), resource_allocator.get(), get_document())))
 						co_return gen_out_of_memory_syntax_error();
 
 					expr->unary_op = UnaryOp::Unpacking;
@@ -538,7 +538,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 					AstNodePtr<InitializerListExprNode> initializer_expr;
 
 					if (!(initializer_expr = make_ast_node<InitializerListExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document)))
+							  resource_allocator.get(), resource_allocator.get(), get_document())))
 						co_return gen_out_of_memory_syntax_error();
 
 					lhs = initializer_expr.cast_to<ExprNode>();
@@ -590,7 +590,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 					AstNodePtr<UnaryExprNode> expr;
 
 					if (!(expr = make_ast_node<UnaryExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document)))
+							  resource_allocator.get(), resource_allocator.get(), get_document())))
 						co_return gen_out_of_memory_syntax_error();
 
 					expr->unary_op = UnaryOp::Neg;
@@ -608,7 +608,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 					AstNodePtr<UnaryExprNode> expr;
 
 					if (!(expr = make_ast_node<UnaryExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document)))
+							  resource_allocator.get(), resource_allocator.get(), get_document())))
 						co_return gen_out_of_memory_syntax_error();
 
 					expr->unary_op = UnaryOp::Not;
@@ -626,7 +626,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 					AstNodePtr<UnaryExprNode> expr;
 
 					if (!(expr = make_ast_node<UnaryExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document)))
+							  resource_allocator.get(), resource_allocator.get(), get_document())))
 						co_return gen_out_of_memory_syntax_error();
 
 					expr->unary_op = UnaryOp::LNot;
@@ -645,7 +645,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 					AstNodePtr<MatchExprNode> expr;
 
 					if (!(expr = make_ast_node<MatchExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document)))
+							  resource_allocator.get(), resource_allocator.get(), get_document())))
 						co_return gen_out_of_memory_syntax_error();
 
 					lhs = expr.cast_to<ExprNode>();
@@ -727,7 +727,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 				default:
 					next_token();
 					co_return SyntaxError(
-						TokenRange{ document->main_module, prefix_token->index },
+						TokenRange{ get_document()->main_module, prefix_token->index },
 						SyntaxErrorKind::ExpectingExpr);
 			}
 		}
@@ -737,7 +737,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 		for (;;) {
 			peff::ScopeGuard set_token_range_guard([this, prefix_token, &lhs]() noexcept {
 				if (lhs) {
-					lhs->token_range = TokenRange{ document->main_module, prefix_token->index, parse_context.idx_prev_token };
+					lhs->token_range = TokenRange{ get_document()->main_module, prefix_token->index, parse_context.idx_prev_token };
 				}
 			});
 
@@ -750,7 +750,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 					AstNodePtr<CallExprNode> expr;
 
 					if (!(expr = make_ast_node<CallExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document, AstNodePtr<ExprNode>(), peff::DynArray<AstNodePtr<ExprNode>>{ resource_allocator.get() })))
+							  resource_allocator.get(), resource_allocator.get(), get_document(), AstNodePtr<ExprNode>(), peff::DynArray<AstNodePtr<ExprNode>>{ resource_allocator.get() })))
 						co_return gen_out_of_memory_syntax_error();
 
 					expr->target = lhs;
@@ -789,7 +789,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 					AstNodePtr<BinaryExprNode> expr;
 
 					if (!(expr = make_ast_node<BinaryExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document)))
+							  resource_allocator.get(), resource_allocator.get(), get_document())))
 						co_return gen_out_of_memory_syntax_error();
 
 					expr->binary_op = BinaryOp::Subscript;
@@ -818,7 +818,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 					AstNodePtr<HeadedIdRefExprNode> expr;
 
 					if (!(expr = make_ast_node<HeadedIdRefExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document, lhs, IdRefPtr{})))
+							  resource_allocator.get(), resource_allocator.get(), get_document(), lhs, IdRefPtr{})))
 						co_return gen_out_of_memory_syntax_error();
 
 					expr->head = lhs;
@@ -838,7 +838,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 					AstNodePtr<CastExprNode> expr;
 
 					if (!(expr = make_ast_node<CastExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document)))
+							  resource_allocator.get(), resource_allocator.get(), get_document())))
 						co_return gen_out_of_memory_syntax_error();
 
 					expr->source = lhs;
@@ -866,7 +866,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 					AstNodePtr<BinaryExprNode> expr;
 
 					if (!(expr = make_ast_node<BinaryExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document)))
+							  resource_allocator.get(), resource_allocator.get(), get_document())))
 						co_return gen_out_of_memory_syntax_error();
 
 					expr->binary_op = BinaryOp::Mul;
@@ -887,7 +887,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 					AstNodePtr<BinaryExprNode> expr;
 
 					if (!(expr = make_ast_node<BinaryExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document)))
+							  resource_allocator.get(), resource_allocator.get(), get_document())))
 						co_return gen_out_of_memory_syntax_error();
 
 					expr->binary_op = BinaryOp::Div;
@@ -908,7 +908,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 					AstNodePtr<BinaryExprNode> expr;
 
 					if (!(expr = make_ast_node<BinaryExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document)))
+							  resource_allocator.get(), resource_allocator.get(), get_document())))
 						co_return gen_out_of_memory_syntax_error();
 
 					expr->binary_op = BinaryOp::Mod;
@@ -930,7 +930,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 					AstNodePtr<BinaryExprNode> expr;
 
 					if (!(expr = make_ast_node<BinaryExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document)))
+							  resource_allocator.get(), resource_allocator.get(), get_document())))
 						co_return gen_out_of_memory_syntax_error();
 
 					expr->binary_op = BinaryOp::Add;
@@ -951,7 +951,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 					AstNodePtr<BinaryExprNode> expr;
 
 					if (!(expr = make_ast_node<BinaryExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document)))
+							  resource_allocator.get(), resource_allocator.get(), get_document())))
 						co_return gen_out_of_memory_syntax_error();
 
 					expr->binary_op = BinaryOp::Sub;
@@ -973,7 +973,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 					AstNodePtr<BinaryExprNode> expr;
 
 					if (!(expr = make_ast_node<BinaryExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document)))
+							  resource_allocator.get(), resource_allocator.get(), get_document())))
 						co_return gen_out_of_memory_syntax_error();
 
 					expr->binary_op = BinaryOp::Shl;
@@ -994,7 +994,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 					AstNodePtr<BinaryExprNode> expr;
 
 					if (!(expr = make_ast_node<BinaryExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document)))
+							  resource_allocator.get(), resource_allocator.get(), get_document())))
 						co_return gen_out_of_memory_syntax_error();
 
 					expr->binary_op = BinaryOp::Shr;
@@ -1016,7 +1016,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 					AstNodePtr<BinaryExprNode> expr;
 
 					if (!(expr = make_ast_node<BinaryExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document)))
+							  resource_allocator.get(), resource_allocator.get(), get_document())))
 						co_return gen_out_of_memory_syntax_error();
 
 					expr->binary_op = BinaryOp::Cmp;
@@ -1038,7 +1038,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 					AstNodePtr<BinaryExprNode> expr;
 
 					if (!(expr = make_ast_node<BinaryExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document)))
+							  resource_allocator.get(), resource_allocator.get(), get_document())))
 						co_return gen_out_of_memory_syntax_error();
 
 					expr->binary_op = BinaryOp::Gt;
@@ -1059,7 +1059,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 					AstNodePtr<BinaryExprNode> expr;
 
 					if (!(expr = make_ast_node<BinaryExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document)))
+							  resource_allocator.get(), resource_allocator.get(), get_document())))
 						co_return gen_out_of_memory_syntax_error();
 
 					expr->binary_op = BinaryOp::GtEq;
@@ -1080,7 +1080,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 					AstNodePtr<BinaryExprNode> expr;
 
 					if (!(expr = make_ast_node<BinaryExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document)))
+							  resource_allocator.get(), resource_allocator.get(), get_document())))
 						co_return gen_out_of_memory_syntax_error();
 
 					expr->binary_op = BinaryOp::Lt;
@@ -1101,7 +1101,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 					AstNodePtr<BinaryExprNode> expr;
 
 					if (!(expr = make_ast_node<BinaryExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document)))
+							  resource_allocator.get(), resource_allocator.get(), get_document())))
 						co_return gen_out_of_memory_syntax_error();
 
 					expr->binary_op = BinaryOp::LtEq;
@@ -1123,7 +1123,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 					AstNodePtr<BinaryExprNode> expr;
 
 					if (!(expr = make_ast_node<BinaryExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document)))
+							  resource_allocator.get(), resource_allocator.get(), get_document())))
 						co_return gen_out_of_memory_syntax_error();
 
 					expr->binary_op = BinaryOp::Eq;
@@ -1144,7 +1144,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 					AstNodePtr<BinaryExprNode> expr;
 
 					if (!(expr = make_ast_node<BinaryExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document)))
+							  resource_allocator.get(), resource_allocator.get(), get_document())))
 						co_return gen_out_of_memory_syntax_error();
 
 					expr->binary_op = BinaryOp::Neq;
@@ -1165,7 +1165,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 					AstNodePtr<BinaryExprNode> expr;
 
 					if (!(expr = make_ast_node<BinaryExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document)))
+							  resource_allocator.get(), resource_allocator.get(), get_document())))
 						co_return gen_out_of_memory_syntax_error();
 
 					expr->binary_op = BinaryOp::StrictEq;
@@ -1186,7 +1186,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 					AstNodePtr<BinaryExprNode> expr;
 
 					if (!(expr = make_ast_node<BinaryExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document)))
+							  resource_allocator.get(), resource_allocator.get(), get_document())))
 						co_return gen_out_of_memory_syntax_error();
 
 					expr->binary_op = BinaryOp::StrictNeq;
@@ -1208,7 +1208,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 					AstNodePtr<BinaryExprNode> expr;
 
 					if (!(expr = make_ast_node<BinaryExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document)))
+							  resource_allocator.get(), resource_allocator.get(), get_document())))
 						co_return gen_out_of_memory_syntax_error();
 
 					expr->binary_op = BinaryOp::And;
@@ -1230,7 +1230,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 					AstNodePtr<BinaryExprNode> expr;
 
 					if (!(expr = make_ast_node<BinaryExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document)))
+							  resource_allocator.get(), resource_allocator.get(), get_document())))
 						co_return gen_out_of_memory_syntax_error();
 
 					expr->binary_op = BinaryOp::Xor;
@@ -1252,7 +1252,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 					AstNodePtr<BinaryExprNode> expr;
 
 					if (!(expr = make_ast_node<BinaryExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document)))
+							  resource_allocator.get(), resource_allocator.get(), get_document())))
 						co_return gen_out_of_memory_syntax_error();
 
 					expr->binary_op = BinaryOp::Or;
@@ -1274,7 +1274,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 					AstNodePtr<BinaryExprNode> expr;
 
 					if (!(expr = make_ast_node<BinaryExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document)))
+							  resource_allocator.get(), resource_allocator.get(), get_document())))
 						co_return gen_out_of_memory_syntax_error();
 
 					expr->binary_op = BinaryOp::LAnd;
@@ -1296,7 +1296,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 					AstNodePtr<BinaryExprNode> expr;
 
 					if (!(expr = make_ast_node<BinaryExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document)))
+							  resource_allocator.get(), resource_allocator.get(), get_document())))
 						co_return gen_out_of_memory_syntax_error();
 
 					expr->binary_op = BinaryOp::LOr;
@@ -1318,7 +1318,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 					AstNodePtr<TernaryExprNode> expr;
 
 					if (!(expr = make_ast_node<TernaryExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document)))
+							  resource_allocator.get(), resource_allocator.get(), get_document())))
 						co_return gen_out_of_memory_syntax_error();
 
 					expr->lhs = lhs;
@@ -1350,7 +1350,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 					AstNodePtr<BinaryExprNode> expr;
 
 					if (!(expr = make_ast_node<BinaryExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document)))
+							  resource_allocator.get(), resource_allocator.get(), get_document())))
 						co_return gen_out_of_memory_syntax_error();
 
 					expr->binary_op = BinaryOp::Assign;
@@ -1371,7 +1371,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 					AstNodePtr<BinaryExprNode> expr;
 
 					if (!(expr = make_ast_node<BinaryExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document)))
+							  resource_allocator.get(), resource_allocator.get(), get_document())))
 						co_return gen_out_of_memory_syntax_error();
 
 					expr->binary_op = BinaryOp::AddAssign;
@@ -1392,7 +1392,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 					AstNodePtr<BinaryExprNode> expr;
 
 					if (!(expr = make_ast_node<BinaryExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document)))
+							  resource_allocator.get(), resource_allocator.get(), get_document())))
 						co_return gen_out_of_memory_syntax_error();
 
 					expr->binary_op = BinaryOp::SubAssign;
@@ -1413,7 +1413,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 					AstNodePtr<BinaryExprNode> expr;
 
 					if (!(expr = make_ast_node<BinaryExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document)))
+							  resource_allocator.get(), resource_allocator.get(), get_document())))
 						co_return gen_out_of_memory_syntax_error();
 
 					expr->binary_op = BinaryOp::MulAssign;
@@ -1434,7 +1434,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 					AstNodePtr<BinaryExprNode> expr;
 
 					if (!(expr = make_ast_node<BinaryExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document)))
+							  resource_allocator.get(), resource_allocator.get(), get_document())))
 						co_return gen_out_of_memory_syntax_error();
 
 					expr->binary_op = BinaryOp::DivAssign;
@@ -1455,7 +1455,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 					AstNodePtr<BinaryExprNode> expr;
 
 					if (!(expr = make_ast_node<BinaryExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document)))
+							  resource_allocator.get(), resource_allocator.get(), get_document())))
 						co_return gen_out_of_memory_syntax_error();
 
 					expr->binary_op = BinaryOp::AndAssign;
@@ -1476,7 +1476,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 					AstNodePtr<BinaryExprNode> expr;
 
 					if (!(expr = make_ast_node<BinaryExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document)))
+							  resource_allocator.get(), resource_allocator.get(), get_document())))
 						co_return gen_out_of_memory_syntax_error();
 
 					expr->binary_op = BinaryOp::OrAssign;
@@ -1497,7 +1497,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 					AstNodePtr<BinaryExprNode> expr;
 
 					if (!(expr = make_ast_node<BinaryExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document)))
+							  resource_allocator.get(), resource_allocator.get(), get_document())))
 						co_return gen_out_of_memory_syntax_error();
 
 					expr->binary_op = BinaryOp::XorAssign;
@@ -1518,7 +1518,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 					AstNodePtr<BinaryExprNode> expr;
 
 					if (!(expr = make_ast_node<BinaryExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document)))
+							  resource_allocator.get(), resource_allocator.get(), get_document())))
 						co_return gen_out_of_memory_syntax_error();
 
 					expr->binary_op = BinaryOp::ShlAssign;
@@ -1539,7 +1539,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 					AstNodePtr<BinaryExprNode> expr;
 
 					if (!(expr = make_ast_node<BinaryExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document)))
+							  resource_allocator.get(), resource_allocator.get(), get_document())))
 						co_return gen_out_of_memory_syntax_error();
 
 					expr->binary_op = BinaryOp::ShrAssign;
@@ -1560,7 +1560,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 					AstNodePtr<BinaryExprNode> expr;
 
 					if (!(expr = make_ast_node<BinaryExprNode>(
-							  resource_allocator.get(), resource_allocator.get(), document)))
+							  resource_allocator.get(), resource_allocator.get(), get_document())))
 						co_return gen_out_of_memory_syntax_error();
 
 					expr->binary_op = BinaryOp::Comma;
@@ -1585,8 +1585,8 @@ end:
 	co_return {};
 
 gen_bad_expr:
-	if (!(expr_out = make_ast_node<BadExprNode>(resource_allocator.get(), resource_allocator.get(), document, lhs).cast_to<ExprNode>()))
+	if (!(expr_out = make_ast_node<BadExprNode>(resource_allocator.get(), resource_allocator.get(), get_document(), lhs).cast_to<ExprNode>()))
 		co_return gen_out_of_memory_syntax_error();
-	expr_out->token_range = { document->main_module, prefix_token->index, parse_context.idx_current_token };
+	expr_out->token_range = { get_document()->main_module, prefix_token->index, parse_context.idx_current_token };
 	co_return syntax_error;
 }

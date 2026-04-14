@@ -342,9 +342,25 @@ SLAKE_API bool slake::is_compatible(const TypeRef &type, const Value &value) noe
 
 			return true;
 		}
-		case TypeId::StructInstance:
+		case TypeId::StructInstance: {
 			// Cannot pass structure instance as value.
+			if(!value.is_reference())
+				return false;
+			const Reference &ref = value.get_reference();
+			switch(ref.kind) {
+				case ReferenceKind::LocalVarRef:
+				case ReferenceKind::CoroutineLocalVarRef: {
+					TypeRef t = Runtime::typeof_var(ref);
+
+					if(t.get_custom_type_def() != type.type_def)
+						return false;
+					return true;
+				}
+				default:
+					break;
+			}
 			return false;
+		}
 		case TypeId::GenericArg:
 			return false;
 		case TypeId::Array: {

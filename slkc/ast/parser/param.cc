@@ -26,7 +26,7 @@ SLKC_API ParseCoroutine Parser::parse_params(
 
 		AstNodePtr<VarNode> param_node;
 
-		if (!(param_node = make_ast_node<VarNode>(resource_allocator.get(), resource_allocator.get(), document))) {
+		if (!(param_node = make_ast_node<VarNode>(resource_allocator.get(), resource_allocator.get(), get_document()))) {
 			co_return gen_out_of_memory_syntax_error();
 		}
 

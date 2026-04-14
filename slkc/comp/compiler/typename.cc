@@ -1656,7 +1656,7 @@ SLKC_API peff::Option<CompilationError> slkc::fn_to_type_name(
 	AstNodePtr<FnTypeNameNode> &evaluated_type_out) {
 	AstNodePtr<FnTypeNameNode> tn;
 
-	if (!(tn = make_ast_node<FnTypeNameNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->document))) {
+	if (!(tn = make_ast_node<FnTypeNameNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->get_document()))) {
 		return gen_out_of_memory_comp_error();
 	}
 
@@ -1683,12 +1683,12 @@ SLKC_API peff::Option<CompilationError> slkc::fn_to_type_name(
 
 					SLKC_RETURN_IF_COMP_ERROR(get_full_id_ref(compile_env->allocator.get(), fn->parent->parent->shared_from_this().cast_to<MemberNode>(), full_id_ref));
 
-					auto this_type = make_ast_node<CustomTypeNameNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->document);
+					auto this_type = make_ast_node<CustomTypeNameNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->get_document());
 
 					if (!this_type) {
 						return gen_out_of_memory_comp_error();
 					}
-					this_type->context_node = to_weak_ptr(compile_env->document->root_module.cast_to<MemberNode>());
+					this_type->context_node = to_weak_ptr(compile_env->get_document()->root_module.cast_to<MemberNode>());
 
 					this_type->id_ref_ptr = std::move(full_id_ref);
 

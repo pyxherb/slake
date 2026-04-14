@@ -487,8 +487,9 @@ namespace slake {
 			write_var_with_type(entity_ref, typeof_var(entity_ref), value);
 		}
 		SLAKE_FORCEINLINE InternalExceptionPointer write_var_checked(const Reference &entity_ref, const Value &value) const noexcept {
-			if (!is_compatible(typeof_var(entity_ref), value))
-				return MismatchedVarTypeError::alloc(get_fixed_alloc());
+			TypeRef t = typeof_var(entity_ref);
+			if (!is_compatible(t, value))
+				return MismatchedVarTypeError::alloc(get_fixed_alloc(), t);
 			write_var(entity_ref, value);
 			return {};
 		}

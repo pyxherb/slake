@@ -84,15 +84,39 @@ namespace slkc {
 		peff::SharedPtr<T> in_memory;
 		uint32_t cached_index = UINT32_MAX;
 
+		SLAKE_FORCEINLINE void reset() noexcept {
+			if (in_memory)
+				in_memory.reset();
+			cached_index = UINT32_MAX;
+		}
+
 		SLAKE_FORCEINLINE AstNodePtr() {}
 		SLAKE_FORCEINLINE AstNodePtr(const peff::SharedPtr<T> &in_memory) : in_memory(in_memory) {}
+		SLAKE_FORCEINLINE AstNodePtr(peff::SharedPtr<T> &&in_memory) : in_memory(std::move(in_memory)) {}
 		SLAKE_FORCEINLINE explicit AstNodePtr(uint32_t cached_index) : cached_index(cached_index) {}
+		SLAKE_FORCEINLINE ~AstNodePtr() {
+			in_memory.reset();
+		}
 
-		SLAKE_FORCEINLINE AstNodePtr(const ThisType &) = default;
-		SLAKE_FORCEINLINE AstNodePtr(ThisType &&in_memory) = default;
+		SLAKE_FORCEINLINE AstNodePtr(const ThisType &rhs) noexcept : in_memory(rhs.in_memory), cached_index(rhs.cached_index) {
+		}
+		SLAKE_FORCEINLINE AstNodePtr(ThisType &&rhs) noexcept {
+			if (rhs.in_memory) {
+				in_memory = std::move(rhs.in_memory);
+			}
+			cached_index = rhs.cached_index;
+			rhs.cached_index = UINT32_MAX;
+		}
 
-		SLAKE_FORCEINLINE ThisType &operator=(const ThisType &) = default;
+		SLAKE_FORCEINLINE ThisType &operator=(const ThisType &rhs) noexcept {
+			reset();
+			in_memory = rhs.in_memory;
+			cached_index = rhs.cached_index;
+
+			return *this;
+		}
 		SLAKE_FORCEINLINE ThisType &operator=(ThisType &&rhs) noexcept {
+			reset();
 			in_memory = std::move(rhs.in_memory);
 			cached_index = rhs.cached_index;
 

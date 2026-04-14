@@ -170,6 +170,8 @@ SLKC_API peff::Option<CompilationError> slkc::determine_fn_overloading(
 			case AstNodeType::Interface:
 				SLKC_RETURN_IF_COMP_ERROR(_determine_with_parent_interface(compile_env, fn_slot, arg_types, num_arg_types, is_static, matched_overloadings, walked_parents));
 				break;
+			default:
+				break;
 		}
 
 	return {};

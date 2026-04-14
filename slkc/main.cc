@@ -806,127 +806,129 @@ int main(int argc, char *argv[]) {
 			print_error("Error allocating memory for the runtime");
 			return ENOMEM;
 		}
-		slkc::CompileEnv compile_env(runtime.get(), document, &peff::g_null_alloc, peff::default_allocator());
 		{
-			slake::HostObjectRef<slake::ModuleObject> mod_obj = slake::ModuleObject::alloc(runtime.get());
-			mod_obj->set_access(slake::ACCESS_PUBLIC | slake::ACCESS_STATIC);
+			{
+				slake::HostObjectRef<slake::ModuleObject> mod_obj = slake::ModuleObject::alloc(runtime.get());
+				mod_obj->set_access(slake::ACCESS_PUBLIC | slake::ACCESS_STATIC);
 
-			peff::SharedPtr<slkc::Parser> parser;
-			if (!(parser = peff::make_shared<slkc::Parser>(peff::default_allocator(), document, std::move(token_list), peff::default_allocator()))) {
-				print_error("Error allocating memory for the parser");
-				return ENOMEM;
-			}
+				peff::SharedPtr<slkc::Parser> parser;
+				if (!(parser = peff::make_shared<slkc::Parser>(peff::default_allocator(), document, std::move(token_list), peff::default_allocator()))) {
+					print_error("Error allocating memory for the parser");
+					return ENOMEM;
+				}
 
-			slkc::AstNodePtr<slkc::ModuleNode> root_mod;
-			if (!(root_mod = peff::make_shared_with_control_block<slkc::ModuleNode, slkc::AstNodeControlBlock<slkc::ModuleNode>>(peff::default_allocator(), peff::default_allocator(), document))) {
-				print_error("Error allocating memory for the root module");
-				return ENOMEM;
-			}
-			document->root_module = root_mod;
+				slkc::AstNodePtr<slkc::ModuleNode> root_mod;
+				if (!(root_mod = peff::make_shared_with_control_block<slkc::ModuleNode, slkc::AstNodeControlBlock<slkc::ModuleNode>>(peff::default_allocator(), peff::default_allocator(), document))) {
+					print_error("Error allocating memory for the root module");
+					return ENOMEM;
+				}
+				document->root_module = root_mod;
 
-			slkc::IdRefPtr module_name;
+				slkc::IdRefPtr module_name;
 
-			bool encountered_errors = false;
-			if (auto e = parser->parse(mod, module_name); e) {
-				encountered_errors = true;
-				dump_syntax_error(parser.get(), *e);
-			}
+				bool encountered_errors = false;
+				if (auto e = parser->parse(mod, module_name); e) {
+					encountered_errors = true;
+					dump_syntax_error(parser.get(), *e);
+				}
 
-			for (auto &i : parser->syntax_errors) {
-				encountered_errors = true;
-				dump_syntax_error(parser.get(), i);
-			}
+				for (auto &i : parser->syntax_errors) {
+					encountered_errors = true;
+					dump_syntax_error(parser.get(), i);
+				}
 
-			if (module_name) {
-				if (auto e = complete_parent_modules(&compile_env, module_name.get(), mod); e) {
+				slkc::CompileEnv compile_env(runtime.get(), document, &peff::g_null_alloc, peff::default_allocator());
+				if (module_name) {
+					if (auto e = complete_parent_modules(&compile_env, module_name.get(), mod); e) {
+						encountered_errors = true;
+						dump_compilation_error(parser, *e);
+					}
+				}
+
+				if (auto e = slkc::compile_module_like_node(&compile_env, mod, mod_obj.get()); e) {
 					encountered_errors = true;
 					dump_compilation_error(parser, *e);
 				}
-			}
 
-			/* if (auto e = index_module_var_members(&compile_env, root_mod); e) {
-				encountered_errors = true;
-				dump_compilation_error(parser, *e);
-			}*/
+				// Sort errors in order.
+				std::sort(compile_env.errors.data(), compile_env.errors.data() + compile_env.errors.size());
 
-			if (auto e = slkc::compile_module_like_node(&compile_env, mod, mod_obj.get()); e) {
-				encountered_errors = true;
-				dump_compilation_error(parser, *e);
-			}
+				for (auto &i : compile_env.errors) {
+					encountered_errors = true;
+					dump_compilation_error(parser, i);
+				}
 
-			// Sort errors in order.
-			std::sort(compile_env.errors.data(), compile_env.errors.data() + compile_env.errors.size());
+				if (!encountered_errors) {
+					slake::HostObjectRef<slake::ModuleObject> last_module = runtime->get_root_object();
 
-			for (auto &i : compile_env.errors) {
-				encountered_errors = true;
-				dump_compilation_error(parser, i);
-			}
+					for (size_t i = 0; i < module_name->entries.size() - 1; ++i) {
+						slkc::IdRefEntry &e = module_name->entries.at(i);
 
-			if (!encountered_errors) {
-				slake::HostObjectRef<slake::ModuleObject> last_module = runtime->get_root_object();
+						if (auto cur_mod = last_module->get_member(e.name); cur_mod) {
+							last_module = (slake::ModuleObject *)cur_mod.as_object;
 
-				for (size_t i = 0; i < module_name->entries.size() - 1; ++i) {
-					slkc::IdRefEntry &e = module_name->entries.at(i);
+							continue;
+						}
 
-					if (auto cur_mod = last_module->get_member(e.name); cur_mod) {
-						last_module = (slake::ModuleObject *)cur_mod.as_object;
+						slake::HostObjectRef<slake::ModuleObject> cur_module;
 
-						continue;
-					}
-
-					slake::HostObjectRef<slake::ModuleObject> cur_module;
-
-					if (!(cur_module = slake::ModuleObject::alloc(runtime.get()))) {
-						puts("Error dumping compiled module!");
-					}
-
-					if (!cur_module->set_name(e.name)) {
-						puts("Error dumping compiled module!");
-					}
-
-					if (last_module) {
-						if (!last_module->add_member(cur_module.get())) {
+						if (!(cur_module = slake::ModuleObject::alloc(runtime.get()))) {
 							puts("Error dumping compiled module!");
 						}
-						cur_module->set_parent(last_module.get());
+
+						if (!cur_module->set_name(e.name)) {
+							puts("Error dumping compiled module!");
+						}
+
+						if (last_module) {
+							if (!last_module->add_member(cur_module.get())) {
+								puts("Error dumping compiled module!");
+							}
+							cur_module->set_parent(last_module.get());
+						}
+
+						last_module = cur_module;
 					}
 
-					last_module = cur_module;
-				}
+					if (!mod_obj->set_name(module_name->entries.back().name)) {
+						puts("Error dumping compiled module!");
+					}
 
-				if (!mod_obj->set_name(module_name->entries.back().name)) {
-					puts("Error dumping compiled module!");
-				}
+					if (!last_module->add_member(mod_obj.get())) {
+						puts("Error dumping compiled module!");
+					}
+					mod_obj->set_parent(last_module.get());
 
-				if (!last_module->add_member(mod_obj.get())) {
-					puts("Error dumping compiled module!");
-				}
-				mod_obj->set_parent(last_module.get());
+					FILE *fp;
 
-				FILE *fp;
+					if (!(fp = fopen(g_output_file_name, "wb"))) {
+						print_error("Error opening the output file");
+					}
+					FileWriter w(fp);
+					if (auto e = slkc::dump_module(peff::default_allocator(), &w, mod_obj.get())) {
+						encountered_errors = true;
+						dump_compilation_error(parser, *e);
+					}
 
-				if (!(fp = fopen(g_output_file_name, "wb"))) {
-					print_error("Error opening the output file");
-				}
-				FileWriter w(fp);
-				if (auto e = slkc::dump_module(peff::default_allocator(), &w, mod_obj.get())) {
-					encountered_errors = true;
-					dump_compilation_error(parser, *e);
-				}
+					ANSIDumpWriter dump_writer;
+					slkc::Decompiler decompiler;
 
-				ANSIDumpWriter dump_writer;
-				slkc::Decompiler decompiler;
+					// decompiler.dump_cfg = true;
 
-				// decompiler.dump_cfg = true;
-
-				if (!decompiler.decompile_module(peff::default_allocator(), &dump_writer, mod_obj.get())) {
-					puts("Error dumping compiled module!");
+					if (!decompiler.decompile_module(peff::default_allocator(), &dump_writer, mod_obj.get())) {
+						puts("Error dumping compiled module!");
+					}
 				}
 			}
 
-			document->root_module = {};
+			// The document must be cleared manually at the end or the memory will leak!
+			document->root_module.reset();
 			document->generic_cache_dir.clear();
 			document->external_module_providers.clear_and_shrink();
+			mod.reset();
+			fs_external_mod_provider.reset();
+			document->clear_deferred_destructible_ast_nodes();
+			document.reset();
 		}
 	}
 

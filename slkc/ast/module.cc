@@ -149,6 +149,8 @@ SLKC_API ModuleNode::ModuleNode(const ModuleNode &rhs, peff::Alloc *allocator, D
 }
 
 SLKC_API ModuleNode::~ModuleNode() {
+	if(parser)
+	parser.reset();
 }
 
 SLKC_API size_t ModuleNode::push_member(AstNodePtr<MemberNode> member_node) noexcept {
@@ -197,7 +199,7 @@ SLKC_API void ModuleNode::remove_member(const std::string_view &name) noexcept {
 	}
 }
 
-SLKC_API void ModuleNode::set_parser(peff::SharedPtr<Parser> parser) {
+SLKC_API void ModuleNode::set_parser(const peff::SharedPtr<Parser> &parser) {
 	parser->document = {};
 	parser->cur_parent = {};
 	this->parser = parser;

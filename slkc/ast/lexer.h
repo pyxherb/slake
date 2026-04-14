@@ -273,12 +273,12 @@ namespace slkc {
 		size_t index = SIZE_MAX;
 
 		SLKC_API Token(peff::Alloc *allocator, const peff::WeakPtr<Document> &document);
-		SLKC_API virtual ~Token();
+		SLKC_API ~Token();
 
 		SLKC_API void dealloc();
 	};
 
-	using OwnedTokenPtr = std::unique_ptr<Token, peff::DeallocableDeleter<Token>>;
+	using OwnedTokenPtr = peff::UniquePtr<Token, peff::DeallocableDeleter<Token>>;
 	using TokenList = peff::DynArray<OwnedTokenPtr>;
 
 	enum class LexicalErrorKind {

@@ -36,46 +36,46 @@ struct SA {
 }
 
 interface IA {
-	public fn testIA() virtual;
+	public fn test_IA() virtual;
 }
 
 interface IB {
-	public fn testIB() virtual;
+	public fn test_IB() virtual;
 }
 
 class ImplTest: IA + IB {
-	fn testIA() virtual {
-		extfns.print("Called testIA");
+	fn test_IA() virtual {
+		extfns.print("Called test_IA");
 	}
 
-	fn testIB() virtual {
-		extfns.print("Called testIB");
+	fn test_IB() virtual {
+		extfns.print("Called test_IB");
 	}
 }
 
 class InterfaceTest<T: IA + IB> {
 	fn test(instance: T) {
-		(instance as IA).testIA();
-		(instance as IB).testIB();
+		(instance as IA).test_IA();
+		(instance as IB).test_IB();
 	}
 }
 
 class TestParent<T> {
-	public fn myTest(a: T, b: T) {
+	public fn my_test(a: T, b: T) {
 		with T(i32) {
 			a + b;
 			extfns.print("T = i32\n");
 		}
-		extfns.print("Called myTest: ", a, " ", b, "\n");
+		extfns.print("Called my_test: ", a, " ", b, "\n");
 		return;
 	}
 }
 
 class TestDerived<T>(TestParent::<T>) {
-	fn myTest() {
+	fn my_test() {
 		return;
 	}
-	fn myTest(a: T) {
+	fn my_test(a: T) {
 		return;
 	}
 }
@@ -84,13 +84,13 @@ class AnotherGeneric<X, U> {
 	class ChildGeneric<V, T(Test)> {
 		public let xyz: i32;
 
-		public fn _setX(abc: T) {
-			this.xyz = abc.getX();
-			extfns.print("[ChildGeneric]setX: ", this.xyz, "\n");
+		public fn _set_x(abc: T) {
+			this.xyz = abc.get_x();
+			extfns.print("[ChildGeneric]set_x: ", this.xyz, "\n");
 			return;
 		}
 
-		public fn _getX() -> i32 {
+		public fn _get_x() -> i32 {
 			extfns.print("[ChildGeneric]Fetched xyz: ", this.xyz, "\n");
 			return this.xyz;
 		}
@@ -111,7 +111,7 @@ class Test {
 		return;
 	}
 
-	public fn getX() -> i32 {
+	public fn get_x() -> i32 {
 		extfns.print("Fetched x: ", this.x, "\n");
 		return this.x;
 	}
@@ -121,8 +121,8 @@ class Test {
 		return;
 	}
 
-	fn testFunc(x: i32, y: i32) {
-		extfns.print("Called testFunc from Test");
+	fn test_func(x: i32, y: i32) {
+		extfns.print("Called test_func from Test");
 		return;
 	}
 
@@ -145,36 +145,36 @@ class Derived(Test) {
 		return;
 	}
 
-	public fn getY() -> i32 {
+	public fn get_y() -> i32 {
 		extfns.print("Fetched y: ", this.y, "\n");
 		return this.y;
 	}
 
-	public fn testFunc(x: i32) {
-		extfns.print("Called testFunc from Derived");
+	public fn test_func(x: i32) {
+		extfns.print("Called test_func from Derived");
 		return;
 	}
 }
 
 class VirtualBase {
-	public fn testBase(test: i32) virtual {
+	public fn test_base(test: i32) virtual {
 		extfns.print("Called VirtualBase's test\n");
 		return;
 	}
 }
 
 class VirtualDerived(VirtualBase) {
-	public fn testBase(test: i32) virtual {
+	public fn test_base(test: i32) virtual {
 		extfns.print("Called VirtualDerived's test\n");
 		return;
 	}
 }
 
-fn genericFn<T, U>(t: T, u: U) {
+fn generic_fn<T, U>(t: T, u: U) {
 	return;
 }
 
-fn genericFn<U, T>(t: T, u: U) {
+fn generic_fn<U, T>(t: T, u: U) {
 	return;
 }
 
@@ -198,7 +198,7 @@ fn t() {
 	123456 + test;
 }
 
-fn valueGenericParamTest<const T: i32>() {
+fn value_generic_param_test<const T: i32>() {
 }
 
 //class CallableTest<...T> {
@@ -256,24 +256,32 @@ public async main() -> i32 {
 	s.b = 45678901;
 	s.c = 78901234;
 
+	let t: SA = s;
+
+	t = s;
+
+	hostext.extfns.print("t.a = ", t.a, "\n");
+	hostext.extfns.print("t.b = ", t.b, "\n");
+	hostext.extfns.print("t.c = ", t.c, "\n");
+
 	hostext.extfns.print("Entered main\n");
 
 	let vt: VirtualBase = new VirtualDerived();
 
-	vt.testBase(123);
+	vt.test_base(123);
 
-	let testDerived: TestDerived::<i32> = new TestDerived::<i32>();
+	let test_derived: TestDerived::<i32> = new TestDerived::<i32>();
 
-	testDerived.myTest(123, 456);
+	test_derived.my_test(123, 456);
 
 	let test: Derived = new Derived(1);
 	test.lab = test;
 
-	test.testFunc(123, 456);
+	test.test_func(123, 456);
 
 	let x: AnotherGeneric::<i32, f32>.ChildGeneric::<f32, Test> = new AnotherGeneric::<i32, f32>.ChildGeneric::<f32, Test>();
-	x._setX(test);
-	x._getX();
+	x._set_x(test);
+	x._get_x();
 
 	extfns.print(test + 123);
 
@@ -286,7 +294,7 @@ public async main() -> i32 {
 
 	while(test.x = test.x - 1) {
 		extfns.print("Yielded\n");
-		yield test.getX();
+		yield test.get_x();
 	}
 
 	1 <=> 1;
@@ -309,13 +317,13 @@ public async main() -> i32 {
 			extfns.print("Default\n");
 	}
 
-	let implTest: ImplTest = new ImplTest();
+	let impl_test: ImplTest = new ImplTest();
 
-	let interfaceTest: InterfaceTest::<ImplTest> = new InterfaceTest::<ImplTest>();
+	let interface_test: InterfaceTest::<ImplTest> = new InterfaceTest::<ImplTest>();
 
-	//let callableTest: CallableTest<(i32, u32, f32)>;
+	//let callable_test: CallableTest<(i32, u32, f32)>;
 
-	//callableTest.call(114, 514 as u32, 1919810.0f);
+	//callable_test.call(114, 514 as u32, 1919810.0f);
 
 	hostext.extfns.print(s.a, "\n");
 	hostext.extfns.print(s.b, "\n");
@@ -385,7 +393,7 @@ public async main() -> i32 {
 /*public fn fib(n: u64) -> u64 {
 	if (n < 1UL)
 		return 0UL;
-	else if (n < 3UL)
+	else if (n < 3UL)ff
 		return 1UL;
 	return fib(n - 1UL) + fib(n - 2UL);
 }

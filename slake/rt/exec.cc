@@ -193,7 +193,7 @@ SLAKE_API InternalExceptionPointer Runtime::_fill_args(
 	for (size_t i = 0; i < fn->param_types.size(); ++i) {
 		TypeRef t = fn->param_types.at(i);
 		if (!is_compatible(t, args[i]))
-			return MismatchedVarTypeError::alloc(get_fixed_alloc());
+			return MismatchedVarTypeError::alloc(get_fixed_alloc(), t);
 	}
 	char *p_args = context->aligned_stack_alloc(sizeof(Value) * num_args, alignof(Value));
 	if (!p_args)
@@ -215,8 +215,8 @@ SLAKE_API AllocaRecord *Runtime::_alloc_alloca_record(Context *context, const Ma
 	record->def_reg = output_reg;
 	record->off_next = mf->off_alloca_records;
 	mf->off_alloca_records = frame->cur_coroutine
-							   ? context->stack_top - frame->cur_coroutine->off_stack_top
-							   : context->stack_top;
+								 ? context->stack_top - frame->cur_coroutine->off_stack_top
+								 : context->stack_top;
 	return record;
 }
 
@@ -701,7 +701,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			const Reference &ref = dest_value->get_reference();
 			TypeRef t = typeof_var(ref);
 			if (!is_compatible(t, *data))
-				return MismatchedVarTypeError::alloc(get_fixed_alloc());
+				return MismatchedVarTypeError::alloc(get_fixed_alloc(), t);
 			write_var_with_type(ref, t, *data);
 			break;
 		}
@@ -2301,8 +2301,8 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 
 				size_t off_last_minor_frame = mf->off_last_minor_frame;
 				context->_context.stack_top = cur_major_frame->cur_coroutine
-												 ? cur_major_frame->cur_coroutine->off_stack_top + mf->stack_base
-												 : mf->stack_base;
+												  ? cur_major_frame->cur_coroutine->off_stack_top + mf->stack_base
+												  : mf->stack_base;
 				cur_major_frame->resumable_context_data.off_cur_minor_frame = off_last_minor_frame;
 			}
 			break;
@@ -2392,40 +2392,40 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _set_register_value(this, data_stack, stack_size, cur_major_frame, output, alloca_ref));
 
 					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _create_new_major_frame(
-																	context,
-																	this_object,
-																	fn,
-																	nullptr,
-																	cur_major_frame->cur_coroutine
-																		? resumable_context_data.off_next_args + cur_major_frame->cur_coroutine->off_stack_top
-																		: resumable_context_data.off_next_args,
-																	cur_major_frame->resumable_context_data.num_next_args,
-																	UINT32_MAX,
-																	&alloca_ref));
+																	 context,
+																	 this_object,
+																	 fn,
+																	 nullptr,
+																	 cur_major_frame->cur_coroutine
+																		 ? resumable_context_data.off_next_args + cur_major_frame->cur_coroutine->off_stack_top
+																		 : resumable_context_data.off_next_args,
+																	 cur_major_frame->resumable_context_data.num_next_args,
+																	 UINT32_MAX,
+																	 &alloca_ref));
 				} else
 					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _create_new_major_frame(
-																	context,
-																	this_object,
-																	fn,
-																	nullptr,
-																	cur_major_frame->cur_coroutine
-																		? resumable_context_data.off_next_args + cur_major_frame->cur_coroutine->off_stack_top
-																		: resumable_context_data.off_next_args,
-																	resumable_context_data.num_next_args,
-																	output,
-																	nullptr));
+																	 context,
+																	 this_object,
+																	 fn,
+																	 nullptr,
+																	 cur_major_frame->cur_coroutine
+																		 ? resumable_context_data.off_next_args + cur_major_frame->cur_coroutine->off_stack_top
+																		 : resumable_context_data.off_next_args,
+																	 resumable_context_data.num_next_args,
+																	 output,
+																	 nullptr));
 			} else {
 				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _create_new_major_frame(
-																context,
-																this_object,
-																fn,
-																nullptr,
-																cur_major_frame->cur_coroutine
-																	? resumable_context_data.off_next_args + cur_major_frame->cur_coroutine->off_stack_top
-																	: resumable_context_data.off_next_args,
-																resumable_context_data.num_next_args,
-																output,
-																nullptr));
+																 context,
+																 this_object,
+																 fn,
+																 nullptr,
+																 cur_major_frame->cur_coroutine
+																	 ? resumable_context_data.off_next_args + cur_major_frame->cur_coroutine->off_stack_top
+																	 : resumable_context_data.off_next_args,
+																 resumable_context_data.num_next_args,
+																 output,
+																 nullptr));
 			}
 
 			resumable_context_data.off_next_args = SIZE_MAX;
@@ -2441,6 +2441,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 
 			switch (num_operands) {
 				case 0:
+					return_value = nullptr;
 					break;
 				case 1:
 					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], return_value));
@@ -2535,11 +2536,11 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			HostObjectRef<CoroutineObject> co;
 
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, create_coroutine_instance(
-															fn,
-															this_object,
-															_fetch_arg_stack(context->get_context().data_stack, context->get_context().stack_size, cur_major_frame, cur_major_frame->resumable_context_data.off_next_args),
-															cur_major_frame->resumable_context_data.num_next_args,
-															co));
+															 fn,
+															 this_object,
+															 _fetch_arg_stack(context->get_context().data_stack, context->get_context().stack_size, cur_major_frame, cur_major_frame->resumable_context_data.off_next_args),
+															 cur_major_frame->resumable_context_data.num_next_args,
+															 co));
 			cur_major_frame->resumable_context_data.off_next_args = SIZE_MAX;
 			cur_major_frame->resumable_context_data.num_next_args = 0;
 

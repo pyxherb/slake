@@ -23,10 +23,10 @@ SLKC_API void Document::_do_clear_deferred_destructible_ast_nodes() {
 	}
 }
 
-SLAKE_API GenericArgListCmp::GenericArgListCmp(Document *document, CompileEnv *compile_env) : document(document), compile_env(compile_env) {
+SLAKE_API GenericArgListCmp::GenericArgListCmp(Document *document, slake::Runtime *runtime) : document(document), runtime(runtime) {
 }
 
-SLAKE_API GenericArgListCmp::GenericArgListCmp(const GenericArgListCmp &r) : document(r.document), compile_env(r.compile_env) {
+SLAKE_API GenericArgListCmp::GenericArgListCmp(const GenericArgListCmp &r) : document(r.document), runtime(r.runtime) {
 }
 
 SLAKE_API GenericArgListCmp::GenericArgListCmp::~GenericArgListCmp() {
@@ -44,13 +44,14 @@ SLAKE_API peff::Option<int> GenericArgListCmp::operator()(const peff::DynArray<A
 			return -1;
 		if (l->get_ast_node_type() > r->get_ast_node_type())
 			return 1;
+		CompileEnv compile_env(runtime, document->shared_from_this(), document->allocator.get(), document->allocator.get());
 		switch (l->get_ast_node_type()) {
 			case AstNodeType::Expr: {
-				NormalCompilationContext compilation_context(compile_env.get(), nullptr);
+				NormalCompilationContext compilation_context(&compile_env, nullptr);
 				AstNodePtr<ExprNode> le, re;
 				{
-					PathEnv path_env(compile_env->allocator.get());
-					if (auto e = eval_const_expr(compile_env.get(), &compilation_context, &path_env, l.cast_to<ExprNode>(), le); e) {
+					PathEnv path_env(compile_env.allocator.get());
+					if (auto e = eval_const_expr(&compile_env, &compilation_context, &path_env, l.cast_to<ExprNode>(), le); e) {
 						stored_error = std::move(e);
 						return {};
 					}
@@ -60,8 +61,8 @@ SLAKE_API peff::Option<int> GenericArgListCmp::operator()(const peff::DynArray<A
 					return {};
 				}
 				{
-					PathEnv path_env(compile_env->allocator.get());
-					if (auto e = eval_const_expr(compile_env.get(), &compilation_context, &path_env, r.cast_to<ExprNode>(), re); e) {
+					PathEnv path_env(compile_env.allocator.get());
+					if (auto e = eval_const_expr(&compile_env, &compilation_context, &path_env, r.cast_to<ExprNode>(), re); e) {
 						stored_error = std::move(e);
 						return {};
 					}

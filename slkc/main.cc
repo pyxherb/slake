@@ -927,7 +927,7 @@ int main(int argc, char *argv[]) {
 			document->external_module_providers.clear_and_shrink();
 			mod.reset();
 			fs_external_mod_provider.reset();
-			document->clear_deferred_destructible_ast_nodes();
+			// document->clear_deferred_destructible_ast_nodes();
 			document.reset();
 		}
 	}

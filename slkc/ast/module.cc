@@ -149,8 +149,6 @@ SLKC_API ModuleNode::ModuleNode(const ModuleNode &rhs, peff::Alloc *allocator, D
 }
 
 SLKC_API ModuleNode::~ModuleNode() {
-	if(parser)
-	parser.reset();
 }
 
 SLKC_API size_t ModuleNode::push_member(AstNodePtr<MemberNode> member_node) noexcept {

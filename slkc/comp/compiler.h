@@ -516,6 +516,9 @@ namespace slkc {
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> is_basic_type(
 		AstNodePtr<TypeNameNode> lhs,
 		bool &result_out);
+	[[nodiscard]] SLKC_API peff::Option<CompilationError> is_object_type(
+		AstNodePtr<TypeNameNode> lhs,
+		bool &result_out);
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> is_scoped_enum_base_type(
 		AstNodePtr<TypeNameNode> lhs,
 		bool &result_out);
@@ -759,8 +762,8 @@ namespace slkc {
 		const AstNodePtr<TypeNameNode> *arg_types,
 		size_t num_arg_types,
 		bool is_static,
-		peff::DynArray<AstNodePtr<FnOverloadingNode>> &matched_overloadings,
-		peff::Set<AstNodePtr<MemberNode>> *walked_parents = nullptr);
+		peff::DynArray<AstNodePtr<FnOverloadingNode>> &matched_overloadings);
+
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> fn_to_type_name(
 		CompileEnv *compile_env,
 		AstNodePtr<FnOverloadingNode> fn,
@@ -772,13 +775,6 @@ namespace slkc {
 		CompileEnv *compile_env,
 		IdRef *module_path,
 		AstNodePtr<ModuleNode> leaf);
-
-	[[nodiscard]] SLKC_API peff::Option<CompilationError> renormalize_module_var_def_stmts(
-		CompileEnv *compile_env,
-		AstNodePtr<ModuleNode> mod);
-	[[nodiscard]] SLKC_API peff::Option<CompilationError> normalize_module_var_def_stmts(
-		CompileEnv *compile_env,
-		AstNodePtr<ModuleNode> mod);
 
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> gen_binary_op_expr(CompileEnv *compile_env, BinaryOp binary_op, AstNodePtr<ExprNode> lhs, AstNodePtr<ExprNode> rhs, TokenRange token_range, AstNodePtr<BinaryExprNode> &result_out);
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> eval_const_binary_op_expr(CompileEnv *compile_env, CompilationContext *compilation_context, PathEnv *path_env, BinaryOp binary_op, AstNodePtr<ExprNode> lhs, AstNodePtr<ExprNode> rhs, AstNodePtr<ExprNode> &result_out);

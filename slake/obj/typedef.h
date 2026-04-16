@@ -116,6 +116,7 @@ namespace slake {
 		HeapTypeObject *return_type = nullptr;
 		peff::DynArray<HeapTypeObject *> param_types;
 		bool has_var_arg = false;
+		HeapTypeObject *this_type = nullptr;
 
 		SLAKE_API FnTypeDefObject(Runtime *rt, peff::Alloc *self_allocator);
 		SLAKE_API FnTypeDefObject(Duplicator *duplicator, const FnTypeDefObject &x, peff::Alloc *allocator, bool &succeeded_out);

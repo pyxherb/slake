@@ -56,8 +56,6 @@ namespace slkc {
 		peff::DynArray<AstNodePtr<ImportNode>> anonymous_imports;
 		peff::DynArray<AstNodePtr<VarDefStmtNode>> var_def_stmts;
 
-		bool is_var_def_stmts_normalized = false;
-
 		SLKC_API ModuleNode(peff::Alloc *self_allocator, const peff::SharedPtr<Document> &document, AstNodeType ast_node_type = AstNodeType::Module);
 		SLKC_API ModuleNode(const ModuleNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeeded_out);
 		SLKC_API virtual ~ModuleNode();

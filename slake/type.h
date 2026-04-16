@@ -55,6 +55,7 @@ namespace slake {
 		F64,	// 64-bit floating point number
 		Bool,	// Boolean
 
+		Object,				 // Object
 		String,				 // String
 		Instance,			 // Object instance
 		StructInstance,		 // Structure instance
@@ -82,33 +83,6 @@ namespace slake {
 	SLAKE_API TypeId value_type_to_type_id(ValueType value_type) noexcept;
 	SLAKE_API bool is_value_type_compatible_type_id(TypeId type_id) noexcept;
 	SLAKE_API ValueType type_id_to_value_type(TypeId type_id) noexcept;
-
-	SLAKE_FORCEINLINE constexpr bool is_fundamental_type(TypeId type_id) {
-		switch (type_id) {
-			case TypeId::Void:
-			case TypeId::I8:
-			case TypeId::I16:
-			case TypeId::I32:
-			case TypeId::I64:
-			case TypeId::ISize:
-			case TypeId::U8:
-			case TypeId::U16:
-			case TypeId::U32:
-			case TypeId::U64:
-			case TypeId::USize:
-			case TypeId::F32:
-			case TypeId::F64:
-			case TypeId::Bool:
-			case TypeId::String:
-			case TypeId::Any:
-			case TypeId::Unknown:
-				return true;
-			default:
-				break;
-		}
-
-		return false;
-	}
 
 	class Runtime;
 	class Object;
@@ -229,10 +203,6 @@ namespace slake {
 	static_assert(std::is_trivially_copyable_v<TypeRef>, "TypeRef must be trivially copyable");
 	static_assert(std::is_trivially_copy_assignable_v<TypeRef>, "TypeRef must be trivially copy-assignable");
 	static_assert(std::is_trivially_destructible_v<TypeRef>, "TypeRef must be trivially destructible");
-
-	SLAKE_FORCEINLINE bool is_fundamental_type(TypeRef type) {
-		return is_fundamental_type(type.type_id);
-	}
 
 	class ClassObject;
 	class InterfaceObject;

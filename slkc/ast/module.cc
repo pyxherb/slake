@@ -143,8 +143,6 @@ SLKC_API ModuleNode::ModuleNode(const ModuleNode &rhs, peff::Alloc *allocator, D
 		}
 	}
 
-	is_var_def_stmts_normalized = rhs.is_var_def_stmts_normalized;
-
 	succeeded_out = true;
 }
 

@@ -223,7 +223,7 @@ SLAKE_API int TypeRef::compares_to(const TypeRef &rhs) const noexcept {
 		return -1;
 	if (type_modifier > rhs.type_modifier)
 		return 1;
-	if (is_fundamental_type(type_id))
+	if (Runtime::is_basic_type(type_id))
 		return 0;
 	if (type_def < rhs.type_def)
 		return -1;
@@ -239,6 +239,7 @@ SLAKE_API TypeRef TypeRef::duplicate(bool &succeeded_out) const {
 		case TypeId::Array:
 		case TypeId::Ref:
 		case TypeId::GenericArg:
+		case TypeId::Fn:
 			new_type.type_def = (TypeDefObject *)type_def->duplicate(nullptr);
 			if (!succeeded_out) {
 				return {};
@@ -403,6 +404,40 @@ SLAKE_API bool slake::is_compatible(const TypeRef &type, const Value &value) noe
 					break;
 			}
 			return is_compatible(((RefTypeDefObject *)type.type_def)->referenced_type->type_ref, Runtime::typeof_var(value.get_reference()));
+		}
+		case TypeId::Fn: {
+			if (value.value_type != ValueType::Reference) {
+				return false;
+			}
+			if (value.is_local() && !type.is_local())
+				return false;
+
+			const Reference &entity_ref = value.get_reference();
+			if (entity_ref.kind != ReferenceKind::ObjectRef) {
+				return false;
+			}
+			Object *object_ptr = entity_ref.as_object;
+			if (!object_ptr)
+				return false;
+			if (object_ptr->get_object_kind() != ObjectKind::FnOverloading) {
+				return false;
+			}
+
+			auto fn_object_ptr = ((FnOverloadingObject *)object_ptr);
+			auto td = type.get_fn_type_def();
+
+			size_t num_params = fn_object_ptr->param_types.size();
+			if(num_params != td->param_types.size())
+				return false;
+			if(!fn_object_ptr->is_with_var_args() != td->has_var_arg)
+				return false;
+			for(size_t i = 0 ; i < num_params; ++i) {
+				if(fn_object_ptr->param_types.at(i) != td->param_types.at(i)->type_ref)
+					return false;
+			}
+			if (fn_object_ptr->return_type != (td->return_type->type_ref))
+				return false;
+			return true;
 		}
 		case TypeId::Any:
 			if (value.is_local() && !type.is_local())

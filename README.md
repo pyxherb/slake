@@ -29,32 +29,72 @@ It supports:
 
 * Compiler 🕓
   * Type Checker 🕓
-  * Nullable Detection 🕓
-  * Type-based Generic ✅
-  * Value-based Generic ✅
+  * Generic 🕓
+    * Type-based Generic ✅
+    * Value-based Generic ✅
+    * Base Class and Interface Generic Constraint ✅
+    * Trait Interface Generic Constraint 🕓
   * Function Invoking ✅
+    * Regular Function ✅
+    * Method Function 🕓
+    * Closure Function 🕓
+  * Function Type Representation 🕓
+    * Regular Function 🕓
+    * Method Function 🕓
+    * Closure Function 🕓
   * Parameter-name-based Function Invoking 📝
-  * Class Instantiation ✅
-  * Class Inheritance ✅
+  * Class Type 🕓
+    * Instantiation ✅
+    * Inheritance ✅
     * Cyclic Inheritance Checker ✅
-  * Interface Implementing ✅
+  * Interface Type ✅
+    * Implementing ✅
     * Cyclic Inheritance Checker ✅
-  * Structure Instantiation 🕓
+  * Structure Type 🕓
+    * Instantiation ✅
+    * Copy Assignment ✅
+    * Move Assignment 🕓
     * Type Recursion Checker ✅
-  * Coroutine 🕓
-    * As Type 🕓
-  * Exception 🕓
+  * Coroutine Type 🕓
+    * Instantiation 🕓
+    * Copy Assignment 🕓
+    * Move Assignment 🕓
+    * Type Recursion Checker 🕓
+  * Exception Type 🕓
+    * Detaching from Class Type 🕓
+    * Throwing and Handling 🕓
   * Constant Enumeration (syntatic sugar) 🕓
-  * Scoped Enumeration 🕓
-  * Union Enumeration (ADT-like) 🕓
+  * Scoped Enumeration Type 🕓
+  * Union Enumeration (ADT-like) Type 🕓
+    * Instantiation 🕓
+    * Copy Assignment 🕓
+    * Move Assignment 🕓
     * Type Recursion Checker ✅
-  * Base Class and Interface Generic Constraint ✅
-  * Trait Interface Generic Constraint 🕓
+  * Union Enumeration Item Type 🕓
+    * Instantiation 🕓
+    * Copy Assignment 🕓
+    * Move Assignment 🕓
+    * Type Recursion Checker ✅
   * Tuple Type 🕓
+    * Instantiation 🕓
+    * Copy Assignment 🕓
+    * Move Assignment 🕓
+  * Value Type Boxing 🕓
+    * Structure Type 🕓
+    * Coroutine Type 🕓
+    * Union Enumeration Type 🕓
+    * Union Enumeration Item Type 🕓
+    * Tuple Type 🕓
   * Parameter Pack 🕓
-    * Unpacking as Parameters ✅
-  * Type-specific Path (`with`) 🕓
+    * Unpacking as Parameters 🕓
+  * Nullity Type Guard 🕓
+    * Local Variable ✅
+    * Non-local Variable 🕓
+  * Conversion Type Guard 🕓
+    * Local Variable 🕓
+    * Non-local Variable 🕓
   * Pattern Matching 🕓
+    * Exhaustion Check 🕓
   * Type-based Pattern Matching 🕓
   * Attribute 🕓
   * Lambda Expression 🕓
@@ -69,7 +109,7 @@ It supports:
   * Renaming 📝
 
 * Runtime 🕓
-  * Interpreter ✅ (Most of the functions are completed)
+  * Interpreter 🕓
   * Program Analyzer 🕓
   * Program Optimizer 🕓
   * Runtime Library 🕓
@@ -91,6 +131,8 @@ To build Slake, you will always need:
 * A C++ compiler with C++17 support
 * A C++17 standard library, which at least has freestanding environment support.
 * The PEFF library
+
+To build Slake Compiler (slkc), a C++20 compiler and standard library is required.
 
 ## License
 

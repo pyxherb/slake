@@ -930,6 +930,25 @@ SLKC_API peff::Option<CompilationError> slkc::is_basic_type(
 	return {};
 }
 
+
+SLKC_API peff::Option<CompilationError> slkc::is_object_type(
+	AstNodePtr<TypeNameNode> type,
+	bool &result_out) {
+	switch (type->tn_kind) {
+		case TypeNameKind::Object:
+		case TypeNameKind::Fn:
+		case TypeNameKind::Array:
+		case TypeNameKind::Null:
+			result_out = true;
+			break;
+		case TypeNameKind::Custom:
+			return is_class_type(type, result_out);
+		default:
+			result_out = false;
+	}
+	return {};
+}
+
 SLKC_API peff::Option<CompilationError> slkc::is_scoped_enum_base_type(
 	AstNodePtr<TypeNameNode> lhs,
 	bool &result_out) {

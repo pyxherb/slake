@@ -349,6 +349,11 @@ SLAKE_API FnTypeDefObject::FnTypeDefObject(Duplicator *duplicator, const FnTypeD
 
 	has_var_arg = x.has_var_arg;
 
+	if (!duplicator->insert_task(DuplicationTask::make_normal((Object **)&this_type, x.this_type))) {
+		succeeded_out = false;
+		return;
+	}
+
 	succeeded_out = true;
 }
 

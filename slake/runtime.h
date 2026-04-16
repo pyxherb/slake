@@ -494,6 +494,17 @@ namespace slake {
 			return {};
 		}
 
+		SLAKE_API static bool is_integral_type(const TypeRef &type) noexcept;
+		SLAKE_API static bool is_floating_type(const TypeRef &type) noexcept;
+		SLAKE_API static bool is_scoped_enum_type(const TypeRef &type) noexcept;
+		SLAKE_API static bool is_basic_type(const TypeRef &type) noexcept;
+		SLAKE_API static bool is_object_type(const TypeRef &type) noexcept;
+		SLAKE_API static bool is_deferred_loading_type(const TypeRef &type) noexcept;
+		SLAKE_API static bool is_value_type(const TypeRef &type) noexcept;
+		SLAKE_API static bool is_struct_type(const TypeRef &type) noexcept;
+		SLAKE_API static bool is_array_type(const TypeRef &type) noexcept;
+		SLAKE_API static bool is_function_type(const TypeRef &type) noexcept;
+
 		SLAKE_API static size_t sizeof_type(const TypeRef &type);
 		SLAKE_API static size_t alignof_type(const TypeRef &type);
 		SLAKE_API Value default_value_of(const TypeRef &type) const;

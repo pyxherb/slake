@@ -323,47 +323,6 @@ SLKC_API peff::Option<CompilationError> slkc::index_fn_params(
 	return {};
 }
 
-SLKC_API peff::Option<CompilationError> slkc::renormalize_module_var_def_stmts(
-	CompileEnv *compile_env,
-	AstNodePtr<ModuleNode> mod) {
-	for (auto &i : mod->var_def_stmts) {
-		for (auto &j : i->var_def_entries) {
-			if (mod->member_indices.contains(j->name)) {
-				SLKC_RETURN_IF_COMP_ERROR(compile_env->push_error(CompilationError(/* TODO: Use variable definition entries' token range! */ i->token_range, CompilationErrorKind::MemberAlreadyDefined)));
-			}
-			AstNodePtr<VarNode> var_node;
-
-			if (!(var_node = make_ast_node<VarNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->get_document()))) {
-				return gen_out_of_memory_comp_error();
-			}
-
-			if (!var_node->name.build(j->name))
-				return gen_out_of_memory_comp_error();
-			var_node->initial_value = j->initial_value;
-			var_node->type = j->type;
-			var_node->access_modifier = i->access_modifier;
-
-			if (!mod->add_member(var_node.cast_to<MemberNode>()))
-				return gen_out_of_memory_comp_error();
-		}
-	}
-
-	return {};
-}
-
-SLKC_API peff::Option<CompilationError> slkc::normalize_module_var_def_stmts(
-	CompileEnv *compile_env,
-	AstNodePtr<ModuleNode> mod) {
-	if (mod->is_var_def_stmts_normalized) {
-		return {};
-	}
-
-	SLKC_RETURN_IF_COMP_ERROR(renormalize_module_var_def_stmts(compile_env, mod));
-
-	mod->is_var_def_stmts_normalized = true;
-	return {};
-}
-
 SLKC_API peff::Option<CompilationError> slkc::gen_binary_op_expr(CompileEnv *compile_env, BinaryOp binary_op, AstNodePtr<ExprNode> lhs, AstNodePtr<ExprNode> rhs, TokenRange token_range, AstNodePtr<BinaryExprNode> &result_out) {
 	AstNodePtr<BinaryExprNode> expr;
 

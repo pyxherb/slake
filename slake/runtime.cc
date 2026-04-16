@@ -190,6 +190,136 @@ SLAKE_API peff::Alloc *Runtime::get_cur_gen_alloc() {
 	return &young_alloc;
 }
 
+SLAKE_API bool Runtime::is_integral_type(const TypeRef &type) noexcept {
+	switch (type.type_id) {
+		case TypeId::I8:
+		case TypeId::I16:
+		case TypeId::I32:
+		case TypeId::I64:
+		case TypeId::ISize:
+		case TypeId::U8:
+		case TypeId::U16:
+		case TypeId::U32:
+		case TypeId::U64:
+		case TypeId::USize:
+			return true;
+		default:
+			return false;
+	}
+	SLAKE_UNREACHABLE();
+}
+
+SLAKE_API bool Runtime::is_floating_type(const TypeRef &type) noexcept {
+	switch (type.type_id) {
+		case TypeId::F32:
+		case TypeId::F64:
+			return true;
+		default:
+			return false;
+	}
+	SLAKE_UNREACHABLE();
+}
+
+SLAKE_API static bool is_scoped_enum_type(const TypeRef &type) noexcept {
+	return (type.type_id == TypeId::ScopedEnum) || (type.type_id == TypeId::TypelessScopedEnum);
+}
+
+SLAKE_API bool Runtime::is_basic_type(const TypeRef &type) noexcept {
+	switch (type.type_id) {
+		case TypeId::Void:
+		case TypeId::I8:
+		case TypeId::I16:
+		case TypeId::I32:
+		case TypeId::I64:
+		case TypeId::ISize:
+		case TypeId::U8:
+		case TypeId::U16:
+		case TypeId::U32:
+		case TypeId::U64:
+		case TypeId::USize:
+		case TypeId::F32:
+		case TypeId::F64:
+		case TypeId::Bool:
+		case TypeId::Object:
+		case TypeId::String:
+		case TypeId::Any:
+		case TypeId::Unknown:
+			return true;
+		default:
+			return false;
+	}
+	SLAKE_UNREACHABLE();
+}
+
+SLAKE_API bool Runtime::is_object_type(const TypeRef &type) noexcept {
+	switch (type.type_id) {
+		case TypeId::Object:
+		case TypeId::String:
+		case TypeId::Instance:
+		case TypeId::Array:
+		case TypeId::Fn:
+			return true;
+		default:
+			return false;
+	}
+	SLAKE_UNREACHABLE();
+}
+
+SLAKE_API bool Runtime::is_deferred_loading_type(const TypeRef &type) noexcept {
+	return (type.type_def) &&
+		   (type.type_def->get_type_def_kind() == TypeDefKind::CustomTypeDef) &&
+		   (static_cast<CustomTypeDefObject *>(type.type_def)->type_object->get_object_kind() == ObjectKind::IdRef);
+}
+
+SLAKE_API bool Runtime::is_value_type(const TypeRef &type) noexcept {
+	switch (type.type_id) {
+		case TypeId::I8:
+		case TypeId::I16:
+		case TypeId::I32:
+		case TypeId::I64:
+		case TypeId::ISize:
+		case TypeId::U8:
+		case TypeId::U16:
+		case TypeId::U32:
+		case TypeId::U64:
+		case TypeId::USize:
+		case TypeId::F32:
+		case TypeId::F64:
+		case TypeId::Bool:
+		case TypeId::StructInstance:
+		case TypeId::ScopedEnum:
+		case TypeId::TypelessScopedEnum:
+		case TypeId::UnionEnum:
+		case TypeId::UnionEnumItem:
+		case TypeId::Tuple:
+		// any is neither value type nor reference type.
+		// case TypeId::Any:
+			return true;
+		default:
+			return false;
+	}
+	SLAKE_UNREACHABLE();
+}
+
+SLAKE_API bool Runtime::is_struct_type(const TypeRef &type) noexcept {
+	switch (type.type_id) {
+		case TypeId::StructInstance:
+		case TypeId::UnionEnum:
+		case TypeId::UnionEnumItem:
+			return true;
+		default:
+			return false;
+	}
+}
+
+SLAKE_API bool Runtime::is_array_type(const TypeRef &type) noexcept {
+	return type.type_id == TypeId::Array;
+}
+
+SLAKE_API bool Runtime::is_function_type(const TypeRef &type) noexcept {
+	return type.type_id == TypeId::Fn;
+}
+
 SLAKE_API size_t Runtime::sizeof_type(const TypeRef &type) {
 	switch (type.type_id) {
 		case TypeId::I8:
@@ -227,7 +357,7 @@ SLAKE_API size_t Runtime::sizeof_type(const TypeRef &type) {
 
 			return so->cached_object_layout->total_size + (type.type_modifier & TYPE_NULLABLE ? 1 : 0);
 		}
-		case TypeId::ScopedEnum:{
+		case TypeId::ScopedEnum: {
 			assert(type.get_custom_type_def()->type_object->get_object_kind() == ObjectKind::ScopedEnum);
 			auto so = static_cast<ScopedEnumObject *>(type.get_custom_type_def()->type_object);
 
@@ -300,7 +430,7 @@ SLAKE_API size_t Runtime::alignof_type(const TypeRef &type) {
 
 			return so->cached_object_layout->alignment;
 		}
-		case TypeId::ScopedEnum:{
+		case TypeId::ScopedEnum: {
 			assert(type.get_custom_type_def()->type_object->get_object_kind() == ObjectKind::ScopedEnum);
 			auto so = static_cast<ScopedEnumObject *>(type.get_custom_type_def()->type_object);
 

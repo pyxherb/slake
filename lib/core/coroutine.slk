@@ -1,7 +1,0 @@
-///
-/// @description
-/// Coroutine module of Slake Core Library.
-///
-/// @author Slake Contributors
-///
-module std.core.coroutine;

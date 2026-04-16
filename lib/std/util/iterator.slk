@@ -1,9 +1,0 @@
-module std.util.iterator;
-
-public interface IIterable<T> {
-	fn next(): T;
-}
-
-public interface BidirIterable<T>: IIterator<T> {
-	fn prev(): T;
-}

@@ -1,5 +1,0 @@
-module core.reflect;
-
-class Class {
-	public native let name: string;
-}

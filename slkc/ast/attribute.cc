@@ -61,7 +61,7 @@ SLKC_API AttributeNode::AttributeNode(const AttributeNode &rhs, peff::Alloc *all
 	for (size_t i = 0; i < rhs.field_data.size(); ++i) {
 		if (!context.push_task([this, i, &rhs, allocator, &context]() -> bool {
 				AstNodePtr<ExprNode> dd;
-				if (!(dd = rhs.field_data.at(i)->duplicate<ExprNode>(allocator))) {
+				if (!(dd = rhs.field_data.at(i)->do_duplicate(allocator, context).cast_to<ExprNode>())) {
 					return false;
 				}
 
@@ -74,7 +74,7 @@ SLKC_API AttributeNode::AttributeNode(const AttributeNode &rhs, peff::Alloc *all
 	}
 
 	if (!context.push_task([this, &rhs, allocator, &context]() -> bool {
-			if (!(applied_for = applied_for->duplicate<TypeNameNode>(allocator))) {
+			if (!(applied_for = applied_for->do_duplicate(allocator, context).cast_to<TypeNameNode>())) {
 				return false;
 			}
 			return true;

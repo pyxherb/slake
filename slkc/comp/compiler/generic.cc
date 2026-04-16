@@ -169,13 +169,13 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 					for (auto i : obj->overloadings) {
 						context->mapped_node = i.cast_to<MemberNode>();
 
-						if (duplicated_generic_args.size() != i->generic_params.size())
+						if (duplicated_generic_args.size() != i->scope->generic_params.size())
 							continue;
 
 						for (size_t j = 0; j < duplicated_generic_args.size(); ++j) {
 							AstNodePtr<AstNode> cur_arg = duplicated_generic_args.at(j);
 
-							if (i->generic_params.at(j)->input_type) {
+							if (i->scope->generic_params.at(j)->input_type) {
 								if (cur_arg->get_ast_node_type() != AstNodeType::Expr)
 									return CompilationError(
 										cur_arg->token_range,
@@ -188,7 +188,7 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 								}
 
 								bool same = false;
-								SLKC_RETURN_IF_COMP_ERROR(is_same_type(arg_type, i->generic_params.at(j)->input_type, same));
+								SLKC_RETURN_IF_COMP_ERROR(is_same_type(arg_type, i->scope->generic_params.at(j)->input_type, same));
 
 								if (!same)
 									goto fn_overloading_mismatched;
@@ -198,7 +198,7 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 							}
 						}
 
-						for (auto [k, v] : i->generic_param_indices) {
+						for (auto [k, v] : i->scope->generic_param_indices) {
 							if (!context->mapped_generic_args.insert(
 									std::string_view(k),
 									AstNodePtr<AstNode>(duplicated_generic_args.at(v)))) {
@@ -227,7 +227,7 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 
 					context->mapped_node = obj.cast_to<MemberNode>();
 
-					if (duplicated_generic_args.size() != obj->generic_params.size()) {
+					if (duplicated_generic_args.size() != obj->scope->generic_params.size()) {
 						return CompilationError(
 							TokenRange{
 								duplicated_generic_args.front()->token_range.module_node,
@@ -239,7 +239,7 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 					for (size_t i = 0; i < duplicated_generic_args.size(); ++i) {
 						AstNodePtr<AstNode> cur_arg = duplicated_generic_args.at(i);
 
-						if (obj->generic_params.at(i)->input_type) {
+						if (obj->scope->generic_params.at(i)->input_type) {
 							if (cur_arg->get_ast_node_type() != AstNodeType::Expr)
 								return CompilationError(
 									cur_arg->token_range,
@@ -252,7 +252,7 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 							}
 
 							bool same = false;
-							SLKC_RETURN_IF_COMP_ERROR(is_same_type(arg_type, obj->generic_params.at(i)->input_type, same));
+							SLKC_RETURN_IF_COMP_ERROR(is_same_type(arg_type, obj->scope->generic_params.at(i)->input_type, same));
 
 							if (!same)
 								return CompilationError(
@@ -266,7 +266,7 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 						}
 					}
 
-					for (auto [k, v] : obj->generic_param_indices) {
+					for (auto [k, v] : obj->scope->generic_param_indices) {
 						if (!context->mapped_generic_args.insert(
 								std::string_view(k),
 								AstNodePtr<AstNode>(duplicated_generic_args.at(v)))) {
@@ -282,7 +282,7 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 
 					context->mapped_node = obj.cast_to<MemberNode>();
 
-					if (duplicated_generic_args.size() != obj->generic_params.size()) {
+					if (duplicated_generic_args.size() != obj->scope->generic_params.size()) {
 						return CompilationError(
 							TokenRange{
 								duplicated_generic_args.front()->token_range.module_node,
@@ -294,7 +294,7 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 					for (size_t i = 0; i < duplicated_generic_args.size(); ++i) {
 						AstNodePtr<AstNode> cur_arg = duplicated_generic_args.at(i);
 
-						if (obj->generic_params.at(i)->input_type) {
+						if (obj->scope->generic_params.at(i)->input_type) {
 							if (cur_arg->get_ast_node_type() != AstNodeType::Expr)
 								return CompilationError(
 									cur_arg->token_range,
@@ -307,7 +307,7 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 							}
 
 							bool same = false;
-							SLKC_RETURN_IF_COMP_ERROR(is_same_type(arg_type, obj->generic_params.at(i)->input_type, same));
+							SLKC_RETURN_IF_COMP_ERROR(is_same_type(arg_type, obj->scope->generic_params.at(i)->input_type, same));
 
 							if (!same)
 								return CompilationError(
@@ -321,7 +321,7 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 						}
 					}
 
-					for (auto [k, v] : obj->generic_param_indices) {
+					for (auto [k, v] : obj->scope->generic_param_indices) {
 						if (!context->mapped_generic_args.insert(
 								std::string_view(k),
 								AstNodePtr<AstNode>(duplicated_generic_args.at(v)))) {
@@ -452,11 +452,11 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 						case AstNodeType::FnOverloading: {
 							AstNodePtr<FnOverloadingNode> fn_slot = ast_node.cast_to<FnOverloadingNode>();
 
-							for (auto i : fn_slot->generic_params) {
+							for (auto i : fn_slot->scope->generic_params) {
 								SLKC_RETURN_IF_COMP_ERROR(_walk_node_for_generic_instantiation(i.cast_to<MemberNode>(), task.context));
 							}
 
-							if ((task.context->mapped_node != ast_node) && (fn_slot->generic_params.size())) {
+							if ((task.context->mapped_node != ast_node) && (fn_slot->scope->generic_params.size())) {
 								peff::SharedPtr<GenericInstantiationContext> inner_context;
 
 								if (!(inner_context = peff::make_shared<GenericInstantiationContext>(allocator.get(), allocator.get(), task.context->generic_args, &dispatcher))) {
@@ -464,8 +464,8 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 								}
 
 								for (auto [k, v] : task.context->mapped_generic_args) {
-									if (auto it = fn_slot->generic_param_indices.find(k);
-										it == fn_slot->generic_param_indices.end()) {
+									if (auto it = fn_slot->scope->generic_param_indices.find(k);
+										it == fn_slot->scope->generic_param_indices.end()) {
 										if (!inner_context->mapped_generic_args.insert(std::string_view(k), AstNodePtr<AstNode>(v))) {
 											return gen_out_of_memory_comp_error();
 										}
@@ -514,11 +514,11 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 						case AstNodeType::Class: {
 							AstNodePtr<ClassNode> cls = ast_node.cast_to<ClassNode>();
 
-							for (auto j : cls->generic_params) {
+							for (auto j : cls->scope->generic_params) {
 								SLKC_RETURN_IF_COMP_ERROR(_walk_node_for_generic_instantiation(j.cast_to<MemberNode>(), task.context));
 							}
 
-							if ((task.context->mapped_node != ast_node) && (cls->generic_params.size())) {
+							if ((task.context->mapped_node != ast_node) && (cls->scope->generic_params.size())) {
 								peff::SharedPtr<GenericInstantiationContext> inner_context;
 
 								if (!(inner_context = peff::make_shared<GenericInstantiationContext>(allocator.get(), allocator.get(), task.context->generic_args, &dispatcher))) {
@@ -526,31 +526,31 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 								}
 
 								for (auto [k, v] : task.context->mapped_generic_args) {
-									if (auto it = cls->generic_param_indices.find(k);
-										it == cls->generic_param_indices.end()) {
+									if (auto it = cls->scope->generic_param_indices.find(k);
+										it == cls->scope->generic_param_indices.end()) {
 										if (!inner_context->mapped_generic_args.insert(std::string_view(k), AstNodePtr<AstNode>(v))) {
 											return gen_out_of_memory_comp_error();
 										}
 									}
 								}
 
-								SLKC_RETURN_IF_COMP_ERROR(_walk_type_name_for_generic_instantiation(cls->base_type, inner_context));
+								SLKC_RETURN_IF_COMP_ERROR(_walk_type_name_for_generic_instantiation(cls->scope->base_type, inner_context));
 
-								for (auto &k : cls->impl_types) {
+								for (auto &k : cls->scope->impl_types) {
 									SLKC_RETURN_IF_COMP_ERROR(_walk_type_name_for_generic_instantiation(k, inner_context));
 								}
 
-								for (auto j : cls->members) {
+								for (auto j : cls->scope->_members) {
 									SLKC_RETURN_IF_COMP_ERROR(_walk_node_for_generic_instantiation(j, inner_context));
 								}
 							} else {
-								SLKC_RETURN_IF_COMP_ERROR(_walk_type_name_for_generic_instantiation(cls->base_type, task.context));
+								SLKC_RETURN_IF_COMP_ERROR(_walk_type_name_for_generic_instantiation(cls->scope->base_type, task.context));
 
-								for (auto &k : cls->impl_types) {
+								for (auto &k : cls->scope->impl_types) {
 									SLKC_RETURN_IF_COMP_ERROR(_walk_type_name_for_generic_instantiation(k, task.context));
 								}
 
-								for (auto j : cls->members) {
+								for (auto j : cls->scope->_members) {
 									SLKC_RETURN_IF_COMP_ERROR(_walk_node_for_generic_instantiation(j, task.context));
 								}
 							}
@@ -559,11 +559,11 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 						case AstNodeType::Struct: {
 							AstNodePtr<StructNode> cls = ast_node.cast_to<StructNode>();
 
-							for (auto j : cls->generic_params) {
+							for (auto j : cls->scope->generic_params) {
 								SLKC_RETURN_IF_COMP_ERROR(_walk_node_for_generic_instantiation(j.cast_to<MemberNode>(), task.context));
 							}
 
-							if ((task.context->mapped_node != ast_node) && (cls->generic_params.size())) {
+							if ((task.context->mapped_node != ast_node) && (cls->scope->generic_params.size())) {
 								peff::SharedPtr<GenericInstantiationContext> inner_context;
 
 								if (!(inner_context = peff::make_shared<GenericInstantiationContext>(allocator.get(), allocator.get(), task.context->generic_args, &dispatcher))) {
@@ -571,18 +571,18 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 								}
 
 								for (auto [k, v] : task.context->mapped_generic_args) {
-									if (auto it = cls->generic_param_indices.find(k);
-										it == cls->generic_param_indices.end()) {
+									if (auto it = cls->scope->generic_param_indices.find(k);
+										it == cls->scope->generic_param_indices.end()) {
 										if (!inner_context->mapped_generic_args.insert(std::string_view(k), AstNodePtr<AstNode>(v))) {
 											return gen_out_of_memory_comp_error();
 										}
 									}
 								}
-								for (auto j : cls->members) {
+								for (auto j : cls->scope->_members) {
 									SLKC_RETURN_IF_COMP_ERROR(_walk_node_for_generic_instantiation(j, inner_context));
 								}
 							} else {
-								for (auto j : cls->members) {
+								for (auto j : cls->scope->_members) {
 									SLKC_RETURN_IF_COMP_ERROR(_walk_node_for_generic_instantiation(j, task.context));
 								}
 							}
@@ -591,11 +591,11 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 						case AstNodeType::Interface: {
 							AstNodePtr<InterfaceNode> cls = ast_node.cast_to<InterfaceNode>();
 
-							for (auto j : cls->generic_params) {
+							for (auto j : cls->scope->generic_params) {
 								SLKC_RETURN_IF_COMP_ERROR(_walk_node_for_generic_instantiation(j.cast_to<MemberNode>(), task.context));
 							}
 
-							if ((task.context->mapped_node != ast_node) && (cls->generic_params.size())) {
+							if ((task.context->mapped_node != ast_node) && (cls->scope->generic_params.size())) {
 								peff::SharedPtr<GenericInstantiationContext> inner_context;
 
 								if (!(inner_context = peff::make_shared<GenericInstantiationContext>(allocator.get(), allocator.get(), task.context->generic_args, &dispatcher))) {
@@ -603,27 +603,27 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 								}
 
 								for (auto [k, v] : task.context->mapped_generic_args) {
-									if (auto it = cls->generic_param_indices.find(k);
-										it == cls->generic_param_indices.end()) {
+									if (auto it = cls->scope->generic_param_indices.find(k);
+										it == cls->scope->generic_param_indices.end()) {
 										if (!inner_context->mapped_generic_args.insert(std::string_view(k), AstNodePtr<AstNode>(v))) {
 											return gen_out_of_memory_comp_error();
 										}
 									}
 								}
 
-								for (auto &k : cls->impl_types) {
+								for (auto &k : cls->scope->impl_types) {
 									SLKC_RETURN_IF_COMP_ERROR(_walk_type_name_for_generic_instantiation(k, inner_context));
 								}
 
-								for (auto j : cls->members) {
+								for (auto j : cls->scope->_members) {
 									SLKC_RETURN_IF_COMP_ERROR(_walk_node_for_generic_instantiation(j, inner_context));
 								}
 							} else {
-								for (auto &k : cls->impl_types) {
+								for (auto &k : cls->scope->impl_types) {
 									SLKC_RETURN_IF_COMP_ERROR(_walk_type_name_for_generic_instantiation(k, task.context));
 								}
 
-								for (auto j : cls->members) {
+								for (auto j : cls->scope->_members) {
 									SLKC_RETURN_IF_COMP_ERROR(_walk_node_for_generic_instantiation(j, task.context));
 								}
 							}

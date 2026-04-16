@@ -350,7 +350,7 @@ SLKC_API UnpackingTypeNameNode::UnpackingTypeNameNode(peff::Alloc *self_allocato
 
 SLKC_API UnpackingTypeNameNode::UnpackingTypeNameNode(const UnpackingTypeNameNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeeded_out) : TypeNameNode(rhs, allocator, context) {
 	if (!context.push_task([this, &rhs, allocator, &context]() -> bool {
-			if (!(inner_type_name = rhs.inner_type_name->duplicate<TypeNameNode>(allocator)))
+			if (!(inner_type_name = rhs.inner_type_name->do_duplicate(allocator, context).cast_to<TypeNameNode>()))
 				return false;
 			return true;
 		})) {
@@ -379,7 +379,7 @@ SLKC_API ArrayTypeNameNode::ArrayTypeNameNode(peff::Alloc *self_allocator, const
 
 SLKC_API ArrayTypeNameNode::ArrayTypeNameNode(const ArrayTypeNameNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeeded_out) : TypeNameNode(rhs, allocator, context) {
 	if (!context.push_task([this, &rhs, allocator, &context]() -> bool {
-			if (!(element_type = rhs.element_type->duplicate<TypeNameNode>(allocator)))
+			if (!(element_type = rhs.element_type->do_duplicate(allocator, context).cast_to<TypeNameNode>()))
 				return false;
 			return true;
 		})) {
@@ -414,7 +414,7 @@ SLKC_API TupleTypeNameNode::TupleTypeNameNode(const TupleTypeNameNode &rhs, peff
 
 	for (size_t i = 0; i < element_types.size(); ++i) {
 		if (!context.push_task([this, i, &rhs, allocator, &context]() -> bool {
-				if (!(element_types.at(i) = rhs.element_types.at(i)->duplicate<TypeNameNode>(allocator)))
+				if (!(element_types.at(i) = rhs.element_types.at(i)->do_duplicate(allocator, context).cast_to<TypeNameNode>()))
 					return false;
 				return true;
 			})) {
@@ -451,7 +451,7 @@ SLKC_API SIMDTypeNameNode::SIMDTypeNameNode(peff::Alloc *self_allocator, const p
 
 SLKC_API SIMDTypeNameNode::SIMDTypeNameNode(const SIMDTypeNameNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeeded_out) : TypeNameNode(rhs, allocator, context) {
 	if (!context.push_task([this, &rhs, allocator, &context]() -> bool {
-			if (!(element_type = rhs.element_type->duplicate<TypeNameNode>(allocator)))
+			if (!(element_type = rhs.element_type->do_duplicate(allocator, context).cast_to<TypeNameNode>()))
 				return false;
 			return true;
 		})) {
@@ -460,7 +460,7 @@ SLKC_API SIMDTypeNameNode::SIMDTypeNameNode(const SIMDTypeNameNode &rhs, peff::A
 	}
 
 	if (!context.push_task([this, &rhs, allocator, &context]() -> bool {
-			if (!(width = rhs.width->duplicate<ExprNode>(allocator)))
+			if (!(width = rhs.width->do_duplicate(allocator, context).cast_to<ExprNode>()))
 				return false;
 			return true;
 		})) {
@@ -493,7 +493,7 @@ SLKC_API FnTypeNameNode::FnTypeNameNode(peff::Alloc *self_allocator, const peff:
 
 SLKC_API FnTypeNameNode::FnTypeNameNode(const FnTypeNameNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeeded_out) : TypeNameNode(rhs, allocator, context), param_types(allocator) {
 	if (!context.push_task([this, &rhs, allocator, &context]() -> bool {
-			if (rhs.return_type && !(return_type = rhs.return_type->duplicate<TypeNameNode>(allocator)))
+			if (rhs.return_type && !(return_type = rhs.return_type->do_duplicate(allocator, context).cast_to<TypeNameNode>()))
 				return false;
 			return true;
 		})) {
@@ -502,7 +502,7 @@ SLKC_API FnTypeNameNode::FnTypeNameNode(const FnTypeNameNode &rhs, peff::Alloc *
 	}
 
 	if (!context.push_task([this, &rhs, allocator, &context]() -> bool {
-			if (rhs.this_type && !(this_type = rhs.this_type->duplicate<TypeNameNode>(allocator)))
+			if (rhs.this_type && !(this_type = rhs.this_type->do_duplicate(allocator, context).cast_to<TypeNameNode>()))
 				return false;
 			return true;
 		})) {
@@ -517,7 +517,7 @@ SLKC_API FnTypeNameNode::FnTypeNameNode(const FnTypeNameNode &rhs, peff::Alloc *
 
 	for (size_t i = 0; i < param_types.size(); ++i) {
 		if (!context.push_task([this, i, &rhs, allocator, &context]() -> bool {
-				if (!(param_types.at(i) = rhs.param_types.at(i)->duplicate<TypeNameNode>(allocator)))
+				if (!(param_types.at(i) = rhs.param_types.at(i)->do_duplicate(allocator, context).cast_to<TypeNameNode>()))
 					return false;
 				return true;
 			})) {
@@ -550,7 +550,7 @@ SLKC_API RefTypeNameNode::RefTypeNameNode(peff::Alloc *self_allocator, const pef
 
 SLKC_API RefTypeNameNode::RefTypeNameNode(const RefTypeNameNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeeded_out) : TypeNameNode(rhs, allocator, context) {
 	if (!context.push_task([this, &rhs, allocator, &context]() -> bool {
-			if (!(referenced_type = rhs.referenced_type->duplicate<TypeNameNode>(allocator)))
+			if (!(referenced_type = rhs.referenced_type->do_duplicate(allocator, context).cast_to<TypeNameNode>()))
 				return false;
 			return true;
 		})) {
@@ -579,7 +579,7 @@ SLKC_API TempRefTypeNameNode::TempRefTypeNameNode(peff::Alloc *self_allocator, c
 
 SLKC_API TempRefTypeNameNode::TempRefTypeNameNode(const TempRefTypeNameNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeeded_out) : TypeNameNode(rhs, allocator, context) {
 	if (!context.push_task([this, &rhs, allocator, &context]() -> bool {
-			if (!(referenced_type = rhs.referenced_type->duplicate<TypeNameNode>(allocator)))
+			if (!(referenced_type = rhs.referenced_type->do_duplicate(allocator, context).cast_to<TypeNameNode>()))
 				return false;
 			return true;
 		})) {
@@ -614,7 +614,7 @@ SLKC_API ParamTypeListTypeNameNode::ParamTypeListTypeNameNode(const ParamTypeLis
 
 	for (size_t i = 0; i < param_types.size(); ++i) {
 		if (!context.push_task([this, i, &rhs, allocator, &context]() -> bool {
-				if (!(param_types.at(i) = rhs.param_types.at(i)->duplicate<TypeNameNode>(allocator)))
+				if (!(param_types.at(i) = rhs.param_types.at(i)->do_duplicate(allocator, context).cast_to<TypeNameNode>()))
 					return false;
 				return true;
 			})) {
@@ -652,7 +652,7 @@ SLKC_API UnpackedParamsTypeNameNode::UnpackedParamsTypeNameNode(const UnpackedPa
 
 	for (size_t i = 0; i < param_types.size(); ++i) {
 		if (!context.push_task([this, i, &rhs, allocator, &context]() -> bool {
-				if (!(param_types.at(i) = rhs.param_types.at(i)->duplicate<TypeNameNode>(allocator)))
+				if (!(param_types.at(i) = rhs.param_types.at(i)->do_duplicate(allocator, context).cast_to<TypeNameNode>()))
 					return false;
 				return true;
 			})) {
@@ -690,7 +690,7 @@ SLKC_API UnpackedArgsTypeNameNode::UnpackedArgsTypeNameNode(const UnpackedArgsTy
 
 	for (size_t i = 0; i < param_types.size(); ++i) {
 		if (!context.push_task([this, i, &rhs, allocator, &context]() -> bool {
-				if (!(param_types.at(i) = rhs.param_types.at(i)->duplicate<TypeNameNode>(allocator)))
+				if (!(param_types.at(i) = rhs.param_types.at(i)->do_duplicate(allocator, context).cast_to<TypeNameNode>()))
 					return false;
 				return true;
 			})) {

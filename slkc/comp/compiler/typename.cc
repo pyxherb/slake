@@ -1151,8 +1151,8 @@ SLKC_API peff::Option<CompilationError> slkc::is_same_type_in_signature(
 								break;
 							}
 
-							if (((ClassNode *)lp)->generic_param_indices.at(l->name) ==
-								((ClassNode *)rp)->generic_param_indices.at(r->name)) {
+							if (((ClassNode *)lp)->scope->generic_param_indices.at(l->name) ==
+								((ClassNode *)rp)->scope->generic_param_indices.at(r->name)) {
 								whether_out = true;
 								break;
 							} else {
@@ -1167,8 +1167,8 @@ SLKC_API peff::Option<CompilationError> slkc::is_same_type_in_signature(
 								break;
 							}
 
-							if (((InterfaceNode *)lp)->generic_param_indices.at(l->name) ==
-								((InterfaceNode *)rp)->generic_param_indices.at(r->name)) {
+							if (((InterfaceNode *)lp)->scope->generic_param_indices.at(l->name) ==
+								((InterfaceNode *)rp)->scope->generic_param_indices.at(r->name)) {
 								whether_out = true;
 								break;
 							} else {
@@ -1178,11 +1178,11 @@ SLKC_API peff::Option<CompilationError> slkc::is_same_type_in_signature(
 							break;
 						}
 						case AstNodeType::FnOverloading: {
-							auto lit = ((FnOverloadingNode *)lp)->generic_param_indices.find(l->name),
-								 rit = ((FnOverloadingNode *)rp)->generic_param_indices.find(r->name);
+							auto lit = ((FnOverloadingNode *)lp)->scope->generic_param_indices.find(l->name),
+								 rit = ((FnOverloadingNode *)rp)->scope->generic_param_indices.find(r->name);
 
-							assert((lit != ((FnOverloadingNode *)lp)->generic_param_indices.end()) &&
-								   (rit != ((FnOverloadingNode *)rp)->generic_param_indices.end()));
+							assert((lit != ((FnOverloadingNode *)lp)->scope->generic_param_indices.end()) &&
+								   (rit != ((FnOverloadingNode *)rp)->scope->generic_param_indices.end()));
 
 							if (*lit == *rit) {
 								whether_out = true;

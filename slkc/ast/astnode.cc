@@ -11,10 +11,9 @@ SLKC_API AstNode::AstNode(AstNodeType ast_node_type, peff::Alloc *self_allocator
 	document->clear_deferred_destructible_ast_nodes();
 }
 
-SLAKE_API AstNode::AstNode(const AstNode &other, peff::Alloc *new_allocator, DuplicationContext &context) {
+SLAKE_API AstNode::AstNode(const AstNode &other, peff::Alloc *new_allocator, DuplicationContext &context): self_allocator(new_allocator) {
 	other.document->clear_deferred_destructible_ast_nodes();
 	document = other.document;
-	self_allocator = new_allocator;
 	_ast_node_type = other._ast_node_type;
 	token_range = other.token_range;
 }

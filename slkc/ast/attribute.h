@@ -6,9 +6,6 @@
 
 namespace slkc {
 	class AttributeDefNode : public ModuleNode {
-	protected:
-		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
-
 	public:
 		peff::DynArray<AstNodePtr<GenericParamNode>> generic_params;
 		peff::HashMap<std::string_view, size_t> generic_param_indices;
@@ -20,12 +17,11 @@ namespace slkc {
 		SLKC_API AttributeDefNode(peff::Alloc *allocator, const peff::SharedPtr<Document> &document);
 		SLKC_API AttributeDefNode(const AttributeDefNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeeded_out);
 		SLKC_API virtual ~AttributeDefNode();
+
+		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 	};
 
 	class AttributeNode : public AstNode {
-	protected:
-		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
-
 	public:
 		IdRefPtr attribute_name;
 		peff::DynArray<AstNodePtr<ExprNode>> field_data;
@@ -36,6 +32,8 @@ namespace slkc {
 		SLKC_API AttributeNode(peff::Alloc *allocator, const peff::SharedPtr<Document> &document);
 		SLKC_API AttributeNode(const AttributeNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeeded_out);
 		SLKC_API virtual ~AttributeNode();
+
+		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 	};
 }
 

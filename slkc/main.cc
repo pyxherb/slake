@@ -778,8 +778,12 @@ int main(int argc, char *argv[]) {
 			return ENOMEM;
 		}
 
-		slkc::AstNodePtr<slkc::ModuleNode> mod(peff::make_shared_with_control_block<slkc::ModuleNode, slkc::AstNodeControlBlock<slkc::ModuleNode>>(peff::default_allocator(), peff::default_allocator(), document));
-		if (!(mod = peff::make_shared_with_control_block<slkc::ModuleNode, slkc::AstNodeControlBlock<slkc::ModuleNode>>(peff::default_allocator(), peff::default_allocator(), document))) {
+		slkc::AstNodePtr<slkc::ModuleNode> mod;
+		if (!(mod = slkc::make_ast_node<slkc::ModuleNode>(peff::default_allocator(), peff::default_allocator(), document))) {
+			print_error("Error allocating memory for the target module");
+			return ENOMEM;
+		}
+		if (!mod->alloc_scope()) {
 			print_error("Error allocating memory for the target module");
 			return ENOMEM;
 		}
@@ -818,7 +822,11 @@ int main(int argc, char *argv[]) {
 				}
 
 				slkc::AstNodePtr<slkc::ModuleNode> root_mod;
-				if (!(root_mod = peff::make_shared_with_control_block<slkc::ModuleNode, slkc::AstNodeControlBlock<slkc::ModuleNode>>(peff::default_allocator(), peff::default_allocator(), document))) {
+				if (!(root_mod = slkc::make_ast_node<slkc::ModuleNode>(peff::default_allocator(), peff::default_allocator(), document))) {
+					print_error("Error allocating memory for the root module");
+					return ENOMEM;
+				}
+				if (!root_mod->alloc_scope()) {
 					print_error("Error allocating memory for the root module");
 					return ENOMEM;
 				}

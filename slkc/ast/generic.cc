@@ -82,7 +82,7 @@ SLKC_API GenericParamNode::GenericParamNode(const GenericParamNode &rhs, peff::A
 	}
 
 	if (!context.push_task([this, &rhs, allocator, &context]() -> bool {
-			if (rhs.input_type && !(input_type = rhs.input_type->duplicate<TypeNameNode>(allocator))) {
+			if (rhs.input_type && !(input_type = rhs.input_type->do_duplicate(allocator, context).cast_to<TypeNameNode>())) {
 				return false;
 			}
 			return true;

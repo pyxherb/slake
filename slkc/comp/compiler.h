@@ -403,7 +403,7 @@ namespace slkc {
 			CompileEnv *compile_env,
 			peff::SharedPtr<Document> document,
 			peff::Set<AstNodePtr<MemberNode>> &walked_nodes,
-			const AstNodePtr<MemberNode> &resolve_scope,
+			AstNodePtr<MemberNode> resolve_scope,
 			IdRefEntry *id_ref,
 			size_t num_entries,
 			AstNodePtr<MemberNode> &member_out,
@@ -441,8 +441,13 @@ namespace slkc {
 	/// @return CompilationErrorKind::CyclicInheritedInterface Cyclic inherited interface was detected.
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> collect_involved_interfaces(
 		peff::SharedPtr<Document> document,
-		const AstNodePtr<InterfaceNode> &derived,
+		const AstNodePtr<InterfaceNode> &bottom,
 		peff::Set<AstNodePtr<InterfaceNode>> &walked_interfaces,
+		bool insert_self);
+	[[nodiscard]] SLKC_API peff::Option<CompilationError> collect_inherited_members(
+		peff::SharedPtr<Document> document,
+		const AstNodePtr<ClassNode> &bottom,
+		peff::Set<AstNodePtr<MemberNode>> &walked_members,
 		bool insert_self);
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> is_implemented_by_interface(
 		peff::SharedPtr<Document> document,
@@ -741,7 +746,7 @@ namespace slkc {
 		CompileEnv *compile_env,
 		CompilationContext *compilation_context,
 		AstNodePtr<ModuleNode> mod,
-		AstNodePtr<GenericParamNode> *generic_params,
+		const AstNodePtr<GenericParamNode> *generic_params,
 		size_t num_generic_params,
 		slake::GenericParamList &generic_param_list_out);
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> compile_module_like_node(

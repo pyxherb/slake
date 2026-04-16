@@ -224,13 +224,14 @@ SLKC_API peff::Option<CompilationError> slkc::fill_scoped_enum(
 	CompileEnv *compile_env,
 	CompilationContext *compilation_context,
 	AstNodePtr<ScopedEnumNode> enum_node) {
-	if (!enum_node->base_type)
+	if (!enum_node->underlying_type)
 		return {};
 
 	AstNodePtr<ExprNode> last_value;
 
-	for (size_t i = 0; i < enum_node->members.size(); ++i) {
-		AstNodePtr<EnumItemNode> item = enum_node->members.at(i).cast_to<EnumItemNode>();
+	const size_t num_members = enum_node->scope->get_member_num();
+	for (size_t i = 0; i < enum_node->scope->get_member_num(); ++i) {
+		AstNodePtr<EnumItemNode> item = enum_node->scope->get_member(i).cast_to<EnumItemNode>();
 		AstNodePtr<ExprNode> fill_value;
 
 		assert(item->get_ast_node_type() == AstNodeType::EnumItem);
@@ -249,10 +250,10 @@ SLKC_API peff::Option<CompilationError> slkc::fill_scoped_enum(
 
 			{
 				PathEnv root_path_env(compile_env->allocator.get());
-				SLKC_RETURN_IF_COMP_ERROR(eval_expr_type(compile_env, compilation_context, &root_path_env, fill_value, tn, enum_node->base_type));
+				SLKC_RETURN_IF_COMP_ERROR(eval_expr_type(compile_env, compilation_context, &root_path_env, fill_value, tn, enum_node->underlying_type));
 			}
 
-			SLKC_RETURN_IF_COMP_ERROR(is_same_type(tn, enum_node->base_type, is_same));
+			SLKC_RETURN_IF_COMP_ERROR(is_same_type(tn, enum_node->underlying_type, is_same));
 
 			if (!is_same) {
 				AstNodePtr<CastExprNode> cast_expr;
@@ -262,7 +263,7 @@ SLKC_API peff::Option<CompilationError> slkc::fill_scoped_enum(
 
 				cast_expr->token_range = item->enum_value->token_range;
 				cast_expr->source = fill_value;
-				cast_expr->target_type = enum_node->base_type;
+				cast_expr->target_type = enum_node->underlying_type;
 
 				{
 					PathEnv path_env(compile_env->allocator.get());
@@ -273,7 +274,7 @@ SLKC_API peff::Option<CompilationError> slkc::fill_scoped_enum(
 					return CompilationError(item->enum_value->token_range, CompilationErrorKind::IncompatibleInitialValueType);
 			}
 		} else {
-			SLKC_RETURN_IF_COMP_ERROR(get_succeeding_enum_value(compile_env, compilation_context, enum_node->base_type, last_value, fill_value));
+			SLKC_RETURN_IF_COMP_ERROR(get_succeeding_enum_value(compile_env, compilation_context, enum_node->underlying_type, last_value, fill_value));
 		}
 		last_value = (item->filled_value = fill_value);
 	}
@@ -295,13 +296,13 @@ SLKC_API peff::Option<CompilationError> slkc::reindex_fn_params(
 		}
 	}
 
-	for (size_t i = 0; i < fn->generic_params.size(); ++i) {
-		AstNodePtr<GenericParamNode> &cur_param = fn->generic_params.at(i);
-		if (fn->generic_param_indices.contains(cur_param->name)) {
+	for (size_t i = 0; i < fn->scope->generic_params.size(); ++i) {
+		AstNodePtr<GenericParamNode> &cur_param = fn->scope->generic_params.at(i);
+		if (fn->scope->generic_param_indices.contains(cur_param->name)) {
 			SLKC_RETURN_IF_COMP_ERROR(compile_env->push_error(CompilationError(cur_param->token_range, CompilationErrorKind::GenericParamAlreadyDefined)));
 		}
 
-		if (!fn->generic_param_indices.insert(cur_param->name, +i)) {
+		if (!fn->scope->generic_param_indices.insert(cur_param->name, +i)) {
 			return gen_out_of_memory_comp_error();
 		}
 	}
@@ -421,7 +422,7 @@ SLKC_API peff::Option<CompilationError> slkc::is_fn_signature_duplicated(AstNode
 		whether_out = false;
 		return {};
 	}
-	if (lhs->generic_params.size() != rhs->generic_params.size()) {
+	if (lhs->scope->generic_params.size() != rhs->scope->generic_params.size()) {
 		whether_out = false;
 		return {};
 	}

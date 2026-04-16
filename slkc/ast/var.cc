@@ -24,7 +24,7 @@ SLKC_API VarNode::VarNode(const VarNode &rhs, peff::Alloc *allocator, Duplicatio
 	}
 
 	if (!context.push_task([this, &rhs, allocator, &context]() -> bool {
-			if (rhs.type && !(type = rhs.type->duplicate<TypeNameNode>(allocator)))
+			if (rhs.type && !(type = rhs.type->do_duplicate(allocator, context).cast_to<TypeNameNode>()))
 				return false;
 			return true;
 		})) {
@@ -33,7 +33,7 @@ SLKC_API VarNode::VarNode(const VarNode &rhs, peff::Alloc *allocator, Duplicatio
 	}
 
 	if (!context.push_task([this, &rhs, allocator, &context]() -> bool {
-			if (rhs.initial_value && !(initial_value = rhs.initial_value->duplicate<ExprNode>(allocator)))
+			if (rhs.initial_value && !(initial_value = rhs.initial_value->do_duplicate(allocator, context).cast_to<ExprNode>()))
 				return false;
 			return true;
 		})) {

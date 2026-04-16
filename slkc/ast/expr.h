@@ -68,9 +68,6 @@ namespace slkc {
 	};
 
 	class UnaryExprNode : public ExprNode {
-	protected:
-		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
-
 	public:
 		UnaryOp unary_op;
 		AstNodePtr<ExprNode> operand;
@@ -78,6 +75,8 @@ namespace slkc {
 		SLKC_API UnaryExprNode(peff::Alloc *self_allocator, const peff::SharedPtr<Document> &document);
 		SLKC_API UnaryExprNode(const UnaryExprNode &rhs, peff::Alloc *self_allocator, DuplicationContext &context, bool &succeeded_out);
 		SLKC_API virtual ~UnaryExprNode();
+
+		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 	};
 
 	enum class BinaryOp {
@@ -123,9 +122,6 @@ namespace slkc {
 	SLKC_API const char *get_binary_operator_overloading_name(BinaryOp op);
 
 	class BinaryExprNode : public ExprNode {
-	protected:
-		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
-
 	public:
 		BinaryOp binary_op;
 		AstNodePtr<ExprNode> lhs, rhs;
@@ -133,48 +129,44 @@ namespace slkc {
 		SLKC_API BinaryExprNode(peff::Alloc *self_allocator, const peff::SharedPtr<Document> &document);
 		SLKC_API BinaryExprNode(const BinaryExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeeded_out);
 		SLKC_API virtual ~BinaryExprNode();
+
+		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 	};
 
 	class TernaryExprNode : public ExprNode {
-	protected:
-		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
-
 	public:
 		AstNodePtr<ExprNode> cond, lhs, rhs;
 
 		SLKC_API TernaryExprNode(peff::Alloc *self_allocator, const peff::SharedPtr<Document> &document);
 		SLKC_API TernaryExprNode(const TernaryExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeeded_out);
 		SLKC_API virtual ~TernaryExprNode();
+
+		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 	};
 
 	class IdRefExprNode : public ExprNode {
-	protected:
-		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
-
 	public:
 		IdRefPtr id_ref_ptr;
 
 		SLKC_API IdRefExprNode(peff::Alloc *self_allocator, const peff::SharedPtr<Document> &document, IdRefPtr &&id_ref_ptr);
 		SLKC_API IdRefExprNode(const IdRefExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeeded_out);
 		SLKC_API virtual ~IdRefExprNode();
+
+		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 	};
 
 	class LooseIdExprNode : public ExprNode {
-	protected:
-		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
-
 	public:
 		peff::String id;
 
 		SLKC_API LooseIdExprNode(peff::Alloc *self_allocator, const peff::SharedPtr<Document> &document, peff::String &&id);
 		SLKC_API LooseIdExprNode(const LooseIdExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeeded_out);
 		SLKC_API virtual ~LooseIdExprNode();
+
+		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 	};
 
 	class HeadedIdRefExprNode : public ExprNode {
-	protected:
-		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
-
 	public:
 		AstNodePtr<ExprNode> head;
 		IdRefPtr id_ref_ptr;
@@ -182,12 +174,11 @@ namespace slkc {
 		SLKC_API HeadedIdRefExprNode(peff::Alloc *self_allocator, const peff::SharedPtr<Document> &document, const AstNodePtr<ExprNode> &head, IdRefPtr &&id_ref_ptr);
 		SLKC_API HeadedIdRefExprNode(const HeadedIdRefExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeeded_out);
 		SLKC_API virtual ~HeadedIdRefExprNode();
+
+		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 	};
 
 	class I8LiteralExprNode : public ExprNode {
-	protected:
-		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
-
 	public:
 		int8_t data;
 
@@ -206,12 +197,11 @@ namespace slkc {
 		SLKC_API I8LiteralExprNode(peff::Alloc *self_allocator, const peff::SharedPtr<Document> &document, int8_t data);
 		SLKC_API I8LiteralExprNode(const I8LiteralExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context);
 		SLKC_API virtual ~I8LiteralExprNode();
+
+		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 	};
 
 	class I16LiteralExprNode : public ExprNode {
-	protected:
-		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
-
 	public:
 		int16_t data;
 
@@ -230,12 +220,11 @@ namespace slkc {
 		SLKC_API I16LiteralExprNode(peff::Alloc *self_allocator, const peff::SharedPtr<Document> &document, int16_t data);
 		SLKC_API I16LiteralExprNode(const I16LiteralExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context);
 		SLKC_API virtual ~I16LiteralExprNode();
+
+		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 	};
 
 	class I32LiteralExprNode : public ExprNode {
-	protected:
-		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
-
 	public:
 		int32_t data;
 
@@ -254,12 +243,11 @@ namespace slkc {
 		SLKC_API I32LiteralExprNode(peff::Alloc *self_allocator, const peff::SharedPtr<Document> &document, int32_t data);
 		SLKC_API I32LiteralExprNode(const I32LiteralExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context);
 		SLKC_API virtual ~I32LiteralExprNode();
+
+		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 	};
 
 	class I64LiteralExprNode : public ExprNode {
-	protected:
-		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
-
 	public:
 		int64_t data;
 
@@ -278,12 +266,11 @@ namespace slkc {
 		SLKC_API I64LiteralExprNode(peff::Alloc *self_allocator, const peff::SharedPtr<Document> &document, int64_t data);
 		SLKC_API I64LiteralExprNode(const I64LiteralExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context);
 		SLKC_API virtual ~I64LiteralExprNode();
+
+		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 	};
 
 	class U8LiteralExprNode : public ExprNode {
-	protected:
-		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
-
 	public:
 		uint8_t data;
 
@@ -302,12 +289,11 @@ namespace slkc {
 		SLKC_API U8LiteralExprNode(peff::Alloc *self_allocator, const peff::SharedPtr<Document> &document, uint8_t data);
 		SLKC_API U8LiteralExprNode(const U8LiteralExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context);
 		SLKC_API virtual ~U8LiteralExprNode();
+
+		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 	};
 
 	class U16LiteralExprNode : public ExprNode {
-	protected:
-		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
-
 	public:
 		uint16_t data;
 
@@ -326,12 +312,11 @@ namespace slkc {
 		SLKC_API U16LiteralExprNode(peff::Alloc *self_allocator, const peff::SharedPtr<Document> &document, uint16_t data);
 		SLKC_API U16LiteralExprNode(const U16LiteralExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context);
 		SLKC_API virtual ~U16LiteralExprNode();
+
+		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 	};
 
 	class U32LiteralExprNode : public ExprNode {
-	protected:
-		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
-
 	public:
 		uint32_t data;
 
@@ -350,12 +335,11 @@ namespace slkc {
 		SLKC_API U32LiteralExprNode(peff::Alloc *self_allocator, const peff::SharedPtr<Document> &document, uint32_t data);
 		SLKC_API U32LiteralExprNode(const U32LiteralExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context);
 		SLKC_API virtual ~U32LiteralExprNode();
+
+		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 	};
 
 	class U64LiteralExprNode : public ExprNode {
-	protected:
-		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
-
 	public:
 		uint64_t data;
 
@@ -374,12 +358,11 @@ namespace slkc {
 		SLKC_API U64LiteralExprNode(peff::Alloc *self_allocator, const peff::SharedPtr<Document> &document, uint64_t data);
 		SLKC_API U64LiteralExprNode(const U64LiteralExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context);
 		SLKC_API virtual ~U64LiteralExprNode();
+
+		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 	};
 
 	class F32LiteralExprNode : public ExprNode {
-	protected:
-		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
-
 	public:
 		float data;
 
@@ -398,12 +381,11 @@ namespace slkc {
 		SLKC_API F32LiteralExprNode(peff::Alloc *self_allocator, const peff::SharedPtr<Document> &document, float data);
 		SLKC_API F32LiteralExprNode(const F32LiteralExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context);
 		SLKC_API virtual ~F32LiteralExprNode();
+
+		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 	};
 
 	class F64LiteralExprNode : public ExprNode {
-	protected:
-		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
-
 	public:
 		double data;
 
@@ -422,12 +404,11 @@ namespace slkc {
 		SLKC_API F64LiteralExprNode(peff::Alloc *self_allocator, const peff::SharedPtr<Document> &document, double data);
 		SLKC_API F64LiteralExprNode(const F64LiteralExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context);
 		SLKC_API virtual ~F64LiteralExprNode();
+
+		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 	};
 
 	class BoolLiteralExprNode : public ExprNode {
-	protected:
-		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
-
 	public:
 		bool data;
 
@@ -446,46 +427,42 @@ namespace slkc {
 		SLKC_API BoolLiteralExprNode(peff::Alloc *self_allocator, const peff::SharedPtr<Document> &document, bool data);
 		SLKC_API BoolLiteralExprNode(const BoolLiteralExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context);
 		SLKC_API virtual ~BoolLiteralExprNode();
+
+		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 	};
 
 	class StringLiteralExprNode : public ExprNode {
-	protected:
-		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
-
 	public:
 		peff::String data;
 
 		SLKC_API StringLiteralExprNode(peff::Alloc *self_allocator, const peff::SharedPtr<Document> &document, peff::String &&data);
 		SLKC_API StringLiteralExprNode(const StringLiteralExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeeded_out);
 		SLKC_API virtual ~StringLiteralExprNode();
+
+		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 	};
 
 	class NullLiteralExprNode : public ExprNode {
-	protected:
-		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
-
 	public:
 		SLKC_API NullLiteralExprNode(peff::Alloc *self_allocator, const peff::SharedPtr<Document> &document);
 		SLKC_API NullLiteralExprNode(const NullLiteralExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context);
 		SLKC_API virtual ~NullLiteralExprNode();
+
+		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 	};
 
 	class InitializerListExprNode : public ExprNode {
-	protected:
-		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
-
 	public:
 		peff::DynArray<AstNodePtr<ExprNode>> elements;
 
 		SLKC_API InitializerListExprNode(peff::Alloc *self_allocator, const peff::SharedPtr<Document> &document);
 		SLKC_API InitializerListExprNode(const InitializerListExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeeded_out);
 		SLKC_API virtual ~InitializerListExprNode();
+
+		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 	};
 
 	class CallExprNode : public ExprNode {
-	protected:
-		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
-
 	public:
 		AstNodePtr<ExprNode> target;
 		peff::DynArray<AstNodePtr<ExprNode>> args;
@@ -497,12 +474,11 @@ namespace slkc {
 		SLKC_API CallExprNode(peff::Alloc *self_allocator, const peff::SharedPtr<Document> &document, const AstNodePtr<ExprNode> &target, peff::DynArray<AstNodePtr<ExprNode>> &&args);
 		SLKC_API CallExprNode(const CallExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeeded_out);
 		SLKC_API virtual ~CallExprNode();
+
+		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 	};
 
 	class NewExprNode : public ExprNode {
-	protected:
-		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
-
 	public:
 		AstNodePtr<TypeNameNode> target_type;
 		peff::DynArray<AstNodePtr<ExprNode>> args;
@@ -512,12 +488,11 @@ namespace slkc {
 		SLKC_API NewExprNode(peff::Alloc *self_allocator, const peff::SharedPtr<Document> &document);
 		SLKC_API NewExprNode(const NewExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeeded_out);
 		SLKC_API virtual ~NewExprNode();
+
+		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 	};
 
 	class AllocaExprNode : public ExprNode {
-	protected:
-		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
-
 	public:
 		AstNodePtr<TypeNameNode> target_type;
 		AstNodePtr<ExprNode> count_expr;
@@ -527,12 +502,11 @@ namespace slkc {
 		SLKC_API AllocaExprNode(peff::Alloc *self_allocator, const peff::SharedPtr<Document> &document);
 		SLKC_API AllocaExprNode(const AllocaExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeeded_out);
 		SLKC_API virtual ~AllocaExprNode();
+
+		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 	};
 
 	class CastExprNode : public ExprNode {
-	protected:
-		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
-
 	public:
 		AstNodePtr<TypeNameNode> target_type;
 		AstNodePtr<ExprNode> source;
@@ -542,15 +516,14 @@ namespace slkc {
 		SLKC_API CastExprNode(const CastExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeeded_out);
 		SLKC_API virtual ~CastExprNode();
 
+		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
+
 		SLAKE_FORCEINLINE bool is_nullable_cast() const noexcept {
 			return nullable_token_index != SIZE_MAX;
 		}
 	};
 
 	class MatchExprNode : public ExprNode {
-	protected:
-		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
-
 	public:
 		AstNodePtr<ExprNode> condition;
 		AstNodePtr<TypeNameNode> return_type;
@@ -559,24 +532,22 @@ namespace slkc {
 		SLKC_API MatchExprNode(peff::Alloc *self_allocator, const peff::SharedPtr<Document> &document);
 		SLKC_API MatchExprNode(const MatchExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeeded_out);
 		SLKC_API virtual ~MatchExprNode();
+
+		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 	};
 
 	class WrapperExprNode : public ExprNode {
-	protected:
-		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
-
 	public:
 		AstNodePtr<ExprNode> target;
 
 		SLKC_API WrapperExprNode(peff::Alloc *self_allocator, const peff::SharedPtr<Document> &document);
 		SLKC_API WrapperExprNode(const WrapperExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeeded_out);
 		SLKC_API virtual ~WrapperExprNode();
+
+		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 	};
 
 	class RegIndexExprNode : public ExprNode {
-	protected:
-		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
-
 	public:
 		uint32_t reg;
 		AstNodePtr<TypeNameNode> type;
@@ -584,30 +555,30 @@ namespace slkc {
 		SLKC_API RegIndexExprNode(peff::Alloc *self_allocator, const peff::SharedPtr<Document> &document, uint32_t reg, AstNodePtr<TypeNameNode> type);
 		SLKC_API RegIndexExprNode(const RegIndexExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeeded_out);
 		SLKC_API virtual ~RegIndexExprNode();
+
+		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 	};
 
 	class TypeNameExprNode : public ExprNode {
-	protected:
-		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
-
 	public:
 		AstNodePtr<TypeNameNode> type;
 
 		SLKC_API TypeNameExprNode(peff::Alloc *self_allocator, const peff::SharedPtr<Document> &document, AstNodePtr<TypeNameNode> type);
 		SLKC_API TypeNameExprNode(const TypeNameExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeeded_out);
 		SLKC_API virtual ~TypeNameExprNode();
+
+		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 	};
 
 	class BadExprNode : public ExprNode {
-	protected:
-		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
-
 	public:
 		AstNodePtr<ExprNode> incomplete_expr;
 
 		SLKC_API BadExprNode(peff::Alloc *self_allocator, const peff::SharedPtr<Document> &document, const AstNodePtr<ExprNode> &incomplete_expr);
 		SLKC_API BadExprNode(const BadExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeeded_out);
 		SLKC_API virtual ~BadExprNode();
+
+		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 	};
 }
 

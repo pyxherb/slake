@@ -296,18 +296,14 @@ namespace slkc {
 	};
 #endif
 
+	class Scope;
+
 	class AstNode : public peff::SharedFromThis<AstNode> {
 	private:
 		AstNodeType _ast_node_type;
 
-	protected:
-		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const;
-#if SLKC_WITH_AST_DUMPING
-		SLKC_API virtual wandjson::Value *do_dump(peff::Alloc *allocator, AstDumpingContext &context) const;
-#endif
-
 	public:
-		peff::RcObjectPtr<peff::Alloc> self_allocator;
+		const peff::RcObjectPtr<peff::Alloc> self_allocator;
 		Document *document;
 		TokenRange token_range;
 
@@ -317,6 +313,11 @@ namespace slkc {
 		SLKC_API AstNode(AstNodeType ast_node_type, peff::Alloc *self_allocator, const peff::SharedPtr<Document> &document);
 		SLKC_API AstNode(const AstNode &other, peff::Alloc *new_allocator, DuplicationContext &context);
 		SLKC_API virtual ~AstNode();
+
+		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const;
+#if SLKC_WITH_AST_DUMPING
+		SLKC_API virtual wandjson::Value *do_dump(peff::Alloc *allocator, AstDumpingContext &context) const;
+#endif
 
 		template <typename T>
 		SLAKE_FORCEINLINE AstNodePtr<T> duplicate(peff::Alloc *new_allocator) const noexcept {

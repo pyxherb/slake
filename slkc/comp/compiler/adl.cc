@@ -73,30 +73,30 @@ static peff::Option<CompilationError> _determine_with_parent_class(
 	AstNodePtr<ClassNode> m = fn_slot->parent->shared_from_this().cast_to<ClassNode>();
 	{
 		AstNodePtr<ClassNode> base_type;
-		SLKC_RETURN_IF_COMP_ERROR(visit_base_class(m->base_type, base_type, nullptr));
+		SLKC_RETURN_IF_COMP_ERROR(visit_base_class(m->scope->base_type, base_type, nullptr));
 		if (base_type) {
-			if (auto it = base_type->member_indices.find(fn_slot->name); it != base_type->member_indices.end()) {
-				if (base_type->members.at(it.value())->get_ast_node_type() != AstNodeType::Fn) {
+			if (auto it = base_type->scope->_member_indices.find(fn_slot->name); it != base_type->scope->_member_indices.end()) {
+				if (base_type->scope->_members.at(it.value())->get_ast_node_type() != AstNodeType::Fn) {
 					goto class_base_class_malformed;
 				}
 
-				SLKC_RETURN_IF_COMP_ERROR(determine_fn_overloading(compile_env, base_type->members.at(it.value()).cast_to<FnNode>(), arg_types, num_arg_types, is_static, matched_overloadings));
+				SLKC_RETURN_IF_COMP_ERROR(determine_fn_overloading(compile_env, base_type->scope->_members.at(it.value()).cast_to<FnNode>(), arg_types, num_arg_types, is_static, matched_overloadings));
 			}
 		}
 	}
 
 class_base_class_malformed:
-	for (auto &i : m->impl_types) {
+	for (auto &i : m->scope->impl_types) {
 		{
 			AstNodePtr<InterfaceNode> base_type;
 			SLKC_RETURN_IF_COMP_ERROR(visit_base_interface(i, base_type, nullptr));
 			if (base_type) {
-				if (auto it = base_type->member_indices.find(fn_slot->name); it != base_type->member_indices.end()) {
-					if (base_type->members.at(it.value())->get_ast_node_type() != AstNodeType::Fn) {
+				if (auto it = base_type->scope->_member_indices.find(fn_slot->name); it != base_type->scope->_member_indices.end()) {
+					if (base_type->scope->_members.at(it.value())->get_ast_node_type() != AstNodeType::Fn) {
 						continue;
 					}
 
-					SLKC_RETURN_IF_COMP_ERROR(determine_fn_overloading(compile_env, base_type->members.at(it.value()).cast_to<FnNode>(), arg_types, num_arg_types, is_static, matched_overloadings));
+					SLKC_RETURN_IF_COMP_ERROR(determine_fn_overloading(compile_env, base_type->scope->_members.at(it.value()).cast_to<FnNode>(), arg_types, num_arg_types, is_static, matched_overloadings));
 				}
 			}
 		}
@@ -112,17 +112,17 @@ static peff::Option<CompilationError> _determine_with_parent_interface(
 	bool is_static,
 	peff::DynArray<AstNodePtr<FnOverloadingNode>> &matched_overloadings) {
 	AstNodePtr<InterfaceNode> m = fn_slot->parent->shared_from_this().cast_to<InterfaceNode>();
-	for (auto &i : m->impl_types) {
+	for (auto &i : m->scope->impl_types) {
 		{
 			AstNodePtr<InterfaceNode> base_type;
 			SLKC_RETURN_IF_COMP_ERROR(visit_base_interface(i, base_type, nullptr));
 			if (base_type) {
-				if (auto it = base_type->member_indices.find(fn_slot->name); it != base_type->member_indices.end()) {
-					if (base_type->members.at(it.value())->get_ast_node_type() != AstNodeType::Fn) {
+				if (auto it = base_type->scope->_member_indices.find(fn_slot->name); it != base_type->scope->_member_indices.end()) {
+					if (base_type->scope->_members.at(it.value())->get_ast_node_type() != AstNodeType::Fn) {
 						continue;
 					}
 
-					SLKC_RETURN_IF_COMP_ERROR(determine_fn_overloading(compile_env, base_type->members.at(it.value()).cast_to<FnNode>(), arg_types, num_arg_types, is_static, matched_overloadings));
+					SLKC_RETURN_IF_COMP_ERROR(determine_fn_overloading(compile_env, base_type->scope->_members.at(it.value()).cast_to<FnNode>(), arg_types, num_arg_types, is_static, matched_overloadings));
 				}
 			}
 		}

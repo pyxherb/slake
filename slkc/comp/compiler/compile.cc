@@ -139,7 +139,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_type_name(
 
 					type_def->type_object = obj.get();
 
-					type_out = slake::TypeRef(m.cast_to<ScopedEnumNode>()->base_type ? slake::TypeId::ScopedEnum : slake::TypeId::TypelessScopedEnum, type_def.get());
+					type_out = slake::TypeRef(m.cast_to<ScopedEnumNode>()->underlying_type ? slake::TypeId::ScopedEnum : slake::TypeId::TypelessScopedEnum, type_def.get());
 					break;
 				}
 				case AstNodeType::UnionEnum: {
@@ -696,7 +696,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_generic_params(
 	CompileEnv *compile_env,
 	CompilationContext *compilation_context,
 	AstNodePtr<ModuleNode> mod,
-	AstNodePtr<GenericParamNode> *generic_params,
+	const AstNodePtr<GenericParamNode> *generic_params,
 	size_t num_generic_params,
 	slake::GenericParamList &generic_param_list_out) {
 	peff::Option<CompilationError> e;
@@ -873,7 +873,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 
 	peff::Option<CompilationError> compilation_error;
 	if (mod_out->get_object_kind() == slake::ObjectKind::Module) {
-		for (auto i : mod->anonymous_imports) {
+		for (auto i : mod->scope->anonymous_imports) {
 			NormalCompilationContext compilation_context(compile_env, nullptr);
 
 			slake::HostObjectRef<slake::IdRefObject> id;
@@ -889,8 +889,8 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 		}
 	}
 
-	for (auto [k, v] : mod->member_indices) {
-		AstNodePtr<MemberNode> m = mod->members.at(v);
+	for (auto [k, v] : mod->scope->get_members_indices()) {
+		AstNodePtr<MemberNode> m = mod->scope->get_member(v);
 
 		if (m->get_ast_node_type() == AstNodeType::Import) {
 			AstNodePtr<ImportNode> import_node = m.cast_to<ImportNode>();
@@ -914,8 +914,8 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 
 	// SLKC_RETURN_IF_COMP_ERROR(index_module_var_members(compile_env, compile_env->get_document()->root_module));
 
-	for (auto [k, v] : mod->member_indices) {
-		AstNodePtr<MemberNode> m = mod->members.at(v);
+	for (auto [k, v] : mod->scope->get_members_indices()) {
+		AstNodePtr<MemberNode> m = mod->scope->get_member(v);
 
 		NormalCompilationContext compilation_context(compile_env, nullptr);
 
@@ -1014,16 +1014,19 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 					return gen_out_of_runtime_memory_comp_error();
 				}
 
-				SLKC_RETURN_IF_COMP_ERROR(compile_generic_params(compile_env, &compilation_context, mod, cls_node->generic_params.data(), cls_node->generic_params.size(), cls->generic_params));
+				SLKC_RETURN_IF_COMP_ERROR(compile_generic_params(
+					compile_env, &compilation_context,
+					mod,
+					cls_node->scope->get_generic_params_data(), cls_node->scope->get_generic_param_num(), cls->generic_params));
 
-				if (cls_node->base_type) {
+				if (cls_node->scope->base_type) {
 					AstNodePtr<MemberNode> base_type_node;
 
-					if (cls_node->base_type->tn_kind == TypeNameKind::Custom) {
-						if (!(compilation_error = resolve_custom_type_name(compile_env, cls_node->document->shared_from_this(), cls_node->base_type.cast_to<CustomTypeNameNode>(), base_type_node))) {
+					if (cls_node->scope->base_type->tn_kind == TypeNameKind::Custom) {
+						if (!(compilation_error = resolve_custom_type_name(compile_env, cls_node->document->shared_from_this(), cls_node->scope->base_type.cast_to<CustomTypeNameNode>(), base_type_node))) {
 							if (base_type_node) {
 								if (base_type_node->get_ast_node_type() != AstNodeType::Class) {
-									SLKC_RETURN_IF_COMP_ERROR(compile_env->push_error(CompilationError(cls_node->base_type->token_range, CompilationErrorKind::ExpectingClassName)));
+									SLKC_RETURN_IF_COMP_ERROR(compile_env->push_error(CompilationError(cls_node->scope->base_type->token_range, CompilationErrorKind::ExpectingClassName)));
 								}
 
 								bool is_cyclic_inherited = false;
@@ -1034,14 +1037,14 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 									continue;
 								}
 							} else {
-								SLKC_RETURN_IF_COMP_ERROR(compile_env->push_error(CompilationError(cls_node->base_type->token_range, CompilationErrorKind::ExpectingClassName)));
+								SLKC_RETURN_IF_COMP_ERROR(compile_env->push_error(CompilationError(cls_node->scope->base_type->token_range, CompilationErrorKind::ExpectingClassName)));
 							}
 						} else {
 							SLKC_RETURN_IF_COMP_ERROR(compile_env->push_error(std::move(compilation_error.value())));
 							compilation_error.reset();
 						}
 					} else {
-						SLKC_RETURN_IF_COMP_ERROR(compile_env->push_error(CompilationError(cls_node->base_type->token_range, CompilationErrorKind::ExpectingClassName)));
+						SLKC_RETURN_IF_COMP_ERROR(compile_env->push_error(CompilationError(cls_node->scope->base_type->token_range, CompilationErrorKind::ExpectingClassName)));
 					}
 
 					bool is_cyclic_inherited = false;
@@ -1052,12 +1055,12 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 						continue;
 					}
 
-					SLKC_RETURN_IF_COMP_ERROR(compile_type_name(compile_env, &compilation_context, cls_node->base_type, cls->base_type));
+					SLKC_RETURN_IF_COMP_ERROR(compile_type_name(compile_env, &compilation_context, cls_node->scope->base_type, cls->base_type));
 				}
 
 				peff::Set<AstNodePtr<InterfaceNode>> involved_interfaces(compile_env->allocator.get());
 
-				for (auto &i : cls_node->impl_types) {
+				for (auto &i : cls_node->scope->impl_types) {
 					AstNodePtr<MemberNode> implemented_type_node;
 
 					if (i->tn_kind == TypeNameKind::Custom) {
@@ -1109,8 +1112,8 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 					std::move(cmp));
 
 				bool conflicted_interfaces_detected = false;
-				for (auto lhs_it = cls_node->impl_types.begin(); lhs_it != cls_node->impl_types.end(); ++lhs_it) {
-					for (auto rhs_it = lhs_it + 1; rhs_it != cls_node->impl_types.end(); ++rhs_it) {
+				for (auto lhs_it = cls_node->scope->impl_types.begin(); lhs_it != cls_node->scope->impl_types.end(); ++lhs_it) {
+					for (auto rhs_it = lhs_it + 1; rhs_it != cls_node->scope->impl_types.end(); ++rhs_it) {
 						AstNodePtr<InterfaceNode> lhs_parent, rhs_parent;
 
 						SLKC_RETURN_IF_COMP_ERROR(visit_base_interface(*lhs_it, lhs_parent, nullptr));
@@ -1125,13 +1128,11 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 						if (!reported_conflicting_interfaces_set.insert({ lhs_parent, rhs_parent }))
 							return gen_out_of_memory_comp_error();
 
-						for (auto &lhs_member : lhs_parent->members) {
+						for (auto &lhs_member : lhs_parent->scope->get_members()) {
 							if (lhs_member->get_ast_node_type() == AstNodeType::Fn) {
 								AstNodePtr<FnNode> lhs = lhs_member.cast_to<FnNode>();
 
-								if (auto rhs_member = rhs_parent->member_indices.find(lhs_member->name); rhs_member != rhs_parent->member_indices.end()) {
-									AstNodePtr<MemberNode> corresponding_member = rhs_parent->members.at(rhs_member.value());
-
+								if (auto corresponding_member = rhs_parent->scope->try_get_member(lhs_member->name); corresponding_member) {
 									if (corresponding_member->get_ast_node_type() != AstNodeType::Fn) {
 										// Corresponding member should not be not a function.
 										std::terminate();
@@ -1152,9 +1153,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 											if (!b)
 												continue;
 
-											if (auto overriden_it = cls_node->member_indices.find(lhs_member->name); overriden_it != cls_node->member_indices.end()) {
-												AstNodePtr<MemberNode> corresponding_overriden_member = cls_node->members.at(overriden_it.value());
-
+											if (auto corresponding_overriden_member = cls_node->scope->try_get_member(lhs_member->name); corresponding_overriden_member) {
 												if (corresponding_overriden_member->get_ast_node_type() == AstNodeType::Fn) {
 													AstNodePtr<FnNode> corresponding_overriden_method = corresponding_overriden_member.cast_to<FnNode>();
 
@@ -1207,13 +1206,11 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 
 				if (!conflicted_interfaces_detected) {
 					for (auto &i : involved_interfaces) {
-						for (auto &j : i->members) {
+						for (auto &j : i->scope->get_members()) {
 							if (j->get_ast_node_type() == AstNodeType::Fn) {
 								AstNodePtr<FnNode> method = j.cast_to<FnNode>();
 
-								if (auto it = cls_node->member_indices.find(j->name); it != cls_node->member_indices.end()) {
-									AstNodePtr<MemberNode> corresponding_member = cls_node->members.at(it.value());
-
+								if (auto corresponding_member = cls_node->scope->try_get_member(j->name); corresponding_member) {
 									if (corresponding_member->get_ast_node_type() != AstNodeType::Fn) {
 										for (auto &k : method->overloadings) {
 											SLKC_RETURN_IF_COMP_ERROR(compile_env->push_error(CompilationError(cls_node->token_range, AbstractMethodNotImplementedErrorExData{ k })));
@@ -1274,9 +1271,9 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 					return gen_out_of_runtime_memory_comp_error();
 				}
 
-				SLKC_RETURN_IF_COMP_ERROR(compile_generic_params(compile_env, &compilation_context, mod, cls_node->generic_params.data(), cls_node->generic_params.size(), cls->generic_params));
+				SLKC_RETURN_IF_COMP_ERROR(compile_generic_params(compile_env, &compilation_context, mod, cls_node->scope->get_generic_params_data(), cls_node->scope->get_generic_param_num(), cls->generic_params));
 
-				for (auto &i : cls_node->impl_types) {
+				for (auto &i : cls_node->scope->impl_types) {
 					AstNodePtr<MemberNode> implemented_type_node;
 
 					if (i->tn_kind == TypeNameKind::Custom) {
@@ -1325,25 +1322,25 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 				break;
 			}
 			case AstNodeType::ScopedEnum: {
-				AstNodePtr<ScopedEnumNode> cls_node = m.cast_to<ScopedEnumNode>();
+				AstNodePtr<ScopedEnumNode> enum_node = m.cast_to<ScopedEnumNode>();
 
-				slake::TypeRef base_type = slake::TypeId::Invalid;
+				slake::TypeRef underlying_type = slake::TypeId::Invalid;
 
-				if (cls_node->base_type) {
+				if (enum_node->underlying_type) {
 					bool b = false;
-					SLKC_RETURN_IF_COMP_ERROR(is_scoped_enum_base_type(cls_node->base_type, b));
+					SLKC_RETURN_IF_COMP_ERROR(is_scoped_enum_base_type(enum_node->underlying_type, b));
 
 					if (!b) {
 						SLKC_RETURN_IF_COMP_ERROR(compile_env->push_error(
 							CompilationError(
-								cls_node->base_type->token_range,
+								enum_node->scope->base_type->token_range,
 								CompilationErrorKind::InvalidEnumBaseType)));
 					}
 
-					SLKC_RETURN_IF_COMP_ERROR(compile_type_name(compile_env, &compilation_context, cls_node->base_type, base_type));
+					SLKC_RETURN_IF_COMP_ERROR(compile_type_name(compile_env, &compilation_context, enum_node->underlying_type, underlying_type));
 				}
 
-				SLKC_RETURN_IF_COMP_ERROR(fill_scoped_enum(compile_env, &compilation_context, cls_node));
+				SLKC_RETURN_IF_COMP_ERROR(fill_scoped_enum(compile_env, &compilation_context, enum_node));
 
 				slake::HostObjectRef<slake::ScopedEnumObject> cls;
 
@@ -1357,10 +1354,10 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 					return gen_out_of_runtime_memory_comp_error();
 				}
 
-				cls->base_type = base_type;
+				cls->base_type = underlying_type;
 
-				if (base_type != slake::TypeId::Invalid) {
-					for (auto i : cls_node->members) {
+				if (underlying_type != slake::TypeId::Invalid) {
+					for (auto i : enum_node->scope->get_members()) {
 						switch (i->get_ast_node_type()) {
 							case AstNodeType::EnumItem: {
 								AstNodePtr<EnumItemNode> item_node = i.cast_to<EnumItemNode>();
@@ -1374,7 +1371,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 								fr.access_modifier = m->access_modifier;
 								fr.offset = mod_out->get_local_field_storage_size();
 
-								fr.type = base_type;
+								fr.type = underlying_type;
 
 								slake::Value item_value;
 
@@ -1397,11 +1394,11 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 
 								{
 									PathEnv root_path_env(compile_env->allocator.get());
-									SLKC_RETURN_IF_COMP_ERROR(eval_expr_type(compile_env, &compilation_context, &root_path_env, enum_value, enum_value_type, cls_node->base_type));
+									SLKC_RETURN_IF_COMP_ERROR(eval_expr_type(compile_env, &compilation_context, &root_path_env, enum_value, enum_value_type, enum_node->underlying_type));
 								}
 
 								bool is_same;
-								SLKC_RETURN_IF_COMP_ERROR(is_same_type(enum_value_type, cls_node->base_type, is_same));
+								SLKC_RETURN_IF_COMP_ERROR(is_same_type(enum_value_type, enum_node->underlying_type, is_same));
 
 								if (!is_same) {
 									AstNodePtr<CastExprNode> cast_expr;
@@ -1409,7 +1406,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 									if (!(cast_expr = make_ast_node<CastExprNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->get_document())))
 										return gen_out_of_memory_comp_error();
 
-									cast_expr->target_type = cls_node->base_type;
+									cast_expr->target_type = enum_node->underlying_type;
 									cast_expr->source = enum_value;
 									cast_expr->token_range = item_node->filled_value->token_range;
 
@@ -1436,7 +1433,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 						}
 					}
 				} else {
-					for (auto i : cls_node->members) {
+					for (auto i : enum_node->scope->get_members()) {
 						switch (i->get_ast_node_type()) {
 							case AstNodeType::EnumItem: {
 								AstNodePtr<EnumItemNode> item_node = i.cast_to<EnumItemNode>();
@@ -1450,7 +1447,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 								fr.access_modifier = m->access_modifier;
 								fr.offset = mod_out->get_local_field_storage_size();
 
-								fr.type = base_type;
+								fr.type = underlying_type;
 
 								if (item_node->filled_value) {
 									SLKC_RETURN_IF_COMP_ERROR(compile_env->push_error(
@@ -1500,9 +1497,9 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 					return gen_out_of_runtime_memory_comp_error();
 				}
 
-				SLKC_RETURN_IF_COMP_ERROR(compile_generic_params(compile_env, &compilation_context, mod, cls_node->generic_params.data(), cls_node->generic_params.size(), cls->generic_params));
+				SLKC_RETURN_IF_COMP_ERROR(compile_generic_params(compile_env, &compilation_context, mod, cls_node->scope->get_generic_params_data(), cls_node->scope->get_generic_param_num(), cls->generic_params));
 
-				for (auto i : cls_node->members) {
+				for (auto i : cls_node->scope->get_members()) {
 					switch (i->get_ast_node_type()) {
 						case AstNodeType::UnionEnumItem: {
 							AstNodePtr<UnionEnumItemNode> item_node = i.cast_to<UnionEnumItemNode>();
@@ -1565,7 +1562,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 
 				peff::Set<AstNodePtr<InterfaceNode>> involved_interfaces(compile_env->allocator.get());
 
-				for (auto &i : cls_node->impl_types) {
+				for (auto &i : cls_node->scope->impl_types) {
 					AstNodePtr<MemberNode> implemented_type_node;
 
 					if (i->tn_kind == TypeNameKind::Custom) {
@@ -1600,13 +1597,11 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 				}
 
 				for (auto &i : involved_interfaces) {
-					for (auto &j : i->members) {
+					for (auto &j : i->scope->get_members()) {
 						if (j->get_ast_node_type() == AstNodeType::Fn) {
 							AstNodePtr<FnNode> method = j.cast_to<FnNode>();
 
-							if (auto it = cls_node->member_indices.find(j->name); it != cls_node->member_indices.end()) {
-								AstNodePtr<MemberNode> corresponding_member = cls_node->members.at(it.value());
-
+							if (auto corresponding_member = cls_node->scope->try_get_member(j->name); corresponding_member) {
 								if (corresponding_member->get_ast_node_type() != AstNodeType::Fn) {
 									for (auto &k : method->overloadings) {
 										SLKC_RETURN_IF_COMP_ERROR(compile_env->push_error(CompilationError(cls_node->token_range, AbstractMethodNotImplementedErrorExData{ k })));
@@ -1736,7 +1731,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 						}
 					}
 
-					SLKC_RETURN_IF_COMP_ERROR(compile_generic_params(compile_env, &compilation_context, mod, i->generic_params.data(), i->generic_params.size(), fn_object->generic_params));
+					SLKC_RETURN_IF_COMP_ERROR(compile_generic_params(compile_env, &compilation_context, mod, i->scope->get_generic_params_data(), i->scope->get_generic_param_num(), fn_object->generic_params));
 
 					if (i->body) {
 						NormalCompilationContext comp_context(compile_env, nullptr);

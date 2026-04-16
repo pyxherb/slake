@@ -1517,11 +1517,11 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 
 			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error, compilation_context->emit_ins(sld_index, slake::Opcode::NEW, value_reg_out, { slake::Value(type) }));
 
-			if (auto it = c->member_indices.find("new"); it != c->member_indices.end()) {
-				if (c->members.at(it.value())->get_ast_node_type() != AstNodeType::Fn) {
+			if (auto constructor_member = c->scope->try_get_member("new"); constructor_member) {
+				if (constructor_member->get_ast_node_type() != AstNodeType::Fn) {
 					return CompilationError(e->target_type->token_range, CompilationErrorKind::TypeIsNotConstructible);
 				}
-				AstNodePtr<FnNode> constructor = c->members.at(it.value()).cast_to<FnNode>();
+				AstNodePtr<FnNode> constructor = constructor_member.cast_to<FnNode>();
 
 				peff::DynArray<AstNodePtr<TypeNameNode>> arg_types(compile_env->allocator.get());
 

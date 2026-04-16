@@ -37,9 +37,6 @@ namespace slkc {
 	ParamTypeListGenericConstraintPtr duplicate_param_type_list_generic_constraint(peff::Alloc *allocator, const ParamTypeListGenericConstraint *constraint);
 
 	class GenericParamNode : public MemberNode {
-	protected:
-		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
-
 	public:
 		AstNodePtr<TypeNameNode> input_type;
 		GenericConstraintPtr generic_constraint;
@@ -50,6 +47,8 @@ namespace slkc {
 		SLKC_API GenericParamNode(peff::Alloc *self_allocator, const peff::SharedPtr<Document> &document);
 		SLKC_API GenericParamNode(const GenericParamNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeeded_out);
 		SLKC_API virtual ~GenericParamNode();
+
+		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 	};
 }
 

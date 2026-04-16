@@ -500,8 +500,8 @@ SLKC_API peff::Option<CompilationError> slkc::complete_parent_modules(
 	AstNodePtr<ModuleNode> node = compile_env->get_document()->root_module;
 
 	for (size_t i = 0; i < modules.size(); ++i) {
-		if (auto it = node->member_indices.find(module_path->entries.at(i).name); it != node->member_indices.end()) {
-			node = node->members.at(it.value()).cast_to<ModuleNode>();
+		if (auto it = node->scope->_member_indices.find(module_path->entries.at(i).name); it != node->scope->_member_indices.end()) {
+			node = node->scope->_members.at(it.value()).cast_to<ModuleNode>();
 			modules.at(i) = node;
 			idx_new_modules_begin = i + 1;
 		} else {
@@ -511,6 +511,8 @@ SLKC_API peff::Option<CompilationError> slkc::complete_parent_modules(
 				if (!(node = make_ast_node<ModuleNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->get_document()))) {
 					return gen_out_of_memory_comp_error();
 				}
+				if (!node->alloc_scope())
+					return gen_out_of_memory_comp_error();
 			}
 			modules.at(i) = node;
 			if (!node->name.build(module_path->entries.at(i).name)) {
@@ -528,12 +530,12 @@ SLKC_API peff::Option<CompilationError> slkc::complete_parent_modules(
 
 		if (i) {
 			auto m1 = modules.at(i - 1), m2 = modules.at(i);
-			if (!modules.at(i - 1)->add_member(modules.at(i).cast_to<MemberNode>())) {
+			if (!modules.at(i - 1)->scope->add_member(modules.at(i).cast_to<MemberNode>())) {
 				return gen_out_of_memory_comp_error();
 			}
 			modules.at(i)->set_parent(modules.at(i - 1).get());
 		} else {
-			if (!compile_env->get_document()->root_module->add_member(modules.at(i).cast_to<MemberNode>())) {
+			if (!compile_env->get_document()->root_module->scope->add_member(modules.at(i).cast_to<MemberNode>())) {
 				return gen_out_of_memory_comp_error();
 			}
 			modules.at(i)->set_parent(compile_env->get_document()->root_module.get());
@@ -549,7 +551,7 @@ SLKC_API peff::Option<CompilationError> slkc::cleanup_unused_module_tree(
 	AstNodePtr<ModuleNode> cur = leaf;
 
 	for (;;) {
-		for (auto &i : cur->members) {
+		for (auto &i : cur->scope->_members) {
 			if (i->get_ast_node_type() == AstNodeType::Module) {
 				return {};
 			}
@@ -564,7 +566,7 @@ SLKC_API peff::Option<CompilationError> slkc::cleanup_unused_module_tree(
 
 		AstNodePtr<ModuleNode> parent = cur->parent->shared_from_this().cast_to<ModuleNode>();
 
-		parent->remove_member(cur->name);
+		parent->scope->remove_member(cur->name);
 
 		cur = parent;
 	}
@@ -607,8 +609,8 @@ SLKC_API peff::Option<CompilationError> FileSystemExternalModuleProvider::load_m
 		AstNodePtr<ModuleNode> node = compile_env->get_document()->root_module;
 
 		for (size_t i = 0; i < module_name->entries.size(); ++i) {
-			if (auto it = node->member_indices.find(module_name->entries.at(i).name); it != node->member_indices.end()) {
-				node = node->members.at(it.value()).cast_to<ModuleNode>();
+			if (auto it = node->scope->_member_indices.find(module_name->entries.at(i).name); it != node->scope->_member_indices.end()) {
+				node = node->scope->_members.at(it.value()).cast_to<ModuleNode>();
 				continue;
 			}
 
@@ -691,6 +693,9 @@ SLKC_API peff::Option<CompilationError> FileSystemExternalModuleProvider::load_m
 				if (!(mod = make_ast_node<ModuleNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->get_document()))) {
 					return gen_out_of_memory_comp_error();
 				}
+				if (!mod->alloc_scope()) {
+					return gen_out_of_memory_comp_error();
+				}
 
 				slkc::TokenList token_list(compile_env->allocator.get());
 				{
@@ -725,12 +730,12 @@ SLKC_API peff::Option<CompilationError> FileSystemExternalModuleProvider::load_m
 					return CompilationError(module_name->token_range, ErrorParsingImportedModuleErrorExData(mod));
 				}
 
-				for (auto i : mod->members) {
+				for (auto i : mod->scope->_members) {
 					if (i->get_ast_node_type() == AstNodeType::Import) {
 						SLKC_RETURN_IF_COMP_ERROR(load_module(compile_env, i.cast_to<ImportNode>()->id_ref.get()));
 					}
 				}
-				for (auto i : mod->anonymous_imports) {
+				for (auto i : mod->scope->anonymous_imports) {
 					SLKC_RETURN_IF_COMP_ERROR(load_module(compile_env, i->id_ref.get()));
 				}
 

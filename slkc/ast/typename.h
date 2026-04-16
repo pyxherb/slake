@@ -5,7 +5,7 @@
 
 namespace slkc {
 	class VoidTypeNameNode : public TypeNameNode {
-	protected:
+	public:
 		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 
 	public:
@@ -15,7 +15,7 @@ namespace slkc {
 	};
 
 	class I8TypeNameNode : public TypeNameNode {
-	protected:
+	public:
 		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 
 	public:
@@ -25,7 +25,7 @@ namespace slkc {
 	};
 
 	class I16TypeNameNode : public TypeNameNode {
-	protected:
+	public:
 		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 
 	public:
@@ -35,7 +35,7 @@ namespace slkc {
 	};
 
 	class I32TypeNameNode : public TypeNameNode {
-	protected:
+	public:
 		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 
 	public:
@@ -45,7 +45,7 @@ namespace slkc {
 	};
 
 	class I64TypeNameNode : public TypeNameNode {
-	protected:
+	public:
 		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 
 	public:
@@ -55,7 +55,7 @@ namespace slkc {
 	};
 
 	class U8TypeNameNode : public TypeNameNode {
-	protected:
+	public:
 		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 
 	public:
@@ -65,7 +65,7 @@ namespace slkc {
 	};
 
 	class U16TypeNameNode : public TypeNameNode {
-	protected:
+	public:
 		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 
 	public:
@@ -75,7 +75,7 @@ namespace slkc {
 	};
 
 	class U32TypeNameNode : public TypeNameNode {
-	protected:
+	public:
 		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 
 	public:
@@ -85,7 +85,7 @@ namespace slkc {
 	};
 
 	class U64TypeNameNode : public TypeNameNode {
-	protected:
+	public:
 		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 
 	public:
@@ -95,7 +95,7 @@ namespace slkc {
 	};
 
 	class ISizeTypeNameNode : public TypeNameNode {
-	protected:
+	public:
 		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 
 	public:
@@ -105,7 +105,7 @@ namespace slkc {
 	};
 
 	class USizeTypeNameNode : public TypeNameNode {
-	protected:
+	public:
 		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 
 	public:
@@ -115,7 +115,7 @@ namespace slkc {
 	};
 
 	class F32TypeNameNode : public TypeNameNode {
-	protected:
+	public:
 		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 
 	public:
@@ -125,7 +125,7 @@ namespace slkc {
 	};
 
 	class F64TypeNameNode : public TypeNameNode {
-	protected:
+	public:
 		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 
 	public:
@@ -135,7 +135,7 @@ namespace slkc {
 	};
 
 	class StringTypeNameNode : public TypeNameNode {
-	protected:
+	public:
 		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 
 	public:
@@ -145,7 +145,7 @@ namespace slkc {
 	};
 
 	class BoolTypeNameNode : public TypeNameNode {
-	protected:
+	public:
 		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 
 	public:
@@ -155,7 +155,7 @@ namespace slkc {
 	};
 
 	class ObjectTypeNameNode : public TypeNameNode {
-	protected:
+	public:
 		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 
 	public:
@@ -165,7 +165,7 @@ namespace slkc {
 	};
 
 	class AnyTypeNameNode : public TypeNameNode {
-	protected:
+	public:
 		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 
 	public:
@@ -177,7 +177,7 @@ namespace slkc {
 	class MemberNode;
 
 	class CustomTypeNameNode : public TypeNameNode {
-	protected:
+	public:
 		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 
 	public:
@@ -191,7 +191,7 @@ namespace slkc {
 	};
 
 	class UnpackingTypeNameNode : public TypeNameNode {
-	protected:
+	public:
 		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 
 	public:
@@ -203,7 +203,7 @@ namespace slkc {
 	};
 
 	class ArrayTypeNameNode : public TypeNameNode {
-	protected:
+	public:
 		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 
 	public:
@@ -215,7 +215,7 @@ namespace slkc {
 	};
 
 	class FnTypeNameNode : public TypeNameNode {
-	protected:
+	public:
 		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 
 	public:
@@ -231,7 +231,7 @@ namespace slkc {
 	};
 
 	class RefTypeNameNode : public TypeNameNode {
-	protected:
+	public:
 		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 
 	public:
@@ -243,7 +243,7 @@ namespace slkc {
 	};
 
 	class TempRefTypeNameNode : public TypeNameNode {
-	protected:
+	public:
 		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 
 	public:
@@ -255,7 +255,7 @@ namespace slkc {
 	};
 
 	class TupleTypeNameNode : public TypeNameNode {
-	protected:
+	public:
 		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 
 	public:
@@ -272,7 +272,7 @@ namespace slkc {
 	};
 
 	class SIMDTypeNameNode : public TypeNameNode {
-	protected:
+	public:
 		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 
 	public:
@@ -289,7 +289,7 @@ namespace slkc {
 	};
 
 	class ParamTypeListTypeNameNode : public TypeNameNode {
-	protected:
+	public:
 		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 
 	public:
@@ -302,7 +302,7 @@ namespace slkc {
 	};
 
 	class UnpackedParamsTypeNameNode : public TypeNameNode {
-	protected:
+	public:
 		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 
 	public:
@@ -315,7 +315,7 @@ namespace slkc {
 	};
 
 	class UnpackedArgsTypeNameNode : public TypeNameNode {
-	protected:
+	public:
 		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 
 	public:
@@ -328,7 +328,7 @@ namespace slkc {
 	};
 
 	class NullTypeNameNode : public TypeNameNode {
-	protected:
+	public:
 		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 
 	public:

@@ -17,72 +17,12 @@ SLKC_API ClassNode::ClassNode(
 	peff::Alloc *self_allocator,
 	const peff::SharedPtr<Document> &document)
 	: ModuleNode(self_allocator, document, AstNodeType::Class),
-	  generic_params(self_allocator),
-	  generic_param_indices(self_allocator),
-	  idx_generic_param_comma_tokens(self_allocator),
-	  impl_types(self_allocator) {
+	  idx_generic_param_comma_tokens(self_allocator) {
 }
 
-SLKC_API ClassNode::ClassNode(const ClassNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeeded_out) : ModuleNode(rhs, allocator, context, succeeded_out), generic_params(allocator), generic_param_indices(allocator), idx_generic_param_comma_tokens(allocator), impl_types(allocator) {
+SLKC_API ClassNode::ClassNode(const ClassNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeeded_out) : ModuleNode(rhs, allocator, context, succeeded_out), idx_generic_param_comma_tokens(allocator) {
 	if (!succeeded_out) {
 		return;
-	}
-
-	if (!context.push_task([this, &rhs, allocator, &context]() -> bool {
-			if (rhs.base_type && !(base_type = rhs.base_type->duplicate<TypeNameNode>(allocator))) {
-				return false;
-			}
-			return true;
-		})) {
-		succeeded_out = false;
-		return;
-	}
-
-	if (!impl_types.resize(rhs.impl_types.size())) {
-		succeeded_out = false;
-		return;
-	}
-
-	for (size_t i = 0; i < impl_types.size(); ++i) {
-		if (!context.push_task([this, i, &rhs, allocator, &context]() -> bool {
-				if (!(impl_types.at(i) = rhs.impl_types.at(i)->duplicate<TypeNameNode>(allocator)))
-					return false;
-				return true;
-			})) {
-			succeeded_out = false;
-			return;
-		}
-	}
-
-	if (!generic_params.resize(rhs.generic_params.size())) {
-		succeeded_out = false;
-		return;
-	}
-
-	for (size_t i = 0; i < generic_params.size(); ++i) {
-		if (!context.push_task([this, i, &rhs, allocator, &context]() -> bool {
-				if (!(generic_params.at(i) = rhs.generic_params.at(i)->duplicate<GenericParamNode>(allocator)))
-					return false;
-
-				generic_params.at(i)->set_parent(this);
-				return true;
-			})) {
-			succeeded_out = false;
-			return;
-		}
-	}
-
-	for (const auto &[k, v] : rhs.generic_param_indices) {
-		auto captured_v = v;
-		if (!context.push_task([this, v = captured_v, &rhs, allocator, &context]() -> bool {
-				if (!generic_param_indices.insert(generic_params.at(v)->name, +v)) {
-					return false;
-				}
-				return true;
-			})) {
-			succeeded_out = false;
-			return;
-		}
 	}
 
 	if (!idx_generic_param_comma_tokens.resize(rhs.idx_generic_param_comma_tokens.size())) {
@@ -136,62 +76,12 @@ SLKC_API InterfaceNode::InterfaceNode(
 	peff::Alloc *self_allocator,
 	const peff::SharedPtr<Document> &document)
 	: ModuleNode(self_allocator, document, AstNodeType::Interface),
-	  generic_params(self_allocator),
-	  generic_param_indices(self_allocator),
-	  idx_generic_param_comma_tokens(self_allocator),
-	  impl_types(self_allocator) {
+	  idx_generic_param_comma_tokens(self_allocator) {
 }
 
-SLKC_API InterfaceNode::InterfaceNode(const InterfaceNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeeded_out) : ModuleNode(rhs, allocator, context, succeeded_out), generic_params(allocator), generic_param_indices(allocator), idx_generic_param_comma_tokens(allocator), impl_types(allocator) {
+SLKC_API InterfaceNode::InterfaceNode(const InterfaceNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeeded_out) : ModuleNode(rhs, allocator, context, succeeded_out), idx_generic_param_comma_tokens(allocator) {
 	if (!succeeded_out) {
 		return;
-	}
-
-	if (!impl_types.resize(rhs.impl_types.size())) {
-		succeeded_out = false;
-		return;
-	}
-
-	for (size_t i = 0; i < impl_types.size(); ++i) {
-		if (!context.push_task([this, i, &rhs, allocator, &context]() -> bool {
-				if (!(impl_types.at(i) = rhs.impl_types.at(i)->duplicate<TypeNameNode>(allocator)))
-					return false;
-				return true;
-			})) {
-			succeeded_out = false;
-			return;
-		}
-	}
-
-	if (!generic_params.resize(rhs.generic_params.size())) {
-		succeeded_out = false;
-		return;
-	}
-
-	for (size_t i = 0; i < generic_params.size(); ++i) {
-		if (!context.push_task([this, i, &rhs, allocator, &context]() -> bool {
-				if (!(generic_params.at(i) = rhs.generic_params.at(i)->duplicate<GenericParamNode>(allocator)))
-					return false;
-
-				generic_params.at(i)->set_parent(this);
-				return true;
-			})) {
-			succeeded_out = false;
-			return;
-		}
-	}
-
-	for (const auto &[k, v] : rhs.generic_param_indices) {
-		auto captured_v = v;
-		if (!context.push_task([this, v = captured_v, &rhs, allocator, &context]() -> bool {
-				if (!generic_param_indices.insert(generic_params.at(v)->name, +v)) {
-					return false;
-				}
-				return true;
-			})) {
-			succeeded_out = false;
-			return;
-		}
 	}
 
 	if (!idx_generic_param_comma_tokens.resize(rhs.idx_generic_param_comma_tokens.size())) {
@@ -279,7 +169,7 @@ SLKC_API StructNode::StructNode(const StructNode &rhs, peff::Alloc *allocator, D
 
 	for (size_t i = 0; i < impl_types.size(); ++i) {
 		if (!context.push_task([this, i, &rhs, allocator, &context]() -> bool {
-				if (!(impl_types.at(i) = rhs.impl_types.at(i)->duplicate<TypeNameNode>(allocator)))
+				if (!(impl_types.at(i) = rhs.impl_types.at(i)->do_duplicate(allocator, context).cast_to<TypeNameNode>()))
 					return false;
 				return true;
 			})) {
@@ -295,7 +185,7 @@ SLKC_API StructNode::StructNode(const StructNode &rhs, peff::Alloc *allocator, D
 
 	for (size_t i = 0; i < generic_params.size(); ++i) {
 		if (!context.push_task([this, i, &rhs, allocator, &context]() -> bool {
-				if (!(generic_params.at(i) = rhs.generic_params.at(i)->duplicate<GenericParamNode>(allocator)))
+				if (!(generic_params.at(i) = rhs.generic_params.at(i)->do_duplicate(allocator, context).cast_to<GenericParamNode>()))
 					return false;
 
 				generic_params.at(i)->set_parent(this);
@@ -416,18 +306,18 @@ static peff::Option<CompilationError> _collect_involved_interfaces(
 			for (auto &i : context.frames) {
 				if ((&i != &cur_frame) && (i.interface_node == cur_frame.interface_node)) {
 					auto source = context.frames.front();
-					return CompilationError(source.interface_node->impl_types.at(source.index - 1)->token_range, CompilationErrorKind::CyclicInheritedInterface);
+					return CompilationError(source.interface_node->scope->impl_types.at(source.index - 1)->token_range, CompilationErrorKind::CyclicInheritedInterface);
 				}
 			}
 		}
-		if (cur_frame.index >= cur_interface->impl_types.size()) {
+		if (cur_frame.index >= cur_interface->scope->impl_types.size()) {
 			if (!walked_interfaces.insert(AstNodePtr<InterfaceNode>(cur_interface)))
 				return gen_out_of_memory_comp_error();
 			context.frames.pop_back();
 			continue;
 		}
 
-		AstNodePtr<TypeNameNode> t = cur_interface->impl_types.at(cur_frame.index);
+		AstNodePtr<TypeNameNode> t = cur_interface->scope->impl_types.at(cur_frame.index);
 
 		AstNodePtr<MemberNode> m;
 		SLKC_RETURN_IF_COMP_ERROR(resolve_custom_type_name(nullptr, document, t.cast_to<CustomTypeNameNode>(), m));
@@ -454,25 +344,58 @@ malformed:
 
 SLKC_API peff::Option<CompilationError> slkc::collect_involved_interfaces(
 	peff::SharedPtr<Document> document,
-	const AstNodePtr<InterfaceNode> &derived,
+	const AstNodePtr<InterfaceNode> &bottom,
 	peff::Set<AstNodePtr<InterfaceNode>> &walked_interfaces,
 	bool insert_self) {
-	if (walked_interfaces.contains(derived)) {
+	if (walked_interfaces.contains(bottom)) {
 		return {};
 	}
 	if (insert_self) {
-		if (!walked_interfaces.insert(AstNodePtr<InterfaceNode>(derived))) {
+		if (!walked_interfaces.insert(AstNodePtr<InterfaceNode>(bottom))) {
 			return gen_out_of_memory_comp_error();
 		}
 	}
 
 	CollectInvolvedInterfacesContext context(document->allocator.get());
 
-	SLKC_RETURN_IF_COMP_ERROR(_collect_involved_interfaces(document, context, derived, walked_interfaces));
+	SLKC_RETURN_IF_COMP_ERROR(_collect_involved_interfaces(document, context, bottom, walked_interfaces));
 
 	return {};
 
 malformed:
+	return {};
+}
+
+SLKC_API peff::Option<CompilationError> slkc::collect_inherited_members(
+	peff::SharedPtr<Document> document,
+	const AstNodePtr<ClassNode> &bottom,
+	peff::Set<AstNodePtr<MemberNode>> &walked_members,
+	bool insert_self) {
+	auto i = bottom;
+
+	while (i) {
+		// Collect current class.
+		if ((i != bottom) || (insert_self)) {
+			if (!walked_members.insert(i.cast_to<MemberNode>()))
+				return {};
+		}
+
+		// Collect each involved interface.
+		for (auto j : i->scope->impl_types) {
+			peff::Set<AstNodePtr<InterfaceNode>> interfaces(document->allocator.get());
+			AstNodePtr<InterfaceNode> interface_node;
+			SLKC_RETURN_IF_COMP_ERROR(visit_base_interface(j, interface_node, nullptr));
+			SLKC_RETURN_IF_COMP_ERROR(collect_involved_interfaces(document, interface_node, interfaces, true));
+
+			for (auto k : interfaces) {
+				if (!walked_members.insert(k.cast_to<MemberNode>()))
+					return {};
+			}
+		}
+
+		SLKC_RETURN_IF_COMP_ERROR(visit_base_class(i->scope->base_type, i, nullptr));
+	}
+
 	return {};
 }
 
@@ -513,13 +436,13 @@ static peff::Option<CompilationError> _is_struct_recursed(
 					if (!walked_structs.insert(cur_struct.cast_to<AstNode>()))
 						return gen_out_of_memory_comp_error();
 				}
-				if (ex_data.index >= cur_struct->members.size()) {
+				if (ex_data.index >= cur_struct->scope->get_member_num()) {
 					walked_structs.remove(cur_struct.cast_to<AstNode>());
 					context.frames.pop_back();
 					continue;
 				}
 
-				AstNodePtr<MemberNode> v = cur_struct->members.at(ex_data.index);
+				AstNodePtr<MemberNode> v = cur_struct->scope->get_member(ex_data.index);
 
 				if (v->get_ast_node_type() == AstNodeType::Var) {
 					AstNodePtr<VarNode> var_member = v.cast_to<VarNode>();
@@ -564,13 +487,13 @@ static peff::Option<CompilationError> _is_struct_recursed(
 					if (!walked_structs.insert(cur_struct.cast_to<AstNode>()))
 						return gen_out_of_memory_comp_error();
 				}
-				if (ex_data.index >= cur_struct->members.size()) {
+				if (ex_data.index >= cur_struct->scope->get_member_num()) {
 					walked_structs.remove(cur_struct.cast_to<AstNode>());
 					context.frames.pop_back();
 					continue;
 				}
 
-				AstNodePtr<MemberNode> v = cur_struct->members.at(ex_data.index);
+				AstNodePtr<MemberNode> v = cur_struct->scope->get_member(ex_data.index);
 
 				if (v->get_ast_node_type() == AstNodeType::UnionEnumItem) {
 					if (!context.frames.push_back(StructRecursionCheckFrame{ v.cast_to<AstNode>(), IndexedStructRecursionCheckFrameExData{ 0 } }))
@@ -592,13 +515,13 @@ static peff::Option<CompilationError> _is_struct_recursed(
 					if (!walked_structs.insert(cur_struct.cast_to<AstNode>()))
 						return gen_out_of_memory_comp_error();
 				}
-				if (ex_data.index >= cur_struct->members.size()) {
+				if (ex_data.index >= cur_struct->scope->get_member_num()) {
 					walked_structs.remove(cur_struct.cast_to<AstNode>());
 					context.frames.pop_back();
 					continue;
 				}
 
-				AstNodePtr<MemberNode> v = cur_struct->members.at(ex_data.index);
+				AstNodePtr<MemberNode> v = cur_struct->scope->get_member(ex_data.index);
 
 				if (v->get_ast_node_type() == AstNodeType::Var) {
 					AstNodePtr<VarNode> var_member = v.cast_to<VarNode>();
@@ -690,7 +613,7 @@ SLKC_API peff::Option<CompilationError> slkc::is_implemented_by_class(
 	}
 
 	AstNodePtr<ClassNode> current_class = derived;
-	AstNodePtr<TypeNameNode> current_type = derived->base_type;
+	AstNodePtr<TypeNameNode> current_type = derived->scope->base_type;
 
 	while (current_type) {
 		if (current_type->tn_kind != TypeNameKind::Custom) {
@@ -712,8 +635,8 @@ SLKC_API peff::Option<CompilationError> slkc::is_implemented_by_class(
 			return {};
 		}
 
-		for (size_t i = 0; i < current_class->impl_types.size(); ++i) {
-			AstNodePtr<TypeNameNode> t = derived->impl_types.at(i);
+		for (size_t i = 0; i < current_class->scope->impl_types.size(); ++i) {
+			AstNodePtr<TypeNameNode> t = derived->scope->impl_types.at(i);
 
 			AstNodePtr<MemberNode> m;
 			SLKC_RETURN_IF_COMP_ERROR(resolve_custom_type_name(nullptr, document, t.cast_to<CustomTypeNameNode>(), m));
@@ -768,7 +691,7 @@ SLKC_API peff::Option<CompilationError> slkc::is_base_of(
 	AstNodePtr<ClassNode> current_class = derived;
 	AstNodePtr<TypeNameNode> current_type;
 
-	while ((current_type = current_class->base_type)) {
+	while ((current_type = current_class->scope->base_type)) {
 		if (current_type->tn_kind != TypeNameKind::Custom) {
 			goto malformed;
 		}
@@ -832,7 +755,7 @@ SLKC_API EnumItemNode::EnumItemNode(const EnumItemNode &rhs, peff::Alloc *alloca
 	}
 
 	if (!context.push_task([this, &rhs, allocator, &context]() -> bool {
-			if (rhs.enum_value && !(enum_value = rhs.enum_value->duplicate<ExprNode>(allocator))) {
+			if (rhs.enum_value && !(enum_value = rhs.enum_value->do_duplicate(allocator, context).cast_to<ExprNode>())) {
 				return false;
 			}
 			return true;
@@ -871,7 +794,7 @@ SLKC_API ConstEnumNode::ConstEnumNode(const ConstEnumNode &rhs, peff::Alloc *all
 	}
 
 	if (!context.push_task([this, &rhs, allocator, &context]() -> bool {
-			if (rhs.base_type && !(base_type = rhs.base_type->duplicate<TypeNameNode>(allocator))) {
+			if (rhs.underlying_type && !(underlying_type = rhs.underlying_type->do_duplicate(allocator, context).cast_to<TypeNameNode>())) {
 				return false;
 			}
 			return true;
@@ -908,7 +831,7 @@ SLKC_API ScopedEnumNode::ScopedEnumNode(const ScopedEnumNode &rhs, peff::Alloc *
 	}
 
 	if (!context.push_task([this, &rhs, allocator, &context]() -> bool {
-			if (rhs.base_type && !(base_type = rhs.base_type->duplicate<TypeNameNode>(allocator))) {
+			if (rhs.underlying_type && !(underlying_type = rhs.underlying_type->do_duplicate(allocator, context).cast_to<TypeNameNode>())) {
 				return false;
 			}
 			return true;
@@ -962,55 +885,12 @@ SLKC_API UnionEnumNode::UnionEnumNode(
 	peff::Alloc *self_allocator,
 	const peff::SharedPtr<Document> &document)
 	: ModuleNode(self_allocator, document, AstNodeType::UnionEnum),
-	  generic_params(self_allocator),
-	  generic_param_indices(self_allocator),
 	  idx_generic_param_comma_tokens(self_allocator) {
 }
 
-SLKC_API UnionEnumNode::UnionEnumNode(const UnionEnumNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeeded_out) : ModuleNode(rhs, allocator, context, succeeded_out), generic_params(allocator), generic_param_indices(allocator), idx_generic_param_comma_tokens(allocator) {
+SLKC_API UnionEnumNode::UnionEnumNode(const UnionEnumNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeeded_out) : ModuleNode(rhs, allocator, context, succeeded_out), idx_generic_param_comma_tokens(allocator) {
 	if (!succeeded_out) {
 		return;
-	}
-
-	if (!context.push_task([this, &rhs, allocator, &context]() -> bool {
-			if (rhs.base_type && !(base_type = rhs.base_type->duplicate<TypeNameNode>(allocator))) {
-				return false;
-			}
-			return true;
-		})) {
-		succeeded_out = false;
-		return;
-	}
-
-	if (!generic_params.resize(rhs.generic_params.size())) {
-		succeeded_out = false;
-		return;
-	}
-
-	for (size_t i = 0; i < generic_params.size(); ++i) {
-		if (!context.push_task([this, i, &rhs, allocator, &context]() -> bool {
-				if (!(generic_params.at(i) = rhs.generic_params.at(i)->duplicate<GenericParamNode>(allocator)))
-					return false;
-
-				generic_params.at(i)->set_parent(this);
-				return true;
-			})) {
-			succeeded_out = false;
-			return;
-		}
-	}
-
-	for (const auto &[k, v] : rhs.generic_param_indices) {
-		auto captured_v = v;
-		if (!context.push_task([this, v = captured_v, &rhs, allocator, &context]() -> bool {
-				if (!generic_param_indices.insert(generic_params.at(v)->name, +v)) {
-					return false;
-				}
-				return true;
-			})) {
-			succeeded_out = false;
-			return;
-		}
 	}
 
 	if (!idx_generic_param_comma_tokens.resize(rhs.idx_generic_param_comma_tokens.size())) {

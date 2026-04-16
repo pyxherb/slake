@@ -7,6 +7,10 @@ The compiler has 3 main modules:
 
 ## Issues
 
+### Nested Duplication
+
+Some duplication does not use the duplication context, this causes stack overflows.
+
 ### Path-based Null Checker
 
 Implement the path-based null checker.

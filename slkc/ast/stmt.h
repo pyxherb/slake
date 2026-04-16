@@ -37,7 +37,7 @@ namespace slkc {
 	};
 
 	class ExprStmtNode : public StmtNode {
-	protected:
+	public:
 		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 
 	public:
@@ -68,7 +68,7 @@ namespace slkc {
 	SLKC_API VarDefEntryPtr duplicate_var_def_entry(VarDefEntry *var_def_entry, peff::Alloc *allocator);
 
 	class VarDefStmtNode : public StmtNode {
-	protected:
+	public:
 		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 
 	public:
@@ -81,7 +81,7 @@ namespace slkc {
 	};
 
 	class BreakStmtNode : public StmtNode {
-	protected:
+	public:
 		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 
 	public:
@@ -91,7 +91,7 @@ namespace slkc {
 	};
 
 	class ContinueStmtNode : public StmtNode {
-	protected:
+	public:
 		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 
 	public:
@@ -101,7 +101,7 @@ namespace slkc {
 	};
 
 	class ForStmtNode : public StmtNode {
-	protected:
+	public:
 		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 
 	public:
@@ -115,7 +115,7 @@ namespace slkc {
 	};
 
 	class ForEachStmtNode : public StmtNode {
-	protected:
+	public:
 		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 
 	public:
@@ -129,7 +129,7 @@ namespace slkc {
 	};
 
 	class WhileStmtNode : public StmtNode {
-	protected:
+	public:
 		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 
 	public:
@@ -142,7 +142,7 @@ namespace slkc {
 	};
 
 	class DoWhileStmtNode : public StmtNode {
-	protected:
+	public:
 		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 
 	public:
@@ -155,7 +155,7 @@ namespace slkc {
 	};
 
 	class ReturnStmtNode : public StmtNode {
-	protected:
+	public:
 		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 
 	public:
@@ -167,7 +167,7 @@ namespace slkc {
 	};
 
 	class YieldStmtNode : public StmtNode {
-	protected:
+	public:
 		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 
 	public:
@@ -179,7 +179,7 @@ namespace slkc {
 	};
 
 	class IfStmtNode : public StmtNode {
-	protected:
+	public:
 		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 
 	public:
@@ -207,7 +207,7 @@ namespace slkc {
 	WithConstraintEntryPtr duplicate_with_constraint_entry(peff::Alloc *allocator, const WithConstraintEntry *constraint);
 
 	class WithStmtNode : public StmtNode {
-	protected:
+	public:
 		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 
 	public:
@@ -220,7 +220,7 @@ namespace slkc {
 	};
 
 	class CaseLabelStmtNode : public StmtNode {
-	protected:
+	public:
 		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 
 	public:
@@ -236,7 +236,7 @@ namespace slkc {
 	};
 
 	class SwitchStmtNode : public StmtNode {
-	protected:
+	public:
 		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 
 	public:
@@ -250,7 +250,7 @@ namespace slkc {
 	};
 
 	class LabelStmtNode : public StmtNode {
-	protected:
+	public:
 		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 
 	public:
@@ -262,7 +262,7 @@ namespace slkc {
 	};
 
 	class CodeBlockStmtNode : public StmtNode {
-	protected:
+	public:
 		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 
 	public:
@@ -274,7 +274,7 @@ namespace slkc {
 	};
 
 	class BadStmtNode : public StmtNode {
-	protected:
+	public:
 		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 
 	public:

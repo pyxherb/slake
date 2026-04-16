@@ -132,7 +132,7 @@ SLKC_API BinaryExprNode::BinaryExprNode(
 
 SLKC_API BinaryExprNode::BinaryExprNode(const BinaryExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeeded_out) : ExprNode(rhs, allocator, context), binary_op(rhs.binary_op) {
 	if (!context.push_task([this, &rhs, allocator, &context]() -> bool {
-			if (!(this->lhs = rhs.lhs->duplicate<ExprNode>(allocator))) {
+			if (!(this->lhs = rhs.lhs->do_duplicate(allocator, context).cast_to<ExprNode>())) {
 				return false;
 			}
 			return true;
@@ -141,7 +141,7 @@ SLKC_API BinaryExprNode::BinaryExprNode(const BinaryExprNode &rhs, peff::Alloc *
 		return;
 	}
 	if (!context.push_task([this, &rhs, allocator, &context]() -> bool {
-			if (!(this->rhs = rhs.rhs->duplicate<ExprNode>(allocator))) {
+			if (!(this->rhs = rhs.rhs->do_duplicate(allocator, context).cast_to<ExprNode>())) {
 				return false;
 			}
 			return true;
@@ -174,7 +174,7 @@ SLKC_API TernaryExprNode::TernaryExprNode(
 
 SLKC_API TernaryExprNode::TernaryExprNode(const TernaryExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeeded_out) : ExprNode(rhs, allocator, context) {
 	if (!context.push_task([this, &rhs, allocator, &context]() -> bool {
-			if (!(this->cond = rhs.cond->duplicate<ExprNode>(allocator))) {
+			if (!(this->cond = rhs.cond->do_duplicate(allocator, context).cast_to<ExprNode>())) {
 				return false;
 			}
 			return true;
@@ -183,7 +183,7 @@ SLKC_API TernaryExprNode::TernaryExprNode(const TernaryExprNode &rhs, peff::Allo
 		return;
 	}
 	if (!context.push_task([this, &rhs, allocator, &context]() -> bool {
-			if (!(this->lhs = rhs.lhs->duplicate<ExprNode>(allocator))) {
+			if (!(this->lhs = rhs.lhs->do_duplicate(allocator, context).cast_to<ExprNode>())) {
 				return false;
 			}
 			return true;
@@ -192,7 +192,7 @@ SLKC_API TernaryExprNode::TernaryExprNode(const TernaryExprNode &rhs, peff::Allo
 		return;
 	}
 	if (!context.push_task([this, &rhs, allocator, &context]() -> bool {
-			if (!(this->rhs = rhs.rhs->duplicate<ExprNode>(allocator))) {
+			if (!(this->rhs = rhs.rhs->do_duplicate(allocator, context).cast_to<ExprNode>())) {
 				return false;
 			}
 			return true;
@@ -283,7 +283,7 @@ SLKC_API HeadedIdRefExprNode::HeadedIdRefExprNode(
 }
 SLKC_API HeadedIdRefExprNode::HeadedIdRefExprNode(const HeadedIdRefExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeeded_out) : ExprNode(rhs, allocator, context) {
 	if (!context.push_task([this, &rhs, allocator, &context]() -> bool {
-			if (!(this->head = rhs.head->duplicate<ExprNode>(allocator))) {
+			if (!(this->head = rhs.head->do_duplicate(allocator, context).cast_to<ExprNode>())) {
 				return false;
 			}
 			return true;
@@ -598,7 +598,7 @@ SLKC_API InitializerListExprNode::InitializerListExprNode(const InitializerListE
 
 	for (size_t i = 0; i < elements.size(); ++i) {
 		if (!context.push_task([this, i, &rhs, allocator, &context]() -> bool {
-				if (!(elements.at(i) = rhs.elements.at(i)->duplicate<ExprNode>(allocator))) {
+				if (!(elements.at(i) = rhs.elements.at(i)->do_duplicate(allocator, context).cast_to<ExprNode>())) {
 					return false;
 				}
 				return true;
@@ -635,7 +635,7 @@ SLKC_API CallExprNode::CallExprNode(
 SLKC_API CallExprNode::CallExprNode(const CallExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeeded_out)
 	: ExprNode(rhs, allocator, context), args(allocator), idx_comma_tokens(allocator) {
 	if (!context.push_task([this, &rhs, allocator, &context]() -> bool {
-			if (rhs.target && !(target = rhs.target->duplicate<ExprNode>(allocator))) {
+			if (rhs.target && !(target = rhs.target->do_duplicate(allocator, context).cast_to<ExprNode>())) {
 				return false;
 			}
 			return true;
@@ -645,7 +645,7 @@ SLKC_API CallExprNode::CallExprNode(const CallExprNode &rhs, peff::Alloc *alloca
 	}
 
 	if (!context.push_task([this, &rhs, allocator, &context]() -> bool {
-			if (rhs.with_object && !(with_object = rhs.with_object->duplicate<ExprNode>(allocator))) {
+			if (rhs.with_object && !(with_object = rhs.with_object->do_duplicate(allocator, context).cast_to<ExprNode>())) {
 				return false;
 			}
 			return true;
@@ -661,7 +661,7 @@ SLKC_API CallExprNode::CallExprNode(const CallExprNode &rhs, peff::Alloc *alloca
 
 	for (size_t i = 0; i < args.size(); ++i) {
 		if (!context.push_task([this, i, &rhs, allocator, &context]() -> bool {
-				if (!(args.at(i) = rhs.args.at(i)->duplicate<ExprNode>(allocator))) {
+				if (!(args.at(i) = rhs.args.at(i)->do_duplicate(allocator, context).cast_to<ExprNode>())) {
 					return false;
 				}
 				return true;
@@ -693,7 +693,7 @@ SLKC_API NewExprNode::NewExprNode(
 SLKC_API NewExprNode::NewExprNode(const NewExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeeded_out)
 	: ExprNode(rhs, allocator, context), args(allocator), idx_comma_tokens(allocator) {
 	if (!context.push_task([this, &rhs, allocator, &context]() -> bool {
-			if (!(target_type = rhs.target_type->duplicate<TypeNameNode>(allocator))) {
+			if (!(target_type = rhs.target_type->do_duplicate(allocator, context).cast_to<TypeNameNode>())) {
 				return false;
 			}
 			return true;
@@ -709,7 +709,7 @@ SLKC_API NewExprNode::NewExprNode(const NewExprNode &rhs, peff::Alloc *allocator
 
 	for (size_t i = 0; i < args.size(); ++i) {
 		if (!context.push_task([this, i, &rhs, allocator, &context]() -> bool {
-				if (!(args.at(i) = rhs.args.at(i)->duplicate<ExprNode>(allocator))) {
+				if (!(args.at(i) = rhs.args.at(i)->do_duplicate(allocator, context).cast_to<ExprNode>())) {
 					return false;
 				}
 				return true;
@@ -740,7 +740,7 @@ SLKC_API AllocaExprNode::AllocaExprNode(
 SLKC_API AllocaExprNode::AllocaExprNode(const AllocaExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeeded_out)
 	: ExprNode(rhs, allocator, context), idx_comma_tokens(allocator) {
 	if (!context.push_task([this, &rhs, allocator, &context]() -> bool {
-			if (!(count_expr = rhs.count_expr->duplicate<ExprNode>(allocator)))
+			if (!(count_expr = rhs.count_expr->do_duplicate(allocator, context).cast_to<ExprNode>()))
 				return false;
 			return true;
 		})) {
@@ -749,7 +749,7 @@ SLKC_API AllocaExprNode::AllocaExprNode(const AllocaExprNode &rhs, peff::Alloc *
 	}
 
 	if (!context.push_task([this, &rhs, allocator, &context]() -> bool {
-			if (!(target_type = rhs.target_type->duplicate<TypeNameNode>(allocator)))
+			if (!(target_type = rhs.target_type->do_duplicate(allocator, context).cast_to<TypeNameNode>()))
 				return false;
 			return true;
 		})) {
@@ -776,7 +776,7 @@ SLKC_API CastExprNode::CastExprNode(
 SLKC_API CastExprNode::CastExprNode(const CastExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeeded_out)
 	: ExprNode(rhs, allocator, context) {
 	if (!context.push_task([this, &rhs, allocator, &context]() -> bool {
-			if (!(target_type = rhs.target_type->duplicate<TypeNameNode>(allocator)))
+			if (!(target_type = rhs.target_type->do_duplicate(allocator, context).cast_to<TypeNameNode>()))
 				return false;
 			return true;
 		})) {
@@ -785,7 +785,7 @@ SLKC_API CastExprNode::CastExprNode(const CastExprNode &rhs, peff::Alloc *alloca
 	}
 
 	if (!context.push_task([this, &rhs, allocator, &context]() -> bool {
-			if (!(source = rhs.source->duplicate<ExprNode>(allocator)))
+			if (!(source = rhs.source->do_duplicate(allocator, context).cast_to<ExprNode>()))
 				return false;
 			return true;
 		})) {
@@ -819,7 +819,7 @@ SLKC_API MatchExprNode::MatchExprNode(
 SLKC_API MatchExprNode::MatchExprNode(const MatchExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeeded_out)
 	: ExprNode(rhs, allocator, context), cases(allocator) {
 	if (!context.push_task([this, &rhs, allocator, &context]() -> bool {
-			if (!(return_type = rhs.return_type->duplicate<TypeNameNode>(allocator)))
+			if (!(return_type = rhs.return_type->do_duplicate(allocator, context).cast_to<TypeNameNode>()))
 				return false;
 			return true;
 		})) {
@@ -828,7 +828,7 @@ SLKC_API MatchExprNode::MatchExprNode(const MatchExprNode &rhs, peff::Alloc *all
 	}
 
 	if (!context.push_task([this, &rhs, allocator, &context]() -> bool {
-			if (!(condition = rhs.condition->duplicate<ExprNode>(allocator)))
+			if (!(condition = rhs.condition->do_duplicate(allocator, context).cast_to<ExprNode>()))
 				return false;
 			return true;
 		})) {
@@ -843,7 +843,7 @@ SLKC_API MatchExprNode::MatchExprNode(const MatchExprNode &rhs, peff::Alloc *all
 
 	for (size_t i = 0; i < cases.size(); ++i) {
 		if (!context.push_task([this, i, &rhs, allocator, &context]() -> bool {
-				if (!(cases.at(i).first = rhs.cases.at(i).first->duplicate<ExprNode>(allocator)))
+				if (!(cases.at(i).first = rhs.cases.at(i).first->do_duplicate(allocator, context).cast_to<ExprNode>()))
 					return false;
 				return true;
 			})) {
@@ -852,7 +852,7 @@ SLKC_API MatchExprNode::MatchExprNode(const MatchExprNode &rhs, peff::Alloc *all
 		}
 
 		if (!context.push_task([this, i, &rhs, allocator, &context]() -> bool {
-				if (!(cases.at(i).second = rhs.cases.at(i).second->duplicate<ExprNode>(allocator)))
+				if (!(cases.at(i).second = rhs.cases.at(i).second->do_duplicate(allocator, context).cast_to<ExprNode>()))
 					return false;
 				return true;
 			})) {
@@ -882,7 +882,7 @@ SLKC_API WrapperExprNode::WrapperExprNode(
 SLKC_API WrapperExprNode::WrapperExprNode(const WrapperExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeeded_out)
 	: ExprNode(rhs, allocator, context) {
 	if (!context.push_task([this, &rhs, allocator, &context]() -> bool {
-			if (!(target = rhs.target->duplicate<ExprNode>(allocator)))
+			if (!(target = rhs.target->do_duplicate(allocator, context).cast_to<ExprNode>()))
 				return false;
 			return true;
 		})) {
@@ -960,7 +960,7 @@ SLKC_API BadExprNode::BadExprNode(
 SLKC_API BadExprNode::BadExprNode(const BadExprNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeeded_out)
 	: ExprNode(rhs, allocator, context) {
 	if (!context.push_task([this, &rhs, allocator, &context]() -> bool {
-			if (!(incomplete_expr = rhs.incomplete_expr->duplicate<ExprNode>(allocator)))
+			if (!(incomplete_expr = rhs.incomplete_expr->do_duplicate(allocator, context).cast_to<ExprNode>()))
 				return false;
 			return true;
 		})) {

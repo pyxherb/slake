@@ -50,7 +50,7 @@ static peff::Option<CompilationError> _compile_literal_expr(
 			  compile_env->allocator.get(),
 			  compile_env->get_document())
 				.template cast_to<TypeNameNode>())) {
-		return gen_out_of_memory_comp_error();
+		return gen_oom_comp_error();
 	}
 	return {};
 }
@@ -122,7 +122,7 @@ static peff::Option<CompilationError> _load_rest_of_id_ref(CompileEnv *compile_e
 						AstNodePtr<CustomTypeNameNode> custom_overriden_type;
 
 						if (!(custom_overriden_type = make_ast_node<CustomTypeNameNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->get_document())))
-							return gen_out_of_memory_comp_error();
+							return gen_oom_comp_error();
 
 						SLKC_RETURN_IF_COMP_ERROR(get_full_id_ref(compile_env->allocator.get(), part.member, custom_overriden_type->id_ref_ptr));
 
@@ -292,7 +292,7 @@ peff::Option<CompilationError> select_single_matching_overloading(CompileEnv *co
 	if (m->overloadings.size() == 1) {
 		final_member = m->overloadings.back().cast_to<MemberNode>();
 		if (!result_out.call_target_matched_overloadings.push_back(AstNodePtr<FnOverloadingNode>(m->overloadings.back()))) {
-			return gen_out_of_memory_comp_error();
+			return gen_oom_comp_error();
 		}
 		bool accessible;
 		SLKC_RETURN_IF_COMP_ERROR(is_member_accessible(compile_env, {}, final_member.cast_to<MemberNode>(), accessible));
@@ -347,7 +347,7 @@ static peff::Option<CompilationError> _determine_node_type(CompileEnv *compile_e
 			auto tn = make_ast_node<CustomTypeNameNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->get_document());
 
 			if (!tn) {
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			}
 			tn->context_node = to_weak_ptr(compile_env->get_document()->root_module.cast_to<MemberNode>());
 
@@ -367,7 +367,7 @@ static peff::Option<CompilationError> _determine_node_type(CompileEnv *compile_e
 				AstNodePtr<RefTypeNameNode> t;
 
 				if (!(t = make_ast_node<RefTypeNameNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->get_document(), AstNodePtr<TypeNameNode>()))) {
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 				}
 				t->referenced_type = node.cast_to<VarNode>()->type;
 
@@ -379,12 +379,12 @@ static peff::Option<CompilationError> _determine_node_type(CompileEnv *compile_e
 						switch (*nullity_override) {
 							case NullOverrideType::Nullify:
 								if (!(t->referenced_type = t->referenced_type->duplicate<TypeNameNode>(compile_env->allocator.get())))
-									return gen_out_of_memory_comp_error();
+									return gen_oom_comp_error();
 								t->referenced_type->is_nullable = true;
 								break;
 							case NullOverrideType::Denullify:
 								if (!(t->referenced_type = t->referenced_type->duplicate<TypeNameNode>(compile_env->allocator.get())))
-									return gen_out_of_memory_comp_error();
+									return gen_oom_comp_error();
 								t->referenced_type->is_nullable = false;
 								break;
 							case NullOverrideType::Uncertain:
@@ -405,12 +405,12 @@ static peff::Option<CompilationError> _determine_node_type(CompileEnv *compile_e
 						switch (*nullity_override) {
 							case NullOverrideType::Nullify:
 								if (!(type_name_out = type_name_out->duplicate<TypeNameNode>(compile_env->allocator.get())))
-									return gen_out_of_memory_comp_error();
+									return gen_oom_comp_error();
 								type_name_out->is_nullable = true;
 								break;
 							case NullOverrideType::Denullify:
 								if (!(type_name_out = type_name_out->duplicate<TypeNameNode>(compile_env->allocator.get())))
-									return gen_out_of_memory_comp_error();
+									return gen_oom_comp_error();
 								type_name_out->is_nullable = false;
 								break;
 							case NullOverrideType::Uncertain:
@@ -544,7 +544,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 				initial_part.member = initial_member;
 
 				if (!parts.push_back(std::move(initial_part))) {
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 				}
 
 				peff::Set<AstNodePtr<MemberNode>> walked_member_nodes(compile_env->get_document()->allocator.get());
@@ -810,7 +810,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 						initial_part.member = initial_member;
 
 						if (!parts.push_back(std::move(initial_part))) {
-							return gen_out_of_memory_comp_error();
+							return gen_oom_comp_error();
 						}
 
 						peff::Set<AstNodePtr<MemberNode>> walked_member_nodes(compile_env->get_document()->allocator.get());
@@ -1044,7 +1044,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 					  compile_env->allocator.get(),
 					  compile_env->get_document())
 						.cast_to<TypeNameNode>())) {
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			}
 			break;
 		}
@@ -1086,7 +1086,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 					  compile_env->allocator.get(),
 					  compile_env->get_document())
 						.cast_to<TypeNameNode>())) {
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			}
 			break;
 		}
@@ -1115,7 +1115,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 				}
 
 				if (!(result_out.evaluated_type = make_ast_node<ArrayTypeNameNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->get_document(), tn).cast_to<TypeNameNode>())) {
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 				}
 			} else {
 				switch (desired_type->tn_kind) {
@@ -1127,7 +1127,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 				}
 
 				if (!(result_out.evaluated_type = desired_type)) {
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 				}
 			}
 
@@ -1196,7 +1196,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 			peff::DynArray<AstNodePtr<TypeNameNode>> arg_types(compile_env->allocator.get());
 
 			if (!arg_types.resize(e->args.size())) {
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			}
 
 			CompileExprResult result(compile_env->allocator.get());
@@ -1217,7 +1217,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 						AstNodePtr<UnpackedArgsTypeNameNode> t = arg_types.at(i).cast_to<UnpackedArgsTypeNameNode>();
 
 						if (!arg_types.resize(arg_types.size() + t->param_types.size() - 1)) {
-							return gen_out_of_memory_comp_error();
+							return gen_oom_comp_error();
 						}
 
 						--j;
@@ -1237,7 +1237,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 				AstNodePtr<FnTypeNameNode> fn_prototype;
 
 				if (!(fn_prototype = make_ast_node<FnTypeNameNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->get_document()))) {
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 				}
 
 				fn_prototype->param_types = std::move(arg_types);
@@ -1275,7 +1275,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 						AstNodePtr<UnpackedArgsTypeNameNode> t = arg_types.at(i).cast_to<UnpackedArgsTypeNameNode>();
 
 						if (!arg_types.resize(arg_types.size() + t->param_types.size() - 1)) {
-							return gen_out_of_memory_comp_error();
+							return gen_oom_comp_error();
 						}
 
 						--j;
@@ -1347,7 +1347,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 				AstNodePtr<TypeNameNode> arg_type = arg_result.evaluated_type;
 
 				if (!arg_passing_info.push_back({ std::move(arg_type), arg_result.idx_result_reg_out }))
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 
 				// SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error, simplify_param_list_type_name_tree(arg_result.evaluated_type, compile_env->allocator.get(), arg_type));
 			}
@@ -1468,7 +1468,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 				result_out.evaluated_type = fn_type.cast_to<FnTypeNameNode>()->return_type;
 			} else {
 				if (!(result_out.evaluated_type = make_ast_node<VoidTypeNameNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->get_document()).cast_to<TypeNameNode>())) {
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 				}
 			}
 			break;
@@ -1498,7 +1498,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 				auto tn = make_ast_node<CustomTypeNameNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->get_document());
 
 				if (!tn) {
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 				}
 				tn->context_node = to_weak_ptr(compile_env->get_document()->root_module.cast_to<MemberNode>());
 
@@ -1526,7 +1526,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 				peff::DynArray<AstNodePtr<TypeNameNode>> arg_types(compile_env->allocator.get());
 
 				if (!arg_types.resize(e->args.size())) {
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 				}
 
 				AstNodePtr<FnOverloadingNode> overloading;
@@ -1687,7 +1687,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 				bool subtype;
 				if (is_subtype_of(target_type, decayed_expr_type, subtype)) {
 					if (!(result_out.evaluated_type = result_out.evaluated_type->duplicate<TypeNameNode>(compile_env->allocator.get())))
-						return gen_out_of_memory_comp_error();
+						return gen_oom_comp_error();
 					result_out.evaluated_type->is_nullable = true;
 				}
 
@@ -1775,11 +1775,11 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 			peff::DynArray<std::pair<uint32_t, uint32_t>> phi_register_value_map(compile_env->allocator.get());
 
 			if (!match_value_eval_labels.resize(e->cases.size())) {
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			}
 
 			if (!phi_register_value_map.resize(e->cases.size())) {
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			}
 
 			size_t idx_default_branch_case;
@@ -1818,13 +1818,13 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 
 						AstNodePtr<RegIndexExprNode> reg_index_expr;
 						if (!(reg_index_expr = make_ast_node<RegIndexExprNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->get_document(), condition_reg, cond_type))) {
-							return gen_out_of_memory_comp_error();
+							return gen_oom_comp_error();
 						}
 						reg_index_expr->token_range = cur_case.first->token_range;
 
 						AstNodePtr<BoolTypeNameNode> desired_bool_type_name;
 						if (!(desired_bool_type_name = make_ast_node<BoolTypeNameNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->get_document())))
-							return gen_out_of_memory_comp_error();
+							return gen_oom_comp_error();
 
 						SLKC_RETURN_IF_COMP_ERROR(gen_binary_op_expr(compile_env, BinaryOp::Eq, reg_index_expr.cast_to<ExprNode>(), cur_case.first, cur_case.first->token_range, cmp_expr));
 
@@ -1863,7 +1863,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 			peff::DynArray<PathEnv> body_path_envs(compile_env->allocator.get());
 
 			if (!body_path_envs.resize_uninit(e->cases.size()))
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 
 			for (size_t i = 0; i < body_path_envs.size(); ++i)
 				peff::construct_at<PathEnv>(&body_path_envs.at(i), compile_env->allocator.get());
@@ -1898,7 +1898,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 				peff::DynArray<PathEnv *> body_path_envs_ptrs(compile_env->allocator.get());
 
 				if (!body_path_envs_ptrs.resize(body_path_envs.size()))
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 
 				for (size_t i = 0; i < body_path_envs_ptrs.size(); ++i)
 					body_path_envs_ptrs.at(i) = &body_path_envs.at(i);
@@ -1911,7 +1911,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 			peff::DynArray<slake::Value> operands(compile_env->allocator.get());
 
 			if (!operands.resize(phi_register_value_map.size() * 2)) {
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			}
 
 			for (size_t i = 0, j = 0; i < phi_register_value_map.size(); ++i, j += 2) {

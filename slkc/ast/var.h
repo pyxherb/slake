@@ -20,7 +20,7 @@ namespace slkc {
 		SLKC_API virtual ~VarNode();
 
 		SLAKE_FORCEINLINE bool is_local_var() const {
-			return !parent;
+			return !outer;
 		}
 	};
 }

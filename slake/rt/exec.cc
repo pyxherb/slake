@@ -14,10 +14,10 @@ template <bool has_output, size_t num_operands>
 	size_t num_operands_in) noexcept {
 	if constexpr (has_output) {
 		if ((output == UINT32_MAX) || (num_operands != num_operands_in))
-			return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(runtime->get_fixed_alloc()));
+			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(runtime->get_fixed_alloc()));
 	} else {
 		if (num_operands != num_operands_in) {
-			return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(runtime->get_fixed_alloc()));
+			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(runtime->get_fixed_alloc()));
 		}
 	}
 
@@ -29,7 +29,7 @@ template <ValueType value_type>
 	Runtime *runtime,
 	const Value &operand) noexcept {
 	if (operand.value_type != value_type)
-		return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(runtime->get_fixed_alloc()));
+		return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(runtime->get_fixed_alloc()));
 	return {};
 }
 
@@ -38,7 +38,7 @@ template <ReferenceKind kind>
 	Runtime *runtime,
 	const Reference &operand) noexcept {
 	if (operand.kind != kind) {
-		return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(runtime->get_fixed_alloc()));
+		return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(runtime->get_fixed_alloc()));
 	}
 	return {};
 }
@@ -48,7 +48,7 @@ template <ObjectKind type_id>
 	Runtime *runtime,
 	const Object *const object) noexcept {
 	if (object && object->get_object_kind() != type_id) {
-		return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(runtime->get_fixed_alloc()));
+		return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(runtime->get_fixed_alloc()));
 	}
 	return {};
 }
@@ -80,7 +80,7 @@ static SLAKE_FORCEINLINE const Value *_calc_reg_ptr(
 	const Value &value) noexcept {
 	if (!_is_register_valid(cur_major_frame, index)) {
 		// The register does not present.
-		return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(runtime->get_fixed_alloc()));
+		return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(runtime->get_fixed_alloc()));
 	}
 	Value *val = _calc_reg_ptr(stack_data, stack_size, cur_major_frame, index);
 	*_calc_reg_ptr(stack_data, stack_size, cur_major_frame, index) = value;
@@ -97,7 +97,7 @@ static SLAKE_FORCEINLINE const Value *_calc_reg_ptr(
 	if (value.value_type == ValueType::RegIndex) {
 		if (value.as_u32 >= cur_major_frame->resumable_context_data.num_regs) {
 			// The register does not present.
-			return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(runtime->get_fixed_alloc()));
+			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(runtime->get_fixed_alloc()));
 		}
 		value_out = *_calc_reg_ptr(stack_data, stack_size, cur_major_frame, value.as_u32);
 		return {};
@@ -116,7 +116,7 @@ static SLAKE_FORCEINLINE const Value *_calc_reg_ptr(
 	if (value.value_type == ValueType::RegIndex) {
 		if (value.as_u32 >= cur_major_frame->resumable_context_data.num_regs) {
 			// The register does not present.
-			return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(runtime->get_fixed_alloc()));
+			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(runtime->get_fixed_alloc()));
 		}
 		value_out = _calc_reg_ptr(stack_data, stack_size, cur_major_frame, value.as_u32);
 		return {};
@@ -187,7 +187,7 @@ SLAKE_API InternalExceptionPointer Runtime::_fill_args(
 	const Value *args,
 	uint32_t num_args) {
 	if (num_args < fn->param_types.size()) {
-		return alloc_out_of_memory_error_if_alloc_failed(InvalidArgumentNumberError::alloc(get_fixed_alloc(), num_args));
+		return alloc_oom_error_if_alloc_failed(InvalidArgumentNumberError::alloc(get_fixed_alloc(), num_args));
 	}
 
 	for (size_t i = 0; i < fn->param_types.size(); ++i) {
@@ -197,7 +197,7 @@ SLAKE_API InternalExceptionPointer Runtime::_fill_args(
 	}
 	char *p_args = context->aligned_stack_alloc(sizeof(Value) * num_args, alignof(Value));
 	if (!p_args)
-		return alloc_out_of_memory_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
+		return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
 	size_t off_args = new_major_frame->cur_coroutine ? context->stack_top - new_major_frame->cur_coroutine->off_stack_top : context->stack_top;
 	memcpy(p_args, args, sizeof(Value) * num_args);
 	new_major_frame->resumable_context_data.off_args = off_args;
@@ -327,7 +327,7 @@ SLAKE_API InternalExceptionPointer Runtime::_create_new_coroutine_major_frame(
 
 	char *p_major_frame;
 	if (!(p_major_frame = context->aligned_stack_alloc(sizeof(MajorFrame), alignof(MajorFrame))))
-		return alloc_out_of_memory_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
+		return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
 	peff::construct_at<MajorFrame>((MajorFrame *)p_major_frame, this);
 	MajorFrame &new_major_frame = *(MajorFrame *)p_major_frame;
 	new_major_frame.off_prev_frame = context->off_cur_major_frame;
@@ -346,19 +346,19 @@ SLAKE_API InternalExceptionPointer Runtime::_create_new_coroutine_major_frame(
 	if (coroutine->stack_data) {
 		// Note: code commented causes stack addressing error, fix them and re-enable them.
 		if (!context->align_stack(alignof(std::max_align_t)))
-			return alloc_out_of_memory_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
+			return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
 		coroutine->off_stack_top = context->stack_top;
 		new_major_frame.off_regs = context->stack_top + coroutine->off_regs;
 		char *initial_data = context->aligned_stack_alloc(coroutine->len_stack_data, alignof(std::max_align_t));
 		if (!initial_data) {
-			return alloc_out_of_memory_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
+			return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
 		}
 		memcpy(initial_data, coroutine->stack_data, coroutine->len_stack_data);
 		coroutine->release_stack_data();
 	} else {
 		// Create minor frame.
 		if (!context->aligned_stack_alloc(sizeof(MinorFrame), alignof(MinorFrame)))
-			return alloc_out_of_memory_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
+			return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
 
 		size_t mf_stack_off = context->stack_top;
 
@@ -381,7 +381,7 @@ SLAKE_API InternalExceptionPointer Runtime::_create_new_coroutine_major_frame(
 				Value *regs = (Value *)context->aligned_stack_alloc(sizeof(Value) * ol->num_registers, alignof(Value));
 				new_major_frame.off_regs = context->stack_top;
 				if (!regs)
-					return alloc_out_of_memory_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
+					return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
 				for (size_t i = 0; i < ol->num_registers; ++i)
 					regs[i] = Value(ValueType::Undefined);
 				break;
@@ -430,7 +430,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_create_new_major_frame(
 
 	char *p_major_frame;
 	if (!(p_major_frame = context->aligned_stack_alloc(sizeof(MajorFrame), alignof(MajorFrame))))
-		return alloc_out_of_memory_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
+		return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
 	peff::construct_at<MajorFrame>((MajorFrame *)p_major_frame, this);
 	MajorFrame &new_major_frame = *(MajorFrame *)p_major_frame;
 	new_major_frame.off_prev_frame = context->off_cur_major_frame;
@@ -442,7 +442,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_create_new_major_frame(
 
 	// Create minor frame.
 	if (!context->aligned_stack_alloc(sizeof(MinorFrame), alignof(MinorFrame)))
-		return alloc_out_of_memory_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
+		return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
 
 	size_t mf_stack_off = context->stack_top;
 
@@ -556,7 +556,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer slake::Runtime::_add_local_var(Contex
 	size_t size = sizeof_type(type), align = alignof_type(type);
 
 	if (!context->aligned_stack_alloc(size, align))
-		return alloc_out_of_memory_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
+		return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
 
 	switch (type.type_id) {
 		case TypeId::I8:
@@ -582,7 +582,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer slake::Runtime::_add_local_var(Contex
 			// The data is already aligned, just directly assign to them.
 			Object **type_info = (Object **)context->stack_alloc(sizeof(void *));
 			if (!type_info)
-				return alloc_out_of_memory_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
 #ifndef _NDEBUG
 			const size_t diff = alignof(void *) - ((uintptr_t)(calc_stack_addr(context->data_stack, context->stack_size, context->stack_top)) % alignof(void *));
 			assert((diff == alignof(void *) || (!diff)));
@@ -593,14 +593,14 @@ SLAKE_FORCEINLINE InternalExceptionPointer slake::Runtime::_add_local_var(Contex
 		case TypeId::ScopedEnum: {
 			TypeDefObject **type_info = (TypeDefObject **)context->stack_alloc(sizeof(void *));
 			if (!type_info)
-				return alloc_out_of_memory_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
 			memcpy(type_info, &type.type_def, sizeof(void *));
 			break;
 		}
 		case TypeId::TypelessScopedEnum: {
 			TypeDefObject **type_info = (TypeDefObject **)context->stack_alloc(sizeof(void *));
 			if (!type_info)
-				return alloc_out_of_memory_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
 			memcpy(type_info, &type.type_def, sizeof(void *));
 			break;
 		}
@@ -609,7 +609,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer slake::Runtime::_add_local_var(Contex
 		case TypeId::UnionEnumItem: {
 			TypeDefObject **type_info = (TypeDefObject **)context->stack_alloc(sizeof(void *));
 			if (!type_info)
-				return alloc_out_of_memory_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
 			memcpy(type_info, &type.type_def, sizeof(void *));
 			break;
 		}
@@ -619,18 +619,18 @@ SLAKE_FORCEINLINE InternalExceptionPointer slake::Runtime::_add_local_var(Contex
 
 	TypeModifier *type_modifier = (TypeModifier *)context->stack_alloc(sizeof(TypeModifier));
 	if (!type_modifier)
-		return alloc_out_of_memory_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
+		return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
 	*type_modifier = type.type_modifier;
 
 	TypeId *type_id = (TypeId *)context->stack_alloc(sizeof(TypeId));
 	if (!type_id)
-		return alloc_out_of_memory_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
+		return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
 	*type_id = type.type_id;
 
 	size_t off_out = context->stack_top;
 
 	if (!_alloc_alloca_record(context, frame, output_reg))
-		return alloc_out_of_memory_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
+		return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
 
 	restore_stack_top_guard.release();
 
@@ -643,7 +643,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer slake::Runtime::_add_local_var(Contex
 
 SLAKE_FORCEINLINE InternalExceptionPointer larg(Context *context, MajorFrame *major_frame, Runtime *rt, uint32_t off, Reference &object_ref_out) {
 	if (off >= major_frame->resumable_context_data.num_args) {
-		return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(rt->get_fixed_alloc()));
+		return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(rt->get_fixed_alloc()));
 	}
 
 	if (major_frame->cur_coroutine) {
@@ -669,7 +669,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 
 			if ((!_is_register_valid(cur_major_frame, output)) || (dest->is_invalid()))
 				// The register does not present.
-				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			read_var(dest->get_reference(), *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output));
 
 			break;
@@ -683,7 +683,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 
 			if (!_is_register_valid(cur_major_frame, output))
 				// The register does not present.
-				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			read_var(ref, *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output));
 
 			break;
@@ -729,7 +729,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 2>(this, output, num_operands));
 
 			if (!_is_register_valid(cur_major_frame, output)) {
-				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
 
@@ -738,7 +738,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y));
 			if (x->value_type != y->value_type) {
-				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
 			switch (x->value_type) {
@@ -773,7 +773,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 					value_out = (double)(x->get_f64() + y->get_f64());
 					break;
 				default:
-					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
 			break;
@@ -782,7 +782,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 2>(this, output, num_operands));
 
 			if (!_is_register_valid(cur_major_frame, output)) {
-				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
 
@@ -791,7 +791,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y));
 			if (x->value_type != y->value_type) {
-				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
 			switch (x->value_type) {
@@ -826,7 +826,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 					value_out = (double)(x->get_f64() - y->get_f64());
 					break;
 				default:
-					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			break;
 		}
@@ -834,7 +834,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 2>(this, output, num_operands));
 
 			if (!_is_register_valid(cur_major_frame, output)) {
-				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
 
@@ -843,7 +843,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y));
 			if (x->value_type != y->value_type) {
-				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
 			switch (x->value_type) {
@@ -878,7 +878,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 					value_out = (double)(x->get_f64() * y->get_f64());
 					break;
 				default:
-					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			break;
 		}
@@ -886,7 +886,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 2>(this, output, num_operands));
 
 			if (!_is_register_valid(cur_major_frame, output)) {
-				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
 
@@ -895,7 +895,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y));
 			if (x->value_type != y->value_type) {
-				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
 			switch (x->value_type) {
@@ -930,7 +930,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 					value_out = (double)(x->get_f64() / y->get_f64());
 					break;
 				default:
-					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			break;
 		}
@@ -938,7 +938,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 2>(this, output, num_operands));
 
 			if (!_is_register_valid(cur_major_frame, output)) {
-				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
 
@@ -947,7 +947,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y));
 			if (x->value_type != y->value_type) {
-				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
 			switch (x->value_type) {
@@ -982,7 +982,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 					value_out = (double)flib::fmod(x->get_f64(), y->get_f64());
 					break;
 				default:
-					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			break;
 		}
@@ -990,7 +990,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 2>(this, output, num_operands));
 
 			if (!_is_register_valid(cur_major_frame, output)) {
-				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
 
@@ -999,7 +999,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y));
 			if (x->value_type != y->value_type) {
-				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
 			switch (x->value_type) {
@@ -1028,7 +1028,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 					value_out = (uint64_t)(x->get_u64() & y->get_u64());
 					break;
 				default:
-					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			break;
 		}
@@ -1036,7 +1036,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 2>(this, output, num_operands));
 
 			if (!_is_register_valid(cur_major_frame, output)) {
-				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
 
@@ -1045,7 +1045,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y));
 			if (x->value_type != y->value_type) {
-				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
 			switch (x->value_type) {
@@ -1074,7 +1074,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 					value_out = (uint64_t)(x->get_u64() | y->get_u64());
 					break;
 				default:
-					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			break;
 		}
@@ -1082,7 +1082,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 2>(this, output, num_operands));
 
 			if (!_is_register_valid(cur_major_frame, output)) {
-				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
 
@@ -1091,7 +1091,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y));
 			if (x->value_type != y->value_type) {
-				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
 			switch (x->value_type) {
@@ -1120,7 +1120,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 					value_out = (uint64_t)(x->get_u64() ^ y->get_u64());
 					break;
 				default:
-					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			break;
 		}
@@ -1128,7 +1128,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 2>(this, output, num_operands));
 
 			if (!_is_register_valid(cur_major_frame, output)) {
-				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
 
@@ -1137,7 +1137,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y));
 			if (x->value_type != y->value_type) {
-				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
 			switch (x->value_type) {
@@ -1145,7 +1145,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 					value_out = Value((int16_t)(x->get_bool() && y->get_bool()));
 					break;
 				default:
-					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			break;
 		}
@@ -1153,7 +1153,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 2>(this, output, num_operands));
 
 			if (!_is_register_valid(cur_major_frame, output)) {
-				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
 
@@ -1162,7 +1162,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y));
 			if (x->value_type != y->value_type) {
-				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
 			switch (x->value_type) {
@@ -1170,7 +1170,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 					value_out = Value((int16_t)(x->get_bool() || y->get_bool()));
 					break;
 				default:
-					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			break;
 		}
@@ -1178,7 +1178,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 2>(this, output, num_operands));
 
 			if (!_is_register_valid(cur_major_frame, output)) {
-				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
 
@@ -1190,7 +1190,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 				if ((!x->is_null()) || (!y->is_null()))
 					value_out = false;
 				else
-					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			} else {
 				switch (x->value_type) {
 					case ValueType::I8:
@@ -1227,7 +1227,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 						value_out = (bool)(x->get_bool() == y->get_bool());
 						break;
 					default:
-						return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+						return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 				}
 			}
 			break;
@@ -1236,7 +1236,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 2>(this, output, num_operands));
 
 			if (!_is_register_valid(cur_major_frame, output)) {
-				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
 
@@ -1248,7 +1248,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 				if ((!x->is_null()) || (!y->is_null()))
 					value_out = true;
 				else
-					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			} else {
 				switch (x->value_type) {
 					case ValueType::I8:
@@ -1285,7 +1285,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 						value_out = (bool)(x->get_bool() != y->get_bool());
 						break;
 					default:
-						return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+						return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 				}
 			}
 			break;
@@ -1294,7 +1294,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 2>(this, output, num_operands));
 
 			if (!_is_register_valid(cur_major_frame, output)) {
-				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
 
@@ -1303,7 +1303,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y));
 			if (x->value_type != y->value_type) {
-				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
 			switch (x->value_type) {
@@ -1338,7 +1338,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 					value_out = (bool)(x->get_f64() < y->get_f64());
 					break;
 				default:
-					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			break;
 		}
@@ -1346,7 +1346,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 2>(this, output, num_operands));
 
 			if (!_is_register_valid(cur_major_frame, output)) {
-				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
 
@@ -1355,7 +1355,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y));
 			if (x->value_type != y->value_type) {
-				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
 			switch (x->value_type) {
@@ -1390,7 +1390,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 					value_out = (bool)(x->get_f64() > y->get_f64());
 					break;
 				default:
-					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			break;
 		}
@@ -1398,7 +1398,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 2>(this, output, num_operands));
 
 			if (!_is_register_valid(cur_major_frame, output)) {
-				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
 
@@ -1407,7 +1407,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y));
 			if (x->value_type != y->value_type) {
-				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
 			switch (x->value_type) {
@@ -1442,7 +1442,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 					value_out = (bool)(x->get_f64() <= y->get_f64());
 					break;
 				default:
-					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			break;
 		}
@@ -1450,7 +1450,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 2>(this, output, num_operands));
 
 			if (!_is_register_valid(cur_major_frame, output)) {
-				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
 
@@ -1459,7 +1459,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y));
 			if (x->value_type != y->value_type) {
-				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
 			switch (x->value_type) {
@@ -1494,7 +1494,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 					value_out = (bool)(x->get_f64() >= y->get_f64());
 					break;
 				default:
-					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			uint64_t lhs = x->get_u64(), rhs = y->get_u64();
 			if (lhs > rhs) {
@@ -1509,7 +1509,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 2>(this, output, num_operands));
 
 			if (!_is_register_valid(cur_major_frame, output)) {
-				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
 
@@ -1518,7 +1518,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y));
 			if (x->value_type != y->value_type) {
-				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
 			switch (x->value_type) {
@@ -1553,7 +1553,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 					value_out = (int32_t)flib::compare_f64(x->get_f64(), y->get_f64());
 					break;
 				default:
-					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
 			break;
@@ -1562,7 +1562,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 2>(this, output, num_operands));
 
 			if (!_is_register_valid(cur_major_frame, output)) {
-				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
 
@@ -1601,7 +1601,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 					value_out = flib::shl_unsigned64(x->get_u64(), rhs);
 					break;
 				default:
-					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			break;
 		}
@@ -1609,7 +1609,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 2>(this, output, num_operands));
 
 			if (!_is_register_valid(cur_major_frame, output)) {
-				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
 
@@ -1648,7 +1648,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 					value_out = flib::shr_unsigned64(x->get_u64(), rhs);
 					break;
 				default:
-					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			break;
 		}
@@ -1656,7 +1656,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 1>(this, output, num_operands));
 
 			if (!_is_register_valid(cur_major_frame, output)) {
-				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
 
@@ -1688,7 +1688,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 					value_out = (uint64_t)(~x->get_u64());
 					break;
 				default:
-					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			break;
 		}
@@ -1696,7 +1696,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 1>(this, output, num_operands));
 
 			if (!_is_register_valid(cur_major_frame, output)) {
-				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
 
@@ -1737,7 +1737,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 					value_out = (bool)(!x->get_u64());
 					break;
 				default:
-					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			break;
 		}
@@ -1745,7 +1745,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<true, 1>(this, output, num_operands));
 
 			if (!_is_register_valid(cur_major_frame, output)) {
-				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
 
@@ -1783,7 +1783,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 					value_out = (double)(-x->get_f64());
 					break;
 				default:
-					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			break;
 		}
@@ -1806,7 +1806,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			uint32_t index_in = index.get_u32();
 
 			if (index_in > array_object->length) {
-				return alloc_out_of_memory_error_if_alloc_failed(InvalidArrayIndexError::alloc(get_fixed_alloc(), index_in));
+				return alloc_oom_error_if_alloc_failed(InvalidArrayIndexError::alloc(get_fixed_alloc(), index_in));
 			}
 
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _set_register_value(this, data_stack, stack_size, cur_major_frame, output, Value(Reference(ArrayElementRef(array_object, index_in)))));
@@ -1827,7 +1827,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 
 			if (entity_ref.kind == ReferenceKind::Invalid)
 				// TODO: Use a proper one instead.
-				return alloc_out_of_memory_error_if_alloc_failed(ReferencedMemberNotFoundError::alloc(get_fixed_alloc(), (IdRefObject *)ref_ptr.as_object));
+				return alloc_oom_error_if_alloc_failed(ReferencedMemberNotFoundError::alloc(get_fixed_alloc(), (IdRefObject *)ref_ptr.as_object));
 
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _set_register_value(this, data_stack, stack_size, cur_major_frame, output, Value(entity_ref)));
 			break;
@@ -1850,15 +1850,15 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_object_ref_operand_type<ReferenceKind::ObjectRef>(this, id_ref_entity_ref));
 
 			if (!lhs_entity_ref) {
-				return alloc_out_of_memory_error_if_alloc_failed(NullRefError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(NullRefError::alloc(get_fixed_alloc()));
 			}
 
 			if (!id_ref_entity_ref) {
-				return alloc_out_of_memory_error_if_alloc_failed(NullRefError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(NullRefError::alloc(get_fixed_alloc()));
 			}
 
 			if (id_ref_entity_ref.as_object->get_object_kind() != ObjectKind::IdRef) {
-				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
 			IdRefObject *id_ref = (IdRefObject *)id_ref_entity_ref.as_object;
@@ -1904,7 +1904,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, resolve_id_ref(id_ref, entity_ref, lhs_entity_ref.as_object));
 					break;
 				default:
-					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
 			if (!entity_ref) {
@@ -1932,7 +1932,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			if (output != UINT32_MAX) {
 				if (!_is_register_valid(cur_major_frame, output)) {
 					// The register does not present.
-					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 				}
 				*_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output) = operands[0].get_i8();
 			}
@@ -1945,7 +1945,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			if (output != UINT32_MAX) {
 				if (!_is_register_valid(cur_major_frame, output)) {
 					// The register does not present.
-					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 				}
 				*_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output) = operands[0].get_i16();
 			}
@@ -1958,7 +1958,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			if (output != UINT32_MAX) {
 				if (!_is_register_valid(cur_major_frame, output)) {
 					// The register does not present.
-					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 				}
 				*_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output) = operands[0].get_i32();
 			}
@@ -1971,7 +1971,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			if (output != UINT32_MAX) {
 				if (!_is_register_valid(cur_major_frame, output)) {
 					// The register does not present.
-					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 				}
 				*_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output) = operands[0].get_i64();
 			}
@@ -1984,7 +1984,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			if (output != UINT32_MAX) {
 				if (!_is_register_valid(cur_major_frame, output)) {
 					// The register does not present.
-					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 				}
 				Value *const val = _calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
 				val->as_usize = operands[0].get_isize();
@@ -2000,7 +2000,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			if (output != UINT32_MAX) {
 				if (!_is_register_valid(cur_major_frame, output)) {
 					// The register does not present.
-					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 				}
 				*_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output) = operands[0].get_u8();
 			}
@@ -2013,7 +2013,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			if (output != UINT32_MAX) {
 				if (!_is_register_valid(cur_major_frame, output)) {
 					// The register does not present.
-					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 				}
 				*_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output) = operands[0].get_u16();
 			}
@@ -2026,7 +2026,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			if (output != UINT32_MAX) {
 				if (!_is_register_valid(cur_major_frame, output)) {
 					// The register does not present.
-					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 				}
 				*_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output) = operands[0].get_u32();
 			}
@@ -2039,7 +2039,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			if (output != UINT32_MAX) {
 				if (!_is_register_valid(cur_major_frame, output)) {
 					// The register does not present.
-					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 				}
 				*_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output) = operands[0].get_u64();
 			}
@@ -2052,7 +2052,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			if (output != UINT32_MAX) {
 				if (!_is_register_valid(cur_major_frame, output)) {
 					// The register does not present.
-					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 				}
 				Value *const val = _calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
 				val->as_usize = operands[0].get_usize();
@@ -2068,7 +2068,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			if (output != UINT32_MAX) {
 				if (!_is_register_valid(cur_major_frame, output)) {
 					// The register does not present.
-					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 				}
 				*_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output) = operands[0].get_f32();
 			}
@@ -2081,7 +2081,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			if (output != UINT32_MAX) {
 				if (!_is_register_valid(cur_major_frame, output)) {
 					// The register does not present.
-					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 				}
 				*_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output) = operands[0].get_f64();
 			}
@@ -2094,7 +2094,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			if (output != UINT32_MAX) {
 				if (!_is_register_valid(cur_major_frame, output)) {
 					// The register does not present.
-					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 				}
 				*_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output) = operands[0].get_bool();
 			}
@@ -2106,7 +2106,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			if (output != UINT32_MAX) {
 				if (!_is_register_valid(cur_major_frame, output)) {
 					// The register does not present.
-					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 				}
 				*_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output) = nullptr;
 			}
@@ -2121,7 +2121,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			if (output != UINT32_MAX) {
 				if (!_is_register_valid(cur_major_frame, output)) {
 					// The register does not present.
-					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 				}
 				Value *output_reg = _calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
 				output_reg->value_flags = value->value_flags;
@@ -2182,15 +2182,15 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 						const Reference &ref = value->get_reference();
 						switch (ref.kind) {
 							case ReferenceKind::Invalid:
-								return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+								return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 							case ReferenceKind::LocalVarRef:
 								// if (value->as_reference.as_local_var.stack_off >= cur_major_frame->stack_base)
-								return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+								return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 								break;
 							case ReferenceKind::CoroutineLocalVarRef: {
 								// if ((value->as_reference.as_coroutine_local_var.stack_off + value->as_reference.as_coroutine_local_var.coroutine->off_stack_top) >=
 								//(cur_major_frame->cur_coroutine ? cur_major_frame->stack_base + cur_major_frame->cur_coroutine->off_stack_top : cur_major_frame->stack_base))
-								return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+								return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 								break;
 							}
 							default:
@@ -2230,7 +2230,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, larg(&context->get_context(), cur_major_frame, this, operands[0].get_u32(), entity_ref));
 			if (!_is_register_valid(cur_major_frame, output)) {
 				// The register does not present.
-				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			Value *output_reg = _calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
 			output_reg->value_type = ValueType::Reference;
@@ -2258,7 +2258,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			size_t prev_stack_top = context->get_context().stack_top;
 
 			if (!context->_context.aligned_stack_alloc(sizeof(MinorFrame), alignof(MinorFrame)))
-				return alloc_out_of_memory_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
 
 			size_t mf_stack_off = context->_context.stack_top;
 
@@ -2283,7 +2283,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 				MinorFrame *mf = _fetch_minor_frame(&context->_context, cur_major_frame, cur_major_frame->resumable_context_data.off_cur_minor_frame);
 
 				if (mf->off_last_minor_frame == SIZE_MAX)
-					return alloc_out_of_memory_error_if_alloc_failed(FrameBoundaryExceededError::alloc(get_fixed_alloc()));
+					return alloc_oom_error_if_alloc_failed(FrameBoundaryExceededError::alloc(get_fixed_alloc()));
 
 				// Invalidate alloca records to prevent the runtime from dangling references.
 				size_t off_alloca_record = mf->off_alloca_records;
@@ -2291,7 +2291,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 					AllocaRecord *ar = _fetch_alloca_record(&context->get_context(), cur_major_frame, off_alloca_record);
 
 					if (!_is_register_valid(cur_major_frame, ar->def_reg)) {
-						return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+						return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 						// TODO: Use a more proper kind of exception.
 					}
 					_calc_reg_ptr(data_stack, stack_size, cur_major_frame, ar->def_reg)->value_type = ValueType::Invalid;
@@ -2320,12 +2320,12 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			if (char *p = context->get_context().aligned_stack_alloc(sizeof(Value), alignof(Value)); p) {
 				*(Value *)p = *value;
 			} else
-				return alloc_out_of_memory_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
 			const size_t new_off = cur_major_frame->cur_coroutine ? context->get_context().stack_top - cur_major_frame->cur_coroutine->off_stack_top : context->get_context().stack_top;
 			if (cur_major_frame->resumable_context_data.num_next_args) {
 				if (new_off - cur_major_frame->resumable_context_data.off_next_args != sizeof(Value))
 					// TODO: Use a proper one.
-					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			} else {
 				cur_major_frame->resumable_context_data.off_next_args_begin = prev_stack_top;
 			}
@@ -2379,7 +2379,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			}
 
 			if (!fn)
-				return alloc_out_of_memory_error_if_alloc_failed(NullRefError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(NullRefError::alloc(get_fixed_alloc()));
 
 			ResumableContextData &resumable_context_data = cur_major_frame->resumable_context_data;
 
@@ -2447,7 +2447,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], return_value));
 					break;
 				default:
-					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
 			if (CoroutineObject *co = cur_major_frame->cur_coroutine; co) {
@@ -2465,7 +2465,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 					// TODO: Handle this.
 					std::terminate();
 				if (return_value_out_reg != UINT32_MAX)
-					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 				_leave_major_frame(&context->get_context());
 			} else {
 				if (!is_compatible(return_type, *return_value))
@@ -2530,7 +2530,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			}
 
 			if (!fn) {
-				return alloc_out_of_memory_error_if_alloc_failed(NullRefError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(NullRefError::alloc(get_fixed_alloc()));
 			}
 
 			HostObjectRef<CoroutineObject> co;
@@ -2565,7 +2565,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _unwrap_reg_operand(this, data_stack, stack_size, cur_major_frame, operands[0], return_value));
 					break;
 				default:
-					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
 			if (size_t sz_frame = context->_context.stack_top - cur_major_frame->cur_coroutine->off_stack_top; sz_frame) {
@@ -2584,7 +2584,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 
 			if (return_value == ValueType::Invalid) {
 				if (return_value_out_reg != UINT32_MAX) {
-					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 				}
 				_leave_major_frame(&context->get_context());
 			} else {
@@ -2663,12 +2663,12 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 					HostObjectRef<InstanceObject> instance = new_class_instance(cls, 0);
 					if (!instance)
 						// TODO: Return more detail exceptions.
-						return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+						return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _set_register_value(this, data_stack, stack_size, cur_major_frame, output, Reference(instance.get())));
 					break;
 				}
 				default:
-					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			break;
 		}
@@ -2684,7 +2684,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			auto instance = new_array_instance(this, type, size);
 			if (!instance)
 				// TODO: Return more detailed exceptions.
-				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _set_register_value(this, data_stack, stack_size, cur_major_frame, output, Reference(instance.get())));
 
@@ -2692,7 +2692,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 		}
 		// case Opcode::THROW: {
 		//  TODO: Implement it.
-		//  return alloc_out_of_memory_error_if_alloc_failed(UncaughtExceptionError::alloc(get_fixed_alloc(), x));
+		//  return alloc_oom_error_if_alloc_failed(UncaughtExceptionError::alloc(get_fixed_alloc(), x));
 		//}
 		case Opcode::PUSHEH: {
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_count<false, 2>(this, output, num_operands));
@@ -2703,7 +2703,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			MinorFrame *mf = _fetch_minor_frame(&context->get_context(), cur_major_frame, cur_major_frame->resumable_context_data.off_cur_minor_frame);
 
 			if (!context->_context.aligned_stack_alloc(sizeof(ExceptHandler), alignof(ExceptHandler)))
-				return alloc_out_of_memory_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
 
 			size_t eh_stack_off = context->_context.stack_top;
 
@@ -2724,7 +2724,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_type<ValueType::TypeName>(this, operands[0]));
 			if (!_is_register_valid(cur_major_frame, output)) {
 				// The register does not present.
-				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
 			const Value *v;
@@ -2773,7 +2773,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 					break;
 				default:
 					// TODO: Use InvalidTypeCastError instead.
-					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
 			break;
@@ -2783,7 +2783,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_type<ValueType::TypeName>(this, operands[0]));
 			if (!_is_register_valid(cur_major_frame, output)) {
 				// The register does not present.
-				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
 			const Value *v;
@@ -2800,18 +2800,18 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 					break;
 				default:
 					// TODO: Use InvalidTypeCastError instead.
-					return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
 			break;
 		}
 		case Opcode::PHI: {
 			if (output == UINT32_MAX) {
-				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
 			if ((num_operands < 2) || ((num_operands & 1))) {
-				return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
 			Value v;
@@ -2830,13 +2830,13 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 				}
 			}
 
-			return alloc_out_of_memory_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 
 		succeeded:
 			break;
 		}
 		default:
-			return alloc_out_of_memory_error_if_alloc_failed(InvalidOpcodeError::alloc(get_fixed_alloc(), opcode));
+			return alloc_oom_error_if_alloc_failed(InvalidOpcodeError::alloc(get_fixed_alloc(), opcode));
 	}
 	++cur_major_frame->resumable_context_data.cur_ins;
 	return {};

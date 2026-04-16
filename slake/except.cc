@@ -17,10 +17,10 @@ SLAKE_API void OutOfMemoryError::dealloc() {
 }
 
 SLAKE_API OutOfMemoryError *OutOfMemoryError::alloc() noexcept {
-	return &g_global_out_of_memory_error;
+	return &g_global_oom_error;
 }
 
-OutOfMemoryError slake::g_global_out_of_memory_error = OutOfMemoryError();
+OutOfMemoryError slake::g_global_oom_error = OutOfMemoryError();
 
 SLAKE_API RuntimeExecError::RuntimeExecError(
 	peff::Alloc *self_allocator,
@@ -405,7 +405,7 @@ SLAKE_API ErrorEvaluatingObjectTypeError *ErrorEvaluatingObjectTypeError::alloc(
 	return peff::alloc_and_construct<ErrorEvaluatingObjectTypeError>(self_allocator, sizeof(std::max_align_t), self_allocator, object);
 }
 
-SLAKE_API InternalExceptionPointer slake::alloc_out_of_memory_error_if_alloc_failed(InternalExceptionPointer e) {
+SLAKE_API InternalExceptionPointer slake::alloc_oom_error_if_alloc_failed(InternalExceptionPointer e) {
 	if (!e) {
 		return OutOfMemoryError::alloc();
 	}

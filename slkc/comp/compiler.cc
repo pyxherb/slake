@@ -86,7 +86,7 @@ SLKC_API peff::Option<CompilationError> slkc::combine_parallel_path_env(peff::Al
 				break;
 			case PathPossibility::May: {
 				if (!idx_may_paths.insert(+i))
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 				break;
 			}
 			case PathPossibility::Must: {
@@ -119,13 +119,13 @@ SLKC_API peff::Option<CompilationError> slkc::combine_parallel_path_env(peff::Al
 						if (auto prev_override = common_local_var_nullity_overrides.find(cur_override.first); prev_override != common_local_var_nullity_overrides.end()) {
 							if (prev_override.value() != cur_override.second) {
 								if (!nonunifiable_nullity_override_vars.insert(AstNodePtr<VarNode>(prev_override.key())))
-									return gen_out_of_memory_comp_error();
+									return gen_oom_comp_error();
 								common_local_var_nullity_overrides.remove(prev_override);
 							}
 						} else {
 							auto copied_override_type = cur_override.second;
 							if (!common_local_var_nullity_overrides.insert(AstNodePtr<VarNode>(cur_override.first), std::move(copied_override_type)))
-								return gen_out_of_memory_comp_error();
+								return gen_oom_comp_error();
 						}
 					}
 				}
@@ -173,7 +173,7 @@ SLAKE_API peff::Option<CompilationError> PathEnv::set_local_var_nullity_override
 	if (auto it = local_var_nullity_overrides.find(var_node); it != local_var_nullity_overrides.end()) {
 		it.value() = type;
 	} else if (!local_var_nullity_overrides.insert(std::move(var_node), std::move(type)))
-		return gen_out_of_memory_comp_error();
+		return gen_oom_comp_error();
 	return {};
 }
 
@@ -251,13 +251,13 @@ SLKC_API peff::Option<CompilationError> NormalCompilationContext::alloc_label(ui
 	peff::SharedPtr<Label> label = peff::make_shared<Label>(allocator.get(), peff::String(allocator.get()));
 
 	if (!label) {
-		return gen_out_of_memory_comp_error();
+		return gen_oom_comp_error();
 	}
 
 	label_id_out = labels.size();
 
 	if (!labels.push_back(peff::SharedPtr<Label>(label))) {
-		return gen_out_of_memory_comp_error();
+		return gen_oom_comp_error();
 	}
 
 	return {};
@@ -267,10 +267,10 @@ SLKC_API void NormalCompilationContext::set_label_offset(uint32_t label_id, uint
 }
 SLKC_API peff::Option<CompilationError> NormalCompilationContext::set_label_name(uint32_t label_id, const std::string_view &name) {
 	if (!labels.at(label_id)->name.build(name)) {
-		return gen_out_of_memory_comp_error();
+		return gen_oom_comp_error();
 	}
 	if (!label_name_indices.insert(labels.at(label_id)->name, +label_id))
-		return gen_out_of_memory_comp_error();
+		return gen_oom_comp_error();
 	return {};
 }
 SLKC_API uint32_t NormalCompilationContext::get_label_offset(uint32_t label_id) const {
@@ -299,7 +299,7 @@ SLKC_API peff::Option<CompilationError> NormalCompilationContext::emit_ins(uint3
 	ins_out.opcode = opcode;
 	ins_out.output = output_reg_index;
 	if (!ins_out.reserve_operands(allocator.get(), operands.size())) {
-		return gen_out_of_memory_comp_error();
+		return gen_oom_comp_error();
 	}
 
 	auto it = operands.begin();
@@ -321,7 +321,7 @@ SLKC_API peff::Option<CompilationError> NormalCompilationContext::emit_ins(uint3
 	ins_out.opcode = opcode;
 	ins_out.output = output_reg_index;
 	if (!ins_out.reserve_operands(allocator.get(), num_operands)) {
-		return gen_out_of_memory_comp_error();
+		return gen_oom_comp_error();
 	}
 
 	memcpy(ins_out.operands, operands, sizeof(slake::Value) * num_operands);
@@ -337,11 +337,11 @@ SLKC_API peff::Option<CompilationError> NormalCompilationContext::alloc_local_va
 	AstNodePtr<VarNode> new_var;
 
 	if (!(new_var = make_ast_node<VarNode>(allocator.get(), allocator.get(), document))) {
-		return gen_out_of_memory_comp_error();
+		return gen_oom_comp_error();
 	}
 
 	if (!new_var->name.build(name)) {
-		return gen_out_of_memory_comp_error();
+		return gen_oom_comp_error();
 	}
 
 	new_var->type = type;
@@ -349,7 +349,7 @@ SLKC_API peff::Option<CompilationError> NormalCompilationContext::alloc_local_va
 	new_var->idx_reg = reg;
 
 	if (!cur_block_layer.local_vars.insert(new_var->name, AstNodePtr<VarNode>(new_var))) {
-		return gen_out_of_memory_comp_error();
+		return gen_oom_comp_error();
 	}
 
 	local_var_out = new_var;
@@ -406,7 +406,7 @@ SLKC_API uint32_t NormalCompilationContext::get_cur_ins_off() const {
 
 SLKC_API peff::Option<CompilationError> NormalCompilationContext::enter_block() {
 	if (!saved_block_layers.push_back(std::move(cur_block_layer))) {
-		return gen_out_of_memory_comp_error();
+		return gen_oom_comp_error();
 	}
 
 	cur_block_layer = BlockLayer(allocator.get());
@@ -424,12 +424,12 @@ SLKC_API uint32_t NormalCompilationContext::get_block_level() {
 
 SLKC_API peff::Option<CompilationError> NormalCompilationContext::register_source_loc_desc(slake::slxfmt::SourceLocDesc sld, uint32_t &index_out) {
 	if (!source_loc_descs_map.insert(slake::slxfmt::SourceLocDesc(sld), source_loc_descs.size()))
-		return gen_out_of_memory_comp_error();
+		return gen_oom_comp_error();
 	peff::ScopeGuard remove_source_loc_descs_map_guard([this, &sld]() noexcept {
 		source_loc_descs_map.remove(sld);
 	});
 	if (!source_loc_descs.push_back(slake::slxfmt::SourceLocDesc(sld)))
-		return gen_out_of_memory_comp_error();
+		return gen_oom_comp_error();
 	remove_source_loc_descs_map_guard.release();
 	index_out = source_loc_descs.size() - 1;
 	return {};
@@ -494,7 +494,7 @@ SLKC_API peff::Option<CompilationError> slkc::complete_parent_modules(
 	size_t idx_new_modules_begin = 0;
 
 	if (!modules.resize(module_path->entries.size())) {
-		return gen_out_of_memory_comp_error();
+		return gen_oom_comp_error();
 	}
 
 	AstNodePtr<ModuleNode> node = compile_env->get_document()->root_module;
@@ -509,20 +509,20 @@ SLKC_API peff::Option<CompilationError> slkc::complete_parent_modules(
 				node = leaf;
 			} else {
 				if (!(node = make_ast_node<ModuleNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->get_document()))) {
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 				}
 				if (!node->alloc_scope())
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 			}
 			modules.at(i) = node;
 			if (!node->name.build(module_path->entries.at(i).name)) {
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			}
 		}
 	}
 
 	if (!leaf->name.build(module_path->entries.back().name)) {
-		return gen_out_of_memory_comp_error();
+		return gen_oom_comp_error();
 	}
 
 	for (size_t i = idx_new_modules_begin; i < modules.size(); ++i) {
@@ -531,12 +531,12 @@ SLKC_API peff::Option<CompilationError> slkc::complete_parent_modules(
 		if (i) {
 			auto m1 = modules.at(i - 1), m2 = modules.at(i);
 			if (!modules.at(i - 1)->scope->add_member(modules.at(i).cast_to<MemberNode>())) {
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			}
 			modules.at(i)->set_parent(modules.at(i - 1).get());
 		} else {
 			if (!compile_env->get_document()->root_module->scope->add_member(modules.at(i).cast_to<MemberNode>())) {
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			}
 			modules.at(i)->set_parent(compile_env->get_document()->root_module.get());
 		}
@@ -557,14 +557,14 @@ SLKC_API peff::Option<CompilationError> slkc::cleanup_unused_module_tree(
 			}
 		}
 
-		if (!cur->parent) {
+		if (!cur->outer) {
 			break;
 		}
 
-		if (cur->parent->get_ast_node_type() != AstNodeType::Module)
+		if (cur->outer->get_ast_node_type() != AstNodeType::Module)
 			std::terminate();
 
-		AstNodePtr<ModuleNode> parent = cur->parent->shared_from_this().cast_to<ModuleNode>();
+		AstNodePtr<ModuleNode> parent = cur->outer->shared_from_this().cast_to<ModuleNode>();
 
 		parent->scope->remove_member(cur->name);
 
@@ -633,7 +633,7 @@ SLKC_API peff::Option<CompilationError> FileSystemExternalModuleProvider::load_m
 		size_t begin_index = suffix_path.size();
 
 		if (!suffix_path.resize(begin_index + sizeof('/') + current_entry.name.size())) {
-			return gen_out_of_memory_comp_error();
+			return gen_oom_comp_error();
 		}
 
 		suffix_path.at(begin_index) = '/';
@@ -650,7 +650,7 @@ SLKC_API peff::Option<CompilationError> FileSystemExternalModuleProvider::load_m
 			const static char extension[] = ".slk";
 
 			if (!full_path.resize(cur_path.size() + suffix_path.size() + strlen(extension))) {
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			}
 
 			memcpy(full_path.data(), cur_path.data(), cur_path.size());
@@ -691,10 +691,10 @@ SLKC_API peff::Option<CompilationError> FileSystemExternalModuleProvider::load_m
 				AstNodePtr<ModuleNode> mod;
 
 				if (!(mod = make_ast_node<ModuleNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->get_document()))) {
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 				}
 				if (!mod->alloc_scope()) {
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 				}
 
 				slkc::TokenList token_list(compile_env->allocator.get());
@@ -714,13 +714,13 @@ SLKC_API peff::Option<CompilationError> FileSystemExternalModuleProvider::load_m
 
 				peff::SharedPtr<slkc::Parser> parser;
 				if (!(parser = peff::make_shared<slkc::Parser>(compile_env->allocator.get(), compile_env->get_document(), std::move(token_list), compile_env->allocator.get()))) {
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 				}
 
 				IdRefPtr module_name;
 				if (auto e = parser->parse(mod, module_name); e) {
 					if (!parser->syntax_errors.push_back(std::move(*e))) {
-						return gen_out_of_memory_comp_error();
+						return gen_oom_comp_error();
 					}
 				}
 
@@ -750,7 +750,7 @@ SLKC_API peff::Option<CompilationError> FileSystemExternalModuleProvider::load_m
 			const static char extension[] = ".slx";
 
 			if (!full_path.resize(cur_path.size() + suffix_path.size() + strlen(extension))) {
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			}
 
 			memcpy(full_path.data(), cur_path.data(), cur_path.size());

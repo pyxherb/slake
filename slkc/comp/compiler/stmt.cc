@@ -145,7 +145,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_for_stmt(
 			  compile_env->allocator.get(),
 			  compile_env->allocator.get(),
 			  compile_env->get_document()))) {
-		return gen_out_of_memory_comp_error();
+		return gen_oom_comp_error();
 	}
 
 	PrevBreakPointHolder break_point_holder(compilation_context);
@@ -427,7 +427,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_if_stmt(
 			  compile_env->allocator.get(),
 			  compile_env->allocator.get(),
 			  compile_env->get_document()))) {
-		return gen_out_of_memory_comp_error();
+		return gen_oom_comp_error();
 	}
 
 	uint32_t condition_reg;
@@ -540,7 +540,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_while_stmt(
 			  compile_env->allocator.get(),
 			  compile_env->allocator.get(),
 			  compile_env->get_document()))) {
-		return gen_out_of_memory_comp_error();
+		return gen_oom_comp_error();
 	}
 
 	CompileExprResult cond_result(compile_env->allocator.get());
@@ -666,7 +666,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_do_while_stmt(
 			  compile_env->allocator.get(),
 			  compile_env->allocator.get(),
 			  compile_env->get_document()))) {
-		return gen_out_of_memory_comp_error();
+		return gen_oom_comp_error();
 	}
 
 	CompileExprResult cond_result(compile_env->allocator.get());
@@ -774,7 +774,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_with_stmt(
 			  compile_env->allocator.get(),
 			  compile_env->allocator.get(),
 			  compile_env->get_document())))
-		return gen_out_of_memory_comp_error();
+		return gen_oom_comp_error();
 
 	peff::DynArray<AstNodePtr<GenericParamNode>> involved_generic_params(compile_env->allocator.get());
 
@@ -785,15 +785,15 @@ SLKC_API peff::Option<CompilationError> slkc::compile_with_stmt(
 
 		IdRefPtr id_ref_ptr(peff::alloc_and_construct<IdRef>(compile_env->allocator.get(), ASTNODE_ALIGNMENT, compile_env->allocator.get()));
 		if (!id_ref_ptr)
-			return gen_out_of_memory_comp_error();
+			return gen_oom_comp_error();
 
 		IdRefEntry e(compile_env->allocator.get());
 
 		if (!e.name.build(i->generic_param_name))
-			return gen_out_of_memory_comp_error();
+			return gen_oom_comp_error();
 
 		if (!id_ref_ptr->entries.push_back(std::move(e)))
-			return gen_out_of_memory_comp_error();
+			return gen_oom_comp_error();
 
 		tn->token_range = s->token_range;
 
@@ -811,7 +811,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_with_stmt(
 		}
 
 		if (!involved_generic_params.push_back(m.cast_to<GenericParamNode>()))
-			return gen_out_of_memory_comp_error();
+			return gen_oom_comp_error();
 	}
 
 	peff::DynArray<GenericConstraintPtr> original_constraints(compile_env->allocator.get());
@@ -820,10 +820,10 @@ SLKC_API peff::Option<CompilationError> slkc::compile_with_stmt(
 		GenericConstraintPtr constraint;
 
 		if (!(constraint = duplicate_generic_constraint(compile_env->allocator.get(), i->generic_constraint.get())))
-			return gen_out_of_memory_comp_error();
+			return gen_oom_comp_error();
 
 		if (!(original_constraints.push_back(std::move(constraint))))
-			return gen_out_of_memory_comp_error();
+			return gen_oom_comp_error();
 	}
 
 	peff::ScopeGuard restore_constraints_guard([&involved_generic_params, &original_constraints]() noexcept {
@@ -924,7 +924,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_switch_stmt(
 				AstNodePtr<BinaryExprNode> ce;
 
 				if (!(ce = make_ast_node<BinaryExprNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->get_document())))
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 
 				ce->binary_op = BinaryOp::Eq;
 
@@ -948,7 +948,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_switch_stmt(
 			AstNodePtr<BinaryExprNode> cmp_expr;
 
 			if (!(cmp_expr = make_ast_node<BinaryExprNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->get_document()))) {
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			}
 
 			cmp_expr->binary_op = BinaryOp::Eq;
@@ -956,7 +956,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_switch_stmt(
 			cmp_expr->token_range = cur_case->condition->token_range;
 
 			if (!(cmp_expr->lhs = make_ast_node<RegIndexExprNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->get_document(), condition_reg, condition_type).cast_to<ExprNode>())) {
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			}
 			cmp_expr->lhs->token_range = cur_case->condition->token_range;
 
@@ -965,7 +965,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_switch_stmt(
 			AstNodePtr<BoolTypeNameNode> bool_type_name;
 
 			if (!(bool_type_name = make_ast_node<BoolTypeNameNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->get_document())))
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 
 			uint32_t cmp_result_reg;
 			{
@@ -977,7 +977,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_switch_stmt(
 			}
 
 			if (!prev_case_conditions.insert(AstNodePtr<ExprNode>(result_expr)))
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 
 			uint32_t succeeded_value_label;
 			SLKC_RETURN_IF_COMP_ERROR(compilation_context->alloc_label(succeeded_value_label));

@@ -9,7 +9,7 @@ InternalExceptionPointer slake::opti::analyze_cast_ins(
 	Instruction &cur_ins = analyze_context.fn_object->instructions.at(analyze_context.idx_cur_ins);
 
 	if (cur_ins.num_operands != 2) {
-		return alloc_out_of_memory_error_if_alloc_failed(
+		return alloc_oom_error_if_alloc_failed(
 			MalformedProgramError::alloc(
 				analyze_context.runtime->get_fixed_alloc(),
 				analyze_context.fn_object,
@@ -17,7 +17,7 @@ InternalExceptionPointer slake::opti::analyze_cast_ins(
 	}
 
 	if (cur_ins.operands[0].value_type != ValueType::TypeName) {
-		return alloc_out_of_memory_error_if_alloc_failed(
+		return alloc_oom_error_if_alloc_failed(
 			MalformedProgramError::alloc(
 				analyze_context.runtime->get_fixed_alloc(),
 				analyze_context.fn_object,
@@ -88,7 +88,7 @@ InternalExceptionPointer slake::opti::analyze_cast_ins(
 					}
 					break;
 				default: {
-					return alloc_out_of_memory_error_if_alloc_failed(
+					return alloc_oom_error_if_alloc_failed(
 						MalformedProgramError::alloc(
 							analyze_context.runtime->get_fixed_alloc(),
 							analyze_context.fn_object,
@@ -154,7 +154,7 @@ InternalExceptionPointer slake::opti::analyze_cast_ins(
 					}
 					break;
 				default: {
-					return alloc_out_of_memory_error_if_alloc_failed(
+					return alloc_oom_error_if_alloc_failed(
 						MalformedProgramError::alloc(
 							analyze_context.runtime->get_fixed_alloc(),
 							analyze_context.fn_object,
@@ -222,7 +222,7 @@ InternalExceptionPointer slake::opti::analyze_cast_ins(
 					break;
 					break;
 				default: {
-					return alloc_out_of_memory_error_if_alloc_failed(
+					return alloc_oom_error_if_alloc_failed(
 						MalformedProgramError::alloc(
 							analyze_context.runtime->get_fixed_alloc(),
 							analyze_context.fn_object,
@@ -288,7 +288,7 @@ InternalExceptionPointer slake::opti::analyze_cast_ins(
 					}
 					break;
 				default: {
-					return alloc_out_of_memory_error_if_alloc_failed(
+					return alloc_oom_error_if_alloc_failed(
 						MalformedProgramError::alloc(
 							analyze_context.runtime->get_fixed_alloc(),
 							analyze_context.fn_object,
@@ -355,7 +355,7 @@ InternalExceptionPointer slake::opti::analyze_cast_ins(
 					break;
 					break;
 				default: {
-					return alloc_out_of_memory_error_if_alloc_failed(
+					return alloc_oom_error_if_alloc_failed(
 						MalformedProgramError::alloc(
 							analyze_context.runtime->get_fixed_alloc(),
 							analyze_context.fn_object,
@@ -421,7 +421,7 @@ InternalExceptionPointer slake::opti::analyze_cast_ins(
 					}
 					break;
 				default: {
-					return alloc_out_of_memory_error_if_alloc_failed(
+					return alloc_oom_error_if_alloc_failed(
 						MalformedProgramError::alloc(
 							analyze_context.runtime->get_fixed_alloc(),
 							analyze_context.fn_object,
@@ -487,7 +487,7 @@ InternalExceptionPointer slake::opti::analyze_cast_ins(
 					}
 					break;
 				default: {
-					return alloc_out_of_memory_error_if_alloc_failed(
+					return alloc_oom_error_if_alloc_failed(
 						MalformedProgramError::alloc(
 							analyze_context.runtime->get_fixed_alloc(),
 							analyze_context.fn_object,
@@ -553,7 +553,7 @@ InternalExceptionPointer slake::opti::analyze_cast_ins(
 					}
 					break;
 				default: {
-					return alloc_out_of_memory_error_if_alloc_failed(
+					return alloc_oom_error_if_alloc_failed(
 						MalformedProgramError::alloc(
 							analyze_context.runtime->get_fixed_alloc(),
 							analyze_context.fn_object,
@@ -619,7 +619,7 @@ InternalExceptionPointer slake::opti::analyze_cast_ins(
 					}
 					break;
 				default: {
-					return alloc_out_of_memory_error_if_alloc_failed(
+					return alloc_oom_error_if_alloc_failed(
 						MalformedProgramError::alloc(
 							analyze_context.runtime->get_fixed_alloc(),
 							analyze_context.fn_object,
@@ -685,7 +685,7 @@ InternalExceptionPointer slake::opti::analyze_cast_ins(
 					}
 					break;
 				default: {
-					return alloc_out_of_memory_error_if_alloc_failed(
+					return alloc_oom_error_if_alloc_failed(
 						MalformedProgramError::alloc(
 							analyze_context.runtime->get_fixed_alloc(),
 							analyze_context.fn_object,
@@ -751,7 +751,7 @@ InternalExceptionPointer slake::opti::analyze_cast_ins(
 					}
 					break;
 				default: {
-					return alloc_out_of_memory_error_if_alloc_failed(
+					return alloc_oom_error_if_alloc_failed(
 						MalformedProgramError::alloc(
 							analyze_context.runtime->get_fixed_alloc(),
 							analyze_context.fn_object,
@@ -763,7 +763,7 @@ InternalExceptionPointer slake::opti::analyze_cast_ins(
 			break;
 		}
 		default: {
-			return alloc_out_of_memory_error_if_alloc_failed(
+			return alloc_oom_error_if_alloc_failed(
 				MalformedProgramError::alloc(
 					analyze_context.runtime->get_fixed_alloc(),
 					analyze_context.fn_object,

@@ -17,7 +17,7 @@ SLKC_API peff::Option<CompilationError> slkc::get_succeeding_enum_value(
 						  compile_env->get_document(),
 						  last_value.cast_to<I8LiteralExprNode>()->data + 1)
 							.cast_to<ExprNode>()))
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 				break;
 			case TypeNameKind::I16:
 				if (!(value_out = make_ast_node<I16LiteralExprNode>(
@@ -26,7 +26,7 @@ SLKC_API peff::Option<CompilationError> slkc::get_succeeding_enum_value(
 						  compile_env->get_document(),
 						  last_value.cast_to<I16LiteralExprNode>()->data + 1)
 							.cast_to<ExprNode>()))
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 				break;
 			case TypeNameKind::I32:
 				if (!(value_out = make_ast_node<I32LiteralExprNode>(
@@ -35,7 +35,7 @@ SLKC_API peff::Option<CompilationError> slkc::get_succeeding_enum_value(
 						  compile_env->get_document(),
 						  last_value.cast_to<I32LiteralExprNode>()->data + 1)
 							.cast_to<ExprNode>()))
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 				break;
 			case TypeNameKind::I64:
 				if (!(value_out = make_ast_node<I64LiteralExprNode>(
@@ -44,7 +44,7 @@ SLKC_API peff::Option<CompilationError> slkc::get_succeeding_enum_value(
 						  compile_env->get_document(),
 						  last_value.cast_to<I64LiteralExprNode>()->data + 1)
 							.cast_to<ExprNode>()))
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 				break;
 			case TypeNameKind::U8:
 				if (!(value_out = make_ast_node<U8LiteralExprNode>(
@@ -53,7 +53,7 @@ SLKC_API peff::Option<CompilationError> slkc::get_succeeding_enum_value(
 						  compile_env->get_document(),
 						  last_value.cast_to<U8LiteralExprNode>()->data + 1)
 							.cast_to<ExprNode>()))
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 				break;
 			case TypeNameKind::U16:
 				if (!(value_out = make_ast_node<U16LiteralExprNode>(
@@ -62,7 +62,7 @@ SLKC_API peff::Option<CompilationError> slkc::get_succeeding_enum_value(
 						  compile_env->get_document(),
 						  last_value.cast_to<U16LiteralExprNode>()->data + 1)
 							.cast_to<ExprNode>()))
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 				break;
 			case TypeNameKind::U32:
 				if (!(value_out = make_ast_node<U32LiteralExprNode>(
@@ -71,7 +71,7 @@ SLKC_API peff::Option<CompilationError> slkc::get_succeeding_enum_value(
 						  compile_env->get_document(),
 						  last_value.cast_to<U32LiteralExprNode>()->data + 1)
 							.cast_to<ExprNode>()))
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 				break;
 			case TypeNameKind::U64:
 				if (!(value_out = make_ast_node<U8LiteralExprNode>(
@@ -80,7 +80,7 @@ SLKC_API peff::Option<CompilationError> slkc::get_succeeding_enum_value(
 						  compile_env->get_document(),
 						  last_value.cast_to<U64LiteralExprNode>()->data + 1)
 							.cast_to<ExprNode>()))
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 				break;
 			case TypeNameKind::F32:
 				if (!(value_out = make_ast_node<F32LiteralExprNode>(
@@ -89,7 +89,7 @@ SLKC_API peff::Option<CompilationError> slkc::get_succeeding_enum_value(
 						  compile_env->get_document(),
 						  last_value.cast_to<F32LiteralExprNode>()->data + 1)
 							.cast_to<ExprNode>()))
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 				break;
 			case TypeNameKind::F64:
 				if (!(value_out = make_ast_node<F64LiteralExprNode>(
@@ -98,7 +98,7 @@ SLKC_API peff::Option<CompilationError> slkc::get_succeeding_enum_value(
 						  compile_env->get_document(),
 						  last_value.cast_to<F64LiteralExprNode>()->data + 1)
 							.cast_to<ExprNode>()))
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 				break;
 			case TypeNameKind::Bool:
 				if (!(value_out = make_ast_node<BoolLiteralExprNode>(
@@ -107,7 +107,7 @@ SLKC_API peff::Option<CompilationError> slkc::get_succeeding_enum_value(
 						  compile_env->get_document(),
 						  !last_value.cast_to<BoolLiteralExprNode>()->data)
 							.cast_to<ExprNode>()))
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 				break;
 			default:
 				std::terminate();
@@ -121,7 +121,7 @@ SLKC_API peff::Option<CompilationError> slkc::get_succeeding_enum_value(
 						  compile_env->get_document(),
 						  0)
 							.cast_to<ExprNode>()))
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 				break;
 			case TypeNameKind::I16:
 				if (!(value_out = make_ast_node<I16LiteralExprNode>(
@@ -130,7 +130,7 @@ SLKC_API peff::Option<CompilationError> slkc::get_succeeding_enum_value(
 						  compile_env->get_document(),
 						  0)
 							.cast_to<ExprNode>()))
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 				break;
 			case TypeNameKind::I32:
 				if (!(value_out = make_ast_node<I32LiteralExprNode>(
@@ -139,7 +139,7 @@ SLKC_API peff::Option<CompilationError> slkc::get_succeeding_enum_value(
 						  compile_env->get_document(),
 						  0)
 							.cast_to<ExprNode>()))
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 				break;
 			case TypeNameKind::I64:
 				if (!(value_out = make_ast_node<I64LiteralExprNode>(
@@ -148,7 +148,7 @@ SLKC_API peff::Option<CompilationError> slkc::get_succeeding_enum_value(
 						  compile_env->get_document(),
 						  0)
 							.cast_to<ExprNode>()))
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 				break;
 			case TypeNameKind::U8:
 				if (!(value_out = make_ast_node<U8LiteralExprNode>(
@@ -157,7 +157,7 @@ SLKC_API peff::Option<CompilationError> slkc::get_succeeding_enum_value(
 						  compile_env->get_document(),
 						  0)
 							.cast_to<ExprNode>()))
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 				break;
 			case TypeNameKind::U16:
 				if (!(value_out = make_ast_node<U16LiteralExprNode>(
@@ -166,7 +166,7 @@ SLKC_API peff::Option<CompilationError> slkc::get_succeeding_enum_value(
 						  compile_env->get_document(),
 						  0)
 							.cast_to<ExprNode>()))
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 				break;
 			case TypeNameKind::U32:
 				if (!(value_out = make_ast_node<U32LiteralExprNode>(
@@ -175,7 +175,7 @@ SLKC_API peff::Option<CompilationError> slkc::get_succeeding_enum_value(
 						  compile_env->get_document(),
 						  0)
 							.cast_to<ExprNode>()))
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 				break;
 			case TypeNameKind::U64:
 				if (!(value_out = make_ast_node<U8LiteralExprNode>(
@@ -184,7 +184,7 @@ SLKC_API peff::Option<CompilationError> slkc::get_succeeding_enum_value(
 						  compile_env->get_document(),
 						  0)
 							.cast_to<ExprNode>()))
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 				break;
 			case TypeNameKind::F32:
 				if (!(value_out = make_ast_node<F32LiteralExprNode>(
@@ -193,7 +193,7 @@ SLKC_API peff::Option<CompilationError> slkc::get_succeeding_enum_value(
 						  compile_env->get_document(),
 						  0)
 							.cast_to<ExprNode>()))
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 				break;
 			case TypeNameKind::F64:
 				if (!(value_out = make_ast_node<F64LiteralExprNode>(
@@ -202,7 +202,7 @@ SLKC_API peff::Option<CompilationError> slkc::get_succeeding_enum_value(
 						  compile_env->get_document(),
 						  0)
 							.cast_to<ExprNode>()))
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 				break;
 			case TypeNameKind::Bool:
 				if (!(value_out = make_ast_node<BoolLiteralExprNode>(
@@ -211,7 +211,7 @@ SLKC_API peff::Option<CompilationError> slkc::get_succeeding_enum_value(
 						  compile_env->get_document(),
 						  false)
 							.cast_to<ExprNode>()))
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 				break;
 			default:
 				std::terminate();
@@ -259,7 +259,7 @@ SLKC_API peff::Option<CompilationError> slkc::fill_scoped_enum(
 				AstNodePtr<CastExprNode> cast_expr;
 
 				if (!(cast_expr = make_ast_node<CastExprNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->get_document())))
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 
 				cast_expr->token_range = item->enum_value->token_range;
 				cast_expr->source = fill_value;
@@ -292,7 +292,7 @@ SLKC_API peff::Option<CompilationError> slkc::reindex_fn_params(
 		}
 
 		if (!fn->param_indices.insert(cur_param->name, +i)) {
-			return gen_out_of_memory_comp_error();
+			return gen_oom_comp_error();
 		}
 	}
 
@@ -303,7 +303,7 @@ SLKC_API peff::Option<CompilationError> slkc::reindex_fn_params(
 		}
 
 		if (!fn->scope->generic_param_indices.insert(cur_param->name, +i)) {
-			return gen_out_of_memory_comp_error();
+			return gen_oom_comp_error();
 		}
 	}
 
@@ -328,7 +328,7 @@ SLKC_API peff::Option<CompilationError> slkc::gen_binary_op_expr(CompileEnv *com
 	AstNodePtr<BinaryExprNode> expr;
 
 	if (!(expr = make_ast_node<BinaryExprNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->get_document()))) {
-		return gen_out_of_memory_comp_error();
+		return gen_oom_comp_error();
 	}
 
 	expr->binary_op = binary_op;
@@ -346,7 +346,7 @@ SLKC_API peff::Option<CompilationError> slkc::eval_const_binary_op_expr(CompileE
 	AstNodePtr<BinaryExprNode> expr;
 
 	if (!(expr = make_ast_node<BinaryExprNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->get_document())))
-		return gen_out_of_memory_comp_error();
+		return gen_oom_comp_error();
 
 	expr->binary_op = binary_op;
 	expr->lhs = lhs;
@@ -361,7 +361,7 @@ SLKC_API peff::Option<CompilationError> slkc::gen_implicit_cast_expr(CompileEnv 
 	AstNodePtr<CastExprNode> cast_expr;
 
 	if (!(cast_expr = make_ast_node<CastExprNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->get_document())))
-		return gen_out_of_memory_comp_error();
+		return gen_oom_comp_error();
 
 	cast_expr->source = source;
 	cast_expr->target_type = dest_type;
@@ -376,7 +376,7 @@ SLKC_API peff::Option<CompilationError> slkc::implicit_convert_const_expr(Compil
 	AstNodePtr<CastExprNode> cast_expr;
 
 	if (!(cast_expr = make_ast_node<CastExprNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->get_document())))
-		return gen_out_of_memory_comp_error();
+		return gen_oom_comp_error();
 
 	cast_expr->source = source;
 	cast_expr->target_type = dest_type;

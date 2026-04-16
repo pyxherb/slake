@@ -294,7 +294,7 @@ static peff::Option<CompilationError> _collect_involved_interfaces(
 	AstNodePtr<InterfaceNode> interface_node,
 	peff::Set<AstNodePtr<InterfaceNode>> &walked_interfaces) {
 	if (!context.frames.push_back({ interface_node, 0 }))
-		return gen_out_of_memory_comp_error();
+		return gen_oom_comp_error();
 
 	while (context.frames.size()) {
 		CollectInvolvedInterfacesFrame &cur_frame = context.frames.back();
@@ -312,7 +312,7 @@ static peff::Option<CompilationError> _collect_involved_interfaces(
 		}
 		if (cur_frame.index >= cur_interface->scope->impl_types.size()) {
 			if (!walked_interfaces.insert(AstNodePtr<InterfaceNode>(cur_interface)))
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			context.frames.pop_back();
 			continue;
 		}
@@ -331,7 +331,7 @@ static peff::Option<CompilationError> _collect_involved_interfaces(
 		}
 
 		if (!context.frames.push_back({ m.cast_to<InterfaceNode>(), 0 }))
-			return gen_out_of_memory_comp_error();
+			return gen_oom_comp_error();
 
 		++cur_frame.index;
 	}
@@ -352,7 +352,7 @@ SLKC_API peff::Option<CompilationError> slkc::collect_involved_interfaces(
 	}
 	if (insert_self) {
 		if (!walked_interfaces.insert(AstNodePtr<InterfaceNode>(bottom))) {
-			return gen_out_of_memory_comp_error();
+			return gen_oom_comp_error();
 		}
 	}
 
@@ -363,6 +363,25 @@ SLKC_API peff::Option<CompilationError> slkc::collect_involved_interfaces(
 	return {};
 
 malformed:
+	return {};
+}
+
+SLKC_API peff::Option<CompilationError> slkc::collect_involved_interfaces_phased_bfs(
+	const peff::Set<AstNodePtr<InterfaceNode>> &interfaces_in,
+	peff::Set<AstNodePtr<InterfaceNode>> &new_interfaces_out) {
+	assert(&interfaces_in != const_cast<const peff::Set<AstNodePtr<InterfaceNode>> *>(&new_interfaces_out));
+	for (auto i : interfaces_in) {
+		if (!i->scope)
+			continue;
+		for (auto j : i->scope->impl_types) {
+			AstNodePtr<InterfaceNode> m;
+			SLKC_RETURN_IF_COMP_ERROR(visit_base_interface(j, m, nullptr));
+			if (!m)
+				continue;
+			if (!new_interfaces_out.insert(std::move(m)))
+				return gen_oom_comp_error();
+		}
+	}
 	return {};
 }
 
@@ -434,7 +453,7 @@ static peff::Option<CompilationError> _is_struct_recursed(
 						return {};
 					}
 					if (!walked_structs.insert(cur_struct.cast_to<AstNode>()))
-						return gen_out_of_memory_comp_error();
+						return gen_oom_comp_error();
 				}
 				if (ex_data.index >= cur_struct->scope->get_member_num()) {
 					walked_structs.remove(cur_struct.cast_to<AstNode>());
@@ -455,15 +474,15 @@ static peff::Option<CompilationError> _is_struct_recursed(
 						switch (m->get_ast_node_type()) {
 							case AstNodeType::Struct:
 								if (!context.frames.push_back(StructRecursionCheckFrame{ m.cast_to<AstNode>(), IndexedStructRecursionCheckFrameExData{ 0 } }))
-									return gen_out_of_memory_comp_error();
+									return gen_oom_comp_error();
 								break;
 							case AstNodeType::UnionEnum:
 								if (!context.frames.push_back(StructRecursionCheckFrame{ m.cast_to<AstNode>(), IndexedStructRecursionCheckFrameExData{ 0 } }))
-									return gen_out_of_memory_comp_error();
+									return gen_oom_comp_error();
 								break;
 							case AstNodeType::UnionEnumItem:
 								if (!context.frames.push_back(StructRecursionCheckFrame{ m.cast_to<AstNode>(), IndexedStructRecursionCheckFrameExData{ 0 } }))
-									return gen_out_of_memory_comp_error();
+									return gen_oom_comp_error();
 								break;
 							default:
 								// Ignored.
@@ -485,7 +504,7 @@ static peff::Option<CompilationError> _is_struct_recursed(
 						return {};
 					}
 					if (!walked_structs.insert(cur_struct.cast_to<AstNode>()))
-						return gen_out_of_memory_comp_error();
+						return gen_oom_comp_error();
 				}
 				if (ex_data.index >= cur_struct->scope->get_member_num()) {
 					walked_structs.remove(cur_struct.cast_to<AstNode>());
@@ -497,7 +516,7 @@ static peff::Option<CompilationError> _is_struct_recursed(
 
 				if (v->get_ast_node_type() == AstNodeType::UnionEnumItem) {
 					if (!context.frames.push_back(StructRecursionCheckFrame{ v.cast_to<AstNode>(), IndexedStructRecursionCheckFrameExData{ 0 } }))
-						return gen_out_of_memory_comp_error();
+						return gen_oom_comp_error();
 				}
 
 				++ex_data.index;
@@ -513,7 +532,7 @@ static peff::Option<CompilationError> _is_struct_recursed(
 						return {};
 					}
 					if (!walked_structs.insert(cur_struct.cast_to<AstNode>()))
-						return gen_out_of_memory_comp_error();
+						return gen_oom_comp_error();
 				}
 				if (ex_data.index >= cur_struct->scope->get_member_num()) {
 					walked_structs.remove(cur_struct.cast_to<AstNode>());
@@ -534,15 +553,15 @@ static peff::Option<CompilationError> _is_struct_recursed(
 						switch (m->get_ast_node_type()) {
 							case AstNodeType::Struct:
 								if (!context.frames.push_back(StructRecursionCheckFrame{ m.cast_to<AstNode>(), IndexedStructRecursionCheckFrameExData{ 0 } }))
-									return gen_out_of_memory_comp_error();
+									return gen_oom_comp_error();
 								break;
 							case AstNodeType::UnionEnum:
 								if (!context.frames.push_back(StructRecursionCheckFrame{ m.cast_to<AstNode>(), IndexedStructRecursionCheckFrameExData{ 0 } }))
-									return gen_out_of_memory_comp_error();
+									return gen_oom_comp_error();
 								break;
 							case AstNodeType::UnionEnumItem:
 								if (!context.frames.push_back(StructRecursionCheckFrame{ m.cast_to<AstNode>(), IndexedStructRecursionCheckFrameExData{ 0 } }))
-									return gen_out_of_memory_comp_error();
+									return gen_oom_comp_error();
 								break;
 							default:
 								// Ignored.
@@ -570,7 +589,7 @@ SLKC_API peff::Option<CompilationError> slkc::is_struct_recursed(
 	peff::Set<AstNodePtr<AstNode>> walked_structs(document->allocator.get());
 
 	if (!context.frames.push_back(StructRecursionCheckFrame{ derived.cast_to<AstNode>(), IndexedStructRecursionCheckFrameExData{ 0 } }))
-		return gen_out_of_memory_comp_error();
+		return gen_oom_comp_error();
 
 	return _is_struct_recursed(document, context, walked_structs, whether_out);
 }
@@ -583,7 +602,7 @@ SLKC_API peff::Option<CompilationError> slkc::is_union_enum_recursed(
 	peff::Set<AstNodePtr<AstNode>> walked_structs(document->allocator.get());
 
 	if (!context.frames.push_back(StructRecursionCheckFrame{ derived.cast_to<AstNode>(), IndexedStructRecursionCheckFrameExData{ 0 } }))
-		return gen_out_of_memory_comp_error();
+		return gen_oom_comp_error();
 
 	return _is_struct_recursed(document, context, walked_structs, whether_out);
 }
@@ -609,7 +628,7 @@ SLKC_API peff::Option<CompilationError> slkc::is_implemented_by_class(
 	peff::Set<AstNodePtr<ClassNode>> walked_classes(document->allocator.get());
 
 	if (!walked_classes.insert(AstNodePtr<ClassNode>(derived))) {
-		return gen_out_of_memory_comp_error();
+		return gen_oom_comp_error();
 	}
 
 	AstNodePtr<ClassNode> current_class = derived;
@@ -665,7 +684,7 @@ SLKC_API peff::Option<CompilationError> slkc::is_implemented_by_class(
 		}
 
 		if (!walked_classes.insert(AstNodePtr<ClassNode>(current_class))) {
-			return gen_out_of_memory_comp_error();
+			return gen_oom_comp_error();
 		}
 	}
 
@@ -685,7 +704,7 @@ SLKC_API peff::Option<CompilationError> slkc::is_base_of(
 	peff::Set<AstNodePtr<ClassNode>> walked_classes(document->allocator.get());
 
 	if (!walked_classes.insert(AstNodePtr<ClassNode>(derived))) {
-		return gen_out_of_memory_comp_error();
+		return gen_oom_comp_error();
 	}
 
 	AstNodePtr<ClassNode> current_class = derived;
@@ -721,7 +740,7 @@ SLKC_API peff::Option<CompilationError> slkc::is_base_of(
 		}
 
 		if (!walked_classes.insert(AstNodePtr<ClassNode>(current_class))) {
-			return gen_out_of_memory_comp_error();
+			return gen_oom_comp_error();
 		}
 	}
 

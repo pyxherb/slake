@@ -13,33 +13,33 @@ SLKC_API peff::Option<CompilationError> slkc::get_full_id_ref(peff::Alloc *alloc
 		}
 
 		if (!entry.name.build(m->name)) {
-			return gen_out_of_memory_comp_error();
+			return gen_oom_comp_error();
 		}
 
 		if (!entry.generic_args.resize(m->generic_args.size())) {
-			return gen_out_of_memory_comp_error();
+			return gen_oom_comp_error();
 		}
 
 		for (size_t i = 0; i < entry.generic_args.size(); ++i) {
 			if (!(entry.generic_args.at(i) = m->generic_args.at(i)->duplicate<AstNode>(allocator))) {
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			}
 		}
 
 		if (!p->entries.push_front(std::move(entry))) {
-			return gen_out_of_memory_comp_error();
+			return gen_oom_comp_error();
 		}
 
 		switch (m->get_ast_node_type()) {
 			case AstNodeType::FnOverloading:
-				if (!m->parent->parent)
+				if (!m->outer->outer)
 					goto end;
-				m = m->parent->parent->shared_from_this().cast_to<MemberNode>();
+				m = m->outer->outer->shared_from_this().cast_to<MemberNode>();
 				break;
 			default:
-				if (!m->parent)
+				if (!m->outer)
 					goto end;
-				m = m->parent->shared_from_this().cast_to<MemberNode>();
+				m = m->outer->shared_from_this().cast_to<MemberNode>();
 		}
 	}
 
@@ -58,8 +58,7 @@ SLKC_API peff::Option<CompilationError> slkc::resolve_static_member(
 	AstNodePtr<MemberNode> result;
 
 	if (member_node->scope) {
-		if (!(result = member_node->scope->try_get_member(name.name)))
-			result = member_node->scope->try_get_generic_param(name.name).cast_to<MemberNode>();
+		result = member_node->scope->try_get_member(name.name);
 	}
 
 	if (result) {
@@ -118,47 +117,24 @@ reresolve:
 
 	if (!result) {
 		switch (member_node->get_ast_node_type()) {
-			case AstNodeType::Class: {
-				AstNodePtr<ClassNode> m = member_node.cast_to<ClassNode>();
-
-				SLKC_RETURN_IF_COMP_ERROR(visit_base_class(m->scope->base_type, m, nullptr));
-
-				while (m) {
-					if (m->scope && (result = m->scope->try_get_member(name.name)))
-						goto class_resolution_succeeded;
-
-					peff::Set<AstNodePtr<InterfaceNode>> interfaces(document->allocator.get());
-					for (auto j : m->scope->impl_types) {
-						AstNodePtr<InterfaceNode> interface_node;
-						SLKC_RETURN_IF_COMP_ERROR(visit_base_interface(j, interface_node, nullptr));
-
-						SLKC_RETURN_IF_COMP_ERROR(collect_involved_interfaces(document, interface_node, interfaces, true));
-
-						for (auto i : interfaces) {
-							if (member_node->scope) {
-								if ((result = i->scope->try_get_member(name.name)))
-									goto class_resolution_succeeded;
-							}
-						}
-					}
-
-					SLKC_RETURN_IF_COMP_ERROR(visit_base_class(m->scope->base_type, m, nullptr));
-				}
-
-			class_resolution_succeeded:
-				break;
-			}
 			case AstNodeType::Interface: {
 				AstNodePtr<InterfaceNode> m = member_node.cast_to<InterfaceNode>();
+				{
+					peff::Set<AstNodePtr<InterfaceNode>> interfaces(document->allocator.get());
+					while (interfaces.size()) {
+						for (auto i : interfaces) {
+							if (i->scope) {
+								// Get member from interfaces of current shadowing depth.
+								// See above.
+								if ((result = i->scope->try_get_member(name.name)))
+									goto interface_resolution_succeeded;
+							}
+						}
 
-				peff::Set<AstNodePtr<InterfaceNode>> interfaces(document->allocator.get());
+						peff::Set<AstNodePtr<InterfaceNode>> new_interfaces(document->allocator.get());
 
-				SLKC_RETURN_IF_COMP_ERROR(collect_involved_interfaces(document, m, interfaces, true));
-
-				for (auto i : interfaces) {
-					if (member_node->scope) {
-						if ((result = i->scope->try_get_member(name.name)))
-							goto interface_resolution_succeeded;
+						SLKC_RETURN_IF_COMP_ERROR(collect_involved_interfaces_phased_bfs(interfaces, new_interfaces));
+						interfaces = std::move(new_interfaces);
 					}
 				}
 
@@ -178,17 +154,22 @@ reresolve:
 							goto generic_param_resolution_succeeded;
 
 						peff::Set<AstNodePtr<InterfaceNode>> interfaces(document->allocator.get());
-						for (auto j : m->scope->impl_types) {
-							AstNodePtr<InterfaceNode> interface_node;
-							SLKC_RETURN_IF_COMP_ERROR(visit_base_interface(j, interface_node, nullptr));
-
-							SLKC_RETURN_IF_COMP_ERROR(collect_involved_interfaces(document, interface_node, interfaces, true));
-
-							for (auto i : interfaces) {
-								if (member_node->scope) {
-									if ((result = i->scope->try_get_member(name.name)))
-										goto generic_param_resolution_succeeded;
+						{
+							peff::Set<AstNodePtr<InterfaceNode>> interfaces(document->allocator.get());
+							while (interfaces.size()) {
+								for (auto i : interfaces) {
+									if (i->scope) {
+										// Get member from interfaces of current shadowing depth.
+										// See above.
+										if ((result = i->scope->try_get_member(name.name)))
+											goto generic_param_resolution_succeeded;
+									}
 								}
+
+								peff::Set<AstNodePtr<InterfaceNode>> new_interfaces(document->allocator.get());
+
+								SLKC_RETURN_IF_COMP_ERROR(collect_involved_interfaces_phased_bfs(interfaces, new_interfaces));
+								interfaces = std::move(new_interfaces);
 							}
 						}
 
@@ -247,8 +228,39 @@ reresolve:
 
 				goto reresolve;
 			}
-			default:
-				result = {};
+			default: {
+				AstNodePtr<ClassNode> m = member_node.cast_to<ClassNode>();
+
+				SLKC_RETURN_IF_COMP_ERROR(visit_base_class(member_node->scope->base_type, m, nullptr));
+
+				while (m) {
+					// Try getting member from base class.
+					if (m->scope && (result = m->scope->try_get_member(name.name)))
+						goto general_resolution_succeeded;
+
+					{
+						peff::Set<AstNodePtr<InterfaceNode>> interfaces(document->allocator.get());
+						while (interfaces.size()) {
+							for (auto i : interfaces) {
+								if (i->scope) {
+									// Try getting member from interfaces of current shadowing depth.
+									// The conflicts will be handled during the compilation stage.
+									if ((result = i->scope->try_get_member(name.name)))
+										goto general_resolution_succeeded;
+								}
+							}
+
+							peff::Set<AstNodePtr<InterfaceNode>> new_interfaces(document->allocator.get());
+
+							SLKC_RETURN_IF_COMP_ERROR(collect_involved_interfaces_phased_bfs(interfaces, new_interfaces));
+							interfaces = std::move(new_interfaces);
+						}
+					}
+
+					SLKC_RETURN_IF_COMP_ERROR(visit_base_class(m->scope->base_type, m, nullptr));
+				}
+			general_resolution_succeeded:;
+			}
 		}
 	}
 
@@ -301,10 +313,10 @@ SLKC_API peff::Option<CompilationError> slkc::is_member_accessible(
 	if (member->is_public())
 		goto access_check_passed;
 	if (compile_env->cur_parent_access_node) {
-		auto p = member->parent->shared_from_this().cast_to<MemberNode>();
+		auto p = member->outer->shared_from_this().cast_to<MemberNode>();
 
 		if (p->get_ast_node_type() == AstNodeType::Fn)
-			p = p->parent->shared_from_this().cast_to<MemberNode>();
+			p = p->outer->shared_from_this().cast_to<MemberNode>();
 
 		auto access_node = compile_env->cur_parent_access_node.cast_to<MemberNode>();
 
@@ -320,7 +332,7 @@ SLKC_API peff::Option<CompilationError> slkc::is_member_accessible(
 						goto access_check_passed;
 					}
 				}
-				for (AstNodePtr<MemberNode> j = p; j; j = j->parent ? j->parent->shared_from_this().cast_to<MemberNode>() : AstNodePtr<MemberNode>{}) {
+				for (AstNodePtr<MemberNode> j = p; j; j = j->outer ? j->outer->shared_from_this().cast_to<MemberNode>() : AstNodePtr<MemberNode>{}) {
 					if (access_node->get_ast_node_type() == AstNodeType::Module) {
 						switch (j->get_ast_node_type()) {
 							case AstNodeType::Class:
@@ -422,14 +434,14 @@ SLKC_API peff::Option<CompilationError> slkc::resolve_id_ref(
 					assert(part.num_entries);
 
 					if (!resolved_part_list_out->push_back(std::move(part)))
-						return gen_out_of_memory_comp_error();
+						return gen_oom_comp_error();
 
 					is_post_static_parts = true;
 				} else {
 					ResolvedIdRefPart part = { is_static, 1, cur_member };
 
 					if (!resolved_part_list_out->push_back(std::move(part)))
-						return gen_out_of_memory_comp_error();
+						return gen_oom_comp_error();
 				}
 			}
 		}
@@ -440,7 +452,7 @@ SLKC_API peff::Option<CompilationError> slkc::resolve_id_ref(
 			ResolvedIdRefPart part = { is_static, num_entries, cur_member };
 
 			if (!resolved_part_list_out->push_back(std::move(part)))
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 		}
 	}
 
@@ -466,87 +478,32 @@ reresolve:
 	}
 
 	// Try resolving with generic parameters.
-	if ((num_entries == 1) && (!is_sealed)) {
+	if (num_entries == 1) {
 		const IdRefEntry &initial_entry = id_ref[0];
 
 		if (!initial_entry.generic_args.size()) {
 			AstNodePtr<MemberNode> cur_scope = resolve_scope;
 
-		reresolve_with_new_scope:
-			switch (cur_scope->get_ast_node_type()) {
-				case AstNodeType::Class: {
-					AstNodePtr<ClassNode> m = cur_scope.cast_to<ClassNode>();
-
-					if (auto it = m->scope->generic_param_indices.find(initial_entry.name); it != m->scope->generic_param_indices.end()) {
-						member_out = m->scope->generic_params.at(it.value()).cast_to<MemberNode>();
+			auto i = resolve_scope.get();
+			do {
+				if (i->scope) {
+					if (auto p = i->scope->try_get_generic_param(initial_entry.name); p) {
+						member_out = p.cast_to<MemberNode>();
 						return {};
 					}
-					if (m->parent) {
-						cur_scope = m->parent->shared_from_this().cast_to<MemberNode>();
-						goto reresolve_with_new_scope;
-					}
-					break;
 				}
-				case AstNodeType::Interface: {
-					AstNodePtr<InterfaceNode> m = cur_scope.cast_to<InterfaceNode>();
 
-					if (auto it = m->scope->generic_param_indices.find(initial_entry.name); it != m->scope->generic_param_indices.end()) {
-						member_out = m->scope->generic_params.at(it.value()).cast_to<MemberNode>();
-						return {};
-					}
-					if (m->parent) {
-						cur_scope = m->parent->shared_from_this().cast_to<MemberNode>();
-						goto reresolve_with_new_scope;
-					}
-					break;
-				}
-				case AstNodeType::Struct: {
-					AstNodePtr<StructNode> m = cur_scope.cast_to<StructNode>();
-
-					if (auto it = m->generic_param_indices.find(initial_entry.name); it != m->generic_param_indices.end()) {
-						member_out = m->generic_params.at(it.value()).cast_to<MemberNode>();
-						return {};
-					}
-					if (m->parent) {
-						cur_scope = m->parent->shared_from_this().cast_to<MemberNode>();
-						goto reresolve_with_new_scope;
-					}
-					break;
-				}
-				case AstNodeType::UnionEnum: {
-					AstNodePtr<UnionEnumNode> m = cur_scope.cast_to<UnionEnumNode>();
-
-					if (auto it = m->scope->generic_param_indices.find(initial_entry.name); it != m->scope->generic_param_indices.end()) {
-						member_out = m->scope->generic_params.at(it.value()).cast_to<MemberNode>();
-						return {};
-					}
-					if (m->parent) {
-						cur_scope = m->parent->shared_from_this().cast_to<MemberNode>();
-						goto reresolve_with_new_scope;
-					}
-					break;
-				}
-				case AstNodeType::FnOverloading: {
-					AstNodePtr<FnOverloadingNode> m = cur_scope.cast_to<FnOverloadingNode>();
-
-					if (auto it = m->scope->generic_param_indices.find(initial_entry.name); it != m->scope->generic_param_indices.end()) {
-						member_out = m->scope->generic_params.at(it.value()).cast_to<MemberNode>();
-						return {};
-					}
-
-					cur_scope = m->parent->parent->shared_from_this().cast_to<MemberNode>();
-					goto reresolve_with_new_scope;
-				}
-				default:;
-			}
+				i = i->outer;
+			} while (is_sealed && i->outer);
 		}
 	}
 
 	SLKC_RETURN_IF_COMP_ERROR(resolve_id_ref(compile_env, document, resolve_scope, id_ref, num_entries, member_out, resolved_part_list_out, is_static));
 
-	if (!member_out) {
-		if (resolve_scope->parent && (!is_sealed)) {
-			AstNodePtr<MemberNode> p = resolve_scope->parent->shared_from_this().cast_to<MemberNode>();
+	// Try resolving with outer scope.
+	if ((!member_out) && (!is_sealed)) {
+		if (resolve_scope->outer) {
+			AstNodePtr<MemberNode> p = resolve_scope->outer->shared_from_this().cast_to<MemberNode>();
 
 			switch (p->get_ast_node_type()) {
 				case AstNodeType::Class:
@@ -557,7 +514,7 @@ reresolve:
 
 					goto reresolve;
 				case AstNodeType::Fn:
-					resolve_scope = p.cast_to<MemberNode>()->parent->shared_from_this().cast_to<MemberNode>();
+					resolve_scope = p.cast_to<MemberNode>()->outer->shared_from_this().cast_to<MemberNode>();
 
 					goto reresolve;
 				default:
@@ -675,12 +632,12 @@ resolved:
 	return {};
 }
 
-SLKC_API peff::Option<CompilationError> slkc::visit_base_class(AstNodePtr<TypeNameNode> cls, AstNodePtr<ClassNode> &class_out, peff::Set<AstNodePtr<MemberNode>> *walked_nodes) {
+SLKC_API peff::Option<CompilationError> slkc::visit_base_class(AstNodePtr<TypeNameNode> base_type_name, AstNodePtr<ClassNode> &class_out, peff::Set<AstNodePtr<MemberNode>> *walked_nodes) {
 	do {
-		if (cls && (cls->tn_kind == TypeNameKind::Custom)) {
+		if (base_type_name && (base_type_name->tn_kind == TypeNameKind::Custom)) {
 			AstNodePtr<MemberNode> base_type;
 
-			SLKC_RETURN_IF_COMP_ERROR(resolve_custom_type_name(nullptr, cls->document->shared_from_this(), cls.cast_to<CustomTypeNameNode>(), base_type, walked_nodes));
+			SLKC_RETURN_IF_COMP_ERROR(resolve_custom_type_name(nullptr, base_type_name->document->shared_from_this(), base_type_name.cast_to<CustomTypeNameNode>(), base_type, walked_nodes));
 
 			if (base_type && (base_type->get_ast_node_type() == AstNodeType::Class)) {
 				AstNodePtr<ClassNode> b = base_type.cast_to<ClassNode>();
@@ -700,12 +657,12 @@ SLKC_API peff::Option<CompilationError> slkc::visit_base_class(AstNodePtr<TypeNa
 	return {};
 }
 
-SLKC_API peff::Option<CompilationError> slkc::visit_base_interface(AstNodePtr<TypeNameNode> cls, AstNodePtr<InterfaceNode> &class_out, peff::Set<AstNodePtr<MemberNode>> *walked_nodes) {
+SLKC_API peff::Option<CompilationError> slkc::visit_base_interface(AstNodePtr<TypeNameNode> base_type_name, AstNodePtr<InterfaceNode> &class_out, peff::Set<AstNodePtr<MemberNode>> *walked_nodes) {
 	do {
-		if (cls && (cls->tn_kind == TypeNameKind::Custom)) {
+		if (base_type_name && (base_type_name->tn_kind == TypeNameKind::Custom)) {
 			AstNodePtr<MemberNode> base_type;
 
-			SLKC_RETURN_IF_COMP_ERROR(resolve_custom_type_name(nullptr, cls->document->shared_from_this(), cls.cast_to<CustomTypeNameNode>(), base_type, walked_nodes));
+			SLKC_RETURN_IF_COMP_ERROR(resolve_custom_type_name(nullptr, base_type_name->document->shared_from_this(), base_type_name.cast_to<CustomTypeNameNode>(), base_type, walked_nodes));
 
 			if (base_type && (base_type->get_ast_node_type() == AstNodeType::Interface)) {
 				AstNodePtr<InterfaceNode> b = base_type.cast_to<InterfaceNode>();

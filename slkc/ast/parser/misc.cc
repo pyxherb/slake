@@ -21,7 +21,7 @@ SLKC_API peff::Option<SyntaxError> Parser::lookahead_until(size_t num_token_ids,
 	for (size_t i = 0; i < num_token_ids; ++i) {
 		TokenId copied_token_id = token_ids[i];
 		if (!ex_data.expecting_token_ids.insert(std::move(copied_token_id)))
-			return gen_out_of_memory_syntax_error();
+			return gen_oom_syntax_error();
 	}
 
 	return SyntaxError({ token->source_location.module_node, token->index }, std::move(ex_data));
@@ -113,7 +113,7 @@ SLKC_API peff::Option<SyntaxError> Parser::split_shr_op_token() {
 
 			OwnedTokenPtr extra_closing_token;
 			if (!(extra_closing_token = OwnedTokenPtr(peff::alloc_and_construct<Token>(token->allocator.get(), ASTNODE_ALIGNMENT, token->allocator.get(), peff::WeakPtr<Document>(get_document()))))) {
-				return gen_out_of_memory_syntax_error();
+				return gen_oom_syntax_error();
 			}
 
 			extra_closing_token->token_id = TokenId::GtOp;
@@ -126,7 +126,7 @@ SLKC_API peff::Option<SyntaxError> Parser::split_shr_op_token() {
 			extra_closing_token->source_text = token->source_text.substr(1);
 
 			if (!token_list.insert(parse_context.idx_current_token + 1, std::move(extra_closing_token))) {
-				return gen_out_of_memory_syntax_error();
+				return gen_oom_syntax_error();
 			}
 
 			break;
@@ -146,7 +146,7 @@ SLKC_API peff::Option<SyntaxError> Parser::split_rdbrackets_token() {
 
 			OwnedTokenPtr extra_closing_token;
 			if (!(extra_closing_token = OwnedTokenPtr(peff::alloc_and_construct<Token>(token->allocator.get(), ASTNODE_ALIGNMENT, token->allocator.get(), peff::WeakPtr<Document>(get_document()))))) {
-				return gen_out_of_memory_syntax_error();
+				return gen_oom_syntax_error();
 			}
 
 			extra_closing_token->token_id = TokenId::RBracket;
@@ -159,7 +159,7 @@ SLKC_API peff::Option<SyntaxError> Parser::split_rdbrackets_token() {
 			extra_closing_token->source_text = token->source_text.substr(1);
 
 			if (!token_list.insert(parse_context.idx_current_token + 1, std::move(extra_closing_token))) {
-				return gen_out_of_memory_syntax_error();
+				return gen_oom_syntax_error();
 			}
 
 			break;

@@ -28,7 +28,7 @@ SLKC_API peff::Option<LexicalError> Lexer::lex(ModuleNode *module_node, const st
 		peff::String str_literal(allocator);
 
 		if (!(token = OwnedTokenPtr(peff::alloc_and_construct<Token>(allocator, sizeof(std::max_align_t), allocator, peff::WeakPtr<Document>(document)))))
-			goto out_of_memory;
+			goto oom;
 
 		while (true) {
 			/*!re2c
@@ -40,7 +40,6 @@ SLKC_API peff::Option<LexicalError> Lexer::lex(ModuleNode *module_node, const st
 				<InitialCondition>"//"		{ YYSETCONDITION(LineCommentCondition); token->token_id = TokenId::LineComment; continue; }
 				<InitialCondition>"/*"		{ YYSETCONDITION(CommentCondition); token->token_id = TokenId::BlockComment; continue; }
 
-				<InitialCondition>"<:"		{ token->token_id = TokenId::SubtypeOp; break; }
 				<InitialCondition>"->"		{ token->token_id = TokenId::ReturnTypeOp; break; }
 				<InitialCondition>"::"		{ token->token_id = TokenId::ScopeOp; break; }
 				<InitialCondition>"=>"		{ token->token_id = TokenId::MatchOp; break; }
@@ -158,7 +157,7 @@ SLKC_API peff::Option<LexicalError> Lexer::lex(ModuleNode *module_node, const st
 				<InitialCondition>"object"		{ token->token_id = TokenId::ObjectTypeName; break; }
 				<InitialCondition>"any"			{ token->token_id = TokenId::AnyTypeName; break; }
 				<InitialCondition>"simd_t"		{ token->token_id = TokenId::SIMDTypeName; break; }
-				<InitialCondition>"no_return"	{ token->token_id = TokenId::NoReturnTypeName; break; }
+				<InitialCondition>"never"		{ token->token_id = TokenId::NeverTypeName; break; }
 
 				<InitialCondition>","		{ token->token_id = TokenId::Comma; break; }
 				<InitialCondition>"?"		{ token->token_id = TokenId::Question; break; }
@@ -360,19 +359,19 @@ SLKC_API peff::Option<LexicalError> Lexer::lex(ModuleNode *module_node, const st
 						{ (size_t)std::count(str_to_end.begin(), str_to_end.end(), '\n'), YYCURSOR_pos }
 					}, LexicalErrorKind::PrematuredEndOfFile};
 				}
-				<StringCondition>[^]		{ if(!str_literal.push_back(+YYCURSOR[-1])) goto out_of_memory; continue; }
+				<StringCondition>[^]		{ if(!str_literal.push_back(+YYCURSOR[-1])) goto oom; continue; }
 
-				<EscapeCondition>"'"	{ YYSETCONDITION(StringCondition); if(!str_literal.push_back('\'')) goto out_of_memory; continue; }
-				<EscapeCondition>"\""	{ YYSETCONDITION(StringCondition); if(!str_literal.push_back('"')) goto out_of_memory; continue; }
-				<EscapeCondition>"?"	{ YYSETCONDITION(StringCondition); if(!str_literal.push_back('?')) goto out_of_memory; continue; }
-				<EscapeCondition>"\\"	{ YYSETCONDITION(StringCondition); if(!str_literal.push_back('\\')) goto out_of_memory; continue; }
-				<EscapeCondition>"a"	{ YYSETCONDITION(StringCondition); if(!str_literal.push_back('\a')) goto out_of_memory; continue; }
-				<EscapeCondition>"b"	{ YYSETCONDITION(StringCondition); if(!str_literal.push_back('\b')) goto out_of_memory; continue; }
-				<EscapeCondition>"f"	{ YYSETCONDITION(StringCondition); if(!str_literal.push_back('\f')) goto out_of_memory; continue; }
-				<EscapeCondition>"n"	{ YYSETCONDITION(StringCondition); if(!str_literal.push_back('\n')) goto out_of_memory; continue; }
-				<EscapeCondition>"r"	{ YYSETCONDITION(StringCondition); if(!str_literal.push_back('\r')) goto out_of_memory; continue; }
-				<EscapeCondition>"t"	{ YYSETCONDITION(StringCondition); if(!str_literal.push_back('\t')) goto out_of_memory; continue; }
-				<EscapeCondition>"v"	{ YYSETCONDITION(StringCondition); if(!str_literal.push_back('\v')) goto out_of_memory; continue; }
+				<EscapeCondition>"'"	{ YYSETCONDITION(StringCondition); if(!str_literal.push_back('\'')) goto oom; continue; }
+				<EscapeCondition>"\""	{ YYSETCONDITION(StringCondition); if(!str_literal.push_back('"')) goto oom; continue; }
+				<EscapeCondition>"?"	{ YYSETCONDITION(StringCondition); if(!str_literal.push_back('?')) goto oom; continue; }
+				<EscapeCondition>"\\"	{ YYSETCONDITION(StringCondition); if(!str_literal.push_back('\\')) goto oom; continue; }
+				<EscapeCondition>"a"	{ YYSETCONDITION(StringCondition); if(!str_literal.push_back('\a')) goto oom; continue; }
+				<EscapeCondition>"b"	{ YYSETCONDITION(StringCondition); if(!str_literal.push_back('\b')) goto oom; continue; }
+				<EscapeCondition>"f"	{ YYSETCONDITION(StringCondition); if(!str_literal.push_back('\f')) goto oom; continue; }
+				<EscapeCondition>"n"	{ YYSETCONDITION(StringCondition); if(!str_literal.push_back('\n')) goto oom; continue; }
+				<EscapeCondition>"r"	{ YYSETCONDITION(StringCondition); if(!str_literal.push_back('\r')) goto oom; continue; }
+				<EscapeCondition>"t"	{ YYSETCONDITION(StringCondition); if(!str_literal.push_back('\t')) goto oom; continue; }
+				<EscapeCondition>"v"	{ YYSETCONDITION(StringCondition); if(!str_literal.push_back('\v')) goto oom; continue; }
 				<EscapeCondition>[0-7]{1,3}	{
 					YYSETCONDITION(StringCondition);
 
@@ -385,7 +384,7 @@ SLKC_API peff::Option<LexicalError> Lexer::lex(ModuleNode *module_node, const st
 					}
 
 					if(!str_literal.push_back(+c))
-						goto out_of_memory;
+						goto oom;
 				}
 				<EscapeCondition>[xX][0-9a-fA-F]{1,2}	{
 					YYSETCONDITION(StringCondition);
@@ -407,7 +406,7 @@ SLKC_API peff::Option<LexicalError> Lexer::lex(ModuleNode *module_node, const st
 					}
 
 					if(!str_literal.push_back(+c))
-						goto out_of_memory;
+						goto oom;
 				}
 				<EscapeCondition>$	{
 					size_t begin_index = prev_YYCURSOR - src.data(), endIndex = YYCURSOR - src.data();
@@ -511,7 +510,7 @@ SLKC_API peff::Option<LexicalError> Lexer::lex(ModuleNode *module_node, const st
 					: endIndex - idxLastEndNewline)
 		};
 		if (!token_list.push_back(std::move(token)))
-			goto out_of_memory;
+			goto oom;
 
 		prev_YYCURSOR = YYCURSOR;
 	}
@@ -524,11 +523,11 @@ end: {
 	token->source_location = endLocation;
 
 	if (!token_list.push_back(std::move(token)))
-		goto out_of_memory;
+		goto oom;
 }
 
 	return {};
 
-out_of_memory:
+oom:
 	return LexicalError{ SourceLocation{ module_node, { 0, 0 }, { 0, 0 } }, LexicalErrorKind::OutOfMemory };
 }

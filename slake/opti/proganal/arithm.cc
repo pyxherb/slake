@@ -19,7 +19,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 	switch (cur_ins.opcode) {
 		case Opcode::ADD: {
 			if (cur_ins.num_operands != 2) {
-				return alloc_out_of_memory_error_if_alloc_failed(
+				return alloc_oom_error_if_alloc_failed(
 					MalformedProgramError::alloc(
 						analyze_context.runtime->get_fixed_alloc(),
 						analyze_context.fn_object,
@@ -30,7 +30,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 			SLAKE_RETURN_IF_EXCEPT(eval_value_type(analyze_context, cur_ins.operands[1], rhs_type));
 
 			if (lhs_type != rhs_type) {
-				return alloc_out_of_memory_error_if_alloc_failed(
+				return alloc_oom_error_if_alloc_failed(
 					MalformedProgramError::alloc(
 						analyze_context.runtime->get_fixed_alloc(),
 						analyze_context.fn_object,
@@ -112,7 +112,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 					}
 					break;
 				default: {
-					return alloc_out_of_memory_error_if_alloc_failed(
+					return alloc_oom_error_if_alloc_failed(
 						MalformedProgramError::alloc(
 							analyze_context.runtime->get_fixed_alloc(),
 							analyze_context.fn_object,
@@ -130,7 +130,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 		}
 		case Opcode::SUB: {
 			if (cur_ins.num_operands != 2) {
-				return alloc_out_of_memory_error_if_alloc_failed(
+				return alloc_oom_error_if_alloc_failed(
 					MalformedProgramError::alloc(
 						analyze_context.runtime->get_fixed_alloc(),
 						analyze_context.fn_object,
@@ -141,7 +141,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 			SLAKE_RETURN_IF_EXCEPT(eval_value_type(analyze_context, cur_ins.operands[1], rhs_type));
 
 			if (lhs_type != rhs_type) {
-				return alloc_out_of_memory_error_if_alloc_failed(
+				return alloc_oom_error_if_alloc_failed(
 					MalformedProgramError::alloc(
 						analyze_context.runtime->get_fixed_alloc(),
 						analyze_context.fn_object,
@@ -223,7 +223,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 					}
 					break;
 				default: {
-					return alloc_out_of_memory_error_if_alloc_failed(
+					return alloc_oom_error_if_alloc_failed(
 						MalformedProgramError::alloc(
 							analyze_context.runtime->get_fixed_alloc(),
 							analyze_context.fn_object,
@@ -241,7 +241,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 		}
 		case Opcode::MUL: {
 			if (cur_ins.num_operands != 2) {
-				return alloc_out_of_memory_error_if_alloc_failed(
+				return alloc_oom_error_if_alloc_failed(
 					MalformedProgramError::alloc(
 						analyze_context.runtime->get_fixed_alloc(),
 						analyze_context.fn_object,
@@ -252,7 +252,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 			SLAKE_RETURN_IF_EXCEPT(eval_value_type(analyze_context, cur_ins.operands[1], rhs_type));
 
 			if (lhs_type != rhs_type) {
-				return alloc_out_of_memory_error_if_alloc_failed(
+				return alloc_oom_error_if_alloc_failed(
 					MalformedProgramError::alloc(
 						analyze_context.runtime->get_fixed_alloc(),
 						analyze_context.fn_object,
@@ -334,7 +334,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 					}
 					break;
 				default: {
-					return alloc_out_of_memory_error_if_alloc_failed(
+					return alloc_oom_error_if_alloc_failed(
 						MalformedProgramError::alloc(
 							analyze_context.runtime->get_fixed_alloc(),
 							analyze_context.fn_object,
@@ -352,7 +352,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 		}
 		case Opcode::DIV: {
 			if (cur_ins.num_operands != 2) {
-				return alloc_out_of_memory_error_if_alloc_failed(
+				return alloc_oom_error_if_alloc_failed(
 					MalformedProgramError::alloc(
 						analyze_context.runtime->get_fixed_alloc(),
 						analyze_context.fn_object,
@@ -363,7 +363,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 			SLAKE_RETURN_IF_EXCEPT(eval_value_type(analyze_context, cur_ins.operands[1], rhs_type));
 
 			if (lhs_type != rhs_type) {
-				return alloc_out_of_memory_error_if_alloc_failed(
+				return alloc_oom_error_if_alloc_failed(
 					MalformedProgramError::alloc(
 						analyze_context.runtime->get_fixed_alloc(),
 						analyze_context.fn_object,
@@ -445,7 +445,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 					}
 					break;
 				default: {
-					return alloc_out_of_memory_error_if_alloc_failed(
+					return alloc_oom_error_if_alloc_failed(
 						MalformedProgramError::alloc(
 							analyze_context.runtime->get_fixed_alloc(),
 							analyze_context.fn_object,
@@ -463,7 +463,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 		}
 		case Opcode::MOD: {
 			if (cur_ins.num_operands != 2) {
-				return alloc_out_of_memory_error_if_alloc_failed(
+				return alloc_oom_error_if_alloc_failed(
 					MalformedProgramError::alloc(
 						analyze_context.runtime->get_fixed_alloc(),
 						analyze_context.fn_object,
@@ -474,7 +474,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 			SLAKE_RETURN_IF_EXCEPT(eval_value_type(analyze_context, cur_ins.operands[1], rhs_type));
 
 			if (lhs_type != rhs_type) {
-				return alloc_out_of_memory_error_if_alloc_failed(
+				return alloc_oom_error_if_alloc_failed(
 					MalformedProgramError::alloc(
 						analyze_context.runtime->get_fixed_alloc(),
 						analyze_context.fn_object,
@@ -556,7 +556,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 					}
 					break;
 				default: {
-					return alloc_out_of_memory_error_if_alloc_failed(
+					return alloc_oom_error_if_alloc_failed(
 						MalformedProgramError::alloc(
 							analyze_context.runtime->get_fixed_alloc(),
 							analyze_context.fn_object,
@@ -574,7 +574,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 		}
 		case Opcode::AND: {
 			if (cur_ins.num_operands != 2) {
-				return alloc_out_of_memory_error_if_alloc_failed(
+				return alloc_oom_error_if_alloc_failed(
 					MalformedProgramError::alloc(
 						analyze_context.runtime->get_fixed_alloc(),
 						analyze_context.fn_object,
@@ -585,7 +585,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 			SLAKE_RETURN_IF_EXCEPT(eval_value_type(analyze_context, cur_ins.operands[1], rhs_type));
 
 			if (lhs_type != rhs_type) {
-				return alloc_out_of_memory_error_if_alloc_failed(
+				return alloc_oom_error_if_alloc_failed(
 					MalformedProgramError::alloc(
 						analyze_context.runtime->get_fixed_alloc(),
 						analyze_context.fn_object,
@@ -653,7 +653,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 					}
 					break;
 				default: {
-					return alloc_out_of_memory_error_if_alloc_failed(
+					return alloc_oom_error_if_alloc_failed(
 						MalformedProgramError::alloc(
 							analyze_context.runtime->get_fixed_alloc(),
 							analyze_context.fn_object,
@@ -671,7 +671,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 		}
 		case Opcode::OR: {
 			if (cur_ins.num_operands != 2) {
-				return alloc_out_of_memory_error_if_alloc_failed(
+				return alloc_oom_error_if_alloc_failed(
 					MalformedProgramError::alloc(
 						analyze_context.runtime->get_fixed_alloc(),
 						analyze_context.fn_object,
@@ -682,7 +682,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 			SLAKE_RETURN_IF_EXCEPT(eval_value_type(analyze_context, cur_ins.operands[1], rhs_type));
 
 			if (lhs_type != rhs_type) {
-				return alloc_out_of_memory_error_if_alloc_failed(
+				return alloc_oom_error_if_alloc_failed(
 					MalformedProgramError::alloc(
 						analyze_context.runtime->get_fixed_alloc(),
 						analyze_context.fn_object,
@@ -750,7 +750,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 					}
 					break;
 				default: {
-					return alloc_out_of_memory_error_if_alloc_failed(
+					return alloc_oom_error_if_alloc_failed(
 						MalformedProgramError::alloc(
 							analyze_context.runtime->get_fixed_alloc(),
 							analyze_context.fn_object,
@@ -768,7 +768,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 		}
 		case Opcode::XOR: {
 			if (cur_ins.num_operands != 2) {
-				return alloc_out_of_memory_error_if_alloc_failed(
+				return alloc_oom_error_if_alloc_failed(
 					MalformedProgramError::alloc(
 						analyze_context.runtime->get_fixed_alloc(),
 						analyze_context.fn_object,
@@ -779,7 +779,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 			SLAKE_RETURN_IF_EXCEPT(eval_value_type(analyze_context, cur_ins.operands[1], rhs_type));
 
 			if (lhs_type != rhs_type) {
-				return alloc_out_of_memory_error_if_alloc_failed(
+				return alloc_oom_error_if_alloc_failed(
 					MalformedProgramError::alloc(
 						analyze_context.runtime->get_fixed_alloc(),
 						analyze_context.fn_object,
@@ -847,7 +847,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 					}
 					break;
 				default: {
-					return alloc_out_of_memory_error_if_alloc_failed(
+					return alloc_oom_error_if_alloc_failed(
 						MalformedProgramError::alloc(
 							analyze_context.runtime->get_fixed_alloc(),
 							analyze_context.fn_object,
@@ -865,7 +865,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 		}
 		case Opcode::LAND: {
 			if (cur_ins.num_operands != 2) {
-				return alloc_out_of_memory_error_if_alloc_failed(
+				return alloc_oom_error_if_alloc_failed(
 					MalformedProgramError::alloc(
 						analyze_context.runtime->get_fixed_alloc(),
 						analyze_context.fn_object,
@@ -878,7 +878,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 			int cmp_result;
 
 			if (lhs_type != TypeId::Bool) {
-				return alloc_out_of_memory_error_if_alloc_failed(
+				return alloc_oom_error_if_alloc_failed(
 					MalformedProgramError::alloc(
 						analyze_context.runtime->get_fixed_alloc(),
 						analyze_context.fn_object,
@@ -886,7 +886,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 			}
 
 			if (lhs_type.compares_to(rhs_type)) {
-				return alloc_out_of_memory_error_if_alloc_failed(
+				return alloc_oom_error_if_alloc_failed(
 					MalformedProgramError::alloc(
 						analyze_context.runtime->get_fixed_alloc(),
 						analyze_context.fn_object,
@@ -905,7 +905,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 					}
 					break;
 				default: {
-					return alloc_out_of_memory_error_if_alloc_failed(
+					return alloc_oom_error_if_alloc_failed(
 						MalformedProgramError::alloc(
 							analyze_context.runtime->get_fixed_alloc(),
 							analyze_context.fn_object,
@@ -923,7 +923,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 		}
 		case Opcode::LOR: {
 			if (cur_ins.num_operands != 2) {
-				return alloc_out_of_memory_error_if_alloc_failed(
+				return alloc_oom_error_if_alloc_failed(
 					MalformedProgramError::alloc(
 						analyze_context.runtime->get_fixed_alloc(),
 						analyze_context.fn_object,
@@ -934,14 +934,14 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 			SLAKE_RETURN_IF_EXCEPT(eval_value_type(analyze_context, cur_ins.operands[1], rhs_type));
 
 			if (lhs_type != TypeId::Bool) {
-				return alloc_out_of_memory_error_if_alloc_failed(
+				return alloc_oom_error_if_alloc_failed(
 					MalformedProgramError::alloc(
 						analyze_context.runtime->get_fixed_alloc(),
 						analyze_context.fn_object,
 						analyze_context.idx_cur_ins));
 			}
 			if (lhs_type != rhs_type) {
-				return alloc_out_of_memory_error_if_alloc_failed(
+				return alloc_oom_error_if_alloc_failed(
 					MalformedProgramError::alloc(
 						analyze_context.runtime->get_fixed_alloc(),
 						analyze_context.fn_object,
@@ -960,7 +960,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 					}
 					break;
 				default: {
-					return alloc_out_of_memory_error_if_alloc_failed(
+					return alloc_oom_error_if_alloc_failed(
 						MalformedProgramError::alloc(
 							analyze_context.runtime->get_fixed_alloc(),
 							analyze_context.fn_object,
@@ -978,7 +978,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 		}
 		case Opcode::EQ: {
 			if (cur_ins.num_operands != 2) {
-				return alloc_out_of_memory_error_if_alloc_failed(
+				return alloc_oom_error_if_alloc_failed(
 					MalformedProgramError::alloc(
 						analyze_context.runtime->get_fixed_alloc(),
 						analyze_context.fn_object,
@@ -989,7 +989,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 			SLAKE_RETURN_IF_EXCEPT(eval_value_type(analyze_context, cur_ins.operands[1], rhs_type));
 
 			if (lhs_type != rhs_type) {
-				return alloc_out_of_memory_error_if_alloc_failed(
+				return alloc_oom_error_if_alloc_failed(
 					MalformedProgramError::alloc(
 						analyze_context.runtime->get_fixed_alloc(),
 						analyze_context.fn_object,
@@ -1078,7 +1078,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 					}
 					break;
 				default: {
-					return alloc_out_of_memory_error_if_alloc_failed(
+					return alloc_oom_error_if_alloc_failed(
 						MalformedProgramError::alloc(
 							analyze_context.runtime->get_fixed_alloc(),
 							analyze_context.fn_object,
@@ -1096,7 +1096,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 		}
 		case Opcode::NEQ: {
 			if (cur_ins.num_operands != 2) {
-				return alloc_out_of_memory_error_if_alloc_failed(
+				return alloc_oom_error_if_alloc_failed(
 					MalformedProgramError::alloc(
 						analyze_context.runtime->get_fixed_alloc(),
 						analyze_context.fn_object,
@@ -1107,7 +1107,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 			SLAKE_RETURN_IF_EXCEPT(eval_value_type(analyze_context, cur_ins.operands[1], rhs_type));
 
 			if (lhs_type != rhs_type) {
-				return alloc_out_of_memory_error_if_alloc_failed(
+				return alloc_oom_error_if_alloc_failed(
 					MalformedProgramError::alloc(
 						analyze_context.runtime->get_fixed_alloc(),
 						analyze_context.fn_object,
@@ -1196,7 +1196,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 					}
 					break;
 				default: {
-					return alloc_out_of_memory_error_if_alloc_failed(
+					return alloc_oom_error_if_alloc_failed(
 						MalformedProgramError::alloc(
 							analyze_context.runtime->get_fixed_alloc(),
 							analyze_context.fn_object,
@@ -1214,7 +1214,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 		}
 		case Opcode::LT: {
 			if (cur_ins.num_operands != 2) {
-				return alloc_out_of_memory_error_if_alloc_failed(
+				return alloc_oom_error_if_alloc_failed(
 					MalformedProgramError::alloc(
 						analyze_context.runtime->get_fixed_alloc(),
 						analyze_context.fn_object,
@@ -1225,7 +1225,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 			SLAKE_RETURN_IF_EXCEPT(eval_value_type(analyze_context, cur_ins.operands[1], rhs_type));
 
 			if (lhs_type != rhs_type) {
-				return alloc_out_of_memory_error_if_alloc_failed(
+				return alloc_oom_error_if_alloc_failed(
 					MalformedProgramError::alloc(
 						analyze_context.runtime->get_fixed_alloc(),
 						analyze_context.fn_object,
@@ -1307,7 +1307,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 					}
 					break;
 				default: {
-					return alloc_out_of_memory_error_if_alloc_failed(
+					return alloc_oom_error_if_alloc_failed(
 						MalformedProgramError::alloc(
 							analyze_context.runtime->get_fixed_alloc(),
 							analyze_context.fn_object,
@@ -1325,7 +1325,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 		}
 		case Opcode::GT: {
 			if (cur_ins.num_operands != 2) {
-				return alloc_out_of_memory_error_if_alloc_failed(
+				return alloc_oom_error_if_alloc_failed(
 					MalformedProgramError::alloc(
 						analyze_context.runtime->get_fixed_alloc(),
 						analyze_context.fn_object,
@@ -1336,7 +1336,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 			SLAKE_RETURN_IF_EXCEPT(eval_value_type(analyze_context, cur_ins.operands[1], rhs_type));
 
 			if (lhs_type != rhs_type) {
-				return alloc_out_of_memory_error_if_alloc_failed(
+				return alloc_oom_error_if_alloc_failed(
 					MalformedProgramError::alloc(
 						analyze_context.runtime->get_fixed_alloc(),
 						analyze_context.fn_object,
@@ -1418,7 +1418,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 					}
 					break;
 				default: {
-					return alloc_out_of_memory_error_if_alloc_failed(
+					return alloc_oom_error_if_alloc_failed(
 						MalformedProgramError::alloc(
 							analyze_context.runtime->get_fixed_alloc(),
 							analyze_context.fn_object,
@@ -1436,7 +1436,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 		}
 		case Opcode::LTEQ: {
 			if (cur_ins.num_operands != 2) {
-				return alloc_out_of_memory_error_if_alloc_failed(
+				return alloc_oom_error_if_alloc_failed(
 					MalformedProgramError::alloc(
 						analyze_context.runtime->get_fixed_alloc(),
 						analyze_context.fn_object,
@@ -1447,7 +1447,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 			SLAKE_RETURN_IF_EXCEPT(eval_value_type(analyze_context, cur_ins.operands[1], rhs_type));
 
 			if (lhs_type != rhs_type) {
-				return alloc_out_of_memory_error_if_alloc_failed(
+				return alloc_oom_error_if_alloc_failed(
 					MalformedProgramError::alloc(
 						analyze_context.runtime->get_fixed_alloc(),
 						analyze_context.fn_object,
@@ -1529,7 +1529,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 					}
 					break;
 				default: {
-					return alloc_out_of_memory_error_if_alloc_failed(
+					return alloc_oom_error_if_alloc_failed(
 						MalformedProgramError::alloc(
 							analyze_context.runtime->get_fixed_alloc(),
 							analyze_context.fn_object,
@@ -1547,7 +1547,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 		}
 		case Opcode::GTEQ: {
 			if (cur_ins.num_operands != 2) {
-				return alloc_out_of_memory_error_if_alloc_failed(
+				return alloc_oom_error_if_alloc_failed(
 					MalformedProgramError::alloc(
 						analyze_context.runtime->get_fixed_alloc(),
 						analyze_context.fn_object,
@@ -1558,7 +1558,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 			SLAKE_RETURN_IF_EXCEPT(eval_value_type(analyze_context, cur_ins.operands[1], rhs_type));
 
 			if (lhs_type != rhs_type) {
-				return alloc_out_of_memory_error_if_alloc_failed(
+				return alloc_oom_error_if_alloc_failed(
 					MalformedProgramError::alloc(
 						analyze_context.runtime->get_fixed_alloc(),
 						analyze_context.fn_object,
@@ -1640,7 +1640,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 					}
 					break;
 				default: {
-					return alloc_out_of_memory_error_if_alloc_failed(
+					return alloc_oom_error_if_alloc_failed(
 						MalformedProgramError::alloc(
 							analyze_context.runtime->get_fixed_alloc(),
 							analyze_context.fn_object,
@@ -1658,7 +1658,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 		}
 		case Opcode::CMP: {
 			if (cur_ins.num_operands != 2) {
-				return alloc_out_of_memory_error_if_alloc_failed(
+				return alloc_oom_error_if_alloc_failed(
 					MalformedProgramError::alloc(
 						analyze_context.runtime->get_fixed_alloc(),
 						analyze_context.fn_object,
@@ -1669,7 +1669,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 			SLAKE_RETURN_IF_EXCEPT(eval_value_type(analyze_context, cur_ins.operands[1], rhs_type));
 
 			if (lhs_type != rhs_type) {
-				return alloc_out_of_memory_error_if_alloc_failed(
+				return alloc_oom_error_if_alloc_failed(
 					MalformedProgramError::alloc(
 						analyze_context.runtime->get_fixed_alloc(),
 						analyze_context.fn_object,
@@ -1821,7 +1821,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 					}
 					break;
 				default: {
-					return alloc_out_of_memory_error_if_alloc_failed(
+					return alloc_oom_error_if_alloc_failed(
 						MalformedProgramError::alloc(
 							analyze_context.runtime->get_fixed_alloc(),
 							analyze_context.fn_object,
@@ -1839,7 +1839,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 		}
 		case Opcode::LSH: {
 			if (cur_ins.num_operands != 2) {
-				return alloc_out_of_memory_error_if_alloc_failed(
+				return alloc_oom_error_if_alloc_failed(
 					MalformedProgramError::alloc(
 						analyze_context.runtime->get_fixed_alloc(),
 						analyze_context.fn_object,
@@ -1850,7 +1850,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 			SLAKE_RETURN_IF_EXCEPT(eval_value_type(analyze_context, cur_ins.operands[1], rhs_type));
 
 			if (rhs_type != TypeId::U32) {
-				return alloc_out_of_memory_error_if_alloc_failed(
+				return alloc_oom_error_if_alloc_failed(
 					MalformedProgramError::alloc(
 						analyze_context.runtime->get_fixed_alloc(),
 						analyze_context.fn_object,
@@ -1918,7 +1918,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 					}
 					break;
 				default: {
-					return alloc_out_of_memory_error_if_alloc_failed(
+					return alloc_oom_error_if_alloc_failed(
 						MalformedProgramError::alloc(
 							analyze_context.runtime->get_fixed_alloc(),
 							analyze_context.fn_object,
@@ -1936,7 +1936,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 		}
 		case Opcode::RSH: {
 			if (cur_ins.num_operands != 2) {
-				return alloc_out_of_memory_error_if_alloc_failed(
+				return alloc_oom_error_if_alloc_failed(
 					MalformedProgramError::alloc(
 						analyze_context.runtime->get_fixed_alloc(),
 						analyze_context.fn_object,
@@ -1947,7 +1947,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 			SLAKE_RETURN_IF_EXCEPT(eval_value_type(analyze_context, cur_ins.operands[1], rhs_type));
 
 			if (rhs_type != TypeId::U32) {
-				return alloc_out_of_memory_error_if_alloc_failed(
+				return alloc_oom_error_if_alloc_failed(
 					MalformedProgramError::alloc(
 						analyze_context.runtime->get_fixed_alloc(),
 						analyze_context.fn_object,
@@ -2015,7 +2015,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 					}
 					break;
 				default: {
-					return alloc_out_of_memory_error_if_alloc_failed(
+					return alloc_oom_error_if_alloc_failed(
 						MalformedProgramError::alloc(
 							analyze_context.runtime->get_fixed_alloc(),
 							analyze_context.fn_object,
@@ -2033,7 +2033,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 		}
 		case Opcode::NOT: {
 			if (cur_ins.num_operands != 1) {
-				return alloc_out_of_memory_error_if_alloc_failed(
+				return alloc_oom_error_if_alloc_failed(
 					MalformedProgramError::alloc(
 						analyze_context.runtime->get_fixed_alloc(),
 						analyze_context.fn_object,
@@ -2101,7 +2101,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 					}
 					break;
 				default: {
-					return alloc_out_of_memory_error_if_alloc_failed(
+					return alloc_oom_error_if_alloc_failed(
 						MalformedProgramError::alloc(
 							analyze_context.runtime->get_fixed_alloc(),
 							analyze_context.fn_object,
@@ -2118,7 +2118,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 		}
 		case Opcode::LNOT: {
 			if (cur_ins.num_operands != 1) {
-				return alloc_out_of_memory_error_if_alloc_failed(
+				return alloc_oom_error_if_alloc_failed(
 					MalformedProgramError::alloc(
 						analyze_context.runtime->get_fixed_alloc(),
 						analyze_context.fn_object,
@@ -2144,7 +2144,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 					}
 					break;
 				default: {
-					return alloc_out_of_memory_error_if_alloc_failed(
+					return alloc_oom_error_if_alloc_failed(
 						MalformedProgramError::alloc(
 							analyze_context.runtime->get_fixed_alloc(),
 							analyze_context.fn_object,
@@ -2161,7 +2161,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 		}
 		case Opcode::NEG: {
 			if (cur_ins.num_operands != 1) {
-				return alloc_out_of_memory_error_if_alloc_failed(
+				return alloc_oom_error_if_alloc_failed(
 					MalformedProgramError::alloc(
 						analyze_context.runtime->get_fixed_alloc(),
 						analyze_context.fn_object,
@@ -2241,7 +2241,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 					}
 					break;
 				default: {
-					return alloc_out_of_memory_error_if_alloc_failed(
+					return alloc_oom_error_if_alloc_failed(
 						MalformedProgramError::alloc(
 							analyze_context.runtime->get_fixed_alloc(),
 							analyze_context.fn_object,

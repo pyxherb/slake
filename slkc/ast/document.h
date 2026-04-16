@@ -165,7 +165,7 @@ namespace slkc {
 		}
 	};
 
-	SLAKE_FORCEINLINE CompilationError gen_out_of_memory_comp_error() {
+	SLAKE_FORCEINLINE CompilationError gen_oom_comp_error() {
 		return CompilationError(TokenRange{ 0, 0 }, CompilationErrorKind::OutOfMemory);
 	}
 
@@ -247,15 +247,15 @@ namespace slkc {
 		SLAKE_FORCEINLINE GenericInstantiationDispatcher(peff::Alloc *allocator) : allocator(allocator), member_tasks(allocator), ast_node_tasks(allocator), type_tasks(allocator), collected_fn_overloadings(allocator), collected_fns(allocator) {}
 
 		[[nodiscard]] SLAKE_FORCEINLINE peff::Option<CompilationError> push_member_task(MemberGenericInstantiationTask &&task) noexcept {
-			return member_tasks.push_back(std::move(task)) ? peff::Option<CompilationError>{} : gen_out_of_memory_comp_error();
+			return member_tasks.push_back(std::move(task)) ? peff::Option<CompilationError>{} : gen_oom_comp_error();
 		}
 
 		[[nodiscard]] SLAKE_FORCEINLINE peff::Option<CompilationError> push_type_slot_task(TypeSlotGenericInstantiationTask &&task) noexcept {
-			return type_tasks.push_back(std::move(task)) ? peff::Option<CompilationError>{} : gen_out_of_memory_comp_error();
+			return type_tasks.push_back(std::move(task)) ? peff::Option<CompilationError>{} : gen_oom_comp_error();
 		}
 
 		[[nodiscard]] SLAKE_FORCEINLINE peff::Option<CompilationError> push_ast_node_task(AstNodeGenericInstantiationTask &&task) noexcept {
-			return ast_node_tasks.push_back(std::move(task)) ? peff::Option<CompilationError>{} : gen_out_of_memory_comp_error();
+			return ast_node_tasks.push_back(std::move(task)) ? peff::Option<CompilationError>{} : gen_oom_comp_error();
 		}
 	};
 

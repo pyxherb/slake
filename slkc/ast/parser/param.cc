@@ -27,7 +27,7 @@ SLKC_API ParseCoroutine Parser::parse_params(
 		AstNodePtr<VarNode> param_node;
 
 		if (!(param_node = make_ast_node<VarNode>(resource_allocator.get(), resource_allocator.get(), get_document()))) {
-			co_return gen_out_of_memory_syntax_error();
+			co_return gen_oom_syntax_error();
 		}
 
 		Token *name_token;
@@ -35,7 +35,7 @@ SLKC_API ParseCoroutine Parser::parse_params(
 		SLKC_CO_RETURN_IF_PARSE_ERROR(expect_token((name_token = peek_token()), TokenId::Id));
 
 		if (!param_node->name.build(name_token->source_text))
-			co_return gen_out_of_memory_syntax_error();
+			co_return gen_oom_syntax_error();
 
 		next_token();
 
@@ -46,7 +46,7 @@ SLKC_API ParseCoroutine Parser::parse_params(
 		}
 
 		if (!params_out.push_back(std::move(param_node)))
-			co_return gen_out_of_memory_syntax_error();
+			co_return gen_oom_syntax_error();
 
 		if (peek_token()->token_id != TokenId::Comma) {
 			break;
@@ -55,7 +55,7 @@ SLKC_API ParseCoroutine Parser::parse_params(
 		Token *comma_token = next_token();
 
 		if (!idx_comma_tokens_out.push_back(+comma_token->index))
-			co_return gen_out_of_memory_syntax_error();
+			co_return gen_oom_syntax_error();
 	}
 
 	Token *var_arg_token;

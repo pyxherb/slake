@@ -6,7 +6,7 @@ SLKC_API ParseCoroutine Parser::parse_generic_constraint(peff::Alloc *allocator,
 	GenericConstraintPtr constraint(peff::alloc_and_construct<GenericConstraint>(resource_allocator.get(), alignof(GenericConstraint), resource_allocator.get()));
 
 	if (!constraint) {
-		co_return gen_out_of_memory_syntax_error();
+		co_return gen_oom_syntax_error();
 	}
 
 	peff::Option<SyntaxError> syntax_error;
@@ -30,7 +30,7 @@ SLKC_API ParseCoroutine Parser::parse_generic_constraint(peff::Alloc *allocator,
 			SLKC_CO_RETURN_IF_CO_PARSE_ERROR(parse_type_name(this->resource_allocator.get(), tn));
 
 			if (!constraint->impl_types.push_back(std::move(tn))) {
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 			}
 
 			if (peek_token()->token_id != TokenId::AddOp) {
@@ -50,7 +50,7 @@ SLKC_API ParseCoroutine Parser::parse_param_type_list_generic_constraint(peff::A
 	ParamTypeListGenericConstraintPtr constraint(peff::alloc_and_construct<ParamTypeListGenericConstraint>(resource_allocator.get(), alignof(ParamTypeListGenericConstraint), resource_allocator.get()));
 
 	if (!constraint) {
-		co_return gen_out_of_memory_syntax_error();
+		co_return gen_oom_syntax_error();
 	}
 
 	peff::Option<SyntaxError> syntax_error;
@@ -72,7 +72,7 @@ SLKC_API ParseCoroutine Parser::parse_param_type_list_generic_constraint(peff::A
 			SLKC_CO_RETURN_IF_CO_PARSE_ERROR(parse_type_name(this->resource_allocator.get(), tn));
 
 			if (!constraint->arg_types.push_back(std::move(tn))) {
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 			}
 
 			if (peek_token()->token_id != TokenId::Comma) {
@@ -110,13 +110,13 @@ SLKC_API ParseCoroutine Parser::parse_generic_params(
 			AstNodePtr<GenericParamNode> generic_param_node;
 
 			if (!(generic_param_node = make_ast_node<GenericParamNode>(resource_allocator.get(), resource_allocator.get(), get_document()))) {
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 			}
 
-			generic_param_node->parent = cur_parent.get();
+			generic_param_node->outer = cur_parent.get();
 
 			if (!generic_params_out.push_back(AstNodePtr<GenericParamNode>(generic_param_node)))
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 
 			if (Token *varg_token = peek_token(); varg_token->token_id == TokenId::VarArg) {
 				next_token();
@@ -134,7 +134,7 @@ SLKC_API ParseCoroutine Parser::parse_generic_params(
 				SLKC_CO_RETURN_IF_PARSE_ERROR(expect_token((name_token = peek_token()), TokenId::Id));;
 
 				if (!generic_param_node->name.build(name_token->source_text))
-					co_return gen_out_of_memory_syntax_error();
+					co_return gen_oom_syntax_error();
 
 				next_token();
 
@@ -153,7 +153,7 @@ SLKC_API ParseCoroutine Parser::parse_generic_params(
 				SLKC_CO_RETURN_IF_PARSE_ERROR(expect_token((name_token = peek_token()), TokenId::Id));;
 
 				if (!generic_param_node->name.build(name_token->source_text))
-					co_return gen_out_of_memory_syntax_error();
+					co_return gen_oom_syntax_error();
 
 				next_token();
 
@@ -175,7 +175,7 @@ SLKC_API ParseCoroutine Parser::parse_generic_params(
 				});
 
 				if (!generic_param_node->name.build(name_token->source_text))
-					co_return gen_out_of_memory_syntax_error();
+					co_return gen_oom_syntax_error();
 
 				next_token();
 
@@ -189,7 +189,7 @@ SLKC_API ParseCoroutine Parser::parse_generic_params(
 			Token *comma_token = next_token();
 
 			if (!idx_comma_tokens_out.push_back(+comma_token->index))
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 		}
 
 		Token *r_angle_bracket_token;

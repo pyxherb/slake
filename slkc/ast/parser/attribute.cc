@@ -8,7 +8,7 @@ SLKC_API ParseCoroutine Parser::parse_attribute(peff::Alloc *allocator, AstNodeP
 	AstNodePtr<AttributeNode> attribute;
 
 	if (!(attribute = make_ast_node<AttributeNode>(resource_allocator.get(), resource_allocator.get(), get_document()))) {
-		co_return gen_out_of_memory_syntax_error();
+		co_return gen_oom_syntax_error();
 	}
 
 	attribute_out = attribute;
@@ -39,7 +39,7 @@ SLKC_API ParseCoroutine Parser::parse_attribute(peff::Alloc *allocator, AstNodeP
 				SLKC_CO_RETURN_IF_CO_PARSE_ERROR(parse_expr(this->resource_allocator.get(), 0, arg));
 
 				/*if (!args_out.push_back(std::move(arg)))
-					co_return gen_out_of_memory_syntax_error();*/
+					co_return gen_oom_syntax_error();*/
 
 				if (peek_token()->token_id != TokenId::Comma) {
 					break;
@@ -47,7 +47,7 @@ SLKC_API ParseCoroutine Parser::parse_attribute(peff::Alloc *allocator, AstNodeP
 
 				Token *comma_token = next_token();
 				/*if (!idx_comma_tokens_out.push_back(+comma_token->index))
-					co_return gen_out_of_memory_syntax_error();*/
+					co_return gen_oom_syntax_error();*/
 			}
 
 			Token *r_parenthese_token;
@@ -88,7 +88,7 @@ SLKC_API ParseCoroutine Parser::parse_attributes(peff::Alloc *allocator, peff::D
 		SLKC_CO_RETURN_IF_CO_PARSE_ERROR(parse_attribute(this->resource_allocator.get(), attribute));
 
 		if (!attributes_out.push_back(std::move(attribute)))
-			co_return gen_out_of_memory_syntax_error();
+			co_return gen_oom_syntax_error();
 	}
 
 	co_return {};

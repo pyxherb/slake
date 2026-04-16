@@ -18,7 +18,7 @@ namespace slake {
 		SLAKE_API static OutOfMemoryError *alloc() noexcept;
 	};
 
-	extern OutOfMemoryError g_global_out_of_memory_error;
+	extern OutOfMemoryError g_global_oom_error;
 
 	class IdRefObject;
 
@@ -460,7 +460,7 @@ namespace slake {
 		SLAKE_API static ReadError *alloc(peff::Alloc *self_allocator);
 	};
 
-	SLAKE_API InternalExceptionPointer alloc_out_of_memory_error_if_alloc_failed(InternalExceptionPointer e);
+	SLAKE_API InternalExceptionPointer alloc_oom_error_if_alloc_failed(InternalExceptionPointer e);
 }
 
 #endif

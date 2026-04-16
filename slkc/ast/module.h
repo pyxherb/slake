@@ -147,7 +147,7 @@ namespace slkc {
 		friend class Scope;
 
 	public:
-		MemberNode *parent = nullptr;  // DO NOT use WeakPtr because we want to set the parent during the copy constructor is executing.
+		MemberNode *outer = nullptr;  // DO NOT use WeakPtr because we want to set the parent during the copy constructor is executing.
 		peff::String name;
 		peff::DynArray<AstNodePtr<TypeNameNode>> generic_args;
 		peff::DynArray<AstNodePtr<AttributeNode>> attributes;
@@ -170,7 +170,7 @@ namespace slkc {
 		}
 
 		SLAKE_FORCEINLINE void set_parent(MemberNode *parent) noexcept {
-			this->parent = parent;
+			this->outer = parent;
 		}
 
 		SLAKE_FORCEINLINE bool is_public() const noexcept {

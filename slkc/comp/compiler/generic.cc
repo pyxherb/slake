@@ -96,22 +96,22 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 	peff::DynArray<AstNodePtr<AstNode>> duplicated_generic_args(allocator.get());
 
 	if (!duplicated_generic_args.resize(generic_args.size())) {
-		return gen_out_of_memory_comp_error();
+		return gen_oom_comp_error();
 	}
 
 	for (size_t i = 0; i < duplicated_generic_args.size(); ++i) {
 		if (!(duplicated_generic_args.at(i) = generic_args.at(i)->duplicate<AstNode>(allocator.get()))) {
-			return gen_out_of_memory_comp_error();
+			return gen_oom_comp_error();
 		}
 	}
 
 	duplicated_object = original_object->duplicate<MemberNode>(allocator.get());
 
 	if (!duplicated_object) {
-		return gen_out_of_memory_comp_error();
+		return gen_oom_comp_error();
 	}
 
-	duplicated_object->set_parent(original_object->parent);
+	duplicated_object->set_parent(original_object->outer);
 
 	GenericCacheTable *cache_table;
 
@@ -129,7 +129,7 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 					original_object.get(),
 					GenericCacheTable(allocator.get(),
 						GenericArgListCmp(this, nullptr)))) {
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			}
 			cache_table = &generic_cache_dir.at(original_object.get());
 		}
@@ -158,7 +158,7 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 			peff::SharedPtr<GenericInstantiationContext> context;
 
 			if (!(context = peff::make_shared<GenericInstantiationContext>(allocator.get(), allocator.get(), &duplicated_generic_args, &dispatcher)))
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 
 			switch (original_object->get_ast_node_type()) {
 				case AstNodeType::Fn: {
@@ -202,20 +202,20 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 							if (!context->mapped_generic_args.insert(
 									std::string_view(k),
 									AstNodePtr<AstNode>(duplicated_generic_args.at(v)))) {
-								return gen_out_of_memory_comp_error();
+								return gen_oom_comp_error();
 							}
 						}
 
 						SLKC_RETURN_IF_COMP_ERROR(_walk_node_for_generic_instantiation(i.cast_to<MemberNode>(), context));
 
 						if (!overloadings.push_back(AstNodePtr<FnOverloadingNode>(i))) {
-							return gen_out_of_memory_comp_error();
+							return gen_oom_comp_error();
 						}
 					fn_overloading_mismatched:;
 					}
 
 					if (!overloadings.shrink_to_fit()) {
-						return gen_out_of_memory_comp_error();
+						return gen_oom_comp_error();
 					}
 
 					obj->overloadings = std::move(overloadings);
@@ -270,7 +270,7 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 						if (!context->mapped_generic_args.insert(
 								std::string_view(k),
 								AstNodePtr<AstNode>(duplicated_generic_args.at(v)))) {
-							return gen_out_of_memory_comp_error();
+							return gen_oom_comp_error();
 						}
 					}
 
@@ -325,7 +325,7 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 						if (!context->mapped_generic_args.insert(
 								std::string_view(k),
 								AstNodePtr<AstNode>(duplicated_generic_args.at(v)))) {
-							return gen_out_of_memory_comp_error();
+							return gen_oom_comp_error();
 						}
 					}
 
@@ -437,13 +437,13 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 
 					if (task.context->mapped_node == ast_node) {
 						if (!ast_node->generic_args.resize(task.context->generic_args->size())) {
-							return gen_out_of_memory_comp_error();
+							return gen_oom_comp_error();
 						}
 						for (size_t i = 0; i < task.context->generic_args->size(); ++i) {
 							if (!(ast_node->generic_args.at(i) =
 										task.context->generic_args->at(i)
 											->duplicate<TypeNameNode>(allocator.get()))) {
-								return gen_out_of_memory_comp_error();
+								return gen_oom_comp_error();
 							}
 						}
 					}
@@ -460,14 +460,14 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 								peff::SharedPtr<GenericInstantiationContext> inner_context;
 
 								if (!(inner_context = peff::make_shared<GenericInstantiationContext>(allocator.get(), allocator.get(), task.context->generic_args, &dispatcher))) {
-									return gen_out_of_memory_comp_error();
+									return gen_oom_comp_error();
 								}
 
 								for (auto [k, v] : task.context->mapped_generic_args) {
 									if (auto it = fn_slot->scope->generic_param_indices.find(k);
 										it == fn_slot->scope->generic_param_indices.end()) {
 										if (!inner_context->mapped_generic_args.insert(std::string_view(k), AstNodePtr<AstNode>(v))) {
-											return gen_out_of_memory_comp_error();
+											return gen_oom_comp_error();
 										}
 									}
 								}
@@ -489,7 +489,7 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 
 							if (!dispatcher.collected_fn_overloadings.contains(fn_slot))
 								if (!dispatcher.collected_fn_overloadings.insert(std::move(fn_slot)))
-									return gen_out_of_memory_comp_error();
+									return gen_oom_comp_error();
 							break;
 						}
 						case AstNodeType::Fn: {
@@ -502,7 +502,7 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 
 							if (!dispatcher.collected_fns.contains(fn_slot))
 								if (!dispatcher.collected_fns.insert(std::move(fn_slot)))
-									return gen_out_of_memory_comp_error();
+									return gen_oom_comp_error();
 							break;
 						}
 						case AstNodeType::Var: {
@@ -522,14 +522,14 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 								peff::SharedPtr<GenericInstantiationContext> inner_context;
 
 								if (!(inner_context = peff::make_shared<GenericInstantiationContext>(allocator.get(), allocator.get(), task.context->generic_args, &dispatcher))) {
-									return gen_out_of_memory_comp_error();
+									return gen_oom_comp_error();
 								}
 
 								for (auto [k, v] : task.context->mapped_generic_args) {
 									if (auto it = cls->scope->generic_param_indices.find(k);
 										it == cls->scope->generic_param_indices.end()) {
 										if (!inner_context->mapped_generic_args.insert(std::string_view(k), AstNodePtr<AstNode>(v))) {
-											return gen_out_of_memory_comp_error();
+											return gen_oom_comp_error();
 										}
 									}
 								}
@@ -567,14 +567,14 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 								peff::SharedPtr<GenericInstantiationContext> inner_context;
 
 								if (!(inner_context = peff::make_shared<GenericInstantiationContext>(allocator.get(), allocator.get(), task.context->generic_args, &dispatcher))) {
-									return gen_out_of_memory_comp_error();
+									return gen_oom_comp_error();
 								}
 
 								for (auto [k, v] : task.context->mapped_generic_args) {
 									if (auto it = cls->scope->generic_param_indices.find(k);
 										it == cls->scope->generic_param_indices.end()) {
 										if (!inner_context->mapped_generic_args.insert(std::string_view(k), AstNodePtr<AstNode>(v))) {
-											return gen_out_of_memory_comp_error();
+											return gen_oom_comp_error();
 										}
 									}
 								}
@@ -599,14 +599,14 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 								peff::SharedPtr<GenericInstantiationContext> inner_context;
 
 								if (!(inner_context = peff::make_shared<GenericInstantiationContext>(allocator.get(), allocator.get(), task.context->generic_args, &dispatcher))) {
-									return gen_out_of_memory_comp_error();
+									return gen_oom_comp_error();
 								}
 
 								for (auto [k, v] : task.context->mapped_generic_args) {
 									if (auto it = cls->scope->generic_param_indices.find(k);
 										it == cls->scope->generic_param_indices.end()) {
 										if (!inner_context->mapped_generic_args.insert(std::string_view(k), AstNodePtr<AstNode>(v))) {
-											return gen_out_of_memory_comp_error();
+											return gen_oom_comp_error();
 										}
 									}
 								}
@@ -738,17 +738,17 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 								AstNodePtr<ParamTypeListTypeNameNode> inner_type_name = unpacking_type->inner_type_name.cast_to<ParamTypeListTypeNameNode>();
 
 								if (!fn_slot->params.erase_range_and_shrink(i, i + 1))
-									return gen_out_of_memory_comp_error();
+									return gen_oom_comp_error();
 
 								if (!fn_slot->params.insert_range_init(i, inner_type_name->param_types.size())) {
-									return gen_out_of_memory_comp_error();
+									return gen_oom_comp_error();
 								}
 
 								for (size_t k = 0; k < inner_type_name->param_types.size(); ++k) {
 									AstNodePtr<VarNode> p = cur_param->duplicate<VarNode>(allocator.get());
 
 									if (!p) {
-										return gen_out_of_memory_comp_error();
+										return gen_oom_comp_error();
 									}
 
 									constexpr static size_t len_name = sizeof("arg_") + (sizeof(size_t) << 1) + 1;
@@ -757,7 +757,7 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 									snprintf(name_buf, len_name - 1, "arg_%.02zx", i + k);
 
 									if (!p->name.build(name_buf)) {
-										return gen_out_of_memory_comp_error();
+										return gen_oom_comp_error();
 									}
 
 									p->type = inner_type_name->param_types.at(k);
@@ -811,7 +811,7 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 			}
 
 			if (!cache_table->insert(std::move(duplicated_generic_args), AstNodePtr<MemberNode>(duplicated_object))) {
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			}
 		}
 

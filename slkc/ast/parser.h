@@ -261,7 +261,7 @@ namespace slkc {
 			return document.lock();
 		}
 
-		SLKC_API SyntaxError gen_out_of_memory_syntax_error() const noexcept {
+		SLKC_API SyntaxError gen_oom_syntax_error() const noexcept {
 			return SyntaxError(TokenRange{ get_document()->main_module, 0 }, SyntaxErrorKind::OutOfMemory);
 		}
 
@@ -291,7 +291,7 @@ namespace slkc {
 
 		PEFF_FORCEINLINE peff::Option<SyntaxError> push_literal_overflowed_error(Token *token) noexcept {
 			if (!syntax_errors.push_back(SyntaxError(TokenRange{ get_document()->main_module, token->index }, SyntaxErrorKind::LiteralOverflowed)))
-				return gen_out_of_memory_syntax_error();
+				return gen_oom_syntax_error();
 			return {};
 		}
 

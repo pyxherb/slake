@@ -54,7 +54,7 @@ SLKC_API ParseCoroutine Parser::parse_type_name(peff::Alloc *allocator, AstNodeP
 					  resource_allocator.get(),
 					  resource_allocator.get(), get_document())
 						.cast_to<TypeNameNode>()))
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 			type_name_out->token_range = TokenRange{ get_document()->main_module, t->index };
 			next_token();
 
@@ -65,7 +65,7 @@ SLKC_API ParseCoroutine Parser::parse_type_name(peff::Alloc *allocator, AstNodeP
 					  resource_allocator.get(),
 					  resource_allocator.get(), get_document())
 						.cast_to<TypeNameNode>()))
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 			type_name_out->token_range = TokenRange{ get_document()->main_module, t->index };
 			next_token();
 			break;
@@ -74,7 +74,7 @@ SLKC_API ParseCoroutine Parser::parse_type_name(peff::Alloc *allocator, AstNodeP
 					  resource_allocator.get(),
 					  resource_allocator.get(), get_document())
 						.cast_to<TypeNameNode>()))
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 			type_name_out->token_range = TokenRange{ get_document()->main_module, t->index };
 			next_token();
 			break;
@@ -83,7 +83,7 @@ SLKC_API ParseCoroutine Parser::parse_type_name(peff::Alloc *allocator, AstNodeP
 					  resource_allocator.get(),
 					  resource_allocator.get(), get_document())
 						.cast_to<TypeNameNode>()))
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 			type_name_out->token_range = TokenRange{ get_document()->main_module, t->index };
 			next_token();
 			break;
@@ -92,7 +92,7 @@ SLKC_API ParseCoroutine Parser::parse_type_name(peff::Alloc *allocator, AstNodeP
 					  resource_allocator.get(),
 					  resource_allocator.get(), get_document())
 						.cast_to<TypeNameNode>()))
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 			type_name_out->token_range = TokenRange{ get_document()->main_module, t->index };
 			next_token();
 			break;
@@ -101,7 +101,7 @@ SLKC_API ParseCoroutine Parser::parse_type_name(peff::Alloc *allocator, AstNodeP
 					  resource_allocator.get(),
 					  resource_allocator.get(), get_document())
 						.cast_to<TypeNameNode>()))
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 			type_name_out->token_range = TokenRange{ get_document()->main_module, t->index };
 			next_token();
 			break;
@@ -110,7 +110,7 @@ SLKC_API ParseCoroutine Parser::parse_type_name(peff::Alloc *allocator, AstNodeP
 					  resource_allocator.get(),
 					  resource_allocator.get(), get_document())
 						.cast_to<TypeNameNode>()))
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 			type_name_out->token_range = TokenRange{ get_document()->main_module, t->index };
 			next_token();
 			break;
@@ -119,7 +119,7 @@ SLKC_API ParseCoroutine Parser::parse_type_name(peff::Alloc *allocator, AstNodeP
 					  resource_allocator.get(),
 					  resource_allocator.get(), get_document())
 						.cast_to<TypeNameNode>()))
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 			type_name_out->token_range = TokenRange{ get_document()->main_module, t->index };
 			next_token();
 			break;
@@ -128,7 +128,7 @@ SLKC_API ParseCoroutine Parser::parse_type_name(peff::Alloc *allocator, AstNodeP
 					  resource_allocator.get(),
 					  resource_allocator.get(), get_document())
 						.cast_to<TypeNameNode>()))
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 			type_name_out->token_range = TokenRange{ get_document()->main_module, t->index };
 			next_token();
 			break;
@@ -137,7 +137,7 @@ SLKC_API ParseCoroutine Parser::parse_type_name(peff::Alloc *allocator, AstNodeP
 					  resource_allocator.get(),
 					  resource_allocator.get(), get_document())
 						.cast_to<TypeNameNode>()))
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 			type_name_out->token_range = TokenRange{ get_document()->main_module, t->index };
 			next_token();
 			break;
@@ -146,7 +146,7 @@ SLKC_API ParseCoroutine Parser::parse_type_name(peff::Alloc *allocator, AstNodeP
 					  resource_allocator.get(),
 					  resource_allocator.get(), get_document())
 						.cast_to<TypeNameNode>()))
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 			type_name_out->token_range = TokenRange{ get_document()->main_module, t->index };
 			break;
 		case TokenId::USizeTypeName:
@@ -154,7 +154,7 @@ SLKC_API ParseCoroutine Parser::parse_type_name(peff::Alloc *allocator, AstNodeP
 					  resource_allocator.get(),
 					  resource_allocator.get(), get_document())
 						.cast_to<TypeNameNode>()))
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 			type_name_out->token_range = TokenRange{ get_document()->main_module, t->index };
 			next_token();
 			break;
@@ -163,7 +163,7 @@ SLKC_API ParseCoroutine Parser::parse_type_name(peff::Alloc *allocator, AstNodeP
 					  resource_allocator.get(),
 					  resource_allocator.get(), get_document())
 						.cast_to<TypeNameNode>()))
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 			type_name_out->token_range = TokenRange{ get_document()->main_module, t->index };
 			next_token();
 			break;
@@ -172,7 +172,7 @@ SLKC_API ParseCoroutine Parser::parse_type_name(peff::Alloc *allocator, AstNodeP
 					  resource_allocator.get(),
 					  resource_allocator.get(), get_document())
 						.cast_to<TypeNameNode>()))
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 			type_name_out->token_range = TokenRange{ get_document()->main_module, t->index };
 			next_token();
 			break;
@@ -181,7 +181,7 @@ SLKC_API ParseCoroutine Parser::parse_type_name(peff::Alloc *allocator, AstNodeP
 					  resource_allocator.get(),
 					  resource_allocator.get(), get_document())
 						.cast_to<TypeNameNode>()))
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 			type_name_out->token_range = TokenRange{ get_document()->main_module, t->index };
 			next_token();
 			break;
@@ -190,7 +190,7 @@ SLKC_API ParseCoroutine Parser::parse_type_name(peff::Alloc *allocator, AstNodeP
 					  resource_allocator.get(),
 					  resource_allocator.get(), get_document())
 						.cast_to<TypeNameNode>()))
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 			type_name_out->token_range = TokenRange{ get_document()->main_module, t->index };
 			next_token();
 			break;
@@ -200,7 +200,7 @@ SLKC_API ParseCoroutine Parser::parse_type_name(peff::Alloc *allocator, AstNodeP
 			if (!(tn = make_ast_node<ParamTypeListTypeNameNode>(
 					  resource_allocator.get(),
 					  resource_allocator.get(), get_document())))
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 
 			type_name_out = tn.cast_to<TypeNameNode>();
 
@@ -223,7 +223,7 @@ SLKC_API ParseCoroutine Parser::parse_type_name(peff::Alloc *allocator, AstNodeP
 				SLKC_CO_RETURN_IF_CO_PARSE_ERROR(parse_type_name(this->resource_allocator.get(), param_type));
 
 				if (!tn->param_types.push_back(std::move(param_type)))
-					co_return gen_out_of_memory_syntax_error();
+					co_return gen_oom_syntax_error();
 
 				if (peek_token()->token_id != TokenId::Comma) {
 					break;
@@ -232,7 +232,7 @@ SLKC_API ParseCoroutine Parser::parse_type_name(peff::Alloc *allocator, AstNodeP
 				Token *comma_token = next_token();
 				/*
 				if (!idx_comma_tokens_out.push_back(+comma_token->index))
-					co_return gen_out_of_memory_syntax_error();*/
+					co_return gen_oom_syntax_error();*/
 			}
 
 			Token *r_parenthese_token;
@@ -247,7 +247,7 @@ SLKC_API ParseCoroutine Parser::parse_type_name(peff::Alloc *allocator, AstNodeP
 			if (!(tn = make_ast_node<FnTypeNameNode>(
 					  resource_allocator.get(),
 					  resource_allocator.get(), get_document())))
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 			type_name_out = tn.cast_to<TypeNameNode>();
 			tn->token_range = TokenRange{ get_document()->main_module, t->index };
 			next_token();
@@ -268,7 +268,7 @@ SLKC_API ParseCoroutine Parser::parse_type_name(peff::Alloc *allocator, AstNodeP
 				SLKC_CO_RETURN_IF_CO_PARSE_ERROR(parse_type_name(this->resource_allocator.get(), param_type));
 
 				if (!tn->param_types.push_back(std::move(param_type)))
-					co_return gen_out_of_memory_syntax_error();
+					co_return gen_oom_syntax_error();
 
 				if (peek_token()->token_id != TokenId::Comma) {
 					break;
@@ -277,7 +277,7 @@ SLKC_API ParseCoroutine Parser::parse_type_name(peff::Alloc *allocator, AstNodeP
 				Token *comma_token = next_token();
 				/*
 				if (!idx_comma_tokens_out.push_back(+comma_token->index))
-					co_return gen_out_of_memory_syntax_error();*/
+					co_return gen_oom_syntax_error();*/
 			}
 
 			Token *r_parenthese_token;
@@ -307,7 +307,7 @@ SLKC_API ParseCoroutine Parser::parse_type_name(peff::Alloc *allocator, AstNodeP
 					  resource_allocator.get(),
 					  resource_allocator.get(),
 					  get_document())))
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 
 			type_name_out = tn.cast_to<TypeNameNode>();
 
@@ -330,7 +330,7 @@ SLKC_API ParseCoroutine Parser::parse_type_name(peff::Alloc *allocator, AstNodeP
 				SLKC_CO_RETURN_IF_CO_PARSE_ERROR(parse_type_name(this->resource_allocator.get(), t));
 
 				if (!tn->element_types.push_back(std::move(t)))
-					co_return gen_out_of_memory_syntax_error();
+					co_return gen_oom_syntax_error();
 
 				if (peek_token()->token_id != TokenId::Comma) {
 					break;
@@ -339,7 +339,7 @@ SLKC_API ParseCoroutine Parser::parse_type_name(peff::Alloc *allocator, AstNodeP
 				Token *comma_token = next_token();
 
 				if (!tn->idx_comma_tokens.push_back(+comma_token->index))
-					co_return gen_out_of_memory_syntax_error();
+					co_return gen_oom_syntax_error();
 			}
 
 			Token *r_bracket_token;
@@ -362,7 +362,7 @@ SLKC_API ParseCoroutine Parser::parse_type_name(peff::Alloc *allocator, AstNodeP
 					  resource_allocator.get(),
 					  resource_allocator.get(),
 					  get_document())))
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 
 			type_name_out = tn.cast_to<TypeNameNode>();
 
@@ -409,7 +409,7 @@ SLKC_API ParseCoroutine Parser::parse_type_name(peff::Alloc *allocator, AstNodeP
 					  resource_allocator.get(),
 					  resource_allocator.get(),
 					  get_document())))
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 
 			tn->context_node = to_weak_ptr(cur_parent);
 
@@ -463,7 +463,7 @@ SLKC_API ParseCoroutine Parser::parse_type_name(peff::Alloc *allocator, AstNodeP
 							  get_document(),
 							  type_name_out)
 								.cast_to<TypeNameNode>()))
-						co_return gen_out_of_memory_syntax_error();
+						co_return gen_oom_syntax_error();
 					break;
 				}
 				default:
@@ -482,7 +482,7 @@ end:
 					  get_document(),
 					  type_name_out)
 						.cast_to<TypeNameNode>()))
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 		} else if ((t = peek_token())->token_id == TokenId::LAndOp) {
 			next_token();
 			if (!(type_name_out = make_ast_node<TempRefTypeNameNode>(
@@ -491,7 +491,7 @@ end:
 					  get_document(),
 					  type_name_out)
 						.cast_to<TypeNameNode>()))
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 		}
 	}
 

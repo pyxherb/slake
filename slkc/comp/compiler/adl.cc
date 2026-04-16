@@ -46,13 +46,13 @@ static peff::Option<CompilationError> _determine_with_current_slot(
 			matched_overloadings.clear_and_shrink();
 
 			if (!matched_overloadings.push_back(AstNodePtr<FnOverloadingNode>(current_overloading))) {
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			}
 
 			return {};
 		} else {
 			if (!matched_overloadings.push_back(AstNodePtr<FnOverloadingNode>(current_overloading))) {
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			}
 		}
 
@@ -70,7 +70,7 @@ static peff::Option<CompilationError> _determine_with_parent_class(
 	peff::DynArray<AstNodePtr<FnOverloadingNode>> &matched_overloadings) {
 	SLKC_RETURN_IF_COMP_ERROR(check_stack_bounds(1024 * 8));
 
-	AstNodePtr<ClassNode> m = fn_slot->parent->shared_from_this().cast_to<ClassNode>();
+	AstNodePtr<ClassNode> m = fn_slot->outer->shared_from_this().cast_to<ClassNode>();
 	{
 		AstNodePtr<ClassNode> base_type;
 		SLKC_RETURN_IF_COMP_ERROR(visit_base_class(m->scope->base_type, base_type, nullptr));
@@ -111,7 +111,7 @@ static peff::Option<CompilationError> _determine_with_parent_interface(
 	size_t num_arg_types,
 	bool is_static,
 	peff::DynArray<AstNodePtr<FnOverloadingNode>> &matched_overloadings) {
-	AstNodePtr<InterfaceNode> m = fn_slot->parent->shared_from_this().cast_to<InterfaceNode>();
+	AstNodePtr<InterfaceNode> m = fn_slot->outer->shared_from_this().cast_to<InterfaceNode>();
 	for (auto &i : m->scope->impl_types) {
 		{
 			AstNodePtr<InterfaceNode> base_type;
@@ -144,7 +144,7 @@ SLKC_API peff::Option<CompilationError> slkc::determine_fn_overloading(
 	if (is_static) {
 		// ...
 	} else
-		switch (fn_slot->parent->get_ast_node_type()) {
+		switch (fn_slot->outer->get_ast_node_type()) {
 			case AstNodeType::Class:
 				SLKC_RETURN_IF_COMP_ERROR(_determine_with_parent_class(compile_env, fn_slot, arg_types, num_arg_types, is_static, matched_overloadings));
 				break;

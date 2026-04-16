@@ -6,7 +6,7 @@ using namespace slkc;
 
 SLAKE_FORCEINLINE peff::Option<SyntaxError> ParseCoroutine::resume(Parser *parser) {
 	if (!coro_handle)
-		return parser->gen_out_of_memory_syntax_error();
+		return parser->gen_oom_syntax_error();
 
 	coro_handle.resume();
 
@@ -44,11 +44,11 @@ SLAKE_FORCEINLINE bool ParseCoroutine::Awaitable::await_ready() {
 
 SLAKE_FORCEINLINE void ParseCoroutine::Awaitable::await_suspend(Handle h) {
 	if (!scheduler->task_list.push_back(std::move(h))) {
-		co.coro_handle.promise().result = parser->gen_out_of_memory_syntax_error();
+		co.coro_handle.promise().result = parser->gen_oom_syntax_error();
 		return;
 	}
 	if (!scheduler->task_list.push_back(Handle(handle))) {
-		co.coro_handle.promise().result = parser->gen_out_of_memory_syntax_error();
+		co.coro_handle.promise().result = parser->gen_oom_syntax_error();
 		return;
 	}
 }
@@ -59,7 +59,7 @@ SLAKE_FORCEINLINE peff::Option<SyntaxError> ParseCoroutine::Awaitable::await_res
 			return std::move(handle.promise().result);
 		return {};
 	}
-	return parser->gen_out_of_memory_syntax_error();
+	return parser->gen_oom_syntax_error();
 }
 
 SLKC_API ParseCoroutine::Awaitable ParseCoroutine::operator()(Parser *parser) {
@@ -239,7 +239,7 @@ SLKC_API ParseCoroutine Parser::parse_id_name(peff::Alloc *allocator, peff::Stri
 	switch (t->token_id) {
 		case TokenId::Id:
 			if (!name_out.build(t->source_text)) {
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 			}
 			next_token();
 			break;
@@ -253,7 +253,7 @@ SLKC_API ParseCoroutine Parser::parse_id_ref(peff::Alloc *allocator, IdRefPtr &i
 	peff::Option<SyntaxError> syntax_error;
 	IdRefPtr id_ref_ptr(peff::alloc_and_construct<IdRef>(resource_allocator.get(), ASTNODE_ALIGNMENT, resource_allocator.get()));
 	if (!id_ref_ptr)
-		co_return gen_out_of_memory_syntax_error();
+		co_return gen_oom_syntax_error();
 	Token *t = peek_token();
 
 	id_ref_ptr->token_range = TokenRange{ get_document()->main_module, t->index };
@@ -264,14 +264,14 @@ SLKC_API ParseCoroutine Parser::parse_id_ref(peff::Alloc *allocator, IdRefPtr &i
 		IdRefEntry entry(resource_allocator.get());
 		peff::String id_text(resource_allocator.get());
 		if (!id_text.build("this")) {
-			co_return gen_out_of_memory_syntax_error();
+			co_return gen_oom_syntax_error();
 		}
 
 		entry.name = std::move(id_text);
 		entry.name_token_index = t->index;
 
 		if (!id_ref_ptr->entries.push_back(std::move(entry)))
-			co_return gen_out_of_memory_syntax_error();
+			co_return gen_oom_syntax_error();
 
 		if ((t = peek_token())->token_id != TokenId::Dot) {
 			goto end;
@@ -292,7 +292,7 @@ SLKC_API ParseCoroutine Parser::parse_id_ref(peff::Alloc *allocator, IdRefPtr &i
 		entry.access_op_token_index = t->index;
 
 		if (!id_ref_ptr->entries.push_back(std::move(entry)))
-			co_return gen_out_of_memory_syntax_error();
+			co_return gen_oom_syntax_error();
 	}
 
 	for (;;) {
@@ -302,7 +302,7 @@ SLKC_API ParseCoroutine Parser::parse_id_ref(peff::Alloc *allocator, IdRefPtr &i
 		IdRefEntry entry(resource_allocator.get());
 		peff::String id_text(resource_allocator.get());
 		if (!id_text.build(t->source_text)) {
-			co_return gen_out_of_memory_syntax_error();
+			co_return gen_oom_syntax_error();
 		}
 
 		entry.name = std::move(id_text);
@@ -321,7 +321,7 @@ SLKC_API ParseCoroutine Parser::parse_id_ref(peff::Alloc *allocator, IdRefPtr &i
 				AstNodePtr<AstNode> generic_arg;
 				SLKC_CO_RETURN_IF_CO_PARSE_ERROR(parse_generic_arg(this->resource_allocator.get(), generic_arg));
 				if (!entry.generic_args.push_back(std::move(generic_arg))) {
-					co_return gen_out_of_memory_syntax_error();
+					co_return gen_oom_syntax_error();
 				}
 
 				if ((t = peek_token())->token_id != TokenId::Comma) {
@@ -338,7 +338,7 @@ SLKC_API ParseCoroutine Parser::parse_id_ref(peff::Alloc *allocator, IdRefPtr &i
 		}
 
 		if (!id_ref_ptr->entries.push_back(std::move(entry)))
-			co_return gen_out_of_memory_syntax_error();
+			co_return gen_oom_syntax_error();
 
 		if ((t = peek_token())->token_id != TokenId::Dot) {
 			break;
@@ -367,7 +367,7 @@ end:
 		SLKC_CO_RETURN_IF_CO_PARSE_ERROR(parse_expr(this->resource_allocator.get(), 0, arg));
 
 		if (!args_out.push_back(std::move(arg)))
-			co_return gen_out_of_memory_syntax_error();
+			co_return gen_oom_syntax_error();
 
 		if (peek_token()->token_id != TokenId::Comma) {
 			break;
@@ -375,7 +375,7 @@ end:
 
 		Token *comma_token = next_token();
 		if (!idx_comma_tokens_out.push_back(+comma_token->index))
-			co_return gen_out_of_memory_syntax_error();
+			co_return gen_oom_syntax_error();
 	}
 
 	co_return {};
@@ -390,10 +390,10 @@ SLKC_API ParseCoroutine Parser::parse_fn(peff::Alloc *allocator, AstNodePtr<FnOv
 	peff::String name(resource_allocator.get());
 
 	if (!(fn_node_out = make_ast_node<FnOverloadingNode>(resource_allocator.get(), resource_allocator.get(), get_document())))
-		co_return gen_out_of_memory_syntax_error();
+		co_return gen_oom_syntax_error();
 
 	if (!(fn_node_out->alloc_scope()))
-		co_return gen_out_of_memory_syntax_error();
+		co_return gen_oom_syntax_error();
 
 	switch ((fn_token = peek_token())->token_id) {
 		case TokenId::FnKeyword: {
@@ -427,12 +427,12 @@ SLKC_API ParseCoroutine Parser::parse_fn(peff::Alloc *allocator, AstNodePtr<FnOv
 			SLKC_CO_RETURN_IF_CO_PARSE_ERROR(parse_operator_name(this->resource_allocator.get(), operator_name));
 
 			if (!name.build(operator_name)) {
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 			}
 
 			if (fn_node_out->fn_flags & FN_LVALUE) {
 				if (!name.append(LVALUE_OPERATOR_NAME_SUFFIX))
-					co_return gen_out_of_memory_syntax_error();
+					co_return gen_oom_syntax_error();
 			}
 			break;
 		}
@@ -475,7 +475,7 @@ SLKC_API ParseCoroutine Parser::parse_fn(peff::Alloc *allocator, AstNodePtr<FnOv
 			peff::String s(resource_allocator.get());
 
 			if (!s.build(gp->name)) {
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 			}
 
 			ConflictingDefinitionsErrorExData ex_data(std::move(s));
@@ -483,7 +483,7 @@ SLKC_API ParseCoroutine Parser::parse_fn(peff::Alloc *allocator, AstNodePtr<FnOv
 			co_return SyntaxError(gp->token_range, std::move(ex_data));
 		}
 		if (!fn_node_out->scope->generic_param_indices.insert(gp->name, +i))
-			co_return gen_out_of_memory_syntax_error();
+			co_return gen_oom_syntax_error();
 	}
 
 	bool has_var_arg = false;
@@ -498,17 +498,17 @@ SLKC_API ParseCoroutine Parser::parse_fn(peff::Alloc *allocator, AstNodePtr<FnOv
 			peff::String s(resource_allocator.get());
 
 			if (!s.build(cur_param->name)) {
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 			}
 
 			ConflictingDefinitionsErrorExData ex_data(std::move(s));
 
 			if (!syntax_errors.push_back(SyntaxError(cur_param->token_range, std::move(ex_data))))
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 		}
 
 		if (!fn_node_out->param_indices.insert(cur_param->name, +i)) {
-			co_return gen_out_of_memory_syntax_error();
+			co_return gen_oom_syntax_error();
 		}
 	}
 
@@ -540,7 +540,7 @@ SLKC_API ParseCoroutine Parser::parse_fn(peff::Alloc *allocator, AstNodePtr<FnOv
 		SLKC_CO_RETURN_IF_CO_PARSE_ERROR(parse_type_name(this->resource_allocator.get(), fn_node_out->return_type));
 	} else {
 		if (!(fn_node_out->return_type = make_ast_node<VoidTypeNameNode>(resource_allocator.get(), resource_allocator.get(), get_document()).cast_to<TypeNameNode>())) {
-			co_return gen_out_of_memory_syntax_error();
+			co_return gen_oom_syntax_error();
 		}
 	}
 
@@ -558,7 +558,7 @@ SLKC_API ParseCoroutine Parser::parse_fn(peff::Alloc *allocator, AstNodePtr<FnOv
 			AstNodePtr<StmtNode> cur_stmt;
 
 			if (!(fn_node_out->body = make_ast_node<CodeBlockStmtNode>(resource_allocator.get(), resource_allocator.get(), get_document()))) {
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 			}
 
 			while (true) {
@@ -570,12 +570,12 @@ SLKC_API ParseCoroutine Parser::parse_fn(peff::Alloc *allocator, AstNodePtr<FnOv
 
 				if ((syntax_error = co_await (parse_stmt(this->resource_allocator.get(), cur_stmt)(this)))) {
 					if (!syntax_errors.push_back(std::move(syntax_error.value())))
-						co_return gen_out_of_memory_syntax_error();
+						co_return gen_oom_syntax_error();
 				}
 
 				if (cur_stmt) {
 					if (!fn_node_out->body->body.push_back(std::move(cur_stmt))) {
-						co_return gen_out_of_memory_syntax_error();
+						co_return gen_oom_syntax_error();
 					}
 				}
 			}
@@ -608,13 +608,13 @@ SLKC_API ParseCoroutine Parser::parse_union_enum_item(peff::Alloc *allocator, As
 		case TokenId::LParenthese: {
 			AstNodePtr<UnionEnumItemNode> enum_item;
 			if (!(enum_item = make_ast_node<UnionEnumItemNode>(resource_allocator.get(), resource_allocator.get(), get_document())))
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 			if (!enum_item->alloc_scope())
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 			next_token();
 
 			if (!enum_item->name.build(name_token->source_text))
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 
 			size_t idx_member;
 			{
@@ -623,13 +623,13 @@ SLKC_API ParseCoroutine Parser::parse_union_enum_item(peff::Alloc *allocator, As
 				});
 
 				if ((idx_member = enum_out->scope->push_member(enum_item.cast_to<MemberNode>())) == SIZE_MAX)
-					co_return gen_out_of_memory_syntax_error();
+					co_return gen_oom_syntax_error();
 
 				while (true) {
 					AstNodePtr<VarNode> enum_item_entry;
 
 					if (!(enum_item_entry = make_ast_node<VarNode>(resource_allocator.get(), resource_allocator.get(), get_document())))
-						co_return gen_out_of_memory_syntax_error();
+						co_return gen_oom_syntax_error();
 
 					size_t idx_entry_member;
 					{
@@ -637,7 +637,7 @@ SLKC_API ParseCoroutine Parser::parse_union_enum_item(peff::Alloc *allocator, As
 							enum_item->token_range = TokenRange{ get_document()->main_module, token->index, parse_context.idx_prev_token };
 						});
 						if ((idx_entry_member = enum_item->scope->push_member(enum_item_entry.cast_to<MemberNode>())) == SIZE_MAX) {
-							co_return gen_out_of_memory_syntax_error();
+							co_return gen_oom_syntax_error();
 						}
 
 						Token *entry_name_token;
@@ -646,7 +646,7 @@ SLKC_API ParseCoroutine Parser::parse_union_enum_item(peff::Alloc *allocator, As
 						next_token();
 
 						if (!enum_item_entry->name.build(entry_name_token->source_text))
-							co_return gen_out_of_memory_syntax_error();
+							co_return gen_oom_syntax_error();
 
 						Token *colon_token;
 						SLKC_CO_RETURN_IF_PARSE_ERROR((expect_token((colon_token = peek_token()), TokenId::Colon)));
@@ -660,7 +660,7 @@ SLKC_API ParseCoroutine Parser::parse_union_enum_item(peff::Alloc *allocator, As
 						peff::String s(resource_allocator.get());
 
 						if (!s.build(enum_item_entry->name)) {
-							co_return gen_out_of_memory_syntax_error();
+							co_return gen_oom_syntax_error();
 						}
 
 						ConflictingDefinitionsErrorExData ex_data(std::move(s));
@@ -668,7 +668,7 @@ SLKC_API ParseCoroutine Parser::parse_union_enum_item(peff::Alloc *allocator, As
 						co_return SyntaxError(enum_item->token_range, std::move(ex_data));
 					} else {
 						if (!(enum_item->scope->index_member(idx_entry_member))) {
-							co_return gen_out_of_memory_syntax_error();
+							co_return gen_oom_syntax_error();
 						}
 					}
 
@@ -685,7 +685,7 @@ SLKC_API ParseCoroutine Parser::parse_union_enum_item(peff::Alloc *allocator, As
 				peff::String s(resource_allocator.get());
 
 				if (!s.build(enum_item->name)) {
-					co_return gen_out_of_memory_syntax_error();
+					co_return gen_oom_syntax_error();
 				}
 
 				ConflictingDefinitionsErrorExData ex_data(std::move(s));
@@ -693,7 +693,7 @@ SLKC_API ParseCoroutine Parser::parse_union_enum_item(peff::Alloc *allocator, As
 				co_return SyntaxError(enum_item->token_range, std::move(ex_data));
 			} else {
 				if (!(enum_out->scope->index_member(idx_member))) {
-					co_return gen_out_of_memory_syntax_error();
+					co_return gen_oom_syntax_error();
 				}
 			}
 			break;
@@ -710,10 +710,10 @@ SLKC_API ParseCoroutine Parser::parse_enum_item(peff::Alloc *allocator, AstNodeP
 
 	AstNodePtr<EnumItemNode> enum_item;
 	if (!(enum_item = make_ast_node<EnumItemNode>(resource_allocator.get(), resource_allocator.get(), get_document())))
-		co_return gen_out_of_memory_syntax_error();
+		co_return gen_oom_syntax_error();
 
 	if (!(enum_item->alloc_scope()))
-		co_return gen_out_of_memory_syntax_error();
+		co_return gen_oom_syntax_error();
 
 	size_t idx_member;
 	{
@@ -722,7 +722,7 @@ SLKC_API ParseCoroutine Parser::parse_enum_item(peff::Alloc *allocator, AstNodeP
 		});
 
 		if ((idx_member = enum_out->scope->push_member(enum_item.cast_to<MemberNode>())) == SIZE_MAX) {
-			co_return gen_out_of_memory_syntax_error();
+			co_return gen_oom_syntax_error();
 		}
 
 		Token *name_token;
@@ -731,7 +731,7 @@ SLKC_API ParseCoroutine Parser::parse_enum_item(peff::Alloc *allocator, AstNodeP
 		next_token();
 
 		if (!enum_item->name.build(name_token->source_text))
-			co_return gen_out_of_memory_syntax_error();
+			co_return gen_oom_syntax_error();
 
 		if (Token *token = peek_token(); token->token_id == TokenId::AssignOp) {
 			next_token();
@@ -743,7 +743,7 @@ SLKC_API ParseCoroutine Parser::parse_enum_item(peff::Alloc *allocator, AstNodeP
 		peff::String s(resource_allocator.get());
 
 		if (!s.build(enum_item->name)) {
-			co_return gen_out_of_memory_syntax_error();
+			co_return gen_oom_syntax_error();
 		}
 
 		ConflictingDefinitionsErrorExData ex_data(std::move(s));
@@ -751,7 +751,7 @@ SLKC_API ParseCoroutine Parser::parse_enum_item(peff::Alloc *allocator, AstNodeP
 		co_return SyntaxError(enum_item->token_range, std::move(ex_data));
 	} else {
 		if (!(enum_out->scope->index_member(idx_member))) {
-			co_return gen_out_of_memory_syntax_error();
+			co_return gen_oom_syntax_error();
 		}
 	}
 
@@ -805,10 +805,10 @@ access_modifier_parse_end:
 					AstNodePtr<UnionEnumNode> enum_node;
 
 					if (!(enum_node = make_ast_node<UnionEnumNode>(resource_allocator.get(), resource_allocator.get(), get_document())))
-						co_return gen_out_of_memory_syntax_error();
+						co_return gen_oom_syntax_error();
 
 					if (!(enum_node->alloc_scope()))
-						co_return gen_out_of_memory_syntax_error();
+						co_return gen_oom_syntax_error();
 
 					peff::ScopeGuard set_token_range_guard([this, token, enum_node]() noexcept {
 						enum_node->token_range = TokenRange{ get_document()->main_module, token->index, parse_context.idx_prev_token };
@@ -821,11 +821,11 @@ access_modifier_parse_end:
 
 					size_t idx_member;
 					if ((idx_member = p->scope->push_member(enum_node.cast_to<MemberNode>())) == SIZE_MAX) {
-						co_return gen_out_of_memory_syntax_error();
+						co_return gen_oom_syntax_error();
 					}
 
 					if (!enum_node->name.build(name_token->source_text)) {
-						co_return gen_out_of_memory_syntax_error();
+						co_return gen_oom_syntax_error();
 					}
 
 					Token *l_brace_token;
@@ -841,7 +841,7 @@ access_modifier_parse_end:
 							if (syntax_error->error_kind == SyntaxErrorKind::OutOfMemory)
 								co_return syntax_error;
 							if (!syntax_errors.push_back(syntax_error.move()))
-								co_return gen_out_of_memory_syntax_error();
+								co_return gen_oom_syntax_error();
 						}
 
 						if (peek_token()->token_id != TokenId::Comma)
@@ -858,7 +858,7 @@ access_modifier_parse_end:
 						peff::String s(resource_allocator.get());
 
 						if (!s.build(enum_node->name)) {
-							co_return gen_out_of_memory_syntax_error();
+							co_return gen_oom_syntax_error();
 						}
 
 						ConflictingDefinitionsErrorExData ex_data(std::move(s));
@@ -866,7 +866,7 @@ access_modifier_parse_end:
 						co_return SyntaxError(enum_node->token_range, std::move(ex_data));
 					} else {
 						if (!(p->scope->index_member(idx_member))) {
-							co_return gen_out_of_memory_syntax_error();
+							co_return gen_oom_syntax_error();
 						}
 					}
 					break;
@@ -876,10 +876,10 @@ access_modifier_parse_end:
 					AstNodePtr<ConstEnumNode> enum_node;
 
 					if (!(enum_node = make_ast_node<ConstEnumNode>(resource_allocator.get(), resource_allocator.get(), get_document())))
-						co_return gen_out_of_memory_syntax_error();
+						co_return gen_oom_syntax_error();
 
 					if (!(enum_node->alloc_scope()))
-						co_return gen_out_of_memory_syntax_error();
+						co_return gen_oom_syntax_error();
 
 					peff::ScopeGuard set_token_range_guard([this, token, enum_node]() noexcept {
 						enum_node->token_range = TokenRange{ get_document()->main_module, token->index, parse_context.idx_prev_token };
@@ -892,11 +892,11 @@ access_modifier_parse_end:
 
 					size_t idx_member;
 					if ((idx_member = p->scope->push_member(enum_node.cast_to<MemberNode>())) == SIZE_MAX) {
-						co_return gen_out_of_memory_syntax_error();
+						co_return gen_oom_syntax_error();
 					}
 
 					if (!enum_node->name.build(name_token->source_text)) {
-						co_return gen_out_of_memory_syntax_error();
+						co_return gen_oom_syntax_error();
 					}
 
 					if (Token *l_parenthese_token = peek_token(); l_parenthese_token->token_id == TokenId::LParenthese) {
@@ -923,7 +923,7 @@ access_modifier_parse_end:
 							if (syntax_error->error_kind == SyntaxErrorKind::OutOfMemory)
 								co_return syntax_error;
 							if (!syntax_errors.push_back(syntax_error.move()))
-								co_return gen_out_of_memory_syntax_error();
+								co_return gen_oom_syntax_error();
 						}
 
 						if (peek_token()->token_id != TokenId::Comma)
@@ -940,7 +940,7 @@ access_modifier_parse_end:
 						peff::String s(resource_allocator.get());
 
 						if (!s.build(enum_node->name)) {
-							co_return gen_out_of_memory_syntax_error();
+							co_return gen_oom_syntax_error();
 						}
 
 						ConflictingDefinitionsErrorExData ex_data(std::move(s));
@@ -948,7 +948,7 @@ access_modifier_parse_end:
 						co_return SyntaxError(enum_node->token_range, std::move(ex_data));
 					} else {
 						if (!(p->scope->index_member(idx_member))) {
-							co_return gen_out_of_memory_syntax_error();
+							co_return gen_oom_syntax_error();
 						}
 					}
 					break;
@@ -958,10 +958,10 @@ access_modifier_parse_end:
 					AstNodePtr<ScopedEnumNode> enum_node;
 
 					if (!(enum_node = make_ast_node<ScopedEnumNode>(resource_allocator.get(), resource_allocator.get(), get_document())))
-						co_return gen_out_of_memory_syntax_error();
+						co_return gen_oom_syntax_error();
 
 					if (!(enum_node->alloc_scope()))
-						co_return gen_out_of_memory_syntax_error();
+						co_return gen_oom_syntax_error();
 
 					size_t idx_member;
 					{
@@ -969,11 +969,11 @@ access_modifier_parse_end:
 							enum_node->token_range = TokenRange{ get_document()->main_module, token->index, parse_context.idx_prev_token };
 						});
 						if ((idx_member = p->scope->push_member(enum_node.cast_to<MemberNode>())) == SIZE_MAX) {
-							co_return gen_out_of_memory_syntax_error();
+							co_return gen_oom_syntax_error();
 						}
 
 						if (!enum_node->name.build(name_token->source_text)) {
-							co_return gen_out_of_memory_syntax_error();
+							co_return gen_oom_syntax_error();
 						}
 
 						if (Token *l_parenthese_token = peek_token(); l_parenthese_token->token_id == TokenId::LParenthese) {
@@ -1001,7 +1001,7 @@ access_modifier_parse_end:
 							if (syntax_error->error_kind == SyntaxErrorKind::OutOfMemory)
 								co_return syntax_error;
 							if (!syntax_errors.push_back(syntax_error.move()))
-								co_return gen_out_of_memory_syntax_error();
+								co_return gen_oom_syntax_error();
 						}
 
 						if (peek_token()->token_id != TokenId::Comma)
@@ -1018,7 +1018,7 @@ access_modifier_parse_end:
 						peff::String s(resource_allocator.get());
 
 						if (!s.build(enum_node->name)) {
-							co_return gen_out_of_memory_syntax_error();
+							co_return gen_oom_syntax_error();
 						}
 
 						ConflictingDefinitionsErrorExData ex_data(std::move(s));
@@ -1026,7 +1026,7 @@ access_modifier_parse_end:
 						co_return SyntaxError(enum_node->token_range, std::move(ex_data));
 					} else {
 						if (!(p->scope->index_member(idx_member))) {
-							co_return gen_out_of_memory_syntax_error();
+							co_return gen_oom_syntax_error();
 						}
 					}
 					break;
@@ -1043,11 +1043,11 @@ access_modifier_parse_end:
 			AstNodePtr<AttributeDefNode> attribute_node;
 
 			if (!(attribute_node = make_ast_node<AttributeDefNode>(resource_allocator.get(), resource_allocator.get(), get_document()))) {
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 			}
 
 			if (!(attribute_node->alloc_scope()))
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 
 			attribute_node->access_modifier = access;
 
@@ -1059,11 +1059,11 @@ access_modifier_parse_end:
 
 			size_t idx_member;
 			if ((idx_member = p->scope->push_member(attribute_node.cast_to<MemberNode>())) == SIZE_MAX) {
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 			}
 
 			if (!attribute_node->name.build(name_token->source_text)) {
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 			}
 
 			{
@@ -1096,7 +1096,7 @@ access_modifier_parse_end:
 						// Parse the rest to make sure that we have gained all of the information,
 						// instead of ignoring them.
 						if (!syntax_errors.push_back(std::move(syntax_error.value())))
-							co_return gen_out_of_memory_syntax_error();
+							co_return gen_oom_syntax_error();
 						syntax_error.reset();
 					}
 				}
@@ -1112,7 +1112,7 @@ access_modifier_parse_end:
 				peff::String s(resource_allocator.get());
 
 				if (!s.build(attribute_node->name)) {
-					co_return gen_out_of_memory_syntax_error();
+					co_return gen_oom_syntax_error();
 				}
 
 				ConflictingDefinitionsErrorExData ex_data(std::move(s));
@@ -1120,7 +1120,7 @@ access_modifier_parse_end:
 				co_return SyntaxError(attribute_node->token_range, std::move(ex_data));
 			} else {
 				if (!(p->scope->index_member(idx_member))) {
-					co_return gen_out_of_memory_syntax_error();
+					co_return gen_oom_syntax_error();
 				}
 			}
 
@@ -1142,7 +1142,7 @@ access_modifier_parse_end:
 					peff::String s(resource_allocator.get());
 
 					if (!s.build(fn->name)) {
-						co_return gen_out_of_memory_syntax_error();
+						co_return gen_oom_syntax_error();
 					}
 
 					ConflictingDefinitionsErrorExData ex_data(std::move(s));
@@ -1152,27 +1152,27 @@ access_modifier_parse_end:
 				FnNode *fn_slot = (FnNode *)p->scope->_members.at(it.value()).get();
 				fn->set_parent(fn_slot);
 				if (!fn_slot->overloadings.push_back(std::move(fn))) {
-					co_return gen_out_of_memory_syntax_error();
+					co_return gen_oom_syntax_error();
 				}
 			} else {
 				AstNodePtr<FnNode> fn_slot;
 
 				if (!(fn_slot = make_ast_node<FnNode>(resource_allocator.get(), resource_allocator.get(), get_document()))) {
-					co_return gen_out_of_memory_syntax_error();
+					co_return gen_oom_syntax_error();
 				}
 
 				if (!fn_slot->name.build(fn->name)) {
-					co_return gen_out_of_memory_syntax_error();
+					co_return gen_oom_syntax_error();
 				}
 
 				if (!(p->scope->add_member(fn_slot.cast_to<MemberNode>()))) {
-					co_return gen_out_of_memory_syntax_error();
+					co_return gen_oom_syntax_error();
 				}
 
 				fn->set_parent(fn_slot.get());
 
 				if (!fn_slot->overloadings.push_back(std::move(fn))) {
-					co_return gen_out_of_memory_syntax_error();
+					co_return gen_oom_syntax_error();
 				}
 			}
 			break;
@@ -1184,11 +1184,11 @@ access_modifier_parse_end:
 			AstNodePtr<ClassNode> class_node;
 
 			if (!(class_node = make_ast_node<ClassNode>(resource_allocator.get(), resource_allocator.get(), get_document()))) {
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 			}
 
 			if (!(class_node->alloc_scope()))
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 
 			class_node->access_modifier = access;
 
@@ -1199,12 +1199,12 @@ access_modifier_parse_end:
 			next_token();
 
 			if (!class_node->name.build(name_token->source_text)) {
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 			}
 
 			size_t idx_member;
 			if ((idx_member = p->scope->push_member(class_node.cast_to<MemberNode>())) == SIZE_MAX) {
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 			}
 
 			{
@@ -1226,7 +1226,7 @@ access_modifier_parse_end:
 						peff::String s(resource_allocator.get());
 
 						if (!s.build(gp->name)) {
-							co_return gen_out_of_memory_syntax_error();
+							co_return gen_oom_syntax_error();
 						}
 
 						ConflictingDefinitionsErrorExData ex_data(std::move(s));
@@ -1234,7 +1234,7 @@ access_modifier_parse_end:
 						co_return SyntaxError(gp->token_range, std::move(ex_data));
 					}
 					if (!class_node->scope->generic_param_indices.insert(gp->name, +i))
-						co_return gen_out_of_memory_syntax_error();
+						co_return gen_oom_syntax_error();
 				}
 
 				if (Token *l_parenthese_token = peek_token(); l_parenthese_token->token_id == TokenId::LParenthese) {
@@ -1257,7 +1257,7 @@ access_modifier_parse_end:
 						SLKC_CO_RETURN_IF_CO_PARSE_ERROR(parse_type_name(this->resource_allocator.get(), tn));
 
 						if (!class_node->scope->impl_types.push_back(std::move(tn))) {
-							co_return gen_out_of_memory_syntax_error();
+							co_return gen_oom_syntax_error();
 						}
 
 						if (peek_token()->token_id != TokenId::AddOp) {
@@ -1286,7 +1286,7 @@ access_modifier_parse_end:
 						// Parse the rest to make sure that we have gained all of the information,
 						// instead of ignoring them.
 						if (!syntax_errors.push_back(std::move(syntax_error.value())))
-							co_return gen_out_of_memory_syntax_error();
+							co_return gen_oom_syntax_error();
 						syntax_error.reset();
 					}
 				}
@@ -1302,7 +1302,7 @@ access_modifier_parse_end:
 				peff::String s(resource_allocator.get());
 
 				if (!s.build(class_node->name)) {
-					co_return gen_out_of_memory_syntax_error();
+					co_return gen_oom_syntax_error();
 				}
 
 				ConflictingDefinitionsErrorExData ex_data(std::move(s));
@@ -1310,7 +1310,7 @@ access_modifier_parse_end:
 				co_return SyntaxError(class_node->token_range, std::move(ex_data));
 			} else {
 				if (!(p->scope->index_member(idx_member))) {
-					co_return gen_out_of_memory_syntax_error();
+					co_return gen_oom_syntax_error();
 				}
 			}
 
@@ -1323,11 +1323,11 @@ access_modifier_parse_end:
 			AstNodePtr<StructNode> struct_node;
 
 			if (!(struct_node = make_ast_node<StructNode>(resource_allocator.get(), resource_allocator.get(), get_document()))) {
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 			}
 
 			if (!(struct_node->alloc_scope()))
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 
 			struct_node->access_modifier = access;
 
@@ -1338,12 +1338,12 @@ access_modifier_parse_end:
 			next_token();
 
 			if (!struct_node->name.build(name_token->source_text)) {
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 			}
 
 			size_t idx_member;
 			if ((idx_member = p->scope->push_member(struct_node.cast_to<MemberNode>())) == SIZE_MAX) {
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 			}
 
 			{
@@ -1365,7 +1365,7 @@ access_modifier_parse_end:
 						peff::String s(resource_allocator.get());
 
 						if (!s.build(gp->name)) {
-							co_return gen_out_of_memory_syntax_error();
+							co_return gen_oom_syntax_error();
 						}
 
 						ConflictingDefinitionsErrorExData ex_data(std::move(s));
@@ -1373,7 +1373,7 @@ access_modifier_parse_end:
 						co_return SyntaxError(gp->token_range, std::move(ex_data));
 					}
 					if (!struct_node->scope->generic_param_indices.insert(gp->name, +i))
-						co_return gen_out_of_memory_syntax_error();
+						co_return gen_oom_syntax_error();
 				}
 
 				if (Token *colon_token = peek_token(); colon_token->token_id == TokenId::Colon) {
@@ -1385,7 +1385,7 @@ access_modifier_parse_end:
 						SLKC_CO_RETURN_IF_CO_PARSE_ERROR(parse_type_name(this->resource_allocator.get(), tn));
 
 						if (!struct_node->scope->impl_types.push_back(std::move(tn))) {
-							co_return gen_out_of_memory_syntax_error();
+							co_return gen_oom_syntax_error();
 						}
 
 						if (peek_token()->token_id != TokenId::AddOp) {
@@ -1414,7 +1414,7 @@ access_modifier_parse_end:
 						// Parse the rest to make sure that we have gained all of the information,
 						// instead of ignoring them.
 						if (!syntax_errors.push_back(std::move(syntax_error.value())))
-							co_return gen_out_of_memory_syntax_error();
+							co_return gen_oom_syntax_error();
 						syntax_error.reset();
 					}
 				}
@@ -1430,7 +1430,7 @@ access_modifier_parse_end:
 				peff::String s(resource_allocator.get());
 
 				if (!s.build(struct_node->name)) {
-					co_return gen_out_of_memory_syntax_error();
+					co_return gen_oom_syntax_error();
 				}
 
 				ConflictingDefinitionsErrorExData ex_data(std::move(s));
@@ -1438,7 +1438,7 @@ access_modifier_parse_end:
 				co_return SyntaxError(struct_node->token_range, std::move(ex_data));
 			} else {
 				if (!(p->scope->index_member(idx_member))) {
-					co_return gen_out_of_memory_syntax_error();
+					co_return gen_oom_syntax_error();
 				}
 			}
 
@@ -1451,11 +1451,11 @@ access_modifier_parse_end:
 			AstNodePtr<InterfaceNode> interface_node;
 
 			if (!(interface_node = make_ast_node<InterfaceNode>(resource_allocator.get(), resource_allocator.get(), get_document()))) {
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 			}
 
 			if (!(interface_node->alloc_scope()))
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 
 			interface_node->access_modifier = access;
 
@@ -1466,12 +1466,12 @@ access_modifier_parse_end:
 			next_token();
 
 			if (!interface_node->name.build(name_token->source_text)) {
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 			}
 
 			size_t idx_member;
 			if ((idx_member = p->scope->push_member(interface_node.cast_to<MemberNode>())) == SIZE_MAX) {
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 			}
 
 			Token *t;
@@ -1495,7 +1495,7 @@ access_modifier_parse_end:
 						peff::String s(resource_allocator.get());
 
 						if (!s.build(gp->name)) {
-							co_return gen_out_of_memory_syntax_error();
+							co_return gen_oom_syntax_error();
 						}
 
 						ConflictingDefinitionsErrorExData ex_data(std::move(s));
@@ -1503,7 +1503,7 @@ access_modifier_parse_end:
 						co_return SyntaxError(gp->token_range, std::move(ex_data));
 					}
 					if (!interface_node->scope->generic_param_indices.insert(gp->name, +i))
-						co_return gen_out_of_memory_syntax_error();
+						co_return gen_oom_syntax_error();
 				}
 
 				if (Token *colon_token = peek_token(); colon_token->token_id == TokenId::Colon) {
@@ -1515,7 +1515,7 @@ access_modifier_parse_end:
 						SLKC_CO_RETURN_IF_CO_PARSE_ERROR(parse_type_name(this->resource_allocator.get(), tn));
 
 						if (!interface_node->scope->impl_types.push_back(std::move(tn))) {
-							co_return gen_out_of_memory_syntax_error();
+							co_return gen_oom_syntax_error();
 						}
 
 						if (peek_token()->token_id != TokenId::AddOp) {
@@ -1544,7 +1544,7 @@ access_modifier_parse_end:
 						// Parse the rest to make sure that we have gained all of the information,
 						// instead of ignoring them.
 						if (!syntax_errors.push_back(std::move(syntax_error.value())))
-							co_return gen_out_of_memory_syntax_error();
+							co_return gen_oom_syntax_error();
 						syntax_error.reset();
 					}
 				}
@@ -1560,7 +1560,7 @@ access_modifier_parse_end:
 				peff::String s(resource_allocator.get());
 
 				if (!s.build(interface_node->name)) {
-					co_return gen_out_of_memory_syntax_error();
+					co_return gen_oom_syntax_error();
 				}
 
 				ConflictingDefinitionsErrorExData ex_data(std::move(s));
@@ -1568,7 +1568,7 @@ access_modifier_parse_end:
 				co_return SyntaxError(interface_node->token_range, std::move(ex_data));
 			} else {
 				if (!(p->scope->index_member(idx_member))) {
-					co_return gen_out_of_memory_syntax_error();
+					co_return gen_oom_syntax_error();
 				}
 			}
 
@@ -1581,13 +1581,13 @@ access_modifier_parse_end:
 			AstNodePtr<ImportNode> import_node;
 
 			if (!(import_node = make_ast_node<ImportNode>(resource_allocator.get(), resource_allocator.get(), get_document()))) {
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 			}
 
 			SLKC_CO_RETURN_IF_CO_PARSE_ERROR(parse_id_ref(this->resource_allocator.get(), import_node->id_ref));
 			size_t idx_member;
 			if ((idx_member = p->scope->push_member(import_node.cast_to<MemberNode>())) == SIZE_MAX) {
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 			}
 
 			if (Token *as_token = peek_token(); as_token->token_id == TokenId::AsKeyword) {
@@ -1598,15 +1598,15 @@ access_modifier_parse_end:
 				SLKC_CO_RETURN_IF_PARSE_ERROR((expect_token((name_token = peek_token()), TokenId::Id)));
 
 				if (!import_node->name.build(name_token->source_text)) {
-					co_return gen_out_of_memory_syntax_error();
+					co_return gen_oom_syntax_error();
 				}
 
 				if (!p->scope->index_member(idx_member)) {
-					co_return gen_out_of_memory_syntax_error();
+					co_return gen_oom_syntax_error();
 				}
 			} else {
 				if (!p->scope->anonymous_imports.push_back(AstNodePtr<ImportNode>(import_node))) {
-					co_return gen_out_of_memory_syntax_error();
+					co_return gen_oom_syntax_error();
 				}
 			}
 
@@ -1629,13 +1629,13 @@ access_modifier_parse_end:
 					  resource_allocator.get(),
 					  get_document(),
 					  peff::DynArray<VarDefEntryPtr>(resource_allocator.get())))) {
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 			}
 
 			stmt->access_modifier = access;
 
 			if (!p->var_def_stmts.push_back(AstNodePtr<VarDefStmtNode>(stmt))) {
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 			}
 
 			peff::ScopeGuard set_token_range_guard([this, token, stmt]() noexcept {
@@ -1655,27 +1655,27 @@ access_modifier_parse_end:
 					peff::String s(resource_allocator.get());
 
 					if (!s.build(i->name))
-						co_return gen_out_of_memory_syntax_error();
+						co_return gen_oom_syntax_error();
 
 					ConflictingDefinitionsErrorExData ex_data(std::move(s));
 
 					if (syntax_errors.push_back(SyntaxError(TokenRange(p.get(), i->idx_name_token), std::move(ex_data))))
-						co_return gen_out_of_memory_syntax_error();
+						co_return gen_oom_syntax_error();
 				}
 				AstNodePtr<VarNode> var_node;
 
 				if (!(var_node = make_ast_node<VarNode>(resource_allocator.get(), resource_allocator.get(), get_document()))) {
-					co_return gen_out_of_memory_syntax_error();
+					co_return gen_oom_syntax_error();
 				}
 
 				if (!var_node->name.build(i->name))
-					co_return gen_out_of_memory_syntax_error();
+					co_return gen_oom_syntax_error();
 				var_node->initial_value = i->initial_value;
 				var_node->type = i->type;
 				var_node->access_modifier = stmt->access_modifier;
 
 				if (!p->scope->add_member(var_node.cast_to<MemberNode>()))
-					co_return gen_out_of_memory_syntax_error();
+					co_return gen_oom_syntax_error();
 			}
 
 			break;
@@ -1705,7 +1705,7 @@ SLKC_API ParseCoroutine Parser::parse_program(peff::Alloc *allocator, const AstN
 
 		if ((syntax_error = (co_await parse_id_ref(this->resource_allocator.get(), module_name)(this)))) {
 			if (!syntax_errors.push_back(std::move(syntax_error.value())))
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 			syntax_error.reset();
 		}
 
@@ -1722,7 +1722,7 @@ SLKC_API ParseCoroutine Parser::parse_program(peff::Alloc *allocator, const AstN
 			// Parse the rest to make sure that we have gained all of the information,
 			// instead of ignoring them.
 			if (!syntax_errors.push_back(std::move(syntax_error.value())))
-				co_return gen_out_of_memory_syntax_error();
+				co_return gen_oom_syntax_error();
 			syntax_error.reset();
 		}
 	}

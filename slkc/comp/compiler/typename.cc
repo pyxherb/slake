@@ -27,7 +27,7 @@ SLKC_API peff::Option<CompilationError> slkc::remove_ref_of_type(
 	if (src->is_nullable) {
 		auto new_node = src->duplicate<TypeNameNode>(src->self_allocator.get());
 		if (!new_node)
-			return gen_out_of_memory_comp_error();
+			return gen_oom_comp_error();
 		new_node->is_nullable = false;
 		type_name_out = new_node;
 	} else
@@ -754,7 +754,7 @@ recurse:
 					  type->self_allocator.get(),
 					  type->document->shared_from_this())
 						.cast_to<TypeNameNode>()))
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			break;
 		case TypeNameKind::U16:
 			if (!(type_name_out = make_ast_node<I16TypeNameNode>(
@@ -762,7 +762,7 @@ recurse:
 					  type->self_allocator.get(),
 					  type->document->shared_from_this())
 						.cast_to<TypeNameNode>()))
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			break;
 		case TypeNameKind::U32:
 			if (!(type_name_out = make_ast_node<I32TypeNameNode>(
@@ -770,7 +770,7 @@ recurse:
 					  type->self_allocator.get(),
 					  type->document->shared_from_this())
 						.cast_to<TypeNameNode>()))
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			break;
 		case TypeNameKind::U64:
 			if (!(type_name_out = make_ast_node<I64TypeNameNode>(
@@ -778,7 +778,7 @@ recurse:
 					  type->self_allocator.get(),
 					  type->document->shared_from_this())
 						.cast_to<TypeNameNode>()))
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			break;
 		case TypeNameKind::USize:
 			if (!(type_name_out = make_ast_node<ISizeTypeNameNode>(
@@ -786,7 +786,7 @@ recurse:
 					  type->self_allocator.get(),
 					  type->document->shared_from_this())
 						.cast_to<TypeNameNode>()))
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			break;
 		default:
 			type_name_out = {};
@@ -806,7 +806,7 @@ recurse:
 					  type->self_allocator.get(),
 					  type->document->shared_from_this())
 						.cast_to<TypeNameNode>()))
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			break;
 		case TypeNameKind::I16:
 			if (!(type_name_out = make_ast_node<U16TypeNameNode>(
@@ -814,7 +814,7 @@ recurse:
 					  type->self_allocator.get(),
 					  type->document->shared_from_this())
 						.cast_to<TypeNameNode>()))
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			break;
 		case TypeNameKind::I32:
 			if (!(type_name_out = make_ast_node<U32TypeNameNode>(
@@ -822,7 +822,7 @@ recurse:
 					  type->self_allocator.get(),
 					  type->document->shared_from_this())
 						.cast_to<TypeNameNode>()))
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			break;
 		case TypeNameKind::I64:
 			if (!(type_name_out = make_ast_node<U64TypeNameNode>(
@@ -830,7 +830,7 @@ recurse:
 					  type->self_allocator.get(),
 					  type->document->shared_from_this())
 						.cast_to<TypeNameNode>()))
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			break;
 		case TypeNameKind::ISize:
 			if (!(type_name_out = make_ast_node<USizeTypeNameNode>(
@@ -838,7 +838,7 @@ recurse:
 					  type->self_allocator.get(),
 					  type->document->shared_from_this())
 						.cast_to<TypeNameNode>()))
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			break;
 		default:
 			type_name_out = {};
@@ -1034,7 +1034,7 @@ reconvert: {
 							  rhs->self_allocator.get(),
 							  rhs->document->shared_from_this())
 								.cast_to<TypeNameNode>()))
-						return gen_out_of_memory_comp_error();
+						return gen_oom_comp_error();
 					goto reconvert;
 				case TypeNameKind::I64:
 				case TypeNameKind::U64:
@@ -1043,7 +1043,7 @@ reconvert: {
 							  rhs->self_allocator.get(),
 							  rhs->document->shared_from_this())
 								.cast_to<TypeNameNode>()))
-						return gen_out_of_memory_comp_error();
+						return gen_oom_comp_error();
 					goto reconvert;
 			}
 		}
@@ -1064,7 +1064,7 @@ reconvert: {
 							  lhs->self_allocator.get(),
 							  lhs->document->shared_from_this())
 								.cast_to<TypeNameNode>()))
-						return gen_out_of_memory_comp_error();
+						return gen_oom_comp_error();
 					goto reconvert;
 				case TypeNameKind::I64:
 				case TypeNameKind::U64:
@@ -1073,7 +1073,7 @@ reconvert: {
 							  lhs->self_allocator.get(),
 							  lhs->document->shared_from_this())
 								.cast_to<TypeNameNode>()))
-						return gen_out_of_memory_comp_error();
+						return gen_oom_comp_error();
 					goto reconvert;
 			}
 		}
@@ -1136,8 +1136,8 @@ SLKC_API peff::Option<CompilationError> slkc::is_same_type_in_signature(
 					l = lhs_member.cast_to<GenericParamNode>();
 					r = rhs_member.cast_to<GenericParamNode>();
 
-					auto lp = l->parent,
-						 rp = r->parent;
+					auto lp = l->outer,
+						 rp = r->outer;
 
 					if (lp->get_ast_node_type() != rp->get_ast_node_type()) {
 						whether_out = false;
@@ -1521,7 +1521,7 @@ SLKC_API peff::Option<CompilationError> slkc::unwrap_param_list_type_name_tree(
 	AstNodePtr<TypeNameNode> duplicated_type = type->duplicate<TypeNameNode>(allocator);
 
 	if (!duplicated_type) {
-		return gen_out_of_memory_comp_error();
+		return gen_oom_comp_error();
 	}
 
 	SLKC_RETURN_IF_COMP_ERROR(_do_expand_param_list_type_name_tree(duplicated_type));
@@ -1584,12 +1584,12 @@ SLKC_API peff::Option<CompilationError> slkc::get_unpacked_type_of(
 						AstNodePtr<UnpackedParamsTypeNameNode> unpacked_type;
 
 						if (!(unpacked_type = make_ast_node<UnpackedParamsTypeNameNode>(document->allocator.get(), document->allocator.get(), document))) {
-							return gen_out_of_memory_comp_error();
+							return gen_oom_comp_error();
 						}
 
 						if (p->param_type_list_generic_constraint) {
 							if (!unpacked_type->param_types.resize(p->param_type_list_generic_constraint->arg_types.size())) {
-								return gen_out_of_memory_comp_error();
+								return gen_oom_comp_error();
 							}
 
 							for (size_t i = 0; i < unpacked_type->param_types.size(); ++i) {
@@ -1618,11 +1618,11 @@ SLKC_API peff::Option<CompilationError> slkc::get_unpacked_type_of(
 			AstNodePtr<UnpackedParamsTypeNameNode> unpacked_type;
 
 			if (!(unpacked_type = make_ast_node<UnpackedParamsTypeNameNode>(document->allocator.get(), document->allocator.get(), document))) {
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			}
 
 			if (!unpacked_type->param_types.resize(t->param_types.size())) {
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			}
 
 			for (size_t i = 0; i < unpacked_type->param_types.size(); ++i) {
@@ -1640,11 +1640,11 @@ SLKC_API peff::Option<CompilationError> slkc::get_unpacked_type_of(
 			AstNodePtr<UnpackedArgsTypeNameNode> unpacked_type;
 
 			if (!(unpacked_type = make_ast_node<UnpackedArgsTypeNameNode>(document->allocator.get(), document->allocator.get(), document))) {
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			}
 
 			if (!unpacked_type->param_types.resize(t->param_types.size())) {
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			}
 
 			for (size_t i = 0; i < unpacked_type->param_types.size(); ++i) {
@@ -1676,11 +1676,11 @@ SLKC_API peff::Option<CompilationError> slkc::fn_to_type_name(
 	AstNodePtr<FnTypeNameNode> tn;
 
 	if (!(tn = make_ast_node<FnTypeNameNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->get_document()))) {
-		return gen_out_of_memory_comp_error();
+		return gen_oom_comp_error();
 	}
 
 	if (!tn->param_types.resize(fn->params.size())) {
-		return gen_out_of_memory_comp_error();
+		return gen_oom_comp_error();
 	}
 
 	for (size_t i = 0; i < tn->param_types.size(); ++i) {
@@ -1694,18 +1694,18 @@ SLKC_API peff::Option<CompilationError> slkc::fn_to_type_name(
 	tn->return_type = fn->return_type;
 
 	if (!(fn->access_modifier & slake::ACCESS_STATIC)) {
-		if (fn->parent && fn->parent->parent) {
-			switch (fn->parent->parent->get_ast_node_type()) {
+		if (fn->outer && fn->outer->outer) {
+			switch (fn->outer->outer->get_ast_node_type()) {
 				case AstNodeType::Class:
 				case AstNodeType::Interface: {
 					IdRefPtr full_id_ref;
 
-					SLKC_RETURN_IF_COMP_ERROR(get_full_id_ref(compile_env->allocator.get(), fn->parent->parent->shared_from_this().cast_to<MemberNode>(), full_id_ref));
+					SLKC_RETURN_IF_COMP_ERROR(get_full_id_ref(compile_env->allocator.get(), fn->outer->outer->shared_from_this().cast_to<MemberNode>(), full_id_ref));
 
 					auto this_type = make_ast_node<CustomTypeNameNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->get_document());
 
 					if (!this_type) {
-						return gen_out_of_memory_comp_error();
+						return gen_oom_comp_error();
 					}
 					this_type->context_node = to_weak_ptr(compile_env->get_document()->root_module.cast_to<MemberNode>());
 

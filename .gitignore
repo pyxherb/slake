@@ -30,6 +30,7 @@ CMakeSettings.json
 *.user
 *.bak
 .nvim.lua
+.clangd
 
 # Runtime artifacts
 *.log

@@ -105,7 +105,7 @@ static peff::Option<CompilationError> _compile_simple_binary_expr(
 			if ((e = _compile_or_cast_operand(compile_env, compilation_context, path_env, lhs_eval_purpose, desired_lhs_type, expr->lhs, lhs_type, lhs_result))) {
 				if (auto re = _compile_or_cast_operand(compile_env, compilation_context, path_env, rhs_eval_purpose, desired_rhs_type, expr->rhs, rhs_type, rhs_result); re) {
 					if (!compile_env->errors.push_back(std::move(*e))) {
-						return gen_out_of_memory_comp_error();
+						return gen_oom_comp_error();
 					}
 					e.reset();
 					return re;
@@ -237,7 +237,7 @@ static peff::Option<CompilationError> _compile_simple_assign_expr(
 			if ((e = _compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::LValue, desired_lhs_type, expr->lhs, lhs_type, lhs_result))) {
 				if (auto re = _compile_or_cast_operand(compile_env, compilation_context, path_env, rhs_eval_purpose, desired_rhs_type, expr->rhs, decayed_rhs_type, rhs_result); re) {
 					if (!compile_env->errors.push_back(std::move(*e))) {
-						return gen_out_of_memory_comp_error();
+						return gen_oom_comp_error();
 					}
 					e.reset();
 					return re;
@@ -289,7 +289,7 @@ static peff::Option<CompilationError> _compile_simple_assign_expr(
 			if ((e = _compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::LValue, desired_lhs_type, expr->lhs, lhs_type, lhs_result))) {
 				if (auto re = _compile_or_cast_operand(compile_env, compilation_context, path_env, rhs_eval_purpose, desired_rhs_type, expr->rhs, decayed_rhs_type, rhs_result); re) {
 					if (!compile_env->errors.push_back(std::move(*e))) {
-						return gen_out_of_memory_comp_error();
+						return gen_oom_comp_error();
 					}
 					e.reset();
 					return re;
@@ -377,7 +377,7 @@ static peff::Option<CompilationError> _compile_simple_land_binary_expr(
 			if ((e = _compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, bool_type.cast_to<TypeNameNode>(), expr->lhs, lhs_type, lhs_result))) {
 				if (auto re = _compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, bool_type.cast_to<TypeNameNode>(), expr->rhs, rhs_type, rhs_result); re) {
 					if (!compile_env->errors.push_back(std::move(*e))) {
-						return gen_out_of_memory_comp_error();
+						return gen_oom_comp_error();
 					}
 					e.reset();
 					return re;
@@ -488,7 +488,7 @@ static peff::Option<CompilationError> _compile_simple_lor_binary_expr(
 			if ((e = _compile_or_cast_operand(compile_env, compilation_context, &lhs_path_env, ExprEvalPurpose::RValue, bool_type.cast_to<TypeNameNode>(), expr->lhs, lhs_type, lhs_result))) {
 				if (auto re = _compile_or_cast_operand(compile_env, compilation_context, &rhs_path_env, ExprEvalPurpose::RValue, bool_type.cast_to<TypeNameNode>(), expr->rhs, rhs_type, rhs_result); re) {
 					if (!compile_env->errors.push_back(std::move(*e))) {
-						return gen_out_of_memory_comp_error();
+						return gen_oom_comp_error();
 					}
 					e.reset();
 					return re;
@@ -671,7 +671,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 	if (auto e = eval_expr_type(compile_env, compilation_context, path_env, expr->lhs, lhs_type); e) {
 		if (auto re = eval_expr_type(compile_env, compilation_context, path_env, expr->rhs, rhs_type); re) {
 			if (!compile_env->errors.push_back(std::move(*e))) {
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			}
 			e.reset();
 			return re;
@@ -704,21 +704,21 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 			  compile_env->allocator.get(),
 			  compile_env->allocator.get(),
 			  compile_env->get_document()))) {
-		return gen_out_of_memory_comp_error();
+		return gen_oom_comp_error();
 	}
 
 	if (!(i32_type = peff::make_shared_with_control_block<I32TypeNameNode, AstNodeControlBlock<I32TypeNameNode>>(
 			  compile_env->allocator.get(),
 			  compile_env->allocator.get(),
 			  compile_env->get_document()))) {
-		return gen_out_of_memory_comp_error();
+		return gen_oom_comp_error();
 	}
 
 	if (!(bool_type = make_ast_node<BoolTypeNameNode>(
 			  compile_env->allocator.get(),
 			  compile_env->allocator.get(),
 			  compile_env->get_document()))) {
-		return gen_out_of_memory_comp_error();
+		return gen_oom_comp_error();
 	}
 
 	// Deal with the RHS to LHS user binary operator.
@@ -764,7 +764,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 				std::string_view operator_name = get_binary_operator_overloading_name(expr->binary_op);
 
 				if (!e.name.build(operator_name)) {
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 				}
 
 				SLKC_RETURN_IF_COMP_ERROR(resolve_instance_member(compile_env, compile_env->get_document(), cls_node, e, operator_slot));
@@ -781,7 +781,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 				peff::DynArray<AstNodePtr<TypeNameNode>> operator_param_types(compile_env->allocator.get());
 
 				if (!operator_param_types.push_back(AstNodePtr<TypeNameNode>(lhs_type))) {
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 				}
 
 				AstNodePtr<VoidTypeNameNode> void_type;
@@ -790,11 +790,11 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 						  compile_env->allocator.get(),
 						  compile_env->allocator.get(),
 						  compile_env->get_document()))) {
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 				}
 
 				if (!operator_param_types.push_back(void_type.cast_to<TypeNameNode>())) {
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 				}
 
 				SLKC_RETURN_IF_COMP_ERROR(determine_fn_overloading(compile_env, operator_slot.cast_to<FnNode>(), operator_param_types.data(), operator_param_types.size(), false, matched_overloading_indices));
@@ -852,7 +852,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 					id_ref_object->param_types = peff::DynArray<slake::TypeRef>(compile_env->runtime->get_cur_gen_alloc());
 
 					if (!id_ref_object->param_types->resize(matched_overloading->params.size())) {
-						return gen_out_of_memory_comp_error();
+						return gen_oom_comp_error();
 					}
 
 					for (size_t i = 0; i < id_ref_object->param_types->size(); ++i) {
@@ -873,7 +873,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 					id_ref_object->param_types = peff::DynArray<slake::TypeRef>(compile_env->runtime->get_cur_gen_alloc());
 
 					if (!id_ref_object->param_types->resize(matched_overloading->params.size())) {
-						return gen_out_of_memory_comp_error();
+						return gen_oom_comp_error();
 					}
 
 					for (size_t i = 0; i < id_ref_object->param_types->size(); ++i) {
@@ -2099,7 +2099,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								  compile_env->get_document(),
 								  decayed_lhs_type.cast_to<ArrayTypeNameNode>()->element_type)
 									.cast_to<TypeNameNode>())) {
-							return gen_out_of_memory_comp_error();
+							return gen_oom_comp_error();
 						}
 						peff::Option<CompilationError> e;
 
@@ -2116,7 +2116,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								if ((e = _compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, lhs_type, expr->lhs, lhs_type, result))) {
 									if (auto re = _compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, u32_type.cast_to<TypeNameNode>(), expr->rhs, rhs_type, result); re) {
 										if (!compile_env->errors.push_back(std::move(*e))) {
-											return gen_out_of_memory_comp_error();
+											return gen_oom_comp_error();
 										}
 										e.reset();
 										return re;
@@ -2153,7 +2153,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								if ((e = _compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, lhs_type, expr->lhs, lhs_type, result))) {
 									if (auto re = _compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, u32_type.cast_to<TypeNameNode>(), expr->rhs, rhs_type, result); re) {
 										if (!compile_env->errors.push_back(std::move(*e))) {
-											return gen_out_of_memory_comp_error();
+											return gen_oom_comp_error();
 										}
 										e.reset();
 										return re;
@@ -2260,7 +2260,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 							return CompilationError(expr->token_range, CompilationErrorKind::OperatorNotFound);
 
 						if (!e.name.build(operator_name)) {
-							return gen_out_of_memory_comp_error();
+							return gen_oom_comp_error();
 						}
 
 						SLKC_RETURN_IF_COMP_ERROR(resolve_instance_member(compile_env, compile_env->get_document(), cls_node, e, operator_slot));
@@ -2277,7 +2277,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 						peff::DynArray<AstNodePtr<TypeNameNode>> operator_param_types(compile_env->allocator.get());
 
 						if (!operator_param_types.push_back(AstNodePtr<TypeNameNode>(rhs_type))) {
-							return gen_out_of_memory_comp_error();
+							return gen_oom_comp_error();
 						}
 
 						SLKC_RETURN_IF_COMP_ERROR(determine_fn_overloading(compile_env, operator_slot.cast_to<FnNode>(), operator_param_types.data(), operator_param_types.size(), false, matched_overloading_indices));
@@ -2335,7 +2335,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 							id_ref_object->param_types = peff::DynArray<slake::TypeRef>(compile_env->runtime->get_cur_gen_alloc());
 
 							if (!id_ref_object->param_types->resize(matched_overloading->params.size())) {
-								return gen_out_of_memory_comp_error();
+								return gen_oom_comp_error();
 							}
 
 							for (size_t i = 0; i < id_ref_object->param_types->size(); ++i) {
@@ -2358,7 +2358,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 							id_ref_object->param_types = peff::DynArray<slake::TypeRef>(compile_env->runtime->get_cur_gen_alloc());
 
 							if (!id_ref_object->param_types->resize(matched_overloading->params.size())) {
-								return gen_out_of_memory_comp_error();
+								return gen_oom_comp_error();
 							}
 
 							for (size_t i = 0; i < id_ref_object->param_types->size(); ++i) {
@@ -2454,7 +2454,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								if ((e = _compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, decayed_lhs_type, expr->lhs, lhs_type, result))) {
 									if (auto re = _compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, decayed_lhs_type, expr->rhs, rhs_type, result); re) {
 										if (!compile_env->errors.push_back(std::move(*e))) {
-											return gen_out_of_memory_comp_error();
+											return gen_oom_comp_error();
 										}
 										e.reset();
 										return re;
@@ -2505,7 +2505,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								if ((e = _compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, decayed_lhs_type, expr->lhs, lhs_type, result))) {
 									if (auto re = _compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, decayed_lhs_type, expr->rhs, rhs_type, result); re) {
 										if (!compile_env->errors.push_back(std::move(*e))) {
-											return gen_out_of_memory_comp_error();
+											return gen_oom_comp_error();
 										}
 										e.reset();
 										return re;

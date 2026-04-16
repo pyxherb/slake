@@ -27,7 +27,7 @@ SLAKE_FORCEINLINE static InternalExceptionPointer _normalize_read_result(Runtime
 		case ReadResult::Succeeded:
 			break;
 		case ReadResult::ReadError:
-			return alloc_out_of_memory_error_if_alloc_failed(ReadError::alloc(runtime->get_fixed_alloc()));
+			return alloc_oom_error_if_alloc_failed(ReadError::alloc(runtime->get_fixed_alloc()));
 		default:
 			std::terminate();
 	}
@@ -1174,7 +1174,7 @@ SLAKE_API InternalExceptionPointer loader::load_single_module(LoaderContext &con
 	SLAKE_RETURN_IF_EXCEPT(_normalize_read_result(runtime, reader->read((char *)&imh, sizeof(imh))));
 
 	if (memcmp(imh.magic, slxfmt::IMH_MAGIC, sizeof(imh.magic))) {
-		return alloc_out_of_memory_error_if_alloc_failed(BadMagicError::alloc(runtime->get_fixed_alloc()));
+		return alloc_oom_error_if_alloc_failed(BadMagicError::alloc(runtime->get_fixed_alloc()));
 	}
 
 	if (!(module_object_out = ModuleObject::alloc(runtime))) {

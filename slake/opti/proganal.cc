@@ -193,7 +193,7 @@ InternalExceptionPointer slake::opti::eval_object_type(
 					break;
 				}
 				default:
-					return alloc_out_of_memory_error_if_alloc_failed(
+					return alloc_oom_error_if_alloc_failed(
 						ErrorEvaluatingObjectTypeError::alloc(
 							object->associated_runtime->get_fixed_alloc(),
 							object));
@@ -253,7 +253,7 @@ InternalExceptionPointer slake::opti::eval_value_type(
 			uint32_t reg_index = value.get_reg_index();
 
 			if (!analyze_context.analyzed_info_out.analyzed_reg_info.contains(reg_index)) {
-				return alloc_out_of_memory_error_if_alloc_failed(
+				return alloc_oom_error_if_alloc_failed(
 					MalformedProgramError::alloc(
 						analyze_context.runtime->get_fixed_alloc(),
 						analyze_context.fn_object,
@@ -264,7 +264,7 @@ InternalExceptionPointer slake::opti::eval_value_type(
 			break;
 		}
 		default: {
-			return alloc_out_of_memory_error_if_alloc_failed(
+			return alloc_oom_error_if_alloc_failed(
 				MalformedProgramError::alloc(
 					analyze_context.runtime->get_fixed_alloc(),
 					analyze_context.fn_object,
@@ -296,7 +296,7 @@ InternalExceptionPointer slake::opti::eval_const_value(
 			uint32_t idx_reg = value.get_reg_index();
 
 			if (!analyze_context.analyzed_info_out.analyzed_reg_info.contains(idx_reg)) {
-				return alloc_out_of_memory_error_if_alloc_failed(
+				return alloc_oom_error_if_alloc_failed(
 					MalformedProgramError::alloc(
 						analyze_context.runtime->get_fixed_alloc(),
 						analyze_context.fn_object,
@@ -365,7 +365,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 
 				if (analyzed_info_out.analyzed_reg_info.contains(reg_index)) {
 					// Malformed program, return.
-					return alloc_out_of_memory_error_if_alloc_failed(
+					return alloc_oom_error_if_alloc_failed(
 						MalformedProgramError::alloc(
 							runtime->get_fixed_alloc(),
 							fn_object,
@@ -385,7 +385,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 
 					if (!analyzed_info_out.analyzed_reg_info.contains(index)) {
 						// Malformed program, return.
-						return alloc_out_of_memory_error_if_alloc_failed(
+						return alloc_oom_error_if_alloc_failed(
 							MalformedProgramError::alloc(
 								runtime->get_fixed_alloc(),
 								fn_object,
@@ -400,7 +400,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 				case Opcode::LOAD: {
 					if (reg_index != UINT32_MAX) {
 						if (cur_ins.num_operands != 1) {
-							return alloc_out_of_memory_error_if_alloc_failed(
+							return alloc_oom_error_if_alloc_failed(
 								MalformedProgramError::alloc(
 									runtime->get_fixed_alloc(),
 									fn_object,
@@ -408,7 +408,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 						}
 
 						if (cur_ins.operands[0].value_type != ValueType::Reference) {
-							return alloc_out_of_memory_error_if_alloc_failed(
+							return alloc_oom_error_if_alloc_failed(
 								MalformedProgramError::alloc(
 									runtime->get_fixed_alloc(),
 									fn_object,
@@ -421,7 +421,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 
 							if ((object.kind != ReferenceKind::ObjectRef) ||
 								(object.as_object->get_object_kind() != ObjectKind::IdRef)) {
-								return alloc_out_of_memory_error_if_alloc_failed(
+								return alloc_oom_error_if_alloc_failed(
 									MalformedProgramError::alloc(
 										runtime->get_fixed_alloc(),
 										fn_object,
@@ -445,7 +445,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 								return e;
 							} else {
 								e.reset();
-								return alloc_out_of_memory_error_if_alloc_failed(
+								return alloc_oom_error_if_alloc_failed(
 									MalformedProgramError::alloc(
 										runtime->get_fixed_alloc(),
 										fn_object,
@@ -476,7 +476,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 				case Opcode::RLOAD: {
 					if (reg_index != UINT32_MAX) {
 						if (cur_ins.num_operands != 2) {
-							return alloc_out_of_memory_error_if_alloc_failed(
+							return alloc_oom_error_if_alloc_failed(
 								MalformedProgramError::alloc(
 									runtime->get_fixed_alloc(),
 									fn_object,
@@ -484,7 +484,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 						}
 
 						if (cur_ins.operands[0].value_type != ValueType::RegIndex) {
-							return alloc_out_of_memory_error_if_alloc_failed(
+							return alloc_oom_error_if_alloc_failed(
 								MalformedProgramError::alloc(
 									runtime->get_fixed_alloc(),
 									fn_object,
@@ -492,7 +492,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 						}
 
 						if (cur_ins.operands[1].value_type != ValueType::Reference) {
-							return alloc_out_of_memory_error_if_alloc_failed(
+							return alloc_oom_error_if_alloc_failed(
 								MalformedProgramError::alloc(
 									runtime->get_fixed_alloc(),
 									fn_object,
@@ -505,7 +505,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 
 							if ((object.kind != ReferenceKind::ObjectRef) ||
 								(object.as_object->get_object_kind() != ObjectKind::IdRef)) {
-								return alloc_out_of_memory_error_if_alloc_failed(
+								return alloc_oom_error_if_alloc_failed(
 									MalformedProgramError::alloc(
 										runtime->get_fixed_alloc(),
 										fn_object,
@@ -533,7 +533,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 										switch (object->get_object_kind()) {
 											case ObjectKind::FnOverloading:
 												if (((FnOverloadingObject *)object)->access & ACCESS_STATIC) {
-													return alloc_out_of_memory_error_if_alloc_failed(
+													return alloc_oom_error_if_alloc_failed(
 														MalformedProgramError::alloc(
 															runtime->get_fixed_alloc(),
 															fn_object,
@@ -541,7 +541,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 												}
 												break;
 											default: {
-												return alloc_out_of_memory_error_if_alloc_failed(
+												return alloc_oom_error_if_alloc_failed(
 													MalformedProgramError::alloc(
 														runtime->get_fixed_alloc(),
 														fn_object,
@@ -557,7 +557,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 										analyzed_info_out.analyzed_reg_info.at(reg_index).storage_type = RegStorageType::FieldVar;
 										break;
 									default: {
-										return alloc_out_of_memory_error_if_alloc_failed(
+										return alloc_oom_error_if_alloc_failed(
 											MalformedProgramError::alloc(
 												runtime->get_fixed_alloc(),
 												fn_object,
@@ -570,7 +570,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 								break;
 							}
 							default: {
-								return alloc_out_of_memory_error_if_alloc_failed(
+								return alloc_oom_error_if_alloc_failed(
 									MalformedProgramError::alloc(
 										runtime->get_fixed_alloc(),
 										fn_object,
@@ -583,7 +583,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 				}
 				case Opcode::STORE: {
 					if (reg_index != UINT32_MAX) {
-						return alloc_out_of_memory_error_if_alloc_failed(
+						return alloc_oom_error_if_alloc_failed(
 							MalformedProgramError::alloc(
 								runtime->get_fixed_alloc(),
 								fn_object,
@@ -654,7 +654,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 								analyzed_info_out.analyzed_reg_info.at(reg_index).type = analyzed_info_out.analyzed_reg_info.at(cur_ins.operands[0].get_reg_index()).type;
 								break;
 							default: {
-								return alloc_out_of_memory_error_if_alloc_failed(
+								return alloc_oom_error_if_alloc_failed(
 									MalformedProgramError::alloc(
 										runtime->get_fixed_alloc(),
 										fn_object,
@@ -668,7 +668,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 				case Opcode::LARG: {
 					if (reg_index != UINT32_MAX) {
 						if (cur_ins.num_operands != 1) {
-							return alloc_out_of_memory_error_if_alloc_failed(
+							return alloc_oom_error_if_alloc_failed(
 								MalformedProgramError::alloc(
 									runtime->get_fixed_alloc(),
 									fn_object,
@@ -676,7 +676,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 						}
 
 						if (cur_ins.operands[0].value_type != ValueType::U32) {
-							return alloc_out_of_memory_error_if_alloc_failed(
+							return alloc_oom_error_if_alloc_failed(
 								MalformedProgramError::alloc(
 									runtime->get_fixed_alloc(),
 									fn_object,
@@ -688,7 +688,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 
 						if (fn_object->overloading_flags & OL_VARG) {
 							if (index > fn_object->param_types.size()) {
-								return alloc_out_of_memory_error_if_alloc_failed(
+								return alloc_oom_error_if_alloc_failed(
 									MalformedProgramError::alloc(
 										runtime->get_fixed_alloc(),
 										fn_object,
@@ -713,7 +713,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 							}
 						} else {
 							if (index >= fn_object->param_types.size()) {
-								return alloc_out_of_memory_error_if_alloc_failed(
+								return alloc_oom_error_if_alloc_failed(
 									MalformedProgramError::alloc(
 										runtime->get_fixed_alloc(),
 										fn_object,
@@ -739,7 +739,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 				}
 				case Opcode::LVAR: {
 					if (reg_index == UINT32_MAX) {
-						return alloc_out_of_memory_error_if_alloc_failed(
+						return alloc_oom_error_if_alloc_failed(
 							MalformedProgramError::alloc(
 								runtime->get_fixed_alloc(),
 								fn_object,
@@ -747,7 +747,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 					}
 
 					if (cur_ins.num_operands != 1) {
-						return alloc_out_of_memory_error_if_alloc_failed(
+						return alloc_oom_error_if_alloc_failed(
 							MalformedProgramError::alloc(
 								runtime->get_fixed_alloc(),
 								fn_object,
@@ -755,7 +755,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 					}
 
 					if (cur_ins.operands[0].value_type != ValueType::TypeName) {
-						return alloc_out_of_memory_error_if_alloc_failed(
+						return alloc_oom_error_if_alloc_failed(
 							MalformedProgramError::alloc(
 								runtime->get_fixed_alloc(),
 								fn_object,
@@ -784,7 +784,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 				case Opcode::LVALUE: {
 					if (reg_index != UINT32_MAX) {
 						if (cur_ins.num_operands != 1) {
-							return alloc_out_of_memory_error_if_alloc_failed(
+							return alloc_oom_error_if_alloc_failed(
 								MalformedProgramError::alloc(
 									runtime->get_fixed_alloc(),
 									fn_object,
@@ -792,7 +792,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 						}
 
 						if (cur_ins.operands[0].value_type != ValueType::RegIndex) {
-							return alloc_out_of_memory_error_if_alloc_failed(
+							return alloc_oom_error_if_alloc_failed(
 								MalformedProgramError::alloc(
 									runtime->get_fixed_alloc(),
 									fn_object,
@@ -803,7 +803,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 						TypeRef type = analyzed_info_out.analyzed_reg_info.at(index).type;
 
 						if (type.type_id != TypeId::Ref) {
-							return alloc_out_of_memory_error_if_alloc_failed(
+							return alloc_oom_error_if_alloc_failed(
 								MalformedProgramError::alloc(
 									runtime->get_fixed_alloc(),
 									fn_object,
@@ -847,7 +847,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 				case Opcode::AT: {
 					if (reg_index != UINT32_MAX) {
 						if (cur_ins.num_operands != 2) {
-							return alloc_out_of_memory_error_if_alloc_failed(
+							return alloc_oom_error_if_alloc_failed(
 								MalformedProgramError::alloc(
 									runtime->get_fixed_alloc(),
 									fn_object,
@@ -855,7 +855,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 						}
 
 						if (cur_ins.operands[0].value_type != ValueType::RegIndex) {
-							return alloc_out_of_memory_error_if_alloc_failed(
+							return alloc_oom_error_if_alloc_failed(
 								MalformedProgramError::alloc(
 									runtime->get_fixed_alloc(),
 									fn_object,
@@ -866,7 +866,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 						TypeRef type = analyzed_info_out.analyzed_reg_info.at(index).type;
 
 						if (type.type_id != TypeId::Array) {
-							return alloc_out_of_memory_error_if_alloc_failed(
+							return alloc_oom_error_if_alloc_failed(
 								MalformedProgramError::alloc(
 									runtime->get_fixed_alloc(),
 									fn_object,
@@ -886,7 +886,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 				}
 				case Opcode::JMP:
 					if (reg_index != UINT32_MAX) {
-						return alloc_out_of_memory_error_if_alloc_failed(
+						return alloc_oom_error_if_alloc_failed(
 							MalformedProgramError::alloc(
 								runtime->get_fixed_alloc(),
 								fn_object,
@@ -900,14 +900,14 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 					break;
 				case Opcode::PUSHARG: {
 					if (reg_index != UINT32_MAX) {
-						return alloc_out_of_memory_error_if_alloc_failed(
+						return alloc_oom_error_if_alloc_failed(
 							MalformedProgramError::alloc(
 								runtime->get_fixed_alloc(),
 								fn_object,
 								i));
 					}
 					if (cur_ins.num_operands != 1) {
-						return alloc_out_of_memory_error_if_alloc_failed(
+						return alloc_oom_error_if_alloc_failed(
 							MalformedProgramError::alloc(
 								runtime->get_fixed_alloc(),
 								fn_object,
@@ -931,7 +931,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 							mark_reg_as_for_output(analyze_context, cur_ins.operands[0].get_reg_index());
 							break;
 						default:
-							return alloc_out_of_memory_error_if_alloc_failed(
+							return alloc_oom_error_if_alloc_failed(
 								MalformedProgramError::alloc(
 									runtime->get_fixed_alloc(),
 									fn_object,
@@ -943,7 +943,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 				}
 				case Opcode::CALL: {
 					if (cur_ins.num_operands != 1) {
-						return alloc_out_of_memory_error_if_alloc_failed(
+						return alloc_oom_error_if_alloc_failed(
 							MalformedProgramError::alloc(
 								runtime->get_fixed_alloc(),
 								fn_object,
@@ -952,7 +952,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 
 					Value call_target = cur_ins.operands[0];
 					if (call_target.value_type != ValueType::RegIndex) {
-						return alloc_out_of_memory_error_if_alloc_failed(
+						return alloc_oom_error_if_alloc_failed(
 							MalformedProgramError::alloc(
 								runtime->get_fixed_alloc(),
 								fn_object,
@@ -961,7 +961,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 
 					uint32_t call_target_reg_index = call_target.get_reg_index();
 					if (!analyzed_info_out.analyzed_reg_info.contains(call_target_reg_index)) {
-						return alloc_out_of_memory_error_if_alloc_failed(
+						return alloc_oom_error_if_alloc_failed(
 							MalformedProgramError::alloc(
 								runtime->get_fixed_alloc(),
 								fn_object,
@@ -978,7 +978,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 							}
 							break;
 						default: {
-							return alloc_out_of_memory_error_if_alloc_failed(
+							return alloc_oom_error_if_alloc_failed(
 								MalformedProgramError::alloc(
 									runtime->get_fixed_alloc(),
 									fn_object,
@@ -1006,7 +1006,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 				case Opcode::MCALL:
 				case Opcode::CTORCALL: {
 					if (cur_ins.num_operands != 2) {
-						return alloc_out_of_memory_error_if_alloc_failed(
+						return alloc_oom_error_if_alloc_failed(
 							MalformedProgramError::alloc(
 								runtime->get_fixed_alloc(),
 								fn_object,
@@ -1015,7 +1015,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 
 					Value call_target = cur_ins.operands[0];
 					if (call_target.value_type != ValueType::RegIndex) {
-						return alloc_out_of_memory_error_if_alloc_failed(
+						return alloc_oom_error_if_alloc_failed(
 							MalformedProgramError::alloc(
 								runtime->get_fixed_alloc(),
 								fn_object,
@@ -1024,7 +1024,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 
 					uint32_t call_target_reg_index = call_target.get_reg_index();
 					if (!analyzed_info_out.analyzed_reg_info.contains(call_target_reg_index)) {
-						return alloc_out_of_memory_error_if_alloc_failed(
+						return alloc_oom_error_if_alloc_failed(
 							MalformedProgramError::alloc(
 								runtime->get_fixed_alloc(),
 								fn_object,
@@ -1041,7 +1041,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 							}
 							break;
 						default: {
-							return alloc_out_of_memory_error_if_alloc_failed(
+							return alloc_oom_error_if_alloc_failed(
 								MalformedProgramError::alloc(
 									runtime->get_fixed_alloc(),
 									fn_object,
@@ -1067,14 +1067,14 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 				}
 				case Opcode::RET:
 					if (reg_index != UINT32_MAX) {
-						return alloc_out_of_memory_error_if_alloc_failed(
+						return alloc_oom_error_if_alloc_failed(
 							MalformedProgramError::alloc(
 								runtime->get_fixed_alloc(),
 								fn_object,
 								i));
 					}
 					if (cur_ins.num_operands != 1) {
-						return alloc_out_of_memory_error_if_alloc_failed(
+						return alloc_oom_error_if_alloc_failed(
 							MalformedProgramError::alloc(
 								runtime->get_fixed_alloc(),
 								fn_object,
@@ -1098,7 +1098,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 							mark_reg_as_for_output(analyze_context, cur_ins.operands[0].get_reg_index());
 							break;
 						default:
-							return alloc_out_of_memory_error_if_alloc_failed(
+							return alloc_oom_error_if_alloc_failed(
 								MalformedProgramError::alloc(
 									runtime->get_fixed_alloc(),
 									fn_object,
@@ -1109,7 +1109,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 					break;
 				case Opcode::YIELD:
 					if (reg_index != UINT32_MAX) {
-						return alloc_out_of_memory_error_if_alloc_failed(
+						return alloc_oom_error_if_alloc_failed(
 							MalformedProgramError::alloc(
 								runtime->get_fixed_alloc(),
 								fn_object,
@@ -1120,7 +1120,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 					break;
 				case Opcode::LTHIS:
 					if (reg_index == UINT32_MAX) {
-						return alloc_out_of_memory_error_if_alloc_failed(
+						return alloc_oom_error_if_alloc_failed(
 							MalformedProgramError::alloc(
 								runtime->get_fixed_alloc(),
 								fn_object,
@@ -1128,7 +1128,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 					}
 
 					if (analyze_context.fn_object->this_type.type_id == TypeId::Void) {
-						return alloc_out_of_memory_error_if_alloc_failed(
+						return alloc_oom_error_if_alloc_failed(
 							MalformedProgramError::alloc(
 								runtime->get_fixed_alloc(),
 								fn_object,
@@ -1138,7 +1138,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 					break;
 				case Opcode::NEW:
 					if (reg_index == UINT32_MAX) {
-						return alloc_out_of_memory_error_if_alloc_failed(
+						return alloc_oom_error_if_alloc_failed(
 							MalformedProgramError::alloc(
 								runtime->get_fixed_alloc(),
 								fn_object,
@@ -1146,7 +1146,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 					}
 
 					if (cur_ins.num_operands != 1) {
-						return alloc_out_of_memory_error_if_alloc_failed(
+						return alloc_oom_error_if_alloc_failed(
 							MalformedProgramError::alloc(
 								runtime->get_fixed_alloc(),
 								fn_object,
@@ -1154,7 +1154,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 					}
 
 					if (cur_ins.operands[0].value_type != ValueType::TypeName) {
-						return alloc_out_of_memory_error_if_alloc_failed(
+						return alloc_oom_error_if_alloc_failed(
 							MalformedProgramError::alloc(
 								runtime->get_fixed_alloc(),
 								fn_object,
@@ -1165,7 +1165,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 					break;
 				case Opcode::ARRNEW: {
 					if (reg_index == UINT32_MAX) {
-						return alloc_out_of_memory_error_if_alloc_failed(
+						return alloc_oom_error_if_alloc_failed(
 							MalformedProgramError::alloc(
 								runtime->get_fixed_alloc(),
 								fn_object,
@@ -1173,7 +1173,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 					}
 
 					if (cur_ins.num_operands != 2) {
-						return alloc_out_of_memory_error_if_alloc_failed(
+						return alloc_oom_error_if_alloc_failed(
 							MalformedProgramError::alloc(
 								runtime->get_fixed_alloc(),
 								fn_object,
@@ -1181,7 +1181,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 					}
 
 					if (cur_ins.operands[0].value_type != ValueType::TypeName) {
-						return alloc_out_of_memory_error_if_alloc_failed(
+						return alloc_oom_error_if_alloc_failed(
 							MalformedProgramError::alloc(
 								runtime->get_fixed_alloc(),
 								fn_object,
@@ -1191,7 +1191,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 					TypeRef length_type;
 					SLAKE_RETURN_IF_EXCEPT(eval_value_type(analyze_context, cur_ins.operands[1], length_type));
 					if (!is_value_type_compatible_type_id(length_type.type_id)) {
-						return alloc_out_of_memory_error_if_alloc_failed(
+						return alloc_oom_error_if_alloc_failed(
 							MalformedProgramError::alloc(
 								runtime->get_fixed_alloc(),
 								fn_object,
@@ -1199,7 +1199,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 					}
 
 					if (length_type.compares_to(TypeId::U32)) {
-						return alloc_out_of_memory_error_if_alloc_failed(
+						return alloc_oom_error_if_alloc_failed(
 							MalformedProgramError::alloc(
 								runtime->get_fixed_alloc(),
 								fn_object,
@@ -1216,7 +1216,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 				case Opcode::THROW:
 				case Opcode::PUSHEH:
 					if (reg_index != UINT32_MAX) {
-						return alloc_out_of_memory_error_if_alloc_failed(
+						return alloc_oom_error_if_alloc_failed(
 							MalformedProgramError::alloc(
 								runtime->get_fixed_alloc(),
 								fn_object,
@@ -1232,7 +1232,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 				}
 				default: {
 					// Malformed program, return.
-					return alloc_out_of_memory_error_if_alloc_failed(
+					return alloc_oom_error_if_alloc_failed(
 						MalformedProgramError::alloc(
 							runtime->get_fixed_alloc(),
 							fn_object,
@@ -1244,7 +1244,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 
 	// A well-formed program should not have unused argument pushing instructions.
 	if (analyze_context.arg_push_ins_offs.size()) {
-		return alloc_out_of_memory_error_if_alloc_failed(
+		return alloc_oom_error_if_alloc_failed(
 			MalformedProgramError::alloc(
 				runtime->get_fixed_alloc(),
 				fn_object,

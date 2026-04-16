@@ -209,7 +209,7 @@ InternalExceptionPointer Runtime::_map_generic_params(const Object *v, GenericIn
 			ClassObject *value = (ClassObject *)v;
 
 			if (instantiation_context->generic_args->size() != value->generic_params.size()) {
-				return alloc_out_of_memory_error_if_alloc_failed(
+				return alloc_oom_error_if_alloc_failed(
 					MismatchedGenericArgumentNumberError::alloc(
 						const_cast<Runtime *>(this)->get_fixed_alloc()));
 			}
@@ -224,7 +224,7 @@ InternalExceptionPointer Runtime::_map_generic_params(const Object *v, GenericIn
 			InterfaceObject *value = (InterfaceObject *)v;
 
 			if (instantiation_context->generic_args->size() != value->generic_params.size()) {
-				return alloc_out_of_memory_error_if_alloc_failed(
+				return alloc_oom_error_if_alloc_failed(
 					MismatchedGenericArgumentNumberError::alloc(
 						const_cast<Runtime *>(this)->get_fixed_alloc()));
 			}
@@ -248,7 +248,7 @@ InternalExceptionPointer Runtime::_map_generic_params(const Object *v, GenericIn
 
 SLAKE_API InternalExceptionPointer Runtime::_map_generic_params(const FnOverloadingObject *ol, GenericInstantiationContext *instantiation_context) const {
 	if (instantiation_context->generic_args->size() != ol->generic_params.size()) {
-		return alloc_out_of_memory_error_if_alloc_failed(
+		return alloc_oom_error_if_alloc_failed(
 			MismatchedGenericArgumentNumberError::alloc(
 				const_cast<Runtime *>(this)->get_fixed_alloc()));
 	}
@@ -413,7 +413,7 @@ SLAKE_API InternalExceptionPointer Runtime::instantiate_generic_object(MemberObj
 									peff::String name(get_fixed_alloc());
 									if (!name.build(name_object->data))
 										return OutOfMemoryError::alloc();
-									return alloc_out_of_memory_error_if_alloc_failed(
+									return alloc_oom_error_if_alloc_failed(
 										GenericArgTypeError::alloc(
 											const_cast<Runtime *>(this)->get_fixed_alloc(),
 											std::move(name)));
@@ -427,7 +427,7 @@ SLAKE_API InternalExceptionPointer Runtime::instantiate_generic_object(MemberObj
 								return OutOfMemoryError::alloc();
 							}
 
-							return alloc_out_of_memory_error_if_alloc_failed(
+							return alloc_oom_error_if_alloc_failed(
 								GenericParameterNotFoundError::alloc(
 									const_cast<Runtime*>(this)->get_fixed_alloc(),
 									std::move(param_name)));
@@ -463,7 +463,7 @@ SLAKE_API InternalExceptionPointer Runtime::instantiate_generic_object(MemberObj
 									return OutOfMemoryError::alloc();
 								}
 
-								return alloc_out_of_memory_error_if_alloc_failed(
+								return alloc_oom_error_if_alloc_failed(
 									GenericParameterNotFoundError::alloc(
 										const_cast<Runtime *>(this)->get_fixed_alloc(),
 										std::move(param_name)));
@@ -866,6 +866,8 @@ SLAKE_API InternalExceptionPointer Runtime::_instantiate_generic_object(GenericI
 
 				break;
 			}
+			default:
+				std::terminate();
 		}
 	}
 	return {};

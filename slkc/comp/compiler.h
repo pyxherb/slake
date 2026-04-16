@@ -252,14 +252,14 @@ namespace slkc {
 
 		SLAKE_FORCEINLINE peff::Option<CompilationError> push_error(CompilationError &&error) {
 			if (!errors.push_back(std::move(error)))
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 
 			return {};
 		}
 
 		SLAKE_FORCEINLINE peff::Option<CompilationError> push_warning(CompilationWarning &&warning) {
 			if (!warnings.push_back(std::move(warning)))
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 
 			return {};
 		}
@@ -444,6 +444,16 @@ namespace slkc {
 		const AstNodePtr<InterfaceNode> &bottom,
 		peff::Set<AstNodePtr<InterfaceNode>> &walked_interfaces,
 		bool insert_self);
+	///
+	/// @brief Walk and collect involved interfaces like in a BFS phase.
+	///
+	/// @param interfaces_in Current interface set.
+	/// @param new_interfaces_out New interface set.
+	/// @return Any fatal error occurred during the collecting operation.
+	///
+	[[nodiscard]] SLKC_API peff::Option<CompilationError> collect_involved_interfaces_phased_bfs(
+		const peff::Set<AstNodePtr<InterfaceNode>> &interfaces_in,
+		peff::Set<AstNodePtr<InterfaceNode>> &new_interfaces_out);
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> collect_inherited_members(
 		peff::SharedPtr<Document> document,
 		const AstNodePtr<ClassNode> &bottom,
@@ -789,8 +799,8 @@ namespace slkc {
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> is_fn_signature_same(AstNodePtr<VarNode> *l_params, AstNodePtr<VarNode> *r_params, size_t num_params, AstNodePtr<TypeNameNode> l_overriden_type, AstNodePtr<TypeNameNode> r_overriden_type, bool &whether_out);
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> is_fn_signature_duplicated(AstNodePtr<FnOverloadingNode> lhs, AstNodePtr<FnOverloadingNode> rhs, bool &whether_out);
 
-	[[nodiscard]] SLKC_API peff::Option<CompilationError> visit_base_class(AstNodePtr<TypeNameNode> cls, AstNodePtr<ClassNode> &class_out, peff::Set<AstNodePtr<MemberNode>> *walked_nodes);
-	[[nodiscard]] SLKC_API peff::Option<CompilationError> visit_base_interface(AstNodePtr<TypeNameNode> cls, AstNodePtr<InterfaceNode> &class_out, peff::Set<AstNodePtr<MemberNode>> *walked_nodes);
+	[[nodiscard]] SLKC_API peff::Option<CompilationError> visit_base_class(AstNodePtr<TypeNameNode> base_type_name, AstNodePtr<ClassNode> &class_out, peff::Set<AstNodePtr<MemberNode>> *walked_nodes);
+	[[nodiscard]] SLKC_API peff::Option<CompilationError> visit_base_interface(AstNodePtr<TypeNameNode> base_type_name, AstNodePtr<InterfaceNode> &class_out, peff::Set<AstNodePtr<MemberNode>> *walked_nodes);
 
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> check_stack_bounds(size_t reserved_size);
 

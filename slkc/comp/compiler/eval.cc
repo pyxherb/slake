@@ -96,7 +96,7 @@ peff::Option<CompilationError> _cast_const_expr(
 	AstNodePtr<CastExprNode> cast_expr;
 
 	if (!(cast_expr = make_ast_node<CastExprNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->get_document()))) {
-		return gen_out_of_memory_comp_error();
+		return gen_oom_comp_error();
 	}
 
 	cast_expr->source = expr;
@@ -177,7 +177,7 @@ static peff::Option<CompilationError> eval_integral_binary_op_expr(
 					  compile_env->allocator.get(), compile_env->get_document(),
 					  lhs.cast_to<LT>()->data + rhs.cast_to<LT>()->data)
 						.template cast_to<ExprNode>()))
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			break;
 		}
 		case BinaryOp::Sub: {
@@ -198,7 +198,7 @@ static peff::Option<CompilationError> eval_integral_binary_op_expr(
 					  compile_env->allocator.get(), compile_env->get_document(),
 					  lhs.cast_to<LT>()->data - rhs.cast_to<LT>()->data)
 						.template cast_to<ExprNode>()))
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			break;
 		}
 		case BinaryOp::Mul: {
@@ -219,7 +219,7 @@ static peff::Option<CompilationError> eval_integral_binary_op_expr(
 					  compile_env->allocator.get(), compile_env->get_document(),
 					  lhs.cast_to<LT>()->data * rhs.cast_to<LT>()->data)
 						.template cast_to<ExprNode>()))
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			break;
 		}
 		case BinaryOp::Div: {
@@ -240,7 +240,7 @@ static peff::Option<CompilationError> eval_integral_binary_op_expr(
 					  compile_env->allocator.get(), compile_env->get_document(),
 					  lhs.cast_to<LT>()->data / rhs.cast_to<LT>()->data)
 						.template cast_to<ExprNode>()))
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			break;
 		}
 		case BinaryOp::Mod: {
@@ -261,7 +261,7 @@ static peff::Option<CompilationError> eval_integral_binary_op_expr(
 					  compile_env->allocator.get(), compile_env->get_document(),
 					  lhs.cast_to<LT>()->data % rhs.cast_to<LT>()->data)
 						.template cast_to<ExprNode>()))
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			break;
 		}
 		case BinaryOp::And: {
@@ -282,7 +282,7 @@ static peff::Option<CompilationError> eval_integral_binary_op_expr(
 					  compile_env->allocator.get(), compile_env->get_document(),
 					  lhs.cast_to<LT>()->data & rhs.cast_to<LT>()->data)
 						.template cast_to<ExprNode>()))
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			break;
 		}
 		case BinaryOp::Or: {
@@ -303,7 +303,7 @@ static peff::Option<CompilationError> eval_integral_binary_op_expr(
 					  compile_env->allocator.get(), compile_env->get_document(),
 					  lhs.cast_to<LT>()->data | rhs.cast_to<LT>()->data)
 						.template cast_to<ExprNode>()))
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			break;
 		}
 		case BinaryOp::Xor: {
@@ -324,7 +324,7 @@ static peff::Option<CompilationError> eval_integral_binary_op_expr(
 					  compile_env->allocator.get(), compile_env->get_document(),
 					  lhs.cast_to<LT>()->data ^ rhs.cast_to<LT>()->data)
 						.template cast_to<ExprNode>()))
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			break;
 		}
 		case BinaryOp::LAnd: {
@@ -332,7 +332,7 @@ static peff::Option<CompilationError> eval_integral_binary_op_expr(
 			if (!(bool_type = make_ast_node<BoolTypeNameNode>(
 					  compile_env->allocator.get(),
 					  compile_env->allocator.get(), compile_env->get_document())))
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 
 			SLKC_RETURN_IF_COMP_ERROR(eval_binary_op_expr_operand(
 				compile_env,
@@ -380,7 +380,7 @@ static peff::Option<CompilationError> eval_integral_binary_op_expr(
 			if (!(bool_type = make_ast_node<BoolTypeNameNode>(
 					  compile_env->allocator.get(),
 					  compile_env->allocator.get(), compile_env->get_document())))
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 
 			SLKC_RETURN_IF_COMP_ERROR(eval_binary_op_expr_operand(
 				compile_env,
@@ -433,7 +433,7 @@ static peff::Option<CompilationError> eval_integral_binary_op_expr(
 			if (!(u32_type = make_ast_node<U32TypeNameNode>(
 					  compile_env->allocator.get(),
 					  compile_env->allocator.get(), compile_env->get_document())))
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, rhs, u32_type.cast_to<TypeNameNode>(), rhs));
 
 			if ((!lhs) || (!rhs)) {
@@ -447,7 +447,7 @@ static peff::Option<CompilationError> eval_integral_binary_op_expr(
 					  compile_env->allocator.get(), compile_env->get_document(),
 					  lhs.cast_to<BoolLiteralExprNode>()->data << rhs.cast_to<U32LiteralExprNode>()->data)
 						.template cast_to<ExprNode>()))
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			break;
 		}
 		case BinaryOp::Shr: {
@@ -460,7 +460,7 @@ static peff::Option<CompilationError> eval_integral_binary_op_expr(
 			if (!(u32_type = make_ast_node<U32TypeNameNode>(
 					  compile_env->allocator.get(),
 					  compile_env->allocator.get(), compile_env->get_document())))
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			SLKC_RETURN_IF_COMP_ERROR(_cast_const_expr(compile_env, compilation_context, path_env, rhs, u32_type.cast_to<TypeNameNode>(), rhs));
 
 			if ((!lhs) || (!rhs)) {
@@ -474,7 +474,7 @@ static peff::Option<CompilationError> eval_integral_binary_op_expr(
 					  compile_env->allocator.get(), compile_env->get_document(),
 					  lhs.cast_to<BoolLiteralExprNode>()->data >> rhs.cast_to<U32LiteralExprNode>()->data)
 						.template cast_to<ExprNode>()))
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			break;
 		}
 		case BinaryOp::Eq:
@@ -494,7 +494,7 @@ static peff::Option<CompilationError> eval_integral_binary_op_expr(
 							  compile_env->allocator.get(), compile_env->get_document(),
 							  lhs->expr_kind == ExprKind::Null)
 								.template cast_to<ExprNode>()))
-						return gen_out_of_memory_comp_error();
+						return gen_oom_comp_error();
 				} else {
 					if (lhs->expr_kind == ExprKind::Null) {
 						if (!(expr_out = make_ast_node<BoolLiteralExprNode>(
@@ -502,14 +502,14 @@ static peff::Option<CompilationError> eval_integral_binary_op_expr(
 								  compile_env->allocator.get(), compile_env->get_document(),
 								  rhs->expr_kind == ExprKind::Null)
 									.template cast_to<ExprNode>()))
-							return gen_out_of_memory_comp_error();
+							return gen_oom_comp_error();
 					} else {
 						if (!(expr_out = make_ast_node<BoolLiteralExprNode>(
 								  compile_env->allocator.get(),
 								  compile_env->allocator.get(), compile_env->get_document(),
 								  lhs.cast_to<LT>()->data == rhs.cast_to<LT>()->data)
 									.template cast_to<ExprNode>()))
-							return gen_out_of_memory_comp_error();
+							return gen_oom_comp_error();
 					}
 				}
 			} else {
@@ -518,7 +518,7 @@ static peff::Option<CompilationError> eval_integral_binary_op_expr(
 						  compile_env->allocator.get(), compile_env->get_document(),
 						  lhs.cast_to<LT>()->data == rhs.cast_to<LT>()->data)
 							.template cast_to<ExprNode>()))
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 			}
 			break;
 		}
@@ -539,7 +539,7 @@ static peff::Option<CompilationError> eval_integral_binary_op_expr(
 							  compile_env->allocator.get(), compile_env->get_document(),
 							  lhs->expr_kind != ExprKind::Null)
 								.template cast_to<ExprNode>()))
-						return gen_out_of_memory_comp_error();
+						return gen_oom_comp_error();
 				} else {
 					if (lhs->expr_kind == ExprKind::Null) {
 						if (!(expr_out = make_ast_node<BoolLiteralExprNode>(
@@ -547,14 +547,14 @@ static peff::Option<CompilationError> eval_integral_binary_op_expr(
 								  compile_env->allocator.get(), compile_env->get_document(),
 								  rhs->expr_kind != ExprKind::Null)
 									.template cast_to<ExprNode>()))
-							return gen_out_of_memory_comp_error();
+							return gen_oom_comp_error();
 					} else {
 						if (!(expr_out = make_ast_node<BoolLiteralExprNode>(
 								  compile_env->allocator.get(),
 								  compile_env->allocator.get(), compile_env->get_document(),
 								  lhs.cast_to<LT>()->data != rhs.cast_to<LT>()->data)
 									.template cast_to<ExprNode>()))
-							return gen_out_of_memory_comp_error();
+							return gen_oom_comp_error();
 					}
 				}
 			} else {
@@ -563,7 +563,7 @@ static peff::Option<CompilationError> eval_integral_binary_op_expr(
 						  compile_env->allocator.get(), compile_env->get_document(),
 						  lhs.cast_to<LT>()->data != rhs.cast_to<LT>()->data)
 							.template cast_to<ExprNode>()))
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 			}
 			break;
 		}
@@ -585,7 +585,7 @@ static peff::Option<CompilationError> eval_integral_binary_op_expr(
 					  compile_env->allocator.get(), compile_env->get_document(),
 					  lhs.cast_to<LT>()->data > rhs.cast_to<LT>()->data)
 						.template cast_to<ExprNode>()))
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			break;
 		}
 		case BinaryOp::Lt: {
@@ -606,7 +606,7 @@ static peff::Option<CompilationError> eval_integral_binary_op_expr(
 					  compile_env->allocator.get(), compile_env->get_document(),
 					  lhs.cast_to<LT>()->data < rhs.cast_to<LT>()->data)
 						.template cast_to<ExprNode>()))
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			break;
 		}
 		case BinaryOp::GtEq: {
@@ -627,7 +627,7 @@ static peff::Option<CompilationError> eval_integral_binary_op_expr(
 					  compile_env->allocator.get(), compile_env->get_document(),
 					  lhs.cast_to<LT>()->data >= rhs.cast_to<LT>()->data)
 						.template cast_to<ExprNode>()))
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			break;
 		}
 		case BinaryOp::LtEq: {
@@ -648,7 +648,7 @@ static peff::Option<CompilationError> eval_integral_binary_op_expr(
 					  compile_env->allocator.get(), compile_env->get_document(),
 					  lhs.cast_to<LT>()->data <= rhs.cast_to<LT>()->data)
 						.template cast_to<ExprNode>()))
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			break;
 		}
 		// TODO: Implement comparison operation.
@@ -715,7 +715,7 @@ static peff::Option<CompilationError> eval_floating_point_binary_op_expr(
 					  compile_env->allocator.get(), compile_env->get_document(),
 					  lhs.cast_to<LT>()->data + rhs.cast_to<LT>()->data)
 						.template cast_to<ExprNode>()))
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			break;
 		}
 		case BinaryOp::Sub: {
@@ -736,7 +736,7 @@ static peff::Option<CompilationError> eval_floating_point_binary_op_expr(
 					  compile_env->allocator.get(), compile_env->get_document(),
 					  lhs.cast_to<LT>()->data - rhs.cast_to<LT>()->data)
 						.template cast_to<ExprNode>()))
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			break;
 		}
 		case BinaryOp::Mul: {
@@ -757,7 +757,7 @@ static peff::Option<CompilationError> eval_floating_point_binary_op_expr(
 					  compile_env->allocator.get(), compile_env->get_document(),
 					  lhs.cast_to<LT>()->data * rhs.cast_to<LT>()->data)
 						.template cast_to<ExprNode>()))
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			break;
 		}
 		case BinaryOp::Div: {
@@ -778,7 +778,7 @@ static peff::Option<CompilationError> eval_floating_point_binary_op_expr(
 					  compile_env->allocator.get(), compile_env->get_document(),
 					  lhs.cast_to<LT>()->data / rhs.cast_to<LT>()->data)
 						.template cast_to<ExprNode>()))
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			break;
 		}
 		case BinaryOp::Mod: {
@@ -800,14 +800,14 @@ static peff::Option<CompilationError> eval_floating_point_binary_op_expr(
 						  compile_env->allocator.get(), compile_env->get_document(),
 						  slake::flib::fmodf(lhs.cast_to<LT>()->data, rhs.cast_to<LT>()->data))
 							.template cast_to<ExprNode>()))
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 			} else {
 				if (!(expr_out = make_ast_node<LT>(
 						  compile_env->allocator.get(),
 						  compile_env->allocator.get(), compile_env->get_document(),
 						  slake::flib::fmod(lhs.cast_to<LT>()->data, rhs.cast_to<LT>()->data))
 							.template cast_to<ExprNode>()))
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 			}
 			break;
 		}
@@ -828,7 +828,7 @@ static peff::Option<CompilationError> eval_floating_point_binary_op_expr(
 							  compile_env->allocator.get(), compile_env->get_document(),
 							  lhs->expr_kind == ExprKind::Null)
 								.template cast_to<ExprNode>()))
-						return gen_out_of_memory_comp_error();
+						return gen_oom_comp_error();
 				} else {
 					if (lhs->expr_kind == ExprKind::Null) {
 						if (!(expr_out = make_ast_node<BoolLiteralExprNode>(
@@ -836,14 +836,14 @@ static peff::Option<CompilationError> eval_floating_point_binary_op_expr(
 								  compile_env->allocator.get(), compile_env->get_document(),
 								  rhs->expr_kind == ExprKind::Null)
 									.template cast_to<ExprNode>()))
-							return gen_out_of_memory_comp_error();
+							return gen_oom_comp_error();
 					} else {
 						if (!(expr_out = make_ast_node<BoolLiteralExprNode>(
 								  compile_env->allocator.get(),
 								  compile_env->allocator.get(), compile_env->get_document(),
 								  lhs.cast_to<LT>()->data == rhs.cast_to<LT>()->data)
 									.template cast_to<ExprNode>()))
-							return gen_out_of_memory_comp_error();
+							return gen_oom_comp_error();
 					}
 				}
 			} else {
@@ -852,7 +852,7 @@ static peff::Option<CompilationError> eval_floating_point_binary_op_expr(
 						  compile_env->allocator.get(), compile_env->get_document(),
 						  lhs.cast_to<LT>()->data == rhs.cast_to<LT>()->data)
 							.template cast_to<ExprNode>()))
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 			}
 			break;
 		}
@@ -873,7 +873,7 @@ static peff::Option<CompilationError> eval_floating_point_binary_op_expr(
 							  compile_env->allocator.get(), compile_env->get_document(),
 							  lhs->expr_kind != ExprKind::Null)
 								.template cast_to<ExprNode>()))
-						return gen_out_of_memory_comp_error();
+						return gen_oom_comp_error();
 				} else {
 					if (lhs->expr_kind == ExprKind::Null) {
 						if (!(expr_out = make_ast_node<BoolLiteralExprNode>(
@@ -881,14 +881,14 @@ static peff::Option<CompilationError> eval_floating_point_binary_op_expr(
 								  compile_env->allocator.get(), compile_env->get_document(),
 								  rhs->expr_kind != ExprKind::Null)
 									.template cast_to<ExprNode>()))
-							return gen_out_of_memory_comp_error();
+							return gen_oom_comp_error();
 					} else {
 						if (!(expr_out = make_ast_node<BoolLiteralExprNode>(
 								  compile_env->allocator.get(),
 								  compile_env->allocator.get(), compile_env->get_document(),
 								  lhs.cast_to<LT>()->data != rhs.cast_to<LT>()->data)
 									.template cast_to<ExprNode>()))
-							return gen_out_of_memory_comp_error();
+							return gen_oom_comp_error();
 					}
 				}
 			} else {
@@ -897,7 +897,7 @@ static peff::Option<CompilationError> eval_floating_point_binary_op_expr(
 						  compile_env->allocator.get(), compile_env->get_document(),
 						  lhs.cast_to<LT>()->data != rhs.cast_to<LT>()->data)
 							.template cast_to<ExprNode>()))
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 			}
 			break;
 		}
@@ -919,7 +919,7 @@ static peff::Option<CompilationError> eval_floating_point_binary_op_expr(
 					  compile_env->allocator.get(), compile_env->get_document(),
 					  lhs.cast_to<LT>()->data > rhs.cast_to<LT>()->data)
 						.template cast_to<ExprNode>()))
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			break;
 		}
 		case BinaryOp::Lt: {
@@ -940,7 +940,7 @@ static peff::Option<CompilationError> eval_floating_point_binary_op_expr(
 					  compile_env->allocator.get(), compile_env->get_document(),
 					  lhs.cast_to<LT>()->data < rhs.cast_to<LT>()->data)
 						.template cast_to<ExprNode>()))
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			break;
 		}
 		case BinaryOp::GtEq: {
@@ -961,7 +961,7 @@ static peff::Option<CompilationError> eval_floating_point_binary_op_expr(
 					  compile_env->allocator.get(), compile_env->get_document(),
 					  lhs.cast_to<LT>()->data >= rhs.cast_to<LT>()->data)
 						.template cast_to<ExprNode>()))
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			break;
 		}
 		case BinaryOp::LtEq: {
@@ -982,7 +982,7 @@ static peff::Option<CompilationError> eval_floating_point_binary_op_expr(
 					  compile_env->allocator.get(), compile_env->get_document(),
 					  lhs.cast_to<LT>()->data <= rhs.cast_to<LT>()->data)
 						.template cast_to<ExprNode>()))
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			break;
 		}
 		// TODO: Implement comparison operation.
@@ -1188,7 +1188,7 @@ reeval:
 						expr_out = e->source;
 					} else {
 						if (!(l = make_ast_node<I8LiteralExprNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->get_document(), 0))) {
-							return gen_out_of_memory_comp_error();
+							return gen_oom_comp_error();
 						}
 						SLKC_RETURN_IF_COMP_ERROR(_do_simple_int_literal_cast<int8_t, I8LiteralExprNode>(compile_env, src, l));
 						expr_out = l.cast_to<ExprNode>();
@@ -1203,7 +1203,7 @@ reeval:
 						expr_out = e->source;
 					} else {
 						if (!(l = make_ast_node<I16LiteralExprNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->get_document(), 0))) {
-							return gen_out_of_memory_comp_error();
+							return gen_oom_comp_error();
 						}
 						SLKC_RETURN_IF_COMP_ERROR(_do_simple_int_literal_cast<int16_t, I16LiteralExprNode>(compile_env, src, l));
 						expr_out = l.cast_to<ExprNode>();
@@ -1218,7 +1218,7 @@ reeval:
 						expr_out = e->source;
 					} else {
 						if (!(l = make_ast_node<I32LiteralExprNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->get_document(), 0))) {
-							return gen_out_of_memory_comp_error();
+							return gen_oom_comp_error();
 						}
 						SLKC_RETURN_IF_COMP_ERROR(_do_simple_int_literal_cast<int32_t, I32LiteralExprNode>(compile_env, src, l));
 						expr_out = l.cast_to<ExprNode>();
@@ -1232,7 +1232,7 @@ reeval:
 						expr_out = e->source;
 					} else {
 						if (!(l = make_ast_node<I64LiteralExprNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->get_document(), 0))) {
-							return gen_out_of_memory_comp_error();
+							return gen_oom_comp_error();
 						}
 						SLKC_RETURN_IF_COMP_ERROR(_do_simple_int_literal_cast<int64_t, I64LiteralExprNode>(compile_env, src, l));
 						expr_out = l.cast_to<ExprNode>();
@@ -1246,7 +1246,7 @@ reeval:
 						expr_out = e->source;
 					} else {
 						if (!(l = make_ast_node<U8LiteralExprNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->get_document(), 0))) {
-							return gen_out_of_memory_comp_error();
+							return gen_oom_comp_error();
 						}
 						SLKC_RETURN_IF_COMP_ERROR(_do_simple_int_literal_cast<int8_t, U8LiteralExprNode>(compile_env, src, l));
 						expr_out = l.cast_to<ExprNode>();
@@ -1260,7 +1260,7 @@ reeval:
 						expr_out = e->source;
 					} else {
 						if (!(l = make_ast_node<U16LiteralExprNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->get_document(), 0))) {
-							return gen_out_of_memory_comp_error();
+							return gen_oom_comp_error();
 						}
 						SLKC_RETURN_IF_COMP_ERROR(_do_simple_int_literal_cast<int16_t, U16LiteralExprNode>(compile_env, src, l));
 						expr_out = l.cast_to<ExprNode>();
@@ -1274,7 +1274,7 @@ reeval:
 						expr_out = e->source;
 					} else {
 						if (!(l = make_ast_node<U32LiteralExprNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->get_document(), 0))) {
-							return gen_out_of_memory_comp_error();
+							return gen_oom_comp_error();
 						}
 						SLKC_RETURN_IF_COMP_ERROR(_do_simple_int_literal_cast<int32_t, U32LiteralExprNode>(compile_env, src, l));
 						expr_out = l.cast_to<ExprNode>();
@@ -1288,7 +1288,7 @@ reeval:
 						expr_out = e->source;
 					} else {
 						if (!(l = make_ast_node<U64LiteralExprNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->get_document(), 0))) {
-							return gen_out_of_memory_comp_error();
+							return gen_oom_comp_error();
 						}
 						SLKC_RETURN_IF_COMP_ERROR(_do_simple_int_literal_cast<int64_t, U64LiteralExprNode>(compile_env, src, l));
 						expr_out = l.cast_to<ExprNode>();
@@ -1302,7 +1302,7 @@ reeval:
 						expr_out = e->source;
 					} else {
 						if (!(l = make_ast_node<F32LiteralExprNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->get_document(), 0))) {
-							return gen_out_of_memory_comp_error();
+							return gen_oom_comp_error();
 						}
 						SLKC_RETURN_IF_COMP_ERROR(_do_simple_int_literal_cast<float, F32LiteralExprNode>(compile_env, src, l));
 						expr_out = l.cast_to<ExprNode>();
@@ -1316,7 +1316,7 @@ reeval:
 						expr_out = e->source;
 					} else {
 						if (!(l = make_ast_node<F64LiteralExprNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->get_document(), 0))) {
-							return gen_out_of_memory_comp_error();
+							return gen_oom_comp_error();
 						}
 						SLKC_RETURN_IF_COMP_ERROR(_do_simple_int_literal_cast<double, F64LiteralExprNode>(compile_env, src, l));
 						expr_out = l.cast_to<ExprNode>();
@@ -1330,7 +1330,7 @@ reeval:
 						expr_out = e->source;
 					} else {
 						if (!(l = make_ast_node<BoolLiteralExprNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->get_document(), 0))) {
-							return gen_out_of_memory_comp_error();
+							return gen_oom_comp_error();
 						}
 						SLKC_RETURN_IF_COMP_ERROR(_do_simple_int_literal_cast<double, BoolLiteralExprNode>(compile_env, src, l));
 						expr_out = l.cast_to<ExprNode>();

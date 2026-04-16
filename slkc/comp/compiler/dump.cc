@@ -239,7 +239,7 @@ SLKC_API peff::Option<CompilationError> slkc::dump_type_name(
 				case slake::ObjectKind::Interface: {
 					peff::DynArray<slake::IdRefEntry> entries(allocator);
 					if (!dest->associated_runtime->get_full_ref(allocator, (slake::MemberObject *)dest, entries)) {
-						return gen_out_of_memory_comp_error();
+						return gen_oom_comp_error();
 					}
 					SLKC_RETURN_IF_COMP_ERROR(dump_id_ref_entries(allocator, writer, entries));
 					break;
@@ -260,7 +260,7 @@ SLKC_API peff::Option<CompilationError> slkc::dump_type_name(
 				case slake::ObjectKind::Struct: {
 					peff::DynArray<slake::IdRefEntry> entries(allocator);
 					if (!dest->associated_runtime->get_full_ref(allocator, (slake::MemberObject *)dest, entries)) {
-						return gen_out_of_memory_comp_error();
+						return gen_oom_comp_error();
 					}
 					SLKC_RETURN_IF_COMP_ERROR(dump_id_ref_entries(allocator, writer, entries));
 					break;
@@ -281,7 +281,7 @@ SLKC_API peff::Option<CompilationError> slkc::dump_type_name(
 				case slake::ObjectKind::ScopedEnum: {
 					peff::DynArray<slake::IdRefEntry> entries(allocator);
 					if (!dest->associated_runtime->get_full_ref(allocator, (slake::MemberObject *)dest, entries)) {
-						return gen_out_of_memory_comp_error();
+						return gen_oom_comp_error();
 					}
 					SLKC_RETURN_IF_COMP_ERROR(dump_id_ref_entries(allocator, writer, entries));
 					break;
@@ -302,7 +302,7 @@ SLKC_API peff::Option<CompilationError> slkc::dump_type_name(
 				case slake::ObjectKind::ScopedEnum: {
 					peff::DynArray<slake::IdRefEntry> entries(allocator);
 					if (!dest->associated_runtime->get_full_ref(allocator, (slake::MemberObject *)dest, entries)) {
-						return gen_out_of_memory_comp_error();
+						return gen_oom_comp_error();
 					}
 					SLKC_RETURN_IF_COMP_ERROR(dump_id_ref_entries(allocator, writer, entries));
 					break;
@@ -323,7 +323,7 @@ SLKC_API peff::Option<CompilationError> slkc::dump_type_name(
 				case slake::ObjectKind::Struct: {
 					peff::DynArray<slake::IdRefEntry> entries(allocator);
 					if (!dest->associated_runtime->get_full_ref(allocator, (slake::MemberObject *)dest, entries)) {
-						return gen_out_of_memory_comp_error();
+						return gen_oom_comp_error();
 					}
 					SLKC_RETURN_IF_COMP_ERROR(dump_id_ref_entries(allocator, writer, entries));
 					break;
@@ -344,7 +344,7 @@ SLKC_API peff::Option<CompilationError> slkc::dump_type_name(
 				case slake::ObjectKind::Struct: {
 					peff::DynArray<slake::IdRefEntry> entries(allocator);
 					if (!dest->associated_runtime->get_full_ref(allocator, (slake::MemberObject *)dest, entries)) {
-						return gen_out_of_memory_comp_error();
+						return gen_oom_comp_error();
 					}
 					SLKC_RETURN_IF_COMP_ERROR(dump_id_ref_entries(allocator, writer, entries));
 					break;
@@ -422,37 +422,37 @@ SLKC_API peff::Option<CompilationError> slkc::dump_module_members(
 		switch (v->get_object_kind()) {
 			case slake::ObjectKind::Class: {
 				if (!collected_classes.push_back((slake::ClassObject *)v)) {
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 				}
 				break;
 			}
 			case slake::ObjectKind::Interface: {
 				if (!collected_interfaces.push_back((slake::InterfaceObject *)v)) {
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 				}
 				break;
 			}
 			case slake::ObjectKind::Struct: {
 				if (!collected_structs.push_back((slake::StructObject *)v)) {
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 				}
 				break;
 			}
 			case slake::ObjectKind::ScopedEnum: {
 				if (!collected_scoped_enums.push_back((slake::ScopedEnumObject *)v)) {
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 				}
 				break;
 			}
 			case slake::ObjectKind::UnionEnum: {
 				if (!collected_union_enums.push_back((slake::UnionEnumObject *)v)) {
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 				}
 				break;
 			}
 			case slake::ObjectKind::Fn: {
 				if (!collected_fns.push_back((slake::FnObject *)v)) {
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 				}
 				break;
 			}
@@ -764,7 +764,7 @@ SLKC_API peff::Option<CompilationError> slkc::dump_module(
 	peff::DynArray<slake::IdRefEntry> module_full_name(allocator);
 
 	if (!mod->associated_runtime->get_full_ref(allocator, mod, module_full_name))
-		return gen_out_of_memory_comp_error();
+		return gen_oom_comp_error();
 
 	SLKC_RETURN_IF_COMP_ERROR(dump_id_ref_entries(allocator, writer, module_full_name));
 

@@ -115,7 +115,6 @@ namespace slkc {
 		GtOp,
 		CmpOp,
 		DollarOp,
-		SubtypeOp,
 
 		AbstractKeyword,
 		AllocaKeyword,
@@ -194,7 +193,7 @@ namespace slkc {
 		ObjectTypeName,
 		AnyTypeName,
 		SIMDTypeName,
-		NoReturnTypeName,
+		NeverTypeName,
 
 		I8Literal,
 		I16Literal,

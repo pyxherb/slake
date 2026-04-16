@@ -32,6 +32,8 @@ SLKC_API const char *slkc::get_token_name(TokenId token_id) {
 	switch (token_id) {
 		case TokenId::End:
 			return "end of file";
+		case TokenId::Unknown:
+			return "<unknown token>";
 		case TokenId::Comma:
 			return ",";
 		case TokenId::Question:
@@ -44,6 +46,10 @@ SLKC_API const char *slkc::get_token_name(TokenId token_id) {
 			return "[";
 		case TokenId::RBracket:
 			return "]";
+		case TokenId::LDBracket:
+			return "[[";
+		case TokenId::RDBracket:
+			return "]]";
 		case TokenId::LBrace:
 			return "{";
 		case TokenId::RBrace:
@@ -128,6 +134,8 @@ SLKC_API const char *slkc::get_token_name(TokenId token_id) {
 			return "||";
 		case TokenId::MatchOp:
 			return "=>";
+		case TokenId::ScopeOp:
+			return "::";
 		case TokenId::ReturnTypeOp:
 			return "->";
 		case TokenId::CmpOp:
@@ -164,6 +172,10 @@ SLKC_API const char *slkc::get_token_name(TokenId token_id) {
 			return "delete";
 		case TokenId::DefaultKeyword:
 			return "default";
+		case TokenId::DefKeyword:
+			return "def";
+		case TokenId::DoKeyword:
+			return "do";
 		case TokenId::ElseKeyword:
 			return "else";
 		case TokenId::EnumKeyword:
@@ -236,6 +248,8 @@ SLKC_API const char *slkc::get_token_name(TokenId token_id) {
 			return "union";
 		case TokenId::VarKeyword:
 			return "var";
+		case TokenId::VirtualKeyword:
+			return "virtual";
 		case TokenId::WhileKeyword:
 			return "while";
 		case TokenId::WithKeyword:
@@ -250,6 +264,8 @@ SLKC_API const char *slkc::get_token_name(TokenId token_id) {
 			return "i32";
 		case TokenId::I64TypeName:
 			return "i64";
+		case TokenId::ISizeTypeName:
+			return "isize";
 		case TokenId::U8TypeName:
 			return "u8";
 		case TokenId::U16TypeName:
@@ -258,6 +274,8 @@ SLKC_API const char *slkc::get_token_name(TokenId token_id) {
 			return "u32";
 		case TokenId::U64TypeName:
 			return "u64";
+		case TokenId::USizeTypeName:
+			return "usize";
 		case TokenId::F32TypeName:
 			return "f32";
 		case TokenId::F64TypeName:
@@ -276,6 +294,8 @@ SLKC_API const char *slkc::get_token_name(TokenId token_id) {
 			return "any";
 		case TokenId::SIMDTypeName:
 			return "simd_t";
+		case TokenId::NeverTypeName:
+			return "never";
 		case TokenId::I8Literal:
 			return "8-bit integer literal";
 		case TokenId::I16Literal:
@@ -302,6 +322,18 @@ SLKC_API const char *slkc::get_token_name(TokenId token_id) {
 			return "raw string literal";
 		case TokenId::Id:
 			return "identifier";
+		case TokenId::Whitespace:
+			return "whitespace";
+		case TokenId::NewLine:
+			return "new line";
+		case TokenId::LineComment:
+			return "line comment";
+		case TokenId::BlockComment:
+			return "block comment";
+		case TokenId::DocumentationComment:
+			return "documentation comment";
+		case TokenId::MaxToken:
+			break;
 	}
 
 	std::terminate();

@@ -189,11 +189,11 @@ SLAKE_API InternalExceptionPointer Runtime::prepare_class_for_instantiation(Clas
 				break;
 
 			if (p->base_type.type_id != TypeId::Instance)
-				return alloc_out_of_memory_error_if_alloc_failed(MalformedClassStructureError::alloc(get_fixed_alloc(), p));
+				return alloc_oom_error_if_alloc_failed(MalformedClassStructureError::alloc(get_fixed_alloc(), p));
 
 			Object *parent_class = (p->base_type.get_custom_type_def())->type_object;
 			if (parent_class->get_object_kind() != ObjectKind::Class)
-				return alloc_out_of_memory_error_if_alloc_failed(MalformedClassStructureError::alloc(get_fixed_alloc(), p));
+				return alloc_oom_error_if_alloc_failed(MalformedClassStructureError::alloc(get_fixed_alloc(), p));
 
 			p = (ClassObject *)parent_class;
 		}

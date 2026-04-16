@@ -86,7 +86,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_type_name(
 					SLKC_RETURN_IF_COMP_ERROR(compile_id_ref(compile_env, compilation_context, full_name->entries.data(), full_name->entries.size(), nullptr, 0, false, {}, obj));
 
 					if (!(compile_env->host_ref_holder.add_object(obj.get()))) {
-						return gen_out_of_memory_comp_error();
+						return gen_oom_comp_error();
 					}
 
 					type_def->type_object = obj.get();
@@ -110,7 +110,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_type_name(
 					SLKC_RETURN_IF_COMP_ERROR(compile_id_ref(compile_env, compilation_context, full_name->entries.data(), full_name->entries.size(), nullptr, 0, false, {}, obj));
 
 					if (!(compile_env->host_ref_holder.add_object(obj.get()))) {
-						return gen_out_of_memory_comp_error();
+						return gen_oom_comp_error();
 					}
 
 					type_def->type_object = obj.get();
@@ -134,7 +134,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_type_name(
 					SLKC_RETURN_IF_COMP_ERROR(compile_id_ref(compile_env, compilation_context, full_name->entries.data(), full_name->entries.size(), nullptr, 0, false, {}, obj));
 
 					if (!(compile_env->host_ref_holder.add_object(obj.get()))) {
-						return gen_out_of_memory_comp_error();
+						return gen_oom_comp_error();
 					}
 
 					type_def->type_object = obj.get();
@@ -158,7 +158,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_type_name(
 					SLKC_RETURN_IF_COMP_ERROR(compile_id_ref(compile_env, compilation_context, full_name->entries.data(), full_name->entries.size(), nullptr, 0, false, {}, obj));
 
 					if (!(compile_env->host_ref_holder.add_object(obj.get()))) {
-						return gen_out_of_memory_comp_error();
+						return gen_oom_comp_error();
 					}
 
 					type_def->type_object = obj.get();
@@ -182,7 +182,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_type_name(
 					SLKC_RETURN_IF_COMP_ERROR(compile_id_ref(compile_env, compilation_context, full_name->entries.data(), full_name->entries.size(), nullptr, 0, false, {}, obj));
 
 					if (!(compile_env->host_ref_holder.add_object(obj.get()))) {
-						return gen_out_of_memory_comp_error();
+						return gen_oom_comp_error();
 					}
 
 					type_def->type_object = obj.get();
@@ -208,7 +208,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_type_name(
 					}
 
 					if (!(compile_env->host_ref_holder.add_object(obj.get()))) {
-						return gen_out_of_memory_comp_error();
+						return gen_oom_comp_error();
 					}
 
 					type_def->owner_object = nullptr;
@@ -240,13 +240,13 @@ SLKC_API peff::Option<CompilationError> slkc::compile_type_name(
 			}
 
 			if (!(compile_env->host_ref_holder.add_object(obj.get()))) {
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			}
 
 			SLKC_RETURN_IF_COMP_ERROR(compile_type_name(compile_env, compilation_context, t->element_type, obj->type_ref));
 
 			if (!(compile_env->host_ref_holder.add_object(type_def.get()))) {
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			}
 
 			type_def->element_type = obj.get();
@@ -265,7 +265,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_type_name(
 			}
 
 			if (!(compile_env->host_ref_holder.add_object(type_def.get()))) {
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			}
 
 			slake::HostObjectRef<slake::HeapTypeObject> obj;
@@ -277,7 +277,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_type_name(
 			SLKC_RETURN_IF_COMP_ERROR(compile_type_name(compile_env, compilation_context, t->referenced_type, obj->type_ref));
 
 			if (!(compile_env->host_ref_holder.add_object(obj.get()))) {
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			}
 
 			type_def->referenced_type = obj.get();
@@ -308,13 +308,13 @@ SLKC_API peff::Option<CompilationError> slkc::compile_type_name(
 				SLKC_RETURN_IF_COMP_ERROR(compile_type_name(compile_env, compilation_context, t->element_types.at(i), heap_type->type_ref));
 
 				if (!(compile_env->host_ref_holder.add_object(heap_type.get())))
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 
 				obj->element_types.at(i) = heap_type.get();
 			}
 
 			if (!(compile_env->host_ref_holder.add_object(obj.get()))) {
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			}
 
 			type_out = slake::TypeRef(slake::TypeId::Tuple, obj.get());
@@ -338,7 +338,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_type_name(
 			SLKC_RETURN_IF_COMP_ERROR(compile_type_name(compile_env, compilation_context, t->element_type, heap_type->type_ref));
 
 			if (!(compile_env->host_ref_holder.add_object(heap_type.get())))
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 
 			AstNodePtr<ExprNode> width;
 
@@ -354,13 +354,13 @@ SLKC_API peff::Option<CompilationError> slkc::compile_type_name(
 				AstNodePtr<CastExprNode> ce;
 
 				if (!(ce = make_ast_node<CastExprNode>(t->document->allocator.get(), t->document->allocator.get(), t->document->shared_from_this()))) {
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 				}
 
 				AstNodePtr<U32TypeNameNode> u32_type;
 
 				if (!(u32_type = make_ast_node<U32TypeNameNode>(t->document->allocator.get(), t->document->allocator.get(), t->document->shared_from_this()))) {
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 				}
 
 				ce->source = width;
@@ -379,7 +379,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_type_name(
 			obj->width = width.cast_to<U32LiteralExprNode>()->data;
 
 			if (!(compile_env->host_ref_holder.add_object(obj.get()))) {
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			}
 
 			type_out = slake::TypeRef(slake::TypeId::SIMD, obj.get());
@@ -407,7 +407,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_type_name(
 				SLKC_RETURN_IF_COMP_ERROR(compile_type_name(compile_env, compilation_context, t->param_types.at(i), heap_type->type_ref));
 
 				if (!(compile_env->host_ref_holder.add_object(heap_type.get())))
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 
 				obj->param_types.at(i) = heap_type.get();
 			}
@@ -415,7 +415,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_type_name(
 			obj->has_var_arg = t->has_var_args;
 
 			if (!(compile_env->host_ref_holder.add_object(obj.get()))) {
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			}
 
 			type_out = slake::TypeRef(slake::TypeId::ParamTypeList, obj.get());
@@ -439,10 +439,10 @@ SLKC_API peff::Option<CompilationError> slkc::compile_type_name(
 			SLKC_RETURN_IF_COMP_ERROR(compile_type_name(compile_env, compilation_context, t->inner_type_name, heap_type->type_ref));
 
 			if (!(compile_env->host_ref_holder.add_object(heap_type.get())))
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 
 			if (!(compile_env->host_ref_holder.add_object(obj.get()))) {
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			}
 
 			obj->type = heap_type.get();
@@ -519,7 +519,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_id_ref(
 		id->param_types = peff::DynArray<slake::TypeRef>(compile_env->runtime->get_cur_gen_alloc());
 
 		if (!id->param_types->resize(num_params)) {
-			return gen_out_of_memory_comp_error();
+			return gen_oom_comp_error();
 		}
 
 		for (size_t i = 0; i < num_params; ++i) {
@@ -563,7 +563,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_value_expr(
 					id));
 
 			if (!compile_env->host_ref_holder.add_object(id.get())) {
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			}
 
 			slake::Reference entity_ref = slake::Reference(id.get());
@@ -637,7 +637,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_value_expr(
 			slake::HostObjectRef<slake::StringObject> s;
 
 			if (!(s = slake::StringObject::alloc(compile_env->runtime))) {
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			}
 
 			if (!s->data.build(e->data)) {
@@ -645,7 +645,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_value_expr(
 			}
 
 			if (!compile_env->host_ref_holder.add_object(s.get())) {
-				return gen_out_of_memory_comp_error();
+				return gen_oom_comp_error();
 			}
 
 			slake::Reference entity_ref = slake::Reference(s.get());
@@ -706,7 +706,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_generic_params(
 		slake::GenericParam gp(compile_env->runtime->get_cur_gen_alloc());
 
 		if (!gp.name.build(gp_node->name)) {
-			return gen_out_of_memory_comp_error();
+			return gen_oom_comp_error();
 		}
 
 		if (gp_node->input_type) {
@@ -715,7 +715,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_generic_params(
 				if (e->error_kind == CompilationErrorKind::OutOfMemory)
 					return e;
 				if (!compile_env->errors.push_back(std::move(*e))) {
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 				}
 				e.reset();
 			}
@@ -728,7 +728,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_generic_params(
 						if (e->error_kind == CompilationErrorKind::OutOfMemory)
 							return e;
 						if (!compile_env->errors.push_back(std::move(*e))) {
-							return gen_out_of_memory_comp_error();
+							return gen_oom_comp_error();
 						}
 						e.reset();
 					}
@@ -743,7 +743,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_generic_params(
 						if (e->error_kind == CompilationErrorKind::OutOfMemory)
 							return e;
 						if (!compile_env->errors.push_back(std::move(*e))) {
-							return gen_out_of_memory_comp_error();
+							return gen_oom_comp_error();
 						}
 						e.reset();
 					}
@@ -907,7 +907,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 
 			if (mod_out->get_object_kind() == slake::ObjectKind::Module) {
 				if (!((slake::ModuleObject *)mod_out)->unnamed_imports.push_back(id.get()))
-					return gen_out_of_memory_comp_error();
+					return gen_oom_comp_error();
 			}
 		}
 	}
@@ -1126,7 +1126,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 							reported_conflicting_interfaces_set.contains({ rhs_parent, lhs_parent }))
 							continue;
 						if (!reported_conflicting_interfaces_set.insert({ lhs_parent, rhs_parent }))
-							return gen_out_of_memory_comp_error();
+							return gen_oom_comp_error();
 
 						for (auto &lhs_member : lhs_parent->scope->get_members()) {
 							if (lhs_member->get_ast_node_type() == AstNodeType::Fn) {
@@ -1404,7 +1404,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 									AstNodePtr<CastExprNode> cast_expr;
 
 									if (!(cast_expr = make_ast_node<CastExprNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->get_document())))
-										return gen_out_of_memory_comp_error();
+										return gen_oom_comp_error();
 
 									cast_expr->target_type = enum_node->underlying_type;
 									cast_expr->source = enum_value;
@@ -1678,7 +1678,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 						case AstNodeType::Struct:
 							if (!(i->access_modifier & slake::ACCESS_STATIC)) {
 								if (!(compile_env->this_node = make_ast_node<ThisNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->get_document())))
-									return gen_out_of_memory_comp_error();
+									return gen_oom_comp_error();
 								compile_env->this_node->this_type = mod->shared_from_this().cast_to<MemberNode>();
 							}
 							break;
@@ -1712,7 +1712,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 							if (e->error_kind == CompilationErrorKind::OutOfMemory)
 								return e;
 							if (!compile_env->errors.push_back(std::move(*e))) {
-								return gen_out_of_memory_comp_error();
+								return gen_oom_comp_error();
 							}
 							e.reset();
 						}
@@ -1725,7 +1725,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 							if (e->error_kind == CompilationErrorKind::OutOfMemory)
 								return e;
 							if (!compile_env->errors.push_back(std::move(*e))) {
-								return gen_out_of_memory_comp_error();
+								return gen_oom_comp_error();
 							}
 							e.reset();
 						}
@@ -1743,7 +1743,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 								if (e->error_kind == CompilationErrorKind::OutOfMemory)
 									return e;
 								if (!compile_env->errors.push_back(std::move(*e))) {
-									return gen_out_of_memory_comp_error();
+									return gen_oom_comp_error();
 								}
 								e.reset();
 							}
@@ -1757,7 +1757,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 						comp_context.generated_instructions.clear_and_shrink();
 
 						if (!fn_object->source_loc_descs.resize(comp_context.source_loc_descs.size()))
-							return gen_out_of_memory_comp_error();
+							return gen_oom_comp_error();
 						memcpy(fn_object->source_loc_descs.data(), comp_context.source_loc_descs.data(), comp_context.source_loc_descs.size() * sizeof(slake::slxfmt::SourceLocDesc));
 						comp_context.source_loc_descs.clear_and_shrink();
 						comp_context.source_loc_descs_map.clear();

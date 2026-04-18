@@ -126,8 +126,6 @@ namespace slake {
 		[[nodiscard]] SLAKE_API bool exec();
 	};
 
-	constexpr static size_t HOSTREF_EPHEMERAL = SIZE_MAX;
-
 	class Object {
 	public:
 		peff::RcObjectPtr<peff::Alloc> self_allocator;
@@ -193,11 +191,6 @@ namespace slake {
 	public:
 		T *_value = nullptr;
 
-		SLAKE_FORCEINLINE void _assert_ephemeral(T *ptr) {
-			if (ptr)
-				assert(ptr->host_ref_count != HOSTREF_EPHEMERAL);
-		}
-
 		SLAKE_FORCEINLINE void reset() noexcept {
 			if (_value) {
 				--_value->host_ref_count;
@@ -225,7 +218,6 @@ namespace slake {
 			}
 		}
 		SLAKE_FORCEINLINE HostObjectRef(T *value = nullptr) noexcept : _value(value) {
-			_assert_ephemeral(value);
 			if (_value) {
 				++_value->host_ref_count;
 			}
@@ -261,7 +253,6 @@ namespace slake {
 		SLAKE_FORCEINLINE HostObjectRef<T> &operator=(T *other) noexcept {
 			reset();
 
-			_assert_ephemeral(other);
 			if ((_value = other)) {
 				++_value->host_ref_count;
 			}

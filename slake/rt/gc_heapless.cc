@@ -691,7 +691,7 @@ rescan:
 	++iteration_times;
 	GCWalkContext context;
 
-	Object *host_ref_list = nullptr, *ephemeral_list = nullptr;
+	Object *host_ref_list = nullptr;
 
 	{
 		Object *prev = nullptr;
@@ -707,12 +707,6 @@ rescan:
 			// Check if the object is referenced by the host, if so, exclude them into a separated list.
 			size_t host_ref_count = i->host_ref_count;
 			switch (host_ref_count) {
-				case HOSTREF_EPHEMERAL:
-					if (ephemeral_list)
-						ephemeral_list->prev_same_gcset = i;
-					i->next_same_gcset = ephemeral_list;
-					ephemeral_list = i;
-					break;
 				case 0:
 					context.push_unwalked(i);
 					break;
@@ -743,11 +737,6 @@ rescan:
 	}
 
 	for (Object *i = host_ref_list, *next; i; i = next) {
-		next = i->next_same_gcset;
-		context.push_object(i);
-	}
-
-	for (Object *i = ephemeral_list, *next; i; i = next) {
 		next = i->next_same_gcset;
 		context.push_object(i);
 	}

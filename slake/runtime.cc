@@ -190,6 +190,18 @@ SLAKE_API peff::Alloc *Runtime::get_cur_gen_alloc() {
 	return &young_alloc;
 }
 
+SLAKE_API peff::Alloc *Runtime::get_generational_alloc(ObjectGeneration generation) {
+	switch (generation) {
+		case ObjectGeneration::Young:
+			return &young_alloc;
+		case ObjectGeneration::Persistent:
+			return &persistent_alloc;
+		default:
+			break;
+	}
+	std::terminate();
+}
+
 SLAKE_API bool Runtime::is_integral_type(const TypeRef &type) noexcept {
 	switch (type.type_id) {
 		case TypeId::I8:
@@ -292,8 +304,8 @@ SLAKE_API bool Runtime::is_value_type(const TypeRef &type) noexcept {
 		case TypeId::UnionEnum:
 		case TypeId::UnionEnumItem:
 		case TypeId::Tuple:
-		// any is neither value type nor reference type.
-		// case TypeId::Any:
+			// any is neither value type nor reference type.
+			// case TypeId::Any:
 			return true;
 		default:
 			return false;

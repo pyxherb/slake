@@ -603,7 +603,7 @@ SLAKE_API InternalExceptionPointer loader::load_id_ref(LoaderContext &context, R
 	SLAKE_RETURN_IF_EXCEPT(_normalize_read_result(runtime, reader->read_u32(num_param_types)));
 
 	if (num_param_types != UINT32_MAX) {
-		peff::DynArray<TypeRef> param_types(id_ref_out->self_allocator.get());
+		peff::DynArray<TypeRef> param_types(id_ref_out->get_allocator());
 
 		if (!param_types.resize(num_param_types)) {
 			return OutOfMemoryError::alloc();
@@ -658,7 +658,7 @@ SLAKE_API InternalExceptionPointer loader::load_module_members(LoaderContext &co
 			cls_object->set_access(access);
 
 			for (size_t j = 0; j < desc.num_generic_params; ++j) {
-				GenericParam gp(cls_object->self_allocator.get());
+				GenericParam gp(cls_object->get_allocator());
 
 				SLAKE_RETURN_IF_EXCEPT(load_generic_param(context, runtime, reader, module_object, gp));
 
@@ -718,7 +718,7 @@ SLAKE_API InternalExceptionPointer loader::load_module_members(LoaderContext &co
 			interface_object->set_access(access);
 
 			for (size_t j = 0; j < desc.num_generic_params; ++j) {
-				GenericParam gp(interface_object->self_allocator.get());
+				GenericParam gp(interface_object->get_allocator());
 
 				SLAKE_RETURN_IF_EXCEPT(load_generic_param(context, runtime, reader, module_object, gp));
 
@@ -775,7 +775,7 @@ SLAKE_API InternalExceptionPointer loader::load_module_members(LoaderContext &co
 			struct_object->set_access(access);
 
 			for (size_t j = 0; j < desc.num_generic_params; ++j) {
-				GenericParam gp(struct_object->self_allocator.get());
+				GenericParam gp(struct_object->get_allocator());
 
 				SLAKE_RETURN_IF_EXCEPT(load_generic_param(context, runtime, reader, module_object, gp));
 
@@ -836,7 +836,7 @@ SLAKE_API InternalExceptionPointer loader::load_module_members(LoaderContext &co
 					slxfmt::EnumItemDesc eid;
 					SLAKE_RETURN_IF_EXCEPT(_normalize_read_result(runtime, reader->read((char *)&eid, sizeof(eid))));
 
-					FieldRecord fr(module_object->self_allocator.get());
+					FieldRecord fr(module_object->get_allocator());
 
 					if (!fr.name.resize(desc.len_name)) {
 						return OutOfMemoryError::alloc();
@@ -866,7 +866,7 @@ SLAKE_API InternalExceptionPointer loader::load_module_members(LoaderContext &co
 					slxfmt::EnumItemDesc eid;
 					SLAKE_RETURN_IF_EXCEPT(_normalize_read_result(runtime, reader->read((char *)&eid, sizeof(eid))));
 
-					FieldRecord fr(module_object->self_allocator.get());
+					FieldRecord fr(module_object->get_allocator());
 
 					if (!fr.name.resize(desc.len_name)) {
 						return OutOfMemoryError::alloc();
@@ -941,7 +941,7 @@ SLAKE_API InternalExceptionPointer loader::load_module_members(LoaderContext &co
 					uint32_t len_field_name;
 					SLAKE_RETURN_IF_EXCEPT(_normalize_read_result(runtime, reader->read_u32(len_field_name)));
 
-					FieldRecord fr(module_object->self_allocator.get());
+					FieldRecord fr(module_object->get_allocator());
 
 					if (!fr.name.resize(len_field_name)) {
 						return OutOfMemoryError::alloc();
@@ -1025,7 +1025,7 @@ SLAKE_API InternalExceptionPointer loader::load_module_members(LoaderContext &co
 				fn_overloading_object->set_register_number(fnd.num_registers);
 
 				for (size_t k = 0; k < fnd.num_generic_params; ++k) {
-					GenericParam gp(fn_overloading_object->self_allocator.get());
+					GenericParam gp(fn_overloading_object->get_allocator());
 
 					SLAKE_RETURN_IF_EXCEPT(load_generic_param(context, runtime, reader, fn_overloading_object.get(), gp));
 
@@ -1065,7 +1065,7 @@ SLAKE_API InternalExceptionPointer loader::load_module_members(LoaderContext &co
 
 					ins.opcode = opcode;
 					ins.output = output;
-					if (!ins.reserve_operands(fn_overloading_object->self_allocator.get(), num_operands)) {
+					if (!ins.reserve_operands(fn_overloading_object->get_allocator(), num_operands)) {
 						return OutOfMemoryError::alloc();
 					}
 
@@ -1107,7 +1107,7 @@ SLAKE_API InternalExceptionPointer loader::load_module_members(LoaderContext &co
 
 			SLAKE_RETURN_IF_EXCEPT(_normalize_read_result(runtime, reader->read((char *)&vad, sizeof(vad))));
 
-			FieldRecord fr(module_object->self_allocator.get());
+			FieldRecord fr(module_object->get_allocator());
 
 			if (!fr.name.resize(vad.len_name)) {
 				return OutOfMemoryError::alloc();

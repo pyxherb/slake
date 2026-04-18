@@ -69,5 +69,5 @@ SLAKE_API HostObjectRef<InstanceObject> slake::InstanceObject::alloc(const Insta
 }
 
 SLAKE_API void slake::InstanceObject::dealloc() {
-	peff::destroy_and_release<InstanceObject>(self_allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroy_and_release<InstanceObject>(get_allocator(), this, alignof(InstanceObject));
 }

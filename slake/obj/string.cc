@@ -6,7 +6,7 @@ SLAKE_API bool slake::StringObject::_set_data(const char *str, size_t size) {
 	if (!size)
 		data.clear_and_shrink();
 	else {
-		peff::String s(self_allocator.get());
+		peff::String s(get_allocator());
 
 		if (!s.resize_and_shrink(size))
 			return false;
@@ -73,7 +73,7 @@ SLAKE_API HostObjectRef<StringObject> slake::StringObject::alloc(Runtime *rt) {
 }
 
 SLAKE_API void slake::StringObject::dealloc() {
-	peff::destroy_and_release<StringObject>(self_allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroy_and_release<StringObject>(get_allocator(), this, alignof(StringObject));
 }
 
 SLAKE_API void StringObject::replace_allocator(peff::Alloc *allocator) noexcept {

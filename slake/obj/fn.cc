@@ -291,7 +291,7 @@ SLAKE_API HostObjectRef<RegularFnOverloadingObject> slake::RegularFnOverloadingO
 }
 
 SLAKE_API void slake::RegularFnOverloadingObject::dealloc() {
-	peff::destroy_and_release<RegularFnOverloadingObject>(self_allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroy_and_release<RegularFnOverloadingObject>(get_allocator(), this, alignof(RegularFnOverloadingObject));
 }
 
 SLAKE_API void RegularFnOverloadingObject::replace_allocator(peff::Alloc *allocator) noexcept {
@@ -371,7 +371,7 @@ SLAKE_API HostObjectRef<NativeFnOverloadingObject> slake::NativeFnOverloadingObj
 }
 
 SLAKE_API void slake::NativeFnOverloadingObject::dealloc() {
-	peff::destroy_and_release<NativeFnOverloadingObject>(self_allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroy_and_release<NativeFnOverloadingObject>(get_allocator(), this, alignof(NativeFnOverloadingObject));
 }
 
 SLAKE_API int FnSignatureComparator::operator()(const FnSignature &lhs, const FnSignature &rhs) const noexcept {
@@ -471,7 +471,7 @@ SLAKE_API HostObjectRef<FnObject> slake::FnObject::alloc(const FnObject *other) 
 }
 
 SLAKE_API void slake::FnObject::dealloc() {
-	peff::destroy_and_release<FnObject>(self_allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroy_and_release<FnObject>(get_allocator(), this, alignof(FnObject));
 }
 
 SLAKE_API void FnObject::replace_allocator(peff::Alloc *allocator) noexcept {
@@ -486,7 +486,7 @@ SLAKE_API InternalExceptionPointer FnObject::resort_overloadings() noexcept {
 	// implement on-demand resorting?
 	auto old_overloadings = std::move(overloadings);
 
-	overloadings = peff::Map<FnSignature, FnOverloadingObject *, FnSignatureComparator, true>(self_allocator.get());
+	overloadings = peff::Map<FnSignature, FnOverloadingObject *, FnSignatureComparator, true>(get_allocator());
 
 	for (auto [k, v] : old_overloadings) {
 		if (!overloadings.insert(FnSignature(k), +v))

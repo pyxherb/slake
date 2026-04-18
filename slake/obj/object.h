@@ -128,7 +128,6 @@ namespace slake {
 
 	class Object {
 	public:
-		peff::RcObjectPtr<peff::Alloc> self_allocator;
 		// The object will never be freed if its host reference count is not 0.
 		mutable std::atomic_size_t host_ref_count = 0;
 
@@ -164,6 +163,8 @@ namespace slake {
 		SLAKE_API virtual void replace_allocator(peff::Alloc *allocator) noexcept;
 
 		SLAKE_FORCEINLINE Runtime *get_runtime() const noexcept { return associated_runtime; }
+
+		SLAKE_API peff::Alloc *get_allocator() const noexcept;
 
 		SLAKE_FORCEINLINE ObjectKind get_object_kind_unchecked() const noexcept {
 			return _object_kind;

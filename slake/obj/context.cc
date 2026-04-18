@@ -117,7 +117,7 @@ SLAKE_API MajorFrame::~MajorFrame() {
 }
 
 SLAKE_API void slake::ContextObject::dealloc() {
-	peff::destroy_and_release<ContextObject>(self_allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroy_and_release<ContextObject>(get_allocator(), this, alignof(ContextObject));
 }
 
 SLAKE_API void MajorFrame::replace_allocator(peff::Alloc *allocator) noexcept {

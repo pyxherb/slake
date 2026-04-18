@@ -69,7 +69,7 @@ SLAKE_API ObjectLayout *ObjectLayout::alloc(peff::Alloc *self_allocator) {
 }
 
 SLAKE_API void ObjectLayout::dealloc() {
-	peff::destroy_and_release<ObjectLayout>(self_allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroy_and_release<ObjectLayout>(self_allocator.get(), this, alignof(ObjectLayout));
 }
 
 SLAKE_API MethodTable::MethodTable(peff::Alloc *self_allocator)
@@ -89,7 +89,7 @@ SLAKE_API MethodTable *MethodTable::alloc(peff::Alloc *self_allocator) {
 }
 
 SLAKE_API void MethodTable::dealloc() {
-	peff::destroy_and_release<MethodTable>(self_allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroy_and_release<MethodTable>(self_allocator.get(), this, alignof(MethodTable));
 }
 
 SLAKE_API void MethodTable::replace_allocator(peff::Alloc *allocator) noexcept {
@@ -254,7 +254,7 @@ SLAKE_API HostObjectRef<ClassObject> slake::ClassObject::alloc(Runtime *rt) {
 }
 
 SLAKE_API void slake::ClassObject::dealloc() {
-	peff::destroy_and_release<ClassObject>(self_allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroy_and_release<ClassObject>(get_allocator(), this, alignof(ClassObject));
 }
 
 SLAKE_API void ClassObject::replace_allocator(peff::Alloc *allocator) noexcept {
@@ -442,7 +442,7 @@ SLAKE_API HostObjectRef<InterfaceObject> slake::InterfaceObject::alloc(Duplicato
 }
 
 SLAKE_API void slake::InterfaceObject::dealloc() {
-	peff::destroy_and_release<InterfaceObject>(self_allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroy_and_release<InterfaceObject>(get_allocator(), this, alignof(InterfaceObject));
 }
 
 SLAKE_API void InterfaceObject::replace_allocator(peff::Alloc *allocator) noexcept {
@@ -718,7 +718,7 @@ SLAKE_API HostObjectRef<StructObject> slake::StructObject::alloc(Runtime *rt) {
 }
 
 SLAKE_API void slake::StructObject::dealloc() {
-	peff::destroy_and_release<StructObject>(self_allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroy_and_release<StructObject>(get_allocator(), this, alignof(StructObject));
 }
 
 SLAKE_API void StructObject::replace_allocator(peff::Alloc *allocator) noexcept {
@@ -779,7 +779,7 @@ SLAKE_API HostObjectRef<ScopedEnumObject> ScopedEnumObject::alloc(Duplicator *du
 }
 
 SLAKE_API void ScopedEnumObject::dealloc() {
-	peff::destroy_and_release<ScopedEnumObject>(self_allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroy_and_release<ScopedEnumObject>(get_allocator(), this, alignof(ScopedEnumObject));
 }
 
 SLAKE_API void ScopedEnumObject::replace_allocator(peff::Alloc *allocator) noexcept {
@@ -821,7 +821,7 @@ SLAKE_API HostObjectRef<UnionEnumItemObject> slake::UnionEnumItemObject::alloc(D
 }
 
 SLAKE_API void slake::UnionEnumItemObject::dealloc() {
-	peff::destroy_and_release<UnionEnumItemObject>(self_allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroy_and_release<UnionEnumItemObject>(get_allocator(), this, alignof(UnionEnumItemObject));
 }
 
 SLAKE_API void UnionEnumItemObject::replace_allocator(peff::Alloc *allocator) noexcept {
@@ -922,7 +922,7 @@ SLAKE_API HostObjectRef<UnionEnumObject> UnionEnumObject::alloc(Duplicator *dupl
 }
 
 SLAKE_API void UnionEnumObject::dealloc() {
-	peff::destroy_and_release<UnionEnumObject>(self_allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroy_and_release<UnionEnumObject>(get_allocator(), this, alignof(UnionEnumObject));
 }
 
 SLAKE_API void UnionEnumObject::replace_allocator(peff::Alloc *allocator) noexcept {

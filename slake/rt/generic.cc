@@ -139,7 +139,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_instantiate_module_fields(Ge
 		const FieldRecord &cur_old_field_record = tmp_mod->field_records.at(i);
 
 		{
-			FieldRecord cur_field_record(tmp_mod->self_allocator.get());
+			FieldRecord cur_field_record(tmp_mod->get_allocator());
 			cur_field_record.type = cur_old_field_record.type;
 			cur_field_record.access_modifier = cur_old_field_record.access_modifier;
 			if (!cur_field_record.name.build(cur_old_field_record.name)) {
@@ -335,7 +335,7 @@ SLAKE_API InternalExceptionPointer Runtime::instantiate_generic_object(MemberObj
 								return OutOfMemoryError::alloc();
 							}
 
-							if (!get_full_ref(id_ref_object->self_allocator.get(), (MemberObject *)type_def->type_object, id_ref_object->entries))
+							if (!get_full_ref(id_ref_object->get_allocator(), (MemberObject *)type_def->type_object, id_ref_object->entries))
 								return OutOfMemoryError::alloc();
 
 							HostObjectRef<CustomTypeDefObject> type_def_object = CustomTypeDefObject::alloc((Runtime *)this);

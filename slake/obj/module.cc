@@ -264,7 +264,7 @@ SLAKE_API HostObjectRef<ModuleObject> slake::ModuleObject::alloc(Duplicator *dup
 }
 
 SLAKE_API void slake::ModuleObject::dealloc() {
-	peff::destroy_and_release<ModuleObject>(self_allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroy_and_release<ModuleObject>(get_allocator(), this, alignof(ModuleObject));
 }
 
 SLAKE_API void ModuleObject::replace_allocator(peff::Alloc *allocator) noexcept {

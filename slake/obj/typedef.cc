@@ -64,7 +64,7 @@ SLAKE_API HostObjectRef<HeapTypeObject> slake::HeapTypeObject::alloc(Duplicator 
 }
 
 SLAKE_API void slake::HeapTypeObject::dealloc() {
-	peff::destroy_and_release<HeapTypeObject>(self_allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroy_and_release<HeapTypeObject>(get_allocator(), this, alignof(HeapTypeObject));
 }
 
 SLAKE_API TypeDefObject::TypeDefObject(Runtime *rt, peff::Alloc *self_allocator, TypeDefKind type_def_kind)
@@ -135,7 +135,7 @@ SLAKE_API HostObjectRef<CustomTypeDefObject> slake::CustomTypeDefObject::alloc(D
 }
 
 SLAKE_API void slake::CustomTypeDefObject::dealloc() {
-	peff::destroy_and_release<CustomTypeDefObject>(self_allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroy_and_release<CustomTypeDefObject>(get_allocator(), this, alignof(CustomTypeDefObject));
 }
 
 SLAKE_API ArrayTypeDefObject::ArrayTypeDefObject(Runtime *rt, peff::Alloc *self_allocator)
@@ -198,7 +198,7 @@ SLAKE_API HostObjectRef<ArrayTypeDefObject> slake::ArrayTypeDefObject::alloc(Dup
 }
 
 SLAKE_API void slake::ArrayTypeDefObject::dealloc() {
-	peff::destroy_and_release<ArrayTypeDefObject>(self_allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroy_and_release<ArrayTypeDefObject>(get_allocator(), this, alignof(ArrayTypeDefObject));
 }
 
 SLAKE_API RefTypeDefObject::RefTypeDefObject(Runtime *rt, peff::Alloc *self_allocator)
@@ -261,7 +261,7 @@ SLAKE_API HostObjectRef<RefTypeDefObject> slake::RefTypeDefObject::alloc(Duplica
 }
 
 SLAKE_API void slake::RefTypeDefObject::dealloc() {
-	peff::destroy_and_release<RefTypeDefObject>(self_allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroy_and_release<RefTypeDefObject>(get_allocator(), this, alignof(RefTypeDefObject));
 }
 
 SLAKE_API GenericArgTypeDefObject::GenericArgTypeDefObject(Runtime *rt, peff::Alloc *self_allocator)
@@ -322,7 +322,7 @@ SLAKE_API HostObjectRef<GenericArgTypeDefObject> slake::GenericArgTypeDefObject:
 }
 
 SLAKE_API void slake::GenericArgTypeDefObject::dealloc() {
-	peff::destroy_and_release<GenericArgTypeDefObject>(self_allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroy_and_release<GenericArgTypeDefObject>(get_allocator(), this, alignof(GenericArgTypeDefObject));
 }
 
 SLAKE_API FnTypeDefObject::FnTypeDefObject(Runtime *rt, peff::Alloc *self_allocator)
@@ -404,7 +404,7 @@ SLAKE_API HostObjectRef<FnTypeDefObject> slake::FnTypeDefObject::alloc(Duplicato
 }
 
 SLAKE_API void slake::FnTypeDefObject::dealloc() {
-	peff::destroy_and_release<FnTypeDefObject>(self_allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroy_and_release<FnTypeDefObject>(get_allocator(), this, alignof(FnTypeDefObject));
 }
 
 SLAKE_API void FnTypeDefObject::replace_allocator(peff::Alloc *allocator) noexcept {
@@ -482,7 +482,7 @@ SLAKE_API HostObjectRef<ParamTypeListTypeDefObject> slake::ParamTypeListTypeDefO
 }
 
 SLAKE_API void slake::ParamTypeListTypeDefObject::dealloc() {
-	peff::destroy_and_release<ParamTypeListTypeDefObject>(self_allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroy_and_release<ParamTypeListTypeDefObject>(get_allocator(), this, alignof(ParamTypeListTypeDefObject));
 }
 
 SLAKE_API void ParamTypeListTypeDefObject::replace_allocator(peff::Alloc *allocator) noexcept {
@@ -558,7 +558,7 @@ SLAKE_API HostObjectRef<TupleTypeDefObject> slake::TupleTypeDefObject::alloc(Dup
 }
 
 SLAKE_API void slake::TupleTypeDefObject::dealloc() {
-	peff::destroy_and_release<TupleTypeDefObject>(self_allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroy_and_release<TupleTypeDefObject>(get_allocator(), this, alignof(TupleTypeDefObject));
 }
 
 SLAKE_API void TupleTypeDefObject::replace_allocator(peff::Alloc *allocator) noexcept {
@@ -627,7 +627,7 @@ SLAKE_API HostObjectRef<SIMDTypeDefObject> slake::SIMDTypeDefObject::alloc(Dupli
 }
 
 SLAKE_API void slake::SIMDTypeDefObject::dealloc() {
-	peff::destroy_and_release<SIMDTypeDefObject>(self_allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroy_and_release<SIMDTypeDefObject>(get_allocator(), this, alignof(SIMDTypeDefObject));
 }
 
 SLAKE_API UnpackingTypeDefObject::UnpackingTypeDefObject(Runtime *rt, peff::Alloc *self_allocator)
@@ -690,7 +690,7 @@ SLAKE_API HostObjectRef<UnpackingTypeDefObject> slake::UnpackingTypeDefObject::a
 }
 
 SLAKE_API void slake::UnpackingTypeDefObject::dealloc() {
-	peff::destroy_and_release<UnpackingTypeDefObject>(self_allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroy_and_release<UnpackingTypeDefObject>(get_allocator(), this, alignof(UnpackingTypeDefObject));
 }
 
 SLAKE_API int TypeDefComparator::operator()(const TypeDefObject *lhs, const TypeDefObject *rhs) const noexcept {

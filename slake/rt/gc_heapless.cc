@@ -702,8 +702,6 @@ rescan:
 			i->next_same_gcset = nullptr;
 			i->prev_same_gcset = nullptr;
 
-			i->object_generation = new_generation;
-
 			// Check if the object is referenced by the host, if so, exclude them into a separated list.
 			size_t host_ref_count = i->host_ref_count;
 			switch (host_ref_count) {
@@ -882,6 +880,7 @@ rescan_deletables:
 		for (Object *i = context.get_walked_list(), *next; i; i = next) {
 			next = i->next_same_gcset;
 			context.remove_from_cur_gcset(i);
+			i->object_generation = new_generation;
 			i->replace_allocator(new_generation_allocator);
 			i->gc_status = ObjectGCStatus::Unwalked;
 		}
@@ -889,6 +888,7 @@ rescan_deletables:
 		for (Object *i = context.get_walked_list(), *next; i; i = next) {
 			next = i->next_same_gcset;
 			context.remove_from_cur_gcset(i);
+			i->object_generation = new_generation;
 			i->gc_status = ObjectGCStatus::Unwalked;
 		}
 	}

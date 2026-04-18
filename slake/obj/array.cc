@@ -11,7 +11,7 @@ SLAKE_API ArrayObject::ArrayObject(Runtime *rt, peff::Alloc *self_allocator, con
 
 SLAKE_API ArrayObject::~ArrayObject() {
 	if (data) {
-		self_allocator->release(data, element_size * length, element_alignment);
+		get_allocator()->release(data, element_size * length, element_alignment);
 	}
 }
 
@@ -32,7 +32,7 @@ SLAKE_API ArrayObject *ArrayObject::alloc(Runtime *rt, const TypeRef &element_ty
 }
 
 SLAKE_API void ArrayObject::dealloc() {
-	peff::destroy_and_release<ArrayObject>(self_allocator.get(), this, alignof(ArrayObject));
+	peff::destroy_and_release<ArrayObject>(get_allocator(), this, alignof(ArrayObject));
 }
 
 InternalExceptionPointer slake::raise_invalid_array_index_error(Runtime *rt, size_t index) {

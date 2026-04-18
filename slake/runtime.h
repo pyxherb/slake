@@ -409,6 +409,7 @@ namespace slake {
 			return &fixed_alloc;
 		}
 		SLAKE_API peff::Alloc *get_cur_gen_alloc();
+		SLAKE_API peff::Alloc *get_generational_alloc(ObjectGeneration generation);
 
 		SLAKE_API HostObjectRef<ModuleObject> load_module(const void *buf, size_t size, LoadModuleFlags flags);
 

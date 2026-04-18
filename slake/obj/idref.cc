@@ -110,7 +110,7 @@ SLAKE_API HostObjectRef<IdRefObject> slake::IdRefObject::alloc(const IdRefObject
 }
 
 SLAKE_API void slake::IdRefObject::dealloc() {
-	peff::destroy_and_release<IdRefObject>(self_allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroy_and_release<IdRefObject>(get_allocator(), this, alignof(IdRefObject));
 }
 
 SLAKE_API void IdRefObject::replace_allocator(peff::Alloc *allocator) noexcept {

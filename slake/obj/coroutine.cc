@@ -26,13 +26,13 @@ SLAKE_API HostObjectRef<CoroutineObject> slake::CoroutineObject::alloc(Runtime *
 }
 
 SLAKE_API void slake::CoroutineObject::dealloc() {
-	peff::destroy_and_release<CoroutineObject>(self_allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroy_and_release<CoroutineObject>(get_allocator(), this, alignof(CoroutineObject));
 }
 
 SLAKE_API char *slake::CoroutineObject::alloc_stack_data(size_t size) {
 	assert(!stack_data);
 	if (size) {
-		if (!(stack_data = (char *)self_allocator->alloc(size, 1))) {
+		if (!(stack_data = (char *)get_allocator()->alloc(size, 1))) {
 			return nullptr;
 		}
 		len_stack_data = size;
@@ -43,7 +43,7 @@ SLAKE_API char *slake::CoroutineObject::alloc_stack_data(size_t size) {
 
 SLAKE_API void slake::CoroutineObject::release_stack_data() {
 	if (stack_data) {
-		self_allocator->release(stack_data, len_stack_data, 1);
+		get_allocator()->release(stack_data, len_stack_data, 1);
 		stack_data = nullptr;
 		len_stack_data = 0;
 	}

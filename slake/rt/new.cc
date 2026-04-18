@@ -7,7 +7,7 @@ using namespace slake;
 SLAKE_API InternalExceptionPointer Runtime::init_method_table_for_class(ClassObject *cls, ClassObject *parent_class) {
 	assert(!cls->cached_instantiated_method_table);
 	MethodTable *parent_mt = parent_class ? parent_class->cached_instantiated_method_table.get() : nullptr;
-	std::unique_ptr<MethodTable, peff::DeallocableDeleter<MethodTable>> method_table(MethodTable::alloc(cls->self_allocator.get()));
+	std::unique_ptr<MethodTable, peff::DeallocableDeleter<MethodTable>> method_table(MethodTable::alloc(cls->get_allocator()));
 
 	if (parent_mt) {
 		if (!method_table->destructors.resize(parent_mt->destructors.size())) {
@@ -90,7 +90,7 @@ SLAKE_API InternalExceptionPointer Runtime::init_object_layout_for_module(BasicM
 			continue;
 		}
 
-		ObjectFieldRecord field_record(mod->self_allocator.get());
+		ObjectFieldRecord field_record(mod->get_allocator());
 
 		TypeRef type = cls_field_record.type;
 
@@ -130,9 +130,9 @@ SLAKE_API InternalExceptionPointer Runtime::init_object_layout_for_class(ClassOb
 	std::unique_ptr<ObjectLayout, peff::DeallocableDeleter<ObjectLayout>> object_layout;
 
 	if (parent_class && parent_class->cached_object_layout) {
-		object_layout = decltype(object_layout)(parent_class->cached_object_layout->duplicate(cls->self_allocator.get()));
+		object_layout = decltype(object_layout)(parent_class->cached_object_layout->duplicate(cls->get_allocator()));
 	} else {
-		object_layout = decltype(object_layout)(ObjectLayout::alloc(cls->self_allocator.get()));
+		object_layout = decltype(object_layout)(ObjectLayout::alloc(cls->get_allocator()));
 	}
 
 	if (!object_layout)
@@ -148,7 +148,7 @@ SLAKE_API InternalExceptionPointer Runtime::init_object_layout_for_class(ClassOb
 
 SLAKE_API InternalExceptionPointer Runtime::init_object_layout_for_struct(StructObject *s) {
 	assert(!s->cached_object_layout);
-	std::unique_ptr<ObjectLayout, peff::DeallocableDeleter<ObjectLayout>> object_layout(ObjectLayout::alloc(s->self_allocator.get()));
+	std::unique_ptr<ObjectLayout, peff::DeallocableDeleter<ObjectLayout>> object_layout(ObjectLayout::alloc(s->get_allocator()));
 
 	if (!object_layout)
 		return OutOfMemoryError::alloc();
@@ -163,7 +163,7 @@ SLAKE_API InternalExceptionPointer Runtime::init_object_layout_for_struct(Struct
 
 SLAKE_API InternalExceptionPointer Runtime::init_object_layout_for_union_enum_item(UnionEnumItemObject *s) {
 	assert(!s->cached_object_layout);
-	std::unique_ptr<ObjectLayout, peff::DeallocableDeleter<ObjectLayout>> object_layout(ObjectLayout::alloc(s->self_allocator.get()));
+	std::unique_ptr<ObjectLayout, peff::DeallocableDeleter<ObjectLayout>> object_layout(ObjectLayout::alloc(s->get_allocator()));
 
 	if (!object_layout)
 		return OutOfMemoryError::alloc();
@@ -430,7 +430,7 @@ SLAKE_API HostObjectRef<ArrayObject> Runtime::new_array_instance(Runtime *rt, co
 	switch (type.type_id) {
 		case TypeId::I8: {
 			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(int8_t));
-			if (!(obj->data = obj->self_allocator->alloc(sizeof(int8_t) * length, alignof(int8_t))))
+			if (!(obj->data = obj->get_allocator()->alloc(sizeof(int8_t) * length, alignof(int8_t))))
 				return nullptr;
 			obj->element_alignment = alignof(int8_t);
 			obj->length = length;
@@ -438,7 +438,7 @@ SLAKE_API HostObjectRef<ArrayObject> Runtime::new_array_instance(Runtime *rt, co
 		}
 		case TypeId::I16: {
 			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(int16_t));
-			if (!(obj->data = obj->self_allocator->alloc(sizeof(int16_t) * length, alignof(int16_t))))
+			if (!(obj->data = obj->get_allocator()->alloc(sizeof(int16_t) * length, alignof(int16_t))))
 				return nullptr;
 			obj->element_alignment = alignof(int16_t);
 			obj->length = length;
@@ -446,7 +446,7 @@ SLAKE_API HostObjectRef<ArrayObject> Runtime::new_array_instance(Runtime *rt, co
 		}
 		case TypeId::I32: {
 			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(int32_t));
-			if (!(obj->data = obj->self_allocator->alloc(sizeof(int32_t) * length, alignof(int32_t))))
+			if (!(obj->data = obj->get_allocator()->alloc(sizeof(int32_t) * length, alignof(int32_t))))
 				return nullptr;
 			obj->element_alignment = alignof(int32_t);
 			obj->length = length;
@@ -454,7 +454,7 @@ SLAKE_API HostObjectRef<ArrayObject> Runtime::new_array_instance(Runtime *rt, co
 		}
 		case TypeId::I64: {
 			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(int64_t));
-			if (!(obj->data = obj->self_allocator->alloc(sizeof(int64_t) * length, alignof(int64_t))))
+			if (!(obj->data = obj->get_allocator()->alloc(sizeof(int64_t) * length, alignof(int64_t))))
 				return nullptr;
 			obj->element_alignment = alignof(int64_t);
 			obj->length = length;
@@ -462,7 +462,7 @@ SLAKE_API HostObjectRef<ArrayObject> Runtime::new_array_instance(Runtime *rt, co
 		}
 		case TypeId::U8: {
 			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(uint8_t));
-			if (!(obj->data = obj->self_allocator->alloc(sizeof(uint8_t) * length, alignof(uint8_t))))
+			if (!(obj->data = obj->get_allocator()->alloc(sizeof(uint8_t) * length, alignof(uint8_t))))
 				return nullptr;
 			obj->element_alignment = alignof(uint8_t);
 			obj->length = length;
@@ -470,7 +470,7 @@ SLAKE_API HostObjectRef<ArrayObject> Runtime::new_array_instance(Runtime *rt, co
 		}
 		case TypeId::U16: {
 			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(uint16_t));
-			if (!(obj->data = obj->self_allocator->alloc(sizeof(uint16_t) * length, alignof(uint16_t))))
+			if (!(obj->data = obj->get_allocator()->alloc(sizeof(uint16_t) * length, alignof(uint16_t))))
 				return nullptr;
 			obj->element_alignment = alignof(uint16_t);
 			obj->length = length;
@@ -478,7 +478,7 @@ SLAKE_API HostObjectRef<ArrayObject> Runtime::new_array_instance(Runtime *rt, co
 		}
 		case TypeId::U32: {
 			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(uint32_t));
-			if (!(obj->data = obj->self_allocator->alloc(sizeof(uint32_t) * length, alignof(uint32_t))))
+			if (!(obj->data = obj->get_allocator()->alloc(sizeof(uint32_t) * length, alignof(uint32_t))))
 				return nullptr;
 			obj->element_alignment = alignof(uint32_t);
 			obj->length = length;
@@ -486,7 +486,7 @@ SLAKE_API HostObjectRef<ArrayObject> Runtime::new_array_instance(Runtime *rt, co
 		}
 		case TypeId::U64: {
 			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(uint64_t));
-			if (!(obj->data = obj->self_allocator->alloc(sizeof(uint64_t) * length, alignof(uint64_t))))
+			if (!(obj->data = obj->get_allocator()->alloc(sizeof(uint64_t) * length, alignof(uint64_t))))
 				return nullptr;
 			obj->element_alignment = alignof(uint64_t);
 			obj->length = length;
@@ -494,7 +494,7 @@ SLAKE_API HostObjectRef<ArrayObject> Runtime::new_array_instance(Runtime *rt, co
 		}
 		case TypeId::F32: {
 			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(float));
-			if (!(obj->data = obj->self_allocator->alloc(sizeof(float) * length, alignof(float))))
+			if (!(obj->data = obj->get_allocator()->alloc(sizeof(float) * length, alignof(float))))
 				return nullptr;
 			obj->element_alignment = alignof(float);
 			obj->length = length;
@@ -502,7 +502,7 @@ SLAKE_API HostObjectRef<ArrayObject> Runtime::new_array_instance(Runtime *rt, co
 		}
 		case TypeId::F64: {
 			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(double));
-			if (!(obj->data = obj->self_allocator->alloc(sizeof(double) * length, alignof(double))))
+			if (!(obj->data = obj->get_allocator()->alloc(sizeof(double) * length, alignof(double))))
 				return nullptr;
 			obj->element_alignment = alignof(double);
 			obj->length = length;
@@ -510,7 +510,7 @@ SLAKE_API HostObjectRef<ArrayObject> Runtime::new_array_instance(Runtime *rt, co
 		}
 		case TypeId::Bool: {
 			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(bool));
-			if (!(obj->data = obj->self_allocator->alloc(sizeof(bool) * length, alignof(bool))))
+			if (!(obj->data = obj->get_allocator()->alloc(sizeof(bool) * length, alignof(bool))))
 				return nullptr;
 			obj->element_alignment = alignof(bool);
 			obj->length = length;
@@ -520,7 +520,7 @@ SLAKE_API HostObjectRef<ArrayObject> Runtime::new_array_instance(Runtime *rt, co
 		case TypeId::Instance:
 		case TypeId::Array: {
 			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(Reference));
-			if (!(obj->data = obj->self_allocator->alloc(sizeof(Reference) * length, alignof(Reference))))
+			if (!(obj->data = obj->get_allocator()->alloc(sizeof(Reference) * length, alignof(Reference))))
 				return nullptr;
 			obj->element_alignment = alignof(Reference);
 			obj->length = length;
@@ -528,7 +528,7 @@ SLAKE_API HostObjectRef<ArrayObject> Runtime::new_array_instance(Runtime *rt, co
 		}
 		case TypeId::Any: {
 			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(Value));
-			if (!(obj->data = obj->self_allocator->alloc(sizeof(Value) * length, alignof(Value))))
+			if (!(obj->data = obj->get_allocator()->alloc(sizeof(Value) * length, alignof(Value))))
 				return nullptr;
 			obj->element_alignment = alignof(Value);
 			obj->length = length;

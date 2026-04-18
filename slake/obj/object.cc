@@ -79,12 +79,11 @@ SLAKE_API bool Duplicator::exec() {
 	return true;
 }
 
-SLAKE_API Object::Object(Runtime *rt, peff::Alloc *self_allocator, ObjectKind object_kind) : associated_runtime(rt), self_allocator(self_allocator), _object_kind(object_kind) {
+SLAKE_API Object::Object(Runtime *rt, peff::Alloc *self_allocator, ObjectKind object_kind) : associated_runtime(rt), _object_kind(object_kind) {
 }
 
 SLAKE_API Object::Object(const Object &x, peff::Alloc *allocator) {
 	associated_runtime = x.associated_runtime;
-	self_allocator = allocator;
 	_object_kind = x._object_kind;
 	object_flags = x.object_flags & ~VF_WALKED;
 }
@@ -99,8 +98,10 @@ SLAKE_API Object *Object::duplicate(Duplicator *duplicator) const {
 }
 
 SLAKE_API void Object::replace_allocator(peff::Alloc *allocator) noexcept {
-	peff::verify_replaceable(self_allocator.get(), allocator);
-	self_allocator = allocator;
+}
+
+SLAKE_API peff::Alloc *Object::get_allocator() const noexcept {
+	return associated_runtime->get_generational_alloc(object_generation);
 }
 
 SLAKE_API Reference Object::get_member(const std::string_view &name) const {

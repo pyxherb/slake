@@ -33,6 +33,8 @@ list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/")
 #     enable_language(ASM_NASM)
 # endif()
 
+set(SLAKE_BUILD_EXAMPLES TRUE CACHE BOOL "Build the examples")
+
 set(SLAKE_BUILD_SLKC TRUE CACHE BOOL "Build SLKC")
 set(SLAKE_BUILD_SLKBCC TRUE CACHE BOOL "Build SLKBCC")
 
@@ -44,7 +46,9 @@ endif()
 
 # add_subdirectory("slkaot")
 
-add_subdirectory("example")
+if(${SLAKE_BUILD_EXAMPLES})
+    add_subdirectory("example")
+endif()
 
 # Generate the version file for the config file
 include(CMakePackageConfigHelpers)

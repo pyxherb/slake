@@ -123,16 +123,42 @@ It supports:
   * Native C++ Backend (SLX2CXX) 🕓
   * WASM Backend (SLX2WASM) 📝
 
-## Building
+## Build
 
-To build Slake, you will always need:
+### CMake
 
-* CMake (version > 3.23)
-* A C++ compiler with C++17 support
-* A C++17 standard library, which at least has freestanding environment support.
-* The PEFF library
+To build Slake, you will need:
 
-To build Slake Compiler (slkc), a C++20 compiler and standard library is required.
+* A C++ compiler with at least C++17 support, with (at least) a freestanding standard library.
+* [The PEFF library](https://codeberg.org/pyxherb/peff), which should have been ported properly to your target platform
+
+To build the examples, see the [README](./example/README.md) file in the `./example` directory.
+
+#### Configure
+
+First, configure the project properly, you should have **the PEFF library installed**.
+
+```bash
+# If there is any error mentions that PEFF was not found in this step,
+# install the PEFF library or locate the PEFF library manually.
+cmake -S . -B build
+```
+
+#### Slake Runtime
+
+To build the Slake Runtime (libslake), choose and build the target `slake`:
+
+```bash
+cmake --build build --target slake --config <Your config>
+```
+
+#### Slake Compiler (slkc)
+
+To build Slake Compiler (slkc), a **C++20 compiler** and corresponding standard library are required.
+
+```bash
+cmake --build build --target slkc --config <Your config>
+```
 
 ## License
 

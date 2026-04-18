@@ -11,7 +11,7 @@ target_link_libraries(slkc PRIVATE slake peff_advutils_static)
 set_property(TARGET slkc PROPERTY CXX_STANDARD 20)
 
 set(SLKC_WITH_LANGUAGE_SERVER TRUE CACHE BOOL "Build SLKC with language server support")
-set(SLKC_WITH_AST_DUMPING TRUE CACHE BOOL "Enable AST dumping for SLKC")
+set(SLKC_WITH_AST_DUMPING FALSE CACHE BOOL "Enable AST dumping for SLKC")
 
 if(SLKC_WITH_AST_DUMPING)
     find_package(wandjson REQUIRED)

@@ -771,7 +771,15 @@ SLKC_API ParseCoroutine Parser::parse_program_stmt(peff::Alloc *allocator) {
 	for (;;) {
 		switch ((current_token = peek_token())->token_id) {
 			case TokenId::PublicKeyword:
-				access |= slake::ACCESS_PUBLIC;
+				access |= slake::make_access_modifier(slake::AccessMode::Public, access);
+				next_token();
+				break;
+			case TokenId::PrivateKeyword:
+				access |= slake::make_access_modifier(slake::AccessMode::Private, access);
+				next_token();
+				break;
+			case TokenId::ProtectedKeyword:
+				access |= slake::make_access_modifier(slake::AccessMode::Protected, access);
 				next_token();
 				break;
 			case TokenId::StaticKeyword:

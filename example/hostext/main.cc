@@ -977,7 +977,7 @@ int main(int argc, char **argv) {
 				auto print_fn = NativeFnOverloadingObject::alloc(
 					fn_object.get(),
 					print);
-				print_fn->set_access(ACCESS_PUBLIC);
+				print_fn->set_access(slake::make_access_modifier(slake::AccessMode::Public));
 				print_fn->return_type = TypeId::Void;
 				print_fn->set_var_args();
 				print_fn->overriden_type = TypeId::Void;

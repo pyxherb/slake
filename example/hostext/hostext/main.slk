@@ -61,6 +61,8 @@ class InterfaceTest<T: IA + IB> {
 }
 
 class TestParent<T> {
+	protected let l_test: i32;
+
 	public fn my_test(a: T, b: T) {
 		with T(i32) {
 			a + b;
@@ -73,6 +75,7 @@ class TestParent<T> {
 
 class TestDerived<T>(TestParent::<T>) {
 	fn my_test() {
+		this.l_test;
 		return;
 	}
 	fn my_test(a: T) {

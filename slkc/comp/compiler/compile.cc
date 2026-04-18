@@ -986,7 +986,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 					case slake::TypeId::TempRef:
 						if (var_node->initial_value)
 							return CompilationError(var_node->initial_value->token_range, CompilationErrorKind::TypeIsNotInitializable);
-						if (!mod_out->append_field_record(std::move(fr))) {
+						if (!mod_out->append_field_record_without_alloc(std::move(fr))) {
 							return gen_out_of_runtime_memory_comp_error();
 						}
 						break;

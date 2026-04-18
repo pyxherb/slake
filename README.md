@@ -6,8 +6,8 @@
 
 ## Introduction
 
-Slake is a statically-typed and embeddable programming language for extensible
-applications.
+Slake is a statically-typed, general-purpose and embeddable
+programming language for extensible applications.
 
 It supports:
 

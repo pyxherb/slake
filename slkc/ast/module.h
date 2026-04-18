@@ -174,7 +174,15 @@ namespace slkc {
 		}
 
 		SLAKE_FORCEINLINE bool is_public() const noexcept {
-			return access_modifier & slake::ACCESS_PUBLIC;
+			return slake::access_mode_of(access_modifier) == slake::AccessMode::Public;
+		}
+
+		SLAKE_FORCEINLINE bool is_private() const noexcept {
+			return slake::access_mode_of(access_modifier) == slake::AccessMode::Private;
+		}
+
+		SLAKE_FORCEINLINE bool is_protected() const noexcept {
+			return slake::access_mode_of(access_modifier) == slake::AccessMode::Protected;
 		}
 
 		SLAKE_FORCEINLINE bool is_static() const noexcept {
@@ -182,6 +190,10 @@ namespace slkc {
 		}
 
 		SLAKE_FORCEINLINE bool is_native() const noexcept {
+			return access_modifier & slake::ACCESS_NATIVE;
+		}
+
+		SLAKE_FORCEINLINE bool is_sealed() const noexcept {
 			return access_modifier & slake::ACCESS_NATIVE;
 		}
 	};

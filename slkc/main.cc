@@ -314,19 +314,19 @@ void dump_lexical_error(const slkc::LexicalError &lexical_error, int indent_leve
 		lexical_error.location.begin_position.column + 1);
 	switch (lexical_error.kind) {
 		case slkc::LexicalErrorKind::UnrecognizedToken:
-			printf("Unrecognized token\n");
+			fprintf(stderr, "Unrecognized token\n");
 			break;
 		case slkc::LexicalErrorKind::UnexpectedEndOfLine:
-			printf("Unexpected end of line\n");
+			fprintf(stderr, "Unexpected end of line\n");
 			break;
 		case slkc::LexicalErrorKind::PrematuredEndOfFile:
-			printf("Prematured end of file\n");
+			fprintf(stderr, "Prematured end of file\n");
 			break;
 		case slkc::LexicalErrorKind::InvalidEscape:
-			printf("Invalid escape sequence\n");
+			fprintf(stderr, "Invalid escape sequence\n");
 			break;
 		case slkc::LexicalErrorKind::OutOfMemory:
-			printf("Out of memory during lexical analysis\n");
+			fprintf(stderr, "Out of memory during lexical analysis\n");
 			break;
 	}
 }
@@ -346,17 +346,17 @@ void dump_syntax_error(slkc::Parser *parser, const slkc::SyntaxError &syntax_err
 
 	switch (syntax_error.error_kind) {
 		case slkc::SyntaxErrorKind::OutOfMemory:
-			printf("Out of memory\n");
+			fprintf(stderr, "Out of memory\n");
 			break;
 		case slkc::SyntaxErrorKind::UnexpectedToken:
-			printf("Unexpected token\n");
+			fprintf(stderr, "Unexpected token\n");
 			break;
 		case slkc::SyntaxErrorKind::ExpectingSingleToken:
-			printf("Expecting %s\n",
+			fprintf(stderr, "Expecting %s\n",
 				slkc::get_token_name(std::get<slkc::ExpectingSingleTokenErrorExData>(syntax_error.ex_data).expecting_token_id));
 			break;
 		case slkc::SyntaxErrorKind::ExpectingTokens: {
-			printf("Expecting ");
+			fprintf(stderr, "Expecting ");
 
 			const slkc::ExpectingTokensErrorExData &ex_data = std::get<slkc::ExpectingTokensErrorExData>(syntax_error.ex_data);
 
@@ -376,30 +376,30 @@ void dump_syntax_error(slkc::Parser *parser, const slkc::SyntaxError &syntax_err
 			break;
 		}
 		case slkc::SyntaxErrorKind::ExpectingId:
-			printf("Expecting an identifier\n");
+			fprintf(stderr, "Expecting an identifier\n");
 			break;
 		case slkc::SyntaxErrorKind::ExpectingExpr:
-			printf("Expecting an expression\n");
+			fprintf(stderr, "Expecting an expression\n");
 			break;
 		case slkc::SyntaxErrorKind::ExpectingStmt:
-			printf("Expecting a statement\n");
+			fprintf(stderr, "Expecting a statement\n");
 			break;
 		case slkc::SyntaxErrorKind::ExpectingDecl:
-			printf("Expecting a declaration\n");
+			fprintf(stderr, "Expecting a declaration\n");
 			break;
 		case slkc::SyntaxErrorKind::NoMatchingTokensFound:
-			printf("Matching token not found\n");
+			fprintf(stderr, "Matching token not found\n");
 			break;
 		case slkc::SyntaxErrorKind::ConflictingDefinitions: {
-			printf("Definition of `");
+			fprintf(stderr, "Definition of ");
 
 			const slkc::ConflictingDefinitionsErrorExData &ex_data = std::get<slkc::ConflictingDefinitionsErrorExData>(syntax_error.ex_data);
 
-			fprintf(stderr, "%s' conflicts with other definitions\n", ex_data.member_name.data());
+			fprintf(stderr, "'%s' conflicts with other definitions\n", ex_data.member_name.data());
 			break;
 		}
 		default:
-			printf("Unknown error (%d)\n", (int)syntax_error.error_kind);
+			fprintf(stderr, "Unknown error (%d)\n", (int)syntax_error.error_kind);
 			break;
 	}
 }
@@ -417,199 +417,199 @@ void dump_compilation_error(peff::SharedPtr<slkc::Parser> parser, const slkc::Co
 		end_token->source_location.end_position.line + 1, end_token->source_location.end_position.column + 1);
 	switch (error.error_kind) {
 		case slkc::CompilationErrorKind::OutOfMemory:
-			printf("Out of memory\n");
+			fprintf(stderr, "Out of memory\n");
 			break;
 		case slkc::CompilationErrorKind::OutOfRuntimeMemory:
-			printf("Slake runtime memory allocation limit exceeded\n");
+			fprintf(stderr, "Slake runtime memory allocation limit exceeded\n");
 			break;
 		case slkc::CompilationErrorKind::ExpectingLValueExpr:
-			printf("Expecting a lvalue expression\n");
+			fprintf(stderr, "Expecting a lvalue expression\n");
 			break;
 		case slkc::CompilationErrorKind::TargetIsNotCallable:
-			printf("Expression is not callable\n");
+			fprintf(stderr, "Expression is not callable\n");
 			break;
 		case slkc::CompilationErrorKind::NoSuchFnOverloading:
-			printf("No such function overloading\n");
+			fprintf(stderr, "No such function overloading\n");
 			break;
 		case slkc::CompilationErrorKind::IncompatibleOperand:
-			printf("Incompatible operand\n");
+			fprintf(stderr, "Incompatible operand\n");
 			break;
 		case slkc::CompilationErrorKind::OperatorNotFound:
-			printf("No matching operator found\n");
+			fprintf(stderr, "No matching operator found\n");
 			break;
 		case slkc::CompilationErrorKind::MismatchedGenericArgNumber:
-			printf("Mismatched generic argument number\n");
+			fprintf(stderr, "Mismatched generic argument number\n");
 			break;
 		case slkc::CompilationErrorKind::ExpectingTypeName:
-			printf("Expecting a type name\n");
+			fprintf(stderr, "Expecting a type name\n");
 			break;
 		case slkc::CompilationErrorKind::ExpectingClassName:
-			printf("Expecting a class name\n");
+			fprintf(stderr, "Expecting a class name\n");
 			break;
 		case slkc::CompilationErrorKind::ExpectingInterfaceName:
-			printf("Expecting an interface name\n");
+			fprintf(stderr, "Expecting an interface name\n");
 			break;
 		case slkc::CompilationErrorKind::AbstractMethodNotImplemented:
-			printf("Abstract method is not implemented\n");
+			fprintf(stderr, "Abstract method is not implemented\n");
 			break;
 		case slkc::CompilationErrorKind::CyclicInheritedClass:
-			printf("Cyclic inherited class detected\n");
+			fprintf(stderr, "Cyclic inherited class detected\n");
 			break;
 		case slkc::CompilationErrorKind::CyclicInheritedInterface:
-			printf("Cyclic inherited interface detected\n");
+			fprintf(stderr, "Cyclic inherited interface detected\n");
 			break;
 		case slkc::CompilationErrorKind::RecursedValueType:
-			printf("Recursed value type detected\n");
+			fprintf(stderr, "Recursed value type detected\n");
 			break;
 		case slkc::CompilationErrorKind::ExpectingId:
-			printf("Expecting an identifier\n");
+			fprintf(stderr, "Expecting an identifier\n");
 			break;
 		case slkc::CompilationErrorKind::IdNotFound:
-			printf("Identifier not found\n");
+			fprintf(stderr, "Identifier not found\n");
 			break;
 		case slkc::CompilationErrorKind::InvalidThisUsage:
-			printf("Cannot use this keyword in this context\n");
+			fprintf(stderr, "Cannot use this keyword in this context\n");
 			break;
 		case slkc::CompilationErrorKind::NoMatchingFnOverloading:
-			printf("No matching function overloading\n");
+			fprintf(stderr, "No matching function overloading\n");
 			break;
 		case slkc::CompilationErrorKind::UnableToDetermineOverloading:
-			printf("Unable to determine the overloading\n");
+			fprintf(stderr, "Unable to determine the overloading\n");
 			break;
 		case slkc::CompilationErrorKind::ArgsMismatched:
-			printf("Mismatched argument types\n");
+			fprintf(stderr, "Mismatched argument types\n");
 			break;
 		case slkc::CompilationErrorKind::MemberAlreadyDefined:
-			printf("Member is already defined\n");
+			fprintf(stderr, "Member is already defined\n");
 			break;
 		case slkc::CompilationErrorKind::MissingBindingObject:
-			printf("Missing binding target\n");
+			fprintf(stderr, "Missing binding target\n");
 			break;
 		case slkc::CompilationErrorKind::RedundantWithObject:
-			printf("Redundant binding target\n");
+			fprintf(stderr, "Redundant binding target\n");
 			break;
 		case slkc::CompilationErrorKind::ParamAlreadyDefined:
-			printf("Parameter is already defined\n");
+			fprintf(stderr, "Parameter is already defined\n");
 			break;
 		case slkc::CompilationErrorKind::GenericParamAlreadyDefined:
-			printf("Generic parameter is already defined\n");
+			fprintf(stderr, "Generic parameter is already defined\n");
 			break;
 		case slkc::CompilationErrorKind::InvalidInitializerListUsage:
-			printf("Cannot use initializer list in this context\n");
+			fprintf(stderr, "Cannot use initializer list in this context\n");
 			break;
 		case slkc::CompilationErrorKind::ErrorDeducingInitializerListType:
-			printf("Error deducing type of the initializer list\n");
+			fprintf(stderr, "Error deducing type of the initializer list\n");
 			break;
 		case slkc::CompilationErrorKind::ErrorDeducingSwitchConditionType:
-			printf("Error deducing type of the switch condition\n");
+			fprintf(stderr, "Error deducing type of the switch condition\n");
 			break;
 		case slkc::CompilationErrorKind::ErrorDeducingArgType:
-			printf("Error deducing type of the argument\n");
+			fprintf(stderr, "Error deducing type of the argument\n");
 			break;
 		case slkc::CompilationErrorKind::ErrorEvaluatingConstSwitchCaseCondition:
-			printf("The switch condition is required to be a comptime evaluatable expression\n");
+			fprintf(stderr, "The switch condition is required to be a comptime evaluatable expression\n");
 			break;
 		case slkc::CompilationErrorKind::MismatchedSwitchCaseConditionType:
-			printf("Mismatched switch condition type\n");
+			fprintf(stderr, "Mismatched switch condition type\n");
 			break;
 		case slkc::CompilationErrorKind::DuplicatedSwitchCaseBranch:
-			printf("Duplicated switch case\n");
+			fprintf(stderr, "Duplicated switch case\n");
 			break;
 		case slkc::CompilationErrorKind::ErrorDeducingMatchConditionType:
-			printf("Error deducing type of the match condition\n");
+			fprintf(stderr, "Error deducing type of the match condition\n");
 			break;
 		case slkc::CompilationErrorKind::ErrorDeducingMatchResultType:
-			printf("Error deducing return type of the match expression\n");
+			fprintf(stderr, "Error deducing return type of the match expression\n");
 			break;
 		case slkc::CompilationErrorKind::ErrorEvaluatingConstMatchCaseCondition:
-			printf("The match condition is required to be a comptime evaluatable expression\n");
+			fprintf(stderr, "The match condition is required to be a comptime evaluatable expression\n");
 			break;
 		case slkc::CompilationErrorKind::MismatchedMatchCaseConditionType:
-			printf("Mismatched case condition type\n");
+			fprintf(stderr, "Mismatched case condition type\n");
 			break;
 		case slkc::CompilationErrorKind::DuplicatedMatchCaseBranch:
-			printf("Duplicated match case\n");
+			fprintf(stderr, "Duplicated match case\n");
 			break;
 		case slkc::CompilationErrorKind::MissingDefaultMatchCaseBranch:
-			printf("Missing default match case\n");
+			fprintf(stderr, "Missing default match case\n");
 			break;
 		case slkc::CompilationErrorKind::LocalVarAlreadyExists:
-			printf("Local variable already exists\n");
+			fprintf(stderr, "Local variable already exists\n");
 			break;
 		case slkc::CompilationErrorKind::InvalidBreakUsage:
-			printf("Cannot use break in this context\n");
+			fprintf(stderr, "Cannot use break in this context\n");
 			break;
 		case slkc::CompilationErrorKind::InvalidContinueUsage:
-			printf("Cannot use continue in this context\n");
+			fprintf(stderr, "Cannot use continue in this context\n");
 			break;
 		case slkc::CompilationErrorKind::InvalidCaseLabelUsage:
-			printf("Cannot use case label in this context\n");
+			fprintf(stderr, "Cannot use case label in this context\n");
 			break;
 		case slkc::CompilationErrorKind::TypeIsNotConstructible:
-			printf("Type is not constructible\n");
+			fprintf(stderr, "Type is not constructible\n");
 			break;
 		case slkc::CompilationErrorKind::InvalidCast:
-			printf("Invalid type cast\n");
+			fprintf(stderr, "Invalid type cast\n");
 			break;
 		case slkc::CompilationErrorKind::FunctionOverloadingDuplicated:
-			printf("Duplicated function overloading\n");
+			fprintf(stderr, "Duplicated function overloading\n");
 			break;
 		case slkc::CompilationErrorKind::RequiresInitialValue:
-			printf("Requires an initial value\n");
+			fprintf(stderr, "Requires an initial value\n");
 			break;
 		case slkc::CompilationErrorKind::ErrorDeducingVarType:
-			printf("Error deducing the variable type\n");
+			fprintf(stderr, "Error deducing the variable type\n");
 			break;
 		case slkc::CompilationErrorKind::TypeIsNotUnpackable:
-			printf("Type is not unpackable\n");
+			fprintf(stderr, "Type is not unpackable\n");
 			break;
 		case slkc::CompilationErrorKind::InvalidVarArgHintDuringInstantiation:
-			printf("Invalid variable argument hint during generic instantiation\n");
+			fprintf(stderr, "Invalid variable argument hint during generic instantiation\n");
 			break;
 		case slkc::CompilationErrorKind::CannotBeUnpackedInThisContext:
-			printf("Cannot be unpacked here\n");
+			fprintf(stderr, "Cannot be unpacked here\n");
 			break;
 		case slkc::CompilationErrorKind::TypeIsNotSubstitutable:
-			printf("Type is not substitutable\n");
+			fprintf(stderr, "Type is not substitutable\n");
 			break;
 		case slkc::CompilationErrorKind::RequiresCompTimeExpr:
-			printf("Requires a compile-time expression\n");
+			fprintf(stderr, "Requires a compile-time expression\n");
 			break;
 		case slkc::CompilationErrorKind::TypeArgTypeMismatched:
-			printf("Type of type arguments mismatched\n");
+			fprintf(stderr, "Type of type arguments mismatched\n");
 			break;
 		case slkc::CompilationErrorKind::InterfaceMethodsConflicted:
-			printf("Interface methods conflicted\n");
+			fprintf(stderr, "Interface methods conflicted\n");
 			break;
 		case slkc::CompilationErrorKind::TypeIsNotInitializable:
-			printf("The type is not initializable\n");
+			fprintf(stderr, "The type is not initializable\n");
 			break;
 		case slkc::CompilationErrorKind::MemberIsNotAccessible:
-			printf("The member is not accessible\n");
+			fprintf(stderr, "The member is not accessible\n");
 			break;
 		case slkc::CompilationErrorKind::InvalidEnumBaseType:
-			printf("Invalid enumeration base type\n");
+			fprintf(stderr, "Invalid enumeration base type\n");
 			break;
 		case slkc::CompilationErrorKind::EnumItemIsNotAssignable:
-			printf("Enumeration item is not assignable\n");
+			fprintf(stderr, "Enumeration item is not assignable\n");
 			break;
 		case slkc::CompilationErrorKind::IncompatibleInitialValueType:
-			printf("Incompatible initial value type\n");
+			fprintf(stderr, "Incompatible initial value type\n");
 			break;
 		case slkc::CompilationErrorKind::FunctionOverloadingDuplicatedDuringInstantiation:
-			printf("Duplicated function overloading detected during instantiation\n");
+			fprintf(stderr, "Duplicated function overloading detected during instantiation\n");
 			break;
 		case slkc::CompilationErrorKind::ReturnValueTypeDoesNotMatch:
-			printf("Return value type does not match\n");
+			fprintf(stderr, "Return value type does not match\n");
 			break;
 
 		case slkc::CompilationErrorKind::ImportLimitExceeded:
-			printf("Import item number exceeded\n");
+			fprintf(stderr, "Import item number exceeded\n");
 			break;
 		case slkc::CompilationErrorKind::ErrorParsingImportedModule: {
 			const slkc::ErrorParsingImportedModuleErrorExData &ex_data = std::get<slkc::ErrorParsingImportedModuleErrorExData>(error.ex_data);
 
-			printf("Error parsing imported module:\n");
+			fprintf(stderr, "Error parsing imported module:\n");
 			if (ex_data.lexical_error) {
 				dump_lexical_error(*ex_data.lexical_error, indent_level + 1);
 			} else {
@@ -620,10 +620,10 @@ void dump_compilation_error(peff::SharedPtr<slkc::Parser> parser, const slkc::Co
 			break;
 		}
 		case slkc::CompilationErrorKind::ModuleNotFound:
-			printf("Module not found\n");
+			fprintf(stderr, "Module not found\n");
 			break;
 		default:
-			printf("Unknown error (%d)\n", (int)error.error_kind);
+			fprintf(stderr, "Unknown error (%d)\n", (int)error.error_kind);
 			break;
 	}
 }
@@ -813,7 +813,7 @@ int main(int argc, char *argv[]) {
 		{
 			{
 				slake::HostObjectRef<slake::ModuleObject> mod_obj = slake::ModuleObject::alloc(runtime.get());
-				mod_obj->set_access(slake::ACCESS_PUBLIC | slake::ACCESS_STATIC);
+				mod_obj->set_access(slake::make_access_modifier(slake::AccessMode::Public, slake::ACCESS_STATIC));
 
 				peff::SharedPtr<slkc::Parser> parser;
 				if (!(parser = peff::make_shared<slkc::Parser>(peff::default_allocator(), document, std::move(token_list), peff::default_allocator()))) {

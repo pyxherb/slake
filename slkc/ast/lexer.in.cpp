@@ -119,6 +119,8 @@ SLKC_API peff::Option<LexicalError> Lexer::lex(ModuleNode *module_node, const st
 				<InitialCondition>"operator"	{ token->token_id = TokenId::OperatorKeyword; break; }
 				<InitialCondition>"override"	{ token->token_id = TokenId::OverrideKeyword; break; }
 				<InitialCondition>"public"		{ token->token_id = TokenId::PublicKeyword; break; }
+				<InitialCondition>"private"		{ token->token_id = TokenId::PrivateKeyword; break; }
+				<InitialCondition>"protected"	{ token->token_id = TokenId::ProtectedKeyword; break; }
 				<InitialCondition>"return"		{ token->token_id = TokenId::ReturnKeyword; break; }
 				<InitialCondition>"static"		{ token->token_id = TokenId::StaticKeyword; break; }
 				<InitialCondition>"struct"		{ token->token_id = TokenId::StructKeyword; break; }

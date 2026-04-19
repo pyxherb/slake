@@ -515,6 +515,7 @@ SLKC_API peff::Option<CompilationError> slkc::complete_parent_modules(
 				}
 				if (!node->alloc_scope())
 					return gen_oom_comp_error();
+				node->access_modifier = slake::make_access_modifier(slake::AccessMode::Public, slake::ACCESS_STATIC);
 			}
 			modules.at(i) = node;
 			if (!node->name.build(module_path->entries.at(i).name)) {
@@ -698,6 +699,7 @@ SLKC_API peff::Option<CompilationError> FileSystemExternalModuleProvider::load_m
 				if (!mod->alloc_scope()) {
 					return gen_oom_comp_error();
 				}
+				mod->access_modifier = slake::make_access_modifier(slake::AccessMode::Public, slake::ACCESS_STATIC);
 
 				slkc::TokenList token_list(compile_env->allocator.get());
 				{

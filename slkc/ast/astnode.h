@@ -70,7 +70,7 @@ namespace slkc {
 		}
 	};
 
-	constexpr static size_t ASTNODE_ALIGNMENT = sizeof(std::max_align_t);
+	constexpr static size_t ASTNODE_ALIGNMENT = alignof(std::max_align_t);
 
 	class AstNode;
 

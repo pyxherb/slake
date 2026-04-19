@@ -111,7 +111,7 @@ SLKC_API void Scope::remove_generic_param(const std::string_view &name) noexcept
 	}
 }
 
-SLKC_API Scope *Scope::duplicate(peff::Alloc *allocator, DuplicationContext &context) {
+SLKC_API Scope *Scope::duplicate(peff::Alloc *allocator, DuplicationContext &context, MemberNode *owner) {
 	peff::UniquePtr<Scope, peff::DeallocableDeleter<Scope>> dest;
 
 	if (!(dest = Scope::alloc(allocator)))
@@ -119,6 +119,8 @@ SLKC_API Scope *Scope::duplicate(peff::Alloc *allocator, DuplicationContext &con
 
 	if (!dest->_members.resize(_members.size()))
 		return nullptr;
+
+	dest->owner = owner;
 
 	for (size_t i = 0; i < this->_members.size(); ++i) {
 		if (!context.push_task([this, i, dest = dest.get(), allocator, &context]() -> bool {
@@ -224,7 +226,7 @@ SLKC_API MemberNode::MemberNode(const MemberNode &rhs, peff::Alloc *allocator, D
 
 	if (rhs.scope) {
 		if (!context.push_task([this, &rhs, allocator, &context]() -> bool {
-				if (!(this->scope = rhs.get_scope()->duplicate(allocator, context))) {
+				if (!(this->scope = rhs.get_scope()->duplicate(allocator, context, this))) {
 					return false;
 				}
 				this->scope->owner = this;

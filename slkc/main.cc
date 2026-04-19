@@ -787,6 +787,7 @@ int main(int argc, char *argv[]) {
 			print_error("Error allocating memory for the target module");
 			return ENOMEM;
 		}
+		mod->access_modifier = slake::make_access_modifier(slake::AccessMode::Public, slake::ACCESS_STATIC);
 
 		document->main_module = mod.get();
 
@@ -827,6 +828,7 @@ int main(int argc, char *argv[]) {
 					print_error("Error allocating memory for the root module");
 					return ENOMEM;
 				}
+				root_mod->access_modifier = slake::make_access_modifier(slake::AccessMode::Public, slake::ACCESS_STATIC);
 				document->root_module = root_mod;
 
 				slkc::IdRefPtr module_name;

@@ -331,6 +331,7 @@ SLKC_API ParseCoroutine Parser::parse_id_ref(peff::Alloc *allocator, IdRefPtr &i
 				next_token();
 			}
 
+			SLKC_CO_RETURN_IF_PARSE_ERROR(split_shr_op_token());
 			SLKC_CO_RETURN_IF_PARSE_ERROR(expect_token(t = peek_token(), TokenId::GtOp));
 			id_ref_ptr->token_range.end_index = t->index;
 

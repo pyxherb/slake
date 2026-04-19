@@ -224,6 +224,7 @@ namespace slkc {
 	struct CompileEnv final {
 		slake::Runtime *runtime;
 		slake::HostRefHolder host_ref_holder;
+		/// @brief The shortcut pointer to the document's allocator.
 		peff::RcObjectPtr<peff::Alloc> allocator;
 		// FIXME: reference to document causes the weak reference cannot become zero and thus seems to be buggy.
 		peff::WeakPtr<Document> document;
@@ -349,7 +350,8 @@ namespace slkc {
 		peff::SharedPtr<Document> document,
 		const AstNodePtr<MemberNode> &member_node,
 		const IdRefEntry &name,
-		AstNodePtr<MemberNode> &member_out);
+		AstNodePtr<MemberNode> &member_out,
+		bool instantiate_generic_member = true);
 	[[nodiscard]] SLKC_API
 		peff::Option<CompilationError>
 		resolve_instance_member(
@@ -357,7 +359,8 @@ namespace slkc {
 			peff::SharedPtr<Document> document,
 			AstNodePtr<MemberNode> member_node,
 			const IdRefEntry &name,
-			AstNodePtr<MemberNode> &member_out);
+			AstNodePtr<MemberNode> &member_out,
+			bool instantiate_generic_member = true);
 	[[nodiscard]] SLKC_API
 		peff::Option<CompilationError>
 		is_member_accessible(
@@ -385,7 +388,8 @@ namespace slkc {
 			size_t num_entries,
 			AstNodePtr<MemberNode> &member_out,
 			ResolvedIdRefPartList *resolved_part_list_out,
-			bool is_static = true);
+			bool is_static = true,
+			bool instantiate_generic_member = true);
 	/// @brief Resolve an identifier reference with a scope object and its parents.
 	/// @param compile_env The compile context. Leave this parameter empty bypasses the access check.
 	/// @param document Document for resolution.
@@ -409,7 +413,8 @@ namespace slkc {
 			AstNodePtr<MemberNode> &member_out,
 			ResolvedIdRefPartList *resolved_part_list_out,
 			bool is_static = true,
-			bool is_sealed = false);
+			bool is_sealed = false,
+			bool instantiate_generic_member = true);
 	/// @brief Resolve a custom type name.
 	/// @param compile_env The compile context. Leave this parameter empty bypasses the access check.
 	/// @param type_name Type name to be resolved.
@@ -423,6 +428,7 @@ namespace slkc {
 			peff::SharedPtr<Document> document,
 			const AstNodePtr<CustomTypeNameNode> &type_name,
 			AstNodePtr<MemberNode> &member_node_out,
+			bool instantiate_generic_member = true,
 			peff::Set<AstNodePtr<MemberNode>> *walked_nodes = nullptr);
 	[[nodiscard]] SLKC_API
 		peff::Option<CompilationError>
@@ -477,6 +483,12 @@ namespace slkc {
 		peff::SharedPtr<Document> document,
 		const AstNodePtr<UnionEnumNode> &derived,
 		bool &whether_out);
+	SLKC_API peff::Option<CompilationError> is_type_ctor_recursed(
+		AstNodePtr<MemberNode> cls,
+		const peff::DynArray<AstNodePtr<AstNode>> &initial_generic_args,
+		peff::Alloc *allocator,
+		bool &result_out,
+		AstNodePtr<CustomTypeNameNode> &recursed_type_name_out) noexcept;
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> is_base_of(
 		peff::SharedPtr<Document> document,
 		const AstNodePtr<ClassNode> &base,

@@ -856,10 +856,75 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 	CompileEnv *compile_env,
 	AstNodePtr<ModuleNode> mod,
 	slake::BasicModuleObject *mod_out) {
+	AstNodePtr<MemberNode> cur_parent_access_node;
+
+	if (size_t n_generic_params = mod->scope->get_generic_param_num(); n_generic_params) {
+		IdRefEntry back_entry(compile_env->allocator.get());
+		if (!back_entry.name.build(mod->name))
+			return gen_oom_comp_error();
+		back_entry.name_token_index = mod->token_range;
+
+		// Fill the generic arguments with the class itself's parameters if needed.
+		if (!back_entry.generic_args.resize(n_generic_params))
+			return gen_oom_comp_error();
+		for (size_t i = 0; i < mod->scope->get_generic_param_num(); ++i) {
+			auto gp = mod->scope->get_generic_param(i);
+			TokenRange token_range = gp->token_range;
+
+			if (gp->input_type) {
+				AstNodePtr<ExprNode> default_value;
+				// TODO: Placeholder, use a proper one.
+				SLKC_RETURN_IF_COMP_ERROR(get_succeeding_enum_value(compile_env, nullptr, gp->input_type, AstNodePtr<ExprNode>(), default_value));
+				back_entry.generic_args.at(i) = default_value.cast_to<AstNode>();
+			} else {
+				AstNodePtr<CustomTypeNameNode> ctn;
+
+				if (!(ctn = make_ast_node<CustomTypeNameNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->document.lock())))
+					return gen_oom_comp_error();
+
+				// Build the generic parameter reference.
+				{
+					IdRefPtr new_id_ref_ptr = IdRefPtr(
+						peff::alloc_and_construct<IdRef>(
+							compile_env->allocator.get(),
+							ASTNODE_ALIGNMENT,
+							compile_env->allocator.get()));
+					if (!new_id_ref_ptr)
+						return gen_oom_comp_error();
+
+					IdRefEntry entry(compile_env->allocator.get());
+					if (!entry.name.build(gp->name))
+						return gen_oom_comp_error();
+					if (!new_id_ref_ptr->entries.push_back(std::move(entry)))
+						return gen_oom_comp_error();
+					new_id_ref_ptr->token_range = token_range;
+					ctn->id_ref_ptr = std::move(new_id_ref_ptr);
+				}
+				ctn->token_range = token_range;
+				ctn->context_node = to_weak_ptr(mod).cast_to<MemberNode>();
+
+				back_entry.generic_args.at(i) = ctn.cast_to<AstNode>();
+			}
+		}
+
+		SLKC_RETURN_IF_COMP_ERROR(
+			resolve_id_ref(
+				compile_env,
+				compile_env->document.lock(),
+				compile_env->cur_parent_access_node->shared_from_this().cast_to<MemberNode>(),
+				&back_entry,
+				1,
+				cur_parent_access_node,
+				nullptr));
+	} else {
+		cur_parent_access_node = mod.cast_to<MemberNode>();
+	}
+	assert(cur_parent_access_node);
+
 	peff::Deferred restore_cur_parent_access_node_guard([compile_env, old_node = compile_env->cur_parent_access_node]() noexcept {
 		compile_env->cur_parent_access_node = old_node;
 	});
-	compile_env->cur_parent_access_node = mod;
+	compile_env->cur_parent_access_node = cur_parent_access_node.cast_to<ModuleNode>();
 
 	peff::ScopeGuard restore_cur_module_guard([compile_env, old_module = compile_env->cur_module]() noexcept {
 		compile_env->cur_module = old_module;
@@ -1677,7 +1742,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 							if (!(i->access_modifier & slake::ACCESS_STATIC)) {
 								if (!(compile_env->this_node = make_ast_node<ThisNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->get_document())))
 									return gen_oom_comp_error();
-								compile_env->this_node->this_type = mod->shared_from_this().cast_to<MemberNode>();
+								compile_env->this_node->this_type = cur_parent_access_node;
 							}
 							break;
 						default:

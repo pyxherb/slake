@@ -54,7 +54,8 @@ SLKC_API peff::Option<CompilationError> slkc::resolve_static_member(
 	peff::SharedPtr<Document> document,
 	const AstNodePtr<MemberNode> &member_node,
 	const IdRefEntry &name,
-	AstNodePtr<MemberNode> &member_out) {
+	AstNodePtr<MemberNode> &member_out,
+	bool instantiate_generic_member) {
 	AstNodePtr<MemberNode> result;
 
 	if (member_node->scope) {
@@ -62,7 +63,7 @@ SLKC_API peff::Option<CompilationError> slkc::resolve_static_member(
 	}
 
 	if (result) {
-		if (name.generic_args.size()) {
+		if (instantiate_generic_member && name.generic_args.size()) {
 			SLKC_RETURN_IF_COMP_ERROR(document->instantiate_generic_object(result, name.generic_args, result));
 		}
 
@@ -107,7 +108,8 @@ SLKC_API peff::Option<CompilationError> slkc::resolve_instance_member(
 	peff::SharedPtr<Document> document,
 	AstNodePtr<MemberNode> member_node,
 	const IdRefEntry &name,
-	AstNodePtr<MemberNode> &member_out) {
+	AstNodePtr<MemberNode> &member_out,
+	bool instantiate_generic_member) {
 reresolve:
 	AstNodePtr<MemberNode> result;
 
@@ -265,7 +267,7 @@ reresolve:
 	}
 
 	if (result) {
-		if (name.generic_args.size()) {
+		if (instantiate_generic_member && name.generic_args.size()) {
 			SLKC_RETURN_IF_COMP_ERROR(document->instantiate_generic_object(result, name.generic_args, result));
 		}
 
@@ -376,7 +378,8 @@ SLKC_API peff::Option<CompilationError> slkc::resolve_id_ref(
 	size_t num_entries,
 	AstNodePtr<MemberNode> &member_out,
 	ResolvedIdRefPartList *resolved_part_list_out,
-	bool is_static) {
+	bool is_static,
+	bool instantiate_generic_member) {
 	AstNodePtr<MemberNode> cur_member = resolve_root;
 
 	bool is_post_static_parts = !is_static;
@@ -398,9 +401,9 @@ SLKC_API peff::Option<CompilationError> slkc::resolve_id_ref(
 
 		AstNodePtr<MemberNode> parent = cur_member;
 		if (is_static) {
-			SLKC_RETURN_IF_COMP_ERROR(resolve_static_member(compile_env, document, parent, cur_entry, cur_member));
+			SLKC_RETURN_IF_COMP_ERROR(resolve_static_member(compile_env, document, parent, cur_entry, cur_member, instantiate_generic_member));
 		} else {
-			SLKC_RETURN_IF_COMP_ERROR(resolve_instance_member(compile_env, document, parent, cur_entry, cur_member));
+			SLKC_RETURN_IF_COMP_ERROR(resolve_instance_member(compile_env, document, parent, cur_entry, cur_member, instantiate_generic_member));
 		}
 
 		if (!cur_member) {
@@ -471,7 +474,8 @@ SLKC_API peff::Option<CompilationError> slkc::resolve_id_ref_with_scope_node(
 	AstNodePtr<MemberNode> &member_out,
 	ResolvedIdRefPartList *resolved_part_list_out,
 	bool is_static,
-	bool is_sealed) {
+	bool is_sealed,
+	bool instantiate_generic_member) {
 reresolve:
 	if (walked_nodes.contains(resolve_scope)) {
 		member_out = {};
@@ -499,7 +503,7 @@ reresolve:
 		}
 	}
 
-	SLKC_RETURN_IF_COMP_ERROR(resolve_id_ref(compile_env, document, resolve_scope, id_ref, num_entries, member_out, resolved_part_list_out, is_static));
+	SLKC_RETURN_IF_COMP_ERROR(resolve_id_ref(compile_env, document, resolve_scope, id_ref, num_entries, member_out, resolved_part_list_out, is_static, instantiate_generic_member));
 
 	// Try resolving with outer scope.
 	if ((!member_out) && (!is_sealed)) {
@@ -532,19 +536,44 @@ SLKC_API peff::Option<CompilationError> slkc::resolve_custom_type_name(
 	peff::SharedPtr<Document> document,
 	const AstNodePtr<CustomTypeNameNode> &type_name,
 	AstNodePtr<MemberNode> &member_node_out,
+	bool instantiate_generic_member,
 	peff::Set<AstNodePtr<MemberNode>> *walked_nodes) {
 	AstNodePtr<MemberNode> member;
 
-	if (type_name->cached_resolve_result.is_valid()) {
-		member = type_name->cached_resolve_result.lock();
-		goto resolved;
+	if (instantiate_generic_member && type_name->cached_resolve_result.is_valid()) {
+		member_node_out = type_name->cached_resolve_result.lock();
+		return {};
 	}
 
 	if (walked_nodes) {
-		SLKC_RETURN_IF_COMP_ERROR(resolve_id_ref_with_scope_node(nullptr, document, *walked_nodes, type_name->context_node.lock(), type_name->id_ref_ptr->entries.data(), type_name->id_ref_ptr->entries.size(), member, nullptr));
+		SLKC_RETURN_IF_COMP_ERROR(
+			resolve_id_ref_with_scope_node(
+				nullptr,
+				document,
+				*walked_nodes,
+				type_name->context_node.lock(),
+				type_name->id_ref_ptr->entries.data(),
+				type_name->id_ref_ptr->entries.size(),
+				member,
+				nullptr,
+				true,
+				false,
+				instantiate_generic_member));
 	} else {
 		peff::Set<AstNodePtr<MemberNode>> my_walked_nodes(document->allocator.get());
-		SLKC_RETURN_IF_COMP_ERROR(resolve_id_ref_with_scope_node(nullptr, document, my_walked_nodes, type_name->context_node.lock(), type_name->id_ref_ptr->entries.data(), type_name->id_ref_ptr->entries.size(), member, nullptr));
+		SLKC_RETURN_IF_COMP_ERROR(
+			resolve_id_ref_with_scope_node(
+				nullptr,
+				document,
+				my_walked_nodes,
+				type_name->context_node.lock(),
+				type_name->id_ref_ptr->entries.data(),
+				type_name->id_ref_ptr->entries.size(),
+				member,
+				nullptr,
+				true,
+				false,
+				instantiate_generic_member));
 	}
 
 	if (member) {
@@ -553,7 +582,8 @@ SLKC_API peff::Option<CompilationError> slkc::resolve_custom_type_name(
 
 resolved:
 	if (member) {
-		type_name->cached_resolve_result = to_weak_ptr(member);
+		if (instantiate_generic_member)
+			type_name->cached_resolve_result = to_weak_ptr(member);
 
 		switch (member->get_ast_node_type()) {
 			case AstNodeType::Class:
@@ -584,7 +614,7 @@ resolved:
 		AstNodePtr<TypeNameNode> &type_name_out) {
 	AstNodePtr<MemberNode> member;
 
-	SLKC_RETURN_IF_COMP_ERROR(resolve_custom_type_name(nullptr, document, type_name, member, nullptr));
+	SLKC_RETURN_IF_COMP_ERROR(resolve_custom_type_name(nullptr, document, type_name, member, true, nullptr));
 
 	if (!member) {
 		type_name_out = {};
@@ -638,7 +668,7 @@ SLKC_API peff::Option<CompilationError> slkc::visit_base_class(AstNodePtr<TypeNa
 		if (base_type_name && (base_type_name->tn_kind == TypeNameKind::Custom)) {
 			AstNodePtr<MemberNode> base_type;
 
-			SLKC_RETURN_IF_COMP_ERROR(resolve_custom_type_name(nullptr, base_type_name->document->shared_from_this(), base_type_name.cast_to<CustomTypeNameNode>(), base_type, walked_nodes));
+			SLKC_RETURN_IF_COMP_ERROR(resolve_custom_type_name(nullptr, base_type_name->document->shared_from_this(), base_type_name.cast_to<CustomTypeNameNode>(), base_type, true, walked_nodes));
 
 			if (base_type && (base_type->get_ast_node_type() == AstNodeType::Class)) {
 				AstNodePtr<ClassNode> b = base_type.cast_to<ClassNode>();
@@ -663,7 +693,7 @@ SLKC_API peff::Option<CompilationError> slkc::visit_base_interface(AstNodePtr<Ty
 		if (base_type_name && (base_type_name->tn_kind == TypeNameKind::Custom)) {
 			AstNodePtr<MemberNode> base_type;
 
-			SLKC_RETURN_IF_COMP_ERROR(resolve_custom_type_name(nullptr, base_type_name->document->shared_from_this(), base_type_name.cast_to<CustomTypeNameNode>(), base_type, walked_nodes));
+			SLKC_RETURN_IF_COMP_ERROR(resolve_custom_type_name(nullptr, base_type_name->document->shared_from_this(), base_type_name.cast_to<CustomTypeNameNode>(), base_type, true, walked_nodes));
 
 			if (base_type && (base_type->get_ast_node_type() == AstNodeType::Interface)) {
 				AstNodePtr<InterfaceNode> b = base_type.cast_to<InterfaceNode>();

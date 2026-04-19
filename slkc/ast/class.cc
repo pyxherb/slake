@@ -55,7 +55,92 @@ SLKC_API peff::Option<CompilationError> ClassNode::is_cyclic_inherited(bool &whe
 	return {};
 }
 
+struct CyclicInheritanceWalkFrame {
+	AstNodePtr<MemberNode> member;
+	const peff::DynArray<AstNodePtr<AstNode>> &generic_args;
+	size_t idx_cur_type_arg = 0;
+};
+
+SLKC_API peff::Option<CompilationError> slkc::is_type_ctor_recursed(
+	AstNodePtr<MemberNode> cls,
+	const peff::DynArray<AstNodePtr<AstNode>> &initial_generic_args,
+	peff::Alloc *allocator,
+	bool &result_out,
+	AstNodePtr<CustomTypeNameNode> &recursed_type_name_out) noexcept {
+	peff::Set<AstNodePtr<MemberNode>> walked_members(allocator);
+	peff::List<CyclicInheritanceWalkFrame> frames(allocator);
+
+	if (!walked_members.insert(AstNodePtr<MemberNode>(cls)))
+		return gen_oom_comp_error();
+
+	if (!frames.push_back({ cls, initial_generic_args, 0 }))
+		return gen_oom_comp_error();
+
+	while (frames.size()) {
+		auto &cur_frame = frames.back();
+		auto &generic_args = cur_frame.generic_args;
+
+		if (cur_frame.idx_cur_type_arg >= generic_args.size()) {
+			walked_members.remove(cur_frame.member);
+			frames.pop_back();
+			continue;
+		}
+
+		auto cur_type_arg = generic_args.at(cur_frame.idx_cur_type_arg);
+
+		++cur_frame.idx_cur_type_arg;
+
+		if (cur_type_arg->get_ast_node_type() == AstNodeType::TypeName) {
+			auto tn = cur_type_arg.cast_to<TypeNameNode>();
+
+			if (tn->tn_kind == TypeNameKind::Custom) {
+				auto ctn = tn.cast_to<CustomTypeNameNode>();
+				AstNodePtr<MemberNode> m;
+
+				SLKC_RETURN_IF_COMP_ERROR(
+					resolve_custom_type_name(
+						nullptr,
+						cls->document->shared_from_this(),
+						ctn,
+						m,
+						false));
+
+				if (m) {
+					if (walked_members.contains(m)) {
+						recursed_type_name_out = ctn;
+						result_out = true;
+						return {};
+					}
+					if (!walked_members.insert(AstNodePtr<MemberNode>(m)))
+						return gen_oom_comp_error();
+				}
+
+				if (!frames.push_back(CyclicInheritanceWalkFrame{ m, ctn->id_ref_ptr->entries.back().generic_args, 0 }))
+					return gen_oom_comp_error();
+			}
+		}
+	}
+
+	recursed_type_name_out = {};
+	result_out = false;
+	return {};
+}
+
 SLKC_API peff::Option<CompilationError> ClassNode::update_cyclic_inherited_status() {
+	if (is_cyclic_inherited_flag)
+		return {};
+
+	if (scope->base_type && scope->base_type->tn_kind == TypeNameKind::Custom) {
+		AstNodePtr<CustomTypeNameNode> ctn;
+		SLKC_RETURN_IF_COMP_ERROR(
+			is_type_ctor_recursed(
+				shared_from_this().cast_to<MemberNode>(),
+				scope->base_type.cast_to<CustomTypeNameNode>()->id_ref_ptr->entries.back().generic_args,
+				document->allocator.get(),
+				is_cyclic_inherited_flag,
+				ctn));
+	}
+
 	SLKC_RETURN_IF_COMP_ERROR(is_base_of(document->shared_from_this(), shared_from_this().cast_to<ClassNode>(), shared_from_this().cast_to<ClassNode>(), is_cyclic_inherited_flag));
 
 	is_cyclic_inheritance_checked = true;

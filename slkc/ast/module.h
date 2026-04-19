@@ -42,7 +42,7 @@ namespace slkc {
 			peff::destroy_and_release<Scope>(allocator.get(), this, alignof(Scope));
 		}
 
-		SLKC_API Scope *duplicate(peff::Alloc *allocator, DuplicationContext &context);
+		SLKC_API Scope *duplicate(peff::Alloc *allocator, DuplicationContext &context, MemberNode *owner);
 
 		[[nodiscard]] SLKC_API size_t push_member(AstNodePtr<MemberNode> member_node) noexcept;
 		/// @brief Push and index a member.

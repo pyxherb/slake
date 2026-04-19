@@ -105,6 +105,16 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 		}
 	}
 
+	{
+		bool recursed;
+		AstNodePtr<CustomTypeNameNode> ctn;
+		SLKC_RETURN_IF_COMP_ERROR(is_type_ctor_recursed(original_object, generic_args, allocator.get(), recursed, ctn));
+		if (recursed) {
+			// TODO: Placeholder, use a proper one.
+			return CompilationError(ctn->token_range, CompilationErrorKind::CyclicInheritedClass);
+		}
+	}
+
 	duplicated_object = original_object->duplicate<MemberNode>(allocator.get());
 
 	if (!duplicated_object) {

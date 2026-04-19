@@ -68,6 +68,18 @@ using namespace slkc;
 	CompileExprResult &result_out,
 	slake::Opcode opcode,
 	uint32_t idx_sld);
+[[nodiscard]] PEFF_FORCEINLINE peff::Option<CompilationError> _update_equality_judgement_involved_states(
+	AstNodePtr<TypeNameNode> lhs_type,
+	AstNodePtr<TypeNameNode> rhs_type,
+	const CompileExprResult &lhs_result,
+	const CompileExprResult &rhs_result,
+	CompileExprResult &result_out);
+[[nodiscard]] PEFF_FORCEINLINE peff::Option<CompilationError> _update_inequality_judgement_involved_states(
+	AstNodePtr<TypeNameNode> lhs_type,
+	AstNodePtr<TypeNameNode> rhs_type,
+	const CompileExprResult &lhs_result,
+	const CompileExprResult &rhs_result,
+	CompileExprResult &result_out);
 
 static peff::Option<CompilationError> _compile_simple_binary_expr(
 	CompileEnv *compile_env,
@@ -117,71 +129,15 @@ static peff::Option<CompilationError> _compile_simple_binary_expr(
 			SLKC_RETURN_IF_COMP_ERROR(_compile_or_cast_operand(compile_env, compilation_context, path_env, rhs_eval_purpose, desired_rhs_type, expr->rhs, rhs_type, rhs_result));
 			rhs_reg = rhs_result.idx_result_reg_out;
 
-			//
-			// Apply variable nullity overrides.
-			// TODO: Handle cond == true, cond == false, cond != true, cond != false
-			//
 			switch (expr->binary_op) {
 				case BinaryOp::StrictEq:
 				case BinaryOp::Eq: {
-					if (lhs_result.evaluated_final_member && (lhs_result.evaluated_final_member->get_ast_node_type() == AstNodeType::Var)) {
-						AstNodePtr<VarNode> v = lhs_result.evaluated_final_member.cast_to<VarNode>();
-						if (v->type->is_nullable) {
-							if (rhs_type->tn_kind == TypeNameKind::Null) {
-								// v == null
-								SLKC_RETURN_IF_COMP_ERROR(result_out.var_nullity_override_path_env.set_local_var_nullity_override(v, NullOverrideType::Nullify));
-							} else if (rhs_type->is_nullable) {
-								// v == T?
-								SLKC_RETURN_IF_COMP_ERROR(result_out.var_nullity_override_path_env.set_local_var_nullity_override(v, NullOverrideType::Uncertain));
-							} else {
-								// v == T
-								SLKC_RETURN_IF_COMP_ERROR(result_out.var_nullity_override_path_env.set_local_var_nullity_override(v, NullOverrideType::Denullify));
-							}
-						}
-					} else {
-						if (rhs_result.evaluated_final_member && (rhs_result.evaluated_final_member->get_ast_node_type() == AstNodeType::Var)) {
-							AstNodePtr<VarNode> v = rhs_result.evaluated_final_member.cast_to<VarNode>();
-							if (v->type->is_nullable) {
-								if (lhs_type->tn_kind == TypeNameKind::Null) {
-									// null == v
-									SLKC_RETURN_IF_COMP_ERROR(result_out.var_nullity_override_path_env.set_local_var_nullity_override(v, NullOverrideType::Nullify));
-								} else if (lhs_type->is_nullable) {
-									// T? == v
-									SLKC_RETURN_IF_COMP_ERROR(result_out.var_nullity_override_path_env.set_local_var_nullity_override(v, NullOverrideType::Uncertain));
-								} else {
-									// T == v
-									SLKC_RETURN_IF_COMP_ERROR(result_out.var_nullity_override_path_env.set_local_var_nullity_override(v, NullOverrideType::Denullify));
-								}
-							}
-						}
-					}
+					SLKC_RETURN_IF_COMP_ERROR(_update_equality_judgement_involved_states(lhs_type, rhs_type, lhs_result, rhs_result, result_out));
 					break;
 				}
 				case BinaryOp::StrictNeq:
 				case BinaryOp::Neq: {
-					if (lhs_result.evaluated_final_member && (lhs_result.evaluated_final_member->get_ast_node_type() == AstNodeType::Var)) {
-						AstNodePtr<VarNode> v = lhs_result.evaluated_final_member.cast_to<VarNode>();
-						if (v->type->is_nullable) {
-							if (rhs_type->tn_kind == TypeNameKind::Null) {
-								// v != null
-								SLKC_RETURN_IF_COMP_ERROR(result_out.var_nullity_override_path_env.set_local_var_nullity_override(v, NullOverrideType::Denullify));
-							} else {
-								// v != T? and v != T are undeterminable
-							}
-						}
-					} else {
-						if (rhs_result.evaluated_final_member && (rhs_result.evaluated_final_member->get_ast_node_type() == AstNodeType::Var)) {
-							AstNodePtr<VarNode> v = rhs_result.evaluated_final_member.cast_to<VarNode>();
-							if (v->type->is_nullable) {
-								if (lhs_type->tn_kind == TypeNameKind::Null) {
-									// null != v
-									SLKC_RETURN_IF_COMP_ERROR(result_out.var_nullity_override_path_env.set_local_var_nullity_override(v, NullOverrideType::Denullify));
-								} else {
-									// T? != v and T != v are undeterminable
-								}
-							}
-						}
-					}
+					SLKC_RETURN_IF_COMP_ERROR(_update_inequality_judgement_involved_states(lhs_type, rhs_type, lhs_result, rhs_result, result_out));
 					break;
 				}
 				default:
@@ -655,6 +611,82 @@ static peff::Option<CompilationError> _compile_simple_compound_assign_expr(
 			return CompilationError(expr->token_range, CompilationErrorKind::TargetIsNotUnpackable);
 	}
 
+	return {};
+}
+
+PEFF_FORCEINLINE peff::Option<CompilationError> _update_equality_judgement_involved_states(
+	AstNodePtr<TypeNameNode> lhs_type,
+	AstNodePtr<TypeNameNode> rhs_type,
+	const CompileExprResult &lhs_result,
+	const CompileExprResult &rhs_result,
+	CompileExprResult &result_out) {
+	//
+	// Apply variable nullity overrides.
+	// TODO: Handle cond == true, cond == false, cond != true, cond != false
+	//
+	if (lhs_result.evaluated_final_member && (lhs_result.evaluated_final_member->get_ast_node_type() == AstNodeType::Var)) {
+		AstNodePtr<VarNode> v = lhs_result.evaluated_final_member.cast_to<VarNode>();
+		if (v->type->is_nullable) {
+			if (rhs_type->tn_kind == TypeNameKind::Null) {
+				// v == null
+				SLKC_RETURN_IF_COMP_ERROR(result_out.var_nullity_override_path_env.set_local_var_nullity_override(v, NullOverrideType::Nullify));
+			} else if (rhs_type->is_nullable) {
+				// v == T?
+				SLKC_RETURN_IF_COMP_ERROR(result_out.var_nullity_override_path_env.set_local_var_nullity_override(v, NullOverrideType::Uncertain));
+			} else {
+				// v == T
+				SLKC_RETURN_IF_COMP_ERROR(result_out.var_nullity_override_path_env.set_local_var_nullity_override(v, NullOverrideType::Denullify));
+			}
+		}
+	} else {
+		if (rhs_result.evaluated_final_member && (rhs_result.evaluated_final_member->get_ast_node_type() == AstNodeType::Var)) {
+			AstNodePtr<VarNode> v = rhs_result.evaluated_final_member.cast_to<VarNode>();
+			if (v->type->is_nullable) {
+				if (lhs_type->tn_kind == TypeNameKind::Null) {
+					// null == v
+					SLKC_RETURN_IF_COMP_ERROR(result_out.var_nullity_override_path_env.set_local_var_nullity_override(v, NullOverrideType::Nullify));
+				} else if (lhs_type->is_nullable) {
+					// T? == v
+					SLKC_RETURN_IF_COMP_ERROR(result_out.var_nullity_override_path_env.set_local_var_nullity_override(v, NullOverrideType::Uncertain));
+				} else {
+					// T == v
+					SLKC_RETURN_IF_COMP_ERROR(result_out.var_nullity_override_path_env.set_local_var_nullity_override(v, NullOverrideType::Denullify));
+				}
+			}
+		}
+	}
+	return {};
+}
+
+PEFF_FORCEINLINE peff::Option<CompilationError> _update_inequality_judgement_involved_states(
+	AstNodePtr<TypeNameNode> lhs_type,
+	AstNodePtr<TypeNameNode> rhs_type,
+	const CompileExprResult &lhs_result,
+	const CompileExprResult &rhs_result,
+	CompileExprResult &result_out) {
+	if (lhs_result.evaluated_final_member && (lhs_result.evaluated_final_member->get_ast_node_type() == AstNodeType::Var)) {
+		AstNodePtr<VarNode> v = lhs_result.evaluated_final_member.cast_to<VarNode>();
+		if (v->type->is_nullable) {
+			if (rhs_type->tn_kind == TypeNameKind::Null) {
+				// v != null
+				SLKC_RETURN_IF_COMP_ERROR(result_out.var_nullity_override_path_env.set_local_var_nullity_override(v, NullOverrideType::Denullify));
+			} else {
+				// v != T? and v != T are undeterminable
+			}
+		}
+	} else {
+		if (rhs_result.evaluated_final_member && (rhs_result.evaluated_final_member->get_ast_node_type() == AstNodeType::Var)) {
+			AstNodePtr<VarNode> v = rhs_result.evaluated_final_member.cast_to<VarNode>();
+			if (v->type->is_nullable) {
+				if (lhs_type->tn_kind == TypeNameKind::Null) {
+					// null != v
+					SLKC_RETURN_IF_COMP_ERROR(result_out.var_nullity_override_path_env.set_local_var_nullity_override(v, NullOverrideType::Denullify));
+				} else {
+					// T? != v and T != v are undeterminable
+				}
+			}
+		}
+	}
 	return {};
 }
 
@@ -2444,15 +2476,16 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 									CompilationWarning(expr->token_range, CompilationWarningKind::UnusedExprResult)));
 								[[fallthrough]];
 							case ExprEvalPurpose::RValue: {
-								CompileExprResult result(compile_env->allocator.get());
+								CompileExprResult lhs_result(compile_env->allocator.get()),
+									rhs_result(compile_env->allocator.get());
 
 								uint32_t lhs_reg,
 									rhs_reg;
 
 								peff::Option<CompilationError> e;
 
-								if ((e = _compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, decayed_lhs_type, expr->lhs, lhs_type, result))) {
-									if (auto re = _compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, decayed_lhs_type, expr->rhs, rhs_type, result); re) {
+								if ((e = _compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, decayed_actual_lhs_type, expr->lhs, decayed_lhs_type, lhs_result))) {
+									if (auto re = _compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, decayed_actual_lhs_type, expr->rhs, decayed_rhs_type, rhs_result); re) {
 										if (!compile_env->errors.push_back(std::move(*e))) {
 											return gen_oom_comp_error();
 										}
@@ -2462,9 +2495,9 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 										return e;
 									}
 								}
-								lhs_reg = result.idx_result_reg_out;
-								SLKC_RETURN_IF_COMP_ERROR(_compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, decayed_lhs_type, expr->rhs, rhs_type, result));
-								rhs_reg = result.idx_result_reg_out;
+								lhs_reg = lhs_result.idx_result_reg_out;
+								SLKC_RETURN_IF_COMP_ERROR(_compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, decayed_actual_lhs_type, expr->rhs, decayed_rhs_type, rhs_result));
+								rhs_reg = rhs_result.idx_result_reg_out;
 
 								uint32_t output_reg;
 								SLKC_RETURN_IF_COMP_ERROR(compilation_context->alloc_reg(output_reg));
@@ -2475,6 +2508,39 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 									{ slake::Value(slake::ValueType::RegIndex, lhs_reg), slake::Value(slake::ValueType::RegIndex, rhs_reg) }));
 								result_out.idx_result_reg_out = output_reg;
 
+								if (lhs_result.evaluated_final_member && (lhs_result.evaluated_final_member->get_ast_node_type() == AstNodeType::Var)) {
+									AstNodePtr<VarNode> v = lhs_result.evaluated_final_member.cast_to<VarNode>();
+									if (v->type->is_nullable) {
+										if (rhs_type->tn_kind == TypeNameKind::Null) {
+											// v == null
+											SLKC_RETURN_IF_COMP_ERROR(result_out.var_nullity_override_path_env.set_local_var_nullity_override(v, NullOverrideType::Nullify));
+										} else if (rhs_type->is_nullable) {
+											// v == T?
+											SLKC_RETURN_IF_COMP_ERROR(result_out.var_nullity_override_path_env.set_local_var_nullity_override(v, NullOverrideType::Uncertain));
+										} else {
+											// v == T
+											SLKC_RETURN_IF_COMP_ERROR(result_out.var_nullity_override_path_env.set_local_var_nullity_override(v, NullOverrideType::Denullify));
+										}
+									}
+								} else {
+									if (rhs_result.evaluated_final_member && (rhs_result.evaluated_final_member->get_ast_node_type() == AstNodeType::Var)) {
+										AstNodePtr<VarNode> v = rhs_result.evaluated_final_member.cast_to<VarNode>();
+										if (v->type->is_nullable) {
+											if (lhs_type->tn_kind == TypeNameKind::Null) {
+												// null == v
+												SLKC_RETURN_IF_COMP_ERROR(result_out.var_nullity_override_path_env.set_local_var_nullity_override(v, NullOverrideType::Nullify));
+											} else if (lhs_type->is_nullable) {
+												// T? == v
+												SLKC_RETURN_IF_COMP_ERROR(result_out.var_nullity_override_path_env.set_local_var_nullity_override(v, NullOverrideType::Uncertain));
+											} else {
+												// T == v
+												SLKC_RETURN_IF_COMP_ERROR(result_out.var_nullity_override_path_env.set_local_var_nullity_override(v, NullOverrideType::Denullify));
+											}
+										}
+									}
+								}
+
+								SLKC_RETURN_IF_COMP_ERROR(_update_equality_judgement_involved_states(lhs_type, rhs_type, lhs_result, rhs_result, result_out));
 								break;
 							}
 							case ExprEvalPurpose::Call:
@@ -2482,6 +2548,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 							case ExprEvalPurpose::Unpacking:
 								return CompilationError(expr->token_range, CompilationErrorKind::TargetIsNotUnpackable);
 						}
+						result_out.evaluated_type = bool_type.cast_to<TypeNameNode>();
 						break;
 					case BinaryOp::StrictNeq:
 						switch (eval_purpose) {
@@ -2495,15 +2562,16 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 									CompilationWarning(expr->token_range, CompilationWarningKind::UnusedExprResult)));
 								[[fallthrough]];
 							case ExprEvalPurpose::RValue: {
-								CompileExprResult result(compile_env->allocator.get());
+								CompileExprResult lhs_result(compile_env->allocator.get()),
+									rhs_result(compile_env->allocator.get());
 
 								uint32_t lhs_reg,
 									rhs_reg;
 
 								peff::Option<CompilationError> e;
 
-								if ((e = _compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, decayed_lhs_type, expr->lhs, lhs_type, result))) {
-									if (auto re = _compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, decayed_lhs_type, expr->rhs, rhs_type, result); re) {
+								if ((e = _compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, decayed_actual_lhs_type, expr->lhs, decayed_lhs_type, lhs_result))) {
+									if (auto re = _compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, decayed_actual_lhs_type, expr->rhs, decayed_rhs_type, rhs_result); re) {
 										if (!compile_env->errors.push_back(std::move(*e))) {
 											return gen_oom_comp_error();
 										}
@@ -2513,9 +2581,9 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 										return e;
 									}
 								}
-								lhs_reg = result.idx_result_reg_out;
-								SLKC_RETURN_IF_COMP_ERROR(_compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, decayed_lhs_type, expr->rhs, rhs_type, result));
-								rhs_reg = result.idx_result_reg_out;
+								lhs_reg = lhs_result.idx_result_reg_out;
+								SLKC_RETURN_IF_COMP_ERROR(_compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, decayed_actual_lhs_type, expr->rhs, decayed_rhs_type, rhs_result));
+								rhs_reg = rhs_result.idx_result_reg_out;
 
 								uint32_t output_reg;
 								SLKC_RETURN_IF_COMP_ERROR(compilation_context->alloc_reg(output_reg));
@@ -2526,6 +2594,31 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 									{ slake::Value(slake::ValueType::RegIndex, lhs_reg), slake::Value(slake::ValueType::RegIndex, rhs_reg) }));
 								result_out.idx_result_reg_out = output_reg;
 
+								if (lhs_result.evaluated_final_member && (lhs_result.evaluated_final_member->get_ast_node_type() == AstNodeType::Var)) {
+									AstNodePtr<VarNode> v = lhs_result.evaluated_final_member.cast_to<VarNode>();
+									if (v->type->is_nullable) {
+										if (rhs_type->tn_kind == TypeNameKind::Null) {
+											// v != null
+											SLKC_RETURN_IF_COMP_ERROR(result_out.var_nullity_override_path_env.set_local_var_nullity_override(v, NullOverrideType::Denullify));
+										} else {
+											// v != T? and v != T are undeterminable
+										}
+									}
+								} else {
+									if (rhs_result.evaluated_final_member && (rhs_result.evaluated_final_member->get_ast_node_type() == AstNodeType::Var)) {
+										AstNodePtr<VarNode> v = rhs_result.evaluated_final_member.cast_to<VarNode>();
+										if (v->type->is_nullable) {
+											if (lhs_type->tn_kind == TypeNameKind::Null) {
+												// null != v
+												SLKC_RETURN_IF_COMP_ERROR(result_out.var_nullity_override_path_env.set_local_var_nullity_override(v, NullOverrideType::Denullify));
+											} else {
+												// T? != v and T != v are undeterminable
+											}
+										}
+									}
+								}
+
+								SLKC_RETURN_IF_COMP_ERROR(_update_inequality_judgement_involved_states(lhs_type, rhs_type, lhs_result, rhs_result, result_out));
 								break;
 							}
 							case ExprEvalPurpose::Call:
@@ -2533,6 +2626,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 							case ExprEvalPurpose::Unpacking:
 								return CompilationError(expr->token_range, CompilationErrorKind::TargetIsNotUnpackable);
 						}
+						result_out.evaluated_type = bool_type.cast_to<TypeNameNode>();
 						break;
 					default:
 						return CompilationError(expr->token_range, CompilationErrorKind::OperatorNotFound);

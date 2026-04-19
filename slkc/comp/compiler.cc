@@ -463,6 +463,8 @@ SLKC_API peff::Option<CompilationError> slkc::eval_expr_type(
 	AstNodePtr<TypeNameNode> &type_out,
 	AstNodePtr<TypeNameNode> desired_type) {
 	SLKC_RETURN_IF_COMP_ERROR(eval_expr_type(compile_env, compilation_context, path_env, expr, type_out, desired_type));
+	if (!type_out)
+		return {};
 	SLKC_RETURN_IF_COMP_ERROR(remove_ref_of_type(type_out, type_out));
 	return {};
 }

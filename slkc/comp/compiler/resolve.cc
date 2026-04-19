@@ -149,7 +149,7 @@ reresolve:
 
 					SLKC_RETURN_IF_COMP_ERROR(visit_base_class(m->generic_constraint->base_type, class_node, nullptr));
 
-					while (m) {
+					while (class_node) {
 						if (class_node->scope && (result = class_node->scope->try_get_member(name.name)))
 							goto generic_param_resolution_succeeded;
 

@@ -812,9 +812,6 @@ int main(int argc, char *argv[]) {
 		}
 		{
 			{
-				slake::HostObjectRef<slake::ModuleObject> mod_obj = slake::ModuleObject::alloc(runtime.get());
-				mod_obj->set_access(slake::make_access_modifier(slake::AccessMode::Public, slake::ACCESS_STATIC));
-
 				peff::SharedPtr<slkc::Parser> parser;
 				if (!(parser = peff::make_shared<slkc::Parser>(peff::default_allocator(), document, std::move(token_list), peff::default_allocator()))) {
 					print_error("Error allocating memory for the parser");
@@ -853,20 +850,12 @@ int main(int argc, char *argv[]) {
 					}
 				}
 
-				if (auto e = slkc::compile_module_like_node(&compile_env, mod, mod_obj.get()); e) {
-					encountered_errors = true;
-					dump_compilation_error(parser, *e);
-				}
+				slake::HostObjectRef<slake::ModuleObject> mod_obj;
 
-				// Sort errors in order.
-				std::sort(compile_env.errors.data(), compile_env.errors.data() + compile_env.errors.size());
+				if (module_name) {
+					mod_obj = slake::ModuleObject::alloc(runtime.get());
+					mod_obj->set_access(slake::make_access_modifier(slake::AccessMode::Public, slake::ACCESS_STATIC));
 
-				for (auto &i : compile_env.errors) {
-					encountered_errors = true;
-					dump_compilation_error(parser, i);
-				}
-
-				if (!encountered_errors) {
 					slake::HostObjectRef<slake::ModuleObject> last_module = runtime->get_root_object();
 
 					for (size_t i = 0; i < module_name->entries.size() - 1; ++i) {
@@ -906,7 +895,23 @@ int main(int argc, char *argv[]) {
 						puts("Error dumping compiled module!");
 					}
 					mod_obj->set_parent(last_module.get());
+				} else
+					mod_obj = runtime->get_root_object();
 
+				if (auto e = slkc::compile_module_like_node(&compile_env, mod, mod_obj.get()); e) {
+					encountered_errors = true;
+					dump_compilation_error(parser, *e);
+				}
+
+				// Sort errors in order.
+				std::sort(compile_env.errors.data(), compile_env.errors.data() + compile_env.errors.size());
+
+				for (auto &i : compile_env.errors) {
+					encountered_errors = true;
+					dump_compilation_error(parser, i);
+				}
+
+				if (!encountered_errors) {
 					FILE *fp;
 
 					if (!(fp = fopen(g_output_file_name, "wb"))) {

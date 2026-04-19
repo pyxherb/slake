@@ -32,3 +32,22 @@ And then switch to the `example/hostext` directory in the project root and run t
 ```bash
 ../../build/example/hostext/hostext
 ```
+
+### Visual Studio Code
+
+You may use a VSCode launch configuration like following to launch the test conviniently:
+
+```json
+{
+    "name": "<Your configuration name>",
+    "type": "cppdbg",
+    "request": "launch",
+    "program": "${workspaceFolder}/build/example/hostext/hostext",
+    "args": [],
+    "stopAtEntry": false,
+    "cwd": "${workspaceFolder}/example/hostext",
+    "environment": [],
+    "externalConsole": false,
+    "MIMode": "lldb"
+}
+```

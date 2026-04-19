@@ -515,8 +515,8 @@ recheck:
 					break;
 				}
 				case TypeNameKind::Custom: {
-					AstNodePtr<MemberNode> subtype_member;  // Subtype member
-					AstNodePtr<MemberNode> type_member;	   // Type member
+					AstNodePtr<MemberNode> subtype_member;	// Subtype member
+					AstNodePtr<MemberNode> type_member;		// Type member
 
 					SLKC_RETURN_IF_COMP_ERROR(resolve_custom_type_name(nullptr, base_type->document->shared_from_this(), base_type.cast_to<CustomTypeNameNode>(), type_member));
 					SLKC_RETURN_IF_COMP_ERROR(resolve_custom_type_name(nullptr, subtype->document->shared_from_this(), subtype.cast_to<CustomTypeNameNode>(), subtype_member));
@@ -542,10 +542,10 @@ recheck:
 						case AstNodeType::Class:
 							switch (subtype_member->get_ast_node_type()) {
 								case AstNodeType::Class:
-									SLKC_RETURN_IF_COMP_ERROR(is_base_of(base_type->document->shared_from_this(), type_member.cast_to<ClassNode>(), subtype_member.cast_to<ClassNode>(), result_out));
-									if (result_out) {
-										// subtype <: base_type
+									if (type_member == subtype_member) {
 										result_out = true;
+									} else {
+										SLKC_RETURN_IF_COMP_ERROR(is_base_of(base_type->document->shared_from_this(), type_member.cast_to<ClassNode>(), subtype_member.cast_to<ClassNode>(), result_out));
 									}
 									break;
 								case AstNodeType::GenericParam: {
@@ -559,11 +559,11 @@ recheck:
 
 											if (gp_base_member->get_ast_node_type() == AstNodeType::Class) {
 												// Only check if the base base_type name is not malformed.
-												SLKC_RETURN_IF_COMP_ERROR(is_base_of(base_type->document->shared_from_this(), type_member.cast_to<ClassNode>(), gp_base_member.cast_to<ClassNode>(), result_out));
-												if (result_out) {
+												if (type_member == gp_base_member) {
 													// subtype <: base_type
 													result_out = true;
-												}
+												} else
+													SLKC_RETURN_IF_COMP_ERROR(is_base_of(base_type->document->shared_from_this(), type_member.cast_to<ClassNode>(), gp_base_member.cast_to<ClassNode>(), result_out));
 											}
 										}
 									}
@@ -929,7 +929,6 @@ SLKC_API peff::Option<CompilationError> slkc::is_basic_type(
 	}
 	return {};
 }
-
 
 SLKC_API peff::Option<CompilationError> slkc::is_object_type(
 	AstNodePtr<TypeNameNode> type,
@@ -1343,6 +1342,22 @@ recheck:
 				}
 			}
 			return {};
+		case TypeNameKind::Custom:
+			if (dest->is_nullable) {
+				result_out = (src->tn_kind == TypeNameKind::Null) || (src->tn_kind == dest->tn_kind);
+			} else {
+				switch (src->tn_kind) {
+					case TypeNameKind::Custom:
+						break;
+					case TypeNameKind::Ref:
+						SLKC_RETURN_IF_COMP_ERROR(remove_ref_of_type(src, src));
+						goto recheck;
+					default:
+						result_out = false;
+						break;
+				}
+			}
+			break;
 		case TypeNameKind::Any:
 			switch (src->tn_kind) {
 				case TypeNameKind::Ref:

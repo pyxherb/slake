@@ -1099,14 +1099,12 @@ SLKC_API peff::Option<CompilationError> slkc::compile_return_stmt(
 		bool l;
 		SLKC_RETURN_IF_COMP_ERROR(is_lvalue_type(compile_env->cur_overloading->return_type, l));
 
-		bool b;
-		SLKC_RETURN_IF_COMP_ERROR(is_same_type(value_type, compile_env->cur_overloading->return_type, b));
-		if (b) {
-			SLKC_RETURN_IF_COMP_ERROR(compile_expr(compile_env, compilation_context, path_env, s->value, l ? ExprEvalPurpose::LValue : ExprEvalPurpose::RValue, compile_env->cur_overloading->return_type, result));
-			reg = result.idx_result_reg_out;
-		} else {
-			SLKC_RETURN_IF_COMP_ERROR(is_convertible(value_type, compile_env->cur_overloading->return_type, true, b));
-			if (b) {
+		bool same;
+		SLKC_RETURN_IF_COMP_ERROR(is_same_type(value_type, compile_env->cur_overloading->return_type, same));
+		if (!same) {
+			bool convertible;
+			SLKC_RETURN_IF_COMP_ERROR(is_convertible(value_type, compile_env->cur_overloading->return_type, true, convertible));
+			if (convertible) {
 				CompileExprResult result(compile_env->allocator.get());
 
 				AstNodePtr<CastExprNode> cast_expr;
@@ -1121,6 +1119,8 @@ SLKC_API peff::Option<CompilationError> slkc::compile_return_stmt(
 				reg = result.idx_result_reg_out;
 			} else
 				return CompilationError(s->value->token_range, CompilationErrorKind::ReturnValueTypeDoesNotMatch);
+		} else {
+			SLKC_RETURN_IF_COMP_ERROR(compile_expr(compile_env, compilation_context, path_env, s->value, l ? ExprEvalPurpose::LValue : ExprEvalPurpose::RValue, compile_env->cur_overloading->return_type, result));
 		}
 
 		SLKC_RETURN_IF_COMP_ERROR(

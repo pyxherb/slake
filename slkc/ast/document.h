@@ -69,6 +69,7 @@ namespace slkc {
 		InvalidCast,
 		FunctionOverloadingDuplicated,
 		RequiresInitialValue,
+		ErrorDeducingExprType,
 		ErrorDeducingVarType,
 		TypeIsNotUnpackable,
 		InvalidVarArgHintDuringInstantiation,

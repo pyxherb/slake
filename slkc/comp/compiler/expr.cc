@@ -2,8 +2,36 @@
 
 using namespace slkc;
 
+SLKC_API peff::Option<CompilationError> slkc::check_null_member_deref(PathEnv *path_env, AstNodePtr<MemberNode> member, const TokenRange &token_range) {
+	switch (member->get_ast_node_type()) {
+		case AstNodeType::Var: {
+			auto m = member.cast_to<VarNode>();
+
+			if (m->type->is_nullable) {
+				auto nullity_override = path_env->lookup_var_nullity_override(m);
+
+				if (nullity_override) {
+					switch (*nullity_override) {
+						case NullOverrideType::Denullify:
+							break;
+						case NullOverrideType::Nullify:
+						case NullOverrideType::Uncertain:
+							return CompilationError(token_range, CompilationErrorKind::DereferencingNull);
+					}
+				} else
+					return CompilationError(token_range, CompilationErrorKind::DereferencingNull);
+			}
+			break;
+		}
+		default:
+			break;
+	}
+
+	return {};
+}
+
 template <typename LE, typename DT, typename TN>
-static peff::Option<CompilationError> _compile_literal_expr(
+[[nodiscard]] static peff::Option<CompilationError> _compile_literal_expr(
 	CompileEnv *compile_env,
 	CompilationContext *compilation_context,
 	PathEnv *path_env,
@@ -93,13 +121,38 @@ SLKC_API peff::Option<CompilationError> slkc::_compile_or_cast_operand(
 
 static peff::Option<CompilationError> _determine_node_type(CompileEnv *compile_env, PathEnv *path_env, ExprEvalPurpose eval_purpose, AstNodePtr<MemberNode> node, AstNodePtr<TypeNameNode> &type_name_out);
 
-static peff::Option<CompilationError> _load_rest_of_id_ref(CompileEnv *compile_env, CompilationContext *compilation_context, PathEnv *path_env, ExprEvalPurpose eval_purpose, uint32_t &result_reg_out, CompileExprResult &result_out, IdRef *id_ref, ResolvedIdRefPartList &parts, uint32_t initial_member_reg, size_t cur_idx, AstNodePtr<FnTypeNameNode> extra_fn_args, uint32_t sld_index) {
+static peff::Option<CompilationError> _load_rest_of_id_ref(
+	CompileEnv *compile_env,
+	CompilationContext *compilation_context,
+	PathEnv *path_env,
+	ExprEvalPurpose eval_purpose,
+	uint32_t &result_reg_out,
+	CompileExprResult &result_out,
+	IdRef *id_ref,
+	ResolvedIdRefPartList &parts,
+	uint32_t initial_member_reg,
+	size_t cur_ref_idx,
+	AstNodePtr<FnTypeNameNode> extra_fn_args,
+	uint32_t sld_index) {
+	//
+	// TODO: Check the resolved parts in order and check if they are null.
+	//
 	uint32_t idx_reg;
 
 	if (initial_member_reg == UINT32_MAX) {
 		SLKC_RETURN_IF_COMP_ERROR(compilation_context->alloc_reg(idx_reg));
 	} else {
 		idx_reg = initial_member_reg;
+	}
+
+	{
+		size_t i = cur_ref_idx, j = 0;
+		while (i < id_ref->entries.size()) {
+			ResolvedIdRefPart &part = parts.at(j);
+			SLKC_RETURN_IF_COMP_ERROR(check_null_member_deref(path_env, part.member, TokenRange{ id_ref->token_range.module_node, id_ref->entries.at(i).name_token_index }));
+			i += part.num_entries;
+			++j;
+		}
 	}
 
 	if (parts.back().member->get_ast_node_type() == AstNodeType::FnOverloading) {
@@ -111,7 +164,7 @@ static peff::Option<CompilationError> _load_rest_of_id_ref(CompileEnv *compile_e
 				AstNodePtr<TypeNameNode> overriden_type;
 
 				// Is calling a virtual instance method.
-				for (size_t i = cur_idx; i < parts.size() - 1; ++i) {
+				for (size_t i = cur_ref_idx; i < parts.size() - 1; ++i) {
 					ResolvedIdRefPart &part = parts.at(i);
 
 					if ((i + 1 == parts.size() - 1) &&
@@ -132,7 +185,7 @@ static peff::Option<CompilationError> _load_rest_of_id_ref(CompileEnv *compile_e
 					}
 
 					if (part.num_entries) {
-						SLKC_RETURN_IF_COMP_ERROR(compile_id_ref(compile_env, compilation_context, id_ref->entries.data() + cur_idx, part.num_entries, nullptr, 0, false, {}, id_ref_object));
+						SLKC_RETURN_IF_COMP_ERROR(compile_id_ref(compile_env, compilation_context, id_ref->entries.data() + cur_ref_idx, part.num_entries, nullptr, 0, false, {}, id_ref_object));
 
 						if (part.is_static) {
 							SLKC_RETURN_IF_COMP_ERROR(compilation_context->emit_ins(sld_index, slake::Opcode::LOAD, idx_reg, { slake::Value(slake::Reference(id_ref_object.get())) }));
@@ -144,14 +197,14 @@ static peff::Option<CompilationError> _load_rest_of_id_ref(CompileEnv *compile_e
 							SLKC_RETURN_IF_COMP_ERROR(compilation_context->emit_ins(sld_index, slake::Opcode::RLOAD, idx_new_reg, { slake::Value(slake::ValueType::RegIndex, idx_reg), slake::Value(slake::Reference(id_ref_object.get())) }));
 							idx_reg = idx_new_reg;
 						}
-						cur_idx += part.num_entries;
+						cur_ref_idx += part.num_entries;
 					}
 				}
 
 				{
 					ResolvedIdRefPart &part = parts.back();
 
-					SLKC_RETURN_IF_COMP_ERROR(compile_id_ref(compile_env, compilation_context, id_ref->entries.data() + cur_idx, part.num_entries, nullptr, 0, false, overriden_type, id_ref_object));
+					SLKC_RETURN_IF_COMP_ERROR(compile_id_ref(compile_env, compilation_context, id_ref->entries.data() + cur_ref_idx, part.num_entries, nullptr, 0, false, overriden_type, id_ref_object));
 
 					if (extra_fn_args) {
 						id_ref_object->param_types = peff::DynArray<slake::TypeRef>(compile_env->runtime->get_cur_gen_alloc());
@@ -179,11 +232,11 @@ static peff::Option<CompilationError> _load_rest_of_id_ref(CompileEnv *compile_e
 				// Is calling an instance method that is not virtual.
 				slake::HostObjectRef<slake::IdRefObject> id_ref_object;
 
-				for (size_t i = cur_idx; i < parts.size() - 1; ++i) {
+				for (size_t i = cur_ref_idx; i < parts.size() - 1; ++i) {
 					ResolvedIdRefPart &part = parts.at(i);
 
 					if (part.num_entries) {
-						SLKC_RETURN_IF_COMP_ERROR(compile_id_ref(compile_env, compilation_context, id_ref->entries.data() + cur_idx, part.num_entries, nullptr, 0, false, {}, id_ref_object));
+						SLKC_RETURN_IF_COMP_ERROR(compile_id_ref(compile_env, compilation_context, id_ref->entries.data() + cur_ref_idx, part.num_entries, nullptr, 0, false, {}, id_ref_object));
 
 						if (part.is_static) {
 							SLKC_RETURN_IF_COMP_ERROR(compilation_context->emit_ins(sld_index, slake::Opcode::LOAD, idx_reg, { slake::Value(slake::Reference(id_ref_object.get())) }));
@@ -195,7 +248,7 @@ static peff::Option<CompilationError> _load_rest_of_id_ref(CompileEnv *compile_e
 							SLKC_RETURN_IF_COMP_ERROR(compilation_context->emit_ins(sld_index, slake::Opcode::RLOAD, idx_new_reg, { slake::Value(slake::ValueType::RegIndex, idx_reg), slake::Value(slake::Reference(id_ref_object.get())) }));
 							idx_reg = idx_new_reg;
 						}
-						cur_idx += part.num_entries;
+						cur_ref_idx += part.num_entries;
 					}
 				}
 
@@ -260,10 +313,10 @@ static peff::Option<CompilationError> _load_rest_of_id_ref(CompileEnv *compile_e
 		slake::HostObjectRef<slake::IdRefObject> id_ref_object;
 
 		if (parts.size() > 1) {
-			for (size_t i = cur_idx; i < parts.size(); ++i) {
+			for (size_t i = cur_ref_idx; i < parts.size(); ++i) {
 				ResolvedIdRefPart &part = parts.at(i);
 
-				SLKC_RETURN_IF_COMP_ERROR(compile_id_ref(compile_env, compilation_context, id_ref->entries.data() + cur_idx, part.num_entries, nullptr, 0, false, {}, id_ref_object));
+				SLKC_RETURN_IF_COMP_ERROR(compile_id_ref(compile_env, compilation_context, id_ref->entries.data() + cur_ref_idx, part.num_entries, nullptr, 0, false, {}, id_ref_object));
 
 				if (part.is_static) {
 					SLKC_RETURN_IF_COMP_ERROR(compilation_context->emit_ins(sld_index, slake::Opcode::LOAD, idx_reg, { slake::Value(slake::Reference(id_ref_object.get())) }));
@@ -276,7 +329,7 @@ static peff::Option<CompilationError> _load_rest_of_id_ref(CompileEnv *compile_e
 					idx_reg = idx_new_reg;
 				}
 
-				cur_idx += part.num_entries;
+				cur_ref_idx += part.num_entries;
 			}
 		}
 	}
@@ -487,6 +540,8 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 			AstNodePtr<TypeNameNode> tn = result.evaluated_type;
 
 		determine_initial_member:
+			if (tn->is_nullable)
+				return CompilationError(e->head->token_range, CompilationErrorKind::DereferencingNull);
 			switch (tn->tn_kind) {
 				case TypeNameKind::Void:
 				case TypeNameKind::I8:
@@ -796,9 +851,9 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 			}
 
 		initial_member_resolved:
-
 			if (initial_member) {
 				if (e->id_ref_ptr->entries.size() > 1) {
+					SLKC_RETURN_IF_COMP_ERROR(check_null_member_deref(path_env, initial_member, TokenRange{ e->id_ref_ptr->token_range.module_node, e->id_ref_ptr->entries.front().name_token_index }));
 					size_t cur_idx = 1;
 
 					ResolvedIdRefPartList parts(compile_env->get_document()->allocator.get());
@@ -1097,7 +1152,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 			if (!desired_type) {
 				for (auto i : e->elements) {
 					AstNodePtr<TypeNameNode> t;
-					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error, eval_decayed_expr_type(compile_env, compilation_context, path_env, i, t));
+					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error, eval_ref_removed_expr_type(compile_env, compilation_context, path_env, i, t));
 
 					if (t) {
 						if (tn) {
@@ -1201,7 +1256,8 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 
 			CompileExprResult result(compile_env->allocator.get());
 			AstNodePtr<TypeNameNode> fn_type;
-			if (auto error = eval_decayed_expr_type(compile_env, compilation_context, path_env, e->target, fn_type); error) {
+			if (auto error = eval_ref_removed_expr_type(compile_env, compilation_context, path_env, e->target, fn_type); error) {
+				// ???
 				switch (error->error_kind) {
 					case CompilationErrorKind::OutOfMemory:
 					case CompilationErrorKind::OutOfRuntimeMemory:
@@ -1249,7 +1305,12 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 
 				arg_types = std::move(fn_prototype->param_types);
 				fn_type = result.evaluated_type;
+
+				if (fn_type->is_nullable)
+					return CompilationError(e->target->token_range, CompilationErrorKind::TargetIsNotCallable);
 			} else {
+				if (fn_type->is_nullable)
+					return CompilationError(e->target->token_range, CompilationErrorKind::TargetIsNotCallable);
 				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error, compile_expr(compile_env, compilation_context, path_env, e->target, ExprEvalPurpose::Call, {}, result));
 
 				target_reg = result.idx_result_reg_out;
@@ -1641,7 +1702,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 
 			AstNodePtr<TypeNameNode> expr_type, target_type = e->target_type;
 
-			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error, eval_decayed_expr_type(compile_env, compilation_context, path_env, e->source, expr_type, target_type));
+			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error, eval_ref_removed_expr_type(compile_env, compilation_context, path_env, e->source, expr_type, target_type));
 
 			bool b;
 			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error, is_convertible(expr_type, target_type, false, b));

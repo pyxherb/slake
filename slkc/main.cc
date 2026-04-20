@@ -602,6 +602,9 @@ void dump_compilation_error(peff::SharedPtr<slkc::Parser> parser, const slkc::Co
 		case slkc::CompilationErrorKind::ReturnValueTypeDoesNotMatch:
 			fprintf(stderr, "Return value type does not match\n");
 			break;
+		case slkc::CompilationErrorKind::DereferencingNull:
+			fprintf(stderr, "Dereferencing null value\n");
+			break;
 
 		case slkc::CompilationErrorKind::ImportLimitExceeded:
 			fprintf(stderr, "Import item number exceeded\n");

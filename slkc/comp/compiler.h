@@ -80,6 +80,8 @@ namespace slkc {
 			no_return_possibility = PathPossibility::Never;
 			break_possibility = PathPossibility::Never;
 		}
+
+		PathEnv &operator=(PathEnv &&) noexcept = default;
 	};
 
 	class CompilationContext;
@@ -307,19 +309,19 @@ namespace slkc {
 		AstNodePtr<TypeNameNode> evaluated_type;
 		AstNodePtr<MemberNode> evaluated_final_member;
 
-		PathEnv var_nullity_override_path_env;
+		PathEnv guard_path_env;
 
 		// For parameter name query, etc, if exists.
 		AstNodePtr<FnNode> call_target_fn_slot;
 		peff::DynArray<AstNodePtr<FnOverloadingNode>> call_target_matched_overloadings;
 		uint32_t idx_this_reg_out = UINT32_MAX, idx_result_reg_out = UINT32_MAX;
 
-		SLAKE_FORCEINLINE CompileExprResult(peff::Alloc *allocator) : call_target_matched_overloadings(allocator), var_nullity_override_path_env(allocator) {}
+		SLAKE_FORCEINLINE CompileExprResult(peff::Alloc *allocator) : call_target_matched_overloadings(allocator), guard_path_env(allocator) {}
 
 		SLAKE_FORCEINLINE void reset() {
 			evaluated_type = {};
 			evaluated_final_member = {};
-			var_nullity_override_path_env.reset();
+			guard_path_env.reset();
 			call_target_fn_slot = {};
 			call_target_matched_overloadings.clear_and_shrink();
 			idx_this_reg_out = UINT32_MAX;
@@ -580,6 +582,11 @@ namespace slkc {
 		AstNodePtr<TypeNameNode> type,
 		AstNodePtr<TypeNameNode> &type_name_out);
 
+	[[nodiscard]] SLKC_API peff::Option<CompilationError> check_null_member_deref(
+		PathEnv *path_env,
+		AstNodePtr<MemberNode> member,
+		const TokenRange &token_range);
+
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> compile_unary_expr(
 		CompileEnv *compile_env,
 		CompilationContext *compilation_context,
@@ -701,7 +708,7 @@ namespace slkc {
 		const AstNodePtr<ExprNode> &expr,
 		AstNodePtr<TypeNameNode> &type_out,
 		AstNodePtr<TypeNameNode> desired_type = {});
-	[[nodiscard]] SLKC_API peff::Option<CompilationError> eval_decayed_expr_type(
+	[[nodiscard]] SLKC_API peff::Option<CompilationError> eval_ref_removed_expr_type(
 		CompileEnv *compile_env,
 		CompilationContext *compilation_context,
 		PathEnv *path_env,

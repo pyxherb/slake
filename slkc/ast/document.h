@@ -85,6 +85,7 @@ namespace slkc {
 		IncompatibleInitialValueType,
 		FunctionOverloadingDuplicatedDuringInstantiation,
 		ReturnValueTypeDoesNotMatch,
+		DereferencingNull,
 
 		ImportLimitExceeded,
 		MalformedModuleName,

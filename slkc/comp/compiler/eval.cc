@@ -1012,8 +1012,29 @@ reeval:
 			AstNodePtr<BinaryExprNode> e = expr.cast_to<BinaryExprNode>();
 
 			AstNodePtr<TypeNameNode> lhs_type, rhs_type, decayed_lhs_type, decayed_rhs_type;
-			SLKC_RETURN_IF_COMP_ERROR(eval_expr_type(compile_env, compilation_context, path_env, e->lhs, lhs_type, {}));
-			SLKC_RETURN_IF_COMP_ERROR(eval_expr_type(compile_env, compilation_context, path_env, e->rhs, rhs_type, {}));
+			peff::Option<PathEnv> lhs_applied_path_env;
+			switch (e->binary_op) {
+				case BinaryOp::LAnd: {
+					lhs_applied_path_env = PathEnv(compile_env->allocator.get());
+					lhs_applied_path_env->set_parent(path_env);
+
+					{
+						NormalCompilationContext tmp_context(compile_env, compilation_context);
+						CompileExprResult lhs_result(compile_env->allocator.get());
+						SLKC_RETURN_IF_COMP_ERROR(compile_expr(compile_env, &tmp_context, path_env, e->lhs, ExprEvalPurpose::RValue, {}, lhs_result));
+						SLKC_RETURN_IF_COMP_ERROR(combine_path_env(*lhs_applied_path_env, lhs_result.guard_path_env));
+						lhs_type = lhs_result.evaluated_type;
+					}
+
+					SLKC_RETURN_IF_COMP_ERROR(
+						eval_expr_type(compile_env, compilation_context, &*lhs_applied_path_env, e->rhs, rhs_type));
+					break;
+				}
+				default:
+					SLKC_RETURN_IF_COMP_ERROR(eval_expr_type(compile_env, compilation_context, path_env, e->lhs, lhs_type, {}));
+					SLKC_RETURN_IF_COMP_ERROR(eval_expr_type(compile_env, compilation_context, path_env, e->rhs, rhs_type, {}));
+					break;
+			}
 
 			SLKC_RETURN_IF_COMP_ERROR(
 				remove_ref_of_type(lhs_type, decayed_lhs_type));

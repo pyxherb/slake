@@ -42,7 +42,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_var_def_stmt(
 
 					AstNodePtr<TypeNameNode> expr_type;
 
-					SLKC_RETURN_IF_COMP_ERROR(eval_decayed_expr_type(compile_env, compilation_context, path_env, i->initial_value, expr_type));
+					SLKC_RETURN_IF_COMP_ERROR(eval_ref_removed_expr_type(compile_env, compilation_context, path_env, i->initial_value, expr_type));
 
 					bool same;
 
@@ -72,7 +72,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_var_def_stmt(
 
 					new_var->is_type_deduced_from_initial_value = true;
 
-					SLKC_RETURN_IF_COMP_ERROR(eval_decayed_expr_type(compile_env, compilation_context, path_env, i->initial_value, deduced_type));
+					SLKC_RETURN_IF_COMP_ERROR(eval_ref_removed_expr_type(compile_env, compilation_context, path_env, i->initial_value, deduced_type));
 
 					if (!deduced_type) {
 						return CompilationError(s->token_range, CompilationErrorKind::ErrorDeducingVarType);
@@ -205,7 +205,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_for_stmt(
 
 					AstNodePtr<TypeNameNode> expr_type;
 
-					SLKC_RETURN_IF_COMP_ERROR(eval_decayed_expr_type(compile_env, compilation_context, path_env, i->initial_value, expr_type));
+					SLKC_RETURN_IF_COMP_ERROR(eval_ref_removed_expr_type(compile_env, compilation_context, path_env, i->initial_value, expr_type));
 
 					bool same;
 
@@ -235,7 +235,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_for_stmt(
 
 					new_var->is_type_deduced_from_initial_value = true;
 
-					SLKC_RETURN_IF_COMP_ERROR(eval_decayed_expr_type(compile_env, compilation_context, path_env, i->initial_value, deduced_type));
+					SLKC_RETURN_IF_COMP_ERROR(eval_ref_removed_expr_type(compile_env, compilation_context, path_env, i->initial_value, deduced_type));
 
 					if (!deduced_type) {
 						return CompilationError(s->token_range, CompilationErrorKind::ErrorDeducingVarType);
@@ -300,7 +300,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_for_stmt(
 
 		AstNodePtr<TypeNameNode> expr_type;
 
-		SLKC_RETURN_IF_COMP_ERROR(eval_decayed_expr_type(compile_env, compilation_context, path_env, s->cond, expr_type, bool_type.cast_to<TypeNameNode>()));
+		SLKC_RETURN_IF_COMP_ERROR(eval_ref_removed_expr_type(compile_env, compilation_context, path_env, s->cond, expr_type, bool_type.cast_to<TypeNameNode>()));
 
 		SLKC_RETURN_IF_COMP_ERROR(is_same_type(bool_type.cast_to<TypeNameNode>(), expr_type, is_same));
 
@@ -349,7 +349,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_for_stmt(
 					: PathPossibility::May;
 			body_path_env.break_possibility = PathPossibility::May;
 
-			SLKC_RETURN_IF_COMP_ERROR(combine_path_env(body_path_env, cond_result.var_nullity_override_path_env));
+			SLKC_RETURN_IF_COMP_ERROR(combine_path_env(body_path_env, cond_result.guard_path_env));
 
 			SLKC_RETURN_IF_COMP_ERROR(compile_stmt(compile_env, compilation_context, path_env, s->body));
 
@@ -436,7 +436,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_if_stmt(
 
 	AstNodePtr<TypeNameNode> expr_type;
 
-	SLKC_RETURN_IF_COMP_ERROR(eval_decayed_expr_type(compile_env, compilation_context, path_env, s->cond, expr_type, bool_type.cast_to<TypeNameNode>()));
+	SLKC_RETURN_IF_COMP_ERROR(eval_ref_removed_expr_type(compile_env, compilation_context, path_env, s->cond, expr_type, bool_type.cast_to<TypeNameNode>()));
 
 	PathEnv cond_env(compile_env->allocator.get());
 	cond_env.set_parent(path_env);
@@ -450,7 +450,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_if_stmt(
 
 	SLKC_RETURN_IF_COMP_ERROR(_compile_or_cast_operand(compile_env, compilation_context, &cond_env, ExprEvalPurpose::RValue, bool_type.cast_to<TypeNameNode>(), s->cond, expr_type, cond_result));
 
-	SLKC_RETURN_IF_COMP_ERROR(combine_path_env(true_path_env, cond_result.var_nullity_override_path_env));
+	SLKC_RETURN_IF_COMP_ERROR(combine_path_env(true_path_env, cond_result.guard_path_env));
 
 	condition_reg = cond_result.idx_result_reg_out;
 
@@ -547,7 +547,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_while_stmt(
 
 	AstNodePtr<TypeNameNode> expr_type;
 
-	SLKC_RETURN_IF_COMP_ERROR(eval_decayed_expr_type(compile_env, compilation_context, path_env, s->cond, expr_type, bool_type.cast_to<TypeNameNode>()));
+	SLKC_RETURN_IF_COMP_ERROR(eval_ref_removed_expr_type(compile_env, compilation_context, path_env, s->cond, expr_type, bool_type.cast_to<TypeNameNode>()));
 
 	PrevBreakPointHolder break_point_holder(compilation_context);
 	PrevContinuePointHolder continue_point_holder(compilation_context);
@@ -629,7 +629,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_while_stmt(
 				: PathPossibility::May;
 		body_path_env.break_possibility = PathPossibility::May;
 
-		SLKC_RETURN_IF_COMP_ERROR(combine_path_env(body_path_env, cond_result.var_nullity_override_path_env));
+		SLKC_RETURN_IF_COMP_ERROR(combine_path_env(body_path_env, cond_result.guard_path_env));
 
 		SLKC_RETURN_IF_COMP_ERROR(try_compile_stmt(compile_env, compilation_context, &body_path_env, s->body));
 		SLKC_RETURN_IF_COMP_ERROR(compile_stmt(compile_env, compilation_context, &body_path_env, s->body));
@@ -673,7 +673,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_do_while_stmt(
 
 	AstNodePtr<TypeNameNode> expr_type;
 
-	SLKC_RETURN_IF_COMP_ERROR(eval_decayed_expr_type(compile_env, compilation_context, path_env, s->cond, expr_type, bool_type.cast_to<TypeNameNode>()));
+	SLKC_RETURN_IF_COMP_ERROR(eval_ref_removed_expr_type(compile_env, compilation_context, path_env, s->cond, expr_type, bool_type.cast_to<TypeNameNode>()));
 
 	PrevBreakPointHolder break_point_holder(compilation_context);
 	PrevContinuePointHolder continue_point_holder(compilation_context);
@@ -732,7 +732,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_do_while_stmt(
 			: PathPossibility::May;
 	body_path_env.break_possibility = PathPossibility::May;
 
-	SLKC_RETURN_IF_COMP_ERROR(combine_path_env(body_path_env, cond_result.var_nullity_override_path_env));
+	SLKC_RETURN_IF_COMP_ERROR(combine_path_env(body_path_env, cond_result.guard_path_env));
 
 	SLKC_RETURN_IF_COMP_ERROR(compile_stmt(compile_env, compilation_context, &body_path_env, s->body));
 
@@ -849,7 +849,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_switch_stmt(
 
 	AstNodePtr<TypeNameNode> match_type;
 
-	SLKC_RETURN_IF_COMP_ERROR(eval_decayed_expr_type(compile_env, compilation_context, path_env, s->condition, match_type));
+	SLKC_RETURN_IF_COMP_ERROR(eval_ref_removed_expr_type(compile_env, compilation_context, path_env, s->condition, match_type));
 
 	if (!match_type)
 		return CompilationError(s->condition->token_range, CompilationErrorKind::ErrorDeducingSwitchConditionType);

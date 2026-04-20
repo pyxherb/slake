@@ -455,7 +455,7 @@ SLKC_API peff::Option<CompilationError> slkc::eval_expr_type(
 	return {};
 }
 
-[[nodiscard]] SLKC_API peff::Option<CompilationError> slkc::eval_decayed_expr_type(
+[[nodiscard]] SLKC_API peff::Option<CompilationError> slkc::eval_ref_removed_expr_type(
 	CompileEnv *compile_env,
 	CompilationContext *compilation_context,
 	PathEnv *path_env,

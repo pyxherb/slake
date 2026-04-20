@@ -160,9 +160,9 @@ class Derived(Test) {
 }
 
 class VirtualBase {
-	public fn test_base(test: i32) virtual {
+	public fn test_base(test: i32) virtual -> bool {
 		extfns.print("Called VirtualBase's test\n");
-		return;
+		return true;
 	}
 }
 
@@ -337,7 +337,7 @@ public async main() -> i32 {
 
 		let nonnullable: i32;
 
-		if (nullable != null)
+		if (nullable !== null)
 			nonnullable = nullable;
 
 		// nonnullable = nullable;
@@ -361,6 +361,13 @@ public async main() -> i32 {
 		};
 
 		nonnullable = ax;
+	}
+
+	{
+		let vb: VirtualBase?;
+
+		if (((vb) !== null) && (vb.test_base(123))) {
+		}
 	}
 
 	for(c: i32 = 10; c > 0; c -= 1) {

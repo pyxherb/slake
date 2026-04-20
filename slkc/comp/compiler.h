@@ -483,12 +483,11 @@ namespace slkc {
 		peff::SharedPtr<Document> document,
 		const AstNodePtr<UnionEnumNode> &derived,
 		bool &whether_out);
-	SLKC_API peff::Option<CompilationError> is_type_ctor_recursed(
+	SLKC_API peff::Option<CompilationError> is_higher_ranked_cyclic_inherited(
 		AstNodePtr<MemberNode> cls,
-		const peff::DynArray<AstNodePtr<AstNode>> &initial_generic_args,
 		peff::Alloc *allocator,
 		bool &result_out,
-		AstNodePtr<CustomTypeNameNode> &recursed_type_name_out) noexcept;
+		bool forced_update = false) noexcept;
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> is_base_of(
 		peff::SharedPtr<Document> document,
 		const AstNodePtr<ClassNode> &base,

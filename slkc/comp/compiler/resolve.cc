@@ -64,7 +64,7 @@ SLKC_API peff::Option<CompilationError> slkc::resolve_static_member(
 
 	if (result) {
 		if (instantiate_generic_member && name.generic_args.size()) {
-			SLKC_RETURN_IF_COMP_ERROR(document->instantiate_generic_object(result, name.generic_args, result));
+			SLKC_RETURN_IF_COMP_ERROR(document->instantiate_generic_object(result, name.name_token_index, name.generic_args, result));
 		}
 
 		switch (result->get_ast_node_type()) {
@@ -268,7 +268,7 @@ reresolve:
 
 	if (result) {
 		if (instantiate_generic_member && name.generic_args.size()) {
-			SLKC_RETURN_IF_COMP_ERROR(document->instantiate_generic_object(result, name.generic_args, result));
+			SLKC_RETURN_IF_COMP_ERROR(document->instantiate_generic_object(result, name.name_token_index, name.generic_args, result));
 		}
 
 		switch (result->get_ast_node_type()) {

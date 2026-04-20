@@ -31,6 +31,8 @@ namespace slkc {
 		peff::DynArray<AstNodePtr<GenericParamNode>> generic_params;
 		peff::HashMap<std::string_view, size_t> generic_param_indices;
 
+		peff::Option<bool> cached_is_higher_ranked_cyclic_inherited;
+
 		SLKC_API Scope(peff::Alloc *allocator) noexcept;
 		SLKC_API ~Scope();
 
@@ -139,6 +141,10 @@ namespace slkc {
 		}
 		SLAKE_FORCEINLINE const decltype(generic_params) &get_generic_params_const() const noexcept {
 			return generic_params;
+		}
+
+		SLAKE_FORCEINLINE void reset_is_higher_ranked_cyclic_inherited_cache() noexcept {
+			cached_is_higher_ranked_cyclic_inherited.reset();
 		}
 	};
 

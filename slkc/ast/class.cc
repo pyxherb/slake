@@ -56,39 +56,51 @@ SLKC_API peff::Option<CompilationError> ClassNode::is_cyclic_inherited(bool &whe
 }
 
 struct CyclicInheritanceWalkFrame {
-	AstNodePtr<MemberNode> member;
-	const peff::DynArray<AstNodePtr<AstNode>> &generic_args;
+	AstNodePtr<CustomTypeNameNode> type_name;
 	size_t idx_cur_type_arg = 0;
 };
 
-SLKC_API peff::Option<CompilationError> slkc::is_type_ctor_recursed(
+SLKC_API peff::Option<CompilationError> slkc::is_higher_ranked_cyclic_inherited(
 	AstNodePtr<MemberNode> cls,
-	const peff::DynArray<AstNodePtr<AstNode>> &initial_generic_args,
 	peff::Alloc *allocator,
 	bool &result_out,
-	AstNodePtr<CustomTypeNameNode> &recursed_type_name_out) noexcept {
-	peff::Set<AstNodePtr<MemberNode>> walked_members(allocator);
+	bool forced_updates) noexcept {
+	assert(cls->scope);
+
+	if(cls->scope->cached_is_higher_ranked_cyclic_inherited) {
+		result_out = cls->scope->cached_is_higher_ranked_cyclic_inherited.value();
+		return {};
+	}
+
 	peff::List<CyclicInheritanceWalkFrame> frames(allocator);
 
-	if (!walked_members.insert(AstNodePtr<MemberNode>(cls)))
-		return gen_oom_comp_error();
+	if (cls->scope->base_type && (cls->scope->base_type->tn_kind == TypeNameKind::Custom)) {
+		if (!frames.push_back({ cls->scope->base_type.cast_to<CustomTypeNameNode>(), 0 }))
+			return gen_oom_comp_error();
+	}
 
-	if (!frames.push_back({ cls, initial_generic_args, 0 }))
-		return gen_oom_comp_error();
+	for (auto i : cls->scope->impl_types) {
+		if (cls->scope->base_type->tn_kind == TypeNameKind::Custom) {
+			if (!frames.push_back({ i.cast_to<CustomTypeNameNode>(), 0 }))
+				return gen_oom_comp_error();
+		}
+	}
 
 	while (frames.size()) {
-		auto &cur_frame = frames.back();
-		auto &generic_args = cur_frame.generic_args;
+		AstNodePtr<AstNode> cur_type_arg;
+		{
+			auto &cur_frame = frames.back();
+			auto &type_name = cur_frame.type_name;
 
-		if (cur_frame.idx_cur_type_arg >= generic_args.size()) {
-			walked_members.remove(cur_frame.member);
-			frames.pop_back();
-			continue;
+			if (cur_frame.idx_cur_type_arg >= type_name->id_ref_ptr->entries.back().generic_args.size()) {
+				frames.pop_back();
+				continue;
+			}
+
+			cur_type_arg = type_name->id_ref_ptr->entries.back().generic_args.at(cur_frame.idx_cur_type_arg);
+
+			++cur_frame.idx_cur_type_arg;
 		}
-
-		auto cur_type_arg = generic_args.at(cur_frame.idx_cur_type_arg);
-
-		++cur_frame.idx_cur_type_arg;
 
 		if (cur_type_arg->get_ast_node_type() == AstNodeType::TypeName) {
 			auto tn = cur_type_arg.cast_to<TypeNameNode>();
@@ -106,23 +118,19 @@ SLKC_API peff::Option<CompilationError> slkc::is_type_ctor_recursed(
 						false));
 
 				if (m) {
-					if (walked_members.contains(m)) {
-						recursed_type_name_out = ctn;
-						result_out = true;
+					if (m == cls) {
+						cls->scope->cached_is_higher_ranked_cyclic_inherited = (result_out = true);
 						return {};
 					}
-					if (!walked_members.insert(AstNodePtr<MemberNode>(m)))
-						return gen_oom_comp_error();
 				}
 
-				if (!frames.push_back(CyclicInheritanceWalkFrame{ m, ctn->id_ref_ptr->entries.back().generic_args, 0 }))
+				if (!frames.push_back(CyclicInheritanceWalkFrame{ ctn, 0 }))
 					return gen_oom_comp_error();
 			}
 		}
 	}
 
-	recursed_type_name_out = {};
-	result_out = false;
+	cls->scope->cached_is_higher_ranked_cyclic_inherited = (result_out = false);
 	return {};
 }
 
@@ -133,9 +141,8 @@ SLKC_API peff::Option<CompilationError> ClassNode::update_cyclic_inherited_statu
 	if (scope->base_type && scope->base_type->tn_kind == TypeNameKind::Custom) {
 		AstNodePtr<CustomTypeNameNode> ctn;
 		SLKC_RETURN_IF_COMP_ERROR(
-			is_type_ctor_recursed(
+			is_higher_ranked_cyclic_inherited(
 				shared_from_this().cast_to<MemberNode>(),
-				scope->base_type.cast_to<CustomTypeNameNode>()->id_ref_ptr->entries.back().generic_args,
 				document->allocator.get(),
 				is_cyclic_inherited_flag,
 				ctn));

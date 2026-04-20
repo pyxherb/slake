@@ -82,6 +82,7 @@ static peff::Option<CompilationError> _walk_node_for_generic_instantiation(
 
 SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 	AstNodePtr<MemberNode> original_object,
+	size_t idx_name_token,
 	const peff::DynArray<AstNodePtr<AstNode>> &generic_args,
 	AstNodePtr<MemberNode> &member_out) {
 	SLKC_RETURN_IF_COMP_ERROR(check_stack_bounds(1024 * 16));
@@ -107,11 +108,13 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 
 	{
 		bool recursed;
-		AstNodePtr<CustomTypeNameNode> ctn;
-		SLKC_RETURN_IF_COMP_ERROR(is_type_ctor_recursed(original_object, generic_args, allocator.get(), recursed, ctn));
+		SLKC_RETURN_IF_COMP_ERROR(is_higher_ranked_cyclic_inherited(original_object, allocator.get(), recursed));
 		if (recursed) {
+			ModuleNode *mod = generic_args.back()->token_range.module_node;
+
 			// TODO: Placeholder, use a proper one.
-			return CompilationError(ctn->token_range, CompilationErrorKind::CyclicInheritedClass);
+			return CompilationError(TokenRange{ mod, idx_name_token },
+				CompilationErrorKind::CyclicInheritedClass);
 		}
 	}
 
@@ -808,8 +811,8 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 									mod = i->token_range.module_node;
 								} else if (i->token_range.module_node != mod)
 									std::terminate();
-								idx_min_token = std::min(i->token_range.begin_index, idx_min_token);
-								idx_max_token = std::max(i->token_range.end_index, idx_max_token);
+								idx_min_token = (std::min)(i->token_range.begin_index, idx_min_token);
+								idx_max_token = (std::max)(i->token_range.end_index, idx_max_token);
 							}
 
 							return CompilationError(

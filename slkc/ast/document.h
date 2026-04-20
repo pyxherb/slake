@@ -10,10 +10,10 @@
 namespace slkc {
 #define SLKC_RETURN_IF_COMP_ERROR(...)                             \
 	if (peff::Option<slkc::CompilationError> _ = (__VA_ARGS__); _) \
-		return _;                                                  \
+		return std::move(_);                                       \
 	else
 #define SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(lvar, ...) \
-	if ((lvar = (__VA_ARGS__)))                          \
+	if ((lvar = (__VA_ARGS__)))                        \
 		return lvar;                                   \
 	else
 
@@ -314,6 +314,7 @@ namespace slkc {
 
 		SLKC_API peff::Option<CompilationError> instantiate_generic_object(
 			AstNodePtr<MemberNode> original_object,
+			size_t idx_name_token,
 			const peff::DynArray<AstNodePtr<AstNode>> &generic_args,
 			AstNodePtr<MemberNode> &member_out);
 

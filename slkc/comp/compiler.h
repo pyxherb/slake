@@ -237,6 +237,8 @@ namespace slkc {
 		AstNodePtr<ModuleNode> cur_module;
 		AstNodePtr<ThisNode> this_node;
 		uint32_t flags;
+		bool is_errors_disabled = false;
+		bool is_warnings_disabled = false;
 
 		SLAKE_FORCEINLINE CompileEnv(
 			slake::Runtime *runtime,
@@ -254,6 +256,8 @@ namespace slkc {
 		SLKC_API virtual ~CompileEnv();
 
 		SLAKE_FORCEINLINE peff::Option<CompilationError> push_error(CompilationError &&error) {
+			if (is_errors_disabled)
+				return {};
 			if (!errors.push_back(std::move(error)))
 				return gen_oom_comp_error();
 
@@ -261,6 +265,8 @@ namespace slkc {
 		}
 
 		SLAKE_FORCEINLINE peff::Option<CompilationError> push_warning(CompilationWarning &&warning) {
+			if (is_warnings_disabled)
+				return {};
 			if (!warnings.push_back(std::move(warning)))
 				return gen_oom_comp_error();
 
@@ -274,6 +280,32 @@ namespace slkc {
 
 		SLAKE_FORCEINLINE peff::SharedPtr<Document> get_document() const noexcept {
 			return document.lock();
+		}
+
+		SLAKE_FORCEINLINE void disable_errors() noexcept {
+			is_errors_disabled = true;
+		}
+
+		SLAKE_FORCEINLINE void enable_errors() noexcept {
+			is_errors_disabled = false;
+		}
+
+		SLAKE_FORCEINLINE void disable_warnings() noexcept {
+			is_warnings_disabled = true;
+		}
+
+		SLAKE_FORCEINLINE void enable_warnings() noexcept {
+			is_warnings_disabled = false;
+		}
+
+		SLAKE_FORCEINLINE void disable_messages() noexcept {
+			disable_errors();
+			disable_warnings();
+		}
+
+		SLAKE_FORCEINLINE void enable_messages() noexcept {
+			enable_errors();
+			enable_warnings();
 		}
 	};
 
@@ -490,6 +522,11 @@ namespace slkc {
 		peff::Alloc *allocator,
 		bool &result_out,
 		bool forced_update = false) noexcept;
+	SLKC_API peff::Option<CompilationError> is_higher_ranked_recursed(
+		AstNodePtr<MemberNode> member,
+		AstNodePtr<CustomTypeNameNode> ctn,
+		peff::Alloc *allocator,
+		bool &result_out) noexcept;
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> is_base_of(
 		peff::SharedPtr<Document> document,
 		const AstNodePtr<ClassNode> &base,

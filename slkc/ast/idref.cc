@@ -32,7 +32,7 @@ SLKC_API peff::Option<IdRefEntry> slkc::duplicate_id_ref_entry(peff::Alloc *self
 	new_id_ref_entry.right_angle_bracket_token_index = rhs.right_angle_bracket_token_index;
 	new_id_ref_entry.access_op_token_index = rhs.access_op_token_index;
 
-	if (!new_id_ref_entry.comma_token_indices.build(rhs.comma_token_indices)) {
+	if (!new_id_ref_entry.generic_args_comma_token_indices.build(rhs.generic_args_comma_token_indices)) {
 		return {};
 	}
 

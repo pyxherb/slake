@@ -55,7 +55,7 @@ SLKC_API peff::Option<CompilationError> ClassNode::is_cyclic_inherited(bool &whe
 	return {};
 }
 
-struct CyclicInheritanceWalkFrame {
+struct HigherRankedCyclicInheritanceWalkFrame {
 	AstNodePtr<CustomTypeNameNode> type_name;
 	size_t idx_cur_type_arg = 0;
 };
@@ -67,12 +67,12 @@ SLKC_API peff::Option<CompilationError> slkc::is_higher_ranked_cyclic_inherited(
 	bool forced_updates) noexcept {
 	assert(cls->scope);
 
-	if(cls->scope->cached_is_higher_ranked_cyclic_inherited) {
+	if (cls->scope->cached_is_higher_ranked_cyclic_inherited) {
 		result_out = cls->scope->cached_is_higher_ranked_cyclic_inherited.value();
 		return {};
 	}
 
-	peff::List<CyclicInheritanceWalkFrame> frames(allocator);
+	peff::List<HigherRankedCyclicInheritanceWalkFrame> frames(allocator);
 
 	if (cls->scope->base_type && (cls->scope->base_type->tn_kind == TypeNameKind::Custom)) {
 		if (!frames.push_back({ cls->scope->base_type.cast_to<CustomTypeNameNode>(), 0 }))
@@ -124,13 +124,81 @@ SLKC_API peff::Option<CompilationError> slkc::is_higher_ranked_cyclic_inherited(
 					}
 				}
 
-				if (!frames.push_back(CyclicInheritanceWalkFrame{ ctn, 0 }))
+				if (!frames.push_back(HigherRankedCyclicInheritanceWalkFrame{ ctn, 0 }))
 					return gen_oom_comp_error();
 			}
 		}
 	}
 
 	cls->scope->cached_is_higher_ranked_cyclic_inherited = (result_out = false);
+	return {};
+}
+
+struct HigherRankedRecursedWalkFrame {
+	AstNodePtr<CustomTypeNameNode> type_name;
+	size_t idx_cur_type_arg = 0;
+};
+
+SLKC_API peff::Option<CompilationError> slkc::is_higher_ranked_recursed(
+	AstNodePtr<MemberNode> member,
+	AstNodePtr<CustomTypeNameNode> ctn,
+	peff::Alloc *allocator,
+	bool &result_out) noexcept {
+	assert(member);
+
+	if (member->scope->cached_is_higher_ranked_recursed) {
+		result_out = member->scope->cached_is_higher_ranked_recursed.value();
+		return {};
+	}
+
+	peff::List<HigherRankedRecursedWalkFrame> frames(allocator);
+
+	if (!frames.push_back({ ctn, 0 }))
+		return gen_oom_comp_error();
+
+	while (frames.size()) {
+		AstNodePtr<AstNode> cur_type_arg;
+		{
+			auto &cur_frame = frames.back();
+			auto &type_name = cur_frame.type_name;
+
+			if (cur_frame.idx_cur_type_arg >= type_name->id_ref_ptr->entries.back().generic_args.size()) {
+				frames.pop_back();
+				continue;
+			}
+
+			cur_type_arg = type_name->id_ref_ptr->entries.back().generic_args.at(cur_frame.idx_cur_type_arg);
+
+			++cur_frame.idx_cur_type_arg;
+		}
+
+		if (cur_type_arg->get_ast_node_type() == AstNodeType::TypeName) {
+			if (cur_type_arg.cast_to<TypeNameNode>()->tn_kind == TypeNameKind::Custom) {
+				auto converted_tn = cur_type_arg.cast_to<CustomTypeNameNode>();
+				AstNodePtr<MemberNode> m;
+
+				SLKC_RETURN_IF_COMP_ERROR(
+					resolve_custom_type_name(
+						nullptr,
+						converted_tn->document->shared_from_this(),
+						converted_tn,
+						m,
+						false));
+
+				if (m) {
+					if (m == member) {
+						member->scope->cached_is_higher_ranked_recursed = (result_out = true);
+						return {};
+					}
+				}
+
+				if (!frames.push_back(HigherRankedRecursedWalkFrame{ converted_tn, 0 }))
+					return gen_oom_comp_error();
+			}
+		}
+	}
+
+	member->scope->cached_is_higher_ranked_recursed = (result_out = false);
 	return {};
 }
 
@@ -148,7 +216,9 @@ SLKC_API peff::Option<CompilationError> ClassNode::update_cyclic_inherited_statu
 				ctn));
 	}
 
-	SLKC_RETURN_IF_COMP_ERROR(is_base_of(document->shared_from_this(), shared_from_this().cast_to<ClassNode>(), shared_from_this().cast_to<ClassNode>(), is_cyclic_inherited_flag));
+	if (!is_cyclic_inherited_flag) {
+		SLKC_RETURN_IF_COMP_ERROR(is_base_of(document->shared_from_this(), shared_from_this().cast_to<ClassNode>(), shared_from_this().cast_to<ClassNode>(), is_cyclic_inherited_flag));
+	}
 
 	is_cyclic_inheritance_checked = true;
 	return {};
@@ -208,6 +278,12 @@ SLKC_API peff::Option<CompilationError> InterfaceNode::is_cyclic_inherited(bool 
 
 SLKC_API peff::Option<CompilationError> InterfaceNode::update_cyclic_inherited_status() {
 	peff::Set<AstNodePtr<InterfaceNode>> involved_interfaces(document->allocator.get());
+
+	SLKC_RETURN_IF_COMP_ERROR(is_higher_ranked_cyclic_inherited(shared_from_this().cast_to<MemberNode>(), document->allocator.get(), is_cyclic_inherited_flag, true));
+	if (is_cyclic_inherited_flag) {
+		is_cyclic_inheritance_checked = true;
+		return {};
+	}
 
 	if (auto e = collect_involved_interfaces(document->shared_from_this(), shared_from_this().cast_to<InterfaceNode>(), involved_interfaces, true); e) {
 		if (e->error_kind == CompilationErrorKind::CyclicInheritedInterface) {
@@ -515,7 +591,7 @@ struct IndexedStructRecursionCheckFrameExData {
 };
 
 struct StructRecursionCheckFrame {
-	AstNodePtr<AstNode> struct_node;
+	AstNodePtr<MemberNode> struct_node;
 	std::variant<IndexedStructRecursionCheckFrameExData> ex_data;
 };
 
@@ -528,78 +604,33 @@ struct StructRecursionCheckContext {
 static peff::Option<CompilationError> _is_struct_recursed(
 	peff::SharedPtr<Document> document,
 	StructRecursionCheckContext &context,
-	peff::Set<AstNodePtr<AstNode>> &walked_structs,
+	peff::Set<AstNodePtr<MemberNode>> &walked_structs,
 	bool &whether_out) {
 	whether_out = false;
 	while (context.frames.size()) {
 		StructRecursionCheckFrame &cur_frame = context.frames.back();
 
+		if (!cur_frame.struct_node->scope) {
+			walked_structs.remove(cur_frame.struct_node);
+			context.frames.pop_back();
+			continue;
+		}
+
 		switch (cur_frame.struct_node->get_ast_node_type()) {
-			case AstNodeType::Struct: {
-				const AstNodePtr<StructNode> &cur_struct = cur_frame.struct_node.cast_to<StructNode>();
-				IndexedStructRecursionCheckFrameExData &ex_data = std::get<IndexedStructRecursionCheckFrameExData>(cur_frame.ex_data);
-
-				if (!ex_data.index) {
-					if (walked_structs.contains(cur_struct.cast_to<AstNode>())) {
-						whether_out = true;
-						return {};
-					}
-					if (!walked_structs.insert(cur_struct.cast_to<AstNode>()))
-						return gen_oom_comp_error();
-				}
-				if (ex_data.index >= cur_struct->scope->get_member_num()) {
-					walked_structs.remove(cur_struct.cast_to<AstNode>());
-					context.frames.pop_back();
-					continue;
-				}
-
-				AstNodePtr<MemberNode> v = cur_struct->scope->get_member(ex_data.index);
-
-				if (v->get_ast_node_type() == AstNodeType::Var) {
-					AstNodePtr<VarNode> var_member = v.cast_to<VarNode>();
-
-					AstNodePtr<MemberNode> m;
-
-					if (auto t = var_member->type; t->tn_kind == TypeNameKind::Custom) {
-						SLKC_RETURN_IF_COMP_ERROR(resolve_custom_type_name(nullptr, document, t.cast_to<CustomTypeNameNode>(), m));
-
-						switch (m->get_ast_node_type()) {
-							case AstNodeType::Struct:
-								if (!context.frames.push_back(StructRecursionCheckFrame{ m.cast_to<AstNode>(), IndexedStructRecursionCheckFrameExData{ 0 } }))
-									return gen_oom_comp_error();
-								break;
-							case AstNodeType::UnionEnum:
-								if (!context.frames.push_back(StructRecursionCheckFrame{ m.cast_to<AstNode>(), IndexedStructRecursionCheckFrameExData{ 0 } }))
-									return gen_oom_comp_error();
-								break;
-							case AstNodeType::UnionEnumItem:
-								if (!context.frames.push_back(StructRecursionCheckFrame{ m.cast_to<AstNode>(), IndexedStructRecursionCheckFrameExData{ 0 } }))
-									return gen_oom_comp_error();
-								break;
-							default:
-								// Ignored.
-								break;
-						}
-					}
-				}
-
-				++ex_data.index;
-				break;
-			}
 			case AstNodeType::UnionEnum: {
 				const AstNodePtr<UnionEnumNode> &cur_struct = cur_frame.struct_node.cast_to<UnionEnumNode>();
 				IndexedStructRecursionCheckFrameExData &ex_data = std::get<IndexedStructRecursionCheckFrameExData>(cur_frame.ex_data);
 
 				if (!ex_data.index) {
-					if (walked_structs.contains(cur_struct.cast_to<AstNode>())) {
+					if (walked_structs.contains(cur_struct.cast_to<MemberNode>())) {
 						whether_out = true;
 						return {};
 					}
-					if (!walked_structs.insert(cur_struct.cast_to<AstNode>()))
+					if (!walked_structs.insert(cur_struct.cast_to<MemberNode>()))
 						return gen_oom_comp_error();
 				}
 				if (ex_data.index >= cur_struct->scope->get_member_num()) {
-					walked_structs.remove(cur_struct.cast_to<AstNode>());
+					walked_structs.remove(cur_struct.cast_to<MemberNode>());
 					context.frames.pop_back();
 					continue;
 				}
@@ -607,27 +638,32 @@ static peff::Option<CompilationError> _is_struct_recursed(
 				AstNodePtr<MemberNode> v = cur_struct->scope->get_member(ex_data.index);
 
 				if (v->get_ast_node_type() == AstNodeType::UnionEnumItem) {
-					if (!context.frames.push_back(StructRecursionCheckFrame{ v.cast_to<AstNode>(), IndexedStructRecursionCheckFrameExData{ 0 } }))
+					if (!context.frames.push_back(StructRecursionCheckFrame{ v.cast_to<MemberNode>(), IndexedStructRecursionCheckFrameExData{ 0 } }))
 						return gen_oom_comp_error();
 				}
 
 				++ex_data.index;
 				break;
 			}
-			case AstNodeType::UnionEnumItem: {
-				const AstNodePtr<UnionEnumItemNode> &cur_struct = cur_frame.struct_node.cast_to<UnionEnumItemNode>();
+			case AstNodeType::Class:
+			case AstNodeType::Interface:
+				walked_structs.remove(cur_frame.struct_node);
+				context.frames.pop_back();
+				continue;
+			default: {
+				const AstNodePtr<MemberNode> &cur_struct = cur_frame.struct_node;
 				IndexedStructRecursionCheckFrameExData &ex_data = std::get<IndexedStructRecursionCheckFrameExData>(cur_frame.ex_data);
 
 				if (!ex_data.index) {
-					if (walked_structs.contains(cur_struct.cast_to<AstNode>())) {
+					if (walked_structs.contains(cur_struct)) {
 						whether_out = true;
 						return {};
 					}
-					if (!walked_structs.insert(cur_struct.cast_to<AstNode>()))
+					if (!walked_structs.insert(AstNodePtr<MemberNode>(cur_struct)))
 						return gen_oom_comp_error();
 				}
 				if (ex_data.index >= cur_struct->scope->get_member_num()) {
-					walked_structs.remove(cur_struct.cast_to<AstNode>());
+					walked_structs.remove(cur_struct);
 					context.frames.pop_back();
 					continue;
 				}
@@ -640,24 +676,14 @@ static peff::Option<CompilationError> _is_struct_recursed(
 					AstNodePtr<MemberNode> m;
 
 					if (auto t = var_member->type; t->tn_kind == TypeNameKind::Custom) {
+						SLKC_RETURN_IF_COMP_ERROR(is_higher_ranked_recursed(cur_struct, t.cast_to<CustomTypeNameNode>(), document->allocator.get(), whether_out));
+						if(whether_out)
+							return {};
 						SLKC_RETURN_IF_COMP_ERROR(resolve_custom_type_name(nullptr, document, t.cast_to<CustomTypeNameNode>(), m));
 
-						switch (m->get_ast_node_type()) {
-							case AstNodeType::Struct:
-								if (!context.frames.push_back(StructRecursionCheckFrame{ m.cast_to<AstNode>(), IndexedStructRecursionCheckFrameExData{ 0 } }))
-									return gen_oom_comp_error();
-								break;
-							case AstNodeType::UnionEnum:
-								if (!context.frames.push_back(StructRecursionCheckFrame{ m.cast_to<AstNode>(), IndexedStructRecursionCheckFrameExData{ 0 } }))
-									return gen_oom_comp_error();
-								break;
-							case AstNodeType::UnionEnumItem:
-								if (!context.frames.push_back(StructRecursionCheckFrame{ m.cast_to<AstNode>(), IndexedStructRecursionCheckFrameExData{ 0 } }))
-									return gen_oom_comp_error();
-								break;
-							default:
-								// Ignored.
-								break;
+						if (m) {
+							if (!context.frames.push_back(StructRecursionCheckFrame{ m.cast_to<MemberNode>(), IndexedStructRecursionCheckFrameExData{ 0 } }))
+								return gen_oom_comp_error();
 						}
 					}
 				}
@@ -665,8 +691,6 @@ static peff::Option<CompilationError> _is_struct_recursed(
 				++ex_data.index;
 				break;
 			}
-			default:
-				std::terminate();
 		}
 	}
 
@@ -678,9 +702,9 @@ SLKC_API peff::Option<CompilationError> slkc::is_struct_recursed(
 	const AstNodePtr<StructNode> &derived,
 	bool &whether_out) {
 	StructRecursionCheckContext context(document->allocator.get());
-	peff::Set<AstNodePtr<AstNode>> walked_structs(document->allocator.get());
+	peff::Set<AstNodePtr<MemberNode>> walked_structs(document->allocator.get()), walked_higher_ranked_structs(document->allocator.get());
 
-	if (!context.frames.push_back(StructRecursionCheckFrame{ derived.cast_to<AstNode>(), IndexedStructRecursionCheckFrameExData{ 0 } }))
+	if (!context.frames.push_back(StructRecursionCheckFrame{ derived.cast_to<MemberNode>(), IndexedStructRecursionCheckFrameExData{ 0 } }))
 		return gen_oom_comp_error();
 
 	return _is_struct_recursed(document, context, walked_structs, whether_out);
@@ -691,9 +715,9 @@ SLKC_API peff::Option<CompilationError> slkc::is_union_enum_recursed(
 	const AstNodePtr<UnionEnumNode> &derived,
 	bool &whether_out) {
 	StructRecursionCheckContext context(document->allocator.get());
-	peff::Set<AstNodePtr<AstNode>> walked_structs(document->allocator.get());
+	peff::Set<AstNodePtr<MemberNode>> walked_structs(document->allocator.get());
 
-	if (!context.frames.push_back(StructRecursionCheckFrame{ derived.cast_to<AstNode>(), IndexedStructRecursionCheckFrameExData{ 0 } }))
+	if (!context.frames.push_back(StructRecursionCheckFrame{ derived.cast_to<MemberNode>(), IndexedStructRecursionCheckFrameExData{ 0 } }))
 		return gen_oom_comp_error();
 
 	return _is_struct_recursed(document, context, walked_structs, whether_out);

@@ -76,6 +76,7 @@ SLKC_API Parser::Parser(peff::SharedPtr<Document> document,
 	  token_list(std::move(token_list)),
 	  resource_allocator(resource_allocator),
 	  syntax_errors(resource_allocator),
+	  syntax_warnings(resource_allocator),
 	  parse_coro_scheduler(resource_allocator) {
 }
 
@@ -249,7 +250,7 @@ SLKC_API ParseCoroutine Parser::parse_id_name(peff::Alloc *allocator, peff::Stri
 	co_return {};
 }
 
-SLKC_API ParseCoroutine Parser::parse_id_ref(peff::Alloc *allocator, IdRefPtr &id_ref_out) {
+SLKC_API ParseCoroutine Parser::parse_id_ref(peff::Alloc *allocator, IdRefPtr &id_ref_out, bool is_parsing_type) {
 	peff::Option<SyntaxError> syntax_error;
 	IdRefPtr id_ref_ptr(peff::alloc_and_construct<IdRef>(resource_allocator.get(), ASTNODE_ALIGNMENT, resource_allocator.get()));
 	if (!id_ref_ptr)
@@ -309,34 +310,74 @@ SLKC_API ParseCoroutine Parser::parse_id_ref(peff::Alloc *allocator, IdRefPtr &i
 		entry.name_token_index = t->index;
 		id_ref_ptr->token_range.end_index = t->index;
 
-		if ((t = peek_token())->token_id == TokenId::ScopeOp) {
-			next_token();
+		do {
+			if (is_parsing_type) {
+				if ((t = peek_token())->token_id == TokenId::LtOp) {
+					entry.generic_scope_token_index = t->index;
 
-			entry.generic_scope_token_index = t->index;
+					next_token();
 
-			SLKC_CO_RETURN_IF_PARSE_ERROR(expect_token(t = peek_token(), TokenId::LtOp));
-			next_token();
+					for (;;) {
+						AstNodePtr<AstNode> generic_arg;
+						SLKC_CO_RETURN_IF_CO_PARSE_ERROR(parse_generic_arg(this->resource_allocator.get(), generic_arg));
+						if (!entry.generic_args.push_back(std::move(generic_arg))) {
+							co_return gen_oom_syntax_error();
+						}
 
-			for (;;) {
-				AstNodePtr<AstNode> generic_arg;
-				SLKC_CO_RETURN_IF_CO_PARSE_ERROR(parse_generic_arg(this->resource_allocator.get(), generic_arg));
-				if (!entry.generic_args.push_back(std::move(generic_arg))) {
-					co_return gen_oom_syntax_error();
-				}
+						if ((t = peek_token())->token_id != TokenId::Comma) {
+							break;
+						}
 
-				if ((t = peek_token())->token_id != TokenId::Comma) {
+						if (!entry.generic_args_comma_token_indices.push_back(+t->index))
+							co_return gen_oom_syntax_error();
+
+						next_token();
+					}
+
+					SLKC_CO_RETURN_IF_PARSE_ERROR(split_shr_op_token());
+					SLKC_CO_RETURN_IF_PARSE_ERROR(expect_token(t = peek_token(), TokenId::GtOp));
+					id_ref_ptr->token_range.end_index = t->index;
+					next_token();
 					break;
 				}
+			}
+			if ((t = peek_token())->token_id == TokenId::ScopeOp) {
+				next_token();
+
+				if (is_parsing_type) {
+					if (!syntax_warnings.push_back(SyntaxWarning(TokenRange{ parse_context.mod, t->index }, SyntaxWarningKind::ScopeOpIsOmittableInIdRef)))
+						co_return gen_oom_syntax_error();
+				}
+
+				entry.generic_scope_token_index = t->index;
+
+				SLKC_CO_RETURN_IF_PARSE_ERROR(expect_token(t = peek_token(), TokenId::LtOp));
+				next_token();
+
+				for (;;) {
+					AstNodePtr<AstNode> generic_arg;
+					SLKC_CO_RETURN_IF_CO_PARSE_ERROR(parse_generic_arg(this->resource_allocator.get(), generic_arg));
+					if (!entry.generic_args.push_back(std::move(generic_arg))) {
+						co_return gen_oom_syntax_error();
+					}
+
+					if ((t = peek_token())->token_id != TokenId::Comma) {
+						break;
+					}
+
+					if (!entry.generic_args_comma_token_indices.push_back(+t->index))
+						co_return gen_oom_syntax_error();
+
+					next_token();
+				}
+
+				SLKC_CO_RETURN_IF_PARSE_ERROR(split_shr_op_token());
+				SLKC_CO_RETURN_IF_PARSE_ERROR(expect_token(t = peek_token(), TokenId::GtOp));
+				id_ref_ptr->token_range.end_index = t->index;
 
 				next_token();
 			}
-
-			SLKC_CO_RETURN_IF_PARSE_ERROR(split_shr_op_token());
-			SLKC_CO_RETURN_IF_PARSE_ERROR(expect_token(t = peek_token(), TokenId::GtOp));
-			id_ref_ptr->token_range.end_index = t->index;
-
-			next_token();
-		}
+		} while (false);
 
 		if (!id_ref_ptr->entries.push_back(std::move(entry)))
 			co_return gen_oom_syntax_error();
@@ -1704,6 +1745,7 @@ SLKC_API ParseCoroutine Parser::parse_program(peff::Alloc *allocator, const AstN
 
 	Token *t;
 
+	parse_context.mod = initial_mod.get();
 	cur_parent = initial_mod.cast_to<MemberNode>();
 
 	module_name_out = {};

@@ -401,7 +401,7 @@ SLKC_API ParseCoroutine Parser::parse_type_name(peff::Alloc *allocator, AstNodeP
 		}
 		case TokenId::Id: {
 			IdRefPtr id;
-			SLKC_CO_RETURN_IF_CO_PARSE_ERROR(parse_id_ref(this->resource_allocator.get(), id));
+			SLKC_CO_RETURN_IF_CO_PARSE_ERROR(parse_id_ref(this->resource_allocator.get(), id, true));
 
 			AstNodePtr<CustomTypeNameNode> tn;
 

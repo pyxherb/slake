@@ -41,7 +41,8 @@ SLAKE_API ObjectLayout *ObjectLayout::duplicate(peff::Alloc *allocator) const {
 	if (!ptr->field_record_init_module_fields_number.resize_uninit(field_record_init_module_fields_number.size())) {
 		return nullptr;
 	}
-	memcpy(ptr->field_record_init_module_fields_number.data(), field_record_init_module_fields_number.data(), field_record_init_module_fields_number.size() * sizeof(std::pair<BasicModuleObject *, size_t>));
+	for (size_t i = 0; i < field_record_init_module_fields_number.size(); ++i)
+		ptr->field_record_init_module_fields_number.at(i) = field_record_init_module_fields_number.at(i);
 	for (size_t i = 0; i < field_records.size(); ++i) {
 		peff::construct_at<ObjectFieldRecord>(&ptr->field_records.at(i), self_allocator.get());
 	}
@@ -140,9 +141,9 @@ SLAKE_API const peff::DynArray<Value> *ClassObject::get_generic_args() const {
 SLAKE_API ClassObject::ClassObject(Duplicator *duplicator, const ClassObject &x, peff::Alloc *allocator, bool &succeeded_out)
 	: BasicModuleObject(duplicator, x, allocator, succeeded_out),
 	  generic_args(allocator),
-	  mapped_generic_args(allocator),	 // No need to copy
+	  mapped_generic_args(allocator),  // No need to copy
 	  generic_params(allocator),
-	  mapped_generic_params(allocator),  // No need to copy
+	  mapped_generic_params(allocator),	 // No need to copy
 	  impl_types(allocator) {
 	if (succeeded_out) {
 		class_flags = x.class_flags;
@@ -293,9 +294,9 @@ SLAKE_API InterfaceObject::InterfaceObject(Runtime *rt, peff::Alloc *self_alloca
 SLAKE_API InterfaceObject::InterfaceObject(Duplicator *duplicator, const InterfaceObject &x, peff::Alloc *allocator, bool &succeeded_out)
 	: BasicModuleObject(duplicator, x, allocator, succeeded_out),
 	  generic_args(allocator),
-	  mapped_generic_args(allocator),	 // No need to copy
+	  mapped_generic_args(allocator),  // No need to copy
 	  generic_params(allocator),
-	  mapped_generic_params(allocator),  // No need to copy
+	  mapped_generic_params(allocator),	 // No need to copy
 	  impl_types(allocator),
 	  impl_interface_indices(allocator) {
 	if (succeeded_out) {
@@ -633,9 +634,9 @@ SLAKE_API const peff::DynArray<Value> *StructObject::get_generic_args() const {
 SLAKE_API StructObject::StructObject(Duplicator *duplicator, const StructObject &x, peff::Alloc *allocator, bool &succeeded_out)
 	: BasicModuleObject(duplicator, x, allocator, succeeded_out),
 	  generic_args(allocator),
-	  mapped_generic_args(allocator),	 // No need to copy
+	  mapped_generic_args(allocator),  // No need to copy
 	  generic_params(allocator),
-	  mapped_generic_params(allocator),  // No need to copy
+	  mapped_generic_params(allocator),	 // No need to copy
 	  impl_types(allocator) {
 	if (succeeded_out) {
 		struct_flags = x.struct_flags;

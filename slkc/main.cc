@@ -309,7 +309,7 @@ void dump_lexical_error(const slkc::LexicalError &lexical_error, int indent_leve
 		putc('\t', stderr);
 	}
 
-	print_error("Syntax error at %zu, %zu: ",
+	fprintf(stderr, "Error at %zu, %zu: ",
 		lexical_error.location.begin_position.line + 1,
 		lexical_error.location.begin_position.column + 1);
 	switch (lexical_error.kind) {
@@ -342,7 +342,7 @@ void dump_syntax_error(slkc::Parser *parser, const slkc::SyntaxError &syntax_err
 	size_t line = begin_token->source_location.begin_position.line + 1;
 	size_t column = begin_token->source_location.begin_position.column + 1;
 
-	print_error("Syntax error at %zu, %zu: ", line, column);
+	fprintf(stderr, "Error at %zu, %zu: ", line, column);
 
 	switch (syntax_error.error_kind) {
 		case slkc::SyntaxErrorKind::OutOfMemory:
@@ -404,6 +404,29 @@ void dump_syntax_error(slkc::Parser *parser, const slkc::SyntaxError &syntax_err
 	}
 }
 
+void dump_syntax_warning(slkc::Parser *parser, const slkc::SyntaxWarning &syntax_warning, int indent_level = 0) {
+	const slkc::Token *begin_token = parser->token_list.at(syntax_warning.token_range.begin_index).get();
+	const slkc::Token *end_token = parser->token_list.at(syntax_warning.token_range.end_index).get();
+
+	for (int i = 0; i < indent_level; ++i) {
+		putc('\t', stderr);
+	}
+
+	size_t line = begin_token->source_location.begin_position.line + 1;
+	size_t column = begin_token->source_location.begin_position.column + 1;
+
+	fprintf(stderr, "Warning at %zu, %zu: ", line, column);
+
+	switch (syntax_warning.warning_kind) {
+		case slkc::SyntaxWarningKind::ScopeOpIsOmittableInIdRef:
+			fprintf(stderr, ":: is omittable in this context\n");
+			break;
+		default:
+			fprintf(stderr, "Unknown error (%d)\n", (int)syntax_warning.warning_kind);
+			break;
+	}
+}
+
 void dump_compilation_error(peff::SharedPtr<slkc::Parser> parser, const slkc::CompilationError &error, int indent_level = 0) {
 	const slkc::Token *begin_token = parser->token_list.at(error.token_range.begin_index).get();
 	const slkc::Token *end_token = parser->token_list.at(error.token_range.end_index).get();
@@ -412,7 +435,7 @@ void dump_compilation_error(peff::SharedPtr<slkc::Parser> parser, const slkc::Co
 		putc('\t', stderr);
 	}
 
-	print_error("Error at %zu, %zu to %zu, %zu: ",
+	fprintf(stderr, "Error at %zu, %zu to %zu, %zu: ",
 		begin_token->source_location.begin_position.line + 1, begin_token->source_location.begin_position.column + 1,
 		end_token->source_location.end_position.line + 1, end_token->source_location.end_position.column + 1);
 	switch (error.error_kind) {
@@ -631,6 +654,27 @@ void dump_compilation_error(peff::SharedPtr<slkc::Parser> parser, const slkc::Co
 	}
 }
 
+void dump_compilation_warning(peff::SharedPtr<slkc::Parser> parser, const slkc::CompilationWarning &warning, int indent_level = 0) {
+	const slkc::Token *begin_token = parser->token_list.at(warning.token_range.begin_index).get();
+	const slkc::Token *end_token = parser->token_list.at(warning.token_range.end_index).get();
+
+	for (int i = 0; i < indent_level; ++i) {
+		putc('\t', stderr);
+	}
+
+	fprintf(stderr, "Warning at %zu, %zu to %zu, %zu: ",
+		begin_token->source_location.begin_position.line + 1, begin_token->source_location.begin_position.column + 1,
+		end_token->source_location.end_position.line + 1, end_token->source_location.end_position.column + 1);
+	switch (warning.warning_kind) {
+		case slkc::CompilationWarningKind::UnusedExprResult:
+			fprintf(stderr, "Expression's result is unused\n");
+			break;
+		default:
+			fprintf(stderr, "Unknown warning (%d)\n", (int)warning.warning_kind);
+			break;
+	}
+}
+
 class FileWriter : public slkc::Writer {
 public:
 	FILE *fp = NULL;
@@ -842,6 +886,10 @@ int main(int argc, char *argv[]) {
 					dump_syntax_error(parser.get(), *e);
 				}
 
+				for (auto &i : parser->syntax_warnings) {
+					dump_syntax_warning(parser.get(), i);
+				}
+
 				for (auto &i : parser->syntax_errors) {
 					encountered_errors = true;
 					dump_syntax_error(parser.get(), i);
@@ -910,6 +958,10 @@ int main(int argc, char *argv[]) {
 
 				// Sort errors in order.
 				std::sort(compile_env.errors.data(), compile_env.errors.data() + compile_env.errors.size());
+
+				for (auto &i : compile_env.warnings) {
+					dump_compilation_warning(parser, i);
+				}
 
 				for (auto &i : compile_env.errors) {
 					encountered_errors = true;

@@ -345,6 +345,61 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 					SLKC_RETURN_IF_COMP_ERROR(_walk_node_for_generic_instantiation(duplicated_object, context));
 					break;
 				}
+				case AstNodeType::Struct: {
+					AstNodePtr<StructNode> obj = duplicated_object.cast_to<StructNode>();
+
+					context->mapped_node = obj.cast_to<MemberNode>();
+
+					if (duplicated_generic_args.size() != obj->scope->generic_params.size()) {
+						return CompilationError(
+							TokenRange{
+								duplicated_generic_args.front()->token_range.module_node,
+								duplicated_generic_args.front()->token_range.begin_index,
+								duplicated_generic_args.back()->token_range.end_index },
+							CompilationErrorKind::MismatchedGenericArgNumber);
+					}
+
+					for (size_t i = 0; i < duplicated_generic_args.size(); ++i) {
+						AstNodePtr<AstNode> cur_arg = duplicated_generic_args.at(i);
+
+						if (obj->scope->generic_params.at(i)->input_type) {
+							if (cur_arg->get_ast_node_type() != AstNodeType::Expr)
+								return CompilationError(
+									cur_arg->token_range,
+									CompilationErrorKind::RequiresCompTimeExpr);
+
+							AstNodePtr<TypeNameNode> arg_type;
+							{
+								PathEnv root_path_env(compile_env.allocator.get());
+								SLKC_RETURN_IF_COMP_ERROR(eval_expr_type(&compile_env, &compilation_context, &root_path_env, cur_arg.cast_to<ExprNode>(), arg_type));
+							}
+
+							bool same = false;
+							SLKC_RETURN_IF_COMP_ERROR(is_same_type(arg_type, obj->scope->generic_params.at(i)->input_type, same));
+
+							if (!same)
+								return CompilationError(
+									cur_arg->token_range,
+									CompilationErrorKind::TypeArgTypeMismatched);
+						} else {
+							if (cur_arg->get_ast_node_type() != AstNodeType::TypeName)
+								return CompilationError(
+									cur_arg->token_range,
+									CompilationErrorKind::ExpectingTypeName);
+						}
+					}
+
+					for (auto [k, v] : obj->scope->generic_param_indices) {
+						if (!context->mapped_generic_args.insert(
+								std::string_view(k),
+								AstNodePtr<AstNode>(duplicated_generic_args.at(v)))) {
+							return gen_oom_comp_error();
+						}
+					}
+
+					SLKC_RETURN_IF_COMP_ERROR(_walk_node_for_generic_instantiation(duplicated_object, context));
+					break;
+				}
 				default:
 					return CompilationError(
 						TokenRange{

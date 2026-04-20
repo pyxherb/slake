@@ -73,7 +73,7 @@ class TestParent<T> {
 	}
 }
 
-class TestDerived<T>(TestParent::<T>) {
+class TestDerived<T>(TestParent<T>) {
 	fn my_test() {
 		this.l_test;
 		return;
@@ -273,7 +273,7 @@ public async main() -> i32 {
 
 	vt.test_base(123);
 
-	let test_derived: TestDerived::<i32> = new TestDerived::<i32>();
+	let test_derived: TestDerived<i32> = new TestDerived<i32>();
 
 	test_derived.my_test(123, 456);
 
@@ -282,7 +282,7 @@ public async main() -> i32 {
 
 	test.test_func(123, 456);
 
-	let x: AnotherGeneric::<i32, f32>.ChildGeneric::<f32, Test> = new AnotherGeneric::<i32, f32>.ChildGeneric::<f32, Test>();
+	let x: AnotherGeneric<i32, f32>.ChildGeneric<f32, Test> = new AnotherGeneric<i32, f32>.ChildGeneric<f32, Test>();
 	x._set_x(test);
 	x._get_x();
 
@@ -322,7 +322,7 @@ public async main() -> i32 {
 
 	let impl_test: ImplTest = new ImplTest();
 
-	let interface_test: InterfaceTest::<ImplTest> = new InterfaceTest::<ImplTest>();
+	let interface_test: InterfaceTest<ImplTest> = new InterfaceTest<ImplTest>();
 
 	//let callable_test: CallableTest<(i32, u32, f32)>;
 

@@ -113,6 +113,23 @@ namespace slkc {
 		}
 	};
 
+	enum class SyntaxWarningKind : int {
+		ScopeOpIsOmittableInIdRef = 0,
+	};
+
+	struct SyntaxWarning {
+		TokenRange token_range;
+		SyntaxWarningKind warning_kind;
+		std::variant<std::monostate> ex_data;
+
+		SLAKE_FORCEINLINE SyntaxWarning(
+			const TokenRange &token_range,
+			SyntaxWarningKind warning_kind)
+			: token_range(token_range),
+			  warning_kind(warning_kind) {
+		}
+	};
+
 	class ParseCoroutineScheduler;
 
 	struct ParseCoroutine {
@@ -249,10 +266,12 @@ namespace slkc {
 		peff::RcObjectPtr<peff::Alloc> resource_allocator;
 		TokenList token_list;
 		struct ParseContext {
+			ModuleNode *mod = nullptr;
 			size_t idx_prev_token = 0, idx_current_token = 0;
 		};
 		ParseContext parse_context;
 		peff::DynArray<SyntaxError> syntax_errors;
+		peff::DynArray<SyntaxWarning> syntax_warnings;
 
 		SLKC_API Parser(peff::SharedPtr<Document> document, TokenList &&token_list, peff::Alloc *resource_allocator);
 		SLKC_API virtual ~Parser();
@@ -301,7 +320,7 @@ namespace slkc {
 	private:
 		[[nodiscard]] SLKC_API ParseCoroutine parse_var_defs(peff::Alloc *allocator, peff::DynArray<VarDefEntryPtr> &var_def_entries);
 
-		[[nodiscard]] SLKC_API ParseCoroutine parse_id_ref(peff::Alloc *allocator, IdRefPtr &id_ref_out);
+		[[nodiscard]] SLKC_API ParseCoroutine parse_id_ref(peff::Alloc *allocator, IdRefPtr &id_ref_out, bool is_parsing_type = false);
 
 		[[nodiscard]] SLKC_API ParseCoroutine parse_expr(peff::Alloc *allocator, int precedence, AstNodePtr<ExprNode> &expr_out);
 

@@ -1265,6 +1265,10 @@ SLKC_API peff::Option<CompilationError> slkc::compile_stmt(
 	CompilationContext *parent_compilation_context,
 	PathEnv *path_env,
 	const AstNodePtr<StmtNode> &stmt) {
+	compile_env->disable_messages();
+	peff::ScopeGuard enable_messages_guard([compile_env]() noexcept {
+		compile_env->enable_messages();
+	});
 	NormalCompilationContext tmp_ctxt(compile_env, parent_compilation_context);
 	return compile_stmt(compile_env, &tmp_ctxt, path_env, stmt);
 }

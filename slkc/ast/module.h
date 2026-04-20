@@ -31,7 +31,7 @@ namespace slkc {
 		peff::DynArray<AstNodePtr<GenericParamNode>> generic_params;
 		peff::HashMap<std::string_view, size_t> generic_param_indices;
 
-		peff::Option<bool> cached_is_higher_ranked_cyclic_inherited;
+		peff::Option<bool> cached_is_higher_ranked_cyclic_inherited, cached_is_higher_ranked_recursed;
 
 		SLKC_API Scope(peff::Alloc *allocator) noexcept;
 		SLKC_API ~Scope();

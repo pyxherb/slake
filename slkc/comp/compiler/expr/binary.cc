@@ -218,19 +218,19 @@ static peff::Option<CompilationError> _compile_simple_assign_expr(
 
 			if (lhs_result.evaluated_final_member && (lhs_result.evaluated_final_member->get_ast_node_type() == AstNodeType::Var)) {
 				if (rhs_result.evaluated_type->tn_kind == TypeNameKind::Null) {
-					SLKC_RETURN_IF_COMP_ERROR(path_env->set_local_var_nullity_override(lhs_result.evaluated_final_member.cast_to<VarNode>(), NullOverrideType::Nullify));
+					SLKC_RETURN_IF_COMP_ERROR(path_env->set_local_var_nullity_override(lhs_result.evaluated_var_chain, NullOverrideType::Nullify));
 				} else {
 					if (rhs_result.evaluated_type->is_nullable) {
 						if (rhs_result.evaluated_final_member && (rhs_result.evaluated_final_member->get_ast_node_type() == AstNodeType::Var)) {
-							if (auto override_type = path_env->lookup_var_nullity_override(rhs_result.evaluated_final_member.cast_to<VarNode>()); override_type.has_value()) {
-								SLKC_RETURN_IF_COMP_ERROR(path_env->set_local_var_nullity_override(lhs_result.evaluated_final_member.cast_to<VarNode>(), override_type.value()));
+							if (auto override_type = path_env->lookup_var_nullity_override(rhs_result.evaluated_var_chain); override_type.has_value()) {
+								SLKC_RETURN_IF_COMP_ERROR(path_env->set_local_var_nullity_override(lhs_result.evaluated_var_chain, override_type.value()));
 							} else
-								SLKC_RETURN_IF_COMP_ERROR(path_env->set_local_var_nullity_override(lhs_result.evaluated_final_member.cast_to<VarNode>(), NullOverrideType::Uncertain));
+								SLKC_RETURN_IF_COMP_ERROR(path_env->set_local_var_nullity_override(lhs_result.evaluated_var_chain, NullOverrideType::Uncertain));
 						} else {
-							SLKC_RETURN_IF_COMP_ERROR(path_env->set_local_var_nullity_override(lhs_result.evaluated_final_member.cast_to<VarNode>(), NullOverrideType::Uncertain));
+							SLKC_RETURN_IF_COMP_ERROR(path_env->set_local_var_nullity_override(lhs_result.evaluated_var_chain, NullOverrideType::Uncertain));
 						}
 					} else
-						SLKC_RETURN_IF_COMP_ERROR(path_env->set_local_var_nullity_override(lhs_result.evaluated_final_member.cast_to<VarNode>(), NullOverrideType::Denullify));
+						SLKC_RETURN_IF_COMP_ERROR(path_env->set_local_var_nullity_override(lhs_result.evaluated_var_chain, NullOverrideType::Denullify));
 				}
 			}
 			break;
@@ -271,19 +271,19 @@ static peff::Option<CompilationError> _compile_simple_assign_expr(
 
 			if (lhs_result.evaluated_final_member && (lhs_result.evaluated_final_member->get_ast_node_type() == AstNodeType::Var)) {
 				if (rhs_result.evaluated_type->tn_kind == TypeNameKind::Null) {
-					SLKC_RETURN_IF_COMP_ERROR(path_env->set_local_var_nullity_override(lhs_result.evaluated_final_member.cast_to<VarNode>(), NullOverrideType::Nullify));
+					SLKC_RETURN_IF_COMP_ERROR(path_env->set_local_var_nullity_override(lhs_result.evaluated_var_chain, NullOverrideType::Nullify));
 				} else {
 					if (rhs_result.evaluated_type->is_nullable) {
 						if (rhs_result.evaluated_final_member && (rhs_result.evaluated_final_member->get_ast_node_type() == AstNodeType::Var)) {
-							if (auto override_type = path_env->lookup_var_nullity_override(rhs_result.evaluated_final_member.cast_to<VarNode>()); override_type.has_value()) {
-								SLKC_RETURN_IF_COMP_ERROR(path_env->set_local_var_nullity_override(lhs_result.evaluated_final_member.cast_to<VarNode>(), override_type.value()));
+							if (auto override_type = path_env->lookup_var_nullity_override(rhs_result.evaluated_var_chain); override_type.has_value()) {
+								SLKC_RETURN_IF_COMP_ERROR(path_env->set_local_var_nullity_override(lhs_result.evaluated_var_chain, override_type.value()));
 							} else
-								SLKC_RETURN_IF_COMP_ERROR(path_env->set_local_var_nullity_override(lhs_result.evaluated_final_member.cast_to<VarNode>(), NullOverrideType::Uncertain));
+								SLKC_RETURN_IF_COMP_ERROR(path_env->set_local_var_nullity_override(lhs_result.evaluated_var_chain, NullOverrideType::Uncertain));
 						} else {
-							SLKC_RETURN_IF_COMP_ERROR(path_env->set_local_var_nullity_override(lhs_result.evaluated_final_member.cast_to<VarNode>(), NullOverrideType::Uncertain));
+							SLKC_RETURN_IF_COMP_ERROR(path_env->set_local_var_nullity_override(lhs_result.evaluated_var_chain, NullOverrideType::Uncertain));
 						}
 					} else
-						SLKC_RETURN_IF_COMP_ERROR(path_env->set_local_var_nullity_override(lhs_result.evaluated_final_member.cast_to<VarNode>(), NullOverrideType::Denullify));
+						SLKC_RETURN_IF_COMP_ERROR(path_env->set_local_var_nullity_override(lhs_result.evaluated_var_chain, NullOverrideType::Denullify));
 				}
 			}
 			break;
@@ -634,13 +634,13 @@ PEFF_FORCEINLINE peff::Option<CompilationError> _update_equality_judgement_invol
 		if (v->type->is_nullable) {
 			if (rhs_type->tn_kind == TypeNameKind::Null) {
 				// v == null
-				SLKC_RETURN_IF_COMP_ERROR(result_out.guard_path_env.set_local_var_nullity_override(v, NullOverrideType::Nullify));
+				SLKC_RETURN_IF_COMP_ERROR(result_out.guard_path_env.set_local_var_nullity_override(lhs_result.evaluated_var_chain, NullOverrideType::Nullify));
 			} else if (rhs_type->is_nullable) {
 				// v == T?
-				SLKC_RETURN_IF_COMP_ERROR(result_out.guard_path_env.set_local_var_nullity_override(v, NullOverrideType::Uncertain));
+				SLKC_RETURN_IF_COMP_ERROR(result_out.guard_path_env.set_local_var_nullity_override(lhs_result.evaluated_var_chain, NullOverrideType::Uncertain));
 			} else {
 				// v == T
-				SLKC_RETURN_IF_COMP_ERROR(result_out.guard_path_env.set_local_var_nullity_override(v, NullOverrideType::Denullify));
+				SLKC_RETURN_IF_COMP_ERROR(result_out.guard_path_env.set_local_var_nullity_override(lhs_result.evaluated_var_chain, NullOverrideType::Denullify));
 			}
 		}
 	} else {
@@ -649,13 +649,13 @@ PEFF_FORCEINLINE peff::Option<CompilationError> _update_equality_judgement_invol
 			if (v->type->is_nullable) {
 				if (lhs_type->tn_kind == TypeNameKind::Null) {
 					// null == v
-					SLKC_RETURN_IF_COMP_ERROR(result_out.guard_path_env.set_local_var_nullity_override(v, NullOverrideType::Nullify));
+					SLKC_RETURN_IF_COMP_ERROR(result_out.guard_path_env.set_local_var_nullity_override(rhs_result.evaluated_var_chain, NullOverrideType::Nullify));
 				} else if (lhs_type->is_nullable) {
 					// T? == v
-					SLKC_RETURN_IF_COMP_ERROR(result_out.guard_path_env.set_local_var_nullity_override(v, NullOverrideType::Uncertain));
+					SLKC_RETURN_IF_COMP_ERROR(result_out.guard_path_env.set_local_var_nullity_override(rhs_result.evaluated_var_chain, NullOverrideType::Uncertain));
 				} else {
 					// T == v
-					SLKC_RETURN_IF_COMP_ERROR(result_out.guard_path_env.set_local_var_nullity_override(v, NullOverrideType::Denullify));
+					SLKC_RETURN_IF_COMP_ERROR(result_out.guard_path_env.set_local_var_nullity_override(rhs_result.evaluated_var_chain, NullOverrideType::Denullify));
 				}
 			}
 		}
@@ -674,7 +674,7 @@ PEFF_FORCEINLINE peff::Option<CompilationError> _update_inequality_judgement_inv
 		if (v->type->is_nullable) {
 			if (rhs_type->tn_kind == TypeNameKind::Null) {
 				// v != null
-				SLKC_RETURN_IF_COMP_ERROR(result_out.guard_path_env.set_local_var_nullity_override(v, NullOverrideType::Denullify));
+				SLKC_RETURN_IF_COMP_ERROR(result_out.guard_path_env.set_local_var_nullity_override(lhs_result.evaluated_var_chain, NullOverrideType::Denullify));
 			} else {
 				// v != T? and v != T are undeterminable
 			}
@@ -685,7 +685,7 @@ PEFF_FORCEINLINE peff::Option<CompilationError> _update_inequality_judgement_inv
 			if (v->type->is_nullable) {
 				if (lhs_type->tn_kind == TypeNameKind::Null) {
 					// null != v
-					SLKC_RETURN_IF_COMP_ERROR(result_out.guard_path_env.set_local_var_nullity_override(v, NullOverrideType::Denullify));
+					SLKC_RETURN_IF_COMP_ERROR(result_out.guard_path_env.set_local_var_nullity_override(rhs_result.evaluated_var_chain, NullOverrideType::Denullify));
 				} else {
 					// T? != v and T != v are undeterminable
 				}

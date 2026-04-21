@@ -2,29 +2,22 @@
 
 using namespace slkc;
 
-SLKC_API peff::Option<CompilationError> slkc::check_null_member_deref(PathEnv *path_env, AstNodePtr<MemberNode> member, const TokenRange &token_range) {
-	switch (member->get_ast_node_type()) {
-		case AstNodeType::Var: {
-			auto m = member.cast_to<VarNode>();
+SLKC_API peff::Option<CompilationError> slkc::check_null_member_deref(PathEnv *path_env, const VarChainView &var_chain, const TokenRange &token_range) {
+	auto m = var_chain.back();
 
-			if (m->type->is_nullable) {
-				auto nullity_override = path_env->lookup_var_nullity_override(m);
+	if ((m->get_ast_node_type() == AstNodeType::Var) && m.cast_to<VarNode>()->type->is_nullable) {
+		auto nullity_override = path_env->lookup_var_nullity_override(var_chain);
 
-				if (nullity_override) {
-					switch (*nullity_override) {
-						case NullOverrideType::Denullify:
-							break;
-						case NullOverrideType::Nullify:
-						case NullOverrideType::Uncertain:
-							return CompilationError(token_range, CompilationErrorKind::DereferencingNull);
-					}
-				} else
+		if (nullity_override) {
+			switch (*nullity_override) {
+				case NullOverrideType::Denullify:
+					break;
+				case NullOverrideType::Nullify:
+				case NullOverrideType::Uncertain:
 					return CompilationError(token_range, CompilationErrorKind::DereferencingNull);
 			}
-			break;
-		}
-		default:
-			break;
+		} else
+			return CompilationError(token_range, CompilationErrorKind::DereferencingNull);
 	}
 
 	return {};
@@ -119,7 +112,7 @@ SLKC_API peff::Option<CompilationError> slkc::_compile_or_cast_operand(
 	return CompilationError(operand->token_range, std::move(ex_data));
 }
 
-static peff::Option<CompilationError> _determine_node_type(CompileEnv *compile_env, PathEnv *path_env, ExprEvalPurpose eval_purpose, AstNodePtr<MemberNode> node, AstNodePtr<TypeNameNode> &type_name_out);
+static peff::Option<CompilationError> _determine_node_type(CompileEnv *compile_env, PathEnv *path_env, ExprEvalPurpose eval_purpose, const VarChain *var_chain, AstNodePtr<MemberNode> node, AstNodePtr<TypeNameNode> &type_name_out);
 
 static peff::Option<CompilationError> _load_rest_of_id_ref(
 	CompileEnv *compile_env,
@@ -130,6 +123,7 @@ static peff::Option<CompilationError> _load_rest_of_id_ref(
 	CompileExprResult &result_out,
 	IdRef *id_ref,
 	ResolvedIdRefPartList &parts,
+	VarChain *var_chain,
 	uint32_t initial_member_reg,
 	size_t cur_ref_idx,
 	AstNodePtr<FnTypeNameNode> extra_fn_args,
@@ -145,11 +139,28 @@ static peff::Option<CompilationError> _load_rest_of_id_ref(
 		idx_reg = initial_member_reg;
 	}
 
-	{
+	if (var_chain) {
 		size_t i = cur_ref_idx, j = 0;
+#ifndef NDEBUG
+		bool var_chain_cleared = false;
+#endif
 		while (i < id_ref->entries.size()) {
 			ResolvedIdRefPart &part = parts.at(j);
-			SLKC_RETURN_IF_COMP_ERROR(check_null_member_deref(path_env, part.member, TokenRange{ id_ref->token_range.module_node, id_ref->entries.at(i).name_token_index }));
+
+			if (part.member->get_ast_node_type() == AstNodeType::Var) {
+				if (!var_chain->push_back(AstNodePtr<MemberNode>(part.member)))
+					return gen_oom_comp_error();
+#ifndef NDEBUG
+				if (var_chain_cleared)
+					std::terminate();
+#endif
+			} else {
+				var_chain->clear();
+#ifndef NDEBUG
+				var_chain_cleared = true;
+#endif
+			}
+			SLKC_RETURN_IF_COMP_ERROR(check_null_member_deref(path_env, *var_chain, TokenRange{ id_ref->token_range.module_node, id_ref->entries.at(i).name_token_index }));
 			i += part.num_entries;
 			++j;
 		}
@@ -388,7 +399,7 @@ peff::Option<CompilationError> select_single_matching_overloading(CompileEnv *co
 	return {};
 };
 
-static peff::Option<CompilationError> _determine_node_type(CompileEnv *compile_env, PathEnv *path_env, ExprEvalPurpose eval_purpose, AstNodePtr<MemberNode> node, AstNodePtr<TypeNameNode> &type_name_out) {
+static peff::Option<CompilationError> _determine_node_type(CompileEnv *compile_env, PathEnv *path_env, ExprEvalPurpose eval_purpose, const VarChain *var_chain, AstNodePtr<MemberNode> node, AstNodePtr<TypeNameNode> &type_name_out) {
 	switch (node->get_ast_node_type()) {
 		case AstNodeType::This: {
 			auto m = node.cast_to<ThisNode>()->this_type;
@@ -425,8 +436,9 @@ static peff::Option<CompilationError> _determine_node_type(CompileEnv *compile_e
 				t->referenced_type = node.cast_to<VarNode>()->type;
 
 				if ((eval_purpose != ExprEvalPurpose::LValue) &&
-					(eval_purpose != ExprEvalPurpose::EvalTypeActual)) {
-					auto nullity_override = path_env->lookup_var_nullity_override(node.cast_to<VarNode>());
+					(eval_purpose != ExprEvalPurpose::EvalTypeActual) &&
+					(var_chain)) {
+					auto nullity_override = path_env->lookup_var_nullity_override(*var_chain);
 
 					if (nullity_override.has_value()) {
 						switch (*nullity_override) {
@@ -451,8 +463,9 @@ static peff::Option<CompilationError> _determine_node_type(CompileEnv *compile_e
 				type_name_out = original_type;
 
 				if ((eval_purpose != ExprEvalPurpose::LValue) &&
-					(eval_purpose != ExprEvalPurpose::EvalTypeActual)) {
-					auto nullity_override = path_env->lookup_var_nullity_override(node.cast_to<VarNode>());
+					(eval_purpose != ExprEvalPurpose::EvalTypeActual) &&
+					(var_chain)) {
+					auto nullity_override = path_env->lookup_var_nullity_override(*var_chain);
 
 					if (nullity_override.has_value()) {
 						switch (*nullity_override) {
@@ -632,9 +645,9 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 
 				parts.back().member = final_member;
 
-				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error, _load_rest_of_id_ref(compile_env, compilation_context, path_env, eval_purpose, final_register, result_out, e->id_ref_ptr.get(), parts, head_register, 0, fn_type, sld_index));
+				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error, _load_rest_of_id_ref(compile_env, compilation_context, path_env, eval_purpose, final_register, result_out, e->id_ref_ptr.get(), parts, nullptr, head_register, 0, fn_type, sld_index));
 			} else {
-				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error, _load_rest_of_id_ref(compile_env, compilation_context, path_env, eval_purpose, final_register, result_out, e->id_ref_ptr.get(), parts, head_register, 0, {}, sld_index));
+				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error, _load_rest_of_id_ref(compile_env, compilation_context, path_env, eval_purpose, final_register, result_out, e->id_ref_ptr.get(), parts, nullptr, head_register, 0, {}, sld_index));
 			}
 
 			bool accessible;
@@ -644,7 +657,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 					TokenRange{ compile_env->get_document()->main_module, e->id_ref_ptr->entries.back().name_token_index },
 					CompilationErrorKind::MemberIsNotAccessible);
 
-			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error, _determine_node_type(compile_env, path_env, eval_purpose, final_member, result_out.evaluated_type));
+			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error, _determine_node_type(compile_env, path_env, eval_purpose, nullptr, final_member, result_out.evaluated_type));
 			result_out.evaluated_final_member = final_member;
 			// TODO: Check if there is this usage while the members are not all initialized.
 
@@ -733,6 +746,8 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 
 			uint32_t final_register;
 
+			VarChain var_chain(compile_env->allocator.get());
+
 			if (!initial_entry.generic_args.size()) {
 				if (e->id_ref_ptr->entries.at(0).name == "this") {
 					if (!compile_env->this_node)
@@ -766,6 +781,9 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 						case ExprEvalPurpose::Unpacking:
 							return CompilationError(e->token_range, CompilationErrorKind::TargetIsNotUnpackable);
 					}
+
+					if (!var_chain.push_back(AstNodePtr<MemberNode>(initial_member)))
+						return gen_oom_comp_error();
 					goto initial_member_resolved;
 				}
 
@@ -801,6 +819,9 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 						case ExprEvalPurpose::Unpacking:
 							return CompilationError(e->token_range, CompilationErrorKind::TargetIsNotUnpackable);
 					}
+
+					if (!var_chain.push_back(AstNodePtr<MemberNode>(initial_member)))
+						return gen_oom_comp_error();
 					goto initial_member_resolved;
 				}
 
@@ -846,6 +867,9 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 
 							break;
 					}
+
+					if (!var_chain.push_back(AstNodePtr<MemberNode>(initial_member)))
+						return gen_oom_comp_error();
 					goto initial_member_resolved;
 				}
 			}
@@ -853,7 +877,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 		initial_member_resolved:
 			if (initial_member) {
 				if (e->id_ref_ptr->entries.size() > 1) {
-					SLKC_RETURN_IF_COMP_ERROR(check_null_member_deref(path_env, initial_member, TokenRange{ e->id_ref_ptr->token_range.module_node, e->id_ref_ptr->entries.front().name_token_index }));
+					SLKC_RETURN_IF_COMP_ERROR(check_null_member_deref(path_env, var_chain, TokenRange{ e->id_ref_ptr->token_range.module_node, e->id_ref_ptr->entries.front().name_token_index }));
 					size_t cur_idx = 1;
 
 					ResolvedIdRefPartList parts(compile_env->get_document()->allocator.get());
@@ -886,6 +910,18 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 						}
 					}
 
+					if (var_chain.size()) {
+						for (auto i : parts) {
+							if (i.member->get_ast_node_type() == AstNodeType::Var) {
+								if (!var_chain.push_back(AstNodePtr<MemberNode>(i.member)))
+									return gen_oom_comp_error();
+							} else {
+								var_chain.clear();
+								break;
+							}
+						}
+					}
+
 					if (final_member->get_ast_node_type() == AstNodeType::Fn) {
 						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error, select_single_matching_overloading(compile_env, e->id_ref_ptr->token_range, final_member, desired_type, false, result_out));
 
@@ -894,9 +930,37 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 
 						parts.back().member = final_member;
 
-						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error, _load_rest_of_id_ref(compile_env, compilation_context, path_env, eval_purpose, final_register, result_out, e->id_ref_ptr.get(), parts, initial_member_reg, 1, fn_type, sld_index));
+						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(
+							compilation_error,
+							_load_rest_of_id_ref(
+								compile_env, compilation_context,
+								path_env,
+								eval_purpose,
+								final_register,
+								result_out,
+								e->id_ref_ptr.get(),
+								parts,
+								var_chain.size() ? &var_chain : nullptr,
+								initial_member_reg,
+								1,
+								fn_type,
+								sld_index));
 					} else {
-						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error, _load_rest_of_id_ref(compile_env, compilation_context, path_env, eval_purpose, final_register, result_out, e->id_ref_ptr.get(), parts, initial_member_reg, 1, {}, sld_index));
+						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(
+							compilation_error,
+							_load_rest_of_id_ref(
+								compile_env, compilation_context,
+								path_env,
+								eval_purpose,
+								final_register,
+								result_out,
+								e->id_ref_ptr.get(),
+								parts,
+								var_chain.size() ? &var_chain : nullptr,
+								initial_member_reg,
+								1,
+								{},
+								sld_index));
 					}
 				} else {
 					final_member = initial_member;
@@ -932,13 +996,51 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 
 					parts.back().member = final_member;
 
-					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error, _load_rest_of_id_ref(compile_env, compilation_context, path_env, eval_purpose, final_register, result_out, e->id_ref_ptr.get(), parts, UINT32_MAX, 0, fn_type, sld_index));
+					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(
+						compilation_error,
+						_load_rest_of_id_ref(
+							compile_env, compilation_context, path_env,
+							eval_purpose,
+							final_register,
+							result_out,
+							e->id_ref_ptr.get(),
+							parts,
+							nullptr,
+							UINT32_MAX,
+							0,
+							fn_type,
+							sld_index));
 				} else {
-					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error, _load_rest_of_id_ref(compile_env, compilation_context, path_env, eval_purpose, final_register, result_out, e->id_ref_ptr.get(), parts, UINT32_MAX, 0, {}, sld_index));
+					if (var_chain.size()) {
+						for (auto i : parts) {
+							if (i.member->get_ast_node_type() == AstNodeType::Var) {
+								if (!var_chain.push_back(AstNodePtr<MemberNode>(i.member)))
+									return gen_oom_comp_error();
+							} else {
+								var_chain.clear();
+								break;
+							}
+						}
+					}
+
+					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(
+						compilation_error,
+						_load_rest_of_id_ref(compile_env,
+							compilation_context,
+							path_env, eval_purpose,
+							final_register,
+							result_out,
+							e->id_ref_ptr.get(),
+							parts,
+							var_chain.size() ? &var_chain : nullptr,
+							UINT32_MAX,
+							0,
+							{},
+							sld_index));
 				}
 			}
 
-			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error, _determine_node_type(compile_env, path_env, eval_purpose, final_member, result_out.evaluated_type));
+			SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error, _determine_node_type(compile_env, path_env, eval_purpose, var_chain.size() ? &var_chain : nullptr, final_member, result_out.evaluated_type));
 			result_out.evaluated_final_member = final_member;
 			// TODO: Check if there is this usage while the members are not all initialized.
 
@@ -1014,6 +1116,8 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 				default:
 					std::terminate();
 			}
+
+			result_out.evaluated_var_chain = std::move(var_chain);
 
 			break;
 		}

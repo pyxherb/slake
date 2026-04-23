@@ -2,8 +2,7 @@
 #define _SLAKE_OBJ_MODULE_H_
 
 #include "var.h"
-#include <unordered_map>
-#include <map>
+#include <peff/containers/hashmap.h>
 
 namespace slake {
 	// TODO: Flatten the field records and move the metadata onto the local field storage area.

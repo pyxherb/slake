@@ -7,6 +7,75 @@
 
 using namespace slake;
 
+class MyAllocator : public peff::StdAlloc {
+public:
+	struct AllocRecord {
+		size_t size;
+		size_t alignment;
+	};
+
+	std::map<void *, AllocRecord> alloc_records;
+
+	~MyAllocator() {
+		assert(alloc_records.empty());
+	}
+
+	virtual void *alloc(size_t size, size_t alignment) noexcept override {
+		void *p = this->StdAlloc::alloc(size, alignment);
+		if (!p)
+			std::terminate();
+
+		alloc_records[p] = { size, alignment };
+
+		return p;
+	}
+
+	virtual void *realloc(void *p, size_t size, size_t alignment, size_t new_size, size_t new_alignment) noexcept override {
+		void *ptr = this->StdAlloc::realloc(p, size, alignment, new_size, new_alignment);
+		if (!ptr)
+			return nullptr;
+
+		AllocRecord &alloc_record = alloc_records.at(p);
+
+		assert(alloc_record.size == size);
+		assert(alloc_record.alignment == alignment);
+
+		alloc_records.erase(p);
+
+		alloc_records[ptr] = { new_size, new_alignment };
+
+		return ptr;
+	}
+
+	virtual void *realloc_in_place(void *p, size_t size, size_t alignment, size_t new_size, size_t new_alignment) noexcept override {
+		void *ptr = this->StdAlloc::realloc_in_place(p, size, alignment, new_size, new_alignment);
+		if (!ptr)
+			return nullptr;
+
+		AllocRecord &alloc_record = alloc_records.at(p);
+
+		assert(alloc_record.size == size);
+		assert(alloc_record.alignment == alignment);
+
+		alloc_records.erase(p);
+
+		alloc_records[ptr] = { new_size, new_alignment };
+
+		return ptr;
+	}
+
+	virtual void release(void *p, size_t size, size_t alignment) noexcept override {
+		AllocRecord &alloc_record = alloc_records.at(p);
+
+		assert(alloc_record.size == size);
+		assert(alloc_record.alignment == alignment);
+
+		alloc_records.erase(p);
+
+		this->StdAlloc::release(p, size, alignment);
+	}
+};
+
 Value print(Context *context, MajorFrame *cur_major_frame) {
 	if (cur_major_frame->resumable_context_data.num_args < 1)
 		putchar('\n');
@@ -908,12 +977,14 @@ public:
 int main(int argc, char **argv) {
 	util::setup_memory_leak_detector();
 
+	MyAllocator my_allocator;
+
 	StdDumpWriter stderr_writer(stderr);
 	{
 		std::unique_ptr<Runtime, peff::DeallocableDeleter<Runtime>> rt = std::unique_ptr<Runtime, peff::DeallocableDeleter<Runtime>>(
 			Runtime::alloc(
 				peff::default_allocator(),
-				peff::default_allocator(),
+				&my_allocator,
 				RT_DEBUG | RT_GCDBG));
 
 		{

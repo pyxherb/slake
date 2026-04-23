@@ -128,6 +128,20 @@ SLAKE_API void *Runtime::locate_value_base_ptr(const Reference &entity_ref) noex
 
 			return base_ptr + ((StructObject *)type_object)->field_records.at(entity_ref.struct_field_index).offset;
 		}
+		case ReferenceKind::InitObjectLayoutFieldRef: {
+			ObjectFieldRecord &field_record =
+				entity_ref.as_init_object_layout_field.object_layout->field_records.at(
+					entity_ref.as_init_object_layout_field.index);
+
+			char *init_data = entity_ref.as_init_object_layout_field.object_layout->get_init_data();
+			assert(init_data);
+			return init_data + field_record.offset;
+		}
+		case ReferenceKind::DefaultStructValueRef: {
+			char *init_data = entity_ref.as_init_object_layout_field.object_layout->get_init_data();
+			assert(init_data);
+			return init_data;
+		}
 		default:
 			break;
 	}
@@ -265,6 +279,16 @@ SLAKE_API TypeRef Runtime::typeof_var(const Reference &entity_ref) noexcept {
 
 			return ((StructObject *)type_object)->field_records.at(entity_ref.struct_field_index).type;
 		}
+		case ReferenceKind::InitObjectLayoutFieldRef: {
+			ObjectFieldRecord &field_record =
+				entity_ref.as_init_object_layout_field.object_layout->field_records.at(
+					entity_ref.as_init_object_layout_field.index);
+
+			return field_record.type;
+		}
+		case ReferenceKind::DefaultStructValueRef:
+			// The user should have known type of the value to be written if they want to write the default value.
+			std::terminate();
 		default:
 			break;
 	}
@@ -1072,7 +1096,8 @@ SLAKE_API void Runtime::write_var_with_type(const Reference &entity_ref, const T
 		case ReferenceKind::ObjectFieldStructFieldRef:
 		case ReferenceKind::ArrayElementStructFieldRef:
 		case ReferenceKind::ArgStructFieldRef:
-		case ReferenceKind::CoroutineArgStructFieldRef: {
+		case ReferenceKind::CoroutineArgStructFieldRef:
+		case ReferenceKind::InitObjectLayoutFieldRef: {
 			char *const raw_data_ptr = (char *)locate_value_base_ptr(entity_ref);
 
 			switch (t.type_id) {

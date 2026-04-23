@@ -29,6 +29,7 @@ SLAKE_API void CountablePoolAlloc::on_ref_zero() noexcept {
 }
 
 SLAKE_API void *CountablePoolAlloc::alloc(size_t size, size_t alignment) noexcept {
+	assert(size);
 	void *p = upstream->alloc(size, alignment);
 	if (!p)
 		return nullptr;
@@ -39,6 +40,7 @@ SLAKE_API void *CountablePoolAlloc::alloc(size_t size, size_t alignment) noexcep
 }
 
 SLAKE_API void *CountablePoolAlloc::realloc(void *ptr, size_t size, size_t alignment, size_t new_size, size_t new_alignment) noexcept {
+	assert(new_size);
 	void *p = upstream->realloc(ptr, size, alignment, new_size, new_alignment);
 	if (!p)
 		return nullptr;
@@ -50,6 +52,7 @@ SLAKE_API void *CountablePoolAlloc::realloc(void *ptr, size_t size, size_t align
 }
 
 SLAKE_API void *CountablePoolAlloc::realloc_in_place(void *ptr, size_t size, size_t alignment, size_t new_size, size_t new_alignment) noexcept {
+	assert(new_size);
 	void *p = upstream->realloc_in_place(ptr, size, alignment, new_size, new_alignment);
 	if (!p)
 		return nullptr;
@@ -132,6 +135,7 @@ SLAKE_API void GenerationalPoolAlloc::on_ref_zero() noexcept {
 }
 
 SLAKE_API void *GenerationalPoolAlloc::alloc(size_t size, size_t alignment) noexcept {
+	assert(size);
 	void *p = upstream->alloc(size, alignment);
 	if (!p)
 		return nullptr;
@@ -142,6 +146,7 @@ SLAKE_API void *GenerationalPoolAlloc::alloc(size_t size, size_t alignment) noex
 }
 
 SLAKE_API void *GenerationalPoolAlloc::realloc(void *ptr, size_t size, size_t alignment, size_t new_size, size_t new_alignment) noexcept {
+	assert(new_size);
 	void *p = upstream->realloc(ptr, size, alignment, new_size, new_alignment);
 	if (!p)
 		return nullptr;
@@ -153,6 +158,7 @@ SLAKE_API void *GenerationalPoolAlloc::realloc(void *ptr, size_t size, size_t al
 }
 
 SLAKE_API void *GenerationalPoolAlloc::realloc_in_place(void *ptr, size_t size, size_t alignment, size_t new_size, size_t new_alignment) noexcept {
+	assert(new_size);
 	void *p = upstream->realloc_in_place(ptr, size, alignment, new_size, new_alignment);
 	if (!p)
 		return nullptr;
@@ -479,6 +485,8 @@ SLAKE_API size_t Runtime::alignof_type(const TypeRef &type) {
 }
 
 SLAKE_API Value Runtime::default_value_of(const TypeRef &type) const {
+	if (type.is_nullable())
+		return Reference(nullptr);
 	switch (type.type_id) {
 		case TypeId::I8:
 			return Value((int8_t)0);
@@ -513,6 +521,11 @@ SLAKE_API Value Runtime::default_value_of(const TypeRef &type) const {
 			// TODO: Replace it with TempRef version.
 			return Value(slake::ObjectFieldRef(nullptr, UINT32_MAX));
 			break;
+		case TypeId::StructInstance: {
+			const CustomTypeDefObject *ctd = type.get_custom_type_def();
+			assert(ctd->type_object->get_object_kind() == ObjectKind::Struct);
+			return Value(slake::DefaultStructValueRef(((StructObject *)type.get_custom_type_def()->type_object)->cached_object_layout.get()));
+		}
 		default:
 			break;
 	}

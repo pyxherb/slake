@@ -19,15 +19,30 @@ SLAKE_API void ObjectLayout::replace_allocator(peff::Alloc *allocator) noexcept 
 	}
 
 	field_name_map.replace_allocator(allocator);
-
-	field_record_init_module_fields_number.replace_allocator(allocator);
 }
 
 SLAKE_API ObjectLayout::ObjectLayout(peff::Alloc *self_allocator)
 	: self_allocator(self_allocator),
 	  field_records(self_allocator),
-	  field_name_map(self_allocator),
-	  field_record_init_module_fields_number(self_allocator) {
+	  field_name_map(self_allocator) {
+}
+
+SLAKE_API ObjectLayout::~ObjectLayout() {
+	if (_init_data)
+		self_allocator->release(_init_data, total_size, alignment);
+}
+
+SLAKE_API ObjectLayout *ObjectLayout::duplicate_with_init_data(peff::Alloc *allocator) const {
+	std::unique_ptr<ObjectLayout, peff::DeallocableDeleter<ObjectLayout>> ptr(duplicate(allocator));
+
+	if (this->_init_data && total_size) {
+		if (!(ptr->_init_data = (char *)allocator->alloc(total_size, alignment))) {
+			return nullptr;
+		}
+		memcpy(ptr->_init_data, this->_init_data, total_size);
+	}
+
+	return ptr.release();
 }
 
 SLAKE_API ObjectLayout *ObjectLayout::duplicate(peff::Alloc *allocator) const {
@@ -38,11 +53,6 @@ SLAKE_API ObjectLayout *ObjectLayout::duplicate(peff::Alloc *allocator) const {
 	if (!ptr->field_records.resize_uninit(field_records.size())) {
 		return nullptr;
 	}
-	if (!ptr->field_record_init_module_fields_number.resize_uninit(field_record_init_module_fields_number.size())) {
-		return nullptr;
-	}
-	for (size_t i = 0; i < field_record_init_module_fields_number.size(); ++i)
-		ptr->field_record_init_module_fields_number.at(i) = field_record_init_module_fields_number.at(i);
 	for (size_t i = 0; i < field_records.size(); ++i) {
 		peff::construct_at<ObjectFieldRecord>(&ptr->field_records.at(i), self_allocator.get());
 	}
@@ -60,7 +70,9 @@ SLAKE_API ObjectLayout *ObjectLayout::duplicate(peff::Alloc *allocator) const {
 			return nullptr;
 		}
 	}
+
 	ptr->total_size = total_size;
+	ptr->alignment = alignment;
 
 	return ptr.release();
 }
@@ -71,6 +83,12 @@ SLAKE_API ObjectLayout *ObjectLayout::alloc(peff::Alloc *self_allocator) {
 
 SLAKE_API void ObjectLayout::dealloc() {
 	peff::destroy_and_release<ObjectLayout>(self_allocator.get(), this, alignof(ObjectLayout));
+}
+
+SLAKE_API char *ObjectLayout::alloc_init_data() noexcept {
+	assert(!_init_data);
+	assert(total_size);
+	return _init_data = (char *)self_allocator->alloc(total_size, alignment);
 }
 
 SLAKE_API MethodTable::MethodTable(peff::Alloc *self_allocator)

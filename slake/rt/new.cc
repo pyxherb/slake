@@ -73,6 +73,8 @@ SLAKE_API InternalExceptionPointer Runtime::init_method_table_for_class(ClassObj
 
 				break;
 			}
+			default:
+				break;
 		}
 	}
 
@@ -82,7 +84,6 @@ SLAKE_API InternalExceptionPointer Runtime::init_method_table_for_class(ClassObj
 }
 
 SLAKE_API InternalExceptionPointer Runtime::init_object_layout_for_module(BasicModuleObject *mod, ObjectLayout *object_layout) {
-	size_t cnt = 0;
 	for (size_t i = 0; i < mod->field_records.size(); ++i) {
 		FieldRecord &cls_field_record = mod->field_records.at(i);
 
@@ -115,12 +116,21 @@ SLAKE_API InternalExceptionPointer Runtime::init_object_layout_for_module(BasicM
 			return OutOfMemoryError::alloc();
 
 		object_layout->total_size += size;
-
-		++cnt;
+		object_layout->alignment = (std::max)(align, object_layout->alignment);
 	}
 
-	if (!object_layout->field_record_init_module_fields_number.push_back({ mod, cnt }))
-		return OutOfMemoryError::alloc();
+	if (object_layout->total_size) {
+		if (!(object_layout->alloc_init_data()))
+			return OutOfMemoryError::alloc();
+
+		for (size_t i = 0; i < mod->field_records.size(); ++i) {
+			FieldRecord &cls_field_record = mod->field_records.at(i);
+			write_var_with_type(
+				{ InitObjectLayoutFieldRef(object_layout, i) },
+				cls_field_record.type,
+				default_value_of(cls_field_record.type));
+		}
+	}
 
 	return {};
 }
@@ -204,10 +214,12 @@ SLAKE_API InternalExceptionPointer Runtime::prepare_class_for_instantiation(Clas
 	while (unprepared_classes.size()) {
 		c = unprepared_classes.back();
 
-		if (!c->cached_object_layout)
+		if (!c->cached_object_layout) {
 			SLAKE_RETURN_IF_EXCEPT(init_object_layout_for_class(c, p));
-		if (!c->cached_instantiated_method_table)
+		}
+		if (!c->cached_instantiated_method_table) {
 			SLAKE_RETURN_IF_EXCEPT(init_method_table_for_class(c, p));
+		}
 
 		p = c;
 		unprepared_classes.pop_back();
@@ -269,6 +281,8 @@ SLAKE_FORCEINLINE InternalExceptionPointer _prepare_struct_for_instantiation(Str
 						return OutOfMemoryError::alloc();
 					break;
 				}
+				default:
+					break;
 			}
 			return {};
 		};
@@ -281,8 +295,9 @@ SLAKE_FORCEINLINE InternalExceptionPointer _prepare_struct_for_instantiation(Str
 				auto &field_records = struct_object->get_field_records();
 
 				if (ex_data.index >= field_records.size()) {
-					if (!struct_object->cached_object_layout)
+					if (!struct_object->cached_object_layout) {
 						SLAKE_RETURN_IF_EXCEPT(struct_object->associated_runtime->init_object_layout_for_struct(struct_object));
+					}
 					context.frames.pop_back();
 					continue;
 				}
@@ -330,8 +345,9 @@ SLAKE_FORCEINLINE InternalExceptionPointer _prepare_struct_for_instantiation(Str
 
 				auto &field_records = item_object->get_field_records();
 				if (ex_data.index >= field_records.size()) {
-					if (!item_object->cached_object_layout)
+					if (!item_object->cached_object_layout) {
 						SLAKE_RETURN_IF_EXCEPT(item_object->associated_runtime->init_object_layout_for_union_enum_item(item_object));
+					}
 					context.frames.pop_back();
 					continue;
 				}
@@ -343,6 +359,8 @@ SLAKE_FORCEINLINE InternalExceptionPointer _prepare_struct_for_instantiation(Str
 				++ex_data.index;
 				break;
 			}
+			default:
+				break;
 		}
 	}
 
@@ -404,24 +422,7 @@ SLAKE_API HostObjectRef<InstanceObject> slake::Runtime::new_class_instance(Class
 
 	instance->_class = cls;
 
-	//
-	// Initialize the fields.
-	//
-	size_t index = 0, cnt = 0;
-	std::pair<BasicModuleObject *, size_t> p = cls->cached_object_layout->field_record_init_module_fields_number.at(0);
-
-	for (size_t i = 0; i < cls->field_records.size(); ++i) {
-		const ObjectFieldRecord &field_record = cls->cached_object_layout->field_records.at(i);
-
-		Value data;
-		read_var(StaticFieldRef(p.first, field_record.idx_init_field_record), data);
-		write_var(ObjectFieldRef(instance.get(), i), data);
-
-		if (cnt++ >= p.second) {
-			cnt = 0;
-			p = cls->cached_object_layout->field_record_init_module_fields_number.at(++index);
-		}
-	}
+	memcpy(instance->raw_field_data, cls->cached_object_layout->get_init_data(), instance->sz_raw_field_data);
 
 	return instance;
 }

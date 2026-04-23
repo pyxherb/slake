@@ -27,6 +27,8 @@ namespace slake {
 		ArrayElementRef,
 		ArgRef,
 		CoroutineArgRef,
+		InitObjectLayoutFieldRef,
+		DefaultStructValueRef,
 
 		ObjectRef,
 		ArgPackRef,
@@ -42,6 +44,7 @@ namespace slake {
 	};
 
 	class StructObject;
+	struct ObjectLayout;
 
 	struct StaticFieldRef {
 		BasicModuleObject *module_object;
@@ -115,6 +118,21 @@ namespace slake {
 		SLAKE_FORCEINLINE CoroutineArgRef(CoroutineObject *coroutine, uint32_t arg_index) : coroutine(coroutine), arg_index(arg_index) {}
 	};
 
+	struct InitObjectLayoutFieldRef {
+		ObjectLayout *object_layout;
+		uint32_t index;
+
+		InitObjectLayoutFieldRef() = default;
+		SLAKE_FORCEINLINE InitObjectLayoutFieldRef(ObjectLayout *object_layout, uint32_t index) : object_layout(object_layout), index(index) {}
+	};
+
+	struct DefaultStructValueRef {
+		ObjectLayout *object_layout;
+
+		DefaultStructValueRef() = default;
+		SLAKE_FORCEINLINE DefaultStructValueRef(ObjectLayout *object_layout) : object_layout(object_layout) {}
+	};
+
 	struct Reference {
 		union {
 			StaticFieldRef as_static_field;
@@ -126,6 +144,8 @@ namespace slake {
 			ArgRef as_arg;
 			ArgPackRef as_arg_pack;
 			CoroutineArgRef as_coroutine_arg;
+			InitObjectLayoutFieldRef as_init_object_layout_field;
+			DefaultStructValueRef as_default_struct_value;
 			void *as_aot_ptr;
 		};
 		uint32_t struct_field_index;
@@ -145,6 +165,8 @@ namespace slake {
 		SLAKE_FORCEINLINE Reference(const ArgRef &ref) noexcept : kind(ReferenceKind::ArgRef), as_arg(ref) {}
 		SLAKE_FORCEINLINE Reference(const ArgPackRef &ref) noexcept : kind(ReferenceKind::ArgPackRef), as_arg_pack(ref) {}
 		SLAKE_FORCEINLINE Reference(const CoroutineArgRef &ref) noexcept : kind(ReferenceKind::CoroutineArgRef), as_coroutine_arg(ref) {}
+		SLAKE_FORCEINLINE Reference(const InitObjectLayoutFieldRef &ref) noexcept : kind(ReferenceKind::InitObjectLayoutFieldRef), as_init_object_layout_field(ref) {}
+		SLAKE_FORCEINLINE Reference(const DefaultStructValueRef &ref) noexcept : kind(ReferenceKind::DefaultStructValueRef), as_default_struct_value(ref) {}
 
 		Reference &operator=(const Reference &) noexcept = default;
 
@@ -203,6 +225,18 @@ namespace slake {
 		SLAKE_FORCEINLINE Reference &operator=(const CoroutineArgRef &ref) noexcept {
 			kind = ReferenceKind::CoroutineArgRef;
 			as_coroutine_arg = ref;
+			return *this;
+		}
+
+		SLAKE_FORCEINLINE Reference &operator=(const InitObjectLayoutFieldRef &ref) noexcept {
+			kind = ReferenceKind::InitObjectLayoutFieldRef;
+			as_init_object_layout_field = ref;
+			return *this;
+		}
+
+		SLAKE_FORCEINLINE Reference &operator=(const DefaultStructValueRef &ref) noexcept {
+			kind = ReferenceKind::DefaultStructValueRef;
+			as_default_struct_value = ref;
 			return *this;
 		}
 

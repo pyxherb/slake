@@ -22,22 +22,48 @@ namespace slake {
 		SLAKE_API void replace_allocator(peff::Alloc *allocator) noexcept;
 	};
 
-	struct ObjectLayout {
+	struct ObjectLayout final {
+	private:
+		char *_init_data = nullptr;
+
+	public:
 		peff::RcObjectPtr<peff::Alloc> self_allocator;
 		size_t total_size = 0;
 		size_t alignment = 1;
-		peff::DynArray<std::pair<BasicModuleObject *, size_t>> field_record_init_module_fields_number;
 		peff::DynArray<ObjectFieldRecord> field_records;
 		peff::HashMap<std::string_view, size_t> field_name_map;
 
 		SLAKE_API ObjectLayout(peff::Alloc *self_allocator);
+		SLAKE_API ~ObjectLayout();
 
+		///
+		/// @brief Duplicate the object layout, with initial data.
+		///
+		/// @param allocator Allocator for the new object layout.
+		/// @return Pointer to the new object layout, nullptr if out of memory.
+		///
+		SLAKE_API ObjectLayout *duplicate_with_init_data(peff::Alloc *allocator) const;
+
+		///
+		/// @brief Duplicate the object layout, without initial data.
+		///
+		/// @param allocator Allocator for the new object layout.
+		/// @return Pointer to the new object layout, nullptr if out of memory.
+		///
 		SLAKE_API ObjectLayout *duplicate(peff::Alloc *allocator) const;
 
 		SLAKE_API static ObjectLayout *alloc(peff::Alloc *self_allocator);
 		SLAKE_API void dealloc();
 
 		SLAKE_API void replace_allocator(peff::Alloc *allocator) noexcept;
+
+		SLAKE_API char *alloc_init_data() noexcept;
+		SLAKE_FORCEINLINE char *get_init_data() const noexcept {
+			return _init_data;
+		}
+		SLAKE_FORCEINLINE const char *get_init_data_const() const noexcept {
+			return const_cast<const char *>(_init_data);
+		}
 	};
 
 	class MethodTable {
@@ -71,7 +97,7 @@ namespace slake {
 		peff::HashMap<std::string_view, size_t> mapped_generic_params;
 
 		TypeRef base_type = TypeId::Invalid;
-		peff::DynArray<TypeRef> impl_types;	// Implemented interfaces
+		peff::DynArray<TypeRef> impl_types;	 // Implemented interfaces
 
 		peff::UniquePtr<MethodTable, peff::DeallocableDeleter<MethodTable>> cached_instantiated_method_table;
 		peff::UniquePtr<ObjectLayout, peff::DeallocableDeleter<ObjectLayout>> cached_object_layout;
@@ -152,7 +178,7 @@ namespace slake {
 		GenericParamList generic_params;
 		peff::HashMap<std::string_view, size_t> mapped_generic_params;
 
-		peff::DynArray<TypeRef> impl_types;	// Implemented interfaces
+		peff::DynArray<TypeRef> impl_types;	 // Implemented interfaces
 
 		peff::UniquePtr<ObjectLayout, peff::DeallocableDeleter<ObjectLayout>> cached_object_layout;
 

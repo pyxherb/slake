@@ -656,6 +656,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer slake::Runtime::_add_local_var(Contex
 		case TypeId::Instance:
 		case TypeId::Array:
 		case TypeId::Ref:
+		case TypeId::StructInstance:
 			write_var_with_type(object_ref_out, type, default_value_of(type));
 			break;
 		default:

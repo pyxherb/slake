@@ -12,7 +12,6 @@ programming language for extensible applications.
 It supports:
 
 * Function Overloading
-* Value-based Generics
 * Union Enumeration (ADT-like)
 * Coroutine
 * and more...
@@ -31,9 +30,9 @@ It supports:
   * Type Checker 🕓
   * Generic 🕓
     * Type-based Generic ✅
-    * Value-based Generic ✅
     * Base Class and Interface Generic Constraint ✅
     * Trait Interface Generic Constraint 🕓
+    * Non-local Constraint 🕓
   * Function Invoking ✅
     * Regular Function ✅
     * Method Function 🕓

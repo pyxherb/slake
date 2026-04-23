@@ -201,9 +201,6 @@ fn t() {
 	123456 + test;
 }
 
-fn value_generic_param_test<const T: i32>() {
-}
-
 //class CallableTest<...T> {
 //	fn call(test: ...T) {
 //		extfns.print("Called CallableTest, values: ", ...test, "\n");
@@ -213,9 +210,6 @@ fn value_generic_param_test<const T: i32>() {
 
 //fn t2() -> simd_t<i32, (4 + 8)> {
 //}
-
-class ArgTest<const T: i32> {
-}
 
 enum union UnionEnum {
 	A(a: i32, b: u32, c: f32)

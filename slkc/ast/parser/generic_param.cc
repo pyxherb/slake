@@ -139,30 +139,6 @@ SLKC_API ParseCoroutine Parser::parse_generic_params(
 				next_token();
 
 				SLKC_CO_RETURN_IF_CO_PARSE_ERROR(parse_param_type_list_generic_constraint(this->resource_allocator.get(), generic_param_node->param_type_list_generic_constraint));
-			} else if (Token *token = peek_token(); token->token_id == TokenId::ConstKeyword) {
-				next_token();
-
-				peff::ScopeGuard set_token_range_guard([this, token, &generic_param_node]() noexcept {
-					if (generic_param_node) {
-						generic_param_node->token_range = TokenRange{ get_document()->main_module, token->index, parse_context.idx_prev_token };
-					}
-				});
-
-				Token *name_token;
-
-				SLKC_CO_RETURN_IF_PARSE_ERROR(expect_token((name_token = peek_token()), TokenId::Id));;
-
-				if (!generic_param_node->name.build(name_token->source_text))
-					co_return gen_oom_syntax_error();
-
-				next_token();
-
-				Token *colon_token;
-				SLKC_CO_RETURN_IF_PARSE_ERROR(expect_token((colon_token = peek_token()), TokenId::Colon));;
-
-				next_token();
-
-				SLKC_CO_RETURN_IF_CO_PARSE_ERROR(parse_type_name(this->resource_allocator.get(), generic_param_node->input_type));
 			} else {
 				Token *name_token;
 

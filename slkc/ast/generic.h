@@ -38,7 +38,6 @@ namespace slkc {
 
 	class GenericParamNode : public MemberNode {
 	public:
-		AstNodePtr<TypeNameNode> input_type;
 		GenericConstraintPtr generic_constraint;
 		ParamTypeListGenericConstraintPtr param_type_list_generic_constraint;
 

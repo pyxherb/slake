@@ -18,7 +18,7 @@ SLKC_API peff::Option<CompilationError> Document::lookup_generic_cache_table(
 
 SLKC_API peff::Option<CompilationError> Document::lookup_generic_cache(
 	AstNodePtr<MemberNode> original_object,
-	const peff::DynArray<AstNodePtr<AstNode>> &generic_args,
+	const peff::DynArray<AstNodePtr<TypeNameNode>> &generic_args,
 	AstNodePtr<MemberNode> &member_out) const {
 	const GenericCacheTable *tab;
 
@@ -38,19 +38,6 @@ SLKC_API peff::Option<CompilationError> Document::lookup_generic_cache(
 static peff::Option<CompilationError> _walk_type_name_for_generic_instantiation(
 	AstNodePtr<TypeNameNode> &type_name,
 	const GenericInstantiationContext &context);
-
-static peff::Option<CompilationError> _walk_type_name_for_generic_instantiation(
-	AstNodePtr<AstNode> &ast_node,
-	peff::SharedPtr<GenericInstantiationContext> context) {
-	SLKC_RETURN_IF_COMP_ERROR(check_stack_bounds(1024 * 8));
-
-	if (!ast_node)
-		return {};
-
-	SLKC_RETURN_IF_COMP_ERROR(context->dispatcher->push_ast_node_task(AstNodeGenericInstantiationTask{ context, ast_node }));
-
-	return {};
-}
 
 static peff::Option<CompilationError> _walk_type_name_for_generic_instantiation(
 	AstNodePtr<TypeNameNode> &type_name,
@@ -83,7 +70,7 @@ static peff::Option<CompilationError> _walk_node_for_generic_instantiation(
 SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 	AstNodePtr<MemberNode> original_object,
 	size_t idx_name_token,
-	const peff::DynArray<AstNodePtr<AstNode>> &generic_args,
+	const peff::DynArray<AstNodePtr<TypeNameNode>> &generic_args,
 	AstNodePtr<MemberNode> &member_out) {
 	SLKC_RETURN_IF_COMP_ERROR(check_stack_bounds(1024 * 16));
 
@@ -94,14 +81,14 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 		return {};
 	}
 
-	peff::DynArray<AstNodePtr<AstNode>> duplicated_generic_args(allocator.get());
+	peff::DynArray<AstNodePtr<TypeNameNode>> duplicated_generic_args(allocator.get());
 
 	if (!duplicated_generic_args.resize(generic_args.size())) {
 		return gen_oom_comp_error();
 	}
 
 	for (size_t i = 0; i < duplicated_generic_args.size(); ++i) {
-		if (!(duplicated_generic_args.at(i) = generic_args.at(i)->duplicate<AstNode>(allocator.get()))) {
+		if (!(duplicated_generic_args.at(i) = generic_args.at(i)->duplicate<TypeNameNode>(allocator.get()))) {
 			return gen_oom_comp_error();
 		}
 	}
@@ -149,22 +136,6 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 
 		CompileEnv compile_env(nullptr, shared_from_this(), allocator.get(), allocator.get());
 		NormalCompilationContext compilation_context(&compile_env, nullptr);
-		for (size_t i = 0; i < generic_args.size(); ++i) {
-			AstNodePtr<AstNode> cur_arg = generic_args.at(i);
-
-			if (cur_arg->get_ast_node_type() == AstNodeType::Expr) {
-				AstNodePtr<ExprNode> evaluated_arg;
-				PathEnv path_env(compile_env.allocator.get());
-				SLKC_RETURN_IF_COMP_ERROR(eval_const_expr(&compile_env, &compilation_context, &path_env, cur_arg.cast_to<ExprNode>(), evaluated_arg));
-				if (!evaluated_arg)
-					return CompilationError(
-						cur_arg->token_range,
-						CompilationErrorKind::RequiresCompTimeExpr);
-
-				evaluated_arg->token_range = cur_arg->token_range;
-				duplicated_generic_args.at(i) = evaluated_arg.cast_to<AstNode>();
-			}
-		}
 		{
 			// Map generic arguments.
 			GenericInstantiationDispatcher dispatcher(allocator.get());
@@ -185,36 +156,10 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 						if (duplicated_generic_args.size() != i->scope->generic_params.size())
 							continue;
 
-						for (size_t j = 0; j < duplicated_generic_args.size(); ++j) {
-							AstNodePtr<AstNode> cur_arg = duplicated_generic_args.at(j);
-
-							if (i->scope->generic_params.at(j)->input_type) {
-								if (cur_arg->get_ast_node_type() != AstNodeType::Expr)
-									return CompilationError(
-										cur_arg->token_range,
-										CompilationErrorKind::RequiresCompTimeExpr);
-
-								AstNodePtr<TypeNameNode> arg_type;
-								{
-									PathEnv root_path_env(compile_env.allocator.get());
-									SLKC_RETURN_IF_COMP_ERROR(eval_expr_type(&compile_env, &compilation_context, &root_path_env, cur_arg.cast_to<ExprNode>(), arg_type));
-								}
-
-								bool same = false;
-								SLKC_RETURN_IF_COMP_ERROR(is_same_type(arg_type, i->scope->generic_params.at(j)->input_type, same));
-
-								if (!same)
-									goto fn_overloading_mismatched;
-							} else {
-								if (cur_arg->get_ast_node_type() != AstNodeType::TypeName)
-									goto fn_overloading_mismatched;
-							}
-						}
-
 						for (auto [k, v] : i->scope->generic_param_indices) {
 							if (!context->mapped_generic_args.insert(
 									std::string_view(k),
-									AstNodePtr<AstNode>(duplicated_generic_args.at(v)))) {
+									AstNodePtr<TypeNameNode>(duplicated_generic_args.at(v)))) {
 								return gen_oom_comp_error();
 							}
 						}
@@ -249,40 +194,10 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 							CompilationErrorKind::MismatchedGenericArgNumber);
 					}
 
-					for (size_t i = 0; i < duplicated_generic_args.size(); ++i) {
-						AstNodePtr<AstNode> cur_arg = duplicated_generic_args.at(i);
-
-						if (obj->scope->generic_params.at(i)->input_type) {
-							if (cur_arg->get_ast_node_type() != AstNodeType::Expr)
-								return CompilationError(
-									cur_arg->token_range,
-									CompilationErrorKind::RequiresCompTimeExpr);
-
-							AstNodePtr<TypeNameNode> arg_type;
-							{
-								PathEnv root_path_env(compile_env.allocator.get());
-								SLKC_RETURN_IF_COMP_ERROR(eval_expr_type(&compile_env, &compilation_context, &root_path_env, cur_arg.cast_to<ExprNode>(), arg_type));
-							}
-
-							bool same = false;
-							SLKC_RETURN_IF_COMP_ERROR(is_same_type(arg_type, obj->scope->generic_params.at(i)->input_type, same));
-
-							if (!same)
-								return CompilationError(
-									cur_arg->token_range,
-									CompilationErrorKind::TypeArgTypeMismatched);
-						} else {
-							if (cur_arg->get_ast_node_type() != AstNodeType::TypeName)
-								return CompilationError(
-									cur_arg->token_range,
-									CompilationErrorKind::ExpectingTypeName);
-						}
-					}
-
 					for (auto [k, v] : obj->scope->generic_param_indices) {
 						if (!context->mapped_generic_args.insert(
 								std::string_view(k),
-								AstNodePtr<AstNode>(duplicated_generic_args.at(v)))) {
+								AstNodePtr<TypeNameNode>(duplicated_generic_args.at(v)))) {
 							return gen_oom_comp_error();
 						}
 					}
@@ -304,40 +219,10 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 							CompilationErrorKind::MismatchedGenericArgNumber);
 					}
 
-					for (size_t i = 0; i < duplicated_generic_args.size(); ++i) {
-						AstNodePtr<AstNode> cur_arg = duplicated_generic_args.at(i);
-
-						if (obj->scope->generic_params.at(i)->input_type) {
-							if (cur_arg->get_ast_node_type() != AstNodeType::Expr)
-								return CompilationError(
-									cur_arg->token_range,
-									CompilationErrorKind::RequiresCompTimeExpr);
-
-							AstNodePtr<TypeNameNode> arg_type;
-							{
-								PathEnv root_path_env(compile_env.allocator.get());
-								SLKC_RETURN_IF_COMP_ERROR(eval_expr_type(&compile_env, &compilation_context, &root_path_env, cur_arg.cast_to<ExprNode>(), arg_type));
-							}
-
-							bool same = false;
-							SLKC_RETURN_IF_COMP_ERROR(is_same_type(arg_type, obj->scope->generic_params.at(i)->input_type, same));
-
-							if (!same)
-								return CompilationError(
-									cur_arg->token_range,
-									CompilationErrorKind::TypeArgTypeMismatched);
-						} else {
-							if (cur_arg->get_ast_node_type() != AstNodeType::TypeName)
-								return CompilationError(
-									cur_arg->token_range,
-									CompilationErrorKind::ExpectingTypeName);
-						}
-					}
-
 					for (auto [k, v] : obj->scope->generic_param_indices) {
 						if (!context->mapped_generic_args.insert(
 								std::string_view(k),
-								AstNodePtr<AstNode>(duplicated_generic_args.at(v)))) {
+								AstNodePtr<TypeNameNode>(duplicated_generic_args.at(v)))) {
 							return gen_oom_comp_error();
 						}
 					}
@@ -359,40 +244,10 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 							CompilationErrorKind::MismatchedGenericArgNumber);
 					}
 
-					for (size_t i = 0; i < duplicated_generic_args.size(); ++i) {
-						AstNodePtr<AstNode> cur_arg = duplicated_generic_args.at(i);
-
-						if (obj->scope->generic_params.at(i)->input_type) {
-							if (cur_arg->get_ast_node_type() != AstNodeType::Expr)
-								return CompilationError(
-									cur_arg->token_range,
-									CompilationErrorKind::RequiresCompTimeExpr);
-
-							AstNodePtr<TypeNameNode> arg_type;
-							{
-								PathEnv root_path_env(compile_env.allocator.get());
-								SLKC_RETURN_IF_COMP_ERROR(eval_expr_type(&compile_env, &compilation_context, &root_path_env, cur_arg.cast_to<ExprNode>(), arg_type));
-							}
-
-							bool same = false;
-							SLKC_RETURN_IF_COMP_ERROR(is_same_type(arg_type, obj->scope->generic_params.at(i)->input_type, same));
-
-							if (!same)
-								return CompilationError(
-									cur_arg->token_range,
-									CompilationErrorKind::TypeArgTypeMismatched);
-						} else {
-							if (cur_arg->get_ast_node_type() != AstNodeType::TypeName)
-								return CompilationError(
-									cur_arg->token_range,
-									CompilationErrorKind::ExpectingTypeName);
-						}
-					}
-
 					for (auto [k, v] : obj->scope->generic_param_indices) {
 						if (!context->mapped_generic_args.insert(
 								std::string_view(k),
-								AstNodePtr<AstNode>(duplicated_generic_args.at(v)))) {
+								AstNodePtr<TypeNameNode>(duplicated_generic_args.at(v)))) {
 							return gen_oom_comp_error();
 						}
 					}
@@ -534,7 +389,7 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 								for (auto [k, v] : task.context->mapped_generic_args) {
 									if (auto it = fn_slot->scope->generic_param_indices.find(k);
 										it == fn_slot->scope->generic_param_indices.end()) {
-										if (!inner_context->mapped_generic_args.insert(std::string_view(k), AstNodePtr<AstNode>(v))) {
+										if (!inner_context->mapped_generic_args.insert(std::string_view(k), AstNodePtr<TypeNameNode>(v))) {
 											return gen_oom_comp_error();
 										}
 									}
@@ -596,7 +451,7 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 								for (auto [k, v] : task.context->mapped_generic_args) {
 									if (auto it = cls->scope->generic_param_indices.find(k);
 										it == cls->scope->generic_param_indices.end()) {
-										if (!inner_context->mapped_generic_args.insert(std::string_view(k), AstNodePtr<AstNode>(v))) {
+										if (!inner_context->mapped_generic_args.insert(std::string_view(k), AstNodePtr<TypeNameNode>(v))) {
 											return gen_oom_comp_error();
 										}
 									}
@@ -641,7 +496,7 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 								for (auto [k, v] : task.context->mapped_generic_args) {
 									if (auto it = cls->scope->generic_param_indices.find(k);
 										it == cls->scope->generic_param_indices.end()) {
-										if (!inner_context->mapped_generic_args.insert(std::string_view(k), AstNodePtr<AstNode>(v))) {
+										if (!inner_context->mapped_generic_args.insert(std::string_view(k), AstNodePtr<TypeNameNode>(v))) {
 											return gen_oom_comp_error();
 										}
 									}
@@ -673,7 +528,7 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 								for (auto [k, v] : task.context->mapped_generic_args) {
 									if (auto it = cls->scope->generic_param_indices.find(k);
 										it == cls->scope->generic_param_indices.end()) {
-										if (!inner_context->mapped_generic_args.insert(std::string_view(k), AstNodePtr<AstNode>(v))) {
+										if (!inner_context->mapped_generic_args.insert(std::string_view(k), AstNodePtr<TypeNameNode>(v))) {
 											return gen_oom_comp_error();
 										}
 									}
@@ -710,84 +565,6 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 							break;
 						}
 						default:;
-					}
-				}
-
-				for (auto &task : ast_node_tasks) {
-					auto &ast_node = task.node;
-
-					switch (ast_node->get_ast_node_type()) {
-						case AstNodeType::TypeName: {
-							const AstNodePtr<TypeNameNode> type_name = ast_node.cast_to<TypeNameNode>();
-							switch (type_name->tn_kind) {
-								case TypeNameKind::Array: {
-									AstNodePtr<ArrayTypeNameNode> tn = type_name.cast_to<ArrayTypeNameNode>();
-
-									SLKC_RETURN_IF_COMP_ERROR(_walk_type_name_for_generic_instantiation(tn->element_type, task.context));
-									break;
-								}
-								case TypeNameKind::Ref: {
-									AstNodePtr<RefTypeNameNode> tn = type_name.cast_to<RefTypeNameNode>();
-
-									SLKC_RETURN_IF_COMP_ERROR(_walk_type_name_for_generic_instantiation(tn->referenced_type, task.context));
-									break;
-								}
-								case TypeNameKind::TempRef: {
-									AstNodePtr<TempRefTypeNameNode> tn = type_name.cast_to<TempRefTypeNameNode>();
-
-									SLKC_RETURN_IF_COMP_ERROR(_walk_type_name_for_generic_instantiation(tn->referenced_type, task.context));
-									break;
-								}
-								case TypeNameKind::Fn: {
-									AstNodePtr<FnTypeNameNode> tn = type_name.cast_to<FnTypeNameNode>();
-
-									for (size_t i = 0; i < tn->param_types.size(); ++i) {
-										SLKC_RETURN_IF_COMP_ERROR(_walk_type_name_for_generic_instantiation(tn->param_types.at(i), task.context));
-									}
-									SLKC_RETURN_IF_COMP_ERROR(_walk_type_name_for_generic_instantiation(tn->return_type, task.context));
-									break;
-								}
-								case TypeNameKind::Custom: {
-									AstNodePtr<CustomTypeNameNode> tn = type_name.cast_to<CustomTypeNameNode>();
-
-									if (tn->id_ref_ptr->entries.size() == 1) {
-										IdRefEntry &entry = tn->id_ref_ptr->entries.at(0);
-
-										if (!entry.generic_args.size()) {
-											if (auto it = task.context->mapped_generic_args.find(entry.name);
-												it != task.context->mapped_generic_args.end()) {
-												ast_node = it.value();
-												break;
-											}
-										}
-									}
-
-									for (size_t i = 0; i < tn->id_ref_ptr->entries.size(); ++i) {
-										auto &generic_args = tn->id_ref_ptr->entries.at(i).generic_args;
-										for (size_t j = 0; j < generic_args.size(); ++j) {
-											SLKC_RETURN_IF_COMP_ERROR(_walk_type_name_for_generic_instantiation(generic_args.at(j), task.context));
-										}
-									}
-									break;
-								}
-								case TypeNameKind::Unpacking: {
-									AstNodePtr<UnpackingTypeNameNode> tn = type_name.cast_to<UnpackingTypeNameNode>();
-
-									SLKC_RETURN_IF_COMP_ERROR(_walk_type_name_for_generic_instantiation(tn->inner_type_name, task.context));
-									break;
-								}
-								case TypeNameKind::ParamTypeList: {
-									AstNodePtr<ParamTypeListTypeNameNode> tn = type_name.cast_to<ParamTypeListTypeNameNode>();
-
-									for (size_t i = 0; i < tn->param_types.size(); ++i) {
-										SLKC_RETURN_IF_COMP_ERROR(_walk_type_name_for_generic_instantiation(tn->param_types.at(i), task.context));
-									}
-									break;
-								}
-								default:
-									break;
-							}
-						}
 					}
 				}
 			}

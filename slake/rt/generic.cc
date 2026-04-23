@@ -89,7 +89,7 @@ SLAKE_API void Runtime::invalidate_generic_cache(MemberObject *i) {
 	}
 }
 
-SLAKE_API InternalExceptionPointer Runtime::set_generic_cache(MemberObject *object, const peff::DynArray<Value> &generic_args, MemberObject *instantiated_object) {
+SLAKE_API InternalExceptionPointer Runtime::set_generic_cache(MemberObject *object, const peff::DynArray<TypeRef> &generic_args, MemberObject *instantiated_object) {
 	if (!_generic_cache_dir.contains(object)) {
 		if (!_generic_cache_dir.insert(+object, GenericCacheTable(get_fixed_alloc(), GenericArgListComparator())))
 			return OutOfMemoryError::alloc();
@@ -98,7 +98,7 @@ SLAKE_API InternalExceptionPointer Runtime::set_generic_cache(MemberObject *obje
 	auto &cache_table = _generic_cache_dir.at(object);
 
 	if (!cache_table.contains(generic_args)) {
-		peff::DynArray<Value> copied_generic_args(get_fixed_alloc());
+		peff::DynArray<TypeRef> copied_generic_args(get_fixed_alloc());
 		if (!copied_generic_args.build(generic_args)) {
 			return OutOfMemoryError::alloc();
 		}
@@ -109,7 +109,7 @@ SLAKE_API InternalExceptionPointer Runtime::set_generic_cache(MemberObject *obje
 	}
 
 	{
-		peff::DynArray<Value> copied_generic_arg_list(get_fixed_alloc());
+		peff::DynArray<TypeRef> copied_generic_arg_list(get_fixed_alloc());
 		if (!copied_generic_arg_list.build(generic_args)) {
 			return OutOfMemoryError::alloc();
 		}
@@ -215,7 +215,7 @@ InternalExceptionPointer Runtime::_map_generic_params(const Object *v, GenericIn
 			}
 
 			for (size_t i = 0; i < value->generic_params.size(); ++i) {
-				if (!instantiation_context->mapped_generic_args.insert(value->generic_params.at(i).name, Value(instantiation_context->generic_args->at(i))))
+				if (!instantiation_context->mapped_generic_args.insert(value->generic_params.at(i).name, TypeRef(instantiation_context->generic_args->at(i))))
 					return OutOfMemoryError::alloc();
 			}
 			break;
@@ -230,7 +230,7 @@ InternalExceptionPointer Runtime::_map_generic_params(const Object *v, GenericIn
 			}
 
 			for (size_t i = 0; i < value->generic_params.size(); ++i) {
-				if (!instantiation_context->mapped_generic_args.insert(value->generic_params.at(i).name, Value(instantiation_context->generic_args->at(i))))
+				if (!instantiation_context->mapped_generic_args.insert(value->generic_params.at(i).name, TypeRef(instantiation_context->generic_args->at(i))))
 					return OutOfMemoryError::alloc();
 			}
 			break;
@@ -254,13 +254,12 @@ SLAKE_API InternalExceptionPointer Runtime::_map_generic_params(const FnOverload
 	}
 
 	for (size_t i = 0; i < ol->generic_params.size(); ++i) {
-		Value copied_value = instantiation_context->generic_args->at(i);
-
+		TypeRef copied_type = instantiation_context->generic_args->at(i);
 		if (auto it = instantiation_context->mapped_generic_args.find(ol->generic_params.at(i).name);
 			it != instantiation_context->mapped_generic_args.end()) {
-			it.value() = copied_value;
+			it.value() = std::move(copied_type);
 		} else {
-			if (!instantiation_context->mapped_generic_args.insert(ol->generic_params.at(i).name, std::move(copied_value)))
+			if (!instantiation_context->mapped_generic_args.insert(ol->generic_params.at(i).name, std::move(copied_type)))
 				return OutOfMemoryError::alloc();
 		}
 	}
@@ -282,7 +281,7 @@ SLAKE_API InternalExceptionPointer Runtime::instantiate_generic_object(MemberObj
 	Duplicator duplicator(this, get_cur_gen_alloc());
 
 	// Cache missed, instantiate the value.
-	MemberObject *duplicated_value = (MemberObject *)object->duplicate(&duplicator);	 // Make a duplicate of the original value.
+	MemberObject *duplicated_value = (MemberObject *)object->duplicate(&duplicator);  // Make a duplicate of the original value.
 
 	while (duplicator.tasks.size()) {
 		if (!duplicator.exec()) {
@@ -296,11 +295,11 @@ SLAKE_API InternalExceptionPointer Runtime::instantiate_generic_object(MemberObj
 	// Instantiate the value.
 	SLAKE_RETURN_IF_EXCEPT(_instantiate_generic_object(dispatcher, duplicated_value, instantiation_context));
 
+	peff::Map<FnObject *, peff::List<FnOverloadingObject *>> walked_fns(get_fixed_alloc());
+
 	size_t iterate_times = 0;
 
 	peff::Set<CustomTypeDefObject *> deferred_type_defs(get_fixed_alloc());
-	peff::Set<FnObject *> fns(get_fixed_alloc());
-
 	while (dispatcher.has_next) {
 		dispatcher.has_next = false;
 
@@ -382,7 +381,7 @@ SLAKE_API InternalExceptionPointer Runtime::instantiate_generic_object(MemberObj
 						type = type.duplicate(is_succeeded);
 						if (!is_succeeded)
 							return OutOfMemoryError::alloc();
-						for (auto j : ((ParamTypeListTypeDefObject*)type.type_def)->param_types)
+						for (auto j : ((ParamTypeListTypeDefObject *)type.type_def)->param_types)
 							SLAKE_RETURN_IF_EXCEPT(_instantiate_generic_object(dispatcher, j->type_ref, i.context.get()));
 						if (auto td = get_equal_type_def(type.type_def); td)
 							type.type_def = td;
@@ -407,21 +406,10 @@ SLAKE_API InternalExceptionPointer Runtime::instantiate_generic_object(MemberObj
 						HostObjectRef<StringObject> name_object = type_def->name_object;
 
 						if (auto it = i.context->mapped_generic_args.find(name_object->data); it != i.context->mapped_generic_args.end()) {
-							Value fetched_arg = it.value();
-							if (fetched_arg.value_type != ValueType::Invalid) {
-								if (fetched_arg.value_type != ValueType::TypeName) {
-									peff::String name(get_fixed_alloc());
-									if (!name.build(name_object->data))
-										return OutOfMemoryError::alloc();
-									return alloc_oom_error_if_alloc_failed(
-										GenericArgTypeError::alloc(
-											const_cast<Runtime *>(this)->get_fixed_alloc(),
-											std::move(name)));
-								}
-								type = fetched_arg.get_type_name();
-							}
-						}
-						else {
+							TypeRef fetched_arg = it.value();
+							if (fetched_arg.type_id != TypeId::Invalid)
+								type = fetched_arg;
+						} else {
 							peff::String param_name(get_fixed_alloc());
 							if (!param_name.build(name_object->data)) {
 								return OutOfMemoryError::alloc();
@@ -429,7 +417,7 @@ SLAKE_API InternalExceptionPointer Runtime::instantiate_generic_object(MemberObj
 
 							return alloc_oom_error_if_alloc_failed(
 								GenericParameterNotFoundError::alloc(
-									const_cast<Runtime*>(this)->get_fixed_alloc(),
+									const_cast<Runtime *>(this)->get_fixed_alloc(),
 									std::move(param_name)));
 						}
 						break;
@@ -448,14 +436,14 @@ SLAKE_API InternalExceptionPointer Runtime::instantiate_generic_object(MemberObj
 
 				switch (value.value_type) {
 					case ValueType::TypeName: {
-						TypeRef type = value.get_type_name();
+						const TypeRef &type = value.get_type_name();
 
 						if (type.type_id == TypeId::GenericArg) {
 							HostObjectRef<GenericArgTypeDefObject> type_def = type.get_generic_arg_type_def();
 							HostObjectRef<StringObject> name_object = type_def->name_object;
 
 							if (auto it = i.context->mapped_generic_args.find(name_object->data); it != i.context->mapped_generic_args.end()) {
-								if (it.value().value_type != ValueType::Invalid)
+								if (it.value().type_id != TypeId::Invalid)
 									value = it.value();
 							} else {
 								peff::String param_name(get_fixed_alloc());
@@ -500,10 +488,10 @@ SLAKE_API InternalExceptionPointer Runtime::instantiate_generic_object(MemberObj
 						ClassObject *const value = (ClassObject *)v;
 
 						if (value->generic_params.size() && value != i.context->mapped_object) {
-							peff::HashMap<std::string_view, Value> copied_mapped_generic_args(get_fixed_alloc());
+							peff::HashMap<std::string_view, TypeRef> copied_mapped_generic_args(get_fixed_alloc());
 
 							for (auto [k, v] : i.context->mapped_generic_args) {
-								if (!(copied_mapped_generic_args.insert(std::string_view(k), Value(v))))
+								if (!(copied_mapped_generic_args.insert(std::string_view(k), TypeRef(v))))
 									return OutOfMemoryError::alloc();
 							}
 
@@ -521,7 +509,7 @@ SLAKE_API InternalExceptionPointer Runtime::instantiate_generic_object(MemberObj
 							// Mark nested generic parameters which have the same name as
 							// irreplaceable, thus they will not be replaced.
 							for (size_t i = 0; i < value->generic_params.size(); ++i) {
-								if (!new_instantiation_context->mapped_generic_args.insert(value->generic_params.at(i).name, ValueType::Invalid))
+								if (!new_instantiation_context->mapped_generic_args.insert(value->generic_params.at(i).name, TypeId::Invalid))
 									return OutOfMemoryError::alloc();
 							}
 
@@ -558,10 +546,10 @@ SLAKE_API InternalExceptionPointer Runtime::instantiate_generic_object(MemberObj
 						InterfaceObject *const value = (InterfaceObject *)v;
 
 						if (value->generic_params.size() && value != i.context->mapped_object) {
-							peff::HashMap<std::string_view, Value> copied_mapped_generic_args(get_fixed_alloc());
+							peff::HashMap<std::string_view, TypeRef> copied_mapped_generic_args(get_fixed_alloc());
 
 							for (auto [k, v] : i.context->mapped_generic_args) {
-								if (!(copied_mapped_generic_args.insert(std::string_view(k), Value(v))))
+								if (!(copied_mapped_generic_args.insert(std::string_view(k), TypeRef(v))))
 									return OutOfMemoryError::alloc();
 							}
 
@@ -579,7 +567,7 @@ SLAKE_API InternalExceptionPointer Runtime::instantiate_generic_object(MemberObj
 							// Mark nested generic parameters which have the same name as
 							// irreplaceable, thus they will not be replaced.
 							for (size_t i = 0; i < value->generic_params.size(); ++i) {
-								if (!new_instantiation_context->mapped_generic_args.insert(value->generic_params.at(i).name, ValueType::Invalid))
+								if (!new_instantiation_context->mapped_generic_args.insert(value->generic_params.at(i).name, TypeId::Invalid))
 									return OutOfMemoryError::alloc();
 							}
 
@@ -619,20 +607,21 @@ SLAKE_API InternalExceptionPointer Runtime::instantiate_generic_object(MemberObj
 					case ObjectKind::Fn: {
 						FnObject *value = (FnObject *)v;
 
-						if (!fns.contains(value)) {
-							if (!fns.insert(+value))
+						if (!walked_fns.contains(value)) {
+							peff::List<FnOverloadingObject *> overloadings(get_fixed_alloc());
+							if (!walked_fns.insert(+value, std::move(overloadings)))
 								return OutOfMemoryError::alloc();
 						}
 
-						if (i.context->mapped_object == value) {
-							peff::Map<FnSignature, FnOverloadingObject *, FnSignatureComparator, true> overloadings(value->overloadings.allocator());
+						auto &overloadings = walked_fns.at(value);
 
+						if (i.context->mapped_object == value) {
 							for (auto [signature, overloading] : value->overloadings) {
 								if (overloading->generic_params.size() == instantiation_context->generic_args->size()) {
-									peff::HashMap<std::string_view, Value> copied_mapped_generic_args(get_fixed_alloc());
+									peff::HashMap<std::string_view, TypeRef> copied_mapped_generic_args(get_fixed_alloc());
 
 									for (auto [k, v] : i.context->mapped_generic_args) {
-										if (!(copied_mapped_generic_args.insert(std::string_view(k), Value(v))))
+										if (!(copied_mapped_generic_args.insert(std::string_view(k), TypeRef(v))))
 											return OutOfMemoryError::alloc();
 									}
 
@@ -650,34 +639,18 @@ SLAKE_API InternalExceptionPointer Runtime::instantiate_generic_object(MemberObj
 									SLAKE_RETURN_IF_EXCEPT(_map_generic_params(overloading, new_instantiation_context.get()));
 
 									SLAKE_RETURN_IF_EXCEPT(_instantiate_generic_object(dispatcher, overloading, new_instantiation_context.get()));
-									if (overloadings.contains({ overloading->param_types,
-											overloading->is_with_var_args(),
-											overloading->generic_params.size(),
-											overloading->overriden_type }))
-										return GenericDuplicatedFnOverloadingError::alloc(
-											instantiation_context->self_allocator.get(),
-											value);
-									if (!overloadings.insert(
-											{ overloading->param_types,
-												overloading->is_with_var_args(),
-												overloading->generic_params.size(),
-												overloading->overriden_type },
-											+overloading))
-										return OutOfMemoryError::alloc();
 								}
+								if (!overloadings.push_back(+overloading))
+									return OutOfMemoryError::alloc();
 							}
-
-							value->overloadings = std::move(overloadings);
 						} else {
-							peff::Map<FnSignature, FnOverloadingObject *, FnSignatureComparator, true> overloadings(value->overloadings.allocator());
-
 							for (auto j : value->overloadings) {
 								size_t original_type_slot_size = dispatcher.next_walk_type_slots.size();
 								if (j.second->generic_params.size()) {
-									peff::HashMap<std::string_view, Value> copied_mapped_generic_args(get_fixed_alloc());
+									peff::HashMap<std::string_view, TypeRef> copied_mapped_generic_args(get_fixed_alloc());
 
 									for (auto [k, v] : i.context->mapped_generic_args) {
-										if (!(copied_mapped_generic_args.insert(std::string_view(k), Value(v))))
+										if (!(copied_mapped_generic_args.insert(std::string_view(k), TypeRef(v))))
 											return OutOfMemoryError::alloc();
 									}
 
@@ -695,7 +668,7 @@ SLAKE_API InternalExceptionPointer Runtime::instantiate_generic_object(MemberObj
 									// Mark nested generic parameters which have the same name as
 									// irreplaceable, thus they will not be replaced.
 									for (size_t i = 0; i < j.second->generic_params.size(); ++i) {
-										if (!new_instantiation_context->mapped_generic_args.insert(j.second->generic_params.at(i).name, ValueType::Invalid))
+										if (!new_instantiation_context->mapped_generic_args.insert(j.second->generic_params.at(i).name, TypeId::Invalid))
 											return OutOfMemoryError::alloc();
 									}
 
@@ -703,23 +676,9 @@ SLAKE_API InternalExceptionPointer Runtime::instantiate_generic_object(MemberObj
 								} else {
 									SLAKE_RETURN_IF_EXCEPT(_instantiate_generic_object(dispatcher, j.second, i.context.get()));
 								}
-								if (overloadings.contains({ j.second->param_types,
-										j.second->is_with_var_args(),
-										j.second->generic_params.size(),
-										j.second->overriden_type }))
-									return GenericDuplicatedFnOverloadingError::alloc(
-										instantiation_context->self_allocator.get(),
-										value);
-								if (!overloadings.insert(
-										{ j.second->param_types,
-											j.second->is_with_var_args(),
-											j.second->generic_params.size(),
-											j.second->overriden_type },
-										+j.second))
+								if (!overloadings.push_back(+j.second))
 									return OutOfMemoryError::alloc();
 							}
-
-							value->overloadings = std::move(overloadings);
 						}
 						break;
 					}
@@ -749,18 +708,18 @@ SLAKE_API InternalExceptionPointer Runtime::instantiate_generic_object(MemberObj
 		}
 	}
 
-	for (auto i : fns) {
-		peff::Map<FnSignature, FnOverloadingObject *, FnSignatureComparator, true> overloadings(i->overloadings.allocator());
+	for (auto i : walked_fns) {
+		peff::Map<FnSignature, FnOverloadingObject *, FnSignatureComparator, true> overloadings(i.first->overloadings.allocator());
 
-		for (auto j : i->overloadings) {
+		for (auto j : i.second) {
 			// Expand the parameter pack.
 			size_t original_param_num;
 			size_t num_params;
 			do {
-				original_param_num = j.second->param_types.size();
-				num_params = j.second->param_types.size();
+				original_param_num = j->param_types.size();
+				num_params = j->param_types.size();
 				for (size_t k = 0; k < num_params; ++k) {
-					auto &param = j.second->param_types.at(k);
+					auto &param = j->param_types.at(k);
 					if (param.type_id == TypeId::Unpacking) {
 						UnpackingTypeDefObject *type_def = ((UnpackingTypeDefObject *)param.type_def);
 						ParamTypeListTypeDefObject *param_type_list = (ParamTypeListTypeDefObject *)type_def->type->type_ref.type_def;
@@ -768,31 +727,34 @@ SLAKE_API InternalExceptionPointer Runtime::instantiate_generic_object(MemberObj
 						if (param_type_list->get_type_def_kind() != TypeDefKind::ParamTypeListTypeDef)
 							std::terminate();
 
-						if (!j.second->param_types.insert_range_uninit(k, param_type_list->param_types.size() - 1))
+						if (!j->param_types.insert_range_uninit(k, param_type_list->param_types.size() - 1))
 							return OutOfMemoryError::alloc();
 
 						for (size_t l = 0; l < param_type_list->param_types.size(); ++l) {
-							j.second->param_types.at(k + l) = param_type_list->param_types.at(l)->type_ref;
+							j->param_types.at(k + l) = param_type_list->param_types.at(l)->type_ref;
 						}
-						num_params = j.second->param_types.size();
+						num_params = j->param_types.size();
 					}
 				}
 			} while (original_param_num != num_params);
-			if (overloadings.contains({ j.second->param_types,
-					j.second->is_with_var_args(),
-					j.second->generic_params.size(),
-					j.second->overriden_type }))
+			if (overloadings.contains({ j->param_types,
+					j->is_with_var_args(),
+					j->generic_params.size(),
+					j->overriden_type }))
 				return GenericDuplicatedFnOverloadingError::alloc(
 					instantiation_context->self_allocator.get(),
-					i);
+					i.first);
 			if (!overloadings.insert(
-					{ j.second->param_types,
-						j.second->is_with_var_args(),
-						j.second->generic_params.size(),
-						j.second->overriden_type },
-					+j.second))
+					{ j->param_types,
+						j->is_with_var_args(),
+						j->generic_params.size(),
+						j->overriden_type },
+					+j))
 				return OutOfMemoryError::alloc();
 		}
+		i.second.clear();
+
+		i.first->overloadings = std::move(overloadings);
 	}
 
 	/* for (auto i : deferred_type_defs) {
@@ -817,10 +779,10 @@ SLAKE_API InternalExceptionPointer Runtime::instantiate_generic_object(MemberObj
 
 SLAKE_API InternalExceptionPointer Runtime::_instantiate_generic_object(GenericInstantiationDispatcher &dispatcher, FnOverloadingObject *ol, GenericInstantiationContext *instantiation_context) {
 	if (ol->generic_params.size() && ol->fn_object != instantiation_context->mapped_object) {
-		peff::HashMap<std::string_view, Value> copied_mapped_generic_args(get_fixed_alloc());
+		peff::HashMap<std::string_view, TypeRef> copied_mapped_generic_args(get_fixed_alloc());
 
 		for (auto [k, v] : instantiation_context->mapped_generic_args) {
-			if (!(copied_mapped_generic_args.insert(std::string_view(k), Value(v))))
+			if (!(copied_mapped_generic_args.insert(std::string_view(k), TypeRef(v))))
 				return OutOfMemoryError::alloc();
 		}
 
@@ -835,7 +797,7 @@ SLAKE_API InternalExceptionPointer Runtime::_instantiate_generic_object(GenericI
 		// Map irreplaceable parameters to corresponding generic parameter reference type
 		// and thus the generic types will keep unchanged.
 		for (size_t i = 0; i < ol->generic_params.size(); ++i) {
-			if (!new_instantiation_context.mapped_generic_args.insert(ol->generic_params.at(i).name, ValueType::Invalid))
+			if (!new_instantiation_context.mapped_generic_args.insert(ol->generic_params.at(i).name, TypeId::Invalid))
 				return OutOfMemoryError::alloc();
 		}
 

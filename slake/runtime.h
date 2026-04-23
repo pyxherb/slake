@@ -164,13 +164,13 @@ namespace slake {
 
 		struct GenericLookupEntry {
 			MemberObject *original_object;
-			peff::DynArray<Value> generic_args;
+			peff::DynArray<TypeRef> generic_args;
 		};
 		mutable peff::Map<const MemberObject *, GenericLookupEntry> _generic_cache_lookup_table;
 
 		using GenericCacheTable =
 			peff::Map<
-				peff::DynArray<Value>,	// Generic arguments.
+				peff::DynArray<TypeRef>,	// Generic arguments.
 				MemberObject *,			// Cached instantiated value.
 				GenericArgListComparator,
 				true>;
@@ -351,15 +351,15 @@ namespace slake {
 			std::atomic_size_t ref_count = 0;
 			peff::RcObjectPtr<peff::Alloc> self_allocator;
 			const Object *mapped_object;
-			const peff::DynArray<Value> *generic_args;
-			peff::HashMap<std::string_view, Value> mapped_generic_args;
+			const peff::DynArray<TypeRef> *generic_args;
+			peff::HashMap<std::string_view, TypeRef> mapped_generic_args;
 
 			SLAKE_FORCEINLINE GenericInstantiationContext(peff::Alloc *self_allocator, peff::Alloc *resource_allocator) : self_allocator(self_allocator), mapped_generic_args(resource_allocator) {}
 			SLAKE_FORCEINLINE GenericInstantiationContext(
 				peff::Alloc *self_allocator,
 				const Object *mapped_object,
-				const peff::DynArray<Value> *generic_args,
-				peff::HashMap<std::string_view, Value> &&mapped_generic_args)
+				const peff::DynArray<TypeRef> *generic_args,
+				peff::HashMap<std::string_view, TypeRef> &&mapped_generic_args)
 				: self_allocator(self_allocator),
 				  mapped_object(mapped_object),
 				  generic_args(generic_args),
@@ -395,7 +395,7 @@ namespace slake {
 		/// @note You must make sure that there's no local values in the instantiation context, or the operation will trigger termination.
 		[[nodiscard]] SLAKE_API InternalExceptionPointer instantiate_generic_object(MemberObject *object, MemberObject *&object_out, GenericInstantiationContext *instantiation_context);
 
-		SLAKE_API InternalExceptionPointer set_generic_cache(MemberObject *object, const peff::DynArray<Value> &generic_args, MemberObject *instantiated_object);
+		SLAKE_API InternalExceptionPointer set_generic_cache(MemberObject *object, const peff::DynArray<TypeRef> &generic_args, MemberObject *instantiated_object);
 
 		/// @brief Resolve a reference and get the referenced value.
 		/// @param ref Reference to be resolved.

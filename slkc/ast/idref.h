@@ -7,7 +7,7 @@
 namespace slkc {
 	struct IdRefEntry {
 		peff::String name;
-		peff::DynArray<AstNodePtr<AstNode>> generic_args;
+		peff::DynArray<AstNodePtr<TypeNameNode>> generic_args;
 		size_t access_op_token_index = SIZE_MAX, name_token_index = SIZE_MAX, generic_scope_token_index = SIZE_MAX, left_angle_bracket_token_index = SIZE_MAX, right_angle_bracket_token_index = SIZE_MAX;
 		peff::DynArray<size_t> generic_args_comma_token_indices;
 

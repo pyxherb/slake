@@ -119,13 +119,10 @@ SLAKE_API bool Runtime::get_full_ref(peff::Alloc *allocator, const MemberObject 
 		if (!copied_name.build(name)) {
 			return false;
 		}
-		peff::DynArray<Value> copied_generic_args(allocator);
+		peff::DynArray<TypeRef> copied_generic_args(allocator);
 		if (auto p = v->get_generic_args(); p) {
-			if (!copied_generic_args.resize(p->size()))
+			if (!copied_generic_args.build(*p))
 				return false;
-			for (size_t i = 0; i < copied_generic_args.size(); ++i) {
-				copied_generic_args.at(i) = p->at(i);
-			}
 		}
 
 		if (!id_ref_out.push_front(IdRefEntry(std::move(copied_name), std::move(copied_generic_args)))) {

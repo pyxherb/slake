@@ -341,7 +341,7 @@ static peff::Option<CompilationError> _compile_simple_land_binary_expr(
 					return e;
 				}
 			}
-			lhs_reg = rhs_result.idx_result_reg_out;
+			lhs_reg = lhs_result.idx_result_reg_out;
 
 			uint32_t post_branch_label_id;
 			SLKC_RETURN_IF_COMP_ERROR(compilation_context->alloc_label(post_branch_label_id));

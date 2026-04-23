@@ -318,7 +318,7 @@ SLKC_API ParseCoroutine Parser::parse_id_ref(peff::Alloc *allocator, IdRefPtr &i
 					next_token();
 
 					for (;;) {
-						AstNodePtr<AstNode> generic_arg;
+						AstNodePtr<TypeNameNode> generic_arg;
 						SLKC_CO_RETURN_IF_CO_PARSE_ERROR(parse_generic_arg(this->resource_allocator.get(), generic_arg));
 						if (!entry.generic_args.push_back(std::move(generic_arg))) {
 							co_return gen_oom_syntax_error();
@@ -355,7 +355,7 @@ SLKC_API ParseCoroutine Parser::parse_id_ref(peff::Alloc *allocator, IdRefPtr &i
 				next_token();
 
 				for (;;) {
-					AstNodePtr<AstNode> generic_arg;
+					AstNodePtr<TypeNameNode> generic_arg;
 					SLKC_CO_RETURN_IF_CO_PARSE_ERROR(parse_generic_arg(this->resource_allocator.get(), generic_arg));
 					if (!entry.generic_args.push_back(std::move(generic_arg))) {
 						co_return gen_oom_syntax_error();

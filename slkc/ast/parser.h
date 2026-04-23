@@ -342,7 +342,7 @@ namespace slkc {
 		[[nodiscard]] SLKC_API ParseCoroutine parse_expr_stmt(peff::Alloc *allocator, AstNodePtr<StmtNode> &stmt_out);
 		[[nodiscard]] SLKC_API ParseCoroutine parse_stmt(peff::Alloc *allocator, AstNodePtr<StmtNode> &stmt_out);
 
-		[[nodiscard]] SLKC_API ParseCoroutine parse_generic_arg(peff::Alloc *allocator, AstNodePtr<AstNode> &arg_out);
+		[[nodiscard]] SLKC_API ParseCoroutine parse_generic_arg(peff::Alloc *allocator, AstNodePtr<TypeNameNode> &arg_out);
 		[[nodiscard]] SLKC_API ParseCoroutine parse_type_name(peff::Alloc *allocator, AstNodePtr<TypeNameNode> &type_name_out, bool with_circumfixes = true);
 
 		[[nodiscard]] SLKC_API ParseCoroutine parse_attribute(peff::Alloc *allocator, AstNodePtr<AttributeNode> &attribute_out);

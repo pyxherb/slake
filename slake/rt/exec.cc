@@ -638,6 +638,30 @@ SLAKE_FORCEINLINE InternalExceptionPointer slake::Runtime::_add_local_var(Contex
 		object_ref_out = CoroutineLocalVarRef(frame->cur_coroutine, off_out - frame->cur_coroutine->off_stack_top);
 	else
 		object_ref_out = LocalVarRef(context, off_out);
+
+	switch (type.type_id) {
+		case TypeId::I8:
+		case TypeId::I16:
+		case TypeId::I32:
+		case TypeId::I64:
+		case TypeId::U8:
+		case TypeId::U16:
+		case TypeId::U32:
+		case TypeId::U64:
+		case TypeId::F32:
+		case TypeId::F64:
+		case TypeId::Bool:
+		case TypeId::String:
+		case TypeId::Any:
+		case TypeId::Instance:
+		case TypeId::Array:
+		case TypeId::Ref:
+			write_var_with_type(object_ref_out, type, default_value_of(type));
+			break;
+		default:
+			break;
+	}
+
 	return {};
 }
 
@@ -1226,6 +1250,9 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 					case ValueType::Bool:
 						value_out = (bool)(x->get_bool() == y->get_bool());
 						break;
+					case ValueType::Reference:
+						value_out = (bool)(x->get_reference() == y->get_reference());
+						break;
 					default:
 						return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 				}
@@ -1283,6 +1310,9 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 						break;
 					case ValueType::Bool:
 						value_out = (bool)(x->get_bool() != y->get_bool());
+						break;
+					case ValueType::Reference:
+						value_out = (bool)(x->get_reference() != y->get_reference());
 						break;
 					default:
 						return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
@@ -1907,9 +1937,8 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
-			if (!entity_ref) {
-				std::terminate();
-			}
+			if (!entity_ref)
+				return alloc_oom_error_if_alloc_failed(ReferencedMemberNotFoundError::alloc(get_fixed_alloc(), id_ref));
 
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _set_register_value(this, data_stack, stack_size, cur_major_frame, output, Value(entity_ref)));
 			break;
@@ -2359,6 +2388,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_operand_type<ValueType::Reference>(this, *this_object_value));
 					const Reference &this_object_ref = this_object_value->get_reference();
 					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_object_ref_operand_type<ReferenceKind::ObjectRef>(this, this_object_ref));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _check_object_operand_type<ObjectKind::Instance>(this, this_object_ref.get_object_ref()));
 					this_object = this_object_ref.as_object;
 					break;
 				}

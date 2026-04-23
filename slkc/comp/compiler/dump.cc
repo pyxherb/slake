@@ -12,22 +12,14 @@ SLKC_API peff::Option<CompilationError> slkc::dump_generic_param(
 	SLKC_RETURN_IF_COMP_ERROR(writer->write_u32(generic_param.name.size()));
 	SLKC_RETURN_IF_COMP_ERROR(writer->write(generic_param.name.data(), generic_param.name.size()));
 
-	if (generic_param.input_type != slake::TypeId::Invalid) {
-		SLKC_RETURN_IF_COMP_ERROR(writer->write_bool(true));
+	bool has_base_type = generic_param.base_type != slake::TypeId::Invalid;
+	SLKC_RETURN_IF_COMP_ERROR(writer->write_bool(has_base_type));
+	if (has_base_type)
+		SLKC_RETURN_IF_COMP_ERROR(dump_type_name(allocator, writer, generic_param.base_type));
 
-		SLKC_RETURN_IF_COMP_ERROR(dump_type_name(allocator, writer, generic_param.input_type));
-	} else {
-		SLKC_RETURN_IF_COMP_ERROR(writer->write_bool(false));
-
-		bool has_base_type = generic_param.base_type != slake::TypeId::Invalid;
-		SLKC_RETURN_IF_COMP_ERROR(writer->write_bool(has_base_type));
-		if (has_base_type)
-			SLKC_RETURN_IF_COMP_ERROR(dump_type_name(allocator, writer, generic_param.base_type));
-
-		SLKC_RETURN_IF_COMP_ERROR(writer->write_u32(generic_param.interfaces.size()));
-		for (auto &k : generic_param.interfaces) {
-			SLKC_RETURN_IF_COMP_ERROR(dump_type_name(allocator, writer, k));
-		}
+	SLKC_RETURN_IF_COMP_ERROR(writer->write_u32(generic_param.interfaces.size()));
+	for (auto &k : generic_param.interfaces) {
+		SLKC_RETURN_IF_COMP_ERROR(dump_type_name(allocator, writer, k));
 	}
 
 	return {};
@@ -41,9 +33,10 @@ SLKC_API peff::Option<CompilationError> slkc::dump_id_ref_entries(
 	for (auto &i : entries) {
 		SLKC_RETURN_IF_COMP_ERROR(writer->write_u32(i.name.size()));
 		SLKC_RETURN_IF_COMP_ERROR(writer->write(i.name.data(), i.name.size()));
+		// TODO: Generate an error if there are too many generic arguments...
 		SLKC_RETURN_IF_COMP_ERROR(writer->write_u8(i.generic_args.size()));
-		for (auto &j : i.generic_args) {
-			SLKC_RETURN_IF_COMP_ERROR(dump_value(allocator, writer, j));
+		for (const auto &j : i.generic_args) {
+			SLKC_RETURN_IF_COMP_ERROR(dump_type_name(allocator, writer, j));
 		}
 	}
 	return {};

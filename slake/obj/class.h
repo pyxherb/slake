@@ -64,7 +64,7 @@ namespace slake {
 
 	class ClassObject : public BasicModuleObject {
 	public:
-		peff::DynArray<Value> generic_args;
+		peff::DynArray<TypeRef> generic_args;
 		peff::HashMap<std::string_view, Value> mapped_generic_args;
 
 		GenericParamList generic_params;
@@ -82,7 +82,7 @@ namespace slake {
 		SLAKE_API ClassObject(Duplicator *duplicator, const ClassObject &x, peff::Alloc *allocator, bool &succeeded_out);
 		SLAKE_API virtual ~ClassObject();
 
-		SLAKE_API virtual const peff::DynArray<Value> *get_generic_args() const override;
+		SLAKE_API virtual const peff::DynArray<TypeRef> *get_generic_args() const override;
 
 		/// @brief Check if the class has implemented the interface.
 		///
@@ -107,7 +107,7 @@ namespace slake {
 		friend class ClassObject;
 
 	public:
-		peff::DynArray<Value> generic_args;
+		peff::DynArray<TypeRef> generic_args;
 		peff::HashMap<std::string_view, Value> mapped_generic_args;
 
 		GenericParamList generic_params;
@@ -123,7 +123,7 @@ namespace slake {
 
 		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
 
-		SLAKE_API virtual const peff::DynArray<Value> *get_generic_args() const override;
+		SLAKE_API virtual const peff::DynArray<TypeRef> *get_generic_args() const override;
 
 		SLAKE_API static HostObjectRef<InterfaceObject> alloc(Runtime *rt);
 		SLAKE_API static HostObjectRef<InterfaceObject> alloc(Duplicator *duplicator, const InterfaceObject *other);
@@ -146,7 +146,7 @@ namespace slake {
 
 	class StructObject : public BasicModuleObject {
 	public:
-		peff::DynArray<Value> generic_args;
+		peff::DynArray<TypeRef> generic_args;
 		peff::HashMap<std::string_view, Value> mapped_generic_args;
 
 		GenericParamList generic_params;
@@ -162,7 +162,7 @@ namespace slake {
 		SLAKE_API StructObject(Duplicator *duplicator, const StructObject &x, peff::Alloc *allocator, bool &succeeded_out);
 		SLAKE_API virtual ~StructObject();
 
-		SLAKE_API virtual const peff::DynArray<Value> *get_generic_args() const override;
+		SLAKE_API virtual const peff::DynArray<TypeRef> *get_generic_args() const override;
 
 		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
 
@@ -211,7 +211,7 @@ namespace slake {
 
 	class UnionEnumObject : public BasicModuleObject {
 	public:
-		peff::DynArray<Value> generic_args;
+		peff::DynArray<TypeRef> generic_args;
 		peff::HashMap<std::string_view, Value> mapped_generic_args;
 
 		GenericParamList generic_params;

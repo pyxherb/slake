@@ -387,26 +387,21 @@ SLAKE_API InternalExceptionPointer loader::load_generic_param(LoaderContext &con
 	SLAKE_RETURN_IF_EXCEPT(_normalize_read_result(runtime, reader->read(generic_param_out.name.data(), len_name)));
 
 	bool b;
+
 	SLAKE_RETURN_IF_EXCEPT(_normalize_read_result(runtime, reader->read_bool(b)));
-
 	if (b) {
-		SLAKE_RETURN_IF_EXCEPT(load_type(context, runtime, reader, member, generic_param_out.input_type));
-	} else {
-		SLAKE_RETURN_IF_EXCEPT(_normalize_read_result(runtime, reader->read_bool(b)));
-		if (b) {
-			SLAKE_RETURN_IF_EXCEPT(load_type(context, runtime, reader, member, generic_param_out.base_type));
-		}
+		SLAKE_RETURN_IF_EXCEPT(load_type(context, runtime, reader, member, generic_param_out.base_type));
+	}
 
-		uint32_t num_impl_interfaces;
+	uint32_t num_impl_interfaces;
 
-		SLAKE_RETURN_IF_EXCEPT(_normalize_read_result(runtime, reader->read_u32(num_impl_interfaces)));
+	SLAKE_RETURN_IF_EXCEPT(_normalize_read_result(runtime, reader->read_u32(num_impl_interfaces)));
 
-		if (!generic_param_out.interfaces.resize(num_impl_interfaces)) {
-			return OutOfMemoryError::alloc();
-		}
-		for (size_t i = 0; i < num_impl_interfaces; ++i) {
-			SLAKE_RETURN_IF_EXCEPT(load_type(context, runtime, reader, member, generic_param_out.interfaces.at(i)));
-		}
+	if (!generic_param_out.interfaces.resize(num_impl_interfaces)) {
+		return OutOfMemoryError::alloc();
+	}
+	for (size_t i = 0; i < num_impl_interfaces; ++i) {
+		SLAKE_RETURN_IF_EXCEPT(load_type(context, runtime, reader, member, generic_param_out.interfaces.at(i)));
 	}
 
 	return {};
@@ -580,7 +575,7 @@ SLAKE_API InternalExceptionPointer loader::load_id_ref_entries(LoaderContext &co
 			return OutOfMemoryError::alloc();
 		}
 		for (size_t j = 0; j < num_generic_args; ++j) {
-			SLAKE_RETURN_IF_EXCEPT(load_value(context, runtime, reader, member, cur_entry.generic_args.at(j)));
+			SLAKE_RETURN_IF_EXCEPT(load_type(context, runtime, reader, member, cur_entry.generic_args.at(j)));
 		}
 
 		if (!entries_out.push_back(std::move(cur_entry))) {

@@ -21,7 +21,7 @@ SLKC_API peff::Option<CompilationError> slkc::get_full_id_ref(peff::Alloc *alloc
 		}
 
 		for (size_t i = 0; i < entry.generic_args.size(); ++i) {
-			if (!(entry.generic_args.at(i) = m->generic_args.at(i)->duplicate<AstNode>(allocator))) {
+			if (!(entry.generic_args.at(i) = m->generic_args.at(i)->duplicate<TypeNameNode>(allocator))) {
 				return gen_oom_comp_error();
 			}
 		}

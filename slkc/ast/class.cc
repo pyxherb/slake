@@ -87,7 +87,7 @@ SLKC_API peff::Option<CompilationError> slkc::is_higher_ranked_cyclic_inherited(
 	}
 
 	while (frames.size()) {
-		AstNodePtr<AstNode> cur_type_arg;
+		AstNodePtr<TypeNameNode> cur_type_arg;
 		{
 			auto &cur_frame = frames.back();
 			auto &type_name = cur_frame.type_name;
@@ -102,31 +102,27 @@ SLKC_API peff::Option<CompilationError> slkc::is_higher_ranked_cyclic_inherited(
 			++cur_frame.idx_cur_type_arg;
 		}
 
-		if (cur_type_arg->get_ast_node_type() == AstNodeType::TypeName) {
-			auto tn = cur_type_arg.cast_to<TypeNameNode>();
+		if (cur_type_arg->tn_kind == TypeNameKind::Custom) {
+			auto ctn = cur_type_arg.cast_to<CustomTypeNameNode>();
+			AstNodePtr<MemberNode> m;
 
-			if (tn->tn_kind == TypeNameKind::Custom) {
-				auto ctn = tn.cast_to<CustomTypeNameNode>();
-				AstNodePtr<MemberNode> m;
+			SLKC_RETURN_IF_COMP_ERROR(
+				resolve_custom_type_name(
+					nullptr,
+					cls->document->shared_from_this(),
+					ctn,
+					m,
+					false));
 
-				SLKC_RETURN_IF_COMP_ERROR(
-					resolve_custom_type_name(
-						nullptr,
-						cls->document->shared_from_this(),
-						ctn,
-						m,
-						false));
-
-				if (m) {
-					if (m == cls) {
-						cls->scope->cached_is_higher_ranked_cyclic_inherited = (result_out = true);
-						return {};
-					}
+			if (m) {
+				if (m == cls) {
+					cls->scope->cached_is_higher_ranked_cyclic_inherited = (result_out = true);
+					return {};
 				}
-
-				if (!frames.push_back(HigherRankedCyclicInheritanceWalkFrame{ ctn, 0 }))
-					return gen_oom_comp_error();
 			}
+
+			if (!frames.push_back(HigherRankedCyclicInheritanceWalkFrame{ ctn, 0 }))
+				return gen_oom_comp_error();
 		}
 	}
 
@@ -157,7 +153,7 @@ SLKC_API peff::Option<CompilationError> slkc::is_higher_ranked_recursed(
 		return gen_oom_comp_error();
 
 	while (frames.size()) {
-		AstNodePtr<AstNode> cur_type_arg;
+		AstNodePtr<TypeNameNode> cur_type_arg;
 		{
 			auto &cur_frame = frames.back();
 			auto &type_name = cur_frame.type_name;
@@ -172,29 +168,27 @@ SLKC_API peff::Option<CompilationError> slkc::is_higher_ranked_recursed(
 			++cur_frame.idx_cur_type_arg;
 		}
 
-		if (cur_type_arg->get_ast_node_type() == AstNodeType::TypeName) {
-			if (cur_type_arg.cast_to<TypeNameNode>()->tn_kind == TypeNameKind::Custom) {
-				auto converted_tn = cur_type_arg.cast_to<CustomTypeNameNode>();
-				AstNodePtr<MemberNode> m;
+		if (cur_type_arg->tn_kind == TypeNameKind::Custom) {
+			auto converted_tn = cur_type_arg.cast_to<CustomTypeNameNode>();
+			AstNodePtr<MemberNode> m;
 
-				SLKC_RETURN_IF_COMP_ERROR(
-					resolve_custom_type_name(
-						nullptr,
-						converted_tn->document->shared_from_this(),
-						converted_tn,
-						m,
-						false));
+			SLKC_RETURN_IF_COMP_ERROR(
+				resolve_custom_type_name(
+					nullptr,
+					converted_tn->document->shared_from_this(),
+					converted_tn,
+					m,
+					false));
 
-				if (m) {
-					if (m == member) {
-						member->scope->cached_is_higher_ranked_recursed = (result_out = true);
-						return {};
-					}
+			if (m) {
+				if (m == member) {
+					member->scope->cached_is_higher_ranked_recursed = (result_out = true);
+					return {};
 				}
-
-				if (!frames.push_back(HigherRankedRecursedWalkFrame{ converted_tn, 0 }))
-					return gen_oom_comp_error();
 			}
+
+			if (!frames.push_back(HigherRankedRecursedWalkFrame{ converted_tn, 0 }))
+				return gen_oom_comp_error();
 		}
 	}
 
@@ -677,7 +671,7 @@ static peff::Option<CompilationError> _is_struct_recursed(
 
 					if (auto t = var_member->type; t->tn_kind == TypeNameKind::Custom) {
 						SLKC_RETURN_IF_COMP_ERROR(is_higher_ranked_recursed(cur_struct, t.cast_to<CustomTypeNameNode>(), document->allocator.get(), whether_out));
-						if(whether_out)
+						if (whether_out)
 							return {};
 						SLKC_RETURN_IF_COMP_ERROR(resolve_custom_type_name(nullptr, document, t.cast_to<CustomTypeNameNode>(), m));
 

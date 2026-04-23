@@ -1,45 +1,12 @@
 #include "../parser.h"
-#include <climits>
 
 using namespace slkc;
 
-SLKC_API ParseCoroutine Parser::parse_generic_arg(peff::Alloc *allocator, AstNodePtr<AstNode>& arg_out) {
+SLKC_API ParseCoroutine Parser::parse_generic_arg(peff::Alloc *allocator, AstNodePtr<TypeNameNode> &arg_out) {
 	peff::Option<SyntaxError> syntax_error;
 	Token *t = peek_token();
 
-	switch (t->token_id) {
-		case TokenId::I8Literal:
-		case TokenId::I16Literal:
-		case TokenId::I32Literal:
-		case TokenId::I64Literal:
-		case TokenId::U8Literal:
-		case TokenId::U16Literal:
-		case TokenId::U32Literal:
-		case TokenId::U64Literal:
-		case TokenId::F32Literal:
-		case TokenId::F64Literal:
-		case TokenId::StringLiteral: {
-			AstNodePtr<ExprNode> e;
-			SLKC_CO_RETURN_IF_CO_PARSE_ERROR(parse_expr(this->resource_allocator.get(), INT_MAX, e));
-			arg_out = e.cast_to<AstNode>();
-			break;
-		}
-		case TokenId::LParenthese: {
-			AstNodePtr<ExprNode> e;
-			SLKC_CO_RETURN_IF_CO_PARSE_ERROR(parse_expr(this->resource_allocator.get(), INT_MAX, e));
-			arg_out = e.cast_to<AstNode>();
-			break;
-		}
-		case TokenId::TypenameKeyword:
-			next_token();
-			[[fallthrough]];
-		default: {
-			AstNodePtr<TypeNameNode> t;
-			SLKC_CO_RETURN_IF_CO_PARSE_ERROR(parse_type_name(this->resource_allocator.get(), t));
-			arg_out = t.cast_to<AstNode>();
-			break;
-		}
-	}
+	SLKC_CO_RETURN_IF_CO_PARSE_ERROR(parse_type_name(this->resource_allocator.get(), arg_out));
 
 	co_return {};
 }

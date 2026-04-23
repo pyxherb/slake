@@ -501,17 +501,10 @@ SLKC_API peff::Option<CompilationError> slkc::compile_id_ref(
 		}
 
 		for (size_t i = 0; i < ce.generic_args.size(); ++i) {
-			slake::Value value;
-			if (ce.generic_args.at(i)->get_ast_node_type() == AstNodeType::Expr) {
-				SLKC_RETURN_IF_COMP_ERROR(compile_value_expr(compile_env, compilation_context, ce.generic_args.at(i).cast_to<ExprNode>(), value));
-			} else {
-				slake::TypeRef type_ref;
-				SLKC_RETURN_IF_COMP_ERROR(compile_type_name(compile_env, compilation_context, ce.generic_args.at(i).cast_to<TypeNameNode>(), type_ref));
-				assert(type_ref.type_id != slake::TypeId::Invalid);
-				value = type_ref;
-			}
-			assert(value != slake::ValueType::Invalid);
-			e.generic_args.at(i) = value;
+			slake::TypeRef type_ref;
+			SLKC_RETURN_IF_COMP_ERROR(compile_type_name(compile_env, compilation_context, ce.generic_args.at(i).cast_to<TypeNameNode>(), type_ref));
+			assert(type_ref.type_id != slake::TypeId::Invalid);
+			e.generic_args.at(i) = type_ref;
 		}
 	}
 
@@ -707,44 +700,32 @@ SLKC_API peff::Option<CompilationError> slkc::compile_generic_params(
 			return gen_oom_comp_error();
 		}
 
-		if (gp_node->input_type) {
-			// TODO: Detect if the input type is compatible with the compile-time expressions.
-			if ((e = compile_type_name(compile_env, compilation_context, gp_node->input_type, gp.input_type))) {
-				if (e->error_kind == CompilationErrorKind::OutOfMemory)
-					return e;
-				if (!compile_env->errors.push_back(std::move(*e))) {
-					return gen_oom_comp_error();
+		if (gp_node->is_param_type_list) {
+			// TODO: Implement it.
+		} else if (gp_node->generic_constraint) {
+			if (gp_node->generic_constraint->base_type) {
+				if ((e = compile_type_name(compile_env, compilation_context, gp_node->generic_constraint->base_type, gp.base_type))) {
+					if (e->error_kind == CompilationErrorKind::OutOfMemory)
+						return e;
+					if (!compile_env->errors.push_back(std::move(*e))) {
+						return gen_oom_comp_error();
+					}
+					e.reset();
 				}
-				e.reset();
 			}
-		} else {
-			if (gp_node->is_param_type_list) {
-				// TODO: Implement it.
-			} else if (gp_node->generic_constraint) {
-				if (gp_node->generic_constraint->base_type) {
-					if ((e = compile_type_name(compile_env, compilation_context, gp_node->generic_constraint->base_type, gp.base_type))) {
-						if (e->error_kind == CompilationErrorKind::OutOfMemory)
-							return e;
-						if (!compile_env->errors.push_back(std::move(*e))) {
-							return gen_oom_comp_error();
-						}
-						e.reset();
-					}
-				}
 
-				if (!gp.interfaces.resize(gp_node->generic_constraint->impl_types.size())) {
-					return gen_out_of_runtime_memory_comp_error();
-				}
+			if (!gp.interfaces.resize(gp_node->generic_constraint->impl_types.size())) {
+				return gen_out_of_runtime_memory_comp_error();
+			}
 
-				for (size_t k = 0; k < gp_node->generic_constraint->impl_types.size(); ++k) {
-					if ((e = compile_type_name(compile_env, compilation_context, gp_node->generic_constraint->impl_types.at(k), gp.interfaces.at(k)))) {
-						if (e->error_kind == CompilationErrorKind::OutOfMemory)
-							return e;
-						if (!compile_env->errors.push_back(std::move(*e))) {
-							return gen_oom_comp_error();
-						}
-						e.reset();
+			for (size_t k = 0; k < gp_node->generic_constraint->impl_types.size(); ++k) {
+				if ((e = compile_type_name(compile_env, compilation_context, gp_node->generic_constraint->impl_types.at(k), gp.interfaces.at(k)))) {
+					if (e->error_kind == CompilationErrorKind::OutOfMemory)
+						return e;
+					if (!compile_env->errors.push_back(std::move(*e))) {
+						return gen_oom_comp_error();
 					}
+					e.reset();
 				}
 			}
 		}
@@ -871,40 +852,33 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 			auto gp = mod->scope->get_generic_param(i);
 			TokenRange token_range = gp->token_range;
 
-			if (gp->input_type) {
-				AstNodePtr<ExprNode> default_value;
-				// TODO: Placeholder, use a proper one.
-				SLKC_RETURN_IF_COMP_ERROR(get_succeeding_enum_value(compile_env, nullptr, gp->input_type, AstNodePtr<ExprNode>(), default_value));
-				back_entry.generic_args.at(i) = default_value.cast_to<AstNode>();
-			} else {
-				AstNodePtr<CustomTypeNameNode> ctn;
+			AstNodePtr<CustomTypeNameNode> ctn;
 
-				if (!(ctn = make_ast_node<CustomTypeNameNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->document.lock())))
+			if (!(ctn = make_ast_node<CustomTypeNameNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->document.lock())))
+				return gen_oom_comp_error();
+
+			// Build the generic parameter reference.
+			{
+				IdRefPtr new_id_ref_ptr = IdRefPtr(
+					peff::alloc_and_construct<IdRef>(
+						compile_env->allocator.get(),
+						ASTNODE_ALIGNMENT,
+						compile_env->allocator.get()));
+				if (!new_id_ref_ptr)
 					return gen_oom_comp_error();
 
-				// Build the generic parameter reference.
-				{
-					IdRefPtr new_id_ref_ptr = IdRefPtr(
-						peff::alloc_and_construct<IdRef>(
-							compile_env->allocator.get(),
-							ASTNODE_ALIGNMENT,
-							compile_env->allocator.get()));
-					if (!new_id_ref_ptr)
-						return gen_oom_comp_error();
-
-					IdRefEntry entry(compile_env->allocator.get());
-					if (!entry.name.build(gp->name))
-						return gen_oom_comp_error();
-					if (!new_id_ref_ptr->entries.push_back(std::move(entry)))
-						return gen_oom_comp_error();
-					new_id_ref_ptr->token_range = token_range;
-					ctn->id_ref_ptr = std::move(new_id_ref_ptr);
-				}
-				ctn->token_range = token_range;
-				ctn->context_node = to_weak_ptr(mod).cast_to<MemberNode>();
-
-				back_entry.generic_args.at(i) = ctn.cast_to<AstNode>();
+				IdRefEntry entry(compile_env->allocator.get());
+				if (!entry.name.build(gp->name))
+					return gen_oom_comp_error();
+				if (!new_id_ref_ptr->entries.push_back(std::move(entry)))
+					return gen_oom_comp_error();
+				new_id_ref_ptr->token_range = token_range;
+				ctn->id_ref_ptr = std::move(new_id_ref_ptr);
 			}
+			ctn->token_range = token_range;
+			ctn->context_node = to_weak_ptr(mod).cast_to<MemberNode>();
+
+			back_entry.generic_args.at(i) = ctn.cast_to<TypeNameNode>();
 		}
 
 		SLKC_RETURN_IF_COMP_ERROR(

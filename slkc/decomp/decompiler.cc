@@ -104,27 +104,18 @@ SLKC_API Decompiler::~Decompiler() {
 }
 
 SLKC_API bool Decompiler::decompile_generic_param(peff::Alloc *allocator, DumpWriter *writer, const slake::GenericParam &generic_param) {
-	if(generic_param.input_type != slake::TypeId::Invalid)
-		SLKC_RETURN_IF_FALSE(writer->write("const "));
 	SLKC_RETURN_IF_FALSE(writer->write(generic_param.name));
-	if (generic_param.input_type != slake::TypeId::Invalid) {
+	if (generic_param.base_type != slake::TypeId::Invalid) {
+		SLKC_RETURN_IF_FALSE(writer->write("("));
+		SLKC_RETURN_IF_FALSE(decompile_type_name(allocator, writer, generic_param.base_type));
+		SLKC_RETURN_IF_FALSE(writer->write(")"));
+	}
+	if (generic_param.interfaces.size()) {
 		SLKC_RETURN_IF_FALSE(writer->write(": "));
-		SLKC_RETURN_IF_FALSE(decompile_type_name(allocator, writer, generic_param.input_type));
-		if ((generic_param.base_type != slake::TypeId::Invalid) || (generic_param.interfaces.size()))
-			SLKC_RETURN_IF_FALSE(writer->write("/* With extraneous constraints */"));
-	} else {
-		if (generic_param.base_type != slake::TypeId::Invalid) {
-			SLKC_RETURN_IF_FALSE(writer->write("("));
-			SLKC_RETURN_IF_FALSE(decompile_type_name(allocator, writer, generic_param.base_type));
-			SLKC_RETURN_IF_FALSE(writer->write(")"));
-		}
-		if (generic_param.interfaces.size()) {
-			SLKC_RETURN_IF_FALSE(writer->write(": "));
-			for (size_t i = 0; i < generic_param.interfaces.size(); ++i) {
-				if (i)
-					SLKC_RETURN_IF_FALSE(writer->write(" + "));
-				SLKC_RETURN_IF_FALSE(decompile_type_name(allocator, writer, generic_param.interfaces.at(i)));
-			}
+		for (size_t i = 0; i < generic_param.interfaces.size(); ++i) {
+			if (i)
+				SLKC_RETURN_IF_FALSE(writer->write(" + "));
+			SLKC_RETURN_IF_FALSE(decompile_type_name(allocator, writer, generic_param.interfaces.at(i)));
 		}
 	}
 
@@ -848,14 +839,14 @@ SLKC_API bool Decompiler::decompile_module_members(peff::Alloc *allocator, DumpW
 								for (size_t j = 0; j < ol->instructions.size(); ++j) {
 									auto &cur_ins = ol->instructions.at(j);
 
-									if((cur_ins.opcode == slake::Opcode::LEAVE) && block_depth)
+									if ((cur_ins.opcode == slake::Opcode::LEAVE) && block_depth)
 										--block_depth;
 
 									for (size_t k = 0; k < indent_level + 1 + block_depth; ++k) {
 										SLKC_RETURN_IF_FALSE(writer->write("\t"));
 									}
 
-									if(cur_ins.opcode == slake::Opcode::ENTER)
+									if (cur_ins.opcode == slake::Opcode::ENTER)
 										++block_depth;
 
 									slake::slxfmt::SourceLocDesc *sld = nullptr;

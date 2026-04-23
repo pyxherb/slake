@@ -9,7 +9,6 @@
 namespace slake {
 	struct GenericParam final {
 		peff::String name;
-		TypeRef input_type = slake::TypeId::Invalid;
 		TypeRef base_type = TypeId::Invalid;
 		peff::DynArray<TypeRef> interfaces;
 
@@ -43,7 +42,7 @@ namespace slake {
 	};
 
 	struct GenericArgListComparator {
-		SLAKE_API int operator()(const peff::DynArray<Value> &lhs, const peff::DynArray<Value> &rhs) const noexcept;
+		SLAKE_API int operator()(const peff::DynArray<TypeRef> &lhs, const peff::DynArray<TypeRef> &rhs) const noexcept;
 	};
 
 	/// @brief Less than ("<") comparator for containers.

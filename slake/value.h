@@ -363,6 +363,7 @@ namespace slake {
 		}
 
 		SLAKE_API bool operator==(const Reference &rhs) const;
+		SLAKE_API bool operator!=(const Reference &rhs) const;
 		SLAKE_API bool operator<(const Reference &rhs) const;
 		SLAKE_API bool operator>(const Reference &rhs) const;
 	};

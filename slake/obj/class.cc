@@ -134,7 +134,7 @@ SLAKE_API slake::ClassObject::ClassObject(Runtime *rt, peff::Alloc *self_allocat
 	  impl_types(self_allocator) {
 }
 
-SLAKE_API const peff::DynArray<Value> *ClassObject::get_generic_args() const {
+SLAKE_API const peff::DynArray<TypeRef> *ClassObject::get_generic_args() const {
 	return &generic_args;
 }
 
@@ -391,7 +391,7 @@ SLAKE_API bool InterfaceObject::is_derived_from(InterfaceObject *p_interface) co
 	return impl_interface_indices.contains(p_interface);
 }
 
-SLAKE_API const peff::DynArray<Value> *InterfaceObject::get_generic_args() const {
+SLAKE_API const peff::DynArray<TypeRef> *InterfaceObject::get_generic_args() const {
 	return &generic_args;
 }
 
@@ -627,7 +627,7 @@ SLAKE_API slake::StructObject::StructObject(Runtime *rt, peff::Alloc *self_alloc
 	  impl_types(self_allocator) {
 }
 
-SLAKE_API const peff::DynArray<Value> *StructObject::get_generic_args() const {
+SLAKE_API const peff::DynArray<TypeRef> *StructObject::get_generic_args() const {
 	return &generic_args;
 }
 

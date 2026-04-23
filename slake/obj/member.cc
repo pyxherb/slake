@@ -21,7 +21,7 @@ SLAKE_API MemberObject::~MemberObject() {
 	associated_runtime->invalidate_generic_cache(this);
 }
 
-SLAKE_API const peff::DynArray<Value> *MemberObject::get_generic_args() const {
+SLAKE_API const peff::DynArray<TypeRef> *MemberObject::get_generic_args() const {
 	return nullptr;
 }
 

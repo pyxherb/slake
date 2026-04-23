@@ -118,6 +118,10 @@ SLAKE_API bool Reference::operator==(const Reference &rhs) const {
 	std::terminate();
 }
 
+SLAKE_API bool Reference::operator!=(const Reference &rhs) const {
+	return !(*this == rhs);
+}
+
 SLAKE_API bool Reference::operator<(const Reference &rhs) const {
 	if (kind < rhs.kind)
 		return true;

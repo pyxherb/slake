@@ -27,7 +27,7 @@ namespace slake {
 		SLAKE_FORCEINLINE Object *get_parent() const noexcept {
 			return _parent;
 		}
-		SLAKE_API virtual const peff::DynArray<Value> *get_generic_args() const;
+		SLAKE_API virtual const peff::DynArray<TypeRef> *get_generic_args() const;
 
 		SLAKE_API std::string_view get_name() const noexcept;
 		SLAKE_API bool set_name(const std::string_view &name) noexcept;

@@ -206,14 +206,14 @@ namespace slkc {
 		SLAKE_API GenericArgListCmp(const GenericArgListCmp &r);
 		SLAKE_API ~GenericArgListCmp();
 
-		SLAKE_API peff::Option<int> operator()(const peff::DynArray<AstNodePtr<AstNode>> &lhs, const peff::DynArray<AstNodePtr<AstNode>> &rhs) const noexcept;
+		SLAKE_API peff::Option<int> operator()(const peff::DynArray<AstNodePtr<TypeNameNode>> &lhs, const peff::DynArray<AstNodePtr<TypeNameNode>> &rhs) const noexcept;
 	};
 
 	class MemberNode;
 
 	using GenericCacheTable =
 		peff::FallibleMap<
-			peff::DynArray<AstNodePtr<AstNode>>,
+			peff::DynArray<AstNodePtr<TypeNameNode>>,
 			AstNodePtr<MemberNode>,
 			GenericArgListCmp,
 			true>;
@@ -232,7 +232,7 @@ namespace slkc {
 
 	struct AstNodeGenericInstantiationTask {
 		peff::SharedPtr<GenericInstantiationContext> context;
-		AstNodePtr<AstNode> &node;
+		AstNodePtr<TypeNameNode> &node;
 	};
 
 	class FnOverloadingNode;
@@ -263,14 +263,14 @@ namespace slkc {
 
 	struct GenericInstantiationContext : public peff::SharedFromThis<GenericInstantiationContext> {
 		peff::RcObjectPtr<peff::Alloc> allocator;
-		const peff::DynArray<AstNodePtr<AstNode>> *generic_args;
-		peff::HashMap<std::string_view, AstNodePtr<AstNode>> mapped_generic_args;
+		const peff::DynArray<AstNodePtr<TypeNameNode>> *generic_args;
+		peff::HashMap<std::string_view, AstNodePtr<TypeNameNode>> mapped_generic_args;
 		AstNodePtr<MemberNode> mapped_node;
 		GenericInstantiationDispatcher *dispatcher = nullptr;
 
 		SLAKE_FORCEINLINE GenericInstantiationContext(
 			peff::Alloc *allocator,
-			const peff::DynArray<AstNodePtr<AstNode>> *generic_args,
+			const peff::DynArray<AstNodePtr<TypeNameNode>> *generic_args,
 			GenericInstantiationDispatcher *dispatcher)
 			: allocator(allocator),
 			  generic_args(generic_args),
@@ -310,13 +310,13 @@ namespace slkc {
 
 		SLKC_API peff::Option<CompilationError> lookup_generic_cache(
 			AstNodePtr<MemberNode> original_object,
-			const peff::DynArray<AstNodePtr<AstNode>> &generic_args,
+			const peff::DynArray<AstNodePtr<TypeNameNode>> &generic_args,
 			AstNodePtr<MemberNode> &member_out) const;
 
 		SLKC_API peff::Option<CompilationError> instantiate_generic_object(
 			AstNodePtr<MemberNode> original_object,
 			size_t idx_name_token,
-			const peff::DynArray<AstNodePtr<AstNode>> &generic_args,
+			const peff::DynArray<AstNodePtr<TypeNameNode>> &generic_args,
 			AstNodePtr<MemberNode> &member_out);
 
 		SLAKE_FORCEINLINE void clear_deferred_destructible_ast_nodes() {

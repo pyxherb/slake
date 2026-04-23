@@ -5,7 +5,7 @@ using namespace slake;
 SLAKE_API GenericParam::GenericParam(peff::Alloc *self_allocator) : name(self_allocator), interfaces(self_allocator) {
 }
 
-SLAKE_API GenericParam::GenericParam(GenericParam &&rhs) : name(std::move(rhs.name)), input_type(std::move(rhs.input_type)), base_type(std::move(rhs.base_type)), interfaces(std::move(rhs.interfaces)) {
+SLAKE_API GenericParam::GenericParam(GenericParam &&rhs) : name(std::move(rhs.name)), base_type(std::move(rhs.base_type)), interfaces(std::move(rhs.interfaces)) {
 }
 
 SLAKE_API void GenericParam::replace_allocator(peff::Alloc *allocator) noexcept {
@@ -104,7 +104,7 @@ SLAKE_API int ParamListComparator::operator()(const ParamTypeList &lhs, const Pa
 	return 0;
 }
 
-SLAKE_API int GenericArgListComparator::operator()(const peff::DynArray<Value>& lhs, const peff::DynArray<Value>& rhs) const noexcept {
+SLAKE_API int GenericArgListComparator::operator()(const peff::DynArray<TypeRef>& lhs, const peff::DynArray<TypeRef>& rhs) const noexcept {
 	if (lhs.size() < rhs.size())
 		return -1;
 	if (lhs.size() > rhs.size())

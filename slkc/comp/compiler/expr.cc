@@ -76,7 +76,7 @@ template <typename LE, typename DT, typename TN>
 	return {};
 }
 
-SLKC_API peff::Option<CompilationError> slkc::_compile_or_cast_operand(
+SLKC_API peff::Option<CompilationError> slkc::compile_or_cast_operand(
 	CompileEnv *compile_env,
 	CompilationContext *compilation_context,
 	PathEnv *path_env,
@@ -112,6 +112,24 @@ SLKC_API peff::Option<CompilationError> slkc::_compile_or_cast_operand(
 	return CompilationError(operand->token_range, std::move(ex_data));
 }
 
+SLKC_API peff::Option<CompilationError> slkc::try_compile_or_cast_operand(
+	CompileEnv *compile_env,
+	CompilationContext *parent_compilation_context,
+	PathEnv *path_env,
+	ExprEvalPurpose eval_purpose,
+	AstNodePtr<TypeNameNode> desired_type,
+	AstNodePtr<ExprNode> operand,
+	AstNodePtr<TypeNameNode> operand_type,
+	CompileExprResult &result_out) {
+	compile_env->disable_messages();
+	peff::ScopeGuard enable_messages_guard([compile_env]() noexcept {
+		compile_env->enable_messages();
+	});
+	NormalCompilationContext tmp_ctxt(compile_env, parent_compilation_context);
+	SLKC_RETURN_IF_COMP_ERROR(compile_or_cast_operand(compile_env, &tmp_ctxt, path_env, eval_purpose, desired_type, operand, operand_type, result_out));
+	return {};
+}
+
 static peff::Option<CompilationError> _determine_node_type(CompileEnv *compile_env, PathEnv *path_env, ExprEvalPurpose eval_purpose, const VarChain *var_chain, AstNodePtr<MemberNode> node, AstNodePtr<TypeNameNode> &type_name_out);
 
 static peff::Option<CompilationError> _load_rest_of_id_ref(
@@ -126,11 +144,9 @@ static peff::Option<CompilationError> _load_rest_of_id_ref(
 	VarChain *var_chain,
 	uint32_t initial_member_reg,
 	size_t cur_ref_idx,
+	size_t cur_part_idx,
 	AstNodePtr<FnTypeNameNode> extra_fn_args,
 	uint32_t sld_index) {
-	//
-	// TODO: Check the resolved parts in order and check if they are null.
-	//
 	uint32_t idx_reg;
 
 	if (initial_member_reg == UINT32_MAX) {
@@ -139,31 +155,33 @@ static peff::Option<CompilationError> _load_rest_of_id_ref(
 		idx_reg = initial_member_reg;
 	}
 
+	//
+	// Check the resolved variable chain in order and check if they are null.
+	//
 	if (var_chain) {
-		size_t i = cur_ref_idx, j = 0;
-#ifndef NDEBUG
-		bool var_chain_cleared = false;
-#endif
-		while (i < id_ref->entries.size()) {
-			ResolvedIdRefPart &part = parts.at(j);
+		size_t i = cur_ref_idx, j = cur_part_idx;
+		while (j < parts.size()) {
+			const ResolvedIdRefPart &part = parts.at(j);
 
-			if (part.member->get_ast_node_type() == AstNodeType::Var) {
-				if (!var_chain->push_back(AstNodePtr<MemberNode>(part.member)))
-					return gen_oom_comp_error();
-#ifndef NDEBUG
-				if (var_chain_cleared)
-					std::terminate();
-#endif
-			} else {
-				var_chain->clear();
-#ifndef NDEBUG
-				var_chain_cleared = true;
-#endif
+			switch (part.member->get_ast_node_type()) {
+				case AstNodeType::This:
+					break;
+				case AstNodeType::Var:
+					if (!var_chain->push_back(AstNodePtr<MemberNode>(part.member)))
+						return gen_oom_comp_error();
+					if ((j + 1 >= parts.size()) && ((eval_purpose == ExprEvalPurpose::LValue) || (eval_purpose == ExprEvalPurpose::EvalType) || (eval_purpose == ExprEvalPurpose::EvalTypeActual))) {
+					} else {
+						SLKC_RETURN_IF_COMP_ERROR(check_null_member_deref(path_env, *var_chain, TokenRange{ id_ref->token_range.module_node, id_ref->entries.at(i).name_token_index }));
+					}
+					break;
+				default:
+					var_chain->clear();
+					goto var_chain_cleared;
 			}
-			SLKC_RETURN_IF_COMP_ERROR(check_null_member_deref(path_env, *var_chain, TokenRange{ id_ref->token_range.module_node, id_ref->entries.at(i).name_token_index }));
 			i += part.num_entries;
 			++j;
 		}
+	var_chain_cleared:;
 	}
 
 	if (parts.back().member->get_ast_node_type() == AstNodeType::FnOverloading) {
@@ -550,6 +568,8 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 
 			AstNodePtr<MemberNode> initial_member;
 
+			bool is_this = result.evaluated_final_member->get_ast_node_type() == AstNodeType::This;
+
 			AstNodePtr<TypeNameNode> tn = result.evaluated_type;
 
 		determine_initial_member:
@@ -637,6 +657,30 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 				return CompilationError(e->id_ref_ptr->token_range, CompilationErrorKind::IdNotFound);
 			}
 
+			// Prevent user to bypass the initialization check using `(this).field`.
+			if (is_this) {
+				if (compile_env->cur_overloading->name == "new") {
+					if (parts.front().member->get_ast_node_type() == AstNodeType::Var) {
+						AstNodePtr<MemberNode> var_chain[] = { compile_env->this_node.cast_to<MemberNode>(), parts.front().member };
+
+						if ((parts.size() != 1) || (eval_purpose != ExprEvalPurpose::LValue)) {
+							if (compile_env->vars_to_be_inited /*&& compile_env->this_node*/) {
+								if (!path_env->is_var_inited(VarChainView{ var_chain })) {
+									if ((parts.size() != 1) || (eval_purpose != ExprEvalPurpose::LValue)) {
+										return CompilationError(
+											TokenRange{
+												e->token_range.module_node,
+												e->id_ref_ptr->entries.front().name_token_index },
+											compile_env->this_node ? CompilationErrorKind::InstanceMemberVarNotInitialized : CompilationErrorKind::StaticMemberVarNotInitialized,
+											MemberVarNotInitializedErrorExData{ parts.front().member.cast_to<VarNode>() });
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+
 			if (final_member->get_ast_node_type() == AstNodeType::Fn) {
 				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error, select_single_matching_overloading(compile_env, e->id_ref_ptr->token_range, final_member, desired_type, false, result_out));
 
@@ -645,9 +689,9 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 
 				parts.back().member = final_member;
 
-				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error, _load_rest_of_id_ref(compile_env, compilation_context, path_env, eval_purpose, final_register, result_out, e->id_ref_ptr.get(), parts, nullptr, head_register, 0, fn_type, sld_index));
+				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error, _load_rest_of_id_ref(compile_env, compilation_context, path_env, eval_purpose, final_register, result_out, e->id_ref_ptr.get(), parts, nullptr, head_register, 0, 0, fn_type, sld_index));
 			} else {
-				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error, _load_rest_of_id_ref(compile_env, compilation_context, path_env, eval_purpose, final_register, result_out, e->id_ref_ptr.get(), parts, nullptr, head_register, 0, {}, sld_index));
+				SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error, _load_rest_of_id_ref(compile_env, compilation_context, path_env, eval_purpose, final_register, result_out, e->id_ref_ptr.get(), parts, nullptr, head_register, 0, 0, {}, sld_index));
 			}
 
 			bool accessible;
@@ -732,6 +776,18 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 					std::terminate();
 			}
 
+			if (is_this && (final_member->get_ast_node_type() == AstNodeType::Var)) {
+				VarChain vc(compile_env->allocator.get());
+
+				if (!vc.push_front(compile_env->this_node.cast_to<MemberNode>()))
+					return gen_oom_comp_error();
+				for (auto &i : parts) {
+					if (!vc.push_back(AstNodePtr<MemberNode>(i.member)))
+						return gen_oom_comp_error();
+				}
+				result_out.evaluated_var_chain = std::move(vc);
+			}
+
 			break;
 		}
 		case ExprKind::IdRef: {
@@ -743,6 +799,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 
 			uint32_t initial_member_reg;
 			bool is_static = false;
+			bool is_this = false;
 
 			uint32_t final_register;
 
@@ -753,12 +810,32 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 					if (!compile_env->this_node)
 						return CompilationError(e->id_ref_ptr->token_range, CompilationErrorKind::InvalidThisUsage);
 
+					is_this = true;
+
 					initial_member = compile_env->this_node.cast_to<MemberNode>();
 
 					if (e->id_ref_ptr->entries.size() > 1) {
 						initial_member_eval_purpose = ExprEvalPurpose::RValue;
 					} else {
 						initial_member_eval_purpose = eval_purpose;
+
+						// 'this' is not referable in constructor if there is no base type and not all member variables are initialized.
+						// TODO: Should we forbid all usage of 'this' before we initialized the object?
+						if (compile_env->cur_overloading->name == "new") {
+							if (!compile_env->this_node->this_type->scope->base_type) {
+								if (compile_env->vars_to_be_inited /*&& compile_env->this_node*/) {
+									for (auto i : *compile_env->vars_to_be_inited) {
+										AstNodePtr<MemberNode> var_chain[] = { compile_env->this_node.cast_to<MemberNode>(), i.second.cast_to<MemberNode>() };
+										if (!path_env->is_var_inited(VarChainView{ var_chain }))
+											return CompilationError(
+												TokenRange{
+													e->token_range.module_node,
+													e->id_ref_ptr->entries.front().name_token_index },
+												CompilationErrorKind::ThisNotInitialized);
+									}
+								}
+							}
+						}
 					}
 
 					switch (initial_member_eval_purpose) {
@@ -782,8 +859,6 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 							return CompilationError(e->token_range, CompilationErrorKind::TargetIsNotUnpackable);
 					}
 
-					if (!var_chain.push_back(AstNodePtr<MemberNode>(initial_member)))
-						return gen_oom_comp_error();
 					goto initial_member_resolved;
 				}
 
@@ -820,8 +895,6 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 							return CompilationError(e->token_range, CompilationErrorKind::TargetIsNotUnpackable);
 					}
 
-					if (!var_chain.push_back(AstNodePtr<MemberNode>(initial_member)))
-						return gen_oom_comp_error();
 					goto initial_member_resolved;
 				}
 
@@ -868,14 +941,14 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 							break;
 					}
 
-					if (!var_chain.push_back(AstNodePtr<MemberNode>(initial_member)))
-						return gen_oom_comp_error();
 					goto initial_member_resolved;
 				}
 			}
 
 		initial_member_resolved:
 			if (initial_member) {
+				if (!var_chain.push_front(AstNodePtr<MemberNode>(initial_member)))
+					return gen_oom_comp_error();
 				if (e->id_ref_ptr->entries.size() > 1) {
 					SLKC_RETURN_IF_COMP_ERROR(check_null_member_deref(path_env, var_chain, TokenRange{ e->id_ref_ptr->token_range.module_node, e->id_ref_ptr->entries.front().name_token_index }));
 					size_t cur_idx = 1;
@@ -910,18 +983,6 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 						}
 					}
 
-					if (var_chain.size()) {
-						for (auto i : parts) {
-							if (i.member->get_ast_node_type() == AstNodeType::Var) {
-								if (!var_chain.push_back(AstNodePtr<MemberNode>(i.member)))
-									return gen_oom_comp_error();
-							} else {
-								var_chain.clear();
-								break;
-							}
-						}
-					}
-
 					if (final_member->get_ast_node_type() == AstNodeType::Fn) {
 						SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error, select_single_matching_overloading(compile_env, e->id_ref_ptr->token_range, final_member, desired_type, false, result_out));
 
@@ -942,7 +1003,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 								parts,
 								var_chain.size() ? &var_chain : nullptr,
 								initial_member_reg,
-								1,
+								1, 1,
 								fn_type,
 								sld_index));
 					} else {
@@ -958,9 +1019,31 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 								parts,
 								var_chain.size() ? &var_chain : nullptr,
 								initial_member_reg,
-								1,
+								1, 1,
 								{},
 								sld_index));
+					}
+					if (is_this) {
+						if (compile_env->cur_overloading->name == "new") {
+							if (parts.front().member->get_ast_node_type() == AstNodeType::Var) {
+								// We allow user to use uninitialized fields as a lvalue for `uninit = x`.
+								if ((parts.size() != 1) || (eval_purpose != ExprEvalPurpose::LValue)) {
+									AstNodePtr<MemberNode> var_chain[] = { compile_env->this_node.cast_to<MemberNode>(), parts.front().member };
+
+									if (!compile_env->this_node->this_type->scope->base_type) {
+										if (compile_env->vars_to_be_inited /*&& compile_env->this_node*/) {
+											if (!path_env->is_var_inited(VarChainView{ var_chain }))
+												return CompilationError(
+													TokenRange{
+														e->token_range.module_node,
+														e->id_ref_ptr->entries.front().name_token_index },
+													compile_env->this_node ? CompilationErrorKind::InstanceMemberVarNotInitialized : CompilationErrorKind::StaticMemberVarNotInitialized,
+													MemberVarNotInitializedErrorExData{ parts.front().member.cast_to<VarNode>() });
+										}
+									}
+								}
+							}
+						}
 					}
 				} else {
 					final_member = initial_member;
@@ -988,6 +1071,26 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 					return CompilationError(e->id_ref_ptr->token_range, CompilationErrorKind::IdNotFound);
 				}
 
+				// Check if the referenced static member is initialized.
+				if (parts.front().member->get_ast_node_type() == AstNodeType::Var) {
+					auto v = parts.front().member;
+					if ((v->outer == (MemberNode *)compile_env->cur_parent_access_node.get()) && (compile_env->cur_overloading->name == "new")) {
+						AstNodePtr<MemberNode> var_chain[] = { v };
+
+						if (!compile_env->this_node->this_type->scope->base_type) {
+							if (compile_env->vars_to_be_inited /*&& compile_env->this_node*/) {
+								if (!path_env->is_var_inited(VarChainView{ var_chain }))
+									return CompilationError(
+										TokenRange{
+											e->token_range.module_node,
+											e->id_ref_ptr->entries.front().name_token_index },
+										compile_env->this_node ? CompilationErrorKind::InstanceMemberVarNotInitialized : CompilationErrorKind::StaticMemberVarNotInitialized,
+										MemberVarNotInitializedErrorExData{ parts.front().member.cast_to<VarNode>() });
+							}
+						}
+					}
+				}
+
 				if (final_member->get_ast_node_type() == AstNodeType::Fn) {
 					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(compilation_error, select_single_matching_overloading(compile_env, e->id_ref_ptr->token_range, final_member, desired_type, false, result_out));
 
@@ -1007,22 +1110,10 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 							parts,
 							nullptr,
 							UINT32_MAX,
-							0,
+							0, 0,
 							fn_type,
 							sld_index));
 				} else {
-					if (var_chain.size()) {
-						for (auto i : parts) {
-							if (i.member->get_ast_node_type() == AstNodeType::Var) {
-								if (!var_chain.push_back(AstNodePtr<MemberNode>(i.member)))
-									return gen_oom_comp_error();
-							} else {
-								var_chain.clear();
-								break;
-							}
-						}
-					}
-
 					SLKC_RETURN_IF_COMP_ERROR_WITH_LVAR(
 						compilation_error,
 						_load_rest_of_id_ref(compile_env,
@@ -1034,7 +1125,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 							parts,
 							var_chain.size() ? &var_chain : nullptr,
 							UINT32_MAX,
-							0,
+							0, 0,
 							{},
 							sld_index));
 				}

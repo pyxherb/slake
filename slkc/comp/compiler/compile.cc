@@ -926,26 +926,48 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 		}
 	}
 
+	peff::HashMap<std::string_view, AstNodePtr<VarNode>> collected_uninit_instance_vars(compile_env->allocator.get()),
+		collected_uninit_static_vars(compile_env->allocator.get());
+	// Collect members of specific kinds in advance to avoid repeated collecting.
 	for (auto [k, v] : mod->scope->get_members_indices()) {
 		AstNodePtr<MemberNode> m = mod->scope->get_member(v);
 
-		if (m->get_ast_node_type() == AstNodeType::Import) {
-			AstNodePtr<ImportNode> import_node = m.cast_to<ImportNode>();
+		switch (m->get_ast_node_type()) {
+			case AstNodeType::Var: {
+				AstNodePtr<VarNode> var_node = m.cast_to<VarNode>();
 
-			for (auto &j : compile_env->get_document()->external_module_providers) {
-				SLKC_RETURN_IF_COMP_ERROR(j->load_module(compile_env, import_node->id_ref.get()));
+				if (!var_node->initial_value) {
+					if (var_node->is_static()) {
+						if (!collected_uninit_static_vars.insert(var_node->name, std::move(var_node)))
+							return gen_oom_comp_error();
+					} else {
+						if (!collected_uninit_instance_vars.insert(var_node->name, std::move(var_node)))
+							return gen_oom_comp_error();
+					}
+				}
+				break;
 			}
+			case AstNodeType::Import: {
+				AstNodePtr<ImportNode> import_node = m.cast_to<ImportNode>();
 
-			NormalCompilationContext compilation_context(compile_env, nullptr);
+				for (auto &j : compile_env->get_document()->external_module_providers) {
+					SLKC_RETURN_IF_COMP_ERROR(j->load_module(compile_env, import_node->id_ref.get()));
+				}
 
-			slake::HostObjectRef<slake::IdRefObject> id;
+				NormalCompilationContext compilation_context(compile_env, nullptr);
 
-			SLKC_RETURN_IF_COMP_ERROR(compile_id_ref(compile_env, &compilation_context, import_node->id_ref->entries.data(), import_node->id_ref->entries.size(), nullptr, 0, false, {}, id));
+				slake::HostObjectRef<slake::IdRefObject> id;
 
-			if (mod_out->get_object_kind() == slake::ObjectKind::Module) {
-				if (!((slake::ModuleObject *)mod_out)->unnamed_imports.push_back(id.get()))
-					return gen_oom_comp_error();
+				SLKC_RETURN_IF_COMP_ERROR(compile_id_ref(compile_env, &compilation_context, import_node->id_ref->entries.data(), import_node->id_ref->entries.size(), nullptr, 0, false, {}, id));
+
+				if (mod_out->get_object_kind() == slake::ObjectKind::Module) {
+					if (!((slake::ModuleObject *)mod_out)->unnamed_imports.push_back(id.get()))
+						return gen_oom_comp_error();
+				}
+				break;
 			}
+			default:
+				break;
 		}
 	}
 
@@ -1713,10 +1735,17 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 						case AstNodeType::Class:
 						case AstNodeType::Interface:
 						case AstNodeType::Struct:
-							if (!(i->access_modifier & slake::ACCESS_STATIC)) {
+							if (!i->is_static()) {
 								if (!(compile_env->this_node = make_ast_node<ThisNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->get_document())))
 									return gen_oom_comp_error();
 								compile_env->this_node->this_type = cur_parent_access_node;
+								if (i->name == "new") {
+									compile_env->vars_to_be_inited = &collected_uninit_instance_vars;
+								}
+							} else {
+								if (i->name == "new") {
+									compile_env->vars_to_be_inited = &collected_uninit_static_vars;
+								}
 							}
 							break;
 						default:
@@ -1783,6 +1812,39 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 									return gen_oom_comp_error();
 								}
 								e.reset();
+							}
+						}
+
+						// Check if all variables to be initialized are initialized by the constructor, etc.
+						if (compile_env->vars_to_be_inited) {
+							if (compile_env->this_node) {
+								for (auto j : *compile_env->vars_to_be_inited) {
+									AstNodePtr<MemberNode> var_chain[] = { compile_env->this_node.cast_to<MemberNode>(), j.second.cast_to<MemberNode>() };
+									VarChainView vcv = var_chain;
+
+									if (!root_path_env.is_var_inited(vcv)) {
+										if (!compile_env->errors.push_back(
+												CompilationError(
+													i->token_range,
+													CompilationErrorKind::InstanceMemberVarNotInitialized,
+													MemberVarNotInitializedErrorExData{ j.second })))
+											return gen_oom_comp_error();
+									}
+								}
+							} else {
+								for (auto j : *compile_env->vars_to_be_inited) {
+									AstNodePtr<MemberNode> var_chain[] = { j.second.cast_to<MemberNode>() };
+									VarChainView vcv = var_chain;
+
+									if (!root_path_env.is_var_inited(vcv)) {
+										if (!compile_env->errors.push_back(
+												CompilationError(
+													i->body->token_range,
+													CompilationErrorKind::StaticMemberVarNotInitialized,
+													MemberVarNotInitializedErrorExData{ j.second })))
+											return gen_oom_comp_error();
+									}
+								}
 							}
 						}
 						if (!fn_object->instructions.resize(comp_context.generated_instructions.size())) {

@@ -628,6 +628,19 @@ void dump_compilation_error(peff::SharedPtr<slkc::Parser> parser, const slkc::Co
 		case slkc::CompilationErrorKind::DereferencingNull:
 			fprintf(stderr, "Dereferencing null value\n");
 			break;
+		case slkc::CompilationErrorKind::InstanceMemberVarNotInitialized: {
+			const slkc::MemberVarNotInitializedErrorExData &ex_data = std::get<slkc::MemberVarNotInitializedErrorExData>(error.ex_data);
+			fprintf(stderr, "Instance member variable `%s` was not initialized\n", ex_data.var->name.data());
+			break;
+		}
+		case slkc::CompilationErrorKind::StaticMemberVarNotInitialized: {
+			const slkc::MemberVarNotInitializedErrorExData &ex_data = std::get<slkc::MemberVarNotInitializedErrorExData>(error.ex_data);
+			fprintf(stderr, "Static member variable `%s` was not initialized\n", ex_data.var->name.data());
+			break;
+		}
+		case slkc::CompilationErrorKind::ThisNotInitialized:
+			fprintf(stderr, "`this` object has not been initialized\n");
+			break;
 
 		case slkc::CompilationErrorKind::ImportLimitExceeded:
 			fprintf(stderr, "Import item number exceeded\n");

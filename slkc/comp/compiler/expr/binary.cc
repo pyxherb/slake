@@ -114,8 +114,8 @@ static peff::Option<CompilationError> _compile_simple_binary_expr(
 			uint32_t lhs_reg,
 				rhs_reg;
 
-			if ((e = _compile_or_cast_operand(compile_env, compilation_context, path_env, lhs_eval_purpose, desired_lhs_type, expr->lhs, lhs_type, lhs_result))) {
-				if (auto re = _compile_or_cast_operand(compile_env, compilation_context, path_env, rhs_eval_purpose, desired_rhs_type, expr->rhs, rhs_type, rhs_result); re) {
+			if ((e = compile_or_cast_operand(compile_env, compilation_context, path_env, lhs_eval_purpose, desired_lhs_type, expr->lhs, lhs_type, lhs_result))) {
+				if (auto re = compile_or_cast_operand(compile_env, compilation_context, path_env, rhs_eval_purpose, desired_rhs_type, expr->rhs, rhs_type, rhs_result); re) {
 					if (!compile_env->errors.push_back(std::move(*e))) {
 						return gen_oom_comp_error();
 					}
@@ -126,7 +126,7 @@ static peff::Option<CompilationError> _compile_simple_binary_expr(
 				}
 			}
 			lhs_reg = lhs_result.idx_result_reg_out;
-			SLKC_RETURN_IF_COMP_ERROR(_compile_or_cast_operand(compile_env, compilation_context, path_env, rhs_eval_purpose, desired_rhs_type, expr->rhs, rhs_type, rhs_result));
+			SLKC_RETURN_IF_COMP_ERROR(compile_or_cast_operand(compile_env, compilation_context, path_env, rhs_eval_purpose, desired_rhs_type, expr->rhs, rhs_type, rhs_result));
 			rhs_reg = rhs_result.idx_result_reg_out;
 
 			switch (expr->binary_op) {
@@ -190,8 +190,8 @@ static peff::Option<CompilationError> _compile_simple_assign_expr(
 
 			uint32_t rhs_reg;
 
-			if ((e = _compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::LValue, desired_lhs_type, expr->lhs, lhs_type, lhs_result))) {
-				if (auto re = _compile_or_cast_operand(compile_env, compilation_context, path_env, rhs_eval_purpose, desired_rhs_type, expr->rhs, decayed_rhs_type, rhs_result); re) {
+			if ((e = compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::LValue, desired_lhs_type, expr->lhs, lhs_type, lhs_result))) {
+				if (auto re = compile_or_cast_operand(compile_env, compilation_context, path_env, rhs_eval_purpose, desired_rhs_type, expr->rhs, decayed_rhs_type, rhs_result); re) {
 					if (!compile_env->errors.push_back(std::move(*e))) {
 						return gen_oom_comp_error();
 					}
@@ -208,7 +208,7 @@ static peff::Option<CompilationError> _compile_simple_assign_expr(
 					remove_nullable_of_type(desired_rhs_type, desired_rhs_type));
 			}
 
-			SLKC_RETURN_IF_COMP_ERROR(_compile_or_cast_operand(compile_env, compilation_context, path_env, rhs_eval_purpose, desired_rhs_type, expr->rhs, decayed_rhs_type, rhs_result));
+			SLKC_RETURN_IF_COMP_ERROR(compile_or_cast_operand(compile_env, compilation_context, path_env, rhs_eval_purpose, desired_rhs_type, expr->rhs, decayed_rhs_type, rhs_result));
 			rhs_reg = rhs_result.idx_result_reg_out;
 			SLKC_RETURN_IF_COMP_ERROR(compilation_context->emit_ins(
 				idx_sld,
@@ -216,12 +216,12 @@ static peff::Option<CompilationError> _compile_simple_assign_expr(
 				UINT32_MAX,
 				{ slake::Value(slake::ValueType::RegIndex, result_out.idx_result_reg_out), slake::Value(slake::ValueType::RegIndex, rhs_reg) }));
 
-			if (lhs_result.evaluated_final_member && (lhs_result.evaluated_final_member->get_ast_node_type() == AstNodeType::Var)) {
+			if (lhs_result.evaluated_var_chain.size()) {
 				if (rhs_result.evaluated_type->tn_kind == TypeNameKind::Null) {
 					SLKC_RETURN_IF_COMP_ERROR(path_env->set_local_var_nullity_override(lhs_result.evaluated_var_chain, NullOverrideType::Nullify));
 				} else {
 					if (rhs_result.evaluated_type->is_nullable) {
-						if (rhs_result.evaluated_final_member && (rhs_result.evaluated_final_member->get_ast_node_type() == AstNodeType::Var)) {
+						if (rhs_result.evaluated_var_chain.size()) {
 							if (auto override_type = path_env->lookup_var_nullity_override(rhs_result.evaluated_var_chain); override_type.has_value()) {
 								SLKC_RETURN_IF_COMP_ERROR(path_env->set_local_var_nullity_override(lhs_result.evaluated_var_chain, override_type.value()));
 							} else
@@ -232,6 +232,7 @@ static peff::Option<CompilationError> _compile_simple_assign_expr(
 					} else
 						SLKC_RETURN_IF_COMP_ERROR(path_env->set_local_var_nullity_override(lhs_result.evaluated_var_chain, NullOverrideType::Denullify));
 				}
+				SLKC_RETURN_IF_COMP_ERROR(path_env->set_var_inited(lhs_result.evaluated_var_chain));
 			}
 			break;
 		}
@@ -242,8 +243,8 @@ static peff::Option<CompilationError> _compile_simple_assign_expr(
 			uint32_t lhs_reg,
 				rhs_reg;
 
-			if ((e = _compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::LValue, desired_lhs_type, expr->lhs, lhs_type, lhs_result))) {
-				if (auto re = _compile_or_cast_operand(compile_env, compilation_context, path_env, rhs_eval_purpose, desired_rhs_type, expr->rhs, decayed_rhs_type, rhs_result); re) {
+			if ((e = compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::LValue, desired_lhs_type, expr->lhs, lhs_type, lhs_result))) {
+				if (auto re = compile_or_cast_operand(compile_env, compilation_context, path_env, rhs_eval_purpose, desired_rhs_type, expr->rhs, decayed_rhs_type, rhs_result); re) {
 					if (!compile_env->errors.push_back(std::move(*e))) {
 						return gen_oom_comp_error();
 					}
@@ -260,7 +261,7 @@ static peff::Option<CompilationError> _compile_simple_assign_expr(
 					remove_nullable_of_type(desired_rhs_type, desired_rhs_type));
 			}
 
-			SLKC_RETURN_IF_COMP_ERROR(_compile_or_cast_operand(compile_env, compilation_context, path_env, rhs_eval_purpose, desired_rhs_type, expr->rhs, decayed_rhs_type, rhs_result));
+			SLKC_RETURN_IF_COMP_ERROR(compile_or_cast_operand(compile_env, compilation_context, path_env, rhs_eval_purpose, desired_rhs_type, expr->rhs, decayed_rhs_type, rhs_result));
 			rhs_reg = rhs_result.idx_result_reg_out;
 			SLKC_RETURN_IF_COMP_ERROR(compilation_context->emit_ins(
 				idx_sld,
@@ -269,12 +270,12 @@ static peff::Option<CompilationError> _compile_simple_assign_expr(
 				{ slake::Value(slake::ValueType::RegIndex, lhs_reg), slake::Value(slake::ValueType::RegIndex, rhs_reg) }));
 			result_out.idx_result_reg_out = rhs_reg;
 
-			if (lhs_result.evaluated_final_member && (lhs_result.evaluated_final_member->get_ast_node_type() == AstNodeType::Var)) {
+			if (lhs_result.evaluated_var_chain.size()) {
 				if (rhs_result.evaluated_type->tn_kind == TypeNameKind::Null) {
 					SLKC_RETURN_IF_COMP_ERROR(path_env->set_local_var_nullity_override(lhs_result.evaluated_var_chain, NullOverrideType::Nullify));
 				} else {
 					if (rhs_result.evaluated_type->is_nullable) {
-						if (rhs_result.evaluated_final_member && (rhs_result.evaluated_final_member->get_ast_node_type() == AstNodeType::Var)) {
+						if (rhs_result.evaluated_var_chain.size()) {
 							if (auto override_type = path_env->lookup_var_nullity_override(rhs_result.evaluated_var_chain); override_type.has_value()) {
 								SLKC_RETURN_IF_COMP_ERROR(path_env->set_local_var_nullity_override(lhs_result.evaluated_var_chain, override_type.value()));
 							} else
@@ -285,6 +286,7 @@ static peff::Option<CompilationError> _compile_simple_assign_expr(
 					} else
 						SLKC_RETURN_IF_COMP_ERROR(path_env->set_local_var_nullity_override(lhs_result.evaluated_var_chain, NullOverrideType::Denullify));
 				}
+				SLKC_RETURN_IF_COMP_ERROR(path_env->set_var_inited(lhs_result.evaluated_var_chain));
 			}
 			break;
 		}
@@ -330,8 +332,8 @@ static peff::Option<CompilationError> _compile_simple_land_binary_expr(
 			uint32_t cmp_end_label_id;
 			SLKC_RETURN_IF_COMP_ERROR(compilation_context->alloc_label(cmp_end_label_id));
 
-			if ((e = _compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, bool_type.cast_to<TypeNameNode>(), expr->lhs, lhs_type, lhs_result))) {
-				if (auto re = _compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, bool_type.cast_to<TypeNameNode>(), expr->rhs, rhs_type, rhs_result); re) {
+			if ((e = compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, bool_type.cast_to<TypeNameNode>(), expr->lhs, lhs_type, lhs_result))) {
+				if (auto re = compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, bool_type.cast_to<TypeNameNode>(), expr->rhs, rhs_type, rhs_result); re) {
 					if (!compile_env->errors.push_back(std::move(*e))) {
 						return gen_oom_comp_error();
 					}
@@ -360,7 +362,7 @@ static peff::Option<CompilationError> _compile_simple_land_binary_expr(
 				PathEnv lhs_applied_path_env(compile_env->allocator.get());
 				lhs_applied_path_env.set_parent(path_env);
 				SLKC_RETURN_IF_COMP_ERROR(combine_path_env(lhs_applied_path_env, lhs_result.guard_path_env));
-				SLKC_RETURN_IF_COMP_ERROR(_compile_or_cast_operand(compile_env, compilation_context, &lhs_applied_path_env, ExprEvalPurpose::RValue, bool_type.cast_to<TypeNameNode>(), expr->rhs, rhs_type, rhs_result));
+				SLKC_RETURN_IF_COMP_ERROR(compile_or_cast_operand(compile_env, compilation_context, &lhs_applied_path_env, ExprEvalPurpose::RValue, bool_type.cast_to<TypeNameNode>(), expr->rhs, rhs_type, rhs_result));
 			}
 			rhs_reg = rhs_result.idx_result_reg_out;
 			SLKC_RETURN_IF_COMP_ERROR(compilation_context->emit_ins(
@@ -446,8 +448,8 @@ static peff::Option<CompilationError> _compile_simple_lor_binary_expr(
 			lhs_path_env.set_parent(path_env);
 			rhs_path_env.set_parent(path_env);
 
-			if ((e = _compile_or_cast_operand(compile_env, compilation_context, &lhs_path_env, ExprEvalPurpose::RValue, bool_type.cast_to<TypeNameNode>(), expr->lhs, lhs_type, lhs_result))) {
-				if (auto re = _compile_or_cast_operand(compile_env, compilation_context, &rhs_path_env, ExprEvalPurpose::RValue, bool_type.cast_to<TypeNameNode>(), expr->rhs, rhs_type, rhs_result); re) {
+			if ((e = compile_or_cast_operand(compile_env, compilation_context, &lhs_path_env, ExprEvalPurpose::RValue, bool_type.cast_to<TypeNameNode>(), expr->lhs, lhs_type, lhs_result))) {
+				if (auto re = compile_or_cast_operand(compile_env, compilation_context, &rhs_path_env, ExprEvalPurpose::RValue, bool_type.cast_to<TypeNameNode>(), expr->rhs, rhs_type, rhs_result); re) {
 					if (!compile_env->errors.push_back(std::move(*e))) {
 						return gen_oom_comp_error();
 					}
@@ -472,7 +474,7 @@ static peff::Option<CompilationError> _compile_simple_lor_binary_expr(
 
 			compilation_context->set_label_offset(post_branch_label_id, compilation_context->get_cur_ins_off());
 
-			SLKC_RETURN_IF_COMP_ERROR(_compile_or_cast_operand(compile_env, compilation_context, &rhs_path_env, ExprEvalPurpose::RValue, bool_type.cast_to<TypeNameNode>(), expr->rhs, rhs_type, rhs_result));
+			SLKC_RETURN_IF_COMP_ERROR(compile_or_cast_operand(compile_env, compilation_context, &rhs_path_env, ExprEvalPurpose::RValue, bool_type.cast_to<TypeNameNode>(), expr->rhs, rhs_type, rhs_result));
 			rhs_reg = rhs_result.idx_result_reg_out;
 			SLKC_RETURN_IF_COMP_ERROR(compilation_context->emit_ins(
 				idx_sld,
@@ -536,7 +538,10 @@ static peff::Option<CompilationError> _compile_simple_compound_assign_expr(
 		case ExprEvalPurpose::EvalTypeActual:
 			break;
 		case ExprEvalPurpose::LValue: {
-			CompileExprResult result(compile_env->allocator.get());
+			CompileExprResult
+				lhs_result(compile_env->allocator.get()),
+				lhs_rvalue_result(compile_env->allocator.get()),
+				rhs_result(compile_env->allocator.get());
 
 			uint32_t lhs_reg,
 				lhs_value_reg,
@@ -546,21 +551,19 @@ static peff::Option<CompilationError> _compile_simple_compound_assign_expr(
 			SLKC_RETURN_IF_COMP_ERROR(compilation_context->alloc_reg(lhs_value_reg));
 			SLKC_RETURN_IF_COMP_ERROR(compilation_context->alloc_reg(result_value_reg));
 
-			SLKC_RETURN_IF_COMP_ERROR(_compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::LValue, lhs_type, expr->lhs, lhs_type, result));
-			lhs_reg = result.idx_result_reg_out;
-			SLKC_RETURN_IF_COMP_ERROR(compilation_context->emit_ins(
-				idx_sld,
-				slake::Opcode::LVALUE,
-				lhs_value_reg,
-				{ slake::Value(slake::ValueType::RegIndex, lhs_reg) }));
+			SLKC_RETURN_IF_COMP_ERROR(compile_expr(compile_env, compilation_context, path_env, expr->lhs, ExprEvalPurpose::RValue, lhs_type, lhs_rvalue_result));
+			lhs_value_reg = lhs_rvalue_result.idx_result_reg_out;
 
-			SLKC_RETURN_IF_COMP_ERROR(_compile_or_cast_operand(compile_env, compilation_context, path_env, rhs_eval_purpose, desired_rhs_type, expr->rhs, rhs_type, result));
-			rhs_reg = result.idx_result_reg_out;
+			SLKC_RETURN_IF_COMP_ERROR(compile_or_cast_operand(compile_env, compilation_context, path_env, rhs_eval_purpose, desired_rhs_type, expr->rhs, rhs_type, rhs_result));
+			rhs_reg = rhs_result.idx_result_reg_out;
 			SLKC_RETURN_IF_COMP_ERROR(compilation_context->emit_ins(
 				idx_sld,
 				opcode,
 				result_value_reg,
 				{ slake::Value(slake::ValueType::RegIndex, lhs_value_reg), slake::Value(slake::ValueType::RegIndex, rhs_reg) }));
+
+			SLKC_RETURN_IF_COMP_ERROR(compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::LValue, lhs_type, expr->lhs, lhs_type, lhs_result));
+			lhs_reg = lhs_result.idx_result_reg_out;
 
 			SLKC_RETURN_IF_COMP_ERROR(compilation_context->emit_ins(
 				idx_sld,
@@ -572,11 +575,11 @@ static peff::Option<CompilationError> _compile_simple_compound_assign_expr(
 			break;
 		}
 		case ExprEvalPurpose::Stmt:
-			SLKC_RETURN_IF_COMP_ERROR(compile_env->push_warning(
-				CompilationWarning(expr->token_range, CompilationWarningKind::UnusedExprResult)));
-			[[fallthrough]];
 		case ExprEvalPurpose::RValue: {
-			CompileExprResult result(compile_env->allocator.get());
+			CompileExprResult
+				lhs_result(compile_env->allocator.get()),
+				lhs_rvalue_result(compile_env->allocator.get()),
+				rhs_result(compile_env->allocator.get());
 
 			uint32_t lhs_reg,
 				lhs_value_reg,
@@ -586,27 +589,26 @@ static peff::Option<CompilationError> _compile_simple_compound_assign_expr(
 			SLKC_RETURN_IF_COMP_ERROR(compilation_context->alloc_reg(lhs_value_reg));
 			SLKC_RETURN_IF_COMP_ERROR(compilation_context->alloc_reg(result_value_reg));
 
-			SLKC_RETURN_IF_COMP_ERROR(_compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::LValue, lhs_type, expr->lhs, lhs_type, result));
-			lhs_reg = result.idx_result_reg_out;
-			SLKC_RETURN_IF_COMP_ERROR(compilation_context->emit_ins(
-				idx_sld,
-				slake::Opcode::LVALUE,
-				lhs_value_reg,
-				{ slake::Value(slake::ValueType::RegIndex, lhs_reg) }));
+			SLKC_RETURN_IF_COMP_ERROR(compile_expr(compile_env, compilation_context, path_env, expr->lhs, ExprEvalPurpose::RValue, lhs_type, lhs_rvalue_result));
+			lhs_value_reg = lhs_rvalue_result.idx_result_reg_out;
 
-			SLKC_RETURN_IF_COMP_ERROR(_compile_or_cast_operand(compile_env, compilation_context, path_env, rhs_eval_purpose, desired_rhs_type, expr->rhs, rhs_type, result));
-			rhs_reg = result.idx_result_reg_out;
+			SLKC_RETURN_IF_COMP_ERROR(compile_or_cast_operand(compile_env, compilation_context, path_env, rhs_eval_purpose, desired_rhs_type, expr->rhs, rhs_type, rhs_result));
+			rhs_reg = rhs_result.idx_result_reg_out;
 			SLKC_RETURN_IF_COMP_ERROR(compilation_context->emit_ins(
 				idx_sld,
 				opcode,
 				result_value_reg,
 				{ slake::Value(slake::ValueType::RegIndex, lhs_value_reg), slake::Value(slake::ValueType::RegIndex, rhs_reg) }));
 
+			SLKC_RETURN_IF_COMP_ERROR(compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::LValue, lhs_type, expr->lhs, lhs_type, lhs_result));
+			lhs_reg = lhs_result.idx_result_reg_out;
+
 			SLKC_RETURN_IF_COMP_ERROR(compilation_context->emit_ins(
 				idx_sld,
 				slake::Opcode::STORE,
 				UINT32_MAX,
 				{ slake::Value(slake::ValueType::RegIndex, lhs_reg), slake::Value(slake::ValueType::RegIndex, result_value_reg) }));
+
 			result_out.idx_result_reg_out = result_value_reg;
 			break;
 		}
@@ -2187,8 +2189,8 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								uint32_t lhs_reg,
 									rhs_reg;
 
-								if ((e = _compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, lhs_type, expr->lhs, lhs_type, result))) {
-									if (auto re = _compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, u32_type.cast_to<TypeNameNode>(), expr->rhs, rhs_type, result); re) {
+								if ((e = compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, lhs_type, expr->lhs, lhs_type, result))) {
+									if (auto re = compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, u32_type.cast_to<TypeNameNode>(), expr->rhs, rhs_type, result); re) {
 										if (!compile_env->errors.push_back(std::move(*e))) {
 											return gen_oom_comp_error();
 										}
@@ -2199,7 +2201,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 									}
 								}
 								lhs_reg = result.idx_result_reg_out;
-								SLKC_RETURN_IF_COMP_ERROR(_compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, u32_type.cast_to<TypeNameNode>(), expr->rhs, rhs_type, result));
+								SLKC_RETURN_IF_COMP_ERROR(compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, u32_type.cast_to<TypeNameNode>(), expr->rhs, rhs_type, result));
 								rhs_reg = result.idx_result_reg_out;
 
 								uint32_t output_reg;
@@ -2224,8 +2226,8 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 								uint32_t lhs_reg,
 									rhs_reg;
 
-								if ((e = _compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, lhs_type, expr->lhs, lhs_type, result))) {
-									if (auto re = _compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, u32_type.cast_to<TypeNameNode>(), expr->rhs, rhs_type, result); re) {
+								if ((e = compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, lhs_type, expr->lhs, lhs_type, result))) {
+									if (auto re = compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, u32_type.cast_to<TypeNameNode>(), expr->rhs, rhs_type, result); re) {
 										if (!compile_env->errors.push_back(std::move(*e))) {
 											return gen_oom_comp_error();
 										}
@@ -2236,7 +2238,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 									}
 								}
 								lhs_reg = result.idx_result_reg_out;
-								SLKC_RETURN_IF_COMP_ERROR(_compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, u32_type.cast_to<TypeNameNode>(), expr->rhs, rhs_type, result));
+								SLKC_RETURN_IF_COMP_ERROR(compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, u32_type.cast_to<TypeNameNode>(), expr->rhs, rhs_type, result));
 								rhs_reg = result.idx_result_reg_out;
 
 								uint32_t tmp_reg;
@@ -2526,8 +2528,8 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 
 								peff::Option<CompilationError> e;
 
-								if ((e = _compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, decayed_actual_lhs_type, expr->lhs, decayed_lhs_type, lhs_result))) {
-									if (auto re = _compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, decayed_actual_lhs_type, expr->rhs, decayed_rhs_type, rhs_result); re) {
+								if ((e = compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, decayed_actual_lhs_type, expr->lhs, decayed_lhs_type, lhs_result))) {
+									if (auto re = compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, decayed_actual_lhs_type, expr->rhs, decayed_rhs_type, rhs_result); re) {
 										if (!compile_env->errors.push_back(std::move(*e))) {
 											return gen_oom_comp_error();
 										}
@@ -2538,7 +2540,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 									}
 								}
 								lhs_reg = lhs_result.idx_result_reg_out;
-								SLKC_RETURN_IF_COMP_ERROR(_compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, decayed_actual_lhs_type, expr->rhs, decayed_rhs_type, rhs_result));
+								SLKC_RETURN_IF_COMP_ERROR(compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, decayed_actual_lhs_type, expr->rhs, decayed_rhs_type, rhs_result));
 								rhs_reg = rhs_result.idx_result_reg_out;
 
 								uint32_t output_reg;
@@ -2580,8 +2582,8 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 
 								peff::Option<CompilationError> e;
 
-								if ((e = _compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, decayed_actual_lhs_type, expr->lhs, decayed_lhs_type, lhs_result))) {
-									if (auto re = _compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, decayed_actual_lhs_type, expr->rhs, decayed_rhs_type, rhs_result); re) {
+								if ((e = compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, decayed_actual_lhs_type, expr->lhs, decayed_lhs_type, lhs_result))) {
+									if (auto re = compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, decayed_actual_lhs_type, expr->rhs, decayed_rhs_type, rhs_result); re) {
 										if (!compile_env->errors.push_back(std::move(*e))) {
 											return gen_oom_comp_error();
 										}
@@ -2592,7 +2594,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_binary_expr(
 									}
 								}
 								lhs_reg = lhs_result.idx_result_reg_out;
-								SLKC_RETURN_IF_COMP_ERROR(_compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, decayed_actual_lhs_type, expr->rhs, decayed_rhs_type, rhs_result));
+								SLKC_RETURN_IF_COMP_ERROR(compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, decayed_actual_lhs_type, expr->rhs, decayed_rhs_type, rhs_result));
 								rhs_reg = rhs_result.idx_result_reg_out;
 
 								uint32_t output_reg;

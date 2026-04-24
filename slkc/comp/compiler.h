@@ -61,6 +61,7 @@ namespace slkc {
 	struct PathEnv {
 		const PathEnv *parent = nullptr;
 		peff::RcObjectPtr<peff::Alloc> allocator;
+		peff::Set<VarChain, VarChainViewComparator, true> inited_vars;
 		peff::Map<VarChain, NullOverrideType, VarChainViewComparator, true> local_var_nullity_overrides;
 
 		/// @brief Indicates if the path will be executed at least one times.
@@ -83,8 +84,11 @@ namespace slkc {
 			this->parent = parent;
 		}
 		SLAKE_API peff::Option<NullOverrideType> lookup_var_nullity_override(const VarChainView &var_node);
-		SLAKE_API peff::Option<CompilationError> set_local_var_nullity_override(VarChainView var_node, NullOverrideType type);
+		SLAKE_API peff::Option<CompilationError> set_local_var_nullity_override(const VarChainView &var_node, NullOverrideType type);
 		SLAKE_API void remove_var_nullity_override(const VarChainView &var_node);
+		SLAKE_API bool is_var_inited(const VarChainView &var_node);
+		SLAKE_API peff::Option<CompilationError> set_var_inited(const VarChainView &var_node);
+		SLAKE_API void remove_var_inited(const VarChainView &var_node);
 
 		SLAKE_FORCEINLINE void reset() {
 			local_var_nullity_overrides.clear();
@@ -249,6 +253,7 @@ namespace slkc {
 		AstNodePtr<ModuleNode> cur_parent_access_node;
 		AstNodePtr<ModuleNode> cur_module;
 		AstNodePtr<ThisNode> this_node;
+		peff::HashMap<std::string_view, AstNodePtr<VarNode>> *vars_to_be_inited = nullptr;
 		uint32_t flags;
 		bool is_errors_disabled = false;
 		bool is_warnings_disabled = false;
@@ -289,6 +294,7 @@ namespace slkc {
 		SLAKE_FORCEINLINE void reset() {
 			cur_overloading = {};
 			this_node = {};
+			vars_to_be_inited = nullptr;
 		}
 
 		SLAKE_FORCEINLINE peff::SharedPtr<Document> get_document() const noexcept {
@@ -384,9 +390,18 @@ namespace slkc {
 
 	using ResolvedIdRefPartList = peff::DynArray<ResolvedIdRefPart>;
 
-	[[nodiscard]] SLKC_API peff::Option<CompilationError> _compile_or_cast_operand(
+	[[nodiscard]] SLKC_API peff::Option<CompilationError> compile_or_cast_operand(
 		CompileEnv *compile_env,
 		CompilationContext *compilation_context,
+		PathEnv *path_env,
+		ExprEvalPurpose eval_purpose,
+		AstNodePtr<TypeNameNode> desired_type,
+		AstNodePtr<ExprNode> operand,
+		AstNodePtr<TypeNameNode> operand_type,
+		CompileExprResult &result_out);
+	[[nodiscard]] SLKC_API peff::Option<CompilationError> try_compile_or_cast_operand(
+		CompileEnv *compile_env,
+		CompilationContext *parent_compilation_context,
 		PathEnv *path_env,
 		ExprEvalPurpose eval_purpose,
 		AstNodePtr<TypeNameNode> desired_type,
@@ -594,6 +609,9 @@ namespace slkc {
 		AstNodePtr<TypeNameNode> base_type,
 		bool &result_out);
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> is_basic_type(
+		AstNodePtr<TypeNameNode> lhs,
+		bool &result_out);
+	[[nodiscard]] SLKC_API peff::Option<CompilationError> is_force_init_type(
 		AstNodePtr<TypeNameNode> lhs,
 		bool &result_out);
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> is_object_type(

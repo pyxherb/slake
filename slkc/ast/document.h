@@ -86,6 +86,9 @@ namespace slkc {
 		FunctionOverloadingDuplicatedDuringInstantiation,
 		ReturnValueTypeDoesNotMatch,
 		DereferencingNull,
+		InstanceMemberVarNotInitialized,
+		StaticMemberVarNotInitialized,
+		ThisNotInitialized,
 
 		ImportLimitExceeded,
 		MalformedModuleName,
@@ -101,6 +104,7 @@ namespace slkc {
 	class TypeNameNode;
 	class ModuleNode;
 	class FnOverloadingNode;
+	class VarNode;
 
 	struct IncompatibleOperandErrorExData {
 		AstNodePtr<TypeNameNode> desired_type;
@@ -118,10 +122,19 @@ namespace slkc {
 		AstNodePtr<FnOverloadingNode> overloading;
 	};
 
+	struct MemberVarNotInitializedErrorExData {
+		AstNodePtr<VarNode> var;
+	};
+
 	struct CompilationError {
 		TokenRange token_range;
 		CompilationErrorKind error_kind;
-		std::variant<std::monostate, IncompatibleOperandErrorExData, ErrorParsingImportedModuleErrorExData, AbstractMethodNotImplementedErrorExData> ex_data;
+		std::variant<std::monostate,
+			IncompatibleOperandErrorExData,
+			ErrorParsingImportedModuleErrorExData,
+			AbstractMethodNotImplementedErrorExData,
+			MemberVarNotInitializedErrorExData>
+			ex_data;
 
 		SLAKE_FORCEINLINE CompilationError(
 			const TokenRange &token_range,
@@ -154,6 +167,16 @@ namespace slkc {
 			AbstractMethodNotImplementedErrorExData &&ex_data)
 			: token_range(token_range),
 			  error_kind(CompilationErrorKind::AbstractMethodNotImplemented),
+			  ex_data(ex_data) {
+			assert(token_range);
+		}
+
+		SLAKE_FORCEINLINE CompilationError(
+			const TokenRange &token_range,
+			CompilationErrorKind kind,
+			MemberVarNotInitializedErrorExData &&ex_data)
+			: token_range(token_range),
+			  error_kind(kind),
 			  ex_data(ex_data) {
 			assert(token_range);
 		}

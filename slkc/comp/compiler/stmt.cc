@@ -53,7 +53,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_var_def_stmt(
 
 						SLKC_RETURN_IF_COMP_ERROR(is_lvalue_type(i->type, b));
 
-						SLKC_RETURN_IF_COMP_ERROR(_compile_or_cast_operand(compile_env, compilation_context, path_env, b ? ExprEvalPurpose::LValue : ExprEvalPurpose::RValue, i->type, i->initial_value, expr_type, result));
+						SLKC_RETURN_IF_COMP_ERROR(compile_or_cast_operand(compile_env, compilation_context, path_env, b ? ExprEvalPurpose::LValue : ExprEvalPurpose::RValue, i->type, i->initial_value, expr_type, result));
 						initial_value_reg = result.idx_result_reg_out;
 					} else {
 						bool b = false;
@@ -216,7 +216,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_for_stmt(
 
 						SLKC_RETURN_IF_COMP_ERROR(is_lvalue_type(i->type, b));
 
-						SLKC_RETURN_IF_COMP_ERROR(_compile_or_cast_operand(compile_env, compilation_context, path_env, b ? ExprEvalPurpose::LValue : ExprEvalPurpose::RValue, i->type, i->initial_value, expr_type, result));
+						SLKC_RETURN_IF_COMP_ERROR(compile_or_cast_operand(compile_env, compilation_context, path_env, b ? ExprEvalPurpose::LValue : ExprEvalPurpose::RValue, i->type, i->initial_value, expr_type, result));
 						initial_value_reg = result.idx_result_reg_out;
 					} else {
 						bool b = false;
@@ -322,7 +322,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_for_stmt(
 
 		compilation_context->set_label_offset(cond_label, compilation_context->get_cur_ins_off());
 
-		SLKC_RETURN_IF_COMP_ERROR(_compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, bool_type.cast_to<TypeNameNode>(), s->cond, expr_type, cond_result));
+		SLKC_RETURN_IF_COMP_ERROR(compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, bool_type.cast_to<TypeNameNode>(), s->cond, expr_type, cond_result));
 		condition_reg = cond_result.idx_result_reg_out;
 
 		SLKC_RETURN_IF_COMP_ERROR(
@@ -448,7 +448,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_if_stmt(
 		&false_path_env
 	};
 
-	SLKC_RETURN_IF_COMP_ERROR(_compile_or_cast_operand(compile_env, compilation_context, &cond_env, ExprEvalPurpose::RValue, bool_type.cast_to<TypeNameNode>(), s->cond, expr_type, cond_result));
+	SLKC_RETURN_IF_COMP_ERROR(compile_or_cast_operand(compile_env, compilation_context, &cond_env, ExprEvalPurpose::RValue, bool_type.cast_to<TypeNameNode>(), s->cond, expr_type, cond_result));
 
 	SLKC_RETURN_IF_COMP_ERROR(combine_path_env(true_path_env, cond_result.guard_path_env));
 
@@ -597,7 +597,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_while_stmt(
 	{
 		compilation_context->set_label_offset(continue_label, compilation_context->get_cur_ins_off());
 
-		SLKC_RETURN_IF_COMP_ERROR(_compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, bool_type.cast_to<TypeNameNode>(), s->cond, expr_type, cond_result));
+		SLKC_RETURN_IF_COMP_ERROR(compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, bool_type.cast_to<TypeNameNode>(), s->cond, expr_type, cond_result));
 
 		condition_reg = cond_result.idx_result_reg_out;
 
@@ -740,7 +740,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_do_while_stmt(
 
 	compilation_context->set_label_offset(continue_label, compilation_context->get_cur_ins_off());
 
-	SLKC_RETURN_IF_COMP_ERROR(_compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, bool_type.cast_to<TypeNameNode>(), s->cond, expr_type, cond_result));
+	SLKC_RETURN_IF_COMP_ERROR(compile_or_cast_operand(compile_env, compilation_context, path_env, ExprEvalPurpose::RValue, bool_type.cast_to<TypeNameNode>(), s->cond, expr_type, cond_result));
 	condition_reg = cond_result.idx_result_reg_out;
 
 	SLKC_RETURN_IF_COMP_ERROR(

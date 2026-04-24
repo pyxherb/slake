@@ -102,7 +102,7 @@ class AnotherGeneric<X, U> {
 
 class Test {
 	public let x: i32;
-	public let lab: Test;
+	public let lab: Test?;
 
 	public operator delete() {
 		extfns.print("Destructing Test...\n");
@@ -111,6 +111,7 @@ class Test {
 
 	public operator new(x: i32) {
 		this.x = x;
+		this.lab = null;
 		return;
 	}
 
@@ -143,6 +144,7 @@ class Derived(Test) {
 	}
 
 	public operator new(y: i32) {
+		this.y = 0;
 		this.x = y * 2;
 		this.x = y * 4;
 		return;

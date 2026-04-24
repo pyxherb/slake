@@ -67,6 +67,10 @@ SLKC_API peff::Option<CompilationError> slkc::combine_path_env(PathEnv &outer, c
 				} else
 					SLKC_RETURN_IF_COMP_ERROR(outer.set_local_var_nullity_override(i.first, i.second));
 			}
+
+			for (const auto &i : inner.inited_vars) {
+				SLKC_RETURN_IF_COMP_ERROR(outer.set_var_inited(i));
+			}
 			break;
 		}
 	}
@@ -89,19 +93,8 @@ SLKC_API peff::Option<CompilationError> slkc::combine_parallel_path_env(peff::Al
 					return gen_oom_comp_error();
 				break;
 			}
-			case PathPossibility::Must: {
-				outer.no_return_possibility = combine_possibility(outer.no_return_possibility, inner.no_return_possibility);
-				outer.return_possibility = combine_possibility(outer.return_possibility, inner.return_possibility);
-				outer.break_possibility = combine_possibility(outer.break_possibility, inner.break_possibility);
-
-				for (auto i : inner.local_var_nullity_overrides) {
-					if (i.second == NullOverrideType::Uncertain) {
-						SLKC_RETURN_IF_COMP_ERROR(outer.set_local_var_nullity_override(i.first, NullOverrideType::Uncertain));
-					} else
-						SLKC_RETURN_IF_COMP_ERROR(outer.set_local_var_nullity_override(i.first, i.second));
-				}
-				break;
-			}
+			case PathPossibility::Must:
+				std::terminate();
 		}
 	}
 
@@ -152,6 +145,30 @@ SLKC_API peff::Option<CompilationError> slkc::combine_parallel_path_env(peff::Al
 		}
 	}
 
+	{
+		peff::Set<VarChainView, VarChainViewComparator, true> common_inited_vars(allocator);
+
+		for (auto it = idx_may_paths.begin(); it != idx_may_paths.end(); ++it) {
+			const PathEnv &inner = *inners[*it];
+
+			for (const auto &i : inner.inited_vars) {
+				if (!common_inited_vars.insert({ i }))
+					return gen_oom_comp_error();
+			}
+		}
+
+		for (auto it = idx_may_paths.begin(); it != idx_may_paths.end(); ++it) {
+			const PathEnv &inner = *inners[*it];
+
+			for (auto i : common_inited_vars) {
+				// If a local variable null override is not always happen, its original assumption should be cancelled.
+				if (!inner.inited_vars.contains_alt(i)) {
+					SLKC_RETURN_IF_COMP_ERROR(outer.set_var_inited(i));
+				}
+			}
+		}
+	}
+
 	return {};
 }
 
@@ -185,7 +202,7 @@ SLAKE_API int VarChainViewComparator::operator()(const VarChainView &lhs, const 
 	return 0;
 }
 
-SLKC_API PathEnv::PathEnv(peff::Alloc *allocator) noexcept : local_var_nullity_overrides(allocator), allocator(allocator) {
+SLKC_API PathEnv::PathEnv(peff::Alloc *allocator) noexcept : inited_vars(allocator), local_var_nullity_overrides(allocator), allocator(allocator) {
 }
 
 SLAKE_API peff::Option<NullOverrideType> PathEnv::lookup_var_nullity_override(const VarChainView &var_node) {
@@ -199,7 +216,7 @@ SLAKE_API peff::Option<NullOverrideType> PathEnv::lookup_var_nullity_override(co
 	return {};
 }
 
-SLAKE_API peff::Option<CompilationError> PathEnv::set_local_var_nullity_override(VarChainView var_node, NullOverrideType type) {
+SLAKE_API peff::Option<CompilationError> PathEnv::set_local_var_nullity_override(const VarChainView &var_node, NullOverrideType type) {
 	if (auto it = local_var_nullity_overrides.find_alt(var_node); it != local_var_nullity_overrides.end()) {
 		it.value() = type;
 	} else {
@@ -215,6 +232,30 @@ SLAKE_API peff::Option<CompilationError> PathEnv::set_local_var_nullity_override
 
 SLAKE_API void PathEnv::remove_var_nullity_override(const VarChainView &var_node) {
 	local_var_nullity_overrides.remove_alt(var_node);
+}
+
+SLAKE_API bool PathEnv::is_var_inited(const VarChainView &var_node) {
+	for (const PathEnv *i = this; i; i = i->parent) {
+		if (i->inited_vars.contains_alt(var_node))
+			return true;
+	}
+	return false;
+}
+
+SLAKE_API peff::Option<CompilationError> PathEnv::set_var_inited(const VarChainView &var_node) {
+	if (!inited_vars.contains_alt(var_node)) {
+		VarChain vc(allocator.get());
+
+		if (!vc.build(var_node))
+			return gen_oom_comp_error();
+		if (!inited_vars.insert(std::move(vc)))
+			return gen_oom_comp_error();
+	}
+	return {};
+}
+
+SLAKE_API void PathEnv::remove_var_inited(const VarChainView &var_node) {
+	inited_vars.remove_alt(var_node);
 }
 
 SLKC_API CompilationContext::CompilationContext(CompilationContext *parent) : parent(parent) {

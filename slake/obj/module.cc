@@ -248,7 +248,7 @@ SLAKE_API HostObjectRef<ModuleObject> slake::ModuleObject::alloc(Runtime *rt) {
 	peff::RcObjectPtr<peff::Alloc> cur_generation_allocator = rt->get_cur_gen_alloc();
 
 	std::unique_ptr<ModuleObject, peff::DeallocableDeleter<ModuleObject>> ptr(
-		peff::alloc_and_construct<ModuleObject>(cur_generation_allocator.get(), sizeof(std::max_align_t), rt, cur_generation_allocator.get()));
+		peff::alloc_and_construct<ModuleObject>(cur_generation_allocator.get(), alignof(ModuleObject), rt, cur_generation_allocator.get()));
 
 	if (!ptr)
 		return nullptr;

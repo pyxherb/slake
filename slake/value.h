@@ -442,31 +442,31 @@ namespace slake {
 		SLAKE_FORCEINLINE Value() noexcept = default;
 		SLAKE_API Value(const Value &other) noexcept = default;
 		SLAKE_FORCEINLINE Value(Value &&other) noexcept = default;
-		SLAKE_FORCEINLINE constexpr Value(int8_t data) noexcept : value_type(ValueType::I8), as_i8(data), value_flags(0) {
+		SLAKE_FORCEINLINE constexpr explicit Value(int8_t data) noexcept : value_type(ValueType::I8), as_i8(data), value_flags(0) {
 		}
-		SLAKE_FORCEINLINE constexpr Value(int16_t data) noexcept : value_type(ValueType::I16), as_i16(data), value_flags(0) {
+		SLAKE_FORCEINLINE constexpr explicit Value(int16_t data) noexcept : value_type(ValueType::I16), as_i16(data), value_flags(0) {
 		}
-		SLAKE_FORCEINLINE constexpr Value(int32_t data) noexcept : value_type(ValueType::I32), as_i32(data), value_flags(0) {
+		SLAKE_FORCEINLINE constexpr explicit Value(int32_t data) noexcept : value_type(ValueType::I32), as_i32(data), value_flags(0) {
 		}
-		SLAKE_FORCEINLINE constexpr Value(int64_t data) noexcept : value_type(ValueType::I64), as_i64(data), value_flags(0) {
+		SLAKE_FORCEINLINE constexpr explicit Value(int64_t data) noexcept : value_type(ValueType::I64), as_i64(data), value_flags(0) {
 		}
 		SLAKE_FORCEINLINE constexpr Value(SizeTypeMarker marker, ssize_t data) noexcept : value_type(ValueType::ISize), as_isize(data), value_flags(0) {
 			SLAKE_REFERENCED_PARAM(marker);
 		}
-		SLAKE_FORCEINLINE constexpr Value(uint8_t data) noexcept : value_type(ValueType::U8), as_u8(data), value_flags(0) {
+		SLAKE_FORCEINLINE constexpr explicit Value(uint8_t data) noexcept : value_type(ValueType::U8), as_u8(data), value_flags(0) {
 		}
-		SLAKE_FORCEINLINE constexpr Value(uint16_t data) noexcept : value_type(ValueType::U16), as_u16(data), value_flags(0) {
+		SLAKE_FORCEINLINE constexpr explicit Value(uint16_t data) noexcept : value_type(ValueType::U16), as_u16(data), value_flags(0) {
 		}
-		SLAKE_FORCEINLINE constexpr Value(uint32_t data) noexcept : value_type(ValueType::U32), as_u32(data), value_flags(0) {
+		SLAKE_FORCEINLINE constexpr explicit Value(uint32_t data) noexcept : value_type(ValueType::U32), as_u32(data), value_flags(0) {
 		}
-		SLAKE_FORCEINLINE constexpr Value(uint64_t data) noexcept : value_type(ValueType::U64), as_u64(data), value_flags(0) {
+		SLAKE_FORCEINLINE constexpr explicit Value(uint64_t data) noexcept : value_type(ValueType::U64), as_u64(data), value_flags(0) {
 		}
 		SLAKE_FORCEINLINE constexpr Value(SizeTypeMarker marker, size_t data) noexcept : value_type(ValueType::USize), as_usize(data), value_flags(0) {
 			SLAKE_REFERENCED_PARAM(marker);
 		}
-		SLAKE_FORCEINLINE constexpr Value(float data) noexcept : value_type(ValueType::F32), as_f32(data), value_flags(0) {
+		SLAKE_FORCEINLINE constexpr explicit Value(float data) noexcept : value_type(ValueType::F32), as_f32(data), value_flags(0) {
 		}
-		SLAKE_FORCEINLINE constexpr Value(double data) noexcept : value_type(ValueType::F64), as_f64(data), value_flags(0) {
+		SLAKE_FORCEINLINE constexpr explicit Value(double data) noexcept : value_type(ValueType::F64), as_f64(data), value_flags(0) {
 		}
 		SLAKE_FORCEINLINE constexpr explicit Value(bool data) noexcept : value_type(ValueType::Bool), as_bool(data), value_flags(0) {
 		}

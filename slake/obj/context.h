@@ -77,7 +77,7 @@ namespace slake {
 
 		SLAKE_API MajorFrame(Runtime *rt) noexcept;
 		MajorFrame(MajorFrame &&) noexcept = default;
-		SLAKE_API ~MajorFrame();
+		~MajorFrame() = default;
 
 		SLAKE_API void dealloc() noexcept;
 
@@ -85,6 +85,7 @@ namespace slake {
 	};
 
 	static_assert(!std::is_polymorphic_v<MajorFrame>);
+	static_assert(std::is_trivially_destructible_v<MajorFrame>);
 
 	using ContextFlags = uint8_t;
 	constexpr static ContextFlags

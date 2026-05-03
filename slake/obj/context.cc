@@ -113,9 +113,6 @@ SLAKE_API HostObjectRef<ContextObject> slake::ContextObject::alloc(Runtime *rt, 
 	return ptr.release();
 }
 
-SLAKE_API MajorFrame::~MajorFrame() {
-}
-
 SLAKE_API void slake::ContextObject::dealloc() {
 	peff::destroy_and_release<ContextObject>(get_allocator(), this, alignof(ContextObject));
 }

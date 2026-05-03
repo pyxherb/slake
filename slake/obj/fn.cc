@@ -256,7 +256,7 @@ SLAKE_API HostObjectRef<RegularFnOverloadingObject> slake::RegularFnOverloadingO
 	std::unique_ptr<RegularFnOverloadingObject, peff::DeallocableDeleter<RegularFnOverloadingObject>> ptr(
 		peff::alloc_and_construct<RegularFnOverloadingObject>(
 			cur_generation_allocator.get(),
-			sizeof(std::max_align_t),
+			alignof(RegularFnOverloadingObject),
 			fn_object,
 			cur_generation_allocator.get()));
 	if (!ptr)
@@ -276,7 +276,7 @@ SLAKE_API HostObjectRef<RegularFnOverloadingObject> slake::RegularFnOverloadingO
 	std::unique_ptr<RegularFnOverloadingObject, peff::DeallocableDeleter<RegularFnOverloadingObject>> ptr(
 		peff::alloc_and_construct<RegularFnOverloadingObject>(
 			cur_generation_allocator.get(),
-			sizeof(std::max_align_t),
+			alignof(RegularFnOverloadingObject),
 			*other, cur_generation_allocator.get(), succeeded));
 	if (!ptr)
 		return nullptr;
@@ -337,7 +337,7 @@ SLAKE_API HostObjectRef<NativeFnOverloadingObject> slake::NativeFnOverloadingObj
 	std::unique_ptr<NativeFnOverloadingObject, peff::DeallocableDeleter<NativeFnOverloadingObject>> ptr(
 		peff::alloc_and_construct<NativeFnOverloadingObject>(
 			cur_generation_allocator.get(),
-			sizeof(std::max_align_t),
+			alignof(NativeFnOverloadingObject),
 			fn_object, cur_generation_allocator.get(), callback));
 	if (!ptr)
 		return nullptr;
@@ -356,7 +356,7 @@ SLAKE_API HostObjectRef<NativeFnOverloadingObject> slake::NativeFnOverloadingObj
 	std::unique_ptr<NativeFnOverloadingObject, peff::DeallocableDeleter<NativeFnOverloadingObject>> ptr(
 		peff::alloc_and_construct<NativeFnOverloadingObject>(
 			cur_generation_allocator.get(),
-			sizeof(std::max_align_t),
+			alignof(NativeFnOverloadingObject),
 			*other, cur_generation_allocator.get(), succeeded));
 	if (!ptr)
 		return nullptr;
@@ -439,7 +439,7 @@ SLAKE_API HostObjectRef<FnObject> slake::FnObject::alloc(Runtime *rt) {
 	std::unique_ptr<FnObject, peff::DeallocableDeleter<FnObject>> ptr(
 		peff::alloc_and_construct<FnObject>(
 			cur_generation_allocator.get(),
-			sizeof(std::max_align_t),
+			alignof(FnObject),
 			rt, cur_generation_allocator.get()));
 
 	if (!rt->add_object(ptr.get()))
@@ -456,7 +456,7 @@ SLAKE_API HostObjectRef<FnObject> slake::FnObject::alloc(const FnObject *other) 
 	std::unique_ptr<FnObject, peff::DeallocableDeleter<FnObject>> ptr(
 		peff::alloc_and_construct<FnObject>(
 			cur_generation_allocator.get(),
-			sizeof(std::max_align_t),
+			alignof(FnObject),
 			*other, cur_generation_allocator.get(), succeeded));
 	if (!ptr)
 		return nullptr;

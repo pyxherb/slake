@@ -170,8 +170,8 @@ namespace slake {
 
 		using GenericCacheTable =
 			peff::Map<
-				peff::DynArray<TypeRef>,	// Generic arguments.
-				MemberObject *,			// Cached instantiated value.
+				peff::DynArray<TypeRef>,  // Generic arguments.
+				MemberObject *,			  // Cached instantiated value.
 				GenericArgListComparator,
 				true>;
 
@@ -200,10 +200,14 @@ namespace slake {
 			Context *context,
 			const MajorFrame *major_frame,
 			size_t stack_offset);
-		SLAKE_API MinorFrame *_fetch_minor_frame(
+		SLAKE_FORCEINLINE MinorFrame *_fetch_minor_frame(
 			Context *context,
 			const MajorFrame *major_frame,
-			size_t stack_offset);
+			size_t stack_offset) {
+			MinorFrame *mf = (MinorFrame *)_fetch_minor_frame_unchecked(context, major_frame, stack_offset);
+			assert(mf->magic == MINOR_FRAME_MAGIC);
+			return mf;
+		}
 		SLAKE_API AllocaRecord *_alloc_alloca_record(Context *context, const MajorFrame *frame, uint32_t output_reg);
 		SLAKE_API static Value *_fetch_arg_stack(
 			char *data_stack,
@@ -217,9 +221,13 @@ namespace slake {
 		SLAKE_API static MajorFrame *_fetch_major_frame_unchecked(
 			Context *context,
 			size_t stack_offset);
-		SLAKE_API static MajorFrame *_fetch_major_frame(
+		SLAKE_FORCEINLINE static MajorFrame *_fetch_major_frame(
 			Context *context,
-			size_t stack_offset);
+			size_t stack_offset) {
+			MajorFrame *mf = _fetch_major_frame_unchecked(context, stack_offset);
+			assert(mf->magic == MAJOR_FRAME_MAGIC);
+			return mf;
+		}
 		SLAKE_API ExceptHandler *_fetch_except_handler(
 			Context *context,
 			MajorFrame *major_frame,
@@ -227,7 +235,7 @@ namespace slake {
 		/// @brief Execute a single instruction.
 		/// @param context Context for execution.
 		/// @param ins Instruction to be executed.
-		[[nodiscard]] InternalExceptionPointer _exec_ins(ContextObject *const context, MajorFrame *const cur_major_frame, const Opcode opcode, const size_t output, const size_t num_operands, const Value *const operands, bool &is_context_changed_out) noexcept;
+		[[nodiscard]] InternalExceptionPointer _exec_ins(ContextObject *const context, MajorFrame *const cur_major_frame, const uint32_t output, const Opcode opcode, const size_t num_operands, const Value *const operands, bool &is_context_changed_out) noexcept;
 
 		friend struct Context;
 
@@ -480,11 +488,11 @@ namespace slake {
 		SLAKE_API static void *locate_value_base_ptr(const Reference &entity_ref) noexcept;
 		SLAKE_API static TypeRef typeof_var(const Reference &entity_ref) noexcept;
 		SLAKE_API static void read_var_with_type(const Reference &entity_ref, const TypeRef &t, Value &value_out) noexcept;
-		SLAKE_FORCEINLINE static void read_var(const Reference& entity_ref, Value& value_out) noexcept {
+		SLAKE_FORCEINLINE static void read_var(const Reference &entity_ref, Value &value_out) noexcept {
 			read_var_with_type(entity_ref, typeof_var(entity_ref), value_out);
 		}
 		SLAKE_API static void write_var_with_type(const Reference &entity_ref, const TypeRef &t, const Value &value) noexcept;
-		SLAKE_FORCEINLINE static void write_var(const Reference& entity_ref, const Value& value) noexcept {
+		SLAKE_FORCEINLINE static void write_var(const Reference &entity_ref, const Value &value) noexcept {
 			write_var_with_type(entity_ref, typeof_var(entity_ref), value);
 		}
 		SLAKE_FORCEINLINE InternalExceptionPointer write_var_checked(const Reference &entity_ref, const Value &value) const noexcept {

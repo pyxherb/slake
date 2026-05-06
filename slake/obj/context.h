@@ -3,6 +3,7 @@
 
 #include "object.h"
 #include "var.h"
+#include "fn.h"
 #include <slake/except.h>
 #include <memory>
 #include <peff/base/deallocable.h>
@@ -61,8 +62,8 @@ namespace slake {
 
 		Runtime *associated_runtime;
 
-		const FnOverloadingObject *cur_fn = nullptr;	 // Current function overloading.
-		ContextObject *cur_context = nullptr;
+		const FnOverloadingObject *cur_fn;	// Current function overloading.
+		ContextObject *cur_context;
 		CoroutineObject *cur_coroutine = nullptr;
 
 		ResumableContextData resumable_context_data;
@@ -73,13 +74,12 @@ namespace slake {
 		size_t prev_stack_top = 0;
 		size_t off_regs = UINT32_MAX;
 
-		Value cur_except = Value();	// Current exception.
+		Value cur_except;  // Current exception.
 
-		SLAKE_API MajorFrame(Runtime *rt) noexcept;
+		SLAKE_FORCEINLINE MajorFrame(Runtime *rt) noexcept : associated_runtime(rt) {
+		}
 		MajorFrame(MajorFrame &&) noexcept = default;
 		~MajorFrame() = default;
-
-		SLAKE_API void dealloc() noexcept;
 
 		SLAKE_API void replace_allocator(peff::Alloc *allocator) noexcept;
 	};
@@ -98,10 +98,10 @@ namespace slake {
 		Runtime *runtime;
 		peff::RcObjectPtr<peff::Alloc> self_allocator;
 		size_t num_major_frames = 0;
-		size_t off_cur_major_frame = SIZE_MAX;	 // Offset of current major frame
-		ContextFlags flags = 0;				 // Flags
-		char *data_stack = nullptr;			 // Data stack
-		size_t stack_top = 0;				 // Stack top
+		size_t off_cur_major_frame = SIZE_MAX;	// Offset of current major frame
+		ContextFlags flags = 0;					// Flags
+		char *data_stack = nullptr;				// Data stack
+		size_t stack_top = 0;					// Stack top
 		size_t stack_size;
 
 		SLAKE_API char *stack_alloc(size_t size) noexcept;

@@ -2,14 +2,6 @@
 
 using namespace slake;
 
-SLAKE_API MajorFrame::MajorFrame(Runtime *rt) noexcept
-	: associated_runtime(rt) {
-}
-
-SLAKE_API void MajorFrame::dealloc() noexcept {
-	peff::destroy_and_release<MajorFrame>(associated_runtime->get_fixed_alloc(), this, alignof(MajorFrame));
-}
-
 SLAKE_API char *Context::stack_alloc(size_t size) noexcept {
 	if (size_t new_stack_top = stack_top + size;
 		new_stack_top > stack_size) {

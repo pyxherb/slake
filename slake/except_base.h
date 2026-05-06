@@ -50,7 +50,7 @@ namespace slake {
 			other._ptr = nullptr;
 		}
 		SLAKE_FORCEINLINE InternalExceptionPointer &operator=(InternalExceptionPointer &&other) noexcept {
-			reset();
+			unwrap();
 			_ptr = other._ptr;
 			other._ptr = nullptr;
 			return *this;

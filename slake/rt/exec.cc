@@ -11,7 +11,7 @@ using namespace slake;
 	if (((output) == UINT32_MAX) || ((num_operands) != (num_operands_in)))               \
 		return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc((runtime)->get_fixed_alloc()));
 
-#define _check_operand_count(runtime, output, num_operands_in, num_opernads)                             \
+#define _check_operand_count(runtime, output, num_operands_in, num_operands)                             \
 	if (num_operands != num_operands_in) {                                                               \
 		return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(runtime->get_fixed_alloc())); \
 	}
@@ -157,24 +157,13 @@ SLAKE_API AllocaRecord *Runtime::_alloc_alloca_record(Context *context, const Ma
 	return record;
 }
 
-SLAKE_API MinorFrame *Runtime::_fetch_minor_frame(
-	Context *context,
-	const MajorFrame *major_frame,
-	size_t stack_offset) {
-	MinorFrame *mf = (MinorFrame *)_fetch_minor_frame_unchecked(context, major_frame, stack_offset);
-	assert(mf->magic == MINOR_FRAME_MAGIC);
-	return mf;
-}
-
 SLAKE_API MinorFrame *Runtime::_fetch_minor_frame_unchecked(
 	Context *context,
 	const MajorFrame *major_frame,
 	size_t stack_offset) {
-	size_t offset;
+	size_t offset = stack_offset;
 	if (major_frame->cur_coroutine) {
-		offset = stack_offset + major_frame->cur_coroutine->off_stack_top;
-	} else {
-		offset = stack_offset;
+		offset += major_frame->cur_coroutine->off_stack_top;
 	}
 
 	return (MinorFrame *)calc_stack_addr(context->data_stack,
@@ -187,11 +176,9 @@ SLAKE_API Value *Runtime::_fetch_arg_stack(
 	size_t stack_size,
 	const MajorFrame *major_frame,
 	size_t stack_offset) {
-	size_t offset;
+	size_t offset = stack_offset;
 	if (major_frame && major_frame->cur_coroutine) {
-		offset = stack_offset + major_frame->cur_coroutine->off_stack_top;
-	} else {
-		offset = stack_offset;
+		offset += major_frame->cur_coroutine->off_stack_top;
 	}
 
 	return (Value *)calc_stack_addr(data_stack,
@@ -203,24 +190,14 @@ SLAKE_API AllocaRecord *Runtime::_fetch_alloca_record(
 	Context *context,
 	const MajorFrame *major_frame,
 	size_t stack_offset) {
-	size_t offset;
+	size_t offset = stack_offset;
 	if (major_frame->cur_coroutine) {
-		offset = stack_offset + major_frame->cur_coroutine->off_stack_top;
-	} else {
-		offset = stack_offset;
+		offset += major_frame->cur_coroutine->off_stack_top;
 	}
 
 	return (AllocaRecord *)calc_stack_addr(context->data_stack,
 		context->stack_size,
 		offset);
-}
-
-SLAKE_API MajorFrame *Runtime::_fetch_major_frame(
-	Context *context,
-	size_t stack_offset) {
-	MajorFrame *mf = _fetch_major_frame_unchecked(context, stack_offset);
-	assert(mf->magic == MAJOR_FRAME_MAGIC);
-	return mf;
 }
 
 SLAKE_API MajorFrame *Runtime::_fetch_major_frame_unchecked(
@@ -320,7 +297,7 @@ SLAKE_API InternalExceptionPointer Runtime::_create_new_coroutine_major_frame(
 				if (!regs)
 					return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
 				for (size_t i = 0; i < ol->num_registers; ++i)
-					regs[i] = Value(ValueType::Undefined);
+					regs[i] = InvalidValueState();
 				break;
 			}
 			default:;
@@ -397,7 +374,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_create_new_major_frame(
 		new_major_frame.resumable_context_data.num_regs = 1;
 		Value *regs = (Value *)context->aligned_stack_alloc(sizeof(Value) * 1, alignof(Value));
 		new_major_frame.off_regs = context->stack_top;
-		*regs = Value(ValueType::Undefined);
+		*regs = InvalidValueState{};
 	} else {
 		new_major_frame.cur_fn = fn;
 		new_major_frame.resumable_context_data.this_object = this_object;
@@ -432,11 +409,11 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_create_new_major_frame(
 	restore_stack_top_guard.release();
 
 	if (context->off_cur_major_frame != SIZE_MAX) {
-		MajorFrame *pmf = _fetch_major_frame(context, context->off_cur_major_frame);
+		MajorFrame *prev_mf = _fetch_major_frame(context, context->off_cur_major_frame);
 		assert(context->off_cur_major_frame != off_major_frame);
-		pmf->off_next_frame = off_major_frame;
-		mf->stack_base = pmf->resumable_context_data.off_next_args_begin;
-		pmf->resumable_context_data.off_next_args_begin = SIZE_MAX;
+		prev_mf->off_next_frame = off_major_frame;
+		mf->stack_base = prev_mf->resumable_context_data.off_next_args_begin;
+		prev_mf->resumable_context_data.off_next_args_begin = SIZE_MAX;
 	}
 	context->off_cur_major_frame = off_major_frame;
 	++context->num_major_frames;
@@ -445,22 +422,17 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_create_new_major_frame(
 }
 
 SLAKE_API void Runtime::_leave_major_frame(Context *context) noexcept {
-	MajorFrame *mf = _fetch_major_frame(context, context->off_cur_major_frame), *pmf;
+	MajorFrame *mf = _fetch_major_frame(context, context->off_cur_major_frame);
 
 	assert(mf->off_next_frame == SIZE_MAX);
 
-	if (mf->off_prev_frame != SIZE_MAX) {
-		pmf = _fetch_major_frame(context, mf->off_prev_frame);
-
-		pmf->off_next_frame = SIZE_MAX;
-	}
+	if (mf->off_prev_frame != SIZE_MAX)
+		_fetch_major_frame(context, mf->off_prev_frame)->off_next_frame = SIZE_MAX;
 
 	context->off_cur_major_frame = mf->off_prev_frame;
 	assert(mf->prev_stack_top <= context->stack_top);
 	context->stack_top = mf->prev_stack_top;
 	--context->num_major_frames;
-
-	std::destroy_at<MajorFrame>(mf);
 }
 
 SLAKE_FORCEINLINE InternalExceptionPointer slake::Runtime::_add_local_var(Context *context, const MajorFrame *frame, TypeRef type, uint32_t output_reg, Reference &object_ref_out) noexcept {
@@ -495,6 +467,8 @@ SLAKE_FORCEINLINE InternalExceptionPointer slake::Runtime::_add_local_var(Contex
 	if (!context->aligned_stack_alloc(size, align))
 		return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
 
+	if (type.is_nullable())
+		context->stack_alloc(sizeof(bool));
 	switch (type.type_id) {
 		case TypeId::I8:
 		case TypeId::I16:
@@ -509,8 +483,6 @@ SLAKE_FORCEINLINE InternalExceptionPointer slake::Runtime::_add_local_var(Contex
 		case TypeId::Bool:
 		case TypeId::String:
 		case TypeId::Any:
-			if (type.is_nullable())
-				context->stack_alloc(sizeof(bool));
 			break;
 		case TypeId::Instance:
 		case TypeId::GenericArg:
@@ -616,7 +588,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer larg(Context *context, MajorFrame *ma
 	return {};
 }
 
-InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorFrame *const cur_major_frame, const Opcode opcode, const size_t output, const size_t num_operands, const Value *const operands, bool &is_context_changed_out) noexcept {
+InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorFrame *const cur_major_frame, const uint32_t output, const Opcode opcode, const size_t num_operands, const Value *const operands, bool &is_context_changed_out) noexcept {
 	InternalExceptionPointer except_ptr;
 	char *const data_stack = context->_context.data_stack;
 	const size_t stack_size = context->_context.stack_size;
@@ -1104,7 +1076,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 
 			switch (x->value_type) {
 				case ValueType::Bool:
-					value_out = Value((int16_t)(x->get_bool() && y->get_bool()));
+					value_out = (int16_t)(x->get_bool() && y->get_bool());
 					break;
 				default:
 					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
@@ -1129,7 +1101,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 
 			switch (x->value_type) {
 				case ValueType::Bool:
-					value_out = Value((int16_t)(x->get_bool() || y->get_bool()));
+					value_out = (int16_t)(x->get_bool() || y->get_bool());
 					break;
 				default:
 					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
@@ -1464,13 +1436,6 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 				default:
 					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
-			uint64_t lhs = x->get_u64(), rhs = y->get_u64();
-			if (lhs > rhs) {
-				value_out = Value((int32_t)1);
-			} else if (lhs < rhs) {
-				value_out = Value((int32_t)-1);
-			} else
-				value_out = Value((int32_t)0);
 			break;
 		}
 		case Opcode::CMP: {
@@ -1860,7 +1825,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 
 								generic_instantiation_context.generic_args = &cur_name.generic_args;
 								MemberObject *m;
-								SLAKE_RETURN_IF_EXCEPT(instantiate_generic_object((MemberObject *)entity_ref.as_object, m, &generic_instantiation_context));
+								SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, instantiate_generic_object((MemberObject *)entity_ref.as_object, m, &generic_instantiation_context));
 								entity_ref = Reference(m);
 							}
 						}
@@ -2261,7 +2226,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 						return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 						// TODO: Use a more proper kind of exception.
 					}
-					_calc_reg_ptr(data_stack, stack_size, cur_major_frame, ar->def_reg)->value_type = ValueType::Invalid;
+					*_calc_reg_ptr(data_stack, stack_size, cur_major_frame, ar->def_reg) = InvalidValueState{};
 
 					off_alloca_record = ar->off_next;
 				}
@@ -2344,7 +2309,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 					break;
 				}
 				default:
-					std::terminate();
+					SLAKE_UNREACHABLE();
 			}
 
 			if (!fn)
@@ -2533,7 +2498,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			}
 
 			uint32_t return_value_out_reg = cur_major_frame->return_value_out_reg;
-			Value return_value = Value(ValueType::Invalid);
+			Value return_value = InvalidValueState{};
 
 			switch (num_operands) {
 				case 0:
@@ -2590,7 +2555,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 
 			if (co->is_done()) {
 				if (output != UINT32_MAX) {
-					SLAKE_RETURN_IF_EXCEPT(_set_register_value(this, data_stack, stack_size, cur_major_frame, output, co->final_result));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _set_register_value(this, data_stack, stack_size, cur_major_frame, output, co->final_result));
 				}
 			} else {
 				if (co->overloading->return_type.type_id == TypeId::StructInstance) {
@@ -2598,9 +2563,9 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 
 					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _add_local_var(&context->get_context(), cur_major_frame, co->overloading->return_type, output, ref));
 
-					SLAKE_RETURN_IF_EXCEPT(_create_new_coroutine_major_frame(&context->_context, co.get(), output, &ref));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _create_new_coroutine_major_frame(&context->_context, co.get(), output, &ref));
 				} else
-					SLAKE_RETURN_IF_EXCEPT(_create_new_coroutine_major_frame(&context->_context, co.get(), output, nullptr));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _create_new_coroutine_major_frame(&context->_context, co.get(), output, nullptr));
 			}
 
 			is_context_changed_out = true;
@@ -2619,7 +2584,7 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			_check_object_operand_type(this, fn_object_ref.as_object, ObjectKind::FnOverloading);
 			co = (CoroutineObject *)fn_object_ref.as_object;
 
-			SLAKE_RETURN_IF_EXCEPT(_set_register_value(this, data_stack, stack_size, cur_major_frame, output, co->is_done()));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _set_register_value(this, data_stack, stack_size, cur_major_frame, output, co->is_done()));
 			break;
 		}
 		case Opcode::LTHIS: {
@@ -2844,13 +2809,6 @@ SLAKE_API InternalExceptionPointer Runtime::exec_context(ContextObject *context)
 
 				bool is_context_changed = false;
 				while (!is_context_changed) {
-					const size_t idx_cur_ins = cur_major_frame->resumable_context_data.cur_ins;
-					if (idx_cur_ins >=
-						num_ins) {
-						// Raise out of fn body error.
-						std::terminate();
-					}
-
 					// Interrupt execution if the thread is explicitly specified to be killed.
 					if (managed_thread->status == ThreadStatus::Dead) {
 						return {};
@@ -2860,8 +2818,14 @@ SLAKE_API InternalExceptionPointer Runtime::exec_context(ContextObject *context)
 						gc();
 					}
 
+					const size_t idx_cur_ins = cur_major_frame->resumable_context_data.cur_ins;
+					if (idx_cur_ins >=
+						num_ins) {
+						// Raise out of fn body error.
+						std::terminate();
+					}
 					const Instruction *const instruction = ol->instructions.data() + idx_cur_ins;
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _exec_ins(context, cur_major_frame, instruction->opcode, instruction->output, instruction->num_operands, instruction->operands, is_context_changed));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _exec_ins(context, cur_major_frame, instruction->output, instruction->opcode, instruction->num_operands, instruction->operands, is_context_changed));
 				}
 
 				break;

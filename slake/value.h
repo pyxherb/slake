@@ -414,6 +414,8 @@ namespace slake {
 		TypeRef type;
 	};
 
+	struct InvalidValueState {};
+
 	using ValueFlags = uint8_t;
 	constexpr ValueFlags VALUE_LOCAL = 0x01;
 	struct Value {
@@ -442,6 +444,8 @@ namespace slake {
 		SLAKE_FORCEINLINE Value() noexcept = default;
 		SLAKE_API Value(const Value &other) noexcept = default;
 		SLAKE_FORCEINLINE Value(Value &&other) noexcept = default;
+		SLAKE_FORCEINLINE Value(InvalidValueState) noexcept : value_type(ValueType::Invalid) {
+		}
 		SLAKE_FORCEINLINE constexpr explicit Value(int8_t data) noexcept : value_type(ValueType::I8), as_i8(data), value_flags(0) {
 		}
 		SLAKE_FORCEINLINE constexpr explicit Value(int16_t data) noexcept : value_type(ValueType::I16), as_i16(data), value_flags(0) {
@@ -485,6 +489,10 @@ namespace slake {
 		SLAKE_FORCEINLINE Value(const TypeRef &type) noexcept : value_type(ValueType::TypeName), as_type(type), value_flags(0) {
 		}
 
+		SLAKE_FORCEINLINE constexpr Value &operator=(InvalidValueState) noexcept {
+			value_type = ValueType::Invalid;
+			return *this;
+		}
 		SLAKE_FORCEINLINE constexpr Value &operator=(ValueType data) noexcept {
 			value_type = data;
 			this->value_flags = 0;

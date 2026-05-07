@@ -75,7 +75,7 @@ SLAKE_API HostObjectRef<IdRefObject> slake::IdRefObject::alloc(Runtime *rt) {
 	std::unique_ptr<IdRefObject, peff::DeallocableDeleter<IdRefObject>> ptr(
 		peff::alloc_and_construct<IdRefObject>(
 			cur_generation_allocator.get(),
-			sizeof(std::max_align_t),
+			alignof(IdRefObject),
 			rt,
 			cur_generation_allocator.get()));
 	if (!ptr)
@@ -95,7 +95,7 @@ SLAKE_API HostObjectRef<IdRefObject> slake::IdRefObject::alloc(const IdRefObject
 	std::unique_ptr<IdRefObject, peff::DeallocableDeleter<IdRefObject>> ptr(
 		peff::alloc_and_construct<IdRefObject>(
 			cur_generation_allocator.get(),
-			sizeof(std::max_align_t),
+			alignof(IdRefObject),
 			*other, cur_generation_allocator.get(), succeeded));
 	if (!ptr)
 		return nullptr;

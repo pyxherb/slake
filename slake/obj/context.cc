@@ -43,7 +43,7 @@ SLAKE_API Context::~Context() {
 	}
 
 	if (data_stack) {
-		self_allocator->release(data_stack, stack_size, sizeof(std::max_align_t));
+		self_allocator->release(data_stack, stack_size, alignof(std::max_align_t));
 	}
 }
 
@@ -89,12 +89,12 @@ SLAKE_API HostObjectRef<ContextObject> slake::ContextObject::alloc(Runtime *rt, 
 	std::unique_ptr<ContextObject, peff::DeallocableDeleter<ContextObject>> ptr(
 		peff::alloc_and_construct<ContextObject>(
 			cur_generation_allocator.get(),
-			sizeof(std::max_align_t),
+			alignof(ContextObject),
 			rt, cur_generation_allocator.get()));
 	if (!ptr)
 		return nullptr;
 
-	if (!(ptr->_context.data_stack = (char *)cur_generation_allocator->alloc(stack_size, sizeof(std::max_align_t))))
+	if (!(ptr->_context.data_stack = (char *)cur_generation_allocator->alloc(stack_size, alignof(std::max_align_t))))
 		return nullptr;
 
 	ptr->_context.stack_size = stack_size;

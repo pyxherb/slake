@@ -300,13 +300,16 @@ namespace slake {
 		CALL,	   // Call
 		MCALL,	   // Method Call
 		CTORCALL,  // Constructor Call
+		RETVOID,   // Return void
 		RET,	   // Return
 
-		COCALL,	  // Coroutine call
-		COMCALL,  // Coroutine method call
-		YIELD,	  // Yield
-		RESUME,	  // Resume
-		CODONE,	  // Is coroutine done?
+		COCALL,		// Coroutine call
+		COMCALL,	// Coroutine method call
+		CORETVOID,	// Coroutine return void
+		CORET,		// Coroutine return
+		YIELD,		// Yield
+		RESUME,		// Resume
+		CODONE,		// Is coroutine done?
 
 		LTHIS,	// Load this register
 

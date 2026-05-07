@@ -536,6 +536,6 @@ SLAKE_API HostObjectRef<ArrayObject> Runtime::new_array_instance(Runtime *rt, co
 			return obj.get();
 		}
 		default:
-			throw std::logic_error("Unhandled element type");
+			peff::panic("Unhandled element type");
 	}
 }

@@ -16,7 +16,7 @@ SLAKE_API HostObjectRef<CoroutineObject> slake::CoroutineObject::alloc(Runtime *
 	std::unique_ptr<CoroutineObject, peff::DeallocableDeleter<CoroutineObject>> ptr(
 		peff::alloc_and_construct<CoroutineObject>(
 			cur_generation_allocator.get(),
-			sizeof(std::max_align_t),
+			alignof(CoroutineObject),
 			rt, cur_generation_allocator.get()));
 
 	if (!rt->add_object(ptr.get()))

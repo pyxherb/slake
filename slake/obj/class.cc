@@ -78,7 +78,7 @@ SLAKE_API ObjectLayout *ObjectLayout::duplicate(peff::Alloc *allocator) const {
 }
 
 SLAKE_API ObjectLayout *ObjectLayout::alloc(peff::Alloc *self_allocator) {
-	return peff::alloc_and_construct<ObjectLayout>(self_allocator, sizeof(std::max_align_t), self_allocator);
+	return peff::alloc_and_construct<ObjectLayout>(self_allocator, alignof(ObjectLayout), self_allocator);
 }
 
 SLAKE_API void ObjectLayout::dealloc() {
@@ -104,7 +104,7 @@ SLAKE_API FnObject *MethodTable::get_method(const std::string_view &name) {
 }
 
 SLAKE_API MethodTable *MethodTable::alloc(peff::Alloc *self_allocator) {
-	return peff::alloc_and_construct<MethodTable>(self_allocator, sizeof(std::max_align_t), self_allocator);
+	return peff::alloc_and_construct<MethodTable>(self_allocator, alignof(MethodTable), self_allocator);
 }
 
 SLAKE_API void MethodTable::dealloc() {
@@ -245,7 +245,7 @@ SLAKE_API HostObjectRef<ClassObject> slake::ClassObject::alloc(Duplicator *dupli
 	std::unique_ptr<ClassObject, peff::DeallocableDeleter<ClassObject>> ptr(
 		peff::alloc_and_construct<ClassObject>(
 			cur_generation_allocator.get(),
-			sizeof(std::max_align_t),
+			alignof(ClassObject),
 			duplicator, *other, cur_generation_allocator.get(), succeeded));
 
 	if (!succeeded)
@@ -263,7 +263,7 @@ SLAKE_API HostObjectRef<ClassObject> slake::ClassObject::alloc(Runtime *rt) {
 	std::unique_ptr<ClassObject, peff::DeallocableDeleter<ClassObject>> ptr(
 		peff::alloc_and_construct<ClassObject>(
 			cur_generation_allocator.get(),
-			sizeof(std::max_align_t),
+			alignof(ClassObject),
 			rt, cur_generation_allocator.get()));
 
 	if (!rt->add_object(ptr.get()))
@@ -426,7 +426,7 @@ SLAKE_API HostObjectRef<InterfaceObject> slake::InterfaceObject::alloc(Runtime *
 	std::unique_ptr<InterfaceObject, peff::DeallocableDeleter<InterfaceObject>> ptr(
 		peff::alloc_and_construct<InterfaceObject>(
 			cur_generation_allocator.get(),
-			sizeof(std::max_align_t),
+			alignof(InterfaceObject),
 			rt,
 			cur_generation_allocator.get()));
 	if (!ptr)
@@ -446,7 +446,7 @@ SLAKE_API HostObjectRef<InterfaceObject> slake::InterfaceObject::alloc(Duplicato
 	std::unique_ptr<InterfaceObject, peff::DeallocableDeleter<InterfaceObject>> ptr(
 		peff::alloc_and_construct<InterfaceObject>(
 			cur_generation_allocator.get(),
-			sizeof(std::max_align_t),
+			alignof(InterfaceObject),
 			duplicator, *other, cur_generation_allocator.get(), succeeded));
 	if (!ptr)
 		return nullptr;
@@ -709,7 +709,7 @@ SLAKE_API HostObjectRef<StructObject> slake::StructObject::alloc(Duplicator *dup
 	std::unique_ptr<StructObject, peff::DeallocableDeleter<StructObject>> ptr(
 		peff::alloc_and_construct<StructObject>(
 			cur_generation_allocator.get(),
-			sizeof(std::max_align_t),
+			alignof(StructObject),
 			duplicator, *other, cur_generation_allocator.get(), succeeded));
 
 	if (!succeeded)
@@ -727,7 +727,7 @@ SLAKE_API HostObjectRef<StructObject> slake::StructObject::alloc(Runtime *rt) {
 	std::unique_ptr<StructObject, peff::DeallocableDeleter<StructObject>> ptr(
 		peff::alloc_and_construct<StructObject>(
 			cur_generation_allocator.get(),
-			sizeof(std::max_align_t),
+			alignof(StructObject),
 			rt, cur_generation_allocator.get()));
 
 	if (!rt->add_object(ptr.get()))
@@ -782,7 +782,7 @@ SLAKE_API HostObjectRef<ScopedEnumObject> ScopedEnumObject::alloc(Runtime *rt) {
 	peff::RcObjectPtr<peff::Alloc> cur_generation_allocator = rt->get_cur_gen_alloc();
 
 	std::unique_ptr<ScopedEnumObject, peff::DeallocableDeleter<ScopedEnumObject>> ptr(
-		peff::alloc_and_construct<ScopedEnumObject>(cur_generation_allocator.get(), sizeof(std::max_align_t), rt, cur_generation_allocator.get()));
+		peff::alloc_and_construct<ScopedEnumObject>(cur_generation_allocator.get(), alignof(ScopedEnumObject), rt, cur_generation_allocator.get()));
 
 	if (!ptr)
 		return nullptr;
@@ -824,7 +824,7 @@ SLAKE_API HostObjectRef<UnionEnumItemObject> slake::UnionEnumItemObject::alloc(R
 	peff::RcObjectPtr<peff::Alloc> cur_generation_allocator = rt->get_cur_gen_alloc();
 
 	std::unique_ptr<UnionEnumItemObject, peff::DeallocableDeleter<UnionEnumItemObject>> ptr(
-		peff::alloc_and_construct<UnionEnumItemObject>(cur_generation_allocator.get(), sizeof(std::max_align_t), rt, cur_generation_allocator.get()));
+		peff::alloc_and_construct<UnionEnumItemObject>(cur_generation_allocator.get(), alignof(UnionEnumItemObject), rt, cur_generation_allocator.get()));
 
 	if (!ptr)
 		return nullptr;
@@ -925,7 +925,7 @@ SLAKE_API HostObjectRef<UnionEnumObject> UnionEnumObject::alloc(Runtime *rt) {
 	peff::RcObjectPtr<peff::Alloc> cur_generation_allocator = rt->get_cur_gen_alloc();
 
 	std::unique_ptr<UnionEnumObject, peff::DeallocableDeleter<UnionEnumObject>> ptr(
-		peff::alloc_and_construct<UnionEnumObject>(cur_generation_allocator.get(), sizeof(std::max_align_t), rt, cur_generation_allocator.get()));
+		peff::alloc_and_construct<UnionEnumObject>(cur_generation_allocator.get(), alignof(UnionEnumObject), rt, cur_generation_allocator.get()));
 
 	if (!ptr)
 		return nullptr;

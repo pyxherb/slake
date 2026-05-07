@@ -192,7 +192,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_instantiate_generic_object(G
 		case ValueType::Undefined:
 			break;
 		default:
-			throw std::logic_error("Unhandled value type");
+			peff::panic("Unhandled value type");
 	}
 	return {};
 }
@@ -702,7 +702,7 @@ SLAKE_API InternalExceptionPointer Runtime::instantiate_generic_object(MemberObj
 						break;
 					}
 					default:
-						throw std::logic_error("Unhandled object type");
+						peff::panic("Unhandled object type");
 				}
 			}
 		}

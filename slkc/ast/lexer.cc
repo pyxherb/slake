@@ -17,7 +17,7 @@ SLKC_API StringTokenExtension::StringTokenExtension(peff::Alloc *allocator, peff
 SLKC_API StringTokenExtension::~StringTokenExtension() {
 }
 SLKC_API void StringTokenExtension::dealloc() {
-	peff::destroy_and_release<StringTokenExtension>(allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroy_and_release<StringTokenExtension>(allocator.get(), this, alignof(std::max_align_t));
 }
 
 SLKC_API Token::Token(peff::Alloc *allocator, const peff::WeakPtr<Document> &document) : allocator(allocator), document(document) {
@@ -25,7 +25,7 @@ SLKC_API Token::Token(peff::Alloc *allocator, const peff::WeakPtr<Document> &doc
 SLKC_API Token::~Token() {
 }
 SLKC_API void Token::dealloc() {
-	peff::destroy_and_release<Token>(allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroy_and_release<Token>(allocator.get(), this, alignof(std::max_align_t));
 }
 
 SLKC_API const char *slkc::get_token_name(TokenId token_id) {

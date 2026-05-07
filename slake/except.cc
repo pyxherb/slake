@@ -39,11 +39,11 @@ SLAKE_API const char *MismatchedVarTypeError::what() const {
 }
 
 SLAKE_API void MismatchedVarTypeError::dealloc() {
-	peff::destroy_and_release<MismatchedVarTypeError>(self_allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroy_and_release<MismatchedVarTypeError>(self_allocator.get(), this, alignof(std::max_align_t));
 }
 
 SLAKE_API MismatchedVarTypeError *MismatchedVarTypeError::alloc(peff::Alloc *self_allocator, const TypeRef &expected_type) {
-	return peff::alloc_and_construct<MismatchedVarTypeError>(self_allocator, sizeof(std::max_align_t), self_allocator, expected_type);
+	return peff::alloc_and_construct<MismatchedVarTypeError>(self_allocator, alignof(std::max_align_t), self_allocator, expected_type);
 }
 
 SLAKE_API FrameBoundaryExceededError::FrameBoundaryExceededError(
@@ -51,7 +51,7 @@ SLAKE_API FrameBoundaryExceededError::FrameBoundaryExceededError(
 SLAKE_API FrameBoundaryExceededError::~FrameBoundaryExceededError() {}
 
 SLAKE_API void FrameBoundaryExceededError::dealloc() {
-	peff::destroy_and_release<FrameBoundaryExceededError>(self_allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroy_and_release<FrameBoundaryExceededError>(self_allocator.get(), this, alignof(std::max_align_t));
 }
 
 SLAKE_API const char *FrameBoundaryExceededError::what() const {
@@ -59,7 +59,7 @@ SLAKE_API const char *FrameBoundaryExceededError::what() const {
 }
 
 SLAKE_API FrameBoundaryExceededError *FrameBoundaryExceededError::alloc(peff::Alloc *self_allocator) {
-	return peff::alloc_and_construct<FrameBoundaryExceededError>(self_allocator, sizeof(std::max_align_t), self_allocator);
+	return peff::alloc_and_construct<FrameBoundaryExceededError>(self_allocator, alignof(std::max_align_t), self_allocator);
 }
 
 SLAKE_API InvalidOpcodeError::InvalidOpcodeError(
@@ -72,11 +72,11 @@ SLAKE_API const char *InvalidOpcodeError::what() const {
 }
 
 SLAKE_API void InvalidOpcodeError::dealloc() {
-	peff::destroy_and_release<InvalidOpcodeError>(self_allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroy_and_release<InvalidOpcodeError>(self_allocator.get(), this, alignof(std::max_align_t));
 }
 
 SLAKE_API InvalidOpcodeError *InvalidOpcodeError::alloc(peff::Alloc *self_allocator, Opcode opcode) {
-	return peff::alloc_and_construct<InvalidOpcodeError>(self_allocator, sizeof(std::max_align_t), self_allocator, opcode);
+	return peff::alloc_and_construct<InvalidOpcodeError>(self_allocator, alignof(std::max_align_t), self_allocator, opcode);
 }
 
 SLAKE_API InvalidOperandsError::InvalidOperandsError(
@@ -88,11 +88,11 @@ SLAKE_API const char *InvalidOperandsError::what() const {
 }
 
 SLAKE_API void InvalidOperandsError::dealloc() {
-	peff::destroy_and_release<InvalidOperandsError>(self_allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroy_and_release<InvalidOperandsError>(self_allocator.get(), this, alignof(std::max_align_t));
 }
 
 SLAKE_API InvalidOperandsError *InvalidOperandsError::alloc(peff::Alloc *self_allocator) {
-	return peff::alloc_and_construct<InvalidOperandsError>(self_allocator, sizeof(std::max_align_t), self_allocator);
+	return peff::alloc_and_construct<InvalidOperandsError>(self_allocator, alignof(std::max_align_t), self_allocator);
 }
 
 SLAKE_API InvalidArrayIndexError::InvalidArrayIndexError(
@@ -105,11 +105,11 @@ SLAKE_API const char *InvalidArrayIndexError::what() const {
 }
 
 SLAKE_API void InvalidArrayIndexError::dealloc() {
-	peff::destroy_and_release<InvalidArrayIndexError>(self_allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroy_and_release<InvalidArrayIndexError>(self_allocator.get(), this, alignof(std::max_align_t));
 }
 
 SLAKE_API InvalidArrayIndexError *InvalidArrayIndexError::alloc(peff::Alloc *self_allocator, size_t index) {
-	return peff::alloc_and_construct<InvalidArrayIndexError>(self_allocator, sizeof(std::max_align_t), self_allocator, index);
+	return peff::alloc_and_construct<InvalidArrayIndexError>(self_allocator, alignof(std::max_align_t), self_allocator, index);
 }
 
 SLAKE_API StackOverflowError::StackOverflowError(peff::Alloc *self_allocator) : RuntimeExecError(self_allocator, RuntimeExecErrorCode::StackOverflow) {}
@@ -120,11 +120,11 @@ SLAKE_API const char *StackOverflowError::what() const {
 }
 
 SLAKE_API void StackOverflowError::dealloc() {
-	peff::destroy_and_release<StackOverflowError>(self_allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroy_and_release<StackOverflowError>(self_allocator.get(), this, alignof(std::max_align_t));
 }
 
 SLAKE_API StackOverflowError *StackOverflowError::alloc(peff::Alloc *self_allocator) {
-	return peff::alloc_and_construct<StackOverflowError>(self_allocator, sizeof(std::max_align_t), self_allocator);
+	return peff::alloc_and_construct<StackOverflowError>(self_allocator, alignof(std::max_align_t), self_allocator);
 }
 
 SLAKE_API InvalidArgumentNumberError::InvalidArgumentNumberError(
@@ -137,11 +137,11 @@ SLAKE_API const char *InvalidArgumentNumberError::what() const {
 }
 
 SLAKE_API void InvalidArgumentNumberError::dealloc() {
-	peff::destroy_and_release<InvalidArgumentNumberError>(self_allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroy_and_release<InvalidArgumentNumberError>(self_allocator.get(), this, alignof(std::max_align_t));
 }
 
 SLAKE_API InvalidArgumentNumberError *InvalidArgumentNumberError::alloc(peff::Alloc *self_allocator, uint32_t num_args) {
-	return peff::alloc_and_construct<InvalidArgumentNumberError>(self_allocator, sizeof(std::max_align_t), self_allocator, num_args);
+	return peff::alloc_and_construct<InvalidArgumentNumberError>(self_allocator, alignof(std::max_align_t), self_allocator, num_args);
 }
 
 SLAKE_API ReferencedMemberNotFoundError::ReferencedMemberNotFoundError(
@@ -154,13 +154,13 @@ SLAKE_API const char *ReferencedMemberNotFoundError::what() const {
 }
 
 SLAKE_API void ReferencedMemberNotFoundError::dealloc() {
-	peff::destroy_and_release<ReferencedMemberNotFoundError>(self_allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroy_and_release<ReferencedMemberNotFoundError>(self_allocator.get(), this, alignof(std::max_align_t));
 }
 
 SLAKE_API ReferencedMemberNotFoundError *ReferencedMemberNotFoundError::alloc(
 	peff::Alloc *self_allocator,
 	IdRefObject *id_ref) {
-	return peff::alloc_and_construct<ReferencedMemberNotFoundError>(self_allocator, sizeof(std::max_align_t), self_allocator, id_ref);
+	return peff::alloc_and_construct<ReferencedMemberNotFoundError>(self_allocator, alignof(std::max_align_t), self_allocator, id_ref);
 }
 
 SLAKE_API NullRefError::NullRefError(
@@ -172,11 +172,11 @@ SLAKE_API const char *NullRefError::what() const {
 }
 
 SLAKE_API void NullRefError::dealloc() {
-	peff::destroy_and_release<NullRefError>(self_allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroy_and_release<NullRefError>(self_allocator.get(), this, alignof(std::max_align_t));
 }
 
 SLAKE_API NullRefError *NullRefError::alloc(peff::Alloc *self_allocator) {
-	return peff::alloc_and_construct<NullRefError>(self_allocator, sizeof(std::max_align_t), self_allocator);
+	return peff::alloc_and_construct<NullRefError>(self_allocator, alignof(std::max_align_t), self_allocator);
 }
 
 SLAKE_API UncaughtExceptionError::UncaughtExceptionError(
@@ -189,13 +189,13 @@ SLAKE_API const char *UncaughtExceptionError::what() const {
 }
 
 SLAKE_API void UncaughtExceptionError::dealloc() {
-	peff::destroy_and_release<UncaughtExceptionError>(self_allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroy_and_release<UncaughtExceptionError>(self_allocator.get(), this, alignof(std::max_align_t));
 }
 
 SLAKE_API UncaughtExceptionError *UncaughtExceptionError::alloc(
 	peff::Alloc *self_allocator,
 	Value exception_value) {
-	return peff::alloc_and_construct<UncaughtExceptionError>(self_allocator, sizeof(std::max_align_t), self_allocator, exception_value);
+	return peff::alloc_and_construct<UncaughtExceptionError>(self_allocator, alignof(std::max_align_t), self_allocator, exception_value);
 }
 
 SLAKE_API MalformedClassStructureError::MalformedClassStructureError(
@@ -208,13 +208,13 @@ SLAKE_API const char *MalformedClassStructureError::what() const {
 }
 
 SLAKE_API void MalformedClassStructureError::dealloc() {
-	peff::destroy_and_release<MalformedClassStructureError>(self_allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroy_and_release<MalformedClassStructureError>(self_allocator.get(), this, alignof(std::max_align_t));
 }
 
 SLAKE_API MalformedClassStructureError *MalformedClassStructureError::alloc(
 	peff::Alloc *self_allocator,
 	ClassObject *class_object) {
-	return peff::alloc_and_construct<MalformedClassStructureError>(self_allocator, sizeof(std::max_align_t), self_allocator, class_object);
+	return peff::alloc_and_construct<MalformedClassStructureError>(self_allocator, alignof(std::max_align_t), self_allocator, class_object);
 }
 
 SLAKE_API MismatchedGenericArgumentNumberError::MismatchedGenericArgumentNumberError(
@@ -226,11 +226,11 @@ SLAKE_API const char *MismatchedGenericArgumentNumberError::what() const {
 }
 
 SLAKE_API void MismatchedGenericArgumentNumberError::dealloc() {
-	peff::destroy_and_release<MismatchedGenericArgumentNumberError>(self_allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroy_and_release<MismatchedGenericArgumentNumberError>(self_allocator.get(), this, alignof(std::max_align_t));
 }
 
 SLAKE_API MismatchedGenericArgumentNumberError *MismatchedGenericArgumentNumberError::alloc(peff::Alloc *self_allocator) {
-	return peff::alloc_and_construct<MismatchedGenericArgumentNumberError>(self_allocator, sizeof(std::max_align_t), self_allocator);
+	return peff::alloc_and_construct<MismatchedGenericArgumentNumberError>(self_allocator, alignof(std::max_align_t), self_allocator);
 }
 
 SLAKE_API GenericParameterNotFoundError::GenericParameterNotFoundError(
@@ -245,13 +245,13 @@ SLAKE_API const char *GenericParameterNotFoundError::what() const {
 }
 
 SLAKE_API void GenericParameterNotFoundError::dealloc() {
-	peff::destroy_and_release<GenericParameterNotFoundError>(self_allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroy_and_release<GenericParameterNotFoundError>(self_allocator.get(), this, alignof(std::max_align_t));
 }
 
 SLAKE_API GenericParameterNotFoundError *GenericParameterNotFoundError::alloc(
 	peff::Alloc *self_allocator,
 	peff::String &&name) {
-	return peff::alloc_and_construct<GenericParameterNotFoundError>(self_allocator, sizeof(std::max_align_t), self_allocator, std::move(name));
+	return peff::alloc_and_construct<GenericParameterNotFoundError>(self_allocator, alignof(std::max_align_t), self_allocator, std::move(name));
 }
 
 SLAKE_API GenericArgTypeError::GenericArgTypeError(
@@ -266,13 +266,13 @@ SLAKE_API const char *GenericArgTypeError::what() const {
 }
 
 SLAKE_API void GenericArgTypeError::dealloc() {
-	peff::destroy_and_release<GenericArgTypeError>(self_allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroy_and_release<GenericArgTypeError>(self_allocator.get(), this, alignof(std::max_align_t));
 }
 
 SLAKE_API GenericArgTypeError *GenericArgTypeError::alloc(
 	peff::Alloc *self_allocator,
 	peff::String &&name) {
-	return peff::alloc_and_construct<GenericArgTypeError>(self_allocator, sizeof(std::max_align_t), self_allocator, std::move(name));
+	return peff::alloc_and_construct<GenericArgTypeError>(self_allocator, alignof(std::max_align_t), self_allocator, std::move(name));
 }
 
 SLAKE_API GenericDuplicatedFnOverloadingError::GenericDuplicatedFnOverloadingError(
@@ -287,13 +287,13 @@ SLAKE_API const char *GenericDuplicatedFnOverloadingError::what() const {
 }
 
 SLAKE_API void GenericDuplicatedFnOverloadingError::dealloc() {
-	peff::destroy_and_release<GenericDuplicatedFnOverloadingError>(self_allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroy_and_release<GenericDuplicatedFnOverloadingError>(self_allocator.get(), this, alignof(std::max_align_t));
 }
 
 SLAKE_API GenericDuplicatedFnOverloadingError *GenericDuplicatedFnOverloadingError::alloc(
 	peff::Alloc *self_allocator,
 	FnObject *original_fn) {
-	return peff::alloc_and_construct<GenericDuplicatedFnOverloadingError>(self_allocator, sizeof(std::max_align_t), self_allocator, original_fn);
+	return peff::alloc_and_construct<GenericDuplicatedFnOverloadingError>(self_allocator, alignof(std::max_align_t), self_allocator, original_fn);
 }
 
 SLAKE_API GenericFieldInitError::GenericFieldInitError(
@@ -310,14 +310,14 @@ SLAKE_API const char *GenericFieldInitError::what() const {
 }
 
 SLAKE_API void GenericFieldInitError::dealloc() {
-	peff::destroy_and_release<GenericFieldInitError>(self_allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroy_and_release<GenericFieldInitError>(self_allocator.get(), this, alignof(std::max_align_t));
 }
 
 SLAKE_API GenericFieldInitError *GenericFieldInitError::alloc(
 	peff::Alloc *self_allocator,
 	BasicModuleObject *object,
 	size_t idx_record) {
-	return peff::alloc_and_construct<GenericFieldInitError>(self_allocator, sizeof(std::max_align_t), self_allocator, object, idx_record);
+	return peff::alloc_and_construct<GenericFieldInitError>(self_allocator, alignof(std::max_align_t), self_allocator, object, idx_record);
 }
 
 SLAKE_API OptimizerError::OptimizerError(
@@ -345,14 +345,14 @@ SLAKE_API const char *MalformedProgramError::what() const {
 }
 
 SLAKE_API void MalformedProgramError::dealloc() {
-	peff::destroy_and_release<MalformedProgramError>(self_allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroy_and_release<MalformedProgramError>(self_allocator.get(), this, alignof(std::max_align_t));
 }
 
 SLAKE_API MalformedProgramError *MalformedProgramError::alloc(
 	peff::Alloc *self_allocator,
 	RegularFnOverloadingObject *fn_overloading,
 	size_t off_ins) {
-	return peff::alloc_and_construct<MalformedProgramError>(self_allocator, sizeof(std::max_align_t), self_allocator, fn_overloading, off_ins);
+	return peff::alloc_and_construct<MalformedProgramError>(self_allocator, alignof(std::max_align_t), self_allocator, fn_overloading, off_ins);
 }
 
 SLAKE_API MalformedCfgError::MalformedCfgError(
@@ -372,7 +372,7 @@ SLAKE_API const char *MalformedCfgError::what() const {
 }
 
 SLAKE_API void MalformedCfgError::dealloc() {
-	peff::destroy_and_release<MalformedCfgError>(self_allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroy_and_release<MalformedCfgError>(self_allocator.get(), this, alignof(std::max_align_t));
 }
 
 SLAKE_API MalformedCfgError *MalformedCfgError::alloc(
@@ -380,7 +380,7 @@ SLAKE_API MalformedCfgError *MalformedCfgError::alloc(
 	const opti::ControlFlowGraph *cfg,
 	size_t idx_basic_block,
 	size_t off_ins) {
-	return peff::alloc_and_construct<MalformedCfgError>(self_allocator, sizeof(std::max_align_t), self_allocator, cfg, idx_basic_block, off_ins);
+	return peff::alloc_and_construct<MalformedCfgError>(self_allocator, alignof(std::max_align_t), self_allocator, cfg, idx_basic_block, off_ins);
 }
 
 SLAKE_API ErrorEvaluatingObjectTypeError::ErrorEvaluatingObjectTypeError(
@@ -396,13 +396,13 @@ SLAKE_API const char *ErrorEvaluatingObjectTypeError::what() const {
 }
 
 SLAKE_API void ErrorEvaluatingObjectTypeError::dealloc() {
-	peff::destroy_and_release<ErrorEvaluatingObjectTypeError>(self_allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroy_and_release<ErrorEvaluatingObjectTypeError>(self_allocator.get(), this, alignof(std::max_align_t));
 }
 
 SLAKE_API ErrorEvaluatingObjectTypeError *ErrorEvaluatingObjectTypeError::alloc(
 	peff::Alloc *self_allocator,
 	Object *object) {
-	return peff::alloc_and_construct<ErrorEvaluatingObjectTypeError>(self_allocator, sizeof(std::max_align_t), self_allocator, object);
+	return peff::alloc_and_construct<ErrorEvaluatingObjectTypeError>(self_allocator, alignof(std::max_align_t), self_allocator, object);
 }
 
 SLAKE_API InternalExceptionPointer slake::alloc_oom_error_if_alloc_failed(InternalExceptionPointer e) {
@@ -428,11 +428,11 @@ SLAKE_API const char *BadMagicError::what() const {
 }
 
 SLAKE_API void BadMagicError::dealloc() {
-	peff::destroy_and_release<BadMagicError>(self_allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroy_and_release<BadMagicError>(self_allocator.get(), this, alignof(std::max_align_t));
 }
 
 SLAKE_API BadMagicError *BadMagicError::alloc(peff::Alloc *self_allocator) {
-	return peff::alloc_and_construct<BadMagicError>(self_allocator, sizeof(std::max_align_t), self_allocator);
+	return peff::alloc_and_construct<BadMagicError>(self_allocator, alignof(std::max_align_t), self_allocator);
 }
 
 SLAKE_API ReadError::ReadError(peff::Alloc *self_allocator)
@@ -444,9 +444,9 @@ SLAKE_API const char *ReadError::what() const {
 }
 
 SLAKE_API void ReadError::dealloc() {
-	peff::destroy_and_release<ReadError>(self_allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroy_and_release<ReadError>(self_allocator.get(), this, alignof(std::max_align_t));
 }
 
 SLAKE_API ReadError *ReadError::alloc(peff::Alloc *self_allocator) {
-	return peff::alloc_and_construct<ReadError>(self_allocator, sizeof(std::max_align_t), self_allocator);
+	return peff::alloc_and_construct<ReadError>(self_allocator, alignof(std::max_align_t), self_allocator);
 }

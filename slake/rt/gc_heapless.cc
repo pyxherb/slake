@@ -90,7 +90,7 @@ SLAKE_API void Runtime::_gc_walk(GCWalkContext *context, const Value &i) {
 		case ValueType::Undefined:
 			break;
 		default:
-			throw std::logic_error("Unhandled value type");
+			peff::panic("Unhandled value type");
 	}
 }
 
@@ -139,7 +139,7 @@ SLAKE_API void Runtime::_gc_walk(GCWalkContext *context, Object *v) {
 
 	switch (v->gc_status) {
 		case ObjectGCStatus::Unwalked:
-			throw std::logic_error("Cannot walk on an unwalked object");
+			peff::panic("Cannot walk on an unwalked object");
 		case ObjectGCStatus::ReadyToWalk:
 			v->gc_status = ObjectGCStatus::Walked;
 
@@ -470,7 +470,7 @@ SLAKE_API void Runtime::_gc_walk(GCWalkContext *context, Object *v) {
 							break;
 						}
 						default:
-							throw std::logic_error("Invalid overloading kind");
+							peff::panic("Invalid overloading kind");
 					}
 
 					_gc_walk(context, fn_overloading->generic_params);
@@ -519,7 +519,7 @@ SLAKE_API void Runtime::_gc_walk(GCWalkContext *context, Object *v) {
 					break;
 				}
 				default:
-					throw std::logic_error("Unhandled object type");
+					peff::panic("Unhandled object type");
 			}
 
 			context->remove_from_walkable_list(v);

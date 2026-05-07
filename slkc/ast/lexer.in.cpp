@@ -27,7 +27,7 @@ SLKC_API peff::Option<LexicalError> Lexer::lex(ModuleNode *module_node, const st
 	while (true) {
 		peff::String str_literal(allocator);
 
-		if (!(token = OwnedTokenPtr(peff::alloc_and_construct<Token>(allocator, sizeof(std::max_align_t), allocator, peff::WeakPtr<Document>(document)))))
+		if (!(token = OwnedTokenPtr(peff::alloc_and_construct<Token>(allocator, alignof(std::max_align_t), allocator, peff::WeakPtr<Document>(document)))))
 			goto oom;
 
 		while (true) {
@@ -311,7 +311,7 @@ SLKC_API peff::Option<LexicalError> Lexer::lex(ModuleNode *module_node, const st
 					YYSETCONDITION(InitialCondition);
 					token->token_id = TokenId::StringLiteral;
 					token->ex_data = std::unique_ptr<TokenExtension, peff::DeallocableDeleter<TokenExtension>>(
-						peff::alloc_and_construct<StringTokenExtension>(allocator, sizeof(std::max_align_t), allocator, std::move(str_literal)));
+						peff::alloc_and_construct<StringTokenExtension>(allocator, alignof(std::max_align_t), allocator, std::move(str_literal)));
 					break;
 				}
 				<StringCondition>"\\"		{ YYSETCONDITION(EscapeCondition); continue; }
@@ -520,7 +520,7 @@ SLKC_API peff::Option<LexicalError> Lexer::lex(ModuleNode *module_node, const st
 end: {
 	SourceLocation endLocation = token->source_location;
 
-	token = OwnedTokenPtr(peff::alloc_and_construct<Token>(allocator, sizeof(std::max_align_t), allocator, document));
+	token = OwnedTokenPtr(peff::alloc_and_construct<Token>(allocator, alignof(std::max_align_t), allocator, document));
 	token->token_id = TokenId::End;
 	token->source_location = endLocation;
 

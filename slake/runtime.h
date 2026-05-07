@@ -232,10 +232,16 @@ namespace slake {
 			Context *context,
 			MajorFrame *major_frame,
 			size_t stack_offset);
+		enum class ContextChangeType : uint_fast8_t {
+			NoChange = 0,		// No change
+			MajorFrameChanged,	// Recurse with the same function
+			FnChanged,			// Function is changed
+			FnKindChanged		// Function kind is changed
+		};
 		/// @brief Execute a single instruction.
 		/// @param context Context for execution.
 		/// @param ins Instruction to be executed.
-		[[nodiscard]] InternalExceptionPointer _exec_ins(ContextObject *const context, MajorFrame *const cur_major_frame, const uint32_t output, const Opcode opcode, const size_t num_operands, const Value *const operands, bool &is_context_changed_out) noexcept;
+		[[nodiscard]] InternalExceptionPointer _exec_ins(ContextObject *const context, MajorFrame *const cur_major_frame, const uint32_t output, const Opcode opcode, const size_t num_operands, const Value *const operands, ContextChangeType &is_context_changed_out) noexcept;
 
 		friend struct Context;
 

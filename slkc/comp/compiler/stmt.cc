@@ -1123,13 +1123,19 @@ SLKC_API peff::Option<CompilationError> slkc::compile_return_stmt(
 
 		SLKC_RETURN_IF_COMP_ERROR(
 			compilation_context->emit_ins(
-				sld_index, slake::Opcode::RET,
+				sld_index,
+				compile_env->cur_overloading->overloading_kind == FnOverloadingKind::Coroutine
+					? slake::Opcode::CORET
+					: slake::Opcode::RET,
 				UINT32_MAX,
 				{ slake::Value(slake::ValueType::RegIndex, reg) }));
 	} else {
 		SLKC_RETURN_IF_COMP_ERROR(
 			compilation_context->emit_ins(
-				sld_index, slake::Opcode::RET,
+				sld_index,
+				compile_env->cur_overloading->overloading_kind == FnOverloadingKind::Coroutine
+					? slake::Opcode::CORETVOID
+					: slake::Opcode::RETVOID,
 				UINT32_MAX,
 				{}));
 	}

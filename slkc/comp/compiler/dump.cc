@@ -670,7 +670,7 @@ SLKC_API peff::Option<CompilationError> slkc::dump_module_members(
 			SLKC_RETURN_IF_COMP_ERROR(dump_type_name(allocator, writer, ol->return_type));
 
 			for (auto &k : ol->instructions) {
-				SLKC_RETURN_IF_COMP_ERROR(writer->write_u16((uint8_t)k.opcode));
+				SLKC_RETURN_IF_COMP_ERROR(writer->write_u16((uint16_t)k.opcode));
 				SLKC_RETURN_IF_COMP_ERROR(writer->write_u32((uint32_t)k.output));
 				SLKC_RETURN_IF_COMP_ERROR(writer->write_u32((uint32_t)k.num_operands));
 				for (size_t l = 0; l < k.num_operands; ++l) {

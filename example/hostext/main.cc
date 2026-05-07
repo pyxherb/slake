@@ -138,7 +138,7 @@ Value print(Context *context, MajorFrame *cur_major_frame) {
 					break;
 				}
 				default:
-					throw std::runtime_error("Invalid argument type");
+					peff::panic("Invalid argument type");
 			}
 		}
 	}
@@ -158,7 +158,7 @@ void print_traceback(Runtime *rt, ContextObject *context) {
 		peff::DynArray<IdRefEntry> full_ref(peff::default_allocator());
 
 		if (!i->associated_runtime->get_full_ref(peff::default_allocator(), i->cur_fn->fn_object, full_ref)) {
-			throw std::bad_alloc();
+			peff::panic("Error getting full reference of the function object");
 		}
 
 		std::string name;
@@ -1053,12 +1053,12 @@ int main(int argc, char **argv) {
 				print_fn->set_var_args();
 				print_fn->overriden_type = TypeId::Void;
 				if (!fn_object->overloadings.insert({ print_fn->param_types, print_fn->is_with_var_args(), print_fn->generic_params.size(), print_fn->overriden_type }, print_fn.get()))
-					throw std::bad_alloc();
+					peff::panic("Error inserting print function");
 				fn_object->set_name("print");
 
 				mod_object_extfns->remove_member("print");
 				if (!mod_object_extfns->add_member(fn_object.get()))
-					throw std::bad_alloc();
+					peff::panic("Error inserting print function");
 
 				auto fn = (FnObject *)mod->get_member("main").as_object;
 				FnOverloadingObject *overloading;

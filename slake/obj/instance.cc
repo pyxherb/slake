@@ -44,7 +44,7 @@ SLAKE_API HostObjectRef<InstanceObject> slake::InstanceObject::alloc(Runtime *rt
 	std::unique_ptr<InstanceObject, peff::DeallocableDeleter<InstanceObject>> ptr(
 		peff::alloc_and_construct<InstanceObject>(
 			cur_generation_allocator.get(),
-			sizeof(std::max_align_t),
+			alignof(InstanceObject),
 			rt, cur_generation_allocator.get()));
 
 	if (!rt->add_object(ptr.get()))
@@ -59,7 +59,7 @@ SLAKE_API HostObjectRef<InstanceObject> slake::InstanceObject::alloc(const Insta
 	std::unique_ptr<InstanceObject, peff::DeallocableDeleter<InstanceObject>> ptr(
 		peff::alloc_and_construct<InstanceObject>(
 			cur_generation_allocator.get(),
-			sizeof(std::max_align_t),
+			alignof(InstanceObject),
 			*other, cur_generation_allocator.get()));
 
 	if (!other->associated_runtime->add_object(ptr.get()))

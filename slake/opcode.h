@@ -7,7 +7,7 @@
 #include "basedefs.h"
 
 namespace slake {
-	enum class Opcode : uint8_t {
+	enum class Opcode : uint16_t {
 		INVALID = 0,  // Invalid
 
 		LVALUE,	 // Load value of a variable
@@ -20,25 +20,242 @@ namespace slake {
 
 		LARGV,	// Load value of an argument
 
-		ADD,   // Add
-		SUB,   // Subtract
-		MUL,   // Multiply
-		DIV,   // Divide
-		MOD,   // Modulo
-		AND,   // AND
-		OR,	   // OR
-		XOR,   // XOR
-		LAND,  // Logical AND
-		LOR,   // Logical OR
-		EQ,	   // Equal
-		NEQ,   // Not Equal
-		LT,	   // Less than
-		GT,	   // Greater than
-		LTEQ,  // Less than or equal
-		GTEQ,  // Greater than or equal
-		LSH,   // Left shift
-		RSH,   // Right shift
-		CMP,   // Compare
+		// Add
+		ADDI8,
+		ADDI16,
+		ADDI32,
+		ADDI64,
+		ADDISIZE,
+		ADDU8,
+		ADDU16,
+		ADDU32,
+		ADDU64,
+		ADDUSIZE,
+		ADDF32,
+		ADDF64,
+
+		// Subtract
+		SUBI8,
+		SUBI16,
+		SUBI32,
+		SUBI64,
+		SUBISIZE,
+		SUBU8,
+		SUBU16,
+		SUBU32,
+		SUBU64,
+		SUBUSIZE,
+		SUBF32,
+		SUBF64,
+
+		// Multiply
+		MULI8,
+		MULI16,
+		MULI32,
+		MULI64,
+		MULISIZE,
+		MULU8,
+		MULU16,
+		MULU32,
+		MULU64,
+		MULUSIZE,
+		MULF32,
+		MULF64,
+
+		// Divide
+		DIVI8,
+		DIVI16,
+		DIVI32,
+		DIVI64,
+		DIVISIZE,
+		DIVU8,
+		DIVU16,
+		DIVU32,
+		DIVU64,
+		DIVUSIZE,
+		DIVF32,
+		DIVF64,
+
+		// Modulo
+		MODI8,
+		MODI16,
+		MODI32,
+		MODI64,
+		MODISIZE,
+		MODU8,
+		MODU16,
+		MODU32,
+		MODU64,
+		MODUSIZE,
+		MODF32,
+		MODF64,
+
+		// AND
+		ANDI8,
+		ANDI16,
+		ANDI32,
+		ANDI64,
+		ANDISIZE,
+		ANDU8,
+		ANDU16,
+		ANDU32,
+		ANDU64,
+		ANDUSIZE,
+		ANDBOOL,
+
+		// OR
+		ORI8,
+		ORI16,
+		ORI32,
+		ORI64,
+		ORISIZE,
+		ORU8,
+		ORU16,
+		ORU32,
+		ORU64,
+		ORUSIZE,
+		ORBOOL,
+
+		// XOR
+		XORI8,
+		XORI16,
+		XORI32,
+		XORI64,
+		XORISIZE,
+		XORU8,
+		XORU16,
+		XORU32,
+		XORU64,
+		XORUSIZE,
+
+		// Equal
+		EQI8,
+		EQI16,
+		EQI32,
+		EQI64,
+		EQISIZE,
+		EQU8,
+		EQU16,
+		EQU32,
+		EQU64,
+		EQUSIZE,
+		EQF32,
+		EQF64,
+		EQBOOL,
+		EQREF,
+		EQTYPE,
+
+		// Not Equal
+		NEQI8,
+		NEQI16,
+		NEQI32,
+		NEQI64,
+		NEQISIZE,
+		NEQU8,
+		NEQU16,
+		NEQU32,
+		NEQU64,
+		NEQUSIZE,
+		NEQF32,
+		NEQF64,
+		NEQBOOL,
+		NEQSTR,
+		NEQREF,
+		NEQTYPE,
+
+		// Less Than
+		LTI8,
+		LTI16,
+		LTI32,
+		LTI64,
+		LTISIZE,
+		LTU8,
+		LTU16,
+		LTU32,
+		LTU64,
+		LTUSIZE,
+		LTF32,
+		LTF64,
+
+		// Greater Than
+		GTI8,
+		GTI16,
+		GTI32,
+		GTI64,
+		GTISIZE,
+		GTU8,
+		GTU16,
+		GTU32,
+		GTU64,
+		GTUSIZE,
+		GTF32,
+		GTF64,
+
+		// Less Than or Equal
+		LTEQI8,
+		LTEQI16,
+		LTEQI32,
+		LTEQI64,
+		LTEQISIZE,
+		LTEQU8,
+		LTEQU16,
+		LTEQU32,
+		LTEQU64,
+		LTEQUSIZE,
+		LTEQF32,
+		LTEQF64,
+
+		// Greater Than or Equal
+		GTEQI8,
+		GTEQI16,
+		GTEQI32,
+		GTEQI64,
+		GTEQISIZE,
+		GTEQU8,
+		GTEQU16,
+		GTEQU32,
+		GTEQU64,
+		GTEQUSIZE,
+		GTEQF32,
+		GTEQF64,
+
+		// Left Shift
+		SHLI8,
+		SHLI16,
+		SHLI32,
+		SHLI64,
+		SHLISIZE,
+		SHLU8,
+		SHLU16,
+		SHLU32,
+		SHLU64,
+		SHLUSIZE,
+
+		// Right Shift
+		SHRI8,
+		SHRI16,
+		SHRI32,
+		SHRI64,
+		SHRISIZE,
+		SHRU8,
+		SHRU16,
+		SHRU32,
+		SHRU64,
+		SHRUSIZE,
+
+		// Compare
+		CMPI8,
+		CMPI16,
+		CMPI32,
+		CMPI64,
+		CMPISIZE,
+		CMPU8,
+		CMPU16,
+		CMPU32,
+		CMPU64,
+		CMPUSIZE,
+		CMPF32,
+		CMPF64,
 
 		NOT,   // Bitwise NOT
 		LNOT,  // Logical NOT

@@ -1030,16 +1030,14 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 								if ((parts.size() != 1) || (eval_purpose != ExprEvalPurpose::LValue)) {
 									AstNodePtr<MemberNode> var_chain[] = { compile_env->this_node.cast_to<MemberNode>(), parts.front().member };
 
-									if (!compile_env->this_node->this_type->scope->base_type) {
-										if (compile_env->vars_to_be_inited /*&& compile_env->this_node*/) {
-											if (!path_env->is_var_inited(VarChainView{ var_chain }))
-												return CompilationError(
-													TokenRange{
-														e->token_range.module_node,
-														e->id_ref_ptr->entries.front().name_token_index },
-													compile_env->this_node ? CompilationErrorKind::InstanceMemberVarNotInitialized : CompilationErrorKind::StaticMemberVarNotInitialized,
-													MemberVarNotInitializedErrorExData{ parts.front().member.cast_to<VarNode>() });
-										}
+									if (compile_env->vars_to_be_inited /*&& compile_env->this_node*/) {
+										if (!path_env->is_var_inited(VarChainView{ var_chain }))
+											return CompilationError(
+												TokenRange{
+													e->token_range.module_node,
+													e->id_ref_ptr->entries.front().name_token_index },
+												compile_env->this_node ? CompilationErrorKind::InstanceMemberVarNotInitialized : CompilationErrorKind::StaticMemberVarNotInitialized,
+												MemberVarNotInitializedErrorExData{ parts.front().member.cast_to<VarNode>() });
 									}
 								}
 							}
@@ -1077,16 +1075,14 @@ SLKC_API peff::Option<CompilationError> slkc::compile_expr(
 					if ((v->outer == (MemberNode *)compile_env->cur_parent_access_node.get()) && (compile_env->cur_overloading->name == "new")) {
 						AstNodePtr<MemberNode> var_chain[] = { v };
 
-						if (!compile_env->this_node->this_type->scope->base_type) {
-							if (compile_env->vars_to_be_inited /*&& compile_env->this_node*/) {
-								if (!path_env->is_var_inited(VarChainView{ var_chain }))
-									return CompilationError(
-										TokenRange{
-											e->token_range.module_node,
-											e->id_ref_ptr->entries.front().name_token_index },
-										compile_env->this_node ? CompilationErrorKind::InstanceMemberVarNotInitialized : CompilationErrorKind::StaticMemberVarNotInitialized,
-										MemberVarNotInitializedErrorExData{ parts.front().member.cast_to<VarNode>() });
-							}
+						if (compile_env->vars_to_be_inited /*&& compile_env->this_node*/) {
+							if (!path_env->is_var_inited(VarChainView{ var_chain }))
+								return CompilationError(
+									TokenRange{
+										e->token_range.module_node,
+										e->id_ref_ptr->entries.front().name_token_index },
+									compile_env->this_node ? CompilationErrorKind::InstanceMemberVarNotInitialized : CompilationErrorKind::StaticMemberVarNotInitialized,
+									MemberVarNotInitializedErrorExData{ parts.front().member.cast_to<VarNode>() });
 						}
 					}
 				}

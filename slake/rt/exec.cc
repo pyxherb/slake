@@ -467,8 +467,6 @@ SLAKE_FORCEINLINE InternalExceptionPointer slake::Runtime::_add_local_var(Contex
 	if (!context->aligned_stack_alloc(size, align))
 		return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
 
-	if (type.is_nullable())
-		context->stack_alloc(sizeof(bool));
 	switch (type.type_id) {
 		case TypeId::I8:
 		case TypeId::I16:
@@ -483,6 +481,8 @@ SLAKE_FORCEINLINE InternalExceptionPointer slake::Runtime::_add_local_var(Contex
 		case TypeId::Bool:
 		case TypeId::String:
 		case TypeId::Any:
+			if (type.is_nullable())
+				context->stack_alloc(sizeof(bool));
 			break;
 		case TypeId::Instance:
 		case TypeId::GenericArg:
@@ -500,6 +500,8 @@ SLAKE_FORCEINLINE InternalExceptionPointer slake::Runtime::_add_local_var(Contex
 			break;
 		}
 		case TypeId::ScopedEnum: {
+			if (type.is_nullable())
+				context->stack_alloc(sizeof(bool));
 			TypeDefObject **type_info = (TypeDefObject **)context->stack_alloc(sizeof(void *));
 			if (!type_info)
 				return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
@@ -507,6 +509,8 @@ SLAKE_FORCEINLINE InternalExceptionPointer slake::Runtime::_add_local_var(Contex
 			break;
 		}
 		case TypeId::TypelessScopedEnum: {
+			if (type.is_nullable())
+				context->stack_alloc(sizeof(bool));
 			TypeDefObject **type_info = (TypeDefObject **)context->stack_alloc(sizeof(void *));
 			if (!type_info)
 				return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
@@ -516,6 +520,8 @@ SLAKE_FORCEINLINE InternalExceptionPointer slake::Runtime::_add_local_var(Contex
 		case TypeId::StructInstance:
 		case TypeId::UnionEnum:
 		case TypeId::UnionEnumItem: {
+			if (type.is_nullable())
+				context->stack_alloc(sizeof(bool));
 			TypeDefObject **type_info = (TypeDefObject **)context->stack_alloc(sizeof(void *));
 			if (!type_info)
 				return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
@@ -659,932 +665,553 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			cur_major_frame->resumable_context_data.cur_ins = operands[((uint8_t)!condition->get_bool()) + 1].get_u32();
 			return {};
 		}
-		case Opcode::ADD: {
+#define SIMPLE_BINARY_OP_PROC(slake_type_lower, slake_type_upper, cpp_type, op)                                                                   \
+	{                                                                                                                                             \
+		_check_operand_count_with_output(this, output, num_operands, 2);                                                                          \
+                                                                                                                                                  \
+		if (!_is_register_valid(cur_major_frame, output)) {                                                                                       \
+			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));                                               \
+		}                                                                                                                                         \
+                                                                                                                                                  \
+		const Value *x, *y;                                                                                                                       \
+                                                                                                                                                  \
+		_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x);                                              \
+		_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y);                                              \
+		if ((x->value_type != ValueType::slake_type_upper) || (y->value_type != ValueType::slake_type_upper)) {                                   \
+			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));                                               \
+		}                                                                                                                                         \
+                                                                                                                                                  \
+		*_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output) = (cpp_type)(x->get_##slake_type_lower() op y->get_##slake_type_lower()); \
+		break;                                                                                                                                    \
+	}
+		case Opcode::ADDI8:
+			SIMPLE_BINARY_OP_PROC(i8, I8, int8_t, +);
+		case Opcode::ADDI16:
+			SIMPLE_BINARY_OP_PROC(i16, I16, int16_t, +);
+		case Opcode::ADDI32:
+			SIMPLE_BINARY_OP_PROC(i32, I32, int32_t, +);
+		case Opcode::ADDI64:
+			SIMPLE_BINARY_OP_PROC(i64, I64, int64_t, +);
+		case Opcode::ADDU8:
+			SIMPLE_BINARY_OP_PROC(u8, U8, uint8_t, +);
+		case Opcode::ADDU16:
+			SIMPLE_BINARY_OP_PROC(u16, U16, uint16_t, +);
+		case Opcode::ADDU32:
+			SIMPLE_BINARY_OP_PROC(u32, U32, uint32_t, +);
+		case Opcode::ADDU64:
+			SIMPLE_BINARY_OP_PROC(u64, U64, uint64_t, +);
+		case Opcode::ADDF32:
+			SIMPLE_BINARY_OP_PROC(f32, F32, float, +);
+		case Opcode::ADDF64:
+			SIMPLE_BINARY_OP_PROC(f64, F64, double, +);
+
+		case Opcode::SUBI8:
+			SIMPLE_BINARY_OP_PROC(i8, I8, int8_t, -);
+		case Opcode::SUBI16:
+			SIMPLE_BINARY_OP_PROC(i16, I16, int16_t, -);
+		case Opcode::SUBI32:
+			SIMPLE_BINARY_OP_PROC(i32, I32, int32_t, -);
+		case Opcode::SUBI64:
+			SIMPLE_BINARY_OP_PROC(i64, I64, int64_t, -);
+		case Opcode::SUBU8:
+			SIMPLE_BINARY_OP_PROC(u8, U8, uint8_t, -);
+		case Opcode::SUBU16:
+			SIMPLE_BINARY_OP_PROC(u16, U16, uint16_t, -);
+		case Opcode::SUBU32:
+			SIMPLE_BINARY_OP_PROC(u32, U32, uint32_t, -);
+		case Opcode::SUBU64:
+			SIMPLE_BINARY_OP_PROC(u64, U64, uint64_t, -);
+		case Opcode::SUBF32:
+			SIMPLE_BINARY_OP_PROC(f32, F32, float, -);
+		case Opcode::SUBF64:
+			SIMPLE_BINARY_OP_PROC(f64, F64, double, -);
+
+		case Opcode::MULI8:
+			SIMPLE_BINARY_OP_PROC(i8, I8, int8_t, *);
+		case Opcode::MULI16:
+			SIMPLE_BINARY_OP_PROC(i16, I16, int16_t, *);
+		case Opcode::MULI32:
+			SIMPLE_BINARY_OP_PROC(i32, I32, int32_t, *);
+		case Opcode::MULI64:
+			SIMPLE_BINARY_OP_PROC(i64, I64, int64_t, *);
+		case Opcode::MULU8:
+			SIMPLE_BINARY_OP_PROC(u8, U8, uint8_t, *);
+		case Opcode::MULU16:
+			SIMPLE_BINARY_OP_PROC(u16, U16, uint16_t, *);
+		case Opcode::MULU32:
+			SIMPLE_BINARY_OP_PROC(u32, U32, uint32_t, *);
+		case Opcode::MULU64:
+			SIMPLE_BINARY_OP_PROC(u64, U64, uint64_t, *);
+		case Opcode::MULF32:
+			SIMPLE_BINARY_OP_PROC(f32, F32, float, *);
+		case Opcode::MULF64:
+			SIMPLE_BINARY_OP_PROC(f64, F64, double, *);
+
+		case Opcode::DIVI8:
+			SIMPLE_BINARY_OP_PROC(i8, I8, int8_t, /);
+		case Opcode::DIVI16:
+			SIMPLE_BINARY_OP_PROC(i16, I16, int16_t, /);
+		case Opcode::DIVI32:
+			SIMPLE_BINARY_OP_PROC(i32, I32, int32_t, /);
+		case Opcode::DIVI64:
+			SIMPLE_BINARY_OP_PROC(i64, I64, int64_t, /);
+		case Opcode::DIVU8:
+			SIMPLE_BINARY_OP_PROC(u8, U8, uint8_t, /);
+		case Opcode::DIVU16:
+			SIMPLE_BINARY_OP_PROC(u16, U16, uint16_t, /);
+		case Opcode::DIVU32:
+			SIMPLE_BINARY_OP_PROC(u32, U32, uint32_t, /);
+		case Opcode::DIVU64:
+			SIMPLE_BINARY_OP_PROC(u64, U64, uint64_t, /);
+		case Opcode::DIVF32:
+			SIMPLE_BINARY_OP_PROC(f32, F32, float, /);
+		case Opcode::DIVF64:
+			SIMPLE_BINARY_OP_PROC(f64, F64, double, /);
+
+		case Opcode::MODI8:
+			SIMPLE_BINARY_OP_PROC(i8, I8, int8_t, %);
+		case Opcode::MODI16:
+			SIMPLE_BINARY_OP_PROC(i16, I16, int16_t, %);
+			break;
+		case Opcode::MODI32:
+			SIMPLE_BINARY_OP_PROC(i32, I32, int32_t, %);
+			break;
+		case Opcode::MODI64:
+			SIMPLE_BINARY_OP_PROC(i64, I64, int64_t, %);
+			break;
+		case Opcode::MODU8:
+			SIMPLE_BINARY_OP_PROC(u8, U8, uint8_t, %);
+			break;
+		case Opcode::MODU16:
+			SIMPLE_BINARY_OP_PROC(u16, U16, uint16_t, %);
+			break;
+		case Opcode::MODU32:
+			SIMPLE_BINARY_OP_PROC(u32, U32, uint32_t, %);
+			break;
+		case Opcode::MODU64:
+			SIMPLE_BINARY_OP_PROC(u64, U64, uint64_t, %);
+			break;
+		case Opcode::MODF32: {
 			_check_operand_count_with_output(this, output, num_operands, 2);
 
 			if (!_is_register_valid(cur_major_frame, output)) {
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
-			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
 
 			const Value *x, *y;
 
 			_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x);
 			_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y);
-			if (x->value_type != y->value_type) {
+			if ((x->value_type != ValueType::F32) ||
+				(y->value_type != ValueType::F32)) {
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
-			switch (x->value_type) {
-				case ValueType::I8:
-					value_out = (int8_t)(x->get_i8() + y->get_i8());
-					break;
-				case ValueType::I16:
-					value_out = (int16_t)(x->get_i16() + y->get_i16());
-					break;
-				case ValueType::I32:
-					value_out = (int32_t)(x->get_i32() + y->get_i32());
-					break;
-				case ValueType::I64:
-					value_out = (int64_t)(x->get_i64() + y->get_i64());
-					break;
-				case ValueType::U8:
-					value_out = (uint8_t)(x->get_u8() + y->get_u8());
-					break;
-				case ValueType::U16:
-					value_out = (uint16_t)(x->get_u16() + y->get_u16());
-					break;
-				case ValueType::U32:
-					value_out = (uint32_t)(x->get_u32() + y->get_u32());
-					break;
-				case ValueType::U64:
-					value_out = (uint64_t)(x->get_u64() + y->get_u64());
-					break;
-				case ValueType::F32:
-					value_out = (float)(x->get_f32() + y->get_f32());
-					break;
-				case ValueType::F64:
-					value_out = (double)(x->get_f64() + y->get_f64());
-					break;
-				default:
-					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
-			}
-
+			*_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output) = (float)(flib::fmodf(x->get_f32(), y->get_f32()));
 			break;
 		}
-		case Opcode::SUB: {
+		case Opcode::MODF64: {
 			_check_operand_count_with_output(this, output, num_operands, 2);
 
 			if (!_is_register_valid(cur_major_frame, output)) {
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
-			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
 
 			const Value *x, *y;
 
 			_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x);
 			_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y);
-			if (x->value_type != y->value_type) {
+			if ((x->value_type != ValueType::F32) ||
+				(y->value_type != ValueType::F32)) {
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
-			switch (x->value_type) {
-				case ValueType::I8:
-					value_out = (int8_t)(x->get_i8() - y->get_i8());
-					break;
-				case ValueType::I16:
-					value_out = (int16_t)(x->get_i16() - y->get_i16());
-					break;
-				case ValueType::I32:
-					value_out = (int32_t)(x->get_i32() - y->get_i32());
-					break;
-				case ValueType::I64:
-					value_out = (int64_t)(x->get_i64() - y->get_i64());
-					break;
-				case ValueType::U8:
-					value_out = (uint8_t)(x->get_u8() - y->get_u8());
-					break;
-				case ValueType::U16:
-					value_out = (uint16_t)(x->get_u16() - y->get_u16());
-					break;
-				case ValueType::U32:
-					value_out = (uint32_t)(x->get_u32() - y->get_u32());
-					break;
-				case ValueType::U64:
-					value_out = (uint64_t)(x->get_u64() - y->get_u64());
-					break;
-				case ValueType::F32:
-					value_out = (float)(x->get_f32() - y->get_f32());
-					break;
-				case ValueType::F64:
-					value_out = (double)(x->get_f64() - y->get_f64());
-					break;
-				default:
-					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
-			}
+			*_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output) = (double)(flib::fmod(x->get_f64(), y->get_f64()));
 			break;
 		}
-		case Opcode::MUL: {
+
+		case Opcode::ANDI8:
+			SIMPLE_BINARY_OP_PROC(i8, I8, int8_t, &);
+		case Opcode::ANDI16:
+			SIMPLE_BINARY_OP_PROC(i16, I16, int16_t, &);
+		case Opcode::ANDI32:
+			SIMPLE_BINARY_OP_PROC(i32, I32, int32_t, &);
+		case Opcode::ANDI64:
+			SIMPLE_BINARY_OP_PROC(i64, I64, int64_t, &);
+		case Opcode::ANDU8:
+			SIMPLE_BINARY_OP_PROC(u8, U8, uint8_t, &);
+		case Opcode::ANDU16:
+			SIMPLE_BINARY_OP_PROC(u16, U16, uint16_t, &);
+		case Opcode::ANDU32:
+			SIMPLE_BINARY_OP_PROC(u32, U32, uint32_t, &);
+		case Opcode::ANDU64:
+			SIMPLE_BINARY_OP_PROC(u64, U64, uint64_t, &);
+		case Opcode::ANDBOOL:
+			SIMPLE_BINARY_OP_PROC(bool, Bool, bool, &);
+
+		case Opcode::ORI8:
+			SIMPLE_BINARY_OP_PROC(i8, I8, int8_t, |);
+		case Opcode::ORI16:
+			SIMPLE_BINARY_OP_PROC(i16, I16, int16_t, |);
+		case Opcode::ORI32:
+			SIMPLE_BINARY_OP_PROC(i32, I32, int32_t, |);
+		case Opcode::ORI64:
+			SIMPLE_BINARY_OP_PROC(i64, I64, int64_t, |);
+		case Opcode::ORU8:
+			SIMPLE_BINARY_OP_PROC(u8, U8, uint8_t, |);
+		case Opcode::ORU16:
+			SIMPLE_BINARY_OP_PROC(u16, U16, uint16_t, |);
+		case Opcode::ORU32:
+			SIMPLE_BINARY_OP_PROC(u32, U32, uint32_t, |);
+		case Opcode::ORU64:
+			SIMPLE_BINARY_OP_PROC(u64, U64, uint64_t, |);
+		case Opcode::ORBOOL:
+			SIMPLE_BINARY_OP_PROC(bool, Bool, bool, |);
+
+		case Opcode::XORI8:
+			SIMPLE_BINARY_OP_PROC(i8, I8, int8_t, ^);
+		case Opcode::XORI16:
+			SIMPLE_BINARY_OP_PROC(i16, I16, int16_t, ^);
+		case Opcode::XORI32:
+			SIMPLE_BINARY_OP_PROC(i32, I32, int32_t, ^);
+		case Opcode::XORI64:
+			SIMPLE_BINARY_OP_PROC(i64, I64, int64_t, ^);
+		case Opcode::XORU8:
+			SIMPLE_BINARY_OP_PROC(u8, U8, uint8_t, ^);
+		case Opcode::XORU16:
+			SIMPLE_BINARY_OP_PROC(u16, U16, uint16_t, ^);
+		case Opcode::XORU32:
+			SIMPLE_BINARY_OP_PROC(u32, U32, uint32_t, ^);
+		case Opcode::XORU64:
+			SIMPLE_BINARY_OP_PROC(u64, U64, uint64_t, ^);
+
+#define SIMPLE_EQ_OP_PROC(slake_type_lower, slake_type_upper)                                                                                         \
+	{                                                                                                                                                 \
+		_check_operand_count_with_output(this, output, num_operands, 2);                                                                              \
+                                                                                                                                                      \
+		if (!_is_register_valid(cur_major_frame, output)) {                                                                                           \
+			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));                                                   \
+		}                                                                                                                                             \
+                                                                                                                                                      \
+		const Value *x, *y;                                                                                                                           \
+                                                                                                                                                      \
+		_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x);                                                  \
+		_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y);                                                  \
+		switch (x->value_type) {                                                                                                                      \
+			case ValueType::slake_type_upper:                                                                                                         \
+				if ((x->value_type != ValueType::slake_type_upper) || (y->value_type != ValueType::slake_type_upper)) {                               \
+					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));                                           \
+				}                                                                                                                                     \
+				*_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output) = (bool)(x->get_##slake_type_lower() == y->get_##slake_type_lower()); \
+				break;                                                                                                                                \
+			case ValueType::Reference:                                                                                                                \
+				*_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output) = x->is_null() == y->is_null();                                       \
+				break;                                                                                                                                \
+			default:                                                                                                                                  \
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));                                               \
+		}                                                                                                                                             \
+                                                                                                                                                      \
+		break;                                                                                                                                        \
+	}
+		case Opcode::EQI8:
+			SIMPLE_EQ_OP_PROC(i8, I8);
+		case Opcode::EQI16:
+			SIMPLE_EQ_OP_PROC(i16, I16);
+		case Opcode::EQI32:
+			SIMPLE_EQ_OP_PROC(i32, I32);
+		case Opcode::EQI64:
+			SIMPLE_EQ_OP_PROC(i64, I64);
+		case Opcode::EQU8:
+			SIMPLE_EQ_OP_PROC(u8, U8);
+		case Opcode::EQU16:
+			SIMPLE_EQ_OP_PROC(u16, U16);
+		case Opcode::EQU32:
+			SIMPLE_EQ_OP_PROC(u32, U32);
+		case Opcode::EQU64:
+			SIMPLE_EQ_OP_PROC(u64, U64);
+		case Opcode::EQF32:
+			SIMPLE_EQ_OP_PROC(f32, F32);
+		case Opcode::EQF64:
+			SIMPLE_EQ_OP_PROC(f64, F64);
+		case Opcode::EQBOOL:
+			SIMPLE_EQ_OP_PROC(bool, Bool);
+		case Opcode::EQREF: {
 			_check_operand_count_with_output(this, output, num_operands, 2);
 
 			if (!_is_register_valid(cur_major_frame, output)) {
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
-			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
-
-			const Value *x, *y;
-
-			_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x);
-			_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y);
-			if (x->value_type != y->value_type) {
-				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
-			}
-
-			switch (x->value_type) {
-				case ValueType::I8:
-					value_out = (int8_t)(x->get_i8() * y->get_i8());
-					break;
-				case ValueType::I16:
-					value_out = (int16_t)(x->get_i16() * y->get_i16());
-					break;
-				case ValueType::I32:
-					value_out = (int32_t)(x->get_i32() * y->get_i32());
-					break;
-				case ValueType::I64:
-					value_out = (int64_t)(x->get_i64() * y->get_i64());
-					break;
-				case ValueType::U8:
-					value_out = (uint8_t)(x->get_u8() * y->get_u8());
-					break;
-				case ValueType::U16:
-					value_out = (uint16_t)(x->get_u16() * y->get_u16());
-					break;
-				case ValueType::U32:
-					value_out = (uint32_t)(x->get_u32() * y->get_u32());
-					break;
-				case ValueType::U64:
-					value_out = (uint64_t)(x->get_u64() * y->get_u64());
-					break;
-				case ValueType::F32:
-					value_out = (float)(x->get_f32() * y->get_f32());
-					break;
-				case ValueType::F64:
-					value_out = (double)(x->get_f64() * y->get_f64());
-					break;
-				default:
-					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
-			}
-			break;
-		}
-		case Opcode::DIV: {
-			_check_operand_count_with_output(this, output, num_operands, 2);
-
-			if (!_is_register_valid(cur_major_frame, output)) {
-				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
-			}
-			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
-
-			const Value *x, *y;
-
-			_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x);
-			_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y);
-			if (x->value_type != y->value_type) {
-				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
-			}
-
-			switch (x->value_type) {
-				case ValueType::I8:
-					value_out = (int8_t)(x->get_i8() / y->get_i8());
-					break;
-				case ValueType::I16:
-					value_out = (int16_t)(x->get_i16() / y->get_i16());
-					break;
-				case ValueType::I32:
-					value_out = (int32_t)(x->get_i32() / y->get_i32());
-					break;
-				case ValueType::I64:
-					value_out = (int64_t)(x->get_i64() / y->get_i64());
-					break;
-				case ValueType::U8:
-					value_out = (uint8_t)(x->get_u8() / y->get_u8());
-					break;
-				case ValueType::U16:
-					value_out = (uint16_t)(x->get_u16() / y->get_u16());
-					break;
-				case ValueType::U32:
-					value_out = (uint32_t)(x->get_u32() / y->get_u32());
-					break;
-				case ValueType::U64:
-					value_out = (uint64_t)(x->get_u64() / y->get_u64());
-					break;
-				case ValueType::F32:
-					value_out = (float)(x->get_f32() / y->get_f32());
-					break;
-				case ValueType::F64:
-					value_out = (double)(x->get_f64() / y->get_f64());
-					break;
-				default:
-					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
-			}
-			break;
-		}
-		case Opcode::MOD: {
-			_check_operand_count_with_output(this, output, num_operands, 2);
-
-			if (!_is_register_valid(cur_major_frame, output)) {
-				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
-			}
-			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
-
-			const Value *x, *y;
-
-			_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x);
-			_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y);
-			if (x->value_type != y->value_type) {
-				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
-			}
-
-			switch (x->value_type) {
-				case ValueType::I8:
-					value_out = (int8_t)(x->get_i8() % y->get_i8());
-					break;
-				case ValueType::I16:
-					value_out = (int16_t)(x->get_i16() % y->get_i16());
-					break;
-				case ValueType::I32:
-					value_out = (int32_t)(x->get_i32() % y->get_i32());
-					break;
-				case ValueType::I64:
-					value_out = (int64_t)(x->get_i64() % y->get_i64());
-					break;
-				case ValueType::U8:
-					value_out = (uint8_t)(x->get_u8() % y->get_u8());
-					break;
-				case ValueType::U16:
-					value_out = (uint16_t)(x->get_u16() % y->get_u16());
-					break;
-				case ValueType::U32:
-					value_out = (uint32_t)(x->get_u32() % y->get_u32());
-					break;
-				case ValueType::U64:
-					value_out = (uint64_t)(x->get_u64() % y->get_u64());
-					break;
-				case ValueType::F32:
-					value_out = (float)flib::fmodf(x->get_f32(), y->get_f32());
-					break;
-				case ValueType::F64:
-					value_out = (double)flib::fmod(x->get_f64(), y->get_f64());
-					break;
-				default:
-					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
-			}
-			break;
-		}
-		case Opcode::AND: {
-			_check_operand_count_with_output(this, output, num_operands, 2);
-
-			if (!_is_register_valid(cur_major_frame, output)) {
-				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
-			}
-			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
-
-			const Value *x, *y;
-
-			_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x);
-			_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y);
-			if (x->value_type != y->value_type) {
-				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
-			}
-
-			switch (x->value_type) {
-				case ValueType::I8:
-					value_out = (int8_t)(x->get_i8() & y->get_i8());
-					break;
-				case ValueType::I16:
-					value_out = (int16_t)(x->get_i16() & y->get_i16());
-					break;
-				case ValueType::I32:
-					value_out = (int32_t)(x->get_i32() & y->get_i32());
-					break;
-				case ValueType::I64:
-					value_out = (int64_t)(x->get_i64() & y->get_i64());
-					break;
-				case ValueType::U8:
-					value_out = (uint8_t)(x->get_u8() & y->get_u8());
-					break;
-				case ValueType::U16:
-					value_out = (uint16_t)(x->get_u16() & y->get_u16());
-					break;
-				case ValueType::U32:
-					value_out = (uint32_t)(x->get_u32() & y->get_u32());
-					break;
-				case ValueType::U64:
-					value_out = (uint64_t)(x->get_u64() & y->get_u64());
-					break;
-				default:
-					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
-			}
-			break;
-		}
-		case Opcode::OR: {
-			_check_operand_count_with_output(this, output, num_operands, 2);
-
-			if (!_is_register_valid(cur_major_frame, output)) {
-				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
-			}
-			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
-
-			const Value *x, *y;
-
-			_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x);
-			_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y);
-			if (x->value_type != y->value_type) {
-				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
-			}
-
-			switch (x->value_type) {
-				case ValueType::I8:
-					value_out = (int8_t)(x->get_i8() | y->get_i8());
-					break;
-				case ValueType::I16:
-					value_out = (int16_t)(x->get_i16() | y->get_i16());
-					break;
-				case ValueType::I32:
-					value_out = (int32_t)(x->get_i32() | y->get_i32());
-					break;
-				case ValueType::I64:
-					value_out = (int64_t)(x->get_i64() | y->get_i64());
-					break;
-				case ValueType::U8:
-					value_out = (uint8_t)(x->get_u8() | y->get_u8());
-					break;
-				case ValueType::U16:
-					value_out = (uint16_t)(x->get_u16() | y->get_u16());
-					break;
-				case ValueType::U32:
-					value_out = (uint32_t)(x->get_u32() | y->get_u32());
-					break;
-				case ValueType::U64:
-					value_out = (uint64_t)(x->get_u64() | y->get_u64());
-					break;
-				default:
-					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
-			}
-			break;
-		}
-		case Opcode::XOR: {
-			_check_operand_count_with_output(this, output, num_operands, 2);
-
-			if (!_is_register_valid(cur_major_frame, output)) {
-				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
-			}
-			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
-
-			const Value *x, *y;
-
-			_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x);
-			_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y);
-			if (x->value_type != y->value_type) {
-				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
-			}
-
-			switch (x->value_type) {
-				case ValueType::I8:
-					value_out = (int8_t)(x->get_i8() ^ y->get_i8());
-					break;
-				case ValueType::I16:
-					value_out = (int16_t)(x->get_i16() ^ y->get_i16());
-					break;
-				case ValueType::I32:
-					value_out = (int32_t)(x->get_i32() ^ y->get_i32());
-					break;
-				case ValueType::I64:
-					value_out = (int64_t)(x->get_i64() ^ y->get_i64());
-					break;
-				case ValueType::U8:
-					value_out = (uint8_t)(x->get_u8() ^ y->get_u8());
-					break;
-				case ValueType::U16:
-					value_out = (uint16_t)(x->get_u16() ^ y->get_u16());
-					break;
-				case ValueType::U32:
-					value_out = (uint32_t)(x->get_u32() ^ y->get_u32());
-					break;
-				case ValueType::U64:
-					value_out = (uint64_t)(x->get_u64() ^ y->get_u64());
-					break;
-				default:
-					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
-			}
-			break;
-		}
-		case Opcode::LAND: {
-			_check_operand_count_with_output(this, output, num_operands, 2);
-
-			if (!_is_register_valid(cur_major_frame, output)) {
-				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
-			}
-			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
-
-			const Value *x, *y;
-
-			_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x);
-			_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y);
-			if (x->value_type != y->value_type) {
-				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
-			}
-
-			switch (x->value_type) {
-				case ValueType::Bool:
-					value_out = (int16_t)(x->get_bool() && y->get_bool());
-					break;
-				default:
-					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
-			}
-			break;
-		}
-		case Opcode::LOR: {
-			_check_operand_count_with_output(this, output, num_operands, 2);
-
-			if (!_is_register_valid(cur_major_frame, output)) {
-				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
-			}
-			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
-
-			const Value *x, *y;
-
-			_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x);
-			_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y);
-			if (x->value_type != y->value_type) {
-				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
-			}
-
-			switch (x->value_type) {
-				case ValueType::Bool:
-					value_out = (int16_t)(x->get_bool() || y->get_bool());
-					break;
-				default:
-					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
-			}
-			break;
-		}
-		case Opcode::EQ: {
-			_check_operand_count_with_output(this, output, num_operands, 2);
-
-			if (!_is_register_valid(cur_major_frame, output)) {
-				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
-			}
-			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
-
-			const Value *x, *y;
-
-			_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x);
-			_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y);
-			if (x->value_type != y->value_type) {
-				if ((!x->is_null()) || (!y->is_null()))
-					value_out = false;
-				else
-					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
-			} else {
-				switch (x->value_type) {
-					case ValueType::I8:
-						value_out = (bool)(x->get_i8() == y->get_i8());
-						break;
-					case ValueType::I16:
-						value_out = (bool)(x->get_i16() == y->get_i16());
-						break;
-					case ValueType::I32:
-						value_out = (bool)(x->get_i32() == y->get_i32());
-						break;
-					case ValueType::I64:
-						value_out = (bool)(x->get_i64() == y->get_i64());
-						break;
-					case ValueType::U8:
-						value_out = (bool)(x->get_u8() == y->get_u8());
-						break;
-					case ValueType::U16:
-						value_out = (bool)(x->get_u16() == y->get_u16());
-						break;
-					case ValueType::U32:
-						value_out = (bool)(x->get_u32() == y->get_u32());
-						break;
-					case ValueType::U64:
-						value_out = (bool)(x->get_u64() == y->get_u64());
-						break;
-					case ValueType::F32:
-						value_out = (bool)(x->get_f32() == y->get_f32());
-						break;
-					case ValueType::F64:
-						value_out = (bool)(x->get_f64() == y->get_f64());
-						break;
-					case ValueType::Bool:
-						value_out = (bool)(x->get_bool() == y->get_bool());
-						break;
-					case ValueType::Reference:
-						value_out = (bool)(x->get_reference() == y->get_reference());
-						break;
-					default:
-						return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
-				}
-			}
-			break;
-		}
-		case Opcode::NEQ: {
-			_check_operand_count_with_output(this, output, num_operands, 2);
-
-			if (!_is_register_valid(cur_major_frame, output)) {
-				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
-			}
-			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
-
-			const Value *x, *y;
-
-			_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x);
-			_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y);
-			if (x->value_type != y->value_type) {
-				if ((!x->is_null()) || (!y->is_null()))
-					value_out = true;
-				else
-					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
-			} else {
-				switch (x->value_type) {
-					case ValueType::I8:
-						value_out = (bool)(x->get_i8() != y->get_i8());
-						break;
-					case ValueType::I16:
-						value_out = (bool)(x->get_i16() != y->get_i16());
-						break;
-					case ValueType::I32:
-						value_out = (bool)(x->get_i32() != y->get_i32());
-						break;
-					case ValueType::I64:
-						value_out = (bool)(x->get_i64() != y->get_i64());
-						break;
-					case ValueType::U8:
-						value_out = (bool)(x->get_u8() != y->get_u8());
-						break;
-					case ValueType::U16:
-						value_out = (bool)(x->get_u16() != y->get_u16());
-						break;
-					case ValueType::U32:
-						value_out = (bool)(x->get_u32() != y->get_u32());
-						break;
-					case ValueType::U64:
-						value_out = (bool)(x->get_u64() != y->get_u64());
-						break;
-					case ValueType::F32:
-						value_out = (bool)(x->get_f32() != y->get_f32());
-						break;
-					case ValueType::F64:
-						value_out = (bool)(x->get_f64() != y->get_f64());
-						break;
-					case ValueType::Bool:
-						value_out = (bool)(x->get_bool() != y->get_bool());
-						break;
-					case ValueType::Reference:
-						value_out = (bool)(x->get_reference() != y->get_reference());
-						break;
-					default:
-						return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
-				}
-			}
-			break;
-		}
-		case Opcode::LT: {
-			_check_operand_count_with_output(this, output, num_operands, 2);
-
-			if (!_is_register_valid(cur_major_frame, output)) {
-				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
-			}
-			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
-
-			const Value *x, *y;
-
-			_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x);
-			_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y);
-			if (x->value_type != y->value_type) {
-				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
-			}
-
-			switch (x->value_type) {
-				case ValueType::I8:
-					value_out = (bool)(x->get_i8() < y->get_i8());
-					break;
-				case ValueType::I16:
-					value_out = (bool)(x->get_i16() < y->get_i16());
-					break;
-				case ValueType::I32:
-					value_out = (bool)(x->get_i32() < y->get_i32());
-					break;
-				case ValueType::I64:
-					value_out = (bool)(x->get_i64() < y->get_i64());
-					break;
-				case ValueType::U8:
-					value_out = (bool)(x->get_u8() < y->get_u8());
-					break;
-				case ValueType::U16:
-					value_out = (bool)(x->get_u16() < y->get_u16());
-					break;
-				case ValueType::U32:
-					value_out = (bool)(x->get_u32() < y->get_u32());
-					break;
-				case ValueType::U64:
-					value_out = (bool)(x->get_u64() < y->get_u64());
-					break;
-				case ValueType::F32:
-					value_out = (bool)(x->get_f32() < y->get_f32());
-					break;
-				case ValueType::F64:
-					value_out = (bool)(x->get_f64() < y->get_f64());
-					break;
-				default:
-					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
-			}
-			break;
-		}
-		case Opcode::GT: {
-			_check_operand_count_with_output(this, output, num_operands, 2);
-
-			if (!_is_register_valid(cur_major_frame, output)) {
-				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
-			}
-			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
-
-			const Value *x, *y;
-
-			_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x);
-			_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y);
-			if (x->value_type != y->value_type) {
-				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
-			}
-
-			switch (x->value_type) {
-				case ValueType::I8:
-					value_out = (bool)(x->get_i8() > y->get_i8());
-					break;
-				case ValueType::I16:
-					value_out = (bool)(x->get_i16() > y->get_i16());
-					break;
-				case ValueType::I32:
-					value_out = (bool)(x->get_i32() > y->get_i32());
-					break;
-				case ValueType::I64:
-					value_out = (bool)(x->get_i64() > y->get_i64());
-					break;
-				case ValueType::U8:
-					value_out = (bool)(x->get_u8() > y->get_u8());
-					break;
-				case ValueType::U16:
-					value_out = (bool)(x->get_u16() > y->get_u16());
-					break;
-				case ValueType::U32:
-					value_out = (bool)(x->get_u32() > y->get_u32());
-					break;
-				case ValueType::U64:
-					value_out = (bool)(x->get_u64() > y->get_u64());
-					break;
-				case ValueType::F32:
-					value_out = (bool)(x->get_f32() > y->get_f32());
-					break;
-				case ValueType::F64:
-					value_out = (bool)(x->get_f64() > y->get_f64());
-					break;
-				default:
-					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
-			}
-			break;
-		}
-		case Opcode::LTEQ: {
-			_check_operand_count_with_output(this, output, num_operands, 2);
-
-			if (!_is_register_valid(cur_major_frame, output)) {
-				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
-			}
-			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
-
-			const Value *x, *y;
-
-			_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x);
-			_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y);
-			if (x->value_type != y->value_type) {
-				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
-			}
-
-			switch (x->value_type) {
-				case ValueType::I8:
-					value_out = (bool)(x->get_i8() <= y->get_i8());
-					break;
-				case ValueType::I16:
-					value_out = (bool)(x->get_i16() <= y->get_i16());
-					break;
-				case ValueType::I32:
-					value_out = (bool)(x->get_i32() <= y->get_i32());
-					break;
-				case ValueType::I64:
-					value_out = (bool)(x->get_i64() <= y->get_i64());
-					break;
-				case ValueType::U8:
-					value_out = (bool)(x->get_u8() <= y->get_u8());
-					break;
-				case ValueType::U16:
-					value_out = (bool)(x->get_u16() <= y->get_u16());
-					break;
-				case ValueType::U32:
-					value_out = (bool)(x->get_u32() <= y->get_u32());
-					break;
-				case ValueType::U64:
-					value_out = (bool)(x->get_u64() <= y->get_u64());
-					break;
-				case ValueType::F32:
-					value_out = (bool)(x->get_f32() <= y->get_f32());
-					break;
-				case ValueType::F64:
-					value_out = (bool)(x->get_f64() <= y->get_f64());
-					break;
-				default:
-					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
-			}
-			break;
-		}
-		case Opcode::GTEQ: {
-			_check_operand_count_with_output(this, output, num_operands, 2);
-
-			if (!_is_register_valid(cur_major_frame, output)) {
-				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
-			}
-			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
-
-			const Value *x, *y;
-
-			_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x);
-			_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y);
-			if (x->value_type != y->value_type) {
-				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
-			}
-
-			switch (x->value_type) {
-				case ValueType::I8:
-					value_out = (bool)(x->get_i8() >= y->get_i8());
-					break;
-				case ValueType::I16:
-					value_out = (bool)(x->get_i16() >= y->get_i16());
-					break;
-				case ValueType::I32:
-					value_out = (bool)(x->get_i32() >= y->get_i32());
-					break;
-				case ValueType::I64:
-					value_out = (bool)(x->get_i64() >= y->get_i64());
-					break;
-				case ValueType::U8:
-					value_out = (bool)(x->get_u8() >= y->get_u8());
-					break;
-				case ValueType::U16:
-					value_out = (bool)(x->get_u16() >= y->get_u16());
-					break;
-				case ValueType::U32:
-					value_out = (bool)(x->get_u32() >= y->get_u32());
-					break;
-				case ValueType::U64:
-					value_out = (bool)(x->get_u64() >= y->get_u64());
-					break;
-				case ValueType::F32:
-					value_out = (bool)(x->get_f32() >= y->get_f32());
-					break;
-				case ValueType::F64:
-					value_out = (bool)(x->get_f64() >= y->get_f64());
-					break;
-				default:
-					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
-			}
-			break;
-		}
-		case Opcode::CMP: {
-			_check_operand_count_with_output(this, output, num_operands, 2);
-
-			if (!_is_register_valid(cur_major_frame, output)) {
-				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
-			}
-			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
-
-			const Value *x, *y;
-
-			_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x);
-			_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y);
-			if (x->value_type != y->value_type) {
-				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
-			}
-
-			switch (x->value_type) {
-				case ValueType::I8:
-					value_out = (int32_t)flib::compare_i8(x->get_i8(), y->get_i8());
-					break;
-				case ValueType::I16:
-					value_out = (int32_t)flib::compare_i16(x->get_i16(), y->get_i16());
-					break;
-				case ValueType::I32:
-					value_out = (int32_t)flib::compare_i32(x->get_i32(), y->get_i32());
-					break;
-				case ValueType::I64:
-					value_out = (int32_t)flib::compare_i64(x->get_i64(), y->get_i64());
-					break;
-				case ValueType::U8:
-					value_out = (int32_t)flib::compare_u8(x->get_u8(), y->get_u8());
-					break;
-				case ValueType::U16:
-					value_out = (int32_t)flib::compare_u16(x->get_u16(), y->get_u16());
-					break;
-				case ValueType::U32:
-					value_out = (int32_t)flib::compare_u32(x->get_u32(), y->get_u32());
-					break;
-				case ValueType::U64:
-					value_out = (int32_t)flib::compare_u64(x->get_u64(), y->get_u64());
-					break;
-				case ValueType::F32:
-					value_out = (int32_t)flib::compare_f32(x->get_f32(), y->get_f32());
-					break;
-				case ValueType::F64:
-					value_out = (int32_t)flib::compare_f64(x->get_f64(), y->get_f64());
-					break;
-				default:
-					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
-			}
-
-			break;
-		}
-		case Opcode::LSH: {
-			_check_operand_count_with_output(this, output, num_operands, 2);
-
-			if (!_is_register_valid(cur_major_frame, output)) {
-				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
-			}
-			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
 
 			const Value *x, *y;
 
 			_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x);
 			_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y);
 
-			_check_operand_type(this, *y, ValueType::U32);
-
-			uint32_t rhs = y->get_u32();
-
-			switch (x->value_type) {
-				case ValueType::I8:
-					value_out = flib::shl_signed8(x->get_i8(), rhs);
-					break;
-				case ValueType::I16:
-					value_out = flib::shl_signed16(x->get_i16(), rhs);
-					break;
-				case ValueType::I32:
-					value_out = flib::shl_signed32(x->get_i32(), rhs);
-					break;
-				case ValueType::I64:
-					value_out = flib::shl_signed64(x->get_i64(), rhs);
-					break;
-				case ValueType::U8:
-					value_out = flib::shl_unsigned8(x->get_u8(), rhs);
-					break;
-				case ValueType::U16:
-					value_out = flib::shl_unsigned16(x->get_u16(), rhs);
-					break;
-				case ValueType::U32:
-					value_out = flib::shl_unsigned32(x->get_u32(), rhs);
-					break;
-				case ValueType::U64:
-					value_out = flib::shl_unsigned64(x->get_u64(), rhs);
-					break;
-				default:
-					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+			if ((x->value_type != ValueType::Reference) || (y->value_type != ValueType::Reference)) {
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
+
+			*_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output) = (x->get_reference() == y->get_reference());
+
 			break;
 		}
-		case Opcode::RSH: {
+		case Opcode::EQTYPE: {
 			_check_operand_count_with_output(this, output, num_operands, 2);
 
 			if (!_is_register_valid(cur_major_frame, output)) {
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
-			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
 
 			const Value *x, *y;
 
 			_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x);
 			_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y);
 
-			_check_operand_type(this, *y, ValueType::U32);
-
-			uint32_t rhs = y->get_u32();
-
-			switch (x->value_type) {
-				case ValueType::I8:
-					value_out = flib::shr_signed8(x->get_i8(), rhs);
-					break;
-				case ValueType::I16:
-					value_out = flib::shr_signed16(x->get_i16(), rhs);
-					break;
-				case ValueType::I32:
-					value_out = flib::shr_signed32(x->get_i32(), rhs);
-					break;
-				case ValueType::I64:
-					value_out = flib::shr_signed64(x->get_i64(), rhs);
-					break;
-				case ValueType::U8:
-					value_out = flib::shr_unsigned8(x->get_u8(), rhs);
-					break;
-				case ValueType::U16:
-					value_out = flib::shr_unsigned16(x->get_u16(), rhs);
-					break;
-				case ValueType::U32:
-					value_out = flib::shr_unsigned32(x->get_u32(), rhs);
-					break;
-				case ValueType::U64:
-					value_out = flib::shr_unsigned64(x->get_u64(), rhs);
-					break;
-				default:
-					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+			if ((x->value_type != ValueType::TypeName) || (y->value_type != ValueType::TypeName)) {
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
+
+			*_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output) = (x->get_type_name() == y->get_type_name());
+
 			break;
 		}
+
+#define SIMPLE_NEQ_OP_PROC(slake_type_lower, slake_type_upper)                                                                                        \
+	{                                                                                                                                                 \
+		_check_operand_count_with_output(this, output, num_operands, 2);                                                                              \
+                                                                                                                                                      \
+		if (!_is_register_valid(cur_major_frame, output)) {                                                                                           \
+			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));                                                   \
+		}                                                                                                                                             \
+                                                                                                                                                      \
+		const Value *x, *y;                                                                                                                           \
+                                                                                                                                                      \
+		_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x);                                                  \
+		_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y);                                                  \
+		switch (x->value_type) {                                                                                                                      \
+			case ValueType::slake_type_upper:                                                                                                         \
+				if ((x->value_type != ValueType::slake_type_upper) || (y->value_type != ValueType::slake_type_upper)) {                               \
+					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));                                           \
+				}                                                                                                                                     \
+				*_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output) = (bool)(x->get_##slake_type_lower() != y->get_##slake_type_lower()); \
+				break;                                                                                                                                \
+			case ValueType::Reference:                                                                                                                \
+				*_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output) = x->is_null() != y->is_null();                                       \
+				break;                                                                                                                                \
+			default:                                                                                                                                  \
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));                                               \
+		}                                                                                                                                             \
+                                                                                                                                                      \
+		break;                                                                                                                                        \
+	}
+		case Opcode::NEQI8:
+			SIMPLE_NEQ_OP_PROC(i8, I8);
+		case Opcode::NEQI16:
+			SIMPLE_NEQ_OP_PROC(i16, I16);
+		case Opcode::NEQI32:
+			SIMPLE_NEQ_OP_PROC(i32, I32);
+		case Opcode::NEQI64:
+			SIMPLE_NEQ_OP_PROC(i64, I64);
+		case Opcode::NEQU8:
+			SIMPLE_NEQ_OP_PROC(u8, U8);
+		case Opcode::NEQU16:
+			SIMPLE_NEQ_OP_PROC(u16, U16);
+		case Opcode::NEQU32:
+			SIMPLE_NEQ_OP_PROC(u32, U32);
+		case Opcode::NEQU64:
+			SIMPLE_NEQ_OP_PROC(u64, U64);
+		case Opcode::NEQF32:
+			SIMPLE_NEQ_OP_PROC(f32, F32);
+		case Opcode::NEQF64:
+			SIMPLE_NEQ_OP_PROC(f64, F64);
+		case Opcode::NEQBOOL:
+			SIMPLE_NEQ_OP_PROC(bool, Bool);
+		case Opcode::NEQREF: {
+			_check_operand_count_with_output(this, output, num_operands, 2);
+
+			if (!_is_register_valid(cur_major_frame, output)) {
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+			}
+
+			const Value *x, *y;
+
+			_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x);
+			_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y);
+
+			if ((x->value_type != ValueType::Reference) || (y->value_type != ValueType::Reference)) {
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+			}
+
+			*_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output) = (x->get_reference() != y->get_reference());
+
+			break;
+		}
+		case Opcode::NEQTYPE: {
+			_check_operand_count_with_output(this, output, num_operands, 2);
+
+			if (!_is_register_valid(cur_major_frame, output)) {
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+			}
+
+			const Value *x, *y;
+
+			_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x);
+			_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y);
+
+			if ((x->value_type != ValueType::TypeName) || (y->value_type != ValueType::TypeName)) {
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+			}
+
+			*_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output) = (x->get_type_name() != y->get_type_name());
+
+			break;
+		}
+
+#define SIMPLE_COMPARING_OP_PROC(slake_type_lower, slake_type_upper, op)                                                                      \
+	{                                                                                                                                         \
+		_check_operand_count_with_output(this, output, num_operands, 2);                                                                      \
+                                                                                                                                              \
+		if (!_is_register_valid(cur_major_frame, output)) {                                                                                   \
+			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));                                           \
+		}                                                                                                                                     \
+                                                                                                                                              \
+		const Value *x, *y;                                                                                                                   \
+                                                                                                                                              \
+		_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x);                                          \
+		_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y);                                          \
+		if ((x->value_type != ValueType::slake_type_upper) || (y->value_type != ValueType::slake_type_upper)) {                               \
+			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));                                           \
+		}                                                                                                                                     \
+                                                                                                                                              \
+		*_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output) = (bool)(x->get_##slake_type_lower() op y->get_##slake_type_lower()); \
+		break;                                                                                                                                \
+	}
+		case Opcode::LTI8:
+			SIMPLE_COMPARING_OP_PROC(i8, I8, <);
+		case Opcode::LTI16:
+			SIMPLE_COMPARING_OP_PROC(i16, I16, <);
+		case Opcode::LTI32:
+			SIMPLE_COMPARING_OP_PROC(i32, I32, <);
+		case Opcode::LTI64:
+			SIMPLE_COMPARING_OP_PROC(i64, I64, <);
+		case Opcode::LTU8:
+			SIMPLE_COMPARING_OP_PROC(u8, U8, <);
+		case Opcode::LTU16:
+			SIMPLE_COMPARING_OP_PROC(u16, U16, <);
+		case Opcode::LTU32:
+			SIMPLE_COMPARING_OP_PROC(u32, U32, <);
+		case Opcode::LTU64:
+			SIMPLE_COMPARING_OP_PROC(u64, U64, <);
+		case Opcode::LTF32:
+			SIMPLE_COMPARING_OP_PROC(f32, F32, <);
+		case Opcode::LTF64:
+			SIMPLE_COMPARING_OP_PROC(f64, F64, <);
+
+		case Opcode::GTI8:
+			SIMPLE_COMPARING_OP_PROC(i8, I8, >);
+		case Opcode::GTI16:
+			SIMPLE_COMPARING_OP_PROC(i16, I16, >);
+		case Opcode::GTI32:
+			SIMPLE_COMPARING_OP_PROC(i32, I32, >);
+		case Opcode::GTI64:
+			SIMPLE_COMPARING_OP_PROC(i64, I64, >);
+		case Opcode::GTU8:
+			SIMPLE_COMPARING_OP_PROC(u8, U8, >);
+		case Opcode::GTU16:
+			SIMPLE_COMPARING_OP_PROC(u16, U16, >);
+		case Opcode::GTU32:
+			SIMPLE_COMPARING_OP_PROC(u32, U32, >);
+		case Opcode::GTU64:
+			SIMPLE_COMPARING_OP_PROC(u64, U64, >);
+		case Opcode::GTF32:
+			SIMPLE_COMPARING_OP_PROC(f32, F32, >);
+		case Opcode::GTF64:
+			SIMPLE_COMPARING_OP_PROC(f64, F64, >);
+
+		case Opcode::LTEQI8:
+			SIMPLE_COMPARING_OP_PROC(i8, I8, <=);
+		case Opcode::LTEQI16:
+			SIMPLE_COMPARING_OP_PROC(i16, I16, <=);
+		case Opcode::LTEQI32:
+			SIMPLE_COMPARING_OP_PROC(i32, I32, <=);
+		case Opcode::LTEQI64:
+			SIMPLE_COMPARING_OP_PROC(i64, I64, <=);
+		case Opcode::LTEQU8:
+			SIMPLE_COMPARING_OP_PROC(u8, U8, <=);
+		case Opcode::LTEQU16:
+			SIMPLE_COMPARING_OP_PROC(u16, U16, <=);
+		case Opcode::LTEQU32:
+			SIMPLE_COMPARING_OP_PROC(u32, U32, <=);
+		case Opcode::LTEQU64:
+			SIMPLE_COMPARING_OP_PROC(u64, U64, <=);
+		case Opcode::LTEQF32:
+			SIMPLE_COMPARING_OP_PROC(f32, F32, <=);
+		case Opcode::LTEQF64:
+			SIMPLE_COMPARING_OP_PROC(f64, F64, <=);
+
+		case Opcode::GTEQI8:
+			SIMPLE_COMPARING_OP_PROC(i8, I8, >=);
+		case Opcode::GTEQI16:
+			SIMPLE_COMPARING_OP_PROC(i16, I16, >=);
+		case Opcode::GTEQI32:
+			SIMPLE_COMPARING_OP_PROC(i32, I32, >=);
+		case Opcode::GTEQI64:
+			SIMPLE_COMPARING_OP_PROC(i64, I64, >=);
+		case Opcode::GTEQU8:
+			SIMPLE_COMPARING_OP_PROC(u8, U8, >=);
+		case Opcode::GTEQU16:
+			SIMPLE_COMPARING_OP_PROC(u16, U16, >=);
+		case Opcode::GTEQU32:
+			SIMPLE_COMPARING_OP_PROC(u32, U32, >=);
+		case Opcode::GTEQU64:
+			SIMPLE_COMPARING_OP_PROC(u64, U64, >=);
+		case Opcode::GTEQF32:
+			SIMPLE_COMPARING_OP_PROC(f32, F32, >=);
+		case Opcode::GTEQF64:
+			SIMPLE_COMPARING_OP_PROC(f64, F64, >=);
+
+#define SIMPLE_CMP_OP_PROC(slake_type_lower, slake_type_upper)                                                                                                                 \
+	{                                                                                                                                                                          \
+		_check_operand_count_with_output(this, output, num_operands, 2);                                                                                                       \
+                                                                                                                                                                               \
+		if (!_is_register_valid(cur_major_frame, output)) {                                                                                                                    \
+			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));                                                                            \
+		}                                                                                                                                                                      \
+                                                                                                                                                                               \
+		const Value *x, *y;                                                                                                                                                    \
+                                                                                                                                                                               \
+		_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], x);                                                                           \
+		_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], y);                                                                           \
+		if ((x->value_type != ValueType::slake_type_upper) || (y->value_type != ValueType::slake_type_upper)) {                                                                \
+			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));                                                                            \
+		}                                                                                                                                                                      \
+                                                                                                                                                                               \
+		*_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output) = (int32_t)flib::compare_##slake_type_lower(x->get_##slake_type_lower(), y->get_##slake_type_lower()); \
+		break;                                                                                                                                                                 \
+	}
+		case Opcode::CMPI8:
+			SIMPLE_CMP_OP_PROC(i8, I8);
+		case Opcode::CMPI16:
+			SIMPLE_CMP_OP_PROC(i16, I16);
+		case Opcode::CMPI32:
+			SIMPLE_CMP_OP_PROC(i32, I32);
+		case Opcode::CMPI64:
+			SIMPLE_CMP_OP_PROC(i64, I64);
+		case Opcode::CMPU8:
+			SIMPLE_CMP_OP_PROC(u8, U8);
+		case Opcode::CMPU16:
+			SIMPLE_CMP_OP_PROC(u16, U16);
+		case Opcode::CMPU32:
+			SIMPLE_CMP_OP_PROC(u32, U32);
+		case Opcode::CMPU64:
+			SIMPLE_CMP_OP_PROC(u64, U64);
+		case Opcode::CMPF32:
+			SIMPLE_CMP_OP_PROC(f32, F32);
+		case Opcode::CMPF64:
+			SIMPLE_CMP_OP_PROC(f64, F64);
+
+			// TODO: Implement SHL and SHR.
+
 		case Opcode::NOT: {
 			_check_operand_count_with_output(this, output, num_operands, 1);
 

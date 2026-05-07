@@ -1044,9 +1044,9 @@ SLAKE_API InternalExceptionPointer loader::load_module_members(LoaderContext &co
 				SLAKE_RETURN_IF_EXCEPT(load_type(context, runtime, reader, fn_overloading_object.get(), fn_overloading_object->return_type));
 
 				for (size_t k = 0; k < fnd.len_body; ++k) {
-					Opcode opcode;
+					uint16_t opcode;
 
-					SLAKE_RETURN_IF_EXCEPT(_normalize_read_result(runtime, reader->read_u8((uint8_t &)opcode)));
+					SLAKE_RETURN_IF_EXCEPT(_normalize_read_result(runtime, reader->read_u16(opcode)));
 
 					uint32_t output;
 
@@ -1058,7 +1058,7 @@ SLAKE_API InternalExceptionPointer loader::load_module_members(LoaderContext &co
 
 					Instruction ins;
 
-					ins.opcode = opcode;
+					ins.opcode = static_cast<Opcode>(opcode);
 					ins.output = output;
 					if (!ins.reserve_operands(fn_overloading_object->get_allocator(), num_operands)) {
 						return OutOfMemoryError::alloc();

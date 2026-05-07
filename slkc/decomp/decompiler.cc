@@ -25,6 +25,8 @@ SLKC_API const char *slkc::get_mnemonic_name(slake::Opcode opcode) {
 
 		MNEMONIC_NAME_CASE(PHI)
 
+		MNEMONIC_NAME_CASE(LARGV)
+
 		// Add
 		MNEMONIC_NAME_CASE(ADDI8)
 		MNEMONIC_NAME_CASE(ADDI16)
@@ -273,14 +275,25 @@ SLKC_API const char *slkc::get_mnemonic_name(slake::Opcode opcode) {
 
 		MNEMONIC_NAME_CASE(LCURFN)
 
+		MNEMONIC_NAME_CASE(COPYI8)
+		MNEMONIC_NAME_CASE(COPYI16)
+		MNEMONIC_NAME_CASE(COPYI32)
+		MNEMONIC_NAME_CASE(COPYI64)
+		MNEMONIC_NAME_CASE(COPYISIZE)
+		MNEMONIC_NAME_CASE(COPYU8)
+		MNEMONIC_NAME_CASE(COPYU16)
+		MNEMONIC_NAME_CASE(COPYU32)
+		MNEMONIC_NAME_CASE(COPYU64)
+		MNEMONIC_NAME_CASE(COPYUSIZE)
+		MNEMONIC_NAME_CASE(COPYF32)
+		MNEMONIC_NAME_CASE(COPYF64)
+		MNEMONIC_NAME_CASE(COPYBOOL)
+		MNEMONIC_NAME_CASE(COPYNULL)
 		MNEMONIC_NAME_CASE(COPY)
-
 		MNEMONIC_NAME_CASE(LARG)
 		MNEMONIC_NAME_CASE(LAPARG)
-
 		MNEMONIC_NAME_CASE(LVAR)
 		MNEMONIC_NAME_CASE(ALLOCA)
-
 		MNEMONIC_NAME_CASE(ENTER)
 		MNEMONIC_NAME_CASE(LEAVE)
 
@@ -1101,9 +1114,9 @@ SLKC_API bool Decompiler::decompile_module_members(peff::Alloc *allocator, DumpW
 											SLKC_RETURN_IF_FALSE(writer->write(mnemonic));
 											SLKC_RETURN_IF_FALSE(writer->write(" "));
 										} else {
-											char s[13];
+											char s[33];
 
-											snprintf(s, sizeof(s) - 1, "0x%0.2x ", (int)cur_ins.opcode);
+											snprintf(s, sizeof(s) - 1, "0x%0.4x ", (int)cur_ins.opcode);
 
 											SLKC_RETURN_IF_FALSE(writer->write(s));
 										}

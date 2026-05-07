@@ -38,11 +38,11 @@ SLKC_API ParseCoroutine::Awaitable::Awaitable(
 	  handle(std::move(handle)) {
 }
 
-SLAKE_FORCEINLINE bool ParseCoroutine::Awaitable::await_ready() {
+SLKC_API bool ParseCoroutine::Awaitable::await_ready() {
 	return false;
 }
 
-SLAKE_FORCEINLINE void ParseCoroutine::Awaitable::await_suspend(Handle h) {
+SLKC_API  void ParseCoroutine::Awaitable::await_suspend(Handle h) {
 	if (!scheduler->task_list.push_back(std::move(h))) {
 		co.coro_handle.promise().result = parser->gen_oom_syntax_error();
 		return;
@@ -53,7 +53,7 @@ SLAKE_FORCEINLINE void ParseCoroutine::Awaitable::await_suspend(Handle h) {
 	}
 }
 
-SLAKE_FORCEINLINE peff::Option<SyntaxError> ParseCoroutine::Awaitable::await_resume() {
+SLKC_API peff::Option<SyntaxError> ParseCoroutine::Awaitable::await_resume() {
 	if (handle) {
 		if (handle.promise().result)
 			return std::move(handle.promise().result);

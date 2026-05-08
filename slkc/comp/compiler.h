@@ -501,68 +501,6 @@ namespace slkc {
 			const AstNodePtr<CustomTypeNameNode> &type_name,
 			AstNodePtr<TypeNameNode> &type_name_out);
 
-	/// @brief Collect interfaces involved in the whole inheritance chain.
-	/// @note Note that this function does not clear current set.
-	/// @param document Document to be operated.
-	/// @param derived Leaf interface node.
-	/// @param walked_interfaces Where the involved interfaces are stored.
-	/// @param insert_self Controls whether to insert the leaf interface itself into the involved interface set.
-	/// @return std::nullopt No error.
-	/// @return CompilationErrorKind::CyclicInheritedInterface Cyclic inherited interface was detected.
-	[[nodiscard]] SLKC_API peff::Option<CompilationError> collect_involved_interfaces(
-		peff::SharedPtr<Document> document,
-		const AstNodePtr<InterfaceNode> &bottom,
-		peff::Set<AstNodePtr<InterfaceNode>> &walked_interfaces,
-		bool insert_self);
-	///
-	/// @brief Walk and collect involved interfaces like in a BFS phase.
-	///
-	/// @param interfaces_in Current interface set.
-	/// @param new_interfaces_out New interface set.
-	/// @return Any fatal error occurred during the collecting operation.
-	///
-	[[nodiscard]] SLKC_API peff::Option<CompilationError> collect_involved_interfaces_phased_bfs(
-		const peff::Set<AstNodePtr<InterfaceNode>> &interfaces_in,
-		peff::Set<AstNodePtr<InterfaceNode>> &new_interfaces_out);
-	[[nodiscard]] SLKC_API peff::Option<CompilationError> collect_inherited_members(
-		peff::SharedPtr<Document> document,
-		const AstNodePtr<ClassNode> &bottom,
-		peff::Set<AstNodePtr<MemberNode>> &walked_members,
-		bool insert_self);
-	[[nodiscard]] SLKC_API peff::Option<CompilationError> is_implemented_by_interface(
-		peff::SharedPtr<Document> document,
-		const AstNodePtr<InterfaceNode> &base,
-		const AstNodePtr<InterfaceNode> &derived,
-		bool &whether_out);
-	[[nodiscard]] SLKC_API peff::Option<CompilationError> is_implemented_by_class(
-		peff::SharedPtr<Document> document,
-		const AstNodePtr<InterfaceNode> &base,
-		const AstNodePtr<ClassNode> &derived,
-		bool &whether_out);
-	[[nodiscard]] SLKC_API peff::Option<CompilationError> is_struct_recursed(
-		peff::SharedPtr<Document> document,
-		const AstNodePtr<StructNode> &derived,
-		bool &whether_out);
-	[[nodiscard]] SLKC_API peff::Option<CompilationError> is_union_enum_recursed(
-		peff::SharedPtr<Document> document,
-		const AstNodePtr<UnionEnumNode> &derived,
-		bool &whether_out);
-	SLKC_API peff::Option<CompilationError> is_higher_ranked_cyclic_inherited(
-		AstNodePtr<MemberNode> cls,
-		peff::Alloc *allocator,
-		bool &result_out,
-		bool forced_update = false) noexcept;
-	SLKC_API peff::Option<CompilationError> is_higher_ranked_recursed(
-		AstNodePtr<MemberNode> member,
-		AstNodePtr<CustomTypeNameNode> ctn,
-		peff::Alloc *allocator,
-		bool &result_out) noexcept;
-	[[nodiscard]] SLKC_API peff::Option<CompilationError> is_base_of(
-		peff::SharedPtr<Document> document,
-		const AstNodePtr<ClassNode> &base,
-		const AstNodePtr<ClassNode> &derived,
-		bool &whether_out);
-
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> remove_ref_of_type(
 		AstNodePtr<TypeNameNode> src,
 		AstNodePtr<TypeNameNode> &type_name_out);

@@ -545,7 +545,7 @@ recheck:
 									if (type_member == subtype_member) {
 										result_out = true;
 									} else {
-										SLKC_RETURN_IF_COMP_ERROR(is_base_of(base_type->document->shared_from_this(), type_member.cast_to<ClassNode>(), subtype_member.cast_to<ClassNode>(), result_out));
+										SLKC_RETURN_IF_COMP_ERROR(is_base_of(base_type->document->shared_from_this(), type_member, subtype_member, result_out));
 									}
 									break;
 								case AstNodeType::GenericParam: {
@@ -563,7 +563,7 @@ recheck:
 													// subtype <: base_type
 													result_out = true;
 												} else
-													SLKC_RETURN_IF_COMP_ERROR(is_base_of(base_type->document->shared_from_this(), type_member.cast_to<ClassNode>(), gp_base_member.cast_to<ClassNode>(), result_out));
+													SLKC_RETURN_IF_COMP_ERROR(is_base_of(base_type->document->shared_from_this(), type_member, gp_base_member, result_out));
 											}
 										}
 									}

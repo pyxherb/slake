@@ -327,7 +327,7 @@ SLKC_API peff::Option<CompilationError> slkc::is_member_accessible(
 				if (access_node->get_ast_node_type() == AstNodeType::Class) {
 					bool result;
 
-					SLKC_RETURN_IF_COMP_ERROR(is_base_of(compile_env->get_document(), p->shared_from_this().cast_to<ClassNode>(), access_node.cast_to<ClassNode>(), result));
+					SLKC_RETURN_IF_COMP_ERROR(is_base_of(compile_env->get_document(), p->shared_from_this().cast_to<MemberNode>(), access_node, result));
 
 					if (result) {
 						// Child classes can always access parent's members.
@@ -672,11 +672,11 @@ SLKC_API peff::Option<CompilationError> slkc::visit_base_class(AstNodePtr<TypeNa
 
 			if (base_type && (base_type->get_ast_node_type() == AstNodeType::Class)) {
 				AstNodePtr<ClassNode> b = base_type.cast_to<ClassNode>();
-				bool is_cyclic_inherited;
+				bool cyclic_inherited;
 
-				SLKC_RETURN_IF_COMP_ERROR(b->is_cyclic_inherited(is_cyclic_inherited));
+				SLKC_RETURN_IF_COMP_ERROR(is_cyclic_inherited(base_type_name->document->shared_from_this(), base_type, cyclic_inherited));
 
-				if (((!walked_nodes) || (!walked_nodes->contains(base_type))) && (!is_cyclic_inherited)) {
+				if (((!walked_nodes) || (!walked_nodes->contains(base_type))) && (!cyclic_inherited)) {
 					class_out = b;
 					break;
 				}
@@ -697,11 +697,11 @@ SLKC_API peff::Option<CompilationError> slkc::visit_base_interface(AstNodePtr<Ty
 
 			if (base_type && (base_type->get_ast_node_type() == AstNodeType::Interface)) {
 				AstNodePtr<InterfaceNode> b = base_type.cast_to<InterfaceNode>();
-				bool is_cyclic_inherited;
+				bool cyclic_inherited;
 
-				SLKC_RETURN_IF_COMP_ERROR(b->is_cyclic_inherited(is_cyclic_inherited));
+				SLKC_RETURN_IF_COMP_ERROR(is_cyclic_implemented(base_type_name->document->shared_from_this(), b, cyclic_inherited));
 
-				if (((!walked_nodes) || (!walked_nodes->contains(base_type))) && (!is_cyclic_inherited)) {
+				if (((!walked_nodes) || (!walked_nodes->contains(base_type))) && (!cyclic_inherited)) {
 					class_out = b;
 					break;
 				}

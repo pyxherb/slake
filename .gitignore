@@ -32,6 +32,7 @@ CMakeSettings.json
 .nvim.lua
 .clangd
 .DS_Store
+.xcode_proj
 
 # Runtime artifacts
 *.log

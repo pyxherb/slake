@@ -43,26 +43,69 @@ SLKC_API ClassNode::ClassNode(const ClassNode &rhs, peff::Alloc *allocator, Dupl
 SLKC_API ClassNode::~ClassNode() {
 }
 
-SLKC_API peff::Option<CompilationError> ClassNode::is_cyclic_inherited(bool &whether_out) {
-	if (is_cyclic_inheritance_checked) {
-		whether_out = is_cyclic_inherited_flag;
-		return {};
-	}
-
-	SLKC_RETURN_IF_COMP_ERROR(update_cyclic_inherited_status());
-
-	whether_out = is_cyclic_inherited_flag;
-	return {};
-}
-
 struct HigherRankedCyclicInheritanceWalkFrame {
 	AstNodePtr<CustomTypeNameNode> type_name;
 	size_t idx_cur_type_arg = 0;
 };
 
+SLKC_API peff::Option<CompilationError> slkc::is_cyclic_inherited(
+	peff::SharedPtr<Document> document,
+	const AstNodePtr<MemberNode> &base,
+	bool &whether_out) {
+	if ((base->scope->cached_is_cyclic_inherited.has_value() && *base->scope->cached_is_cyclic_inherited) ||
+		(base->scope->cached_is_higher_ranked_cyclic_inherited.has_value() && *base->scope->cached_is_higher_ranked_cyclic_inherited)) {
+		whether_out = true;
+		return {};
+	}
+
+	SLKC_RETURN_IF_COMP_ERROR(is_higher_ranked_cyclic_inherited(document, base.cast_to<MemberNode>(), whether_out));
+	if (whether_out) {
+		return {};
+	}
+
+	SLKC_RETURN_IF_COMP_ERROR(is_base_of(document, base.cast_to<MemberNode>(), base.cast_to<MemberNode>(), whether_out));
+
+	base->scope->cached_is_cyclic_inherited = whether_out;
+
+	return {};
+}
+
+SLKC_API peff::Option<CompilationError> slkc::is_cyclic_implemented(
+	peff::SharedPtr<Document> document,
+	const AstNodePtr<InterfaceNode> &base,
+	bool &whether_out) {
+	if ((base->scope->cached_is_cyclic_implemented.has_value() && *base->scope->cached_is_cyclic_implemented) ||
+		(base->scope->cached_is_higher_ranked_cyclic_inherited.has_value() && *base->scope->cached_is_higher_ranked_cyclic_inherited)) {
+		whether_out = *base->scope->cached_is_cyclic_implemented;
+		return {};
+	}
+
+	SLKC_RETURN_IF_COMP_ERROR(is_higher_ranked_cyclic_inherited(document, base.cast_to<MemberNode>(), whether_out));
+	if (whether_out) {
+		return {};
+	}
+
+	peff::Set<AstNodePtr<InterfaceNode>> involved_interfaces(document->allocator.get());
+	if (auto e = collect_involved_interfaces(base->document->shared_from_this(), base, involved_interfaces, true); e) {
+		if (e->error_kind == CompilationErrorKind::CyclicInheritedInterface) {
+			base->scope->cached_is_cyclic_inherited = true;
+			whether_out = true;
+			e.reset();
+
+			return {};
+		}
+		return e;
+	}
+
+	whether_out = false;
+	base->scope->cached_is_cyclic_implemented = false;
+
+	return {};
+}
+
 SLKC_API peff::Option<CompilationError> slkc::is_higher_ranked_cyclic_inherited(
+	peff::SharedPtr<Document> document,
 	AstNodePtr<MemberNode> cls,
-	peff::Alloc *allocator,
 	bool &result_out,
 	bool forced_updates) noexcept {
 	assert(cls->scope);
@@ -72,7 +115,7 @@ SLKC_API peff::Option<CompilationError> slkc::is_higher_ranked_cyclic_inherited(
 		return {};
 	}
 
-	peff::List<HigherRankedCyclicInheritanceWalkFrame> frames(allocator);
+	peff::List<HigherRankedCyclicInheritanceWalkFrame> frames(document->allocator.get());
 
 	if (cls->scope->base_type && (cls->scope->base_type->tn_kind == TypeNameKind::Custom)) {
 		if (!frames.push_back({ cls->scope->base_type.cast_to<CustomTypeNameNode>(), 0 }))
@@ -136,9 +179,9 @@ struct HigherRankedRecursedWalkFrame {
 };
 
 SLKC_API peff::Option<CompilationError> slkc::is_higher_ranked_recursed(
+	peff::SharedPtr<Document> document,
 	AstNodePtr<MemberNode> member,
 	AstNodePtr<CustomTypeNameNode> ctn,
-	peff::Alloc *allocator,
 	bool &result_out) noexcept {
 	assert(member);
 
@@ -147,7 +190,7 @@ SLKC_API peff::Option<CompilationError> slkc::is_higher_ranked_recursed(
 		return {};
 	}
 
-	peff::List<HigherRankedRecursedWalkFrame> frames(allocator);
+	peff::List<HigherRankedRecursedWalkFrame> frames(document->allocator.get());
 
 	if (!frames.push_back({ ctn, 0 }))
 		return gen_oom_comp_error();
@@ -196,28 +239,6 @@ SLKC_API peff::Option<CompilationError> slkc::is_higher_ranked_recursed(
 	return {};
 }
 
-SLKC_API peff::Option<CompilationError> ClassNode::update_cyclic_inherited_status() {
-	if (is_cyclic_inherited_flag)
-		return {};
-
-	if (scope->base_type && scope->base_type->tn_kind == TypeNameKind::Custom) {
-		AstNodePtr<CustomTypeNameNode> ctn;
-		SLKC_RETURN_IF_COMP_ERROR(
-			is_higher_ranked_cyclic_inherited(
-				shared_from_this().cast_to<MemberNode>(),
-				document->allocator.get(),
-				is_cyclic_inherited_flag,
-				ctn));
-	}
-
-	if (!is_cyclic_inherited_flag) {
-		SLKC_RETURN_IF_COMP_ERROR(is_base_of(document->shared_from_this(), shared_from_this().cast_to<ClassNode>(), shared_from_this().cast_to<ClassNode>(), is_cyclic_inherited_flag));
-	}
-
-	is_cyclic_inheritance_checked = true;
-	return {};
-}
-
 SLKC_API AstNodePtr<AstNode> InterfaceNode::do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const {
 	bool succeeded = false;
 	AstNodePtr<InterfaceNode> duplicated_node(make_ast_node<InterfaceNode>(new_allocator, *this, new_allocator, context, succeeded));
@@ -256,47 +277,6 @@ SLKC_API InterfaceNode::InterfaceNode(const InterfaceNode &rhs, peff::Alloc *all
 }
 
 SLKC_API InterfaceNode::~InterfaceNode() {
-}
-
-SLKC_API peff::Option<CompilationError> InterfaceNode::is_cyclic_inherited(bool &whether_out) {
-	if (is_cyclic_inheritance_checked) {
-		whether_out = is_cyclic_inherited_flag;
-		return {};
-	}
-
-	SLKC_RETURN_IF_COMP_ERROR(update_cyclic_inherited_status());
-
-	whether_out = is_cyclic_inherited_flag;
-	return {};
-}
-
-SLKC_API peff::Option<CompilationError> InterfaceNode::update_cyclic_inherited_status() {
-	peff::Set<AstNodePtr<InterfaceNode>> involved_interfaces(document->allocator.get());
-
-	SLKC_RETURN_IF_COMP_ERROR(is_higher_ranked_cyclic_inherited(shared_from_this().cast_to<MemberNode>(), document->allocator.get(), is_cyclic_inherited_flag, true));
-	if (is_cyclic_inherited_flag) {
-		is_cyclic_inheritance_checked = true;
-		return {};
-	}
-
-	if (auto e = collect_involved_interfaces(document->shared_from_this(), shared_from_this().cast_to<InterfaceNode>(), involved_interfaces, true); e) {
-		if (e->error_kind == CompilationErrorKind::CyclicInheritedInterface) {
-			is_cyclic_inherited_flag = true;
-			is_cyclic_inheritance_checked = true;
-			if (!cyclic_inheritance_error.has_value()) {
-				cyclic_inheritance_error = std::move(*e);
-			}
-			e.reset();
-
-			return {};
-		}
-		return e;
-	}
-
-	is_cyclic_inherited_flag = false;
-	is_cyclic_inheritance_checked = true;
-
-	return {};
 }
 
 SLKC_API AstNodePtr<AstNode> StructNode::do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const {
@@ -670,7 +650,7 @@ static peff::Option<CompilationError> _is_struct_recursed(
 					AstNodePtr<MemberNode> m;
 
 					if (auto t = var_member->type; t->tn_kind == TypeNameKind::Custom) {
-						SLKC_RETURN_IF_COMP_ERROR(is_higher_ranked_recursed(cur_struct, t.cast_to<CustomTypeNameNode>(), document->allocator.get(), whether_out));
+						SLKC_RETURN_IF_COMP_ERROR(is_higher_ranked_recursed(document, cur_struct, t.cast_to<CustomTypeNameNode>(), whether_out));
 						if (whether_out)
 							return {};
 						SLKC_RETURN_IF_COMP_ERROR(resolve_custom_type_name(nullptr, document, t.cast_to<CustomTypeNameNode>(), m));
@@ -808,16 +788,10 @@ malformed:
 
 SLKC_API peff::Option<CompilationError> slkc::is_base_of(
 	peff::SharedPtr<Document> document,
-	const AstNodePtr<ClassNode> &base,
-	const AstNodePtr<ClassNode> &derived,
+	const AstNodePtr<MemberNode> &base,
+	const AstNodePtr<MemberNode> &derived,
 	bool &whether_out) {
-	peff::Set<AstNodePtr<ClassNode>> walked_classes(document->allocator.get());
-
-	if (!walked_classes.insert(AstNodePtr<ClassNode>(derived))) {
-		return gen_oom_comp_error();
-	}
-
-	AstNodePtr<ClassNode> current_class = derived;
+	AstNodePtr<MemberNode> current_class = derived;
 	AstNodePtr<TypeNameNode> current_type;
 
 	while ((current_type = current_class->scope->base_type)) {
@@ -836,21 +810,17 @@ SLKC_API peff::Option<CompilationError> slkc::is_base_of(
 			goto malformed;
 		}
 
-		current_class = m.cast_to<ClassNode>();
+		current_class = m;
 
 		// Make sure that the function will work properly when the class has cyclic inheritance.
-		if (walked_classes.contains(current_class)) {
-			whether_out = true;
-			return {};
-		}
-
 		if (current_class == base) {
 			whether_out = true;
 			return {};
 		}
 
-		if (!walked_classes.insert(AstNodePtr<ClassNode>(current_class))) {
-			return gen_oom_comp_error();
+		if (current_class == derived) {
+			whether_out = false;
+			return {};
 		}
 	}
 
@@ -1038,21 +1008,4 @@ SLKC_API UnionEnumNode::UnionEnumNode(const UnionEnumNode &rhs, peff::Alloc *all
 }
 
 SLKC_API UnionEnumNode::~UnionEnumNode() {
-}
-
-SLKC_API peff::Option<CompilationError> UnionEnumNode::is_recursed_type(bool &whether_out) {
-	if (is_recursed_type_checked) {
-		whether_out = is_recursed_type_flag;
-		return {};
-	}
-
-	SLKC_RETURN_IF_COMP_ERROR(update_recursed_type_status());
-
-	whether_out = is_recursed_type_flag;
-
-	return {};
-}
-
-SLKC_API peff::Option<CompilationError> UnionEnumNode::update_recursed_type_status() {
-	return {};
 }

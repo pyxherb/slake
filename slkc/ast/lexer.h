@@ -135,6 +135,7 @@ namespace slkc {
 		DoKeyword,
 		ElseKeyword,
 		EnumKeyword,
+		ExceptKeyword,
 		FalseKeyword,
 		FnKeyword,
 		ForKeyword,

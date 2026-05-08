@@ -95,7 +95,7 @@ SLKC_API peff::Option<CompilationError> Document::instantiate_generic_object(
 
 	{
 		bool recursed;
-		SLKC_RETURN_IF_COMP_ERROR(is_higher_ranked_cyclic_inherited(original_object, allocator.get(), recursed));
+		SLKC_RETURN_IF_COMP_ERROR(is_higher_ranked_cyclic_inherited(shared_from_this(), original_object, recursed));
 		if (recursed) {
 			ModuleNode *mod = generic_args.back()->token_range.module_node;
 

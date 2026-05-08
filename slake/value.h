@@ -86,14 +86,6 @@ namespace slake {
 		SLAKE_FORCEINLINE CoroutineLocalVarRef(CoroutineObject *coroutine, size_t stack_off) : coroutine(coroutine), stack_off(stack_off) {}
 	};
 
-	struct LocalVarStructRef {
-		void *ptr;
-		StructObject *struct_object;
-
-		LocalVarStructRef() = default;
-		SLAKE_FORCEINLINE LocalVarStructRef(void *ptr, StructObject *struct_object) : ptr(ptr), struct_object(struct_object) {}
-	};
-
 	struct ArgRef {
 		const MajorFrame *major_frame;
 		uint32_t arg_index;

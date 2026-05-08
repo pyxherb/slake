@@ -993,10 +993,10 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 									SLKC_RETURN_IF_COMP_ERROR(compile_env->push_error(CompilationError(cls_node->scope->base_type->token_range, CompilationErrorKind::ExpectingClassName)));
 								}
 
-								bool is_cyclic_inherited = false;
-								SLKC_RETURN_IF_COMP_ERROR(is_base_of(cls_node->document->shared_from_this(), cls_node, cls_node, is_cyclic_inherited));
+								bool cyclic_inherited = false;
+								SLKC_RETURN_IF_COMP_ERROR(is_cyclic_inherited(cls_node->document->shared_from_this(), cls_node.cast_to<MemberNode>(), cyclic_inherited));
 
-								if (is_cyclic_inherited) {
+								if (cyclic_inherited) {
 									SLKC_RETURN_IF_COMP_ERROR(compile_env->push_error(CompilationError(cls_node->token_range, CompilationErrorKind::CyclicInheritedClass)));
 									continue;
 								}
@@ -1009,14 +1009,6 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 						}
 					} else {
 						SLKC_RETURN_IF_COMP_ERROR(compile_env->push_error(CompilationError(cls_node->scope->base_type->token_range, CompilationErrorKind::ExpectingClassName)));
-					}
-
-					bool is_cyclic_inherited = false;
-					SLKC_RETURN_IF_COMP_ERROR(cls_node->is_cyclic_inherited(is_cyclic_inherited));
-
-					if (is_cyclic_inherited) {
-						SLKC_RETURN_IF_COMP_ERROR(compile_env->push_error(CompilationError(cls_node->token_range, CompilationErrorKind::CyclicInheritedClass)));
-						continue;
 					}
 
 					SLKC_RETURN_IF_COMP_ERROR(compile_type_name(compile_env, &compilation_context, cls_node->scope->base_type, cls->base_type));
@@ -1221,7 +1213,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 				break;
 			}
 			case AstNodeType::Interface: {
-				AstNodePtr<InterfaceNode> cls_node = m.cast_to<InterfaceNode>();
+				AstNodePtr<InterfaceNode> interface_node = m.cast_to<InterfaceNode>();
 
 				slake::HostObjectRef<slake::InterfaceObject> cls;
 
@@ -1235,13 +1227,13 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 					return gen_out_of_runtime_memory_comp_error();
 				}
 
-				SLKC_RETURN_IF_COMP_ERROR(compile_generic_params(compile_env, &compilation_context, mod, cls_node->scope->get_generic_params_data(), cls_node->scope->get_generic_param_num(), cls->generic_params));
+				SLKC_RETURN_IF_COMP_ERROR(compile_generic_params(compile_env, &compilation_context, mod, interface_node->scope->get_generic_params_data(), interface_node->scope->get_generic_param_num(), cls->generic_params));
 
-				for (auto &i : cls_node->scope->impl_types) {
+				for (auto &i : interface_node->scope->impl_types) {
 					AstNodePtr<MemberNode> implemented_type_node;
 
 					if (i->tn_kind == TypeNameKind::Custom) {
-						if (!(compilation_error = resolve_custom_type_name(compile_env, cls_node->document->shared_from_this(), i.cast_to<CustomTypeNameNode>(), implemented_type_node))) {
+						if (!(compilation_error = resolve_custom_type_name(compile_env, interface_node->document->shared_from_this(), i.cast_to<CustomTypeNameNode>(), implemented_type_node))) {
 							if (implemented_type_node) {
 								if (implemented_type_node->get_ast_node_type() != AstNodeType::Interface) {
 									SLKC_RETURN_IF_COMP_ERROR(compile_env->push_error(CompilationError(i->token_range, CompilationErrorKind::ExpectingInterfaceName)));
@@ -1266,18 +1258,14 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 					}
 				}
 
-				bool is_cyclic_inherited = false;
-				SLKC_RETURN_IF_COMP_ERROR(cls_node->is_cyclic_inherited(is_cyclic_inherited));
+				bool cyclic_inherited = false;
+				SLKC_RETURN_IF_COMP_ERROR(is_cyclic_implemented(compile_env->document.lock(), interface_node, cyclic_inherited));
 
-				if (is_cyclic_inherited) {
-					if (cls_node->cyclic_inheritance_error.has_value()) {
-						SLKC_RETURN_IF_COMP_ERROR(compile_env->push_error(std::move(*cls_node->cyclic_inheritance_error)));
-						cls_node->cyclic_inheritance_error.reset();
-						continue;
-					}
+				if (cyclic_inherited) {
+					SLKC_RETURN_IF_COMP_ERROR(compile_env->push_error(CompilationError(interface_node->token_range, CompilationErrorKind::CyclicInheritedInterface)));
 				}
 
-				SLKC_RETURN_IF_COMP_ERROR(compile_module_like_node(compile_env, cls_node.cast_to<ModuleNode>(), cls.get()));
+				SLKC_RETURN_IF_COMP_ERROR(compile_module_like_node(compile_env, interface_node.cast_to<ModuleNode>(), cls.get()));
 
 				if (!mod_out->add_member(cls.get())) {
 					return gen_out_of_runtime_memory_comp_error();
@@ -1437,15 +1425,15 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 				break;
 			}
 			case AstNodeType::UnionEnum: {
-				AstNodePtr<UnionEnumNode> cls_node = m.cast_to<UnionEnumNode>();
+				AstNodePtr<UnionEnumNode> enum_node = m.cast_to<UnionEnumNode>();
 
-				bool is_cyclic_inherited = false;
-				SLKC_RETURN_IF_COMP_ERROR(cls_node->is_recursed_type(is_cyclic_inherited));
+				bool type_recursed = false;
+				SLKC_RETURN_IF_COMP_ERROR(is_union_enum_recursed(compile_env->document.lock(), enum_node, type_recursed));
 
-				if (is_cyclic_inherited) {
+				if (type_recursed) {
 					SLKC_RETURN_IF_COMP_ERROR(compile_env->push_error(
 						CompilationError(
-							cls_node->token_range,
+							enum_node->token_range,
 							CompilationErrorKind::RecursedValueType)));
 				}
 
@@ -1461,9 +1449,9 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 					return gen_out_of_runtime_memory_comp_error();
 				}
 
-				SLKC_RETURN_IF_COMP_ERROR(compile_generic_params(compile_env, &compilation_context, mod, cls_node->scope->get_generic_params_data(), cls_node->scope->get_generic_param_num(), cls->generic_params));
+				SLKC_RETURN_IF_COMP_ERROR(compile_generic_params(compile_env, &compilation_context, mod, enum_node->scope->get_generic_params_data(), enum_node->scope->get_generic_param_num(), cls->generic_params));
 
-				for (auto i : cls_node->scope->get_members()) {
+				for (auto i : enum_node->scope->get_members()) {
 					switch (i->get_ast_node_type()) {
 						case AstNodeType::UnionEnumItem: {
 							AstNodePtr<UnionEnumItemNode> item_node = i.cast_to<UnionEnumItemNode>();
@@ -1516,10 +1504,10 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 
 				SLKC_RETURN_IF_COMP_ERROR(compile_generic_params(compile_env, &compilation_context, mod, cls_node->generic_params.data(), cls_node->generic_params.size(), cls->generic_params));
 
-				bool is_cyclic_inherited = false;
-				SLKC_RETURN_IF_COMP_ERROR(cls_node->is_recursed_type(is_cyclic_inherited));
+				bool type_recursed = false;
+				SLKC_RETURN_IF_COMP_ERROR(cls_node->is_recursed_type(type_recursed));
 
-				if (is_cyclic_inherited) {
+				if (type_recursed) {
 					SLKC_RETURN_IF_COMP_ERROR(compile_env->push_error(CompilationError(cls_node->token_range, CompilationErrorKind::RecursedValueType)));
 					continue;
 				}

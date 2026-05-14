@@ -723,7 +723,7 @@ SLKC_API ParseCoroutine Parser::parse_stmt(peff::Alloc *allocator, AstNodePtr<St
 		goto gen_bad_stmt;
 
 	{
-		peff::ScopeGuard set_token_range_guard([this, prefix_token, &stmt_out]() noexcept {
+		peff::Deferred set_token_range_guard([this, prefix_token, &stmt_out]() noexcept {
 			stmt_out->token_range = TokenRange{ get_document()->main_module, prefix_token->index, parse_context.idx_prev_token };
 		});
 

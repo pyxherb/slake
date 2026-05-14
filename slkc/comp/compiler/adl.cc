@@ -72,8 +72,8 @@ static peff::Option<CompilationError> _determine_with_parent_class(
 
 	AstNodePtr<ClassNode> m = fn_slot->outer->shared_from_this().cast_to<ClassNode>();
 	{
-		AstNodePtr<ClassNode> base_type;
-		SLKC_RETURN_IF_COMP_ERROR(visit_base_class(m->scope->base_type, base_type, nullptr));
+		AstNodePtr<MemberNode> base_type;
+		SLKC_RETURN_IF_COMP_ERROR(visit_base_type_node(m->scope->base_type, base_type, nullptr));
 		if (base_type) {
 			if (auto it = base_type->scope->_member_indices.find(fn_slot->name); it != base_type->scope->_member_indices.end()) {
 				if (base_type->scope->_members.at(it.value())->get_ast_node_type() != AstNodeType::Fn) {

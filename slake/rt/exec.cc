@@ -593,7 +593,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer larg(Context *context, MajorFrame *ma
 	return {};
 }
 
-InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorFrame *const cur_major_frame, const uint32_t output, const Opcode opcode, const size_t num_operands, const Value *const operands, ContextChangeType &context_changes_out) noexcept {
+SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorFrame *const cur_major_frame, const uint32_t output, const Opcode opcode, const size_t num_operands, const Value *const operands, ContextChangeType &context_changes_out) noexcept {
 	InternalExceptionPointer except_ptr;
 	char *const data_stack = context->_context.data_stack;
 	const size_t stack_size = context->_context.stack_size;
@@ -610,20 +610,6 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 				// The register does not present.
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			read_var(dest->get_reference(), *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output));
-
-			break;
-		}
-		case Opcode::LARGV: {
-			_check_operand_count_with_output_required(this, output, num_operands, 1);
-			_check_operand_type(this, operands[0], ValueType::U32);
-
-			Reference ref;
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, larg(&context->get_context(), cur_major_frame, this, operands[0].get_u32(), ref));
-
-			if (!_is_register_valid(cur_major_frame, output))
-				// The register does not present.
-				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
-			read_var(ref, *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output));
 
 			break;
 		}
@@ -683,6 +669,50 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 		*_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output) = (cpp_type)(x->get_##slake_type_lower() op y->get_##slake_type_lower()); \
 		break;                                                                                                                                    \
 	}
+		case Opcode::PHI: {
+			if (output == UINT32_MAX) {
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+			}
+
+			if ((num_operands < 2) || ((num_operands & 1))) {
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+			}
+
+			const Value *v;
+
+			for (size_t i = 0; i < num_operands; i += 2) {
+				_check_operand_type(this, operands[i], ValueType::U32);
+
+				uint32_t off = operands[i].get_u32();
+
+				if (off == cur_major_frame->resumable_context_data.last_jump_src) {
+					_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[i + 1], v);
+
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _set_register_value(this, data_stack, stack_size, cur_major_frame, output, *v));
+
+					goto succeeded;
+				}
+			}
+
+			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+
+		succeeded:
+			break;
+		}
+		case Opcode::LARGV: {
+			_check_operand_count_with_output_required(this, output, num_operands, 1);
+			_check_operand_type(this, operands[0], ValueType::U32);
+
+			Reference ref;
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, larg(&context->get_context(), cur_major_frame, this, operands[0].get_u32(), ref));
+
+			if (!_is_register_valid(cur_major_frame, output))
+				// The register does not present.
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
+			read_var(ref, *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output));
+
+			break;
+		}
 		case Opcode::ADDI8:
 			SIMPLE_BINARY_OP_PROC(i8, I8, int8_t, +);
 		case Opcode::ADDI16:
@@ -1894,11 +1924,10 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 		}
 		case Opcode::PUSHAP:
 			std::terminate();
-		case Opcode::CTORCALL: {
+		case Opcode::CALL: {
 			FnOverloadingObject *fn;
-			Object *this_object = nullptr;
 
-			_check_operand_count(this, output, num_operands, 2);
+			_check_operand_count(this, output, num_operands, 1);
 
 			const Value *fn_value;
 			_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], fn_value);
@@ -1908,30 +1937,55 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			_check_object_operand_type(this, fn_object_ref.as_object, ObjectKind::FnOverloading);
 			fn = (FnOverloadingObject *)fn_object_ref.as_object;
 
-			const Value *this_object_value;
-			_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], this_object_value);
-			_check_operand_type(this, *this_object_value, ValueType::Reference);
-			const Reference &this_object_ref = this_object_value->get_reference();
-			_check_object_ref_operand_type(this, this_object_ref, ReferenceKind::ObjectRef);
-			_check_object_operand_type(this, this_object_ref.get_object_ref(), ObjectKind::Instance);
-			this_object = this_object_ref.as_object;
-
 			if (!fn)
 				return alloc_oom_error_if_alloc_failed(NullRefError::alloc(get_fixed_alloc()));
 
 			ResumableContextData &resumable_context_data = cur_major_frame->resumable_context_data;
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _create_new_major_frame(
-															 context,
-															 this_object,
-															 fn,
-															 nullptr,
-															 cur_major_frame->cur_coroutine
-																 ? resumable_context_data.off_next_args + cur_major_frame->cur_coroutine->off_stack_top
-																 : resumable_context_data.off_next_args,
-															 resumable_context_data.num_next_args,
-															 output,
-															 nullptr));
+			if (fn->return_type.type_id == TypeId::StructInstance) {
+				if (output != UINT32_MAX) {
+					// TODO: Untested!!!
+					Reference alloca_ref;
+
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _add_local_var(&context->get_context(), cur_major_frame, fn->return_type, output, alloca_ref));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _set_register_value(this, data_stack, stack_size, cur_major_frame, output, alloca_ref));
+
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _create_new_major_frame(
+																	 context,
+																	 nullptr,
+																	 fn,
+																	 nullptr,
+																	 cur_major_frame->cur_coroutine
+																		 ? resumable_context_data.off_next_args + cur_major_frame->cur_coroutine->off_stack_top
+																		 : resumable_context_data.off_next_args,
+																	 cur_major_frame->resumable_context_data.num_next_args,
+																	 UINT32_MAX,
+																	 &alloca_ref));
+				} else
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _create_new_major_frame(
+																	 context,
+																	 nullptr,
+																	 fn,
+																	 nullptr,
+																	 cur_major_frame->cur_coroutine
+																		 ? resumable_context_data.off_next_args + cur_major_frame->cur_coroutine->off_stack_top
+																		 : resumable_context_data.off_next_args,
+																	 resumable_context_data.num_next_args,
+																	 output,
+																	 nullptr));
+			} else {
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _create_new_major_frame(
+																 context,
+																 nullptr,
+																 fn,
+																 nullptr,
+																 cur_major_frame->cur_coroutine
+																	 ? resumable_context_data.off_next_args + cur_major_frame->cur_coroutine->off_stack_top
+																	 : resumable_context_data.off_next_args,
+																 resumable_context_data.num_next_args,
+																 output,
+																 nullptr));
+			}
 
 			resumable_context_data.off_next_args = SIZE_MAX;
 			resumable_context_data.num_next_args = 0;
@@ -2029,10 +2083,11 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 				context_changes_out = ContextChangeType::MajorFrameChanged;
 			break;
 		}
-		case Opcode::CALL: {
+		case Opcode::CTORCALL: {
 			FnOverloadingObject *fn;
+			Object *this_object = nullptr;
 
-			_check_operand_count(this, output, num_operands, 1);
+			_check_operand_count(this, output, num_operands, 2);
 
 			const Value *fn_value;
 			_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], fn_value);
@@ -2042,55 +2097,30 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			_check_object_operand_type(this, fn_object_ref.as_object, ObjectKind::FnOverloading);
 			fn = (FnOverloadingObject *)fn_object_ref.as_object;
 
+			const Value *this_object_value;
+			_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], this_object_value);
+			_check_operand_type(this, *this_object_value, ValueType::Reference);
+			const Reference &this_object_ref = this_object_value->get_reference();
+			_check_object_ref_operand_type(this, this_object_ref, ReferenceKind::ObjectRef);
+			_check_object_operand_type(this, this_object_ref.get_object_ref(), ObjectKind::Instance);
+			this_object = this_object_ref.as_object;
+
 			if (!fn)
 				return alloc_oom_error_if_alloc_failed(NullRefError::alloc(get_fixed_alloc()));
 
 			ResumableContextData &resumable_context_data = cur_major_frame->resumable_context_data;
 
-			if (fn->return_type.type_id == TypeId::StructInstance) {
-				if (output != UINT32_MAX) {
-					// TODO: Untested!!!
-					Reference alloca_ref;
-
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _add_local_var(&context->get_context(), cur_major_frame, fn->return_type, output, alloca_ref));
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _set_register_value(this, data_stack, stack_size, cur_major_frame, output, alloca_ref));
-
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _create_new_major_frame(
-																	 context,
-																	 nullptr,
-																	 fn,
-																	 nullptr,
-																	 cur_major_frame->cur_coroutine
-																		 ? resumable_context_data.off_next_args + cur_major_frame->cur_coroutine->off_stack_top
-																		 : resumable_context_data.off_next_args,
-																	 cur_major_frame->resumable_context_data.num_next_args,
-																	 UINT32_MAX,
-																	 &alloca_ref));
-				} else
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _create_new_major_frame(
-																	 context,
-																	 nullptr,
-																	 fn,
-																	 nullptr,
-																	 cur_major_frame->cur_coroutine
-																		 ? resumable_context_data.off_next_args + cur_major_frame->cur_coroutine->off_stack_top
-																		 : resumable_context_data.off_next_args,
-																	 resumable_context_data.num_next_args,
-																	 output,
-																	 nullptr));
-			} else {
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _create_new_major_frame(
-																 context,
-																 nullptr,
-																 fn,
-																 nullptr,
-																 cur_major_frame->cur_coroutine
-																	 ? resumable_context_data.off_next_args + cur_major_frame->cur_coroutine->off_stack_top
-																	 : resumable_context_data.off_next_args,
-																 resumable_context_data.num_next_args,
-																 output,
-																 nullptr));
-			}
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _create_new_major_frame(
+															 context,
+															 this_object,
+															 fn,
+															 nullptr,
+															 cur_major_frame->cur_coroutine
+																 ? resumable_context_data.off_next_args + cur_major_frame->cur_coroutine->off_stack_top
+																 : resumable_context_data.off_next_args,
+															 resumable_context_data.num_next_args,
+															 output,
+															 nullptr));
 
 			resumable_context_data.off_next_args = SIZE_MAX;
 			resumable_context_data.num_next_args = 0;
@@ -2392,10 +2422,10 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 
 			break;
 		}
-		// case Opcode::THROW: {
-		//  TODO: Implement it.
-		//  return alloc_oom_error_if_alloc_failed(UncaughtExceptionError::alloc(get_fixed_alloc(), x));
-		//}
+		case Opcode::THROW: {
+			//  TODO: Implement it.
+			std::terminate();
+		}
 		case Opcode::PUSHEH: {
 			_check_operand_count(this, output, num_operands, 2);
 
@@ -2421,6 +2451,9 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 			mf->off_except_handler = eh_stack_off;
 			break;
 		}
+		case Opcode::LEXCEPT:
+			// TODO: Implement it.
+			std::terminate();
 		case Opcode::CAST: {
 			_check_operand_count_with_output_required(this, output, num_operands, 2);
 			_check_operand_type(this, operands[0], ValueType::TypeName);
@@ -2505,36 +2538,6 @@ InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorF
 					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
-			break;
-		}
-		case Opcode::PHI: {
-			if (output == UINT32_MAX) {
-				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
-			}
-
-			if ((num_operands < 2) || ((num_operands & 1))) {
-				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
-			}
-
-			const Value *v;
-
-			for (size_t i = 0; i < num_operands; i += 2) {
-				_check_operand_type(this, operands[i], ValueType::U32);
-
-				uint32_t off = operands[i].get_u32();
-
-				if (off == cur_major_frame->resumable_context_data.last_jump_src) {
-					_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[i + 1], v);
-
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _set_register_value(this, data_stack, stack_size, cur_major_frame, output, *v));
-
-					goto succeeded;
-				}
-			}
-
-			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
-
-		succeeded:
 			break;
 		}
 		default:

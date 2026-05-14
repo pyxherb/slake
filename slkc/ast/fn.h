@@ -8,7 +8,7 @@
 namespace slkc {
 	using FnFlags = uint32_t;
 
-	constexpr static FnFlags FN_VARG = 0x00000001, FN_VIRTUAL = 0x00000002, FN_LVALUE = 0x00000004;
+	constexpr static FnFlags FN_VARG = 0x00000001, FN_VIRTUAL = 0x00000002, FN_LVALUE = 0x00000004, FN_OVERRIDE = 0x00000008;
 	constexpr static const char *LVALUE_OPERATOR_NAME_SUFFIX = "_L";
 
 	class FnOverloadingNode;
@@ -67,6 +67,14 @@ namespace slkc {
 
 		SLAKE_FORCEINLINE bool is_varidic() const noexcept {
 			return fn_flags & FN_VARG;
+		}
+
+		SLAKE_FORCEINLINE bool is_override() const noexcept {
+			if (!(fn_flags & FN_OVERRIDE)) {
+				assert(!overriden_type);
+				return false;
+			}
+			return true;
 		}
 	};
 }

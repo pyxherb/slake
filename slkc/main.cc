@@ -502,9 +502,6 @@ void dump_compilation_error(peff::SharedPtr<slkc::Parser> parser, const slkc::Co
 		case slkc::CompilationErrorKind::ArgsMismatched:
 			fprintf(stderr, "Mismatched argument types\n");
 			break;
-		case slkc::CompilationErrorKind::MemberAlreadyDefined:
-			fprintf(stderr, "Member is already defined\n");
-			break;
 		case slkc::CompilationErrorKind::MissingBindingObject:
 			fprintf(stderr, "Missing binding target\n");
 			break;
@@ -641,6 +638,30 @@ void dump_compilation_error(peff::SharedPtr<slkc::Parser> parser, const slkc::Co
 		case slkc::CompilationErrorKind::ThisNotInitialized:
 			fprintf(stderr, "`this` object has not been initialized\n");
 			break;
+		case slkc::CompilationErrorKind::ConflictingWithParentMemberDefinitions: {
+			const slkc::ConflictingWithParentMemberDefinitionsErrorExData &exdata = std::get<slkc::ConflictingWithParentMemberDefinitionsErrorExData>(error.ex_data);
+
+			fprintf(stderr, "Member definition conflicting with definitions from the parent type: %s\n", exdata.member->name.data());
+			break;
+		}
+		case slkc::CompilationErrorKind::FnNotOverridable: {
+			const slkc::FnNotOverridableErrorExData &exdata = std::get<slkc::FnNotOverridableErrorExData>(error.ex_data);
+
+			fprintf(stderr, "Function is not overridable\n");
+			break;
+		}
+		case slkc::CompilationErrorKind::FnShouldBeMarkedAsOverride: {
+			const slkc::FnShouldBeMarkedAsOverrideErrorExData &exdata = std::get<slkc::FnShouldBeMarkedAsOverrideErrorExData>(error.ex_data);
+
+			fprintf(stderr, "The function should be marked as override\n");
+			break;
+		}
+		case slkc::CompilationErrorKind::FnDoesNotOverride: {
+			const slkc::FnDoesNotOverrideErrorExData &exdata = std::get<slkc::FnDoesNotOverrideErrorExData>(error.ex_data);
+
+			fprintf(stderr, "The function does not override any functions of the parent types\n");
+			break;
+		}
 
 		case slkc::CompilationErrorKind::ImportLimitExceeded:
 			fprintf(stderr, "Import item number exceeded\n");

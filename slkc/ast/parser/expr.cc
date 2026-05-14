@@ -183,7 +183,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 
 	{
 		{
-			peff::ScopeGuard set_token_range_guard([this, prefix_token, &lhs]() noexcept {
+			peff::Deferred set_token_range_guard([this, prefix_token, &lhs]() noexcept {
 				if (lhs) {
 					lhs->token_range = TokenRange{ get_document()->main_module, prefix_token->index, parse_context.idx_prev_token };
 				}
@@ -735,7 +735,7 @@ SLKC_API ParseCoroutine Parser::parse_expr(peff::Alloc *allocator, int precedenc
 		Token *infix_token;
 
 		for (;;) {
-			peff::ScopeGuard set_token_range_guard([this, prefix_token, &lhs]() noexcept {
+			peff::Deferred set_token_range_guard([this, prefix_token, &lhs]() noexcept {
 				if (lhs) {
 					lhs->token_range = TokenRange{ get_document()->main_module, prefix_token->index, parse_context.idx_prev_token };
 				}

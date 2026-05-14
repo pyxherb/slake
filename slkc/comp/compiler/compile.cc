@@ -1610,14 +1610,14 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 					return gen_out_of_runtime_memory_comp_error();
 				}
 
-				for (auto &i : slot_node->overloadings) {
+				for (auto &cur_overloading : slot_node->overloadings) {
 					peff::Option<CompilationError> e;
 
-					for (size_t j = &i - slot_node->overloadings.data() + 1; j < slot_node->overloadings.size(); ++j) {
+					for (size_t j = &cur_overloading - slot_node->overloadings.data() + 1; j < slot_node->overloadings.size(); ++j) {
 						bool whether;
-						SLKC_RETURN_IF_COMP_ERROR(is_fn_signature_duplicated(i, slot_node->overloadings.at(j), whether));
+						SLKC_RETURN_IF_COMP_ERROR(is_fn_signature_duplicated(cur_overloading, slot_node->overloadings.at(j), whether));
 						if (whether) {
-							SLKC_RETURN_IF_COMP_ERROR(compile_env->push_error(CompilationError(i->token_range, CompilationErrorKind::FunctionOverloadingDuplicated)));
+							SLKC_RETURN_IF_COMP_ERROR(compile_env->push_error(CompilationError(cur_overloading->token_range, CompilationErrorKind::FunctionOverloadingDuplicated)));
 							break;
 						}
 					}
@@ -1628,15 +1628,15 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 						case AstNodeType::Class:
 						case AstNodeType::Interface:
 						case AstNodeType::Struct:
-							if (!i->is_static()) {
+							if (!cur_overloading->is_static()) {
 								if (!(compile_env->this_node = make_ast_node<ThisNode>(compile_env->allocator.get(), compile_env->allocator.get(), compile_env->get_document())))
 									return gen_oom_comp_error();
 								compile_env->this_node->this_type = cur_parent_access_node;
-								if (i->name == "new") {
+								if (cur_overloading->name == "new") {
 									compile_env->vars_to_be_inited = &collected_uninit_instance_vars;
 								}
 							} else {
-								if (i->name == "new") {
+								if (cur_overloading->name == "new") {
 									compile_env->vars_to_be_inited = &collected_uninit_static_vars;
 								}
 							}
@@ -1651,23 +1651,23 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 						return gen_out_of_runtime_memory_comp_error();
 					}
 
-					if (i->fn_flags & FN_VARG) {
+					if (cur_overloading->fn_flags & FN_VARG) {
 						fn_object->set_var_args();
 					}
-					if (i->fn_flags & FN_VIRTUAL) {
+					if (cur_overloading->fn_flags & FN_VIRTUAL) {
 						fn_object->set_virtual_flag();
 					}
 
-					fn_object->set_access(i->access_modifier);
+					fn_object->set_access(cur_overloading->access_modifier);
 
-					compile_env->cur_overloading = i;
+					compile_env->cur_overloading = cur_overloading;
 
-					if (!fn_object->param_types.resize(i->params.size())) {
+					if (!fn_object->param_types.resize(cur_overloading->params.size())) {
 						return gen_out_of_runtime_memory_comp_error();
 					}
 
-					if (i->return_type) {
-						if ((e = compile_type_name(compile_env, &compilation_context, i->return_type, fn_object->return_type))) {
+					if (cur_overloading->return_type) {
+						if ((e = compile_type_name(compile_env, &compilation_context, cur_overloading->return_type, fn_object->return_type))) {
 							if (e->error_kind == CompilationErrorKind::OutOfMemory)
 								return e;
 							if (!compile_env->errors.push_back(std::move(*e))) {
@@ -1679,8 +1679,8 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 						fn_object->return_type = slake::TypeId::Void;
 					}
 
-					for (size_t j = 0; j < i->params.size(); ++j) {
-						if ((e = compile_type_name(compile_env, &compilation_context, i->params.at(j)->type, fn_object->param_types.at(j)))) {
+					for (size_t j = 0; j < cur_overloading->params.size(); ++j) {
+						if ((e = compile_type_name(compile_env, &compilation_context, cur_overloading->params.at(j)->type, fn_object->param_types.at(j)))) {
 							if (e->error_kind == CompilationErrorKind::OutOfMemory)
 								return e;
 							if (!compile_env->errors.push_back(std::move(*e))) {
@@ -1690,14 +1690,14 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 						}
 					}
 
-					SLKC_RETURN_IF_COMP_ERROR(compile_generic_params(compile_env, &compilation_context, mod, i->scope->get_generic_params_data(), i->scope->get_generic_param_num(), fn_object->generic_params));
+					SLKC_RETURN_IF_COMP_ERROR(compile_generic_params(compile_env, &compilation_context, mod, cur_overloading->scope->get_generic_params_data(), cur_overloading->scope->get_generic_param_num(), fn_object->generic_params));
 
-					if (i->body) {
+					if (cur_overloading->body) {
 						NormalCompilationContext comp_context(compile_env, nullptr);
 
 						PathEnv root_path_env(compile_env->allocator.get());
 
-						for (auto j : i->body->body) {
+						for (auto j : cur_overloading->body->body) {
 							if ((e = compile_stmt(compile_env, &comp_context, &root_path_env, j))) {
 								if (e->error_kind == CompilationErrorKind::OutOfMemory)
 									return e;
@@ -1718,7 +1718,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 									if (!root_path_env.is_var_inited(vcv)) {
 										if (!compile_env->errors.push_back(
 												CompilationError(
-													i->token_range,
+													cur_overloading->token_range,
 													CompilationErrorKind::InstanceMemberVarNotInitialized,
 													MemberVarNotInitializedErrorExData{ j.second })))
 											return gen_oom_comp_error();
@@ -1732,7 +1732,7 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 									if (!root_path_env.is_var_inited(vcv)) {
 										if (!compile_env->errors.push_back(
 												CompilationError(
-													i->body->token_range,
+													cur_overloading->body->token_range,
 													CompilationErrorKind::StaticMemberVarNotInitialized,
 													MemberVarNotInitializedErrorExData{ j.second })))
 											return gen_oom_comp_error();
@@ -1763,6 +1763,71 @@ SLKC_API peff::Option<CompilationError> slkc::compile_module_like_node(
 						}
 
 						fn_object->num_registers = comp_context.num_total_regs;
+					}
+
+					{
+						// Checks if the function shadows the functions from the parents, where is not overridable,
+						// and checks if the function actually overrides the parent type functions.
+						bool did_function_override = false;
+
+						auto check_override = [](const AstNodePtr<FnOverloadingNode> &cur_overloading, const AstNodePtr<MemberNode> &parent, bool &did_fn_override_out) -> peff::Option<CompilationError> {
+							for (const auto &j : parent->scope->get_members_indices()) {
+								if (j.first != cur_overloading->outer->name)
+									continue;
+								auto parent_member = parent->scope->get_member(j.second);
+								if (parent_member->get_ast_node_type() == AstNodeType::Fn) {
+									for (const auto &k : parent_member.cast_to<FnNode>()->overloadings) {
+										bool is_duplicated = false;
+										SLKC_RETURN_IF_COMP_ERROR(is_fn_signature_duplicated(cur_overloading, k, is_duplicated));
+
+										if (k->fn_flags & FN_VIRTUAL) {
+											if (!(cur_overloading->fn_flags & FN_VIRTUAL)) {
+												return CompilationError(cur_overloading->token_range, FnNotOverridableErrorExData(k, cur_overloading));
+											} else {
+												// Functions that shadow functions from the parents must be marked as override.
+												if (!(cur_overloading->is_override()))
+													return CompilationError(cur_overloading->token_range, FnShouldBeMarkedAsOverrideErrorExData(cur_overloading));
+												did_fn_override_out = true;
+											}
+										} else {
+											if (cur_overloading->fn_flags & FN_VIRTUAL) {
+												return CompilationError(cur_overloading->token_range, FnNotOverridableErrorExData(k, cur_overloading));
+											}
+										}
+									}
+								} else {
+									return CompilationError(cur_overloading->token_range, ConflictingWithParentMemberDefinitionsErrorExData(parent_member, cur_overloading.cast_to<MemberNode>()));
+								}
+							}
+							return {};
+						};
+
+						if (mod->scope->base_type) {
+							peff::Set<AstNodePtr<MemberNode>> base_types(compile_env->allocator.get());
+							SLKC_RETURN_IF_COMP_ERROR(collect_inherited_members(compile_env->document.lock(), mod.cast_to<MemberNode>(), base_types, false));
+
+							for (const auto &i : base_types) {
+								SLKC_RETURN_IF_COMP_ERROR(check_override(cur_overloading, i, did_function_override));
+							}
+						}
+
+						if (cur_overloading->is_override() && (!did_function_override)) {
+							for (auto i : mod->scope->impl_types) {
+								AstNodePtr<InterfaceNode> start_interface;
+								SLKC_RETURN_IF_COMP_ERROR(visit_base_interface(i, start_interface, nullptr));
+
+								peff::Set<AstNodePtr<InterfaceNode>> base_types(compile_env->allocator.get());
+								SLKC_RETURN_IF_COMP_ERROR(collect_involved_interfaces(compile_env->document.lock(), start_interface, base_types, false));
+
+								for (const auto &j : base_types) {
+									SLKC_RETURN_IF_COMP_ERROR(check_override(cur_overloading, j.cast_to<MemberNode>(), did_function_override));
+								}
+							}
+						}
+
+						if (cur_overloading->is_override() && (!did_function_override)) {
+							return CompilationError(cur_overloading->token_range, FnDoesNotOverrideErrorExData(cur_overloading));
+						}
 					}
 
 					if (!slot_object->overloadings.insert(slake::FnSignature{ fn_object->param_types, fn_object->is_with_var_args(), fn_object->generic_params.size(), slake::TypeId::Void }, fn_object.get())) {

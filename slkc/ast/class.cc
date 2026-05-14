@@ -43,6 +43,46 @@ SLKC_API ClassNode::ClassNode(const ClassNode &rhs, peff::Alloc *allocator, Dupl
 SLKC_API ClassNode::~ClassNode() {
 }
 
+SLKC_API AstNodePtr<AstNode> ExceptNode::do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const {
+	bool succeeded = false;
+	AstNodePtr<ExceptNode> duplicated_node(make_ast_node<ExceptNode>(new_allocator, *this, new_allocator, context, succeeded));
+	if ((!duplicated_node) || (!succeeded)) {
+		return {};
+	}
+
+	return duplicated_node.cast_to<AstNode>();
+}
+
+SLKC_API ExceptNode::ExceptNode(
+	peff::Alloc *self_allocator,
+	const peff::SharedPtr<Document> &document)
+	: ModuleNode(self_allocator, document, AstNodeType::Except),
+	  idx_generic_param_comma_tokens(self_allocator) {
+}
+
+SLKC_API ExceptNode::ExceptNode(const ExceptNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeeded_out) : ModuleNode(rhs, allocator, context, succeeded_out), idx_generic_param_comma_tokens(allocator) {
+	if (!succeeded_out) {
+		return;
+	}
+
+	if (!idx_generic_param_comma_tokens.resize(rhs.idx_generic_param_comma_tokens.size())) {
+		succeeded_out = false;
+		return;
+	}
+
+	memcpy(idx_generic_param_comma_tokens.data(), rhs.idx_generic_param_comma_tokens.data(), sizeof(size_t) * idx_generic_param_comma_tokens.size());
+
+	idx_langle_bracket_token = rhs.idx_langle_bracket_token;
+	idx_rangle_bracket_token = rhs.idx_rangle_bracket_token;
+
+	is_generic_params_indexed = rhs.is_generic_params_indexed;
+
+	succeeded_out = true;
+}
+
+SLKC_API ExceptNode::~ExceptNode() {
+}
+
 struct HigherRankedCyclicInheritanceWalkFrame {
 	AstNodePtr<CustomTypeNameNode> type_name;
 	size_t idx_cur_type_arg = 0;
@@ -529,7 +569,7 @@ SLKC_API peff::Option<CompilationError> slkc::collect_involved_interfaces_phased
 
 SLKC_API peff::Option<CompilationError> slkc::collect_inherited_members(
 	peff::SharedPtr<Document> document,
-	const AstNodePtr<ClassNode> &bottom,
+	const AstNodePtr<MemberNode> &bottom,
 	peff::Set<AstNodePtr<MemberNode>> &walked_members,
 	bool insert_self) {
 	auto i = bottom;
@@ -554,7 +594,7 @@ SLKC_API peff::Option<CompilationError> slkc::collect_inherited_members(
 			}
 		}
 
-		SLKC_RETURN_IF_COMP_ERROR(visit_base_class(i->scope->base_type, i, nullptr));
+		SLKC_RETURN_IF_COMP_ERROR(visit_base_type_node(i->scope->base_type, i, nullptr));
 	}
 
 	return {};

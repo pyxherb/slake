@@ -171,6 +171,7 @@ namespace slkc {
 		TypenameKeyword,
 		UsingKeyword,
 		UnionKeyword,
+		UnsafeKeyword,
 		VarKeyword,
 		VirtualKeyword,
 		WhileKeyword,

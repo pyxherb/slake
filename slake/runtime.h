@@ -241,7 +241,7 @@ namespace slake {
 		/// @brief Execute a single instruction.
 		/// @param context Context for execution.
 		/// @param ins Instruction to be executed.
-		[[nodiscard]] InternalExceptionPointer _exec_ins(ContextObject *const context, MajorFrame *const cur_major_frame, const uint32_t output, const Opcode opcode, const size_t num_operands, const Value *const operands, ContextChangeType &is_context_changed_out) noexcept;
+		[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer _exec_ins(ContextObject *const context, MajorFrame *const cur_major_frame, const uint32_t output, const Opcode opcode, const size_t num_operands, const Value *const operands, ContextChangeType &is_context_changed_out) noexcept;
 
 		friend struct Context;
 

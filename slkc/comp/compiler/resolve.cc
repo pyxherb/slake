@@ -147,9 +147,9 @@ reresolve:
 				AstNodePtr<GenericParamNode> m = member_node.cast_to<GenericParamNode>();
 
 				{
-					AstNodePtr<ClassNode> class_node;
+					AstNodePtr<MemberNode> class_node;
 
-					SLKC_RETURN_IF_COMP_ERROR(visit_base_class(m->generic_constraint->base_type, class_node, nullptr));
+					SLKC_RETURN_IF_COMP_ERROR(visit_base_type_node(m->generic_constraint->base_type, class_node, nullptr));
 
 					while (class_node) {
 						if (class_node->scope && (result = class_node->scope->try_get_member(name.name)))
@@ -175,7 +175,7 @@ reresolve:
 							}
 						}
 
-						SLKC_RETURN_IF_COMP_ERROR(visit_base_class(class_node->scope->base_type, class_node, nullptr));
+						SLKC_RETURN_IF_COMP_ERROR(visit_base_type_node(class_node->scope->base_type, class_node, nullptr));
 					}
 				}
 
@@ -231,9 +231,9 @@ reresolve:
 				goto reresolve;
 			}
 			default: {
-				AstNodePtr<ClassNode> m = member_node.cast_to<ClassNode>();
+				AstNodePtr<MemberNode> m;
 
-				SLKC_RETURN_IF_COMP_ERROR(visit_base_class(member_node->scope->base_type, m, nullptr));
+				SLKC_RETURN_IF_COMP_ERROR(visit_base_type_node(member_node->scope->base_type, m, nullptr));
 
 				while (m) {
 					// Try getting member from base class.
@@ -259,7 +259,7 @@ reresolve:
 						}
 					}
 
-					SLKC_RETURN_IF_COMP_ERROR(visit_base_class(m->scope->base_type, m, nullptr));
+					SLKC_RETURN_IF_COMP_ERROR(visit_base_type_node(m->scope->base_type, m, nullptr));
 				}
 			general_resolution_succeeded:;
 			}
@@ -663,7 +663,7 @@ resolved:
 	return {};
 }
 
-SLKC_API peff::Option<CompilationError> slkc::visit_base_class(AstNodePtr<TypeNameNode> base_type_name, AstNodePtr<ClassNode> &class_out, peff::Set<AstNodePtr<MemberNode>> *walked_nodes) {
+SLKC_API peff::Option<CompilationError> slkc::visit_base_type_node(AstNodePtr<TypeNameNode> base_type_name, AstNodePtr<MemberNode> &class_out, peff::Set<AstNodePtr<MemberNode>> *walked_nodes) {
 	do {
 		if (base_type_name && (base_type_name->tn_kind == TypeNameKind::Custom)) {
 			AstNodePtr<MemberNode> base_type;
@@ -671,13 +671,12 @@ SLKC_API peff::Option<CompilationError> slkc::visit_base_class(AstNodePtr<TypeNa
 			SLKC_RETURN_IF_COMP_ERROR(resolve_custom_type_name(nullptr, base_type_name->document->shared_from_this(), base_type_name.cast_to<CustomTypeNameNode>(), base_type, true, walked_nodes));
 
 			if (base_type && (base_type->get_ast_node_type() == AstNodeType::Class)) {
-				AstNodePtr<ClassNode> b = base_type.cast_to<ClassNode>();
 				bool cyclic_inherited;
 
 				SLKC_RETURN_IF_COMP_ERROR(is_cyclic_inherited(base_type_name->document->shared_from_this(), base_type, cyclic_inherited));
 
 				if (((!walked_nodes) || (!walked_nodes->contains(base_type))) && (!cyclic_inherited)) {
-					class_out = b;
+					class_out = base_type;
 					break;
 				}
 			}

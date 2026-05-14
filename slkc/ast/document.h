@@ -58,7 +58,6 @@ namespace slkc {
 		NoMatchingFnOverloading,
 		UnableToDetermineOverloading,
 		ArgsMismatched,
-		MemberAlreadyDefined,
 		MissingBindingObject,
 		RedundantWithObject,
 		LocalVarAlreadyExists,
@@ -89,6 +88,10 @@ namespace slkc {
 		InstanceMemberVarNotInitialized,
 		StaticMemberVarNotInitialized,
 		ThisNotInitialized,
+		ConflictingWithParentMemberDefinitions,
+		FnNotOverridable,
+		FnShouldBeMarkedAsOverride,
+		FnDoesNotOverride,
 
 		ImportLimitExceeded,
 		MalformedModuleName,
@@ -105,6 +108,7 @@ namespace slkc {
 	class ModuleNode;
 	class FnOverloadingNode;
 	class VarNode;
+	class MemberNode;
 
 	struct IncompatibleOperandErrorExData {
 		AstNodePtr<TypeNameNode> desired_type;
@@ -126,6 +130,38 @@ namespace slkc {
 		AstNodePtr<VarNode> var;
 	};
 
+	struct ConflictingWithParentMemberDefinitionsErrorExData {
+		AstNodePtr<MemberNode> parent_member;
+		AstNodePtr<MemberNode> member;
+
+		SLAKE_FORCEINLINE ConflictingWithParentMemberDefinitionsErrorExData (
+			AstNodePtr<MemberNode> parent_member,
+			AstNodePtr<MemberNode> member)
+			: parent_member(parent_member),
+			  member(member) {
+		}
+	};
+
+	struct FnNotOverridableErrorExData {
+		AstNodePtr<FnOverloadingNode> original_fn;
+		AstNodePtr<FnOverloadingNode> overriding_fn;
+
+		SLAKE_FORCEINLINE FnNotOverridableErrorExData(
+			AstNodePtr<FnOverloadingNode> original_fn,
+			AstNodePtr<FnOverloadingNode> overriding_fn)
+			: original_fn(original_fn),
+			  overriding_fn(overriding_fn) {
+		}
+	};
+
+	struct FnShouldBeMarkedAsOverrideErrorExData {
+		AstNodePtr<FnOverloadingNode> fn;
+	};
+
+	struct FnDoesNotOverrideErrorExData {
+		AstNodePtr<FnOverloadingNode> fn;
+	};
+
 	struct CompilationError {
 		TokenRange token_range;
 		CompilationErrorKind error_kind;
@@ -133,7 +169,11 @@ namespace slkc {
 			IncompatibleOperandErrorExData,
 			ErrorParsingImportedModuleErrorExData,
 			AbstractMethodNotImplementedErrorExData,
-			MemberVarNotInitializedErrorExData>
+			MemberVarNotInitializedErrorExData,
+			ConflictingWithParentMemberDefinitionsErrorExData,
+			FnNotOverridableErrorExData,
+			FnShouldBeMarkedAsOverrideErrorExData,
+			FnDoesNotOverrideErrorExData>
 			ex_data;
 
 		SLAKE_FORCEINLINE CompilationError(
@@ -178,6 +218,42 @@ namespace slkc {
 			: token_range(token_range),
 			  error_kind(kind),
 			  ex_data(ex_data) {
+			assert(token_range);
+		}
+
+		SLAKE_FORCEINLINE CompilationError(
+			const TokenRange &token_range,
+			ConflictingWithParentMemberDefinitionsErrorExData &&ex_data)
+			: token_range(token_range),
+			  error_kind(CompilationErrorKind::ConflictingWithParentMemberDefinitions),
+			  ex_data(std::move(ex_data)) {
+			assert(token_range);
+		}
+
+		SLAKE_FORCEINLINE CompilationError(
+			const TokenRange &token_range,
+			FnNotOverridableErrorExData &&ex_data)
+			: token_range(token_range),
+			  error_kind(CompilationErrorKind::FnNotOverridable),
+			  ex_data(std::move(ex_data)) {
+			assert(token_range);
+		}
+
+		SLAKE_FORCEINLINE CompilationError(
+			const TokenRange &token_range,
+			FnShouldBeMarkedAsOverrideErrorExData &&ex_data)
+			: token_range(token_range),
+			  error_kind(CompilationErrorKind::FnShouldBeMarkedAsOverride),
+			  ex_data(std::move(ex_data)) {
+			assert(token_range);
+		}
+
+		SLAKE_FORCEINLINE CompilationError(
+			const TokenRange &token_range,
+			FnDoesNotOverrideErrorExData &&ex_data)
+			: token_range(token_range),
+			  error_kind(CompilationErrorKind::FnDoesNotOverride),
+			  ex_data(std::move(ex_data)) {
 			assert(token_range);
 		}
 

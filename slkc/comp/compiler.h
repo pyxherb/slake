@@ -825,7 +825,7 @@ namespace slkc {
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> is_fn_signature_same(AstNodePtr<VarNode> *l_params, AstNodePtr<VarNode> *r_params, size_t num_params, AstNodePtr<TypeNameNode> l_overriden_type, AstNodePtr<TypeNameNode> r_overriden_type, bool &whether_out);
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> is_fn_signature_duplicated(AstNodePtr<FnOverloadingNode> lhs, AstNodePtr<FnOverloadingNode> rhs, bool &whether_out);
 
-	[[nodiscard]] SLKC_API peff::Option<CompilationError> visit_base_class(AstNodePtr<TypeNameNode> base_type_name, AstNodePtr<ClassNode> &class_out, peff::Set<AstNodePtr<MemberNode>> *walked_nodes);
+	[[nodiscard]] SLKC_API peff::Option<CompilationError> visit_base_type_node(AstNodePtr<TypeNameNode> base_type_name, AstNodePtr<MemberNode> &class_out, peff::Set<AstNodePtr<MemberNode>> *walked_nodes);
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> visit_base_interface(AstNodePtr<TypeNameNode> base_type_name, AstNodePtr<InterfaceNode> &class_out, peff::Set<AstNodePtr<MemberNode>> *walked_nodes);
 
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> check_stack_bounds(size_t reserved_size);

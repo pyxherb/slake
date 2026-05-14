@@ -24,7 +24,6 @@ generated/
 .idea/
 .cache/
 .VSCodeCounter/
-.DS_Store/
 CMakePresets.json
 CMakeSettings.json
 *.user
@@ -32,7 +31,6 @@ CMakeSettings.json
 .nvim.lua
 .clangd
 .DS_Store
-.xcode_proj
 
 # Runtime artifacts
 *.log

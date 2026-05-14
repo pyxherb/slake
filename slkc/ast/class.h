@@ -26,26 +26,14 @@ namespace slkc {
 
 	class ExceptNode : public ModuleNode {
 	public:
-		/// @brief Indicates if the cyclic inheritance is already checked.
-		bool is_cyclic_inheritance_checked = false;
-		/// @brief Indicates if the class has cyclic inheritance.
-		bool is_cyclic_inherited_flag = false;
-
 		peff::DynArray<size_t> idx_generic_param_comma_tokens;
 		size_t idx_langle_bracket_token = SIZE_MAX, idx_rangle_bracket_token = SIZE_MAX;
 
 		bool is_generic_params_indexed = false;
 
 		SLKC_API ExceptNode(peff::Alloc *self_allocator, const peff::SharedPtr<Document> &document);
-		SLKC_API ExceptNode(const ClassNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeeded_out);
+		SLKC_API ExceptNode(const ExceptNode &rhs, peff::Alloc *allocator, DuplicationContext &context, bool &succeeded_out);
 		SLKC_API virtual ~ExceptNode();
-
-		SLKC_API peff::Option<CompilationError> is_cyclic_inherited(bool &whether_out);
-		SLKC_API peff::Option<CompilationError> update_cyclic_inherited_status();
-		SLAKE_FORCEINLINE void reset_cyclic_inheritance_flag() {
-			is_cyclic_inheritance_checked = false;
-			is_cyclic_inherited_flag = false;
-		}
 
 		SLKC_API virtual AstNodePtr<AstNode> do_duplicate(peff::Alloc *new_allocator, DuplicationContext &context) const override;
 	};
@@ -187,7 +175,7 @@ namespace slkc {
 		peff::Set<AstNodePtr<InterfaceNode>> &new_interfaces_out);
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> collect_inherited_members(
 		peff::SharedPtr<Document> document,
-		const AstNodePtr<ClassNode> &bottom,
+		const AstNodePtr<MemberNode> &bottom,
 		peff::Set<AstNodePtr<MemberNode>> &walked_members,
 		bool insert_self);
 	[[nodiscard]] SLKC_API peff::Option<CompilationError> is_implemented_by_interface(

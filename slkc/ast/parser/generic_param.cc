@@ -123,7 +123,7 @@ SLKC_API ParseCoroutine Parser::parse_generic_params(
 
 				generic_param_node->is_param_type_list = true;
 
-				peff::ScopeGuard set_token_range_guard([this, varg_token, &generic_param_node]() noexcept {
+				peff::Deferred set_token_range_guard([this, varg_token, &generic_param_node]() noexcept {
 					if (generic_param_node) {
 						generic_param_node->token_range = TokenRange{ get_document()->main_module, varg_token->index, parse_context.idx_prev_token };
 					}
@@ -144,7 +144,7 @@ SLKC_API ParseCoroutine Parser::parse_generic_params(
 
 				SLKC_CO_RETURN_IF_PARSE_ERROR(expect_token((name_token = peek_token()), TokenId::Id));;
 
-				peff::ScopeGuard set_token_range_guard([this, name_token, &generic_param_node]() noexcept {
+				peff::Deferred set_token_range_guard([this, name_token, &generic_param_node]() noexcept {
 					if (generic_param_node) {
 						generic_param_node->token_range = TokenRange{ get_document()->main_module, name_token->index, parse_context.idx_prev_token };
 					}

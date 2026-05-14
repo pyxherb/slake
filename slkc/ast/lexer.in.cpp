@@ -134,6 +134,7 @@ SLKC_API peff::Option<LexicalError> Lexer::lex(ModuleNode *module_node, const st
 				<InitialCondition>"typename"	{ token->token_id = TokenId::TypenameKeyword; break; }
 				<InitialCondition>"using"		{ token->token_id = TokenId::UsingKeyword; break; }
 				<InitialCondition>"union"		{ token->token_id = TokenId::UnionKeyword; break; }
+				<InitialCondition>"unsafe"		{ token->token_id = TokenId::UnsafeKeyword; break; }
 				<InitialCondition>"var"			{ token->token_id = TokenId::VarKeyword; break; }
 				<InitialCondition>"virtual"		{ token->token_id = TokenId::VirtualKeyword; break; }
 				<InitialCondition>"with"		{ token->token_id = TokenId::WithKeyword; break; }

@@ -33,6 +33,7 @@ namespace slkc {
 		GenericParam,
 		Module,
 		Class,
+		Except,
 		Interface,
 		Import,
 

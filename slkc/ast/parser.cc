@@ -504,7 +504,7 @@ SLKC_API ParseCoroutine Parser::parse_fn(peff::Alloc *allocator, AstNodePtr<FnOv
 	});
 	cur_parent = fn_node_out.cast_to<MemberNode>();
 
-	peff::ScopeGuard set_token_range_guard([this, fn_token, fn_node_out]() noexcept {
+	peff::Deferred set_token_range_guard([this, fn_token, fn_node_out]() noexcept {
 		fn_node_out->token_range = TokenRange{ get_document()->main_module, fn_token->index, parse_context.idx_prev_token };
 	});
 
@@ -563,6 +563,8 @@ SLKC_API ParseCoroutine Parser::parse_fn(peff::Alloc *allocator, AstNodePtr<FnOv
 	Token *override_token;
 	if ((override_token = peek_token())->token_id == TokenId::OverrideKeyword) {
 		next_token();
+
+		fn_node_out->fn_flags |= FN_OVERRIDE;
 
 		Token *lookahead_token = peek_token();
 		switch (lookahead_token->token_id) {
@@ -660,7 +662,7 @@ SLKC_API ParseCoroutine Parser::parse_union_enum_item(peff::Alloc *allocator, As
 
 			size_t idx_member;
 			{
-				peff::ScopeGuard set_token_range_guard([this, token, enum_item]() noexcept {
+				peff::Deferred set_token_range_guard([this, token, enum_item]() noexcept {
 					enum_item->token_range = TokenRange{ get_document()->main_module, token->index, parse_context.idx_prev_token };
 				});
 
@@ -759,7 +761,7 @@ SLKC_API ParseCoroutine Parser::parse_enum_item(peff::Alloc *allocator, AstNodeP
 
 	size_t idx_member;
 	{
-		peff::ScopeGuard set_token_range_guard([this, token = peek_token(), enum_item]() noexcept {
+		peff::Deferred set_token_range_guard([this, token = peek_token(), enum_item]() noexcept {
 			enum_item->token_range = TokenRange{ get_document()->main_module, token->index, parse_context.idx_prev_token };
 		});
 
@@ -860,7 +862,7 @@ access_modifier_parse_end:
 					if (!(enum_node->alloc_scope()))
 						co_return gen_oom_syntax_error();
 
-					peff::ScopeGuard set_token_range_guard([this, token, enum_node]() noexcept {
+					peff::Deferred set_token_range_guard([this, token, enum_node]() noexcept {
 						enum_node->token_range = TokenRange{ get_document()->main_module, token->index, parse_context.idx_prev_token };
 					});
 
@@ -931,7 +933,7 @@ access_modifier_parse_end:
 					if (!(enum_node->alloc_scope()))
 						co_return gen_oom_syntax_error();
 
-					peff::ScopeGuard set_token_range_guard([this, token, enum_node]() noexcept {
+					peff::Deferred set_token_range_guard([this, token, enum_node]() noexcept {
 						enum_node->token_range = TokenRange{ get_document()->main_module, token->index, parse_context.idx_prev_token };
 					});
 
@@ -1015,7 +1017,7 @@ access_modifier_parse_end:
 
 					size_t idx_member;
 					{
-						peff::ScopeGuard set_token_range_guard([this, token, enum_node]() noexcept {
+						peff::Deferred set_token_range_guard([this, token, enum_node]() noexcept {
 							enum_node->token_range = TokenRange{ get_document()->main_module, token->index, parse_context.idx_prev_token };
 						});
 						if ((idx_member = p->scope->push_member(enum_node.cast_to<MemberNode>())) == SIZE_MAX) {
@@ -1117,7 +1119,7 @@ access_modifier_parse_end:
 			}
 
 			{
-				peff::ScopeGuard set_token_range_guard([this, token, attribute_node]() noexcept {
+				peff::Deferred set_token_range_guard([this, token, attribute_node]() noexcept {
 					attribute_node->token_range = TokenRange{ get_document()->main_module, token->index, parse_context.idx_prev_token };
 				});
 
@@ -1258,7 +1260,7 @@ access_modifier_parse_end:
 			}
 
 			{
-				peff::ScopeGuard set_token_range_guard([this, token, class_node]() noexcept {
+				peff::Deferred set_token_range_guard([this, token, class_node]() noexcept {
 					class_node->token_range = TokenRange{ get_document()->main_module, token->index, parse_context.idx_prev_token };
 				});
 
@@ -1397,7 +1399,7 @@ access_modifier_parse_end:
 			}
 
 			{
-				peff::ScopeGuard set_token_range_guard([this, token, struct_node]() noexcept {
+				peff::Deferred set_token_range_guard([this, token, struct_node]() noexcept {
 					struct_node->token_range = TokenRange{ get_document()->main_module, token->index, parse_context.idx_prev_token };
 				});
 
@@ -1527,7 +1529,7 @@ access_modifier_parse_end:
 			Token *t;
 
 			{
-				peff::ScopeGuard set_token_range_guard([this, token, interface_node]() noexcept {
+				peff::Deferred set_token_range_guard([this, token, interface_node]() noexcept {
 					interface_node->token_range = TokenRange{ get_document()->main_module, token->index, parse_context.idx_prev_token };
 				});
 
@@ -1688,7 +1690,7 @@ access_modifier_parse_end:
 				co_return gen_oom_syntax_error();
 			}
 
-			peff::ScopeGuard set_token_range_guard([this, token, stmt]() noexcept {
+			peff::Deferred set_token_range_guard([this, token, stmt]() noexcept {
 				stmt->token_range = TokenRange{ get_document()->main_module, token->index, parse_context.idx_prev_token };
 			});
 

@@ -169,7 +169,7 @@ class VirtualBase {
 }
 
 class VirtualDerived(VirtualBase) {
-	public fn test_base(test: i32) virtual {
+	public fn test_base(test: i32) virtual override {
 		extfns.print("Called VirtualDerived's test\n");
 		return;
 	}

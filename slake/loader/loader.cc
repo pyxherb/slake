@@ -1257,11 +1257,20 @@ load_dependencies:
 		runtime->unregister_type_def(i);
 	}
 
-	for (auto i : context.loaded_custom_type_defs) {
-		SLAKE_RETURN_IF_EXCEPT(runtime->load_deferred_custom_type_def(i));
+	bool is_all_type_defs_resolved;
+	do {
+		is_all_type_defs_resolved = true;
+		for (auto i : context.loaded_custom_type_defs) {
+			if (Runtime::is_deferred_loading_type_def(i)) {
+				is_all_type_defs_resolved = false;
+				if (!Runtime::is_resolvable_deferred_loading_type_def(i))
+					continue;
+				SLAKE_RETURN_IF_EXCEPT(runtime->load_deferred_custom_type_def(i));
 
-		SLAKE_RETURN_IF_EXCEPT(runtime->register_type_def(i));
-	}
+				SLAKE_RETURN_IF_EXCEPT(runtime->register_type_def(i));
+			}
+		}
+	} while(!is_all_type_defs_resolved);
 
 	context.loaded_custom_type_defs.clear();
 

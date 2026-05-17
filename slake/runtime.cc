@@ -289,6 +289,25 @@ SLAKE_API bool Runtime::is_deferred_loading_type(const TypeRef &type) noexcept {
 		   (static_cast<CustomTypeDefObject *>(type.type_def)->type_object->get_object_kind() == ObjectKind::IdRef);
 }
 
+SLAKE_API bool Runtime::is_deferred_loading_type_def(TypeDefObject *type_def) noexcept {
+	return ((type_def) &&
+			(type_def->get_type_def_kind() == TypeDefKind::CustomTypeDef) &&
+			((static_cast<CustomTypeDefObject *>(type_def)->type_object->get_object_kind() == ObjectKind::IdRef)));
+}
+
+SLAKE_API bool Runtime::is_resolvable_deferred_loading_type_def(CustomTypeDefObject *type_def) noexcept {
+	if (!((static_cast<CustomTypeDefObject *>(type_def)->type_object->get_object_kind() == ObjectKind::IdRef)))
+		return false;
+	IdRefObject *id_ref = static_cast<IdRefObject *>(static_cast<CustomTypeDefObject *>(type_def)->type_object);
+	if (!id_ref->param_types.has_value())
+		return true;
+	for (const auto &i : *id_ref->param_types) {
+		if (is_deferred_loading_type(i))
+			return false;
+	}
+	return true;
+}
+
 SLAKE_API bool Runtime::is_value_type(const TypeRef &type) noexcept {
 	switch (type.type_id) {
 		case TypeId::I8:

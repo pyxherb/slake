@@ -520,6 +520,9 @@ namespace slake {
 		SLAKE_API static bool is_array_type(const TypeRef &type) noexcept;
 		SLAKE_API static bool is_function_type(const TypeRef &type) noexcept;
 
+		SLAKE_API static bool is_deferred_loading_type_def(TypeDefObject *type_def) noexcept;
+		SLAKE_API static bool is_resolvable_deferred_loading_type_def(CustomTypeDefObject *type_def) noexcept;
+
 		SLAKE_API static size_t sizeof_type(const TypeRef &type);
 		SLAKE_API static size_t alignof_type(const TypeRef &type);
 		SLAKE_API Value default_value_of(const TypeRef &type) const;

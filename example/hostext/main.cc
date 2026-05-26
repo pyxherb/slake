@@ -47,8 +47,8 @@ public:
 		return ptr;
 	}
 
-	virtual void *realloc_in_place(void *p, size_t size, size_t alignment, size_t new_size, size_t new_alignment) noexcept override {
-		void *ptr = this->StdAlloc::realloc_in_place(p, size, alignment, new_size, new_alignment);
+	virtual void *realloc_in_place(void *p, size_t size, size_t alignment, size_t new_size) noexcept override {
+		void *ptr = this->StdAlloc::realloc_in_place(p, size, alignment, new_size);
 		if (!ptr)
 			return nullptr;
 
@@ -59,7 +59,7 @@ public:
 
 		alloc_records.erase(p);
 
-		alloc_records[ptr] = { new_size, new_alignment };
+		alloc_records[ptr] = { new_size, alignment };
 
 		return ptr;
 	}

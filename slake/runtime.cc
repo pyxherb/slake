@@ -51,9 +51,9 @@ SLAKE_API void *CountablePoolAlloc::realloc(void *ptr, size_t size, size_t align
 	return p;
 }
 
-SLAKE_API void *CountablePoolAlloc::realloc_in_place(void *ptr, size_t size, size_t alignment, size_t new_size, size_t new_alignment) noexcept {
+SLAKE_API void *CountablePoolAlloc::realloc_in_place(void *ptr, size_t size, size_t alignment, size_t new_size) noexcept {
 	assert(new_size);
-	void *p = upstream->realloc_in_place(ptr, size, alignment, new_size, new_alignment);
+	void *p = upstream->realloc_in_place(ptr, size, alignment, new_size);
 	if (!p)
 		return nullptr;
 
@@ -157,9 +157,9 @@ SLAKE_API void *GenerationalPoolAlloc::realloc(void *ptr, size_t size, size_t al
 	return p;
 }
 
-SLAKE_API void *GenerationalPoolAlloc::realloc_in_place(void *ptr, size_t size, size_t alignment, size_t new_size, size_t new_alignment) noexcept {
+SLAKE_API void *GenerationalPoolAlloc::realloc_in_place(void *ptr, size_t size, size_t alignment, size_t new_size) noexcept {
 	assert(new_size);
-	void *p = upstream->realloc_in_place(ptr, size, alignment, new_size, new_alignment);
+	void *p = upstream->realloc_in_place(ptr, size, alignment, new_size);
 	if (!p)
 		return nullptr;
 

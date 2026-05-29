@@ -1276,52 +1276,6 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(ContextObject *con
 				case ValueType::U64:
 					value_out = (uint64_t)(~x->get_u64());
 					break;
-				default:
-					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
-			}
-			break;
-		}
-		case Opcode::LNOT: {
-			_check_operand_count_with_output_required(this, output, num_operands, 1);
-
-			if (!_is_register_valid(cur_major_frame, output)) {
-				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
-			}
-			Value &value_out = *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
-
-			const Value *x;
-			_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[1], x);
-			switch (x->value_type) {
-				case ValueType::I8:
-					value_out = (bool)(!x->get_i8());
-					break;
-				case ValueType::I16:
-					value_out = (bool)(!x->get_i16());
-					break;
-				case ValueType::I32:
-					value_out = (bool)(!x->get_i32());
-					break;
-				case ValueType::I64:
-					value_out = (bool)(!x->get_i64());
-					break;
-				case ValueType::U8:
-					value_out = (bool)(!x->get_i8());
-					break;
-				case ValueType::U16:
-					value_out = (bool)(!x->get_u16());
-					break;
-				case ValueType::U32:
-					value_out = (bool)(!x->get_u32());
-					break;
-				case ValueType::U64:
-					value_out = (bool)(!x->get_u64());
-					break;
-				case ValueType::F32:
-					value_out = (bool)(!x->get_f32());
-					break;
-				case ValueType::F64:
-					value_out = (bool)(!x->get_f64());
-					break;
 				case ValueType::Bool:
 					value_out = (bool)(!x->get_u64());
 					break;

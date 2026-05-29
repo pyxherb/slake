@@ -2,337 +2,319 @@
 #define _SLAKE_OPCODE_H_
 
 #include <cstdint>
-#include <map>
-#include <string>
 #include "basedefs.h"
 
+#define SLAKE_OPCODE_ENTRIES      \
+	SLAKE_OPCODE_ENTRY(LVALUE)    \
+	SLAKE_OPCODE_ENTRY(STORE)     \
+                                  \
+	SLAKE_OPCODE_ENTRY(JMP)       \
+	SLAKE_OPCODE_ENTRY(BR)        \
+                                  \
+	SLAKE_OPCODE_ENTRY(PHI)       \
+                                  \
+	SLAKE_OPCODE_ENTRY(LARGV)     \
+                                  \
+	SLAKE_OPCODE_ENTRY(ADDI8)     \
+	SLAKE_OPCODE_ENTRY(ADDI16)    \
+	SLAKE_OPCODE_ENTRY(ADDI32)    \
+	SLAKE_OPCODE_ENTRY(ADDI64)    \
+	SLAKE_OPCODE_ENTRY(ADDISIZE)  \
+	SLAKE_OPCODE_ENTRY(ADDU8)     \
+	SLAKE_OPCODE_ENTRY(ADDU16)    \
+	SLAKE_OPCODE_ENTRY(ADDU32)    \
+	SLAKE_OPCODE_ENTRY(ADDU64)    \
+	SLAKE_OPCODE_ENTRY(ADDUSIZE)  \
+	SLAKE_OPCODE_ENTRY(ADDF32)    \
+	SLAKE_OPCODE_ENTRY(ADDF64)    \
+                                  \
+	SLAKE_OPCODE_ENTRY(SUBI8)     \
+	SLAKE_OPCODE_ENTRY(SUBI16)    \
+	SLAKE_OPCODE_ENTRY(SUBI32)    \
+	SLAKE_OPCODE_ENTRY(SUBI64)    \
+	SLAKE_OPCODE_ENTRY(SUBISIZE)  \
+	SLAKE_OPCODE_ENTRY(SUBU8)     \
+	SLAKE_OPCODE_ENTRY(SUBU16)    \
+	SLAKE_OPCODE_ENTRY(SUBU32)    \
+	SLAKE_OPCODE_ENTRY(SUBU64)    \
+	SLAKE_OPCODE_ENTRY(SUBUSIZE)  \
+	SLAKE_OPCODE_ENTRY(SUBF32)    \
+	SLAKE_OPCODE_ENTRY(SUBF64)    \
+                                  \
+	SLAKE_OPCODE_ENTRY(MULI8)     \
+	SLAKE_OPCODE_ENTRY(MULI16)    \
+	SLAKE_OPCODE_ENTRY(MULI32)    \
+	SLAKE_OPCODE_ENTRY(MULI64)    \
+	SLAKE_OPCODE_ENTRY(MULISIZE)  \
+	SLAKE_OPCODE_ENTRY(MULU8)     \
+	SLAKE_OPCODE_ENTRY(MULU16)    \
+	SLAKE_OPCODE_ENTRY(MULU32)    \
+	SLAKE_OPCODE_ENTRY(MULU64)    \
+	SLAKE_OPCODE_ENTRY(MULUSIZE)  \
+	SLAKE_OPCODE_ENTRY(MULF32)    \
+	SLAKE_OPCODE_ENTRY(MULF64)    \
+                                  \
+	SLAKE_OPCODE_ENTRY(DIVI8)     \
+	SLAKE_OPCODE_ENTRY(DIVI16)    \
+	SLAKE_OPCODE_ENTRY(DIVI32)    \
+	SLAKE_OPCODE_ENTRY(DIVI64)    \
+	SLAKE_OPCODE_ENTRY(DIVISIZE)  \
+	SLAKE_OPCODE_ENTRY(DIVU8)     \
+	SLAKE_OPCODE_ENTRY(DIVU16)    \
+	SLAKE_OPCODE_ENTRY(DIVU32)    \
+	SLAKE_OPCODE_ENTRY(DIVU64)    \
+	SLAKE_OPCODE_ENTRY(DIVUSIZE)  \
+	SLAKE_OPCODE_ENTRY(DIVF32)    \
+	SLAKE_OPCODE_ENTRY(DIVF64)    \
+                                  \
+	SLAKE_OPCODE_ENTRY(MODI8)     \
+	SLAKE_OPCODE_ENTRY(MODI16)    \
+	SLAKE_OPCODE_ENTRY(MODI32)    \
+	SLAKE_OPCODE_ENTRY(MODI64)    \
+	SLAKE_OPCODE_ENTRY(MODISIZE)  \
+	SLAKE_OPCODE_ENTRY(MODU8)     \
+	SLAKE_OPCODE_ENTRY(MODU16)    \
+	SLAKE_OPCODE_ENTRY(MODU32)    \
+	SLAKE_OPCODE_ENTRY(MODU64)    \
+	SLAKE_OPCODE_ENTRY(MODUSIZE)  \
+	SLAKE_OPCODE_ENTRY(MODF32)    \
+	SLAKE_OPCODE_ENTRY(MODF64)    \
+                                  \
+	SLAKE_OPCODE_ENTRY(ANDI8)     \
+	SLAKE_OPCODE_ENTRY(ANDI16)    \
+	SLAKE_OPCODE_ENTRY(ANDI32)    \
+	SLAKE_OPCODE_ENTRY(ANDI64)    \
+	SLAKE_OPCODE_ENTRY(ANDISIZE)  \
+	SLAKE_OPCODE_ENTRY(ANDU8)     \
+	SLAKE_OPCODE_ENTRY(ANDU16)    \
+	SLAKE_OPCODE_ENTRY(ANDU32)    \
+	SLAKE_OPCODE_ENTRY(ANDU64)    \
+	SLAKE_OPCODE_ENTRY(ANDUSIZE)  \
+	SLAKE_OPCODE_ENTRY(ANDBOOL)   \
+                                  \
+	SLAKE_OPCODE_ENTRY(ORI8)      \
+	SLAKE_OPCODE_ENTRY(ORI16)     \
+	SLAKE_OPCODE_ENTRY(ORI32)     \
+	SLAKE_OPCODE_ENTRY(ORI64)     \
+	SLAKE_OPCODE_ENTRY(ORISIZE)   \
+	SLAKE_OPCODE_ENTRY(ORU8)      \
+	SLAKE_OPCODE_ENTRY(ORU16)     \
+	SLAKE_OPCODE_ENTRY(ORU32)     \
+	SLAKE_OPCODE_ENTRY(ORU64)     \
+	SLAKE_OPCODE_ENTRY(ORUSIZE)   \
+	SLAKE_OPCODE_ENTRY(ORBOOL)    \
+                                  \
+	SLAKE_OPCODE_ENTRY(XORI8)     \
+	SLAKE_OPCODE_ENTRY(XORI16)    \
+	SLAKE_OPCODE_ENTRY(XORI32)    \
+	SLAKE_OPCODE_ENTRY(XORI64)    \
+	SLAKE_OPCODE_ENTRY(XORISIZE)  \
+	SLAKE_OPCODE_ENTRY(XORU8)     \
+	SLAKE_OPCODE_ENTRY(XORU16)    \
+	SLAKE_OPCODE_ENTRY(XORU32)    \
+	SLAKE_OPCODE_ENTRY(XORU64)    \
+	SLAKE_OPCODE_ENTRY(XORUSIZE)  \
+                                  \
+	SLAKE_OPCODE_ENTRY(EQI8)      \
+	SLAKE_OPCODE_ENTRY(EQI16)     \
+	SLAKE_OPCODE_ENTRY(EQI32)     \
+	SLAKE_OPCODE_ENTRY(EQI64)     \
+	SLAKE_OPCODE_ENTRY(EQISIZE)   \
+	SLAKE_OPCODE_ENTRY(EQU8)      \
+	SLAKE_OPCODE_ENTRY(EQU16)     \
+	SLAKE_OPCODE_ENTRY(EQU32)     \
+	SLAKE_OPCODE_ENTRY(EQU64)     \
+	SLAKE_OPCODE_ENTRY(EQUSIZE)   \
+	SLAKE_OPCODE_ENTRY(EQF32)     \
+	SLAKE_OPCODE_ENTRY(EQF64)     \
+	SLAKE_OPCODE_ENTRY(EQBOOL)    \
+	SLAKE_OPCODE_ENTRY(EQREF)     \
+	SLAKE_OPCODE_ENTRY(EQTYPE)    \
+                                  \
+	SLAKE_OPCODE_ENTRY(NEQI8)     \
+	SLAKE_OPCODE_ENTRY(NEQI16)    \
+	SLAKE_OPCODE_ENTRY(NEQI32)    \
+	SLAKE_OPCODE_ENTRY(NEQI64)    \
+	SLAKE_OPCODE_ENTRY(NEQISIZE)  \
+	SLAKE_OPCODE_ENTRY(NEQU8)     \
+	SLAKE_OPCODE_ENTRY(NEQU16)    \
+	SLAKE_OPCODE_ENTRY(NEQU32)    \
+	SLAKE_OPCODE_ENTRY(NEQU64)    \
+	SLAKE_OPCODE_ENTRY(NEQUSIZE)  \
+	SLAKE_OPCODE_ENTRY(NEQF32)    \
+	SLAKE_OPCODE_ENTRY(NEQF64)    \
+	SLAKE_OPCODE_ENTRY(NEQBOOL)   \
+	SLAKE_OPCODE_ENTRY(NEQSTR)    \
+	SLAKE_OPCODE_ENTRY(NEQREF)    \
+	SLAKE_OPCODE_ENTRY(NEQTYPE)   \
+                                  \
+	SLAKE_OPCODE_ENTRY(LTI8)      \
+	SLAKE_OPCODE_ENTRY(LTI16)     \
+	SLAKE_OPCODE_ENTRY(LTI32)     \
+	SLAKE_OPCODE_ENTRY(LTI64)     \
+	SLAKE_OPCODE_ENTRY(LTISIZE)   \
+	SLAKE_OPCODE_ENTRY(LTU8)      \
+	SLAKE_OPCODE_ENTRY(LTU16)     \
+	SLAKE_OPCODE_ENTRY(LTU32)     \
+	SLAKE_OPCODE_ENTRY(LTU64)     \
+	SLAKE_OPCODE_ENTRY(LTUSIZE)   \
+	SLAKE_OPCODE_ENTRY(LTF32)     \
+	SLAKE_OPCODE_ENTRY(LTF64)     \
+                                  \
+	SLAKE_OPCODE_ENTRY(GTI8)      \
+	SLAKE_OPCODE_ENTRY(GTI16)     \
+	SLAKE_OPCODE_ENTRY(GTI32)     \
+	SLAKE_OPCODE_ENTRY(GTI64)     \
+	SLAKE_OPCODE_ENTRY(GTISIZE)   \
+	SLAKE_OPCODE_ENTRY(GTU8)      \
+	SLAKE_OPCODE_ENTRY(GTU16)     \
+	SLAKE_OPCODE_ENTRY(GTU32)     \
+	SLAKE_OPCODE_ENTRY(GTU64)     \
+	SLAKE_OPCODE_ENTRY(GTUSIZE)   \
+	SLAKE_OPCODE_ENTRY(GTF32)     \
+	SLAKE_OPCODE_ENTRY(GTF64)     \
+                                  \
+	SLAKE_OPCODE_ENTRY(LTEQI8)    \
+	SLAKE_OPCODE_ENTRY(LTEQI16)   \
+	SLAKE_OPCODE_ENTRY(LTEQI32)   \
+	SLAKE_OPCODE_ENTRY(LTEQI64)   \
+	SLAKE_OPCODE_ENTRY(LTEQISIZE) \
+	SLAKE_OPCODE_ENTRY(LTEQU8)    \
+	SLAKE_OPCODE_ENTRY(LTEQU16)   \
+	SLAKE_OPCODE_ENTRY(LTEQU32)   \
+	SLAKE_OPCODE_ENTRY(LTEQU64)   \
+	SLAKE_OPCODE_ENTRY(LTEQUSIZE) \
+	SLAKE_OPCODE_ENTRY(LTEQF32)   \
+	SLAKE_OPCODE_ENTRY(LTEQF64)   \
+                                  \
+	SLAKE_OPCODE_ENTRY(GTEQI8)    \
+	SLAKE_OPCODE_ENTRY(GTEQI16)   \
+	SLAKE_OPCODE_ENTRY(GTEQI32)   \
+	SLAKE_OPCODE_ENTRY(GTEQI64)   \
+	SLAKE_OPCODE_ENTRY(GTEQISIZE) \
+	SLAKE_OPCODE_ENTRY(GTEQU8)    \
+	SLAKE_OPCODE_ENTRY(GTEQU16)   \
+	SLAKE_OPCODE_ENTRY(GTEQU32)   \
+	SLAKE_OPCODE_ENTRY(GTEQU64)   \
+	SLAKE_OPCODE_ENTRY(GTEQUSIZE) \
+	SLAKE_OPCODE_ENTRY(GTEQF32)   \
+	SLAKE_OPCODE_ENTRY(GTEQF64)   \
+                                  \
+	SLAKE_OPCODE_ENTRY(SHLI8)     \
+	SLAKE_OPCODE_ENTRY(SHLI16)    \
+	SLAKE_OPCODE_ENTRY(SHLI32)    \
+	SLAKE_OPCODE_ENTRY(SHLI64)    \
+	SLAKE_OPCODE_ENTRY(SHLISIZE)  \
+	SLAKE_OPCODE_ENTRY(SHLU8)     \
+	SLAKE_OPCODE_ENTRY(SHLU16)    \
+	SLAKE_OPCODE_ENTRY(SHLU32)    \
+	SLAKE_OPCODE_ENTRY(SHLU64)    \
+	SLAKE_OPCODE_ENTRY(SHLUSIZE)  \
+                                  \
+	SLAKE_OPCODE_ENTRY(SHRI8)     \
+	SLAKE_OPCODE_ENTRY(SHRI16)    \
+	SLAKE_OPCODE_ENTRY(SHRI32)    \
+	SLAKE_OPCODE_ENTRY(SHRI64)    \
+	SLAKE_OPCODE_ENTRY(SHRISIZE)  \
+	SLAKE_OPCODE_ENTRY(SHRU8)     \
+	SLAKE_OPCODE_ENTRY(SHRU16)    \
+	SLAKE_OPCODE_ENTRY(SHRU32)    \
+	SLAKE_OPCODE_ENTRY(SHRU64)    \
+	SLAKE_OPCODE_ENTRY(SHRUSIZE)  \
+                                  \
+	SLAKE_OPCODE_ENTRY(CMPI8)     \
+	SLAKE_OPCODE_ENTRY(CMPI16)    \
+	SLAKE_OPCODE_ENTRY(CMPI32)    \
+	SLAKE_OPCODE_ENTRY(CMPI64)    \
+	SLAKE_OPCODE_ENTRY(CMPISIZE)  \
+	SLAKE_OPCODE_ENTRY(CMPU8)     \
+	SLAKE_OPCODE_ENTRY(CMPU16)    \
+	SLAKE_OPCODE_ENTRY(CMPU32)    \
+	SLAKE_OPCODE_ENTRY(CMPU64)    \
+	SLAKE_OPCODE_ENTRY(CMPUSIZE)  \
+	SLAKE_OPCODE_ENTRY(CMPF32)    \
+	SLAKE_OPCODE_ENTRY(CMPF64)    \
+                                  \
+	SLAKE_OPCODE_ENTRY(NOT)       \
+	SLAKE_OPCODE_ENTRY(NEG)       \
+                                  \
+	SLAKE_OPCODE_ENTRY(AT)        \
+                                  \
+	SLAKE_OPCODE_ENTRY(LOAD)      \
+	SLAKE_OPCODE_ENTRY(RLOAD)     \
+                                  \
+	SLAKE_OPCODE_ENTRY(LCURFN)    \
+                                  \
+	SLAKE_OPCODE_ENTRY(COPYI8)    \
+	SLAKE_OPCODE_ENTRY(COPYI16)   \
+	SLAKE_OPCODE_ENTRY(COPYI32)   \
+	SLAKE_OPCODE_ENTRY(COPYI64)   \
+	SLAKE_OPCODE_ENTRY(COPYISIZE) \
+	SLAKE_OPCODE_ENTRY(COPYU8)    \
+	SLAKE_OPCODE_ENTRY(COPYU16)   \
+	SLAKE_OPCODE_ENTRY(COPYU32)   \
+	SLAKE_OPCODE_ENTRY(COPYU64)   \
+	SLAKE_OPCODE_ENTRY(COPYUSIZE) \
+	SLAKE_OPCODE_ENTRY(COPYF32)   \
+	SLAKE_OPCODE_ENTRY(COPYF64)   \
+	SLAKE_OPCODE_ENTRY(COPYBOOL)  \
+	SLAKE_OPCODE_ENTRY(COPYNULL)  \
+                                  \
+	SLAKE_OPCODE_ENTRY(COPY)      \
+                                  \
+	SLAKE_OPCODE_ENTRY(LARG)      \
+	SLAKE_OPCODE_ENTRY(LAPARG)    \
+                                  \
+	SLAKE_OPCODE_ENTRY(LVAR)      \
+	SLAKE_OPCODE_ENTRY(ALLOCA)    \
+                                  \
+	SLAKE_OPCODE_ENTRY(ENTER)     \
+	SLAKE_OPCODE_ENTRY(LEAVE)     \
+                                  \
+	SLAKE_OPCODE_ENTRY(PUSHARG)   \
+	SLAKE_OPCODE_ENTRY(PUSHAP)    \
+                                  \
+	SLAKE_OPCODE_ENTRY(CALL)      \
+	SLAKE_OPCODE_ENTRY(MCALL)     \
+	SLAKE_OPCODE_ENTRY(CTORCALL)  \
+	SLAKE_OPCODE_ENTRY(RETVOID)   \
+	SLAKE_OPCODE_ENTRY(RET)       \
+                                  \
+	SLAKE_OPCODE_ENTRY(COCALL)    \
+	SLAKE_OPCODE_ENTRY(COMCALL)   \
+	SLAKE_OPCODE_ENTRY(CORETVOID) \
+	SLAKE_OPCODE_ENTRY(CORET)     \
+	SLAKE_OPCODE_ENTRY(YIELD)     \
+	SLAKE_OPCODE_ENTRY(RESUME)    \
+	SLAKE_OPCODE_ENTRY(CODONE)    \
+                                  \
+	SLAKE_OPCODE_ENTRY(LTHIS)     \
+                                  \
+	SLAKE_OPCODE_ENTRY(NEW)       \
+	SLAKE_OPCODE_ENTRY(ARRNEW)    \
+                                  \
+	SLAKE_OPCODE_ENTRY(THROW)     \
+	SLAKE_OPCODE_ENTRY(PUSHEH)    \
+	SLAKE_OPCODE_ENTRY(LEXCEPT)   \
+                                  \
+	SLAKE_OPCODE_ENTRY(CAST)      \
+	SLAKE_OPCODE_ENTRY(NULLCAST)  \
+                                  \
+	SLAKE_OPCODE_ENTRY(APTOTUPLE) \
+                                  \
+	SLAKE_OPCODE_ENTRY(DCMT)      \
+                                  \
+	SLAKE_OPCODE_ENTRY(TYPEOF)    \
+                                  \
+	SLAKE_OPCODE_ENTRY(CONSTSW)
+
 namespace slake {
+#define SLAKE_OPCODE_ENTRY(x) x,
 	enum class Opcode : uint16_t {
-		INVALID = 0,  // Invalid
-
-		LVALUE,	 // Load value of a variable
-		STORE,	 // Store a value into a variable.
-
-		JMP,  // Jump
-		BR,	  // Branch
-
-		PHI,  // Phi
-
-		LARGV,	// Load value of an argument
-
-		// Add
-		ADDI8,
-		ADDI16,
-		ADDI32,
-		ADDI64,
-		ADDISIZE,
-		ADDU8,
-		ADDU16,
-		ADDU32,
-		ADDU64,
-		ADDUSIZE,
-		ADDF32,
-		ADDF64,
-
-		// Subtract
-		SUBI8,
-		SUBI16,
-		SUBI32,
-		SUBI64,
-		SUBISIZE,
-		SUBU8,
-		SUBU16,
-		SUBU32,
-		SUBU64,
-		SUBUSIZE,
-		SUBF32,
-		SUBF64,
-
-		// Multiply
-		MULI8,
-		MULI16,
-		MULI32,
-		MULI64,
-		MULISIZE,
-		MULU8,
-		MULU16,
-		MULU32,
-		MULU64,
-		MULUSIZE,
-		MULF32,
-		MULF64,
-
-		// Divide
-		DIVI8,
-		DIVI16,
-		DIVI32,
-		DIVI64,
-		DIVISIZE,
-		DIVU8,
-		DIVU16,
-		DIVU32,
-		DIVU64,
-		DIVUSIZE,
-		DIVF32,
-		DIVF64,
-
-		// Modulo
-		MODI8,
-		MODI16,
-		MODI32,
-		MODI64,
-		MODISIZE,
-		MODU8,
-		MODU16,
-		MODU32,
-		MODU64,
-		MODUSIZE,
-		MODF32,
-		MODF64,
-
-		// AND
-		ANDI8,
-		ANDI16,
-		ANDI32,
-		ANDI64,
-		ANDISIZE,
-		ANDU8,
-		ANDU16,
-		ANDU32,
-		ANDU64,
-		ANDUSIZE,
-		ANDBOOL,
-
-		// OR
-		ORI8,
-		ORI16,
-		ORI32,
-		ORI64,
-		ORISIZE,
-		ORU8,
-		ORU16,
-		ORU32,
-		ORU64,
-		ORUSIZE,
-		ORBOOL,
-
-		// XOR
-		XORI8,
-		XORI16,
-		XORI32,
-		XORI64,
-		XORISIZE,
-		XORU8,
-		XORU16,
-		XORU32,
-		XORU64,
-		XORUSIZE,
-
-		// Equal
-		EQI8,
-		EQI16,
-		EQI32,
-		EQI64,
-		EQISIZE,
-		EQU8,
-		EQU16,
-		EQU32,
-		EQU64,
-		EQUSIZE,
-		EQF32,
-		EQF64,
-		EQBOOL,
-		EQREF,
-		EQTYPE,
-
-		// Not Equal
-		NEQI8,
-		NEQI16,
-		NEQI32,
-		NEQI64,
-		NEQISIZE,
-		NEQU8,
-		NEQU16,
-		NEQU32,
-		NEQU64,
-		NEQUSIZE,
-		NEQF32,
-		NEQF64,
-		NEQBOOL,
-		NEQSTR,
-		NEQREF,
-		NEQTYPE,
-
-		// Less Than
-		LTI8,
-		LTI16,
-		LTI32,
-		LTI64,
-		LTISIZE,
-		LTU8,
-		LTU16,
-		LTU32,
-		LTU64,
-		LTUSIZE,
-		LTF32,
-		LTF64,
-
-		// Greater Than
-		GTI8,
-		GTI16,
-		GTI32,
-		GTI64,
-		GTISIZE,
-		GTU8,
-		GTU16,
-		GTU32,
-		GTU64,
-		GTUSIZE,
-		GTF32,
-		GTF64,
-
-		// Less Than or Equal
-		LTEQI8,
-		LTEQI16,
-		LTEQI32,
-		LTEQI64,
-		LTEQISIZE,
-		LTEQU8,
-		LTEQU16,
-		LTEQU32,
-		LTEQU64,
-		LTEQUSIZE,
-		LTEQF32,
-		LTEQF64,
-
-		// Greater Than or Equal
-		GTEQI8,
-		GTEQI16,
-		GTEQI32,
-		GTEQI64,
-		GTEQISIZE,
-		GTEQU8,
-		GTEQU16,
-		GTEQU32,
-		GTEQU64,
-		GTEQUSIZE,
-		GTEQF32,
-		GTEQF64,
-
-		// Left Shift
-		SHLI8,
-		SHLI16,
-		SHLI32,
-		SHLI64,
-		SHLISIZE,
-		SHLU8,
-		SHLU16,
-		SHLU32,
-		SHLU64,
-		SHLUSIZE,
-
-		// Right Shift
-		SHRI8,
-		SHRI16,
-		SHRI32,
-		SHRI64,
-		SHRISIZE,
-		SHRU8,
-		SHRU16,
-		SHRU32,
-		SHRU64,
-		SHRUSIZE,
-
-		// Compare
-		CMPI8,
-		CMPI16,
-		CMPI32,
-		CMPI64,
-		CMPISIZE,
-		CMPU8,
-		CMPU16,
-		CMPU32,
-		CMPU64,
-		CMPUSIZE,
-		CMPF32,
-		CMPF64,
-
-		NOT,   // Bitwise NOT
-		LNOT,  // Logical NOT
-		NEG,   // Negate
-
-		AT,	 // Subscript
-
-		LOAD,	// Load value of a variable.
-		RLOAD,	// Access and load corresponding member with an existing value.
-
-		LCURFN,	 // Load current function.
-
-		COPYI8,		// Fast copy for i8 literals
-		COPYI16,	// Fast copy for i16 literals
-		COPYI32,	// Fast copy for i32 literals
-		COPYI64,	// Fast copy for i64 literals
-		COPYISIZE,	// Fast copy for isize literals
-		COPYU8,		// Fast copy for u8 literals
-		COPYU16,	// Fast copy for u16 literals
-		COPYU32,	// Fast copy for u32 literals
-		COPYU64,	// Fast copy for u64 literals
-		COPYUSIZE,	// Fast copy for usize literals
-		COPYF32,	// Fast copy for f32 literals
-		COPYF64,	// Fast copy for f64 literals
-		COPYBOOL,	// Fast copy for bool literals
-		COPYNULL,	// Fast copy for null literals
-
-		COPY,  // Copy values between registers
-
-		LARG,	 // Load an argument.
-		LAPARG,	 // Load an argument pack.
-
-		LVAR,	 // Create a new local variable
-		ALLOCA,	 // Allocate spaces from the stack
-
-		ENTER,	// Enter frame
-		LEAVE,	// Leave frame
-
-		PUSHARG,  // Push an value into the argument stack
-		PUSHAP,	  // Push an argument pack.
-
-		CALL,	   // Call
-		MCALL,	   // Method Call
-		CTORCALL,  // Constructor Call
-		RETVOID,   // Return void
-		RET,	   // Return
-
-		COCALL,		// Coroutine call
-		COMCALL,	// Coroutine method call
-		CORETVOID,	// Coroutine return void
-		CORET,		// Coroutine return
-		YIELD,		// Yield
-		RESUME,		// Resume
-		CODONE,		// Is coroutine done?
-
-		LTHIS,	// Load this register
-
-		NEW,	 // New
-		ARRNEW,	 // Array new
-
-		THROW,	  // Throw an exception
-		PUSHEH,	  // Push an exception handler
-		LEXCEPT,  // Load current exception
-
-		CAST,	   // Cast
-		NULLCAST,  // Nullable cast
-
-		APTOTUPLE,	// Cast an argument pack to a tuple
-
-		DCMT,  // Downcast method table
-
-		TYPEOF,	 // Get type of an object
-
-		CONSTSW,  // Constant switch
-
-		OPCODE_MAX
+		INVALID = 0,
+		SLAKE_OPCODE_ENTRIES
 	};
+#undef SLAKE_OPCODE_ENTRY
 }
 
 #endif

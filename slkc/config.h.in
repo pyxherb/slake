@@ -1,7 +1,0 @@
-#ifndef _SLKC_CONFIG_H_
-#define _SLKC_CONFIG_H_
-
-#cmakedefine01 SLKC_WITH_LANGUAGE_SERVER
-#cmakedefine01 SLKC_WITH_AST_DUMPING
-
-#endif

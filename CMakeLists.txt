@@ -35,16 +35,7 @@ list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/")
 
 set(SLAKE_BUILD_EXAMPLES TRUE CACHE BOOL "Build the examples")
 
-set(SLAKE_BUILD_SLKC TRUE CACHE BOOL "Build SLKC")
-set(SLAKE_BUILD_SLKBCC TRUE CACHE BOOL "Build SLKBCC")
-
 add_subdirectory("slake")
-
-if(SLAKE_BUILD_SLKC)
-    add_subdirectory("slkc")
-endif()
-
-# add_subdirectory("slkaot")
 
 if(${SLAKE_BUILD_EXAMPLES})
     add_subdirectory("example")

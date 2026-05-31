@@ -291,9 +291,11 @@ public async main() -> i32 {
 
 	extfns.print("Value:", v, "\n");
 
-	while(test.x = test.x - 1) {
+	test.x = test.x - 1;
+	while(test.x) {
 		extfns.print("Yielded\n");
 		yield test.get_x();
+		test.x = test.x - 1;
 	}
 
 	1 <=> 1;
@@ -350,10 +352,12 @@ public async main() -> i32 {
 
 		let ax: i32?;
 
+		ax = 123;
+
 		match (123) {
-			123: ((ax = 123) + 123),
-			456: ((ax = 456) + 456),
-			default: ((ax = 789) + 789)
+			123: (ax + 123),
+			456: (ax + 456),
+			default: (ax + 789)
 		};
 
 		nonnullable = ax;

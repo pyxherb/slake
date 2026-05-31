@@ -122,6 +122,8 @@ Value print(Context *context, MajorFrame *cur_major_frame) {
 					fputs(data.get_bool() ? "true" : "false", stdout);
 					break;
 				case ValueType::Reference: {
+					if (!data.get_reference().is_object_ref())
+						continue;
 					Object *object_ptr = data.get_reference().as_object;
 					if (!object_ptr)
 						fputs("null", stdout);
@@ -930,7 +932,7 @@ bool dump_exception_info(peff::Alloc *allocator, DumpWriter *writer, slake::Inte
 					SLAKE_RETURN_IF_FALSE(writer->write("Invalid array index, "));
 					{
 						char n[26];
-						snprintf(n, sizeof(n) - 1,"%zu", err->index);
+						snprintf(n, sizeof(n) - 1, "%zu", err->index);
 						SLAKE_RETURN_IF_FALSE(writer->write(n));
 					}
 					SLAKE_RETURN_IF_FALSE(writer->write(" is out of index range"));

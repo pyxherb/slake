@@ -183,8 +183,7 @@ SLAKE_API TypeRef Runtime::typeof_var(const Reference &entity_ref) noexcept {
 				case TypeId::Any:
 					break;
 				default:
-					// All fields should be checked during the instantiation.
-					std::terminate();
+					break;
 			}
 
 			return t;

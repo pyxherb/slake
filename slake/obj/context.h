@@ -80,8 +80,6 @@ namespace slake {
 		}
 		MajorFrame(MajorFrame &&) noexcept = default;
 		~MajorFrame() = default;
-
-		SLAKE_API void replace_allocator(peff::Alloc *allocator) noexcept;
 	};
 
 	static_assert(!std::is_polymorphic_v<MajorFrame>);

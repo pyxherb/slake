@@ -13,17 +13,17 @@ SLAKE_API char *Context::stack_alloc(size_t size) noexcept {
 }
 
 SLAKE_API char *Context::align_stack(size_t alignment) noexcept {
-	const size_t addr_diff = (uintptr_t)(calc_stack_addr(data_stack, stack_size, stack_top)) % alignment;
+	assert((alignment & (alignment - 1)) == 0);
+	const size_t addr_diff = (uintptr_t)(calc_stack_addr(data_stack, stack_size, stack_top)) & (alignment - 1);
 	if (addr_diff)
 		return stack_alloc(addr_diff);
 	return data_stack + stack_size - stack_top;
 }
 
 SLAKE_API char *Context::aligned_stack_alloc(size_t size, size_t alignment) noexcept {
-	const size_t addr_diff = (uintptr_t)(calc_stack_addr(data_stack, stack_size, stack_top)) % alignment;
-	if (addr_diff)
-		return stack_alloc(size + (addr_diff));
-	return stack_alloc(size);
+	assert((alignment & (alignment - 1)) == 0);
+	const size_t addr_diff = (uintptr_t)(calc_stack_addr(data_stack, stack_size, stack_top)) & (alignment - 1);
+	return stack_alloc(size + addr_diff);
 }
 
 SLAKE_API Context::Context(Runtime *runtime, peff::Alloc *self_allocator) : runtime(runtime), self_allocator(self_allocator) {
@@ -51,15 +51,6 @@ SLAKE_API void Context::replace_allocator(peff::Alloc *allocator) noexcept {
 	peff::verify_replaceable(self_allocator.get(), allocator);
 
 	self_allocator = allocator;
-
-	MajorFrame *cur_major_frame;
-	size_t off_cur_major_frame = this->off_cur_major_frame;
-
-	do {
-		cur_major_frame = this->runtime->_fetch_major_frame(this, off_cur_major_frame);
-		cur_major_frame->replace_allocator(allocator);
-		off_cur_major_frame = cur_major_frame->off_prev_frame;
-	} while (cur_major_frame->off_prev_frame != SIZE_MAX);
 }
 
 SLAKE_API void Context::for_each_major_frame(MajorFrameWalker walker, void *user_data) {
@@ -107,9 +98,6 @@ SLAKE_API HostObjectRef<ContextObject> slake::ContextObject::alloc(Runtime *rt, 
 
 SLAKE_API void slake::ContextObject::dealloc() {
 	peff::destroy_and_release<ContextObject>(get_allocator(), this, alignof(ContextObject));
-}
-
-SLAKE_API void MajorFrame::replace_allocator(peff::Alloc *allocator) noexcept {
 }
 
 SLAKE_API InternalExceptionPointer ContextObject::resume(HostRefHolder *host_ref_holder) {

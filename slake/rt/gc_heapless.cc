@@ -121,15 +121,15 @@ SLAKE_API void Runtime::_gc_walk(GCWalkContext *context, char *stack_top, size_t
 	};
 	char *const stack_base = stack_top + sz_stack;
 	for (auto k = value.off_cur_minor_frame; k != SIZE_MAX;) {
-		MinorFrame *mjf = (MinorFrame *)(stack_base - k);
-		for (auto l = mjf->off_except_handler; l != SIZE_MAX;) {
+		MinorFrame *mnf = (MinorFrame *)(stack_base - k);
+		for (auto l = mnf->off_except_handler; l != SIZE_MAX;) {
 			ExceptHandler *eh = (ExceptHandler *)(stack_base - l);
 
 			_gc_walk(context, eh->type);
 
 			l = eh->off_next;
 		}
-		k = mjf->off_last_minor_frame;
+		k = mnf->off_last_minor_frame;
 	}
 }
 

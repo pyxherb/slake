@@ -606,7 +606,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(ContextObject *con
 			_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[0], dest);
 			_check_operand_type(this, *dest, ValueType::Reference);
 
-			if ((!_is_register_valid(cur_major_frame, output)) || (dest->is_invalid()))
+			if (!_is_register_valid(cur_major_frame, output))
 				// The register does not present.
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			read_var(dest->get_reference(), *_calc_reg_ptr(data_stack, stack_size, cur_major_frame, output));

@@ -493,67 +493,56 @@ namespace slake {
 		SLAKE_FORCEINLINE constexpr Value &operator=(int8_t data) noexcept {
 			value_type = ValueType::I8;
 			this->as_i8 = data;
-			this->value_flags = 0;
 			return *this;
 		}
 		SLAKE_FORCEINLINE constexpr Value &operator=(int16_t data) noexcept {
 			value_type = ValueType::I16;
 			this->as_i16 = data;
-			this->value_flags = 0;
 			return *this;
 		}
 		SLAKE_FORCEINLINE constexpr Value &operator=(int32_t data) noexcept {
 			value_type = ValueType::I32;
 			this->as_i32 = data;
-			this->value_flags = 0;
 			return *this;
 		}
 		SLAKE_FORCEINLINE constexpr Value &operator=(int64_t data) noexcept {
 			value_type = ValueType::I64;
 			this->as_i64 = data;
-			this->value_flags = 0;
 			return *this;
 		}
 		SLAKE_FORCEINLINE constexpr Value &operator=(uint8_t data) noexcept {
 			value_type = ValueType::U8;
 			this->as_u8 = data;
-			this->value_flags = 0;
 			return *this;
 		}
 		SLAKE_FORCEINLINE constexpr Value &operator=(uint16_t data) noexcept {
 			value_type = ValueType::U16;
 			this->as_u16 = data;
-			this->value_flags = 0;
 			return *this;
 		}
 		SLAKE_FORCEINLINE constexpr Value &operator=(uint32_t data) noexcept {
 			value_type = ValueType::U32;
 			this->as_u32 = data;
-			this->value_flags = 0;
 			return *this;
 		}
 		SLAKE_FORCEINLINE constexpr Value &operator=(uint64_t data) noexcept {
 			value_type = ValueType::U64;
 			this->as_u64 = data;
-			this->value_flags = 0;
 			return *this;
 		}
 		SLAKE_FORCEINLINE constexpr Value &operator=(float data) noexcept {
 			value_type = ValueType::F32;
 			this->as_f32 = data;
-			this->value_flags = 0;
 			return *this;
 		}
 		SLAKE_FORCEINLINE constexpr Value &operator=(double data) noexcept {
 			value_type = ValueType::F64;
 			this->as_f64 = data;
-			this->value_flags = 0;
 			return *this;
 		}
 		SLAKE_FORCEINLINE constexpr Value &operator=(bool data) noexcept {
 			value_type = ValueType::Bool;
 			this->as_bool = data;
-			this->value_flags = 0;
 			return *this;
 		}
 		SLAKE_FORCEINLINE Value &operator=(const Reference &entity_ref) noexcept {
@@ -764,12 +753,14 @@ namespace slake {
 		}
 
 		SLAKE_FORCEINLINE bool is_local() const noexcept {
-			return value_flags & VALUE_LOCAL;
+			return value_type == ValueType::Reference ? value_flags & VALUE_LOCAL : false;
 		}
 		SLAKE_FORCEINLINE void set_local() noexcept {
+			assert(value_type == ValueType::Reference);
 			value_flags |= VALUE_LOCAL;
 		}
 		SLAKE_FORCEINLINE void clear_local() noexcept {
+			assert(value_type == ValueType::Reference);
 			value_flags &= ~VALUE_LOCAL;
 		}
 

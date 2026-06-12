@@ -403,7 +403,7 @@ public async main() -> i32 {
 /*public fn fib(n: u64) -> u64 {
 	if (n < 1UL)
 		return 0UL;
-	else if (n < 3UL)ff
+	else if (n < 3UL)
 		return 1UL;
 	return fib(n - 1UL) + fib(n - 2UL);
 }

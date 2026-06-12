@@ -33,11 +33,11 @@ using namespace slake;
 #define _is_register_valid(cur_major_frame, index) ((index) < (cur_major_frame)->resumable_context_data.num_regs)
 
 #define _calc_reg_ptr(stack_data, stack_size, cur_major_frame, index) \
-	(&((std::conditional_t<                                           \
+	(((std::conditional_t<                                           \
 		std::is_const_v<                                              \
 			std::remove_pointer_t<decltype(stack_data)>>,             \
 		const Value *,                                                \
-		Value *>)(calc_stack_addr((stack_data), (stack_size), (cur_major_frame)->off_regs)))[index])
+		Value *>)(calc_stack_addr((stack_data), (stack_size), (cur_major_frame)->off_regs))) + index)
 
 #define _set_register_value(runtime, stack_data, stack_size, cur_major_frame, index, value)          \
 	(!_is_register_valid((cur_major_frame), (index)))                                                \
@@ -593,11 +593,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer larg(Context *context, MajorFrame *ma
 	return {};
 }
 
-SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorFrame *const cur_major_frame, const uint32_t output, const Opcode opcode, const size_t num_operands, const Value *const operands, ContextChangeType &context_changes_out) noexcept {
-	InternalExceptionPointer except_ptr;
-	char *const data_stack = context->_context.data_stack;
-	const size_t stack_size = context->_context.stack_size;
-
+SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(ContextObject *const context, MajorFrame *const cur_major_frame, char *const data_stack, const size_t stack_size, const uint32_t output, const Opcode opcode, const size_t num_operands, const Value *const operands, ContextChangeType &context_changes_out) noexcept {
 	switch (opcode) {
 		case Opcode::LVALUE: {
 			_check_operand_count_with_output_required(this, output, num_operands, 1);
@@ -688,7 +684,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(ContextObject *con
 				if (off == cur_major_frame->resumable_context_data.last_jump_src) {
 					_unwrap_reg_operand_into_ptr(this, data_stack, stack_size, cur_major_frame, operands[i + 1], v);
 
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _set_register_value(this, data_stack, stack_size, cur_major_frame, output, *v));
+					SLAKE_RETURN_IF_EXCEPT(_set_register_value(this, data_stack, stack_size, cur_major_frame, output, *v));
 
 					goto succeeded;
 				}
@@ -704,7 +700,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(ContextObject *con
 			_check_operand_type(this, operands[0], ValueType::U32);
 
 			Reference ref;
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, larg(&context->get_context(), cur_major_frame, this, operands[0].get_u32(), ref));
+			SLAKE_RETURN_IF_EXCEPT(larg(&context->get_context(), cur_major_frame, this, operands[0].get_u32(), ref));
 
 			if (!_is_register_valid(cur_major_frame, output))
 				// The register does not present.
@@ -1352,7 +1348,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(ContextObject *con
 				return alloc_oom_error_if_alloc_failed(InvalidArrayIndexError::alloc(get_fixed_alloc(), index_in));
 			}
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _set_register_value(this, data_stack, stack_size, cur_major_frame, output, Reference(ArrayElementRef(array_object, index_in))));
+			SLAKE_RETURN_IF_EXCEPT(_set_register_value(this, data_stack, stack_size, cur_major_frame, output, Reference(ArrayElementRef(array_object, index_in))));
 
 			break;
 		}
@@ -1366,13 +1362,13 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(ContextObject *con
 
 			Reference entity_ref;
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, resolve_id_ref((IdRefObject *)ref_ptr.as_object, entity_ref));
+			SLAKE_RETURN_IF_EXCEPT(resolve_id_ref((IdRefObject *)ref_ptr.as_object, entity_ref));
 
 			if (entity_ref.kind == ReferenceKind::Invalid)
 				// TODO: Use a proper one instead.
 				return alloc_oom_error_if_alloc_failed(ReferencedMemberNotFoundError::alloc(get_fixed_alloc(), (IdRefObject *)ref_ptr.as_object));
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _set_register_value(this, data_stack, stack_size, cur_major_frame, output, entity_ref));
+			SLAKE_RETURN_IF_EXCEPT(_set_register_value(this, data_stack, stack_size, cur_major_frame, output, entity_ref));
 			break;
 		}
 		case Opcode::RLOAD: {
@@ -1435,7 +1431,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(ContextObject *con
 
 								generic_instantiation_context.generic_args = &cur_name.generic_args;
 								MemberObject *m;
-								SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, instantiate_generic_object((MemberObject *)entity_ref.as_object, m, &generic_instantiation_context));
+								SLAKE_RETURN_IF_EXCEPT(instantiate_generic_object((MemberObject *)entity_ref.as_object, m, &generic_instantiation_context));
 								entity_ref = Reference(m);
 							}
 						}
@@ -1444,7 +1440,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(ContextObject *con
 					break;
 				}
 				case ReferenceKind::ObjectRef:
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, resolve_id_ref(id_ref, entity_ref, lhs_entity_ref.as_object));
+					SLAKE_RETURN_IF_EXCEPT(resolve_id_ref(id_ref, entity_ref, lhs_entity_ref.as_object));
 					break;
 				default:
 					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
@@ -1453,7 +1449,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(ContextObject *con
 			if (!entity_ref)
 				return alloc_oom_error_if_alloc_failed(ReferencedMemberNotFoundError::alloc(get_fixed_alloc(), id_ref));
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _set_register_value(this, data_stack, stack_size, cur_major_frame, output, entity_ref));
+			SLAKE_RETURN_IF_EXCEPT(_set_register_value(this, data_stack, stack_size, cur_major_frame, output, entity_ref));
 			break;
 		}
 		case Opcode::LCURFN: {
@@ -1744,7 +1740,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(ContextObject *con
 			}
 			Value *output_reg = _calc_reg_ptr(data_stack, stack_size, cur_major_frame, output);
 			output_reg->value_type = ValueType::Reference;
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, larg(&context->get_context(), cur_major_frame, this, operands[0].get_u32(), output_reg->get_reference()));
+			SLAKE_RETURN_IF_EXCEPT(larg(&context->get_context(), cur_major_frame, this, operands[0].get_u32(), output_reg->get_reference()));
 			break;
 		}
 		case Opcode::LAPARG:
@@ -1756,8 +1752,8 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(ContextObject *con
 			TypeRef type = operands[0].get_type_name();
 
 			Reference entity_ref;
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _add_local_var(&context->_context, cur_major_frame, type, output, entity_ref));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _set_register_value(this, data_stack, stack_size, cur_major_frame, output, entity_ref));
+			SLAKE_RETURN_IF_EXCEPT(_add_local_var(&context->_context, cur_major_frame, type, output, entity_ref));
+			SLAKE_RETURN_IF_EXCEPT(_set_register_value(this, data_stack, stack_size, cur_major_frame, output, entity_ref));
 			break;
 		}
 		case Opcode::ALLOCA:
@@ -1869,10 +1865,10 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(ContextObject *con
 					// TODO: Untested!!!
 					Reference alloca_ref;
 
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _add_local_var(&context->get_context(), cur_major_frame, fn->return_type, output, alloca_ref));
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _set_register_value(this, data_stack, stack_size, cur_major_frame, output, alloca_ref));
+					SLAKE_RETURN_IF_EXCEPT(_add_local_var(&context->get_context(), cur_major_frame, fn->return_type, output, alloca_ref));
+					SLAKE_RETURN_IF_EXCEPT(_set_register_value(this, data_stack, stack_size, cur_major_frame, output, alloca_ref));
 
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _create_new_major_frame(
+					SLAKE_RETURN_IF_EXCEPT(_create_new_major_frame(
 																	 context,
 																	 nullptr,
 																	 fn,
@@ -1884,7 +1880,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(ContextObject *con
 																	 UINT32_MAX,
 																	 &alloca_ref));
 				} else
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _create_new_major_frame(
+					SLAKE_RETURN_IF_EXCEPT(_create_new_major_frame(
 																	 context,
 																	 nullptr,
 																	 fn,
@@ -1896,7 +1892,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(ContextObject *con
 																	 output,
 																	 nullptr));
 			} else {
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _create_new_major_frame(
+				SLAKE_RETURN_IF_EXCEPT(_create_new_major_frame(
 																 context,
 																 nullptr,
 																 fn,
@@ -1953,10 +1949,10 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(ContextObject *con
 					// TODO: Untested!!!
 					Reference alloca_ref;
 
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _add_local_var(&context->get_context(), cur_major_frame, fn->return_type, output, alloca_ref));
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _set_register_value(this, data_stack, stack_size, cur_major_frame, output, alloca_ref));
+					SLAKE_RETURN_IF_EXCEPT(_add_local_var(&context->get_context(), cur_major_frame, fn->return_type, output, alloca_ref));
+					SLAKE_RETURN_IF_EXCEPT(_set_register_value(this, data_stack, stack_size, cur_major_frame, output, alloca_ref));
 
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _create_new_major_frame(
+					SLAKE_RETURN_IF_EXCEPT(_create_new_major_frame(
 																	 context,
 																	 this_object,
 																	 fn,
@@ -1968,7 +1964,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(ContextObject *con
 																	 UINT32_MAX,
 																	 &alloca_ref));
 				} else
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _create_new_major_frame(
+					SLAKE_RETURN_IF_EXCEPT(_create_new_major_frame(
 																	 context,
 																	 this_object,
 																	 fn,
@@ -1980,7 +1976,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(ContextObject *con
 																	 output,
 																	 nullptr));
 			} else {
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _create_new_major_frame(
+				SLAKE_RETURN_IF_EXCEPT(_create_new_major_frame(
 																 context,
 																 this_object,
 																 fn,
@@ -2032,7 +2028,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(ContextObject *con
 
 			ResumableContextData &resumable_context_data = cur_major_frame->resumable_context_data;
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _create_new_major_frame(
+			SLAKE_RETURN_IF_EXCEPT(_create_new_major_frame(
 															 context,
 															 this_object,
 															 fn,
@@ -2085,8 +2081,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(ContextObject *con
 					// TODO: Check if the return structure reference member is invalid (which means the caller does not want a return value).
 					write_var(cur_major_frame->return_struct_ref, *return_value);
 				} else {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(
-						except_ptr,
+					SLAKE_RETURN_IF_EXCEPT(
 						_set_register_value(
 							this,
 							data_stack,
@@ -2154,7 +2149,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(ContextObject *con
 
 			HostObjectRef<CoroutineObject> co;
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, create_coroutine_instance(
+			SLAKE_RETURN_IF_EXCEPT(create_coroutine_instance(
 															 fn,
 															 this_object,
 															 _fetch_arg_stack(context->get_context().data_stack, context->get_context().stack_size, cur_major_frame, cur_major_frame->resumable_context_data.off_next_args),
@@ -2164,7 +2159,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(ContextObject *con
 			cur_major_frame->resumable_context_data.num_next_args = 0;
 
 			if (return_value_output_reg != UINT32_MAX) {
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _set_register_value(this, data_stack, stack_size, cur_major_frame, return_value_output_reg, Reference(co.get())));
+				SLAKE_RETURN_IF_EXCEPT(_set_register_value(this, data_stack, stack_size, cur_major_frame, return_value_output_reg, Reference(co.get())));
 			}
 			break;
 		}
@@ -2245,7 +2240,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(ContextObject *con
 				_leave_major_frame(&context->get_context());
 				MajorFrame *prev_frame = _fetch_major_frame(&context->get_context(), cur_major_frame->off_prev_frame);
 				if (return_value_out_reg != UINT32_MAX) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _set_register_value(this, data_stack, stack_size, prev_frame, return_value_out_reg, return_value));
+					SLAKE_RETURN_IF_EXCEPT(_set_register_value(this, data_stack, stack_size, prev_frame, return_value_out_reg, return_value));
 				}
 			}
 
@@ -2267,17 +2262,17 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(ContextObject *con
 
 			if (co->is_done()) {
 				if (output != UINT32_MAX) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _set_register_value(this, data_stack, stack_size, cur_major_frame, output, co->final_result));
+					SLAKE_RETURN_IF_EXCEPT(_set_register_value(this, data_stack, stack_size, cur_major_frame, output, co->final_result));
 				}
 			} else {
 				if (co->overloading->return_type.type_id == TypeId::StructInstance) {
 					Reference ref;
 
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _add_local_var(&context->get_context(), cur_major_frame, co->overloading->return_type, output, ref));
+					SLAKE_RETURN_IF_EXCEPT(_add_local_var(&context->get_context(), cur_major_frame, co->overloading->return_type, output, ref));
 
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _create_new_coroutine_major_frame(&context->_context, co.get(), output, &ref));
+					SLAKE_RETURN_IF_EXCEPT(_create_new_coroutine_major_frame(&context->_context, co.get(), output, &ref));
 				} else
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _create_new_coroutine_major_frame(&context->_context, co.get(), output, nullptr));
+					SLAKE_RETURN_IF_EXCEPT(_create_new_coroutine_major_frame(&context->_context, co.get(), output, nullptr));
 			}
 
 			context_changes_out = ContextChangeType::FnKindChanged;
@@ -2296,13 +2291,13 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(ContextObject *con
 			_check_object_operand_type(this, fn_object_ref.as_object, ObjectKind::FnOverloading);
 			co = (CoroutineObject *)fn_object_ref.as_object;
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _set_register_value(this, data_stack, stack_size, cur_major_frame, output, co->is_done()));
+			SLAKE_RETURN_IF_EXCEPT(_set_register_value(this, data_stack, stack_size, cur_major_frame, output, co->is_done()));
 			break;
 		}
 		case Opcode::LTHIS: {
 			_check_operand_count_with_output_required(this, output, num_operands, 0);
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _set_register_value(this, data_stack, stack_size, cur_major_frame, output, Reference(cur_major_frame->resumable_context_data.this_object)));
+			SLAKE_RETURN_IF_EXCEPT(_set_register_value(this, data_stack, stack_size, cur_major_frame, output, Reference(cur_major_frame->resumable_context_data.this_object)));
 			break;
 		}
 		case Opcode::NEW: {
@@ -2318,7 +2313,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(ContextObject *con
 					if (!instance)
 						// TODO: Return more detail exceptions.
 						return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _set_register_value(this, data_stack, stack_size, cur_major_frame, output, Reference(instance.get())));
+					SLAKE_RETURN_IF_EXCEPT(_set_register_value(this, data_stack, stack_size, cur_major_frame, output, Reference(instance.get())));
 					break;
 				}
 				default:
@@ -2340,7 +2335,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(ContextObject *con
 				// TODO: Return more detailed exceptions.
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _set_register_value(this, data_stack, stack_size, cur_major_frame, output, Reference(instance.get())));
+			SLAKE_RETURN_IF_EXCEPT(_set_register_value(this, data_stack, stack_size, cur_major_frame, output, Reference(instance.get())));
 
 			break;
 		}
@@ -2473,6 +2468,8 @@ SLAKE_API InternalExceptionPointer Runtime::exec_context(ContextObject *context)
 	size_t initial_major_frame_depth = context->_context.num_major_frames;
 	InternalExceptionPointer except_ptr;
 	ExecutionRunnable *const managed_thread = managed_thread_runnables.at(current_thread_handle());
+	char *const data_stack = context->_context.data_stack;
+	const size_t data_stack_size = context->_context.stack_size;
 
 	while (context->get_context().num_major_frames >= initial_major_frame_depth) {
 		MajorFrame *cur_major_frame = _fetch_major_frame(&context->get_context(), context->get_context().off_cur_major_frame);
@@ -2513,7 +2510,7 @@ SLAKE_API InternalExceptionPointer Runtime::exec_context(ContextObject *context)
 								std::terminate();
 							}
 							const Instruction *const instruction = ins_ptr + idx_cur_ins;
-							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _exec_ins(context, cur_major_frame, instruction->output, instruction->opcode, instruction->num_operands, instruction->operands, context_change));
+							SLAKE_RETURN_IF_EXCEPT(_exec_ins(context, cur_major_frame, data_stack, data_stack_size, instruction->output, instruction->opcode, instruction->num_operands, instruction->operands, context_change));
 						} while (context_change == ContextChangeType::NoChange);
 					} while (context_change == ContextChangeType::MajorFrameChanged);
 					cur_major_frame = _fetch_major_frame(&context->get_context(), context->get_context().off_cur_major_frame);
@@ -2556,7 +2553,7 @@ SLAKE_API InternalExceptionPointer Runtime::exec_context(ContextObject *context)
 				uint32_t return_value_out_reg = cur_major_frame->return_value_out_reg;
 				_leave_major_frame(&context->get_context());
 				if (return_value_out_reg != UINT32_MAX) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(except_ptr, _set_register_value(this, context->_context.data_stack, context->_context.stack_size, cur_major_frame, return_value_out_reg, return_value));
+					SLAKE_RETURN_IF_EXCEPT(_set_register_value(this, context->_context.data_stack, context->_context.stack_size, cur_major_frame, return_value_out_reg, return_value));
 				}
 
 				break;

@@ -295,314 +295,7 @@ SLAKE_API TypeRef Runtime::typeof_var(const Reference &entity_ref) noexcept {
 }
 
 SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const TypeRef &t, Value &value_out) noexcept {
-	value_out.value_flags = 0;
 	switch (entity_ref.kind) {
-		case ReferenceKind::StaticFieldRef:
-		case ReferenceKind::ObjectFieldRef:
-		case ReferenceKind::StaticFieldStructFieldRef:
-		case ReferenceKind::LocalVarStructFieldRef:
-		case ReferenceKind::CoroutineLocalVarStructFieldRef:
-		case ReferenceKind::ObjectFieldStructFieldRef:
-		case ReferenceKind::ArrayElementStructFieldRef:
-		case ReferenceKind::ArgStructFieldRef:
-		case ReferenceKind::CoroutineArgStructFieldRef: {
-			const char *const raw_data_ptr = (char *)locate_value_base_ptr(entity_ref);
-
-			switch (t.type_id) {
-				case TypeId::I8:
-					if (t.is_nullable())
-						if (*(bool *)((raw_data_ptr + sizeof(int8_t)))) {
-							value_out = nullptr;
-							break;
-						}
-					value_out.as_i8 = (*(reinterpret_cast<const int8_t *>(raw_data_ptr)));
-					value_out.value_type = ValueType::I8;
-					break;
-				case TypeId::I16:
-					if (t.is_nullable())
-						if (*(bool *)((raw_data_ptr + sizeof(int16_t)))) {
-							value_out = nullptr;
-							break;
-						}
-					value_out.as_i16 = (*(reinterpret_cast<const int16_t *>(raw_data_ptr)));
-					value_out.value_type = ValueType::I16;
-					break;
-				case TypeId::I32:
-					if (t.is_nullable())
-						if (*(bool *)((raw_data_ptr + sizeof(int32_t)))) {
-							value_out = nullptr;
-							break;
-						}
-					value_out.as_i32 = (*(reinterpret_cast<const int32_t *>(raw_data_ptr)));
-					value_out.value_type = ValueType::I32;
-					break;
-				case TypeId::I64:
-					if (t.is_nullable())
-						if (*(bool *)((raw_data_ptr + sizeof(int64_t)))) {
-							value_out = nullptr;
-							break;
-						}
-					value_out.as_i64 = (*(reinterpret_cast<const int64_t *>(raw_data_ptr)));
-					value_out.value_type = ValueType::I64;
-					break;
-				case TypeId::ISize:
-					if (t.is_nullable())
-						if (*(bool *)((raw_data_ptr + sizeof(ssize_t)))) {
-							value_out = nullptr;
-							break;
-						}
-					value_out.as_isize = *(reinterpret_cast<const ssize_t *>(raw_data_ptr));
-					value_out.value_type = ValueType::ISize;
-					break;
-				case TypeId::U8:
-					if (t.is_nullable())
-						if (*(bool *)((raw_data_ptr + sizeof(uint8_t)))) {
-							value_out = nullptr;
-							break;
-						}
-					value_out.as_u8 = (*(reinterpret_cast<const uint8_t *>(raw_data_ptr)));
-					value_out.value_type = ValueType::U8;
-					break;
-				case TypeId::U16:
-					if (t.is_nullable())
-						if (*(bool *)((raw_data_ptr + sizeof(uint16_t)))) {
-							value_out = nullptr;
-							break;
-						}
-					value_out.as_u16 = (*(reinterpret_cast<const uint16_t *>(raw_data_ptr)));
-					value_out.value_type = ValueType::U16;
-					break;
-				case TypeId::U32:
-					if (t.is_nullable())
-						if (*(bool *)((raw_data_ptr + sizeof(uint32_t)))) {
-							value_out = nullptr;
-							break;
-						}
-					value_out.as_u32 = (*(reinterpret_cast<const uint32_t *>(raw_data_ptr)));
-					value_out.value_type = ValueType::U32;
-					break;
-				case TypeId::U64:
-					if (t.is_nullable())
-						if (*(bool *)((raw_data_ptr + sizeof(uint64_t)))) {
-							value_out = nullptr;
-							break;
-						}
-					value_out.as_u64 = (*(reinterpret_cast<const uint64_t *>(raw_data_ptr)));
-					value_out.value_type = ValueType::U64;
-					break;
-				case TypeId::USize:
-					if (t.is_nullable())
-						if (*(bool *)((raw_data_ptr + sizeof(size_t)))) {
-							value_out = nullptr;
-							break;
-						}
-					value_out.as_usize = *(reinterpret_cast<const size_t *>(raw_data_ptr));
-					value_out.value_type = ValueType::USize;
-					break;
-				case TypeId::F32:
-					if (t.is_nullable())
-						if (*(bool *)((raw_data_ptr + sizeof(float)))) {
-							value_out = nullptr;
-							break;
-						}
-					value_out.as_f32 = (*(reinterpret_cast<const float *>(raw_data_ptr)));
-					value_out.value_type = ValueType::F32;
-					break;
-				case TypeId::F64:
-					if (t.is_nullable())
-						if (*(bool *)((raw_data_ptr + sizeof(double)))) {
-							value_out = nullptr;
-							break;
-						}
-					value_out.as_f64 = (*(reinterpret_cast<const double *>(raw_data_ptr)));
-					value_out.value_type = ValueType::F64;
-					break;
-				case TypeId::Bool:
-					if (t.is_nullable())
-						if (*(bool *)((raw_data_ptr + sizeof(bool)))) {
-							value_out = nullptr;
-							break;
-						}
-					value_out.as_bool = (*(reinterpret_cast<const bool *>(raw_data_ptr)));
-					value_out.value_type = ValueType::Bool;
-					break;
-				case TypeId::String:
-				case TypeId::Instance:
-				case TypeId::Array:
-				case TypeId::Fn:
-					value_out.as_reference = (Reference(*((Object **)(raw_data_ptr))));
-					value_out.value_type = ValueType::Reference;
-					if (t.is_local())
-						std::terminate();
-					break;
-				case TypeId::StructInstance: {
-					if (t.is_nullable())
-						if (*(bool *)((raw_data_ptr + sizeof_type(t)))) {
-							value_out = nullptr;
-							break;
-						}
-
-					value_out.as_reference = entity_ref;
-					value_out.value_type = ValueType::Reference;
-					break;
-				}
-				case TypeId::ScopedEnum: {
-					CustomTypeDefObject *td = (CustomTypeDefObject *)t.type_def;
-					assert(td->type_object->get_object_kind() == ObjectKind::ScopedEnum);
-
-					TypeRef type;
-					if ((type = ((ScopedEnumObject *)td->type_object)->base_type))
-						switch (type.type_id) {
-							case TypeId::I8:
-								if (t.is_nullable())
-									if (*(bool *)((raw_data_ptr + sizeof(int8_t)))) {
-										value_out = nullptr;
-										break;
-									}
-								value_out.as_i8 = (*(reinterpret_cast<const int8_t *>(raw_data_ptr)));
-								value_out.value_type = ValueType::I8;
-								break;
-							case TypeId::I16:
-								if (t.is_nullable())
-									if (*(bool *)((raw_data_ptr + sizeof(int16_t)))) {
-										value_out = nullptr;
-										break;
-									}
-								value_out.as_i16 = (*(reinterpret_cast<const int16_t *>(raw_data_ptr)));
-								value_out.value_type = ValueType::I16;
-								break;
-							case TypeId::I32:
-								if (t.is_nullable())
-									if (*(bool *)((raw_data_ptr + sizeof(int32_t)))) {
-										value_out = nullptr;
-										break;
-									}
-								value_out.as_i32 = (*(reinterpret_cast<const int32_t *>(raw_data_ptr)));
-								value_out.value_type = ValueType::I32;
-								break;
-							case TypeId::I64:
-								if (t.is_nullable())
-									if (*(bool *)((raw_data_ptr + sizeof(int64_t)))) {
-										value_out = nullptr;
-										break;
-									}
-								value_out.as_i64 = (*(reinterpret_cast<const int64_t *>(raw_data_ptr)));
-								value_out.value_type = ValueType::I64;
-								break;
-							case TypeId::ISize:
-								if (t.is_nullable())
-									if (*(bool *)((raw_data_ptr + sizeof(ssize_t)))) {
-										value_out = nullptr;
-										break;
-									}
-								value_out.as_isize = *(reinterpret_cast<const ssize_t *>(raw_data_ptr));
-								value_out.value_type = ValueType::ISize;
-								break;
-							case TypeId::U8:
-								if (t.is_nullable())
-									if (*(bool *)((raw_data_ptr + sizeof(uint8_t)))) {
-										value_out = nullptr;
-										break;
-									}
-								value_out.as_u8 = (*(reinterpret_cast<const uint8_t *>(raw_data_ptr)));
-								value_out.value_type = ValueType::U8;
-								break;
-							case TypeId::U16:
-								if (t.is_nullable())
-									if (*(bool *)((raw_data_ptr + sizeof(uint16_t)))) {
-										value_out = nullptr;
-										break;
-									}
-								value_out.as_u16 = (*(reinterpret_cast<const uint16_t *>(raw_data_ptr)));
-								value_out.value_type = ValueType::U16;
-								break;
-							case TypeId::U32:
-								if (t.is_nullable())
-									if (*(bool *)((raw_data_ptr + sizeof(uint32_t)))) {
-										value_out = nullptr;
-										break;
-									}
-								value_out.as_u32 = (*(reinterpret_cast<const uint32_t *>(raw_data_ptr)));
-								value_out.value_type = ValueType::U32;
-								break;
-							case TypeId::U64:
-								if (t.is_nullable())
-									if (*(bool *)((raw_data_ptr + sizeof(uint64_t)))) {
-										value_out = nullptr;
-										break;
-									}
-								value_out.as_u64 = (*(reinterpret_cast<const uint64_t *>(raw_data_ptr)));
-								value_out.value_type = ValueType::U64;
-								break;
-							case TypeId::USize:
-								if (t.is_nullable())
-									if (*(bool *)((raw_data_ptr + sizeof(size_t)))) {
-										value_out = nullptr;
-										break;
-									}
-								value_out.as_usize = *(reinterpret_cast<const size_t *>(raw_data_ptr));
-								value_out.value_type = ValueType::USize;
-								break;
-							case TypeId::F32:
-								if (t.is_nullable())
-									if (*(bool *)((raw_data_ptr + sizeof(float)))) {
-										value_out = nullptr;
-										break;
-									}
-								value_out.as_f32 = (*(reinterpret_cast<const float *>(raw_data_ptr)));
-								value_out.value_type = ValueType::F32;
-								break;
-							case TypeId::F64:
-								if (t.is_nullable())
-									if (*(bool *)((raw_data_ptr + sizeof(double)))) {
-										value_out = nullptr;
-										break;
-									}
-								value_out.as_f64 = (*(reinterpret_cast<const double *>(raw_data_ptr)));
-								value_out.value_type = ValueType::F64;
-								break;
-							case TypeId::Bool:
-								if (t.is_nullable())
-									if (*(bool *)((raw_data_ptr + sizeof(bool)))) {
-										value_out = nullptr;
-										break;
-									}
-								value_out.as_bool = (*(reinterpret_cast<const bool *>(raw_data_ptr)));
-								value_out.value_type = ValueType::Bool;
-								break;
-							default:
-								std::terminate();
-						}
-					break;
-				}
-				case TypeId::TypelessScopedEnum:
-					if (t.is_nullable())
-						if (*(bool *)((raw_data_ptr + sizeof(uint32_t)))) {
-							value_out = nullptr;
-							break;
-						}
-					value_out.as_typeless_scoped_enum.type = t;
-					value_out.as_typeless_scoped_enum.value = (*(reinterpret_cast<const uint32_t *>(raw_data_ptr)));
-					value_out.value_type = ValueType::TypelessScopedEnum;
-					break;
-				case TypeId::Ref:
-					value_out.as_reference = (*(reinterpret_cast<const Reference *>(raw_data_ptr)));
-					value_out.value_type = ValueType::Reference;
-					if (t.is_local())
-						std::terminate();
-					break;
-				case TypeId::Any:
-					value_out = (*(reinterpret_cast<const Value *>(raw_data_ptr)));
-					if (t.is_local())
-						std::terminate();
-					break;
-				default:
-					// All fields should be checked during the instantiation.
-					std::terminate();
-			}
-
-			break;
-		}
 		case ReferenceKind::LocalVarRef: {
 			const char *raw_data_ptr = (char *)locate_value_base_ptr(entity_ref);
 
@@ -1080,13 +773,6 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 			}
 			break;
 		}
-		default:
-			std::terminate();
-	}
-}
-
-SLAKE_API void Runtime::write_var_with_type(const Reference &entity_ref, const TypeRef &t, const Value &value) noexcept {
-	switch (entity_ref.kind) {
 		case ReferenceKind::StaticFieldRef:
 		case ReferenceKind::ObjectFieldRef:
 		case ReferenceKind::StaticFieldStructFieldRef:
@@ -1095,96 +781,296 @@ SLAKE_API void Runtime::write_var_with_type(const Reference &entity_ref, const T
 		case ReferenceKind::ObjectFieldStructFieldRef:
 		case ReferenceKind::ArrayElementStructFieldRef:
 		case ReferenceKind::ArgStructFieldRef:
-		case ReferenceKind::CoroutineArgStructFieldRef:
-		case ReferenceKind::InitObjectLayoutFieldRef: {
-			char *const raw_data_ptr = (char *)locate_value_base_ptr(entity_ref);
+		case ReferenceKind::CoroutineArgStructFieldRef: {
+			const char *const raw_data_ptr = (char *)locate_value_base_ptr(entity_ref);
 
 			switch (t.type_id) {
 				case TypeId::I8:
-					if (t.is_nullable()) {
-						if ((*((bool *)(raw_data_ptr + sizeof(int8_t))) = value.is_null()))
+					if (t.is_nullable())
+						if (*(bool *)((raw_data_ptr + sizeof(int8_t)))) {
+							value_out = nullptr;
 							break;
-					}
-					*((int8_t *)raw_data_ptr) = value.get_i8();
+						}
+					value_out.as_i8 = (*(reinterpret_cast<const int8_t *>(raw_data_ptr)));
+					value_out.value_type = ValueType::I8;
 					break;
 				case TypeId::I16:
-					if (t.is_nullable()) {
-						if ((*((bool *)(raw_data_ptr + sizeof(int16_t))) = value.is_null()))
+					if (t.is_nullable())
+						if (*(bool *)((raw_data_ptr + sizeof(int16_t)))) {
+							value_out = nullptr;
 							break;
-					}
-					*((int16_t *)raw_data_ptr) = value.get_i16();
+						}
+					value_out.as_i16 = (*(reinterpret_cast<const int16_t *>(raw_data_ptr)));
+					value_out.value_type = ValueType::I16;
 					break;
 				case TypeId::I32:
-					if (t.is_nullable()) {
-						if ((*((bool *)(raw_data_ptr + sizeof(int32_t))) = value.is_null()))
+					if (t.is_nullable())
+						if (*(bool *)((raw_data_ptr + sizeof(int32_t)))) {
+							value_out = nullptr;
 							break;
-					}
-					*((int32_t *)raw_data_ptr) = value.get_i32();
+						}
+					value_out.as_i32 = (*(reinterpret_cast<const int32_t *>(raw_data_ptr)));
+					value_out.value_type = ValueType::I32;
 					break;
 				case TypeId::I64:
-					if (t.is_nullable()) {
-						if ((*((bool *)(raw_data_ptr + sizeof(int64_t))) = value.is_null()))
+					if (t.is_nullable())
+						if (*(bool *)((raw_data_ptr + sizeof(int64_t)))) {
+							value_out = nullptr;
 							break;
-					}
-					*((int64_t *)raw_data_ptr) = value.get_i64();
+						}
+					value_out.as_i64 = (*(reinterpret_cast<const int64_t *>(raw_data_ptr)));
+					value_out.value_type = ValueType::I64;
+					break;
+				case TypeId::ISize:
+					if (t.is_nullable())
+						if (*(bool *)((raw_data_ptr + sizeof(ssize_t)))) {
+							value_out = nullptr;
+							break;
+						}
+					value_out.as_isize = *(reinterpret_cast<const ssize_t *>(raw_data_ptr));
+					value_out.value_type = ValueType::ISize;
 					break;
 				case TypeId::U8:
-					if (t.is_nullable()) {
-						if ((*((bool *)(raw_data_ptr + sizeof(uint8_t))) = value.is_null()))
+					if (t.is_nullable())
+						if (*(bool *)((raw_data_ptr + sizeof(uint8_t)))) {
+							value_out = nullptr;
 							break;
-					}
-					*((uint8_t *)raw_data_ptr) = value.get_u8();
+						}
+					value_out.as_u8 = (*(reinterpret_cast<const uint8_t *>(raw_data_ptr)));
+					value_out.value_type = ValueType::U8;
 					break;
 				case TypeId::U16:
-					if (t.is_nullable()) {
-						if ((*((bool *)(raw_data_ptr + sizeof(uint16_t))) = value.is_null()))
+					if (t.is_nullable())
+						if (*(bool *)((raw_data_ptr + sizeof(uint16_t)))) {
+							value_out = nullptr;
 							break;
-					}
-					*((uint16_t *)raw_data_ptr) = value.get_u16();
+						}
+					value_out.as_u16 = (*(reinterpret_cast<const uint16_t *>(raw_data_ptr)));
+					value_out.value_type = ValueType::U16;
 					break;
 				case TypeId::U32:
-					if (t.is_nullable()) {
-						if ((*((bool *)(raw_data_ptr + sizeof(uint32_t))) = value.is_null()))
+					if (t.is_nullable())
+						if (*(bool *)((raw_data_ptr + sizeof(uint32_t)))) {
+							value_out = nullptr;
 							break;
-					}
-					*((uint32_t *)raw_data_ptr) = value.get_u32();
+						}
+					value_out.as_u32 = (*(reinterpret_cast<const uint32_t *>(raw_data_ptr)));
+					value_out.value_type = ValueType::U32;
 					break;
 				case TypeId::U64:
-					if (t.is_nullable()) {
-						if ((*((bool *)(raw_data_ptr + sizeof(uint64_t))) = value.is_null()))
+					if (t.is_nullable())
+						if (*(bool *)((raw_data_ptr + sizeof(uint64_t)))) {
+							value_out = nullptr;
 							break;
-					}
-					*((uint64_t *)raw_data_ptr) = value.get_u64();
+						}
+					value_out.as_u64 = (*(reinterpret_cast<const uint64_t *>(raw_data_ptr)));
+					value_out.value_type = ValueType::U64;
+					break;
+				case TypeId::USize:
+					if (t.is_nullable())
+						if (*(bool *)((raw_data_ptr + sizeof(size_t)))) {
+							value_out = nullptr;
+							break;
+						}
+					value_out.as_usize = *(reinterpret_cast<const size_t *>(raw_data_ptr));
+					value_out.value_type = ValueType::USize;
 					break;
 				case TypeId::F32:
-					if (t.is_nullable()) {
-						if ((*((bool *)(raw_data_ptr + sizeof(float))) = value.is_null()))
+					if (t.is_nullable())
+						if (*(bool *)((raw_data_ptr + sizeof(float)))) {
+							value_out = nullptr;
 							break;
-					}
-					*((float *)raw_data_ptr) = value.get_f32();
+						}
+					value_out.as_f32 = (*(reinterpret_cast<const float *>(raw_data_ptr)));
+					value_out.value_type = ValueType::F32;
 					break;
 				case TypeId::F64:
-					if (t.is_nullable()) {
-						if ((*((bool *)(raw_data_ptr + sizeof(double))) = value.is_null()))
+					if (t.is_nullable())
+						if (*(bool *)((raw_data_ptr + sizeof(double)))) {
+							value_out = nullptr;
 							break;
-					}
-					*((double *)raw_data_ptr) = value.get_f64();
+						}
+					value_out.as_f64 = (*(reinterpret_cast<const double *>(raw_data_ptr)));
+					value_out.value_type = ValueType::F64;
 					break;
 				case TypeId::Bool:
-					if (t.is_nullable()) {
-						if ((*((bool *)(raw_data_ptr + sizeof(bool))) = value.is_null()))
+					if (t.is_nullable())
+						if (*(bool *)((raw_data_ptr + sizeof(bool)))) {
+							value_out = nullptr;
 							break;
-					}
-					*((bool *)raw_data_ptr) = value.get_bool();
+						}
+					value_out.as_bool = (*(reinterpret_cast<const bool *>(raw_data_ptr)));
+					value_out.value_type = ValueType::Bool;
 					break;
 				case TypeId::String:
 				case TypeId::Instance:
 				case TypeId::Array:
+				case TypeId::Fn:
+					value_out.as_reference = (Reference(*((Object **)(raw_data_ptr))));
+					value_out.value_type = ValueType::Reference;
 					if (t.is_local())
 						std::terminate();
-					if (value.is_local())
+					break;
+				case TypeId::StructInstance: {
+					if (t.is_nullable())
+						if (*(bool *)((raw_data_ptr + sizeof_type(t)))) {
+							value_out = nullptr;
+							break;
+						}
+
+					value_out.as_reference = entity_ref;
+					value_out.value_type = ValueType::Reference;
+					break;
+				}
+				case TypeId::ScopedEnum: {
+					CustomTypeDefObject *td = (CustomTypeDefObject *)t.type_def;
+					assert(td->type_object->get_object_kind() == ObjectKind::ScopedEnum);
+
+					TypeRef type;
+					if ((type = ((ScopedEnumObject *)td->type_object)->base_type))
+						switch (type.type_id) {
+							case TypeId::I8:
+								if (t.is_nullable())
+									if (*(bool *)((raw_data_ptr + sizeof(int8_t)))) {
+										value_out = nullptr;
+										break;
+									}
+								value_out.as_i8 = (*(reinterpret_cast<const int8_t *>(raw_data_ptr)));
+								value_out.value_type = ValueType::I8;
+								break;
+							case TypeId::I16:
+								if (t.is_nullable())
+									if (*(bool *)((raw_data_ptr + sizeof(int16_t)))) {
+										value_out = nullptr;
+										break;
+									}
+								value_out.as_i16 = (*(reinterpret_cast<const int16_t *>(raw_data_ptr)));
+								value_out.value_type = ValueType::I16;
+								break;
+							case TypeId::I32:
+								if (t.is_nullable())
+									if (*(bool *)((raw_data_ptr + sizeof(int32_t)))) {
+										value_out = nullptr;
+										break;
+									}
+								value_out.as_i32 = (*(reinterpret_cast<const int32_t *>(raw_data_ptr)));
+								value_out.value_type = ValueType::I32;
+								break;
+							case TypeId::I64:
+								if (t.is_nullable())
+									if (*(bool *)((raw_data_ptr + sizeof(int64_t)))) {
+										value_out = nullptr;
+										break;
+									}
+								value_out.as_i64 = (*(reinterpret_cast<const int64_t *>(raw_data_ptr)));
+								value_out.value_type = ValueType::I64;
+								break;
+							case TypeId::ISize:
+								if (t.is_nullable())
+									if (*(bool *)((raw_data_ptr + sizeof(ssize_t)))) {
+										value_out = nullptr;
+										break;
+									}
+								value_out.as_isize = *(reinterpret_cast<const ssize_t *>(raw_data_ptr));
+								value_out.value_type = ValueType::ISize;
+								break;
+							case TypeId::U8:
+								if (t.is_nullable())
+									if (*(bool *)((raw_data_ptr + sizeof(uint8_t)))) {
+										value_out = nullptr;
+										break;
+									}
+								value_out.as_u8 = (*(reinterpret_cast<const uint8_t *>(raw_data_ptr)));
+								value_out.value_type = ValueType::U8;
+								break;
+							case TypeId::U16:
+								if (t.is_nullable())
+									if (*(bool *)((raw_data_ptr + sizeof(uint16_t)))) {
+										value_out = nullptr;
+										break;
+									}
+								value_out.as_u16 = (*(reinterpret_cast<const uint16_t *>(raw_data_ptr)));
+								value_out.value_type = ValueType::U16;
+								break;
+							case TypeId::U32:
+								if (t.is_nullable())
+									if (*(bool *)((raw_data_ptr + sizeof(uint32_t)))) {
+										value_out = nullptr;
+										break;
+									}
+								value_out.as_u32 = (*(reinterpret_cast<const uint32_t *>(raw_data_ptr)));
+								value_out.value_type = ValueType::U32;
+								break;
+							case TypeId::U64:
+								if (t.is_nullable())
+									if (*(bool *)((raw_data_ptr + sizeof(uint64_t)))) {
+										value_out = nullptr;
+										break;
+									}
+								value_out.as_u64 = (*(reinterpret_cast<const uint64_t *>(raw_data_ptr)));
+								value_out.value_type = ValueType::U64;
+								break;
+							case TypeId::USize:
+								if (t.is_nullable())
+									if (*(bool *)((raw_data_ptr + sizeof(size_t)))) {
+										value_out = nullptr;
+										break;
+									}
+								value_out.as_usize = *(reinterpret_cast<const size_t *>(raw_data_ptr));
+								value_out.value_type = ValueType::USize;
+								break;
+							case TypeId::F32:
+								if (t.is_nullable())
+									if (*(bool *)((raw_data_ptr + sizeof(float)))) {
+										value_out = nullptr;
+										break;
+									}
+								value_out.as_f32 = (*(reinterpret_cast<const float *>(raw_data_ptr)));
+								value_out.value_type = ValueType::F32;
+								break;
+							case TypeId::F64:
+								if (t.is_nullable())
+									if (*(bool *)((raw_data_ptr + sizeof(double)))) {
+										value_out = nullptr;
+										break;
+									}
+								value_out.as_f64 = (*(reinterpret_cast<const double *>(raw_data_ptr)));
+								value_out.value_type = ValueType::F64;
+								break;
+							case TypeId::Bool:
+								if (t.is_nullable())
+									if (*(bool *)((raw_data_ptr + sizeof(bool)))) {
+										value_out = nullptr;
+										break;
+									}
+								value_out.as_bool = (*(reinterpret_cast<const bool *>(raw_data_ptr)));
+								value_out.value_type = ValueType::Bool;
+								break;
+							default:
+								std::terminate();
+						}
+					break;
+				}
+				case TypeId::TypelessScopedEnum:
+					if (t.is_nullable())
+						if (*(bool *)((raw_data_ptr + sizeof(uint32_t)))) {
+							value_out = nullptr;
+							break;
+						}
+					value_out.as_typeless_scoped_enum.type = t;
+					value_out.as_typeless_scoped_enum.value = (*(reinterpret_cast<const uint32_t *>(raw_data_ptr)));
+					value_out.value_type = ValueType::TypelessScopedEnum;
+					break;
+				case TypeId::Ref:
+					value_out.as_reference = (*(reinterpret_cast<const Reference *>(raw_data_ptr)));
+					value_out.value_type = ValueType::Reference;
+					if (t.is_local())
 						std::terminate();
-					*((Object **)raw_data_ptr) = value.get_reference().as_object;
+					break;
+				case TypeId::Any:
+					value_out = (*(reinterpret_cast<const Value *>(raw_data_ptr)));
+					if (t.is_local())
+						std::terminate();
 					break;
 				default:
 					// All fields should be checked during the instantiation.
@@ -1193,6 +1079,13 @@ SLAKE_API void Runtime::write_var_with_type(const Reference &entity_ref, const T
 
 			break;
 		}
+		default:
+			std::terminate();
+	}
+}
+
+SLAKE_API void Runtime::write_var_with_type(const Reference &entity_ref, const TypeRef &t, const Value &value) noexcept {
+	switch (entity_ref.kind) {
 		case ReferenceKind::LocalVarRef: {
 			char *raw_data_ptr = (char *)locate_value_base_ptr(entity_ref);
 
@@ -1501,6 +1394,112 @@ SLAKE_API void Runtime::write_var_with_type(const Reference &entity_ref, const T
 				// TODO: Implement it.
 				std::terminate();
 			}
+			break;
+		}
+		case ReferenceKind::StaticFieldRef:
+		case ReferenceKind::ObjectFieldRef:
+		case ReferenceKind::StaticFieldStructFieldRef:
+		case ReferenceKind::LocalVarStructFieldRef:
+		case ReferenceKind::CoroutineLocalVarStructFieldRef:
+		case ReferenceKind::ObjectFieldStructFieldRef:
+		case ReferenceKind::ArrayElementStructFieldRef:
+		case ReferenceKind::ArgStructFieldRef:
+		case ReferenceKind::CoroutineArgStructFieldRef:
+		case ReferenceKind::InitObjectLayoutFieldRef: {
+			char *const raw_data_ptr = (char *)locate_value_base_ptr(entity_ref);
+
+			switch (t.type_id) {
+				case TypeId::I8:
+					if (t.is_nullable()) {
+						if ((*((bool *)(raw_data_ptr + sizeof(int8_t))) = value.is_null()))
+							break;
+					}
+					*((int8_t *)raw_data_ptr) = value.get_i8();
+					break;
+				case TypeId::I16:
+					if (t.is_nullable()) {
+						if ((*((bool *)(raw_data_ptr + sizeof(int16_t))) = value.is_null()))
+							break;
+					}
+					*((int16_t *)raw_data_ptr) = value.get_i16();
+					break;
+				case TypeId::I32:
+					if (t.is_nullable()) {
+						if ((*((bool *)(raw_data_ptr + sizeof(int32_t))) = value.is_null()))
+							break;
+					}
+					*((int32_t *)raw_data_ptr) = value.get_i32();
+					break;
+				case TypeId::I64:
+					if (t.is_nullable()) {
+						if ((*((bool *)(raw_data_ptr + sizeof(int64_t))) = value.is_null()))
+							break;
+					}
+					*((int64_t *)raw_data_ptr) = value.get_i64();
+					break;
+				case TypeId::U8:
+					if (t.is_nullable()) {
+						if ((*((bool *)(raw_data_ptr + sizeof(uint8_t))) = value.is_null()))
+							break;
+					}
+					*((uint8_t *)raw_data_ptr) = value.get_u8();
+					break;
+				case TypeId::U16:
+					if (t.is_nullable()) {
+						if ((*((bool *)(raw_data_ptr + sizeof(uint16_t))) = value.is_null()))
+							break;
+					}
+					*((uint16_t *)raw_data_ptr) = value.get_u16();
+					break;
+				case TypeId::U32:
+					if (t.is_nullable()) {
+						if ((*((bool *)(raw_data_ptr + sizeof(uint32_t))) = value.is_null()))
+							break;
+					}
+					*((uint32_t *)raw_data_ptr) = value.get_u32();
+					break;
+				case TypeId::U64:
+					if (t.is_nullable()) {
+						if ((*((bool *)(raw_data_ptr + sizeof(uint64_t))) = value.is_null()))
+							break;
+					}
+					*((uint64_t *)raw_data_ptr) = value.get_u64();
+					break;
+				case TypeId::F32:
+					if (t.is_nullable()) {
+						if ((*((bool *)(raw_data_ptr + sizeof(float))) = value.is_null()))
+							break;
+					}
+					*((float *)raw_data_ptr) = value.get_f32();
+					break;
+				case TypeId::F64:
+					if (t.is_nullable()) {
+						if ((*((bool *)(raw_data_ptr + sizeof(double))) = value.is_null()))
+							break;
+					}
+					*((double *)raw_data_ptr) = value.get_f64();
+					break;
+				case TypeId::Bool:
+					if (t.is_nullable()) {
+						if ((*((bool *)(raw_data_ptr + sizeof(bool))) = value.is_null()))
+							break;
+					}
+					*((bool *)raw_data_ptr) = value.get_bool();
+					break;
+				case TypeId::String:
+				case TypeId::Instance:
+				case TypeId::Array:
+					if (t.is_local())
+						std::terminate();
+					if (value.is_local())
+						std::terminate();
+					*((Object **)raw_data_ptr) = value.get_reference().as_object;
+					break;
+				default:
+					// All fields should be checked during the instantiation.
+					std::terminate();
+			}
+
 			break;
 		}
 		default:

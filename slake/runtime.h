@@ -241,7 +241,17 @@ namespace slake {
 		/// @brief Execute a single instruction.
 		/// @param context Context for execution.
 		/// @param ins Instruction to be executed.
-		[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer _exec_ins(ContextObject *const context, MajorFrame *const cur_major_frame, char *const data_stack, const size_t stack_size, const uint32_t output, const Opcode opcode, const size_t num_operands, const Value *const operands, ContextChangeType &is_context_changed_out) noexcept;
+		[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer _exec_ins(
+			ContextObject *const context,
+			MajorFrame *const cur_major_frame,
+			char *const data_stack,
+			const size_t stack_size,
+			const uint32_t output,
+			const Opcode opcode,
+			const size_t num_operands,
+			const Value *const operands,
+			Value *const cur_frame_regs_ptr,
+			ContextChangeType &is_context_changed_out) noexcept;
 
 		friend struct Context;
 
@@ -471,13 +481,6 @@ namespace slake {
 			const Value *args,
 			uint32_t num_args,
 			Value &value_out);
-		[[nodiscard]] SLAKE_API InternalExceptionPointer exec_fn_with_separated_execution_thread(
-			const FnOverloadingObject *overloading,
-			ContextObject *context,
-			Object *this_object,
-			const Value *args,
-			uint32_t num_args,
-			HostObjectRef<ContextObject> &context_out);
 		[[nodiscard]] SLAKE_API InternalExceptionPointer create_coroutine_instance(
 			const FnOverloadingObject *fn,
 			Object *this_object,

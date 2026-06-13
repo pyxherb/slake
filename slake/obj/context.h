@@ -134,11 +134,11 @@ namespace slake {
 		SLAKE_API virtual void replace_allocator(peff::Alloc *allocator) noexcept override;
 	};
 
-	SLAKE_FORCEINLINE constexpr char *calc_stack_addr(char *data, size_t sz_stack, size_t offset) {
+	SLAKE_FORCEINLINE constexpr char *calc_stack_addr(char *data, size_t sz_stack, size_t offset) noexcept {
 		return data + (sz_stack - offset);
 	}
 
-	SLAKE_FORCEINLINE constexpr const char *calc_stack_addr(const char *data, size_t sz_stack, size_t offset) {
+	SLAKE_FORCEINLINE constexpr const char *calc_stack_addr(const char *data, size_t sz_stack, size_t offset) noexcept {
 		return data + (sz_stack - offset);
 	}
 

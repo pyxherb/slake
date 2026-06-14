@@ -38,21 +38,6 @@ SLAKE_API void *Runtime::locate_value_base_ptr(const Reference &entity_ref) noex
 			const char *raw_data_ptr = calc_local_var_ref_stack_raw_data_ptr(calc_local_var_ref_stack_base_ptr(entity_ref.as_local_var));
 
 			switch (*static_cast<const TypeId *>(static_cast<const void *>(raw_data_ptr - (sizeof(TypeModifier) + sizeof(TypeId))))) {
-				case TypeId::I8:
-				case TypeId::I16:
-				case TypeId::I32:
-				case TypeId::I64:
-				case TypeId::ISize:
-				case TypeId::U8:
-				case TypeId::U16:
-				case TypeId::U32:
-				case TypeId::U64:
-				case TypeId::USize:
-				case TypeId::F32:
-				case TypeId::F64:
-				case TypeId::Bool:
-				case TypeId::String:
-					break;
 				case TypeId::Instance:
 				case TypeId::Array:
 				case TypeId::Fn:
@@ -64,11 +49,9 @@ SLAKE_API void *Runtime::locate_value_base_ptr(const Reference &entity_ref) noex
 				case TypeId::Ref:
 					raw_data_ptr += sizeof(void *);
 					break;
-				case TypeId::Any:
-					break;
 				default:
 					// All fields should be checked during the instantiation.
-					std::terminate();
+					break;
 			}
 
 			return (void *)raw_data_ptr;
@@ -161,7 +144,9 @@ SLAKE_API TypeRef Runtime::typeof_var(const Reference &entity_ref) noexcept {
 		case ReferenceKind::LocalVarRef: {
 			const char *const raw_data_ptr = calc_local_var_ref_stack_raw_data_ptr(calc_local_var_ref_stack_base_ptr(entity_ref.as_local_var));
 
-			TypeRef t = TypeRef(*(TypeId *)(raw_data_ptr - (sizeof(TypeModifier) + sizeof(TypeId))), *(TypeModifier *)(raw_data_ptr - sizeof(TypeModifier)));
+			TypeRef t = TypeRef(
+				*static_cast<const TypeId *>(static_cast<const void *>(raw_data_ptr - (sizeof(TypeModifier) + sizeof(TypeId)))),
+				*static_cast<const TypeModifier *>(static_cast<const void *>(raw_data_ptr - sizeof(TypeModifier))));
 
 			switch (t.type_id) {
 				case TypeId::Instance:
@@ -179,8 +164,6 @@ SLAKE_API TypeRef Runtime::typeof_var(const Reference &entity_ref) noexcept {
 					break;
 				case TypeId::Ref:
 					t.type_def = *((TypeDefObject **)raw_data_ptr);
-					break;
-				case TypeId::Any:
 					break;
 				default:
 					break;
@@ -308,7 +291,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 						}
 						raw_data_ptr += sizeof(bool);
 					}
-					value_out.as_i8 = (*(static_cast<const int8_t *>(static_cast<const void *>(raw_data_ptr))));
+					value_out.as_i8 = *(static_cast<const int8_t *>(static_cast<const void *>(raw_data_ptr)));
 					value_out.value_type = ValueType::I8;
 					break;
 				case TypeId::I16:
@@ -319,7 +302,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 						}
 						raw_data_ptr += sizeof(bool);
 					}
-					value_out.as_i16 = (*(static_cast<const int16_t *>(static_cast<const void *>(raw_data_ptr))));
+					value_out.as_i16 = *(static_cast<const int16_t *>(static_cast<const void *>(raw_data_ptr)));
 					value_out.value_type = ValueType::I16;
 					break;
 				case TypeId::I32:
@@ -330,7 +313,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 						}
 						raw_data_ptr += sizeof(bool);
 					}
-					value_out.as_i32 = (*(static_cast<const int32_t *>(static_cast<const void *>(raw_data_ptr))));
+					value_out.as_i32 = *(static_cast<const int32_t *>(static_cast<const void *>(raw_data_ptr)));
 					value_out.value_type = ValueType::I32;
 					break;
 				case TypeId::I64:
@@ -341,7 +324,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 						}
 						raw_data_ptr += sizeof(bool);
 					}
-					value_out.as_i64 = (*(static_cast<const int64_t *>(static_cast<const void *>(raw_data_ptr))));
+					value_out.as_i64 = *(static_cast<const int64_t *>(static_cast<const void *>(raw_data_ptr)));
 					value_out.value_type = ValueType::I64;
 					break;
 				case TypeId::ISize:
@@ -363,7 +346,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 						}
 						raw_data_ptr += sizeof(bool);
 					}
-					value_out.as_u8 = (*(static_cast<const uint8_t *>(static_cast<const void *>(raw_data_ptr))));
+					value_out.as_u8 = *(static_cast<const uint8_t *>(static_cast<const void *>(raw_data_ptr)));
 					value_out.value_type = ValueType::U8;
 					break;
 				case TypeId::U16:
@@ -374,7 +357,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 						}
 						raw_data_ptr += sizeof(bool);
 					}
-					value_out.as_u16 = (*(static_cast<const uint16_t *>(static_cast<const void *>(raw_data_ptr))));
+					value_out.as_u16 = *(static_cast<const uint16_t *>(static_cast<const void *>(raw_data_ptr)));
 					value_out.value_type = ValueType::U16;
 					break;
 				case TypeId::U32:
@@ -385,7 +368,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 						}
 						raw_data_ptr += sizeof(bool);
 					}
-					value_out.as_u32 = (*(static_cast<const uint32_t *>(static_cast<const void *>(raw_data_ptr))));
+					value_out.as_u32 = *(static_cast<const uint32_t *>(static_cast<const void *>(raw_data_ptr)));
 					value_out.value_type = ValueType::U32;
 					break;
 				case TypeId::U64:
@@ -396,7 +379,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 						}
 						raw_data_ptr += sizeof(bool);
 					}
-					value_out.as_u64 = (*(static_cast<const uint64_t *>(static_cast<const void *>(raw_data_ptr))));
+					value_out.as_u64 = *(static_cast<const uint64_t *>(static_cast<const void *>(raw_data_ptr)));
 					value_out.value_type = ValueType::U64;
 					break;
 				case TypeId::USize:
@@ -418,7 +401,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 						}
 						raw_data_ptr += sizeof(bool);
 					}
-					value_out.as_f32 = (*(static_cast<const float *>(static_cast<const void *>(raw_data_ptr))));
+					value_out.as_f32 = *(static_cast<const float *>(static_cast<const void *>(raw_data_ptr)));
 					value_out.value_type = ValueType::F32;
 					break;
 				case TypeId::F64:
@@ -429,7 +412,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 						}
 						raw_data_ptr += sizeof(bool);
 					}
-					value_out.as_f64 = (*(static_cast<const double *>(static_cast<const void *>(raw_data_ptr))));
+					value_out.as_f64 = *(static_cast<const double *>(static_cast<const void *>(raw_data_ptr)));
 					value_out.value_type = ValueType::F64;
 					break;
 				case TypeId::Bool:
@@ -440,7 +423,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 						}
 						raw_data_ptr += sizeof(bool);
 					}
-					value_out.as_bool = (*(static_cast<const bool *>(static_cast<const void *>(raw_data_ptr))));
+					value_out.as_bool = *(static_cast<const bool *>(static_cast<const void *>(raw_data_ptr)));
 					value_out.value_type = ValueType::Bool;
 					break;
 				case TypeId::String:
@@ -468,13 +451,13 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 					break;
 				}
 				case TypeId::Ref:
-					value_out.as_reference = (*(static_cast<const Reference *>(static_cast<const void *>(raw_data_ptr))));
+					value_out.as_reference = *(static_cast<const Reference *>(static_cast<const void *>(raw_data_ptr)));
 					value_out.value_type = ValueType::Reference;
 					if (t.is_local())
 						value_out.set_local();
 					break;
 				case TypeId::Any:
-					value_out = (*(static_cast<const Value *>(static_cast<const void *>(raw_data_ptr))));
+					value_out = *(static_cast<const Value *>(static_cast<const void *>(raw_data_ptr)));
 					if (t.is_local())
 						value_out.set_local();
 					break;
@@ -497,7 +480,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 						}
 						raw_data_ptr += sizeof(bool);
 					}
-					value_out.as_i8 = (*(static_cast<const int8_t *>(static_cast<const void *>(raw_data_ptr))));
+					value_out.as_i8 = *(static_cast<const int8_t *>(static_cast<const void *>(raw_data_ptr)));
 					value_out.value_type = ValueType::I8;
 					break;
 				case TypeId::I16:
@@ -508,7 +491,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 						}
 						raw_data_ptr += sizeof(bool);
 					}
-					value_out.as_i16 = (*(static_cast<const int16_t *>(static_cast<const void *>(raw_data_ptr))));
+					value_out.as_i16 = *(static_cast<const int16_t *>(static_cast<const void *>(raw_data_ptr)));
 					value_out.value_type = ValueType::I16;
 					break;
 				case TypeId::I32:
@@ -519,7 +502,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 						}
 						raw_data_ptr += sizeof(bool);
 					}
-					value_out.as_i32 = (*(static_cast<const int32_t *>(static_cast<const void *>(raw_data_ptr))));
+					value_out.as_i32 = *(static_cast<const int32_t *>(static_cast<const void *>(raw_data_ptr)));
 					value_out.value_type = ValueType::I32;
 					break;
 				case TypeId::I64:
@@ -530,7 +513,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 						}
 						raw_data_ptr += sizeof(bool);
 					}
-					value_out.as_i64 = (*(static_cast<const int64_t *>(static_cast<const void *>(raw_data_ptr))));
+					value_out.as_i64 = *(static_cast<const int64_t *>(static_cast<const void *>(raw_data_ptr)));
 					value_out.value_type = ValueType::I64;
 					break;
 				case TypeId::ISize:
@@ -552,7 +535,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 						}
 						raw_data_ptr += sizeof(bool);
 					}
-					value_out.as_u8 = (*(static_cast<const uint8_t *>(static_cast<const void *>(raw_data_ptr))));
+					value_out.as_u8 = *(static_cast<const uint8_t *>(static_cast<const void *>(raw_data_ptr)));
 					value_out.value_type = ValueType::U8;
 					break;
 				case TypeId::U16:
@@ -563,7 +546,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 						}
 						raw_data_ptr += sizeof(bool);
 					}
-					value_out.as_u16 = (*(static_cast<const uint16_t *>(static_cast<const void *>(raw_data_ptr))));
+					value_out.as_u16 = *(static_cast<const uint16_t *>(static_cast<const void *>(raw_data_ptr)));
 					value_out.value_type = ValueType::U16;
 					break;
 				case TypeId::U32:
@@ -574,7 +557,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 						}
 						raw_data_ptr += sizeof(bool);
 					}
-					value_out.as_u32 = (*(static_cast<const uint32_t *>(static_cast<const void *>(raw_data_ptr))));
+					value_out.as_u32 = *(static_cast<const uint32_t *>(static_cast<const void *>(raw_data_ptr)));
 					value_out.value_type = ValueType::U32;
 					break;
 				case TypeId::U64:
@@ -585,7 +568,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 						}
 						raw_data_ptr += sizeof(bool);
 					}
-					value_out.as_u64 = (*(static_cast<const uint64_t *>(static_cast<const void *>(raw_data_ptr))));
+					value_out.as_u64 = *(static_cast<const uint64_t *>(static_cast<const void *>(raw_data_ptr)));
 					value_out.value_type = ValueType::U64;
 					break;
 				case TypeId::USize:
@@ -607,7 +590,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 						}
 						raw_data_ptr += sizeof(bool);
 					}
-					value_out.as_f32 = (*(static_cast<const float *>(static_cast<const void *>(raw_data_ptr))));
+					value_out.as_f32 = *(static_cast<const float *>(static_cast<const void *>(raw_data_ptr)));
 					value_out.value_type = ValueType::F32;
 					break;
 				case TypeId::F64:
@@ -618,7 +601,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 						}
 						raw_data_ptr += sizeof(bool);
 					}
-					value_out.as_f64 = (*(static_cast<const double *>(static_cast<const void *>(raw_data_ptr))));
+					value_out.as_f64 = *(static_cast<const double *>(static_cast<const void *>(raw_data_ptr)));
 					value_out.value_type = ValueType::F64;
 					break;
 				case TypeId::Bool:
@@ -629,7 +612,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 						}
 						raw_data_ptr += sizeof(bool);
 					}
-					value_out.as_bool = (*(static_cast<const bool *>(static_cast<const void *>(raw_data_ptr))));
+					value_out.as_bool = *(static_cast<const bool *>(static_cast<const void *>(raw_data_ptr)));
 					value_out.value_type = ValueType::Bool;
 					break;
 				case TypeId::String:
@@ -657,13 +640,13 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 					break;
 				}
 				case TypeId::Ref:
-					value_out.as_reference = (*(static_cast<const Reference *>(static_cast<const void *>(raw_data_ptr))));
+					value_out.as_reference = *(static_cast<const Reference *>(static_cast<const void *>(raw_data_ptr)));
 					value_out.value_type = ValueType::Reference;
 					if (t.is_local())
 						value_out.set_local();
 					break;
 				case TypeId::Any:
-					value_out = (*(static_cast<const Value *>(static_cast<const void *>(raw_data_ptr))));
+					value_out = *(static_cast<const Value *>(static_cast<const void *>(raw_data_ptr)));
 					if (t.is_local())
 						value_out.set_local();
 					break;
@@ -791,7 +774,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 							value_out = nullptr;
 							break;
 						}
-					value_out.as_i8 = (*(static_cast<const int8_t *>(static_cast<const void *>(raw_data_ptr))));
+					value_out.as_i8 = *(static_cast<const int8_t *>(static_cast<const void *>(raw_data_ptr)));
 					value_out.value_type = ValueType::I8;
 					break;
 				case TypeId::I16:
@@ -800,7 +783,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 							value_out = nullptr;
 							break;
 						}
-					value_out.as_i16 = (*(static_cast<const int16_t *>(static_cast<const void *>(raw_data_ptr))));
+					value_out.as_i16 = *(static_cast<const int16_t *>(static_cast<const void *>(raw_data_ptr)));
 					value_out.value_type = ValueType::I16;
 					break;
 				case TypeId::I32:
@@ -809,7 +792,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 							value_out = nullptr;
 							break;
 						}
-					value_out.as_i32 = (*(static_cast<const int32_t *>(static_cast<const void *>(raw_data_ptr))));
+					value_out.as_i32 = *(static_cast<const int32_t *>(static_cast<const void *>(raw_data_ptr)));
 					value_out.value_type = ValueType::I32;
 					break;
 				case TypeId::I64:
@@ -818,7 +801,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 							value_out = nullptr;
 							break;
 						}
-					value_out.as_i64 = (*(static_cast<const int64_t *>(static_cast<const void *>(raw_data_ptr))));
+					value_out.as_i64 = *(static_cast<const int64_t *>(static_cast<const void *>(raw_data_ptr)));
 					value_out.value_type = ValueType::I64;
 					break;
 				case TypeId::ISize:
@@ -836,7 +819,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 							value_out = nullptr;
 							break;
 						}
-					value_out.as_u8 = (*(static_cast<const uint8_t *>(static_cast<const void *>(raw_data_ptr))));
+					value_out.as_u8 = *(static_cast<const uint8_t *>(static_cast<const void *>(raw_data_ptr)));
 					value_out.value_type = ValueType::U8;
 					break;
 				case TypeId::U16:
@@ -845,7 +828,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 							value_out = nullptr;
 							break;
 						}
-					value_out.as_u16 = (*(static_cast<const uint16_t *>(static_cast<const void *>(raw_data_ptr))));
+					value_out.as_u16 = *(static_cast<const uint16_t *>(static_cast<const void *>(raw_data_ptr)));
 					value_out.value_type = ValueType::U16;
 					break;
 				case TypeId::U32:
@@ -854,7 +837,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 							value_out = nullptr;
 							break;
 						}
-					value_out.as_u32 = (*(static_cast<const uint32_t *>(static_cast<const void *>(raw_data_ptr))));
+					value_out.as_u32 = *(static_cast<const uint32_t *>(static_cast<const void *>(raw_data_ptr)));
 					value_out.value_type = ValueType::U32;
 					break;
 				case TypeId::U64:
@@ -863,7 +846,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 							value_out = nullptr;
 							break;
 						}
-					value_out.as_u64 = (*(static_cast<const uint64_t *>(static_cast<const void *>(raw_data_ptr))));
+					value_out.as_u64 = *(static_cast<const uint64_t *>(static_cast<const void *>(raw_data_ptr)));
 					value_out.value_type = ValueType::U64;
 					break;
 				case TypeId::USize:
@@ -881,7 +864,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 							value_out = nullptr;
 							break;
 						}
-					value_out.as_f32 = (*(static_cast<const float *>(static_cast<const void *>(raw_data_ptr))));
+					value_out.as_f32 = *(static_cast<const float *>(static_cast<const void *>(raw_data_ptr)));
 					value_out.value_type = ValueType::F32;
 					break;
 				case TypeId::F64:
@@ -890,7 +873,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 							value_out = nullptr;
 							break;
 						}
-					value_out.as_f64 = (*(static_cast<const double *>(static_cast<const void *>(raw_data_ptr))));
+					value_out.as_f64 = *(static_cast<const double *>(static_cast<const void *>(raw_data_ptr)));
 					value_out.value_type = ValueType::F64;
 					break;
 				case TypeId::Bool:
@@ -899,7 +882,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 							value_out = nullptr;
 							break;
 						}
-					value_out.as_bool = (*(static_cast<const bool *>(static_cast<const void *>(raw_data_ptr))));
+					value_out.as_bool = *(static_cast<const bool *>(static_cast<const void *>(raw_data_ptr)));
 					value_out.value_type = ValueType::Bool;
 					break;
 				case TypeId::String:
@@ -935,7 +918,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 										value_out = nullptr;
 										break;
 									}
-								value_out.as_i8 = (*(static_cast<const int8_t *>(static_cast<const void *>(raw_data_ptr))));
+								value_out.as_i8 = *(static_cast<const int8_t *>(static_cast<const void *>(raw_data_ptr)));
 								value_out.value_type = ValueType::I8;
 								break;
 							case TypeId::I16:
@@ -944,7 +927,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 										value_out = nullptr;
 										break;
 									}
-								value_out.as_i16 = (*(static_cast<const int16_t *>(static_cast<const void *>(raw_data_ptr))));
+								value_out.as_i16 = *(static_cast<const int16_t *>(static_cast<const void *>(raw_data_ptr)));
 								value_out.value_type = ValueType::I16;
 								break;
 							case TypeId::I32:
@@ -953,7 +936,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 										value_out = nullptr;
 										break;
 									}
-								value_out.as_i32 = (*(static_cast<const int32_t *>(static_cast<const void *>(raw_data_ptr))));
+								value_out.as_i32 = *(static_cast<const int32_t *>(static_cast<const void *>(raw_data_ptr)));
 								value_out.value_type = ValueType::I32;
 								break;
 							case TypeId::I64:
@@ -962,7 +945,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 										value_out = nullptr;
 										break;
 									}
-								value_out.as_i64 = (*(static_cast<const int64_t *>(static_cast<const void *>(raw_data_ptr))));
+								value_out.as_i64 = *(static_cast<const int64_t *>(static_cast<const void *>(raw_data_ptr)));
 								value_out.value_type = ValueType::I64;
 								break;
 							case TypeId::ISize:
@@ -980,7 +963,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 										value_out = nullptr;
 										break;
 									}
-								value_out.as_u8 = (*(static_cast<const uint8_t *>(static_cast<const void *>(raw_data_ptr))));
+								value_out.as_u8 = *(static_cast<const uint8_t *>(static_cast<const void *>(raw_data_ptr)));
 								value_out.value_type = ValueType::U8;
 								break;
 							case TypeId::U16:
@@ -989,7 +972,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 										value_out = nullptr;
 										break;
 									}
-								value_out.as_u16 = (*(static_cast<const uint16_t *>(static_cast<const void *>(raw_data_ptr))));
+								value_out.as_u16 = *(static_cast<const uint16_t *>(static_cast<const void *>(raw_data_ptr)));
 								value_out.value_type = ValueType::U16;
 								break;
 							case TypeId::U32:
@@ -998,7 +981,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 										value_out = nullptr;
 										break;
 									}
-								value_out.as_u32 = (*(static_cast<const uint32_t *>(static_cast<const void *>(raw_data_ptr))));
+								value_out.as_u32 = *(static_cast<const uint32_t *>(static_cast<const void *>(raw_data_ptr)));
 								value_out.value_type = ValueType::U32;
 								break;
 							case TypeId::U64:
@@ -1007,7 +990,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 										value_out = nullptr;
 										break;
 									}
-								value_out.as_u64 = (*(static_cast<const uint64_t *>(static_cast<const void *>(raw_data_ptr))));
+								value_out.as_u64 = *(static_cast<const uint64_t *>(static_cast<const void *>(raw_data_ptr)));
 								value_out.value_type = ValueType::U64;
 								break;
 							case TypeId::USize:
@@ -1025,7 +1008,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 										value_out = nullptr;
 										break;
 									}
-								value_out.as_f32 = (*(static_cast<const float *>(static_cast<const void *>(raw_data_ptr))));
+								value_out.as_f32 = *(static_cast<const float *>(static_cast<const void *>(raw_data_ptr)));
 								value_out.value_type = ValueType::F32;
 								break;
 							case TypeId::F64:
@@ -1034,7 +1017,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 										value_out = nullptr;
 										break;
 									}
-								value_out.as_f64 = (*(static_cast<const double *>(static_cast<const void *>(raw_data_ptr))));
+								value_out.as_f64 = *(static_cast<const double *>(static_cast<const void *>(raw_data_ptr)));
 								value_out.value_type = ValueType::F64;
 								break;
 							case TypeId::Bool:
@@ -1043,7 +1026,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 										value_out = nullptr;
 										break;
 									}
-								value_out.as_bool = (*(static_cast<const bool *>(static_cast<const void *>(raw_data_ptr))));
+								value_out.as_bool = *(static_cast<const bool *>(static_cast<const void *>(raw_data_ptr)));
 								value_out.value_type = ValueType::Bool;
 								break;
 							default:
@@ -1058,17 +1041,17 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 							break;
 						}
 					value_out.as_typeless_scoped_enum.type = t;
-					value_out.as_typeless_scoped_enum.value = (*(static_cast<const uint32_t *>(static_cast<const void *>(raw_data_ptr))));
+					value_out.as_typeless_scoped_enum.value = *(static_cast<const uint32_t *>(static_cast<const void *>(raw_data_ptr)));
 					value_out.value_type = ValueType::TypelessScopedEnum;
 					break;
 				case TypeId::Ref:
-					value_out.as_reference = (*(static_cast<const Reference *>(static_cast<const void *>(raw_data_ptr))));
+					value_out.as_reference = *(static_cast<const Reference *>(static_cast<const void *>(raw_data_ptr)));
 					value_out.value_type = ValueType::Reference;
 					if (t.is_local())
 						std::terminate();
 					break;
 				case TypeId::Any:
-					value_out = (*(static_cast<const Value *>(static_cast<const void *>(raw_data_ptr))));
+					value_out = *(static_cast<const Value *>(static_cast<const void *>(raw_data_ptr)));
 					if (t.is_local())
 						std::terminate();
 					break;

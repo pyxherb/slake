@@ -9,21 +9,19 @@ using namespace slake;
 
 #define _check_operand_count_with_output_required(runtime, output, num_operands_in, num_operands) \
 	if (((output) == UINT32_MAX) | ((num_operands_in) != (num_operands)))                         \
-		return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc((runtime)->get_fixed_alloc()));
+	return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc((runtime)->get_fixed_alloc()))
 
-#define _check_operand_count(runtime, output, num_operands_in, num_operands)                             \
-	if (num_operands_in != num_operands) {                                                               \
-		return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(runtime->get_fixed_alloc())); \
-	}
+#define _check_operand_count(runtime, output, num_operands_in, num_operands) \
+	if (num_operands_in != num_operands)                                     \
+	return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(runtime->get_fixed_alloc()))
 
 #define _check_operand_type(runtime, operand, type) \
 	if ((operand).value_type != (type))             \
-		return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc((runtime)->get_fixed_alloc()));
+	return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc((runtime)->get_fixed_alloc()))
 
-#define _check_object_ref_operand_type(runtime, operand, operand_kind)                                   \
-	if ((operand).kind != operand_kind) {                                                                \
-		return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(runtime->get_fixed_alloc())); \
-	}
+#define _check_object_ref_operand_type(runtime, operand, operand_kind) \
+	if ((operand).kind != operand_kind)                                \
+	return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(runtime->get_fixed_alloc()))
 
 #define _check_object_operand_type(runtime, object, type_id)                                               \
 	if ((object) && ((object)->get_object_kind() != (type_id))) {                                          \
@@ -31,16 +29,17 @@ using namespace slake;
 	}
 
 #define _is_register_valid(cur_major_frame, index) ((index) < (cur_major_frame)->resumable_context_data.num_regs)
+#define _is_register_invalid(cur_major_frame, index) ((index) >= (cur_major_frame)->resumable_context_data.num_regs)
 
-#define _calc_reg_ptr(regs_ptr, index)                  \
-	(static_cast<std::conditional_t<                               \
-		std::is_const_v<                                \
-			std::remove_pointer_t<decltype(regs_ptr)>>, \
-		const Value *,                                  \
-		Value *>>(static_cast<void*>(static_cast<char *>(static_cast<void *>(regs_ptr)) + index * sizeof(Value))))
+#define _calc_reg_ptr(regs_ptr, index)                      \
+	(static_cast<std::conditional_t<                        \
+			std::is_const_v<                                \
+				std::remove_pointer_t<decltype(regs_ptr)>>, \
+			const Value *,                                  \
+			Value *>>(static_cast<void *>(static_cast<char *>(static_cast<void *>(regs_ptr)) + index * sizeof(Value))))
 
 #define _set_register_value(runtime, regs_ptr, cur_major_frame, index, value)                        \
-	(!_is_register_valid((cur_major_frame), (index)))                                                \
+	(_is_register_invalid((cur_major_frame), (index)))                                               \
 		? alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc((runtime)->get_fixed_alloc())) \
 		: ((*_calc_reg_ptr((regs_ptr), (index)) = value), InternalExceptionPointer())
 
@@ -612,7 +611,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			_unwrap_reg_operand_into_ptr(this, cur_frame_regs_ptr, cur_major_frame, operands[0], src);
 			_check_operand_type(this, *src, ValueType::Reference);
 
-			if (!_is_register_valid(cur_major_frame, output))
+			if (_is_register_invalid(cur_major_frame, output))
 				// The register does not present.
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			read_var(src->get_reference(), *_calc_reg_ptr(cur_frame_regs_ptr, output));
@@ -660,7 +659,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 	{                                                                                                                        \
 		_check_operand_count_with_output_required(this, output, num_operands, 2);                                            \
                                                                                                                              \
-		if (!_is_register_valid(cur_major_frame, output)) {                                                                  \
+		if (_is_register_invalid(cur_major_frame, output)) {                                                                 \
 			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));                          \
 		}                                                                                                                    \
                                                                                                                              \
@@ -712,7 +711,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			Reference ref;
 			SLAKE_RETURN_IF_EXCEPT(larg(&context->get_context(), cur_major_frame, this, operands[0].get_u32(), ref));
 
-			if (!_is_register_valid(cur_major_frame, output))
+			if (_is_register_invalid(cur_major_frame, output))
 				// The register does not present.
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			read_var(ref, *_calc_reg_ptr(cur_frame_regs_ptr, output));
@@ -829,7 +828,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 		case Opcode::MODF32: {
 			_check_operand_count_with_output_required(this, output, num_operands, 2);
 
-			if (!_is_register_valid(cur_major_frame, output)) {
+			if (_is_register_invalid(cur_major_frame, output)) {
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
@@ -848,7 +847,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 		case Opcode::MODF64: {
 			_check_operand_count_with_output_required(this, output, num_operands, 2);
 
-			if (!_is_register_valid(cur_major_frame, output)) {
+			if (_is_register_invalid(cur_major_frame, output)) {
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
@@ -924,7 +923,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 	{                                                                                                                            \
 		_check_operand_count_with_output_required(this, output, num_operands, 2);                                                \
                                                                                                                                  \
-		if (!_is_register_valid(cur_major_frame, output)) {                                                                      \
+		if (_is_register_invalid(cur_major_frame, output)) {                                                                     \
 			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));                              \
 		}                                                                                                                        \
                                                                                                                                  \
@@ -973,7 +972,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 		case Opcode::EQREF: {
 			_check_operand_count_with_output_required(this, output, num_operands, 2);
 
-			if (!_is_register_valid(cur_major_frame, output)) {
+			if (_is_register_invalid(cur_major_frame, output)) {
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
@@ -993,7 +992,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 		case Opcode::EQTYPE: {
 			_check_operand_count_with_output_required(this, output, num_operands, 2);
 
-			if (!_is_register_valid(cur_major_frame, output)) {
+			if (_is_register_invalid(cur_major_frame, output)) {
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
@@ -1015,7 +1014,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 	{                                                                                                                            \
 		_check_operand_count_with_output_required(this, output, num_operands, 2);                                                \
                                                                                                                                  \
-		if (!_is_register_valid(cur_major_frame, output)) {                                                                      \
+		if (_is_register_invalid(cur_major_frame, output)) {                                                                     \
 			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));                              \
 		}                                                                                                                        \
                                                                                                                                  \
@@ -1064,7 +1063,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 		case Opcode::NEQREF: {
 			_check_operand_count_with_output_required(this, output, num_operands, 2);
 
-			if (!_is_register_valid(cur_major_frame, output)) {
+			if (_is_register_invalid(cur_major_frame, output)) {
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
@@ -1084,7 +1083,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 		case Opcode::NEQTYPE: {
 			_check_operand_count_with_output_required(this, output, num_operands, 2);
 
-			if (!_is_register_valid(cur_major_frame, output)) {
+			if (_is_register_invalid(cur_major_frame, output)) {
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
@@ -1106,7 +1105,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 	{                                                                                                                    \
 		_check_operand_count_with_output_required(this, output, num_operands, 2);                                        \
                                                                                                                          \
-		if (!_is_register_valid(cur_major_frame, output)) {                                                              \
+		if (_is_register_invalid(cur_major_frame, output)) {                                                             \
 			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));                      \
 		}                                                                                                                \
                                                                                                                          \
@@ -1209,7 +1208,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 	{                                                                                                                                                     \
 		_check_operand_count_with_output_required(this, output, num_operands, 2);                                                                         \
                                                                                                                                                           \
-		if (!_is_register_valid(cur_major_frame, output)) {                                                                                               \
+		if (_is_register_invalid(cur_major_frame, output)) {                                                                                              \
 			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));                                                       \
 		}                                                                                                                                                 \
                                                                                                                                                           \
@@ -1250,7 +1249,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 		case Opcode::NOT: {
 			_check_operand_count_with_output_required(this, output, num_operands, 1);
 
-			if (!_is_register_valid(cur_major_frame, output)) {
+			if (_is_register_invalid(cur_major_frame, output)) {
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			Value &value_out = *_calc_reg_ptr(cur_frame_regs_ptr, output);
@@ -1293,7 +1292,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 		case Opcode::NEG: {
 			_check_operand_count_with_output_required(this, output, num_operands, 1);
 
-			if (!_is_register_valid(cur_major_frame, output)) {
+			if (_is_register_invalid(cur_major_frame, output)) {
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			Value &value_out = *_calc_reg_ptr(cur_frame_regs_ptr, output);
@@ -1477,7 +1476,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			_check_operand_count_with_output_required(this, output, num_operands, 1);
 			_check_operand_type(this, operands[0], ValueType::I8);
 
-			if (!_is_register_valid(cur_major_frame, output)) {
+			if (_is_register_invalid(cur_major_frame, output)) {
 				// The register does not present.
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
@@ -1488,7 +1487,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			_check_operand_count_with_output_required(this, output, num_operands, 1);
 			_check_operand_type(this, operands[0], ValueType::I16);
 
-			if (!_is_register_valid(cur_major_frame, output)) {
+			if (_is_register_invalid(cur_major_frame, output)) {
 				// The register does not present.
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
@@ -1499,7 +1498,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			_check_operand_count_with_output_required(this, output, num_operands, 1);
 			_check_operand_type(this, operands[0], ValueType::I32);
 
-			if (!_is_register_valid(cur_major_frame, output)) {
+			if (_is_register_invalid(cur_major_frame, output)) {
 				// The register does not present.
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
@@ -1510,7 +1509,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			_check_operand_count_with_output_required(this, output, num_operands, 1);
 			_check_operand_type(this, operands[0], ValueType::I64);
 
-			if (!_is_register_valid(cur_major_frame, output)) {
+			if (_is_register_invalid(cur_major_frame, output)) {
 				// The register does not present.
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
@@ -1521,7 +1520,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			_check_operand_count_with_output_required(this, output, num_operands, 1);
 			_check_operand_type(this, operands[0], ValueType::ISize);
 
-			if (!_is_register_valid(cur_major_frame, output)) {
+			if (_is_register_invalid(cur_major_frame, output)) {
 				// The register does not present.
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
@@ -1535,7 +1534,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			_check_operand_count_with_output_required(this, output, num_operands, 1);
 			_check_operand_type(this, operands[0], ValueType::U8);
 
-			if (!_is_register_valid(cur_major_frame, output)) {
+			if (_is_register_invalid(cur_major_frame, output)) {
 				// The register does not present.
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
@@ -1546,7 +1545,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			_check_operand_count_with_output_required(this, output, num_operands, 1);
 			_check_operand_type(this, operands[0], ValueType::U16);
 
-			if (!_is_register_valid(cur_major_frame, output)) {
+			if (_is_register_invalid(cur_major_frame, output)) {
 				// The register does not present.
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
@@ -1557,7 +1556,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			_check_operand_count_with_output_required(this, output, num_operands, 1);
 			_check_operand_type(this, operands[0], ValueType::U32);
 
-			if (!_is_register_valid(cur_major_frame, output)) {
+			if (_is_register_invalid(cur_major_frame, output)) {
 				// The register does not present.
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
@@ -1568,7 +1567,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			_check_operand_count_with_output_required(this, output, num_operands, 1);
 			_check_operand_type(this, operands[0], ValueType::U64);
 
-			if (!_is_register_valid(cur_major_frame, output)) {
+			if (_is_register_invalid(cur_major_frame, output)) {
 				// The register does not present.
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
@@ -1579,7 +1578,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			_check_operand_count_with_output_required(this, output, num_operands, 1);
 			_check_operand_type(this, operands[0], ValueType::USize);
 
-			if (!_is_register_valid(cur_major_frame, output)) {
+			if (_is_register_invalid(cur_major_frame, output)) {
 				// The register does not present.
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
@@ -1593,7 +1592,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			_check_operand_count_with_output_required(this, output, num_operands, 1);
 			_check_operand_type(this, operands[0], ValueType::F32);
 
-			if (!_is_register_valid(cur_major_frame, output)) {
+			if (_is_register_invalid(cur_major_frame, output)) {
 				// The register does not present.
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
@@ -1604,7 +1603,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			_check_operand_count_with_output_required(this, output, num_operands, 1);
 			_check_operand_type(this, operands[0], ValueType::F64);
 
-			if (!_is_register_valid(cur_major_frame, output)) {
+			if (_is_register_invalid(cur_major_frame, output)) {
 				// The register does not present.
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
@@ -1615,7 +1614,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			_check_operand_count_with_output_required(this, output, num_operands, 1);
 			_check_operand_type(this, operands[0], ValueType::Bool);
 
-			if (!_is_register_valid(cur_major_frame, output)) {
+			if (_is_register_invalid(cur_major_frame, output)) {
 				// The register does not present.
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
@@ -1625,7 +1624,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 		case Opcode::COPYNULL: {
 			_check_operand_count_with_output_required(this, output, num_operands, 0);
 
-			if (!_is_register_valid(cur_major_frame, output)) {
+			if (_is_register_invalid(cur_major_frame, output)) {
 				// The register does not present.
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
@@ -1638,7 +1637,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			const Value *value;
 			_unwrap_reg_operand_into_ptr(this, cur_frame_regs_ptr, cur_major_frame, operands[0], value);
 
-			if (!_is_register_valid(cur_major_frame, output)) {
+			if (_is_register_invalid(cur_major_frame, output)) {
 				// The register does not present.
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
@@ -1744,7 +1743,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			_check_operand_count_with_output_required(this, output, num_operands, 1);
 			_check_operand_type(this, operands[0], ValueType::U32);
 
-			if (!_is_register_valid(cur_major_frame, output)) {
+			if (_is_register_invalid(cur_major_frame, output)) {
 				// The register does not present.
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
@@ -1806,7 +1805,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 				while (off_alloca_record != SIZE_MAX) {
 					AllocaRecord *ar = _fetch_alloca_record(&context->get_context(), cur_major_frame, off_alloca_record);
 
-					if (!_is_register_valid(cur_major_frame, ar->def_reg)) {
+					if (_is_register_invalid(cur_major_frame, ar->def_reg)) {
 						return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 						// TODO: Use a more proper kind of exception.
 					}
@@ -2384,7 +2383,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 		case Opcode::CAST: {
 			_check_operand_count_with_output_required(this, output, num_operands, 2);
 			_check_operand_type(this, operands[0], ValueType::TypeName);
-			if (!_is_register_valid(cur_major_frame, output)) {
+			if (_is_register_invalid(cur_major_frame, output)) {
 				// The register does not present.
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
@@ -2443,7 +2442,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 		case Opcode::NULLCAST: {
 			_check_operand_count_with_output_required(this, output, num_operands, 2);
 			_check_operand_type(this, operands[0], ValueType::TypeName);
-			if (!_is_register_valid(cur_major_frame, output)) {
+			if (_is_register_invalid(cur_major_frame, output)) {
 				// The register does not present.
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}

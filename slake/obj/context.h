@@ -62,7 +62,7 @@ namespace slake {
 
 		Runtime *associated_runtime;
 
-		const FnOverloadingObject *cur_fn;	// Current function overloading.
+		FnOverloadingObject *cur_fn;	// Current function overloading.
 		ContextObject *cur_context;
 		CoroutineObject *cur_coroutine = nullptr;
 
@@ -102,9 +102,9 @@ namespace slake {
 		size_t stack_top = 0;					// Stack top
 		size_t stack_size;
 
-		SLAKE_API char *stack_alloc(size_t size) noexcept;
-		SLAKE_API char *align_stack(size_t alignment) noexcept;
-		SLAKE_API char *aligned_stack_alloc(size_t size, size_t alignment) noexcept;
+		SLAKE_API void *stack_alloc(size_t size) noexcept;
+		SLAKE_API void *align_stack(size_t alignment) noexcept;
+		SLAKE_API void *aligned_stack_alloc(size_t size, size_t alignment) noexcept;
 
 		SLAKE_API Context(Runtime *runtime, peff::Alloc *allocator);
 
@@ -134,12 +134,12 @@ namespace slake {
 		SLAKE_API virtual void replace_allocator(peff::Alloc *allocator) noexcept override;
 	};
 
-	SLAKE_FORCEINLINE constexpr char *calc_stack_addr(char *data, size_t sz_stack, size_t offset) noexcept {
-		return data + (sz_stack - offset);
+	SLAKE_FORCEINLINE constexpr void *calc_stack_addr(void *data, size_t sz_stack, size_t offset) noexcept {
+		return static_cast<char *>(data) + (sz_stack - offset);
 	}
 
-	SLAKE_FORCEINLINE constexpr const char *calc_stack_addr(const char *data, size_t sz_stack, size_t offset) noexcept {
-		return data + (sz_stack - offset);
+	SLAKE_FORCEINLINE constexpr const void *calc_stack_addr(const void *data, size_t sz_stack, size_t offset) noexcept {
+		return static_cast<const char *>(data) + (sz_stack - offset);
 	}
 
 	class ExecutionRunnable : public Runnable {

@@ -3,6 +3,7 @@
 
 #include <slake/basedefs.h>
 #include <cstdint>
+#include <type_traits>
 
 namespace slake {
 	namespace flib {
@@ -38,6 +39,14 @@ namespace slake {
 			return 0;
 		}
 
+		SLAKE_FORCEINLINE int compare_usize(size_t lhs, size_t rhs) {
+			if (lhs < rhs)
+				return -1;
+			if (lhs > rhs)
+				return 1;
+			return 0;
+		}
+
 		SLAKE_FORCEINLINE int compare_i8(int8_t lhs, int8_t rhs) {
 			if (lhs < rhs)
 				return -1;
@@ -63,6 +72,14 @@ namespace slake {
 		}
 
 		SLAKE_FORCEINLINE int compare_i64(int64_t lhs, int64_t rhs) {
+			if (lhs < rhs)
+				return -1;
+			if (lhs > rhs)
+				return 1;
+			return 0;
+		}
+
+		SLAKE_FORCEINLINE int compare_isize(std::make_signed_t<size_t> lhs, std::make_signed_t<size_t> rhs) {
 			if (lhs < rhs)
 				return -1;
 			if (lhs > rhs)

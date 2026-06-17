@@ -87,6 +87,7 @@ SLAKE_API void Runtime::_gc_walk(GCWalkContext *context, const Value &i) {
 		case ValueType::TypeName:
 			_gc_walk(context, i.get_type_name());
 			break;
+		case ValueType::Invalid:
 		case ValueType::Undefined:
 			break;
 		default:
@@ -542,7 +543,7 @@ SLAKE_API void Runtime::_gc_walk(GCWalkContext *context, char *data_stack, size_
 
 	size_t num_regs = major_frame->resumable_context_data.num_regs;
 	for (size_t i = 0; i < num_regs; ++i)
-		_gc_walk(context, Value(*calc_stack_addr(data_stack, stack_size, (major_frame->off_regs + sizeof(Value) * i))));
+		_gc_walk(context, *static_cast<Value *>(calc_stack_addr(data_stack, stack_size, (major_frame->off_regs + sizeof(Value) * i))));
 }
 
 SLAKE_API void Runtime::_gc_walk(GCWalkContext *context, Context &ctxt) {

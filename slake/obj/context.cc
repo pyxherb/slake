@@ -2,7 +2,7 @@
 
 using namespace slake;
 
-SLAKE_API char *Context::stack_alloc(size_t size) noexcept {
+SLAKE_API void *Context::stack_alloc(size_t size) noexcept {
 	if (size_t new_stack_top = stack_top + size;
 		new_stack_top > stack_size) {
 		return nullptr;
@@ -12,7 +12,7 @@ SLAKE_API char *Context::stack_alloc(size_t size) noexcept {
 	return data_stack + stack_size - stack_top;
 }
 
-SLAKE_API char *Context::align_stack(size_t alignment) noexcept {
+SLAKE_API void *Context::align_stack(size_t alignment) noexcept {
 	assert((alignment & (alignment - 1)) == 0);
 	const size_t addr_diff = (uintptr_t)(calc_stack_addr(data_stack, stack_size, stack_top)) & (alignment - 1);
 	if (addr_diff)
@@ -20,7 +20,7 @@ SLAKE_API char *Context::align_stack(size_t alignment) noexcept {
 	return data_stack + stack_size - stack_top;
 }
 
-SLAKE_API char *Context::aligned_stack_alloc(size_t size, size_t alignment) noexcept {
+SLAKE_API void*Context::aligned_stack_alloc(size_t size, size_t alignment) noexcept {
 	assert((alignment & (alignment - 1)) == 0);
 	const size_t addr_diff = (uintptr_t)(calc_stack_addr(data_stack, stack_size, stack_top)) & (alignment - 1);
 	return stack_alloc(size + addr_diff);

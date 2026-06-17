@@ -345,7 +345,7 @@ namespace slake {
 		[[nodiscard]] SLAKE_API InternalExceptionPointer _create_new_major_frame(
 			ContextObject *context_object,
 			Object *this_object,
-			const FnOverloadingObject *fn,
+			FnOverloadingObject *fn,
 			const Value *args,
 			size_t off_args,
 			uint32_t num_args,
@@ -475,14 +475,14 @@ namespace slake {
 		///
 		/// @return
 		[[nodiscard]] SLAKE_API InternalExceptionPointer exec_fn(
-			const FnOverloadingObject *overloading,
+			FnOverloadingObject *overloading,
 			ContextObject *context,
 			Object *this_object,
 			const Value *args,
 			uint32_t num_args,
 			Value &value_out);
 		[[nodiscard]] SLAKE_API InternalExceptionPointer create_coroutine_instance(
-			const FnOverloadingObject *fn,
+			FnOverloadingObject *fn,
 			Object *this_object,
 			const Value *args,
 			uint32_t num_args,

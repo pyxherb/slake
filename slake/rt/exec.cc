@@ -23,10 +23,9 @@ using namespace slake;
 	if ((operand).kind != operand_kind)                                \
 	return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(runtime->get_fixed_alloc()))
 
-#define _check_object_operand_type(runtime, object, type_id)                                               \
-	if ((object) && ((object)->get_object_kind() != (type_id))) {                                          \
-		return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc((runtime)->get_fixed_alloc())); \
-	}
+#define _check_object_operand_type(runtime, object, type_id)    \
+	if ((object) && ((object)->get_object_kind() != (type_id))) \
+		return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc((runtime)->get_fixed_alloc()));
 
 #define _is_register_valid(cur_major_frame, index) ((index) < (cur_major_frame)->resumable_context_data.num_regs)
 #define _is_register_invalid(cur_major_frame, index) ((index) >= (cur_major_frame)->resumable_context_data.num_regs)
@@ -36,7 +35,7 @@ using namespace slake;
 			std::is_const_v<                                \
 				std::remove_pointer_t<decltype(regs_ptr)>>, \
 			const Value *,                                  \
-			Value *>>(static_cast<void *>(static_cast<char *>(static_cast<void *>(regs_ptr)) + index * sizeof(Value))))
+			Value *>>(static_cast<void *>(const_cast<Value *>(regs_ptr) + index)))
 
 #define _set_register_value(runtime, regs_ptr, cur_major_frame, index, value)                        \
 	(_is_register_invalid((cur_major_frame), (index)))                                               \
@@ -65,43 +64,43 @@ template <typename LT>
 static void _cast_to_literal_value(bool nullable, const Value &x, Value &value_out) noexcept {
 	switch (x.value_type) {
 		case ValueType::I8:
-			value_out = ((LT)(x.get_i8()));
+			value_out = (static_cast<LT>(x.get_i8()));
 			break;
 		case ValueType::I16:
-			value_out = ((LT)(x.get_i16()));
+			value_out = (static_cast<LT>(x.get_i16()));
 			break;
 		case ValueType::I32:
-			value_out = ((LT)(x.get_i32()));
+			value_out = (static_cast<LT>(x.get_i32()));
 			break;
 		case ValueType::I64:
-			value_out = ((LT)(x.get_i64()));
+			value_out = (static_cast<LT>(x.get_i64()));
 			break;
 		case ValueType::ISize:
-			value_out = ((LT)(x.get_isize()));
+			value_out = (static_cast<LT>(x.get_isize()));
 			break;
 		case ValueType::U8:
-			value_out = ((LT)(x.get_u8()));
+			value_out = (static_cast<LT>(x.get_u8()));
 			break;
 		case ValueType::U16:
-			value_out = ((LT)(x.get_u16()));
+			value_out = (static_cast<LT>(x.get_u16()));
 			break;
 		case ValueType::U32:
-			value_out = ((LT)(x.get_u32()));
+			value_out = (static_cast<LT>(x.get_u32()));
 			break;
 		case ValueType::U64:
-			value_out = ((LT)(x.get_u64()));
+			value_out = (static_cast<LT>(x.get_u64()));
 			break;
 		case ValueType::USize:
-			value_out = ((LT)(x.get_usize()));
+			value_out = (static_cast<LT>(x.get_usize()));
 			break;
 		case ValueType::F32:
-			value_out = ((LT)(x.get_f32()));
+			value_out = (static_cast<LT>(x.get_f32()));
 			break;
 		case ValueType::F64:
-			value_out = ((LT)(x.get_f64()));
+			value_out = (static_cast<LT>(x.get_f64()));
 			break;
 		case ValueType::Bool:
-			value_out = ((LT)(x.get_bool()));
+			value_out = (static_cast<LT>(x.get_bool()));
 			break;
 		case ValueType::Reference:
 			if (nullable) {
@@ -131,7 +130,7 @@ SLAKE_API InternalExceptionPointer Runtime::_fill_args(
 		if (!is_compatible(t, args[i]))
 			return MismatchedVarTypeError::alloc(get_fixed_alloc(), t);
 	}
-	char *p_args = context->aligned_stack_alloc(sizeof(Value) * num_args, alignof(Value));
+	void *p_args = context->aligned_stack_alloc(sizeof(Value) * num_args, alignof(Value));
 	if (!p_args)
 		return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
 	size_t off_args = new_major_frame->cur_coroutine ? context->stack_top - new_major_frame->cur_coroutine->off_stack_top : context->stack_top;
@@ -144,10 +143,9 @@ SLAKE_API InternalExceptionPointer Runtime::_fill_args(
 
 SLAKE_API AllocaRecord *Runtime::_alloc_alloca_record(Context *context, const MajorFrame *frame, uint32_t output_reg) {
 	MinorFrame *mf = _fetch_minor_frame(context, frame, frame->resumable_context_data.off_cur_minor_frame);
-	char *p_record;
-	if (!(p_record = context->aligned_stack_alloc(sizeof(AllocaRecord), alignof(AllocaRecord))))
+	AllocaRecord *record;
+	if (!(record = static_cast<AllocaRecord *>(context->aligned_stack_alloc(sizeof(AllocaRecord), alignof(AllocaRecord)))))
 		return nullptr;
-	AllocaRecord *record = (AllocaRecord *)p_record;
 	record->def_reg = output_reg;
 	record->off_next = mf->off_alloca_records;
 	mf->off_alloca_records = frame->cur_coroutine
@@ -165,9 +163,9 @@ SLAKE_API MinorFrame *Runtime::_fetch_minor_frame_unchecked(
 		offset += major_frame->cur_coroutine->off_stack_top;
 	}
 
-	return (MinorFrame *)calc_stack_addr(context->data_stack,
+	return static_cast<MinorFrame *>(calc_stack_addr(context->data_stack,
 		context->stack_size,
-		offset);
+		offset));
 }
 
 SLAKE_API Value *Runtime::_fetch_arg_stack(
@@ -180,9 +178,9 @@ SLAKE_API Value *Runtime::_fetch_arg_stack(
 		offset += major_frame->cur_coroutine->off_stack_top;
 	}
 
-	return (Value *)calc_stack_addr(data_stack,
+	return static_cast<Value *>(calc_stack_addr(data_stack,
 		stack_size,
-		offset);
+		offset));
 }
 
 SLAKE_API AllocaRecord *Runtime::_fetch_alloca_record(
@@ -194,17 +192,17 @@ SLAKE_API AllocaRecord *Runtime::_fetch_alloca_record(
 		offset += major_frame->cur_coroutine->off_stack_top;
 	}
 
-	return (AllocaRecord *)calc_stack_addr(context->data_stack,
+	return static_cast<AllocaRecord *>(calc_stack_addr(context->data_stack,
 		context->stack_size,
-		offset);
+		offset));
 }
 
 SLAKE_API MajorFrame *Runtime::_fetch_major_frame_unchecked(
 	Context *context,
 	size_t stack_offset) {
-	return (MajorFrame *)calc_stack_addr(context->data_stack,
+	return static_cast<MajorFrame *>(calc_stack_addr(context->data_stack,
 		context->stack_size,
-		stack_offset);
+		stack_offset));
 }
 
 SLAKE_API ExceptHandler *Runtime::_fetch_except_handler(
@@ -218,9 +216,9 @@ SLAKE_API ExceptHandler *Runtime::_fetch_except_handler(
 		offset = stack_offset;
 	}
 
-	return (ExceptHandler *)calc_stack_addr(context->data_stack,
+	return static_cast<ExceptHandler *>(calc_stack_addr(context->data_stack,
 		context->stack_size,
-		offset);
+		offset));
 }
 
 SLAKE_API InternalExceptionPointer Runtime::_create_new_coroutine_major_frame(
@@ -238,11 +236,11 @@ SLAKE_API InternalExceptionPointer Runtime::_create_new_coroutine_major_frame(
 
 	// TODO: Restore resumable context data.
 
-	char *p_major_frame;
-	if (!(p_major_frame = context->aligned_stack_alloc(sizeof(MajorFrame), alignof(MajorFrame))))
+	MajorFrame *p_major_frame;
+	if (!(p_major_frame = static_cast<MajorFrame *>(context->aligned_stack_alloc(sizeof(MajorFrame), alignof(MajorFrame)))))
 		return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
-	peff::construct_at<MajorFrame>((MajorFrame *)p_major_frame, this);
-	MajorFrame &new_major_frame = *(MajorFrame *)p_major_frame;
+	peff::construct_at<MajorFrame>(p_major_frame, this);
+	MajorFrame &new_major_frame = *p_major_frame;
 	new_major_frame.off_prev_frame = context->off_cur_major_frame;
 
 	if (coroutine->resumable.has_value()) {
@@ -262,7 +260,7 @@ SLAKE_API InternalExceptionPointer Runtime::_create_new_coroutine_major_frame(
 			return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
 		coroutine->off_stack_top = context->stack_top;
 		new_major_frame.off_regs = context->stack_top + coroutine->off_regs;
-		char *initial_data = context->aligned_stack_alloc(coroutine->len_stack_data, alignof(std::max_align_t));
+		void *initial_data = context->aligned_stack_alloc(coroutine->len_stack_data, alignof(std::max_align_t));
 		if (!initial_data) {
 			return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
 		}
@@ -289,9 +287,9 @@ SLAKE_API InternalExceptionPointer Runtime::_create_new_coroutine_major_frame(
 
 		switch (coroutine->overloading->overloading_kind) {
 			case FnOverloadingKind::Regular: {
-				RegularFnOverloadingObject *ol = (RegularFnOverloadingObject *)coroutine->overloading;
+				RegularFnOverloadingObject *ol = static_cast<RegularFnOverloadingObject *>(coroutine->overloading);
 				new_major_frame.resumable_context_data.num_regs = ol->num_registers;
-				Value *regs = (Value *)context->aligned_stack_alloc(sizeof(Value) * ol->num_registers, alignof(Value));
+				Value *regs = static_cast<Value *>(context->aligned_stack_alloc(sizeof(Value) * ol->num_registers, alignof(Value)));
 				new_major_frame.off_regs = context->stack_top;
 				if (!regs)
 					return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
@@ -326,7 +324,7 @@ SLAKE_API InternalExceptionPointer Runtime::_create_new_coroutine_major_frame(
 SLAKE_API InternalExceptionPointer slake::Runtime::_create_new_major_frame(
 	ContextObject *context_object,
 	Object *this_object,
-	const FnOverloadingObject *fn,
+	FnOverloadingObject *fn,
 	const Value *args,
 	size_t off_args,
 	uint32_t num_args,
@@ -341,11 +339,11 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_create_new_major_frame(
 
 	// TODO: Restore resumable context data.
 
-	char *p_major_frame;
-	if (!(p_major_frame = context->aligned_stack_alloc(sizeof(MajorFrame), alignof(MajorFrame))))
+	MajorFrame *p_major_frame;
+	if (!(p_major_frame = static_cast<MajorFrame *>(context->aligned_stack_alloc(sizeof(MajorFrame), alignof(MajorFrame)))))
 		return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
-	peff::construct_at<MajorFrame>((MajorFrame *)p_major_frame, this);
-	MajorFrame &new_major_frame = *(MajorFrame *)p_major_frame;
+	peff::construct_at<MajorFrame>(p_major_frame, this);
+	MajorFrame &new_major_frame = *p_major_frame;
 	new_major_frame.off_prev_frame = context->off_cur_major_frame;
 
 	new_major_frame.cur_context = context_object;
@@ -370,7 +368,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_create_new_major_frame(
 		// Used in the creation of top major frame.
 		new_major_frame.cur_fn = nullptr;
 		new_major_frame.resumable_context_data.num_regs = 1;
-		Value *regs = (Value *)context->aligned_stack_alloc(sizeof(Value) * 1, alignof(Value));
+		Value *regs = static_cast<Value *>(context->aligned_stack_alloc(sizeof(Value) * 1, alignof(Value)));
 		new_major_frame.off_regs = context->stack_top;
 		*regs = InvalidValueState{};
 	} else {
@@ -387,9 +385,9 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_create_new_major_frame(
 
 		switch (fn->overloading_kind) {
 			case FnOverloadingKind::Regular: {
-				RegularFnOverloadingObject *ol = (RegularFnOverloadingObject *)fn;
+				RegularFnOverloadingObject *ol = static_cast<RegularFnOverloadingObject *>(fn);
 				new_major_frame.resumable_context_data.num_regs = ol->num_registers;
-				Value *regs = (Value *)context->aligned_stack_alloc(sizeof(Value) * ol->num_registers, alignof(Value));
+				Value *regs = static_cast<Value *>(context->aligned_stack_alloc(sizeof(Value) * ol->num_registers, alignof(Value)));
 				memset(regs, 0, sizeof(Value) * ol->num_registers);
 				new_major_frame.off_regs = context->stack_top;
 				break;
@@ -443,17 +441,17 @@ SLAKE_FORCEINLINE InternalExceptionPointer slake::Runtime::_add_local_var(Contex
 	switch (type.type_id) {
 		case TypeId::StructInstance: {
 			assert(type.get_custom_type_def()->type_object->get_object_kind() == ObjectKind::Struct);
-			SLAKE_RETURN_IF_EXCEPT(prepare_struct_for_instantiation((StructObject *)type.get_custom_type_def()->type_object));
+			SLAKE_RETURN_IF_EXCEPT(prepare_struct_for_instantiation(static_cast<StructObject *>(type.get_custom_type_def()->type_object)));
 			break;
 		}
 		case TypeId::UnionEnum: {
 			assert(type.get_custom_type_def()->type_object->get_object_kind() == ObjectKind::UnionEnum);
-			SLAKE_RETURN_IF_EXCEPT(prepare_union_enum_for_instantiation((UnionEnumObject *)type.get_custom_type_def()->type_object));
+			SLAKE_RETURN_IF_EXCEPT(prepare_union_enum_for_instantiation(static_cast<UnionEnumObject *>(type.get_custom_type_def()->type_object)));
 			break;
 		}
 		case TypeId::UnionEnumItem: {
 			assert(type.get_custom_type_def()->type_object->get_object_kind() == ObjectKind::UnionEnumItem);
-			SLAKE_RETURN_IF_EXCEPT(prepare_union_enum_item_for_instantiation((UnionEnumItemObject *)type.get_custom_type_def()->type_object));
+			SLAKE_RETURN_IF_EXCEPT(prepare_union_enum_item_for_instantiation(static_cast<UnionEnumItemObject *>(type.get_custom_type_def()->type_object)));
 			break;
 		}
 		default:
@@ -487,11 +485,11 @@ SLAKE_FORCEINLINE InternalExceptionPointer slake::Runtime::_add_local_var(Contex
 		case TypeId::Array:
 		case TypeId::Ref: {
 			// The data is already aligned, just directly assign to them.
-			Object **type_info = (Object **)context->stack_alloc(sizeof(void *));
+			Object **type_info = static_cast<Object **>(context->stack_alloc(sizeof(void *)));
 			if (!type_info)
 				return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
 #ifndef _NDEBUG
-			const size_t diff = alignof(void *) - ((uintptr_t)(calc_stack_addr(context->data_stack, context->stack_size, context->stack_top)) % alignof(void *));
+			const size_t diff = alignof(void *) - ((uintptr_t)(calc_stack_addr(context->data_stack, context->stack_size, context->stack_top)) & (alignof(void *) - 1));
 			assert((diff == alignof(void *) || (!diff)));
 #endif
 			*type_info = type.type_def;
@@ -530,12 +528,12 @@ SLAKE_FORCEINLINE InternalExceptionPointer slake::Runtime::_add_local_var(Contex
 			std::terminate();
 	}
 
-	TypeModifier *type_modifier = (TypeModifier *)context->stack_alloc(sizeof(TypeModifier));
+	TypeModifier *type_modifier = static_cast<TypeModifier *>(context->stack_alloc(sizeof(TypeModifier)));
 	if (!type_modifier)
 		return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
 	*type_modifier = type.type_modifier;
 
-	TypeId *type_id = (TypeId *)context->stack_alloc(sizeof(TypeId));
+	TypeId *type_id = static_cast<TypeId *>(context->stack_alloc(sizeof(TypeId)));
 	if (!type_id)
 		return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
 	*type_id = type.type_id;
@@ -655,31 +653,32 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			cur_major_frame->resumable_context_data.cur_ins = operands[((uint8_t)!condition->get_bool()) + 1].get_u32();
 			return {};
 		}
-#define SIMPLE_BINARY_OP_PROC(slake_type_lower, slake_type_upper, cpp_type, op)                                              \
-	{                                                                                                                        \
-		_check_operand_count_with_output_required(this, output, num_operands, 2);                                            \
-                                                                                                                             \
-		if (_is_register_invalid(cur_major_frame, output)) {                                                                 \
-			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));                          \
-		}                                                                                                                    \
-                                                                                                                             \
-		const Value *x, *y;                                                                                                  \
-                                                                                                                             \
-		_unwrap_reg_operand_into_ptr(this, cur_frame_regs_ptr, cur_major_frame, operands[0], x);                             \
-		_unwrap_reg_operand_into_ptr(this, cur_frame_regs_ptr, cur_major_frame, operands[1], y);                             \
-		if ((x->value_type != ValueType::slake_type_upper) | (y->value_type != ValueType::slake_type_upper)) {               \
-			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));                          \
-		}                                                                                                                    \
-                                                                                                                             \
-		*_calc_reg_ptr(cur_frame_regs_ptr, output) = (cpp_type)(x->get_##slake_type_lower() op y->get_##slake_type_lower()); \
-		break;                                                                                                               \
+#define SIMPLE_BINARY_OP_PROC(slake_type_lower, slake_type_upper, cpp_type, op)                              \
+	{                                                                                                        \
+		_check_operand_count_with_output_required(this, output, num_operands, 2);                            \
+                                                                                                             \
+		if (_is_register_invalid(cur_major_frame, output)) {                                                 \
+			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));          \
+		}                                                                                                    \
+                                                                                                             \
+		const Value *x, *y;                                                                                  \
+                                                                                                             \
+		_unwrap_reg_operand_into_ptr(this, cur_frame_regs_ptr, cur_major_frame, operands[0], x);             \
+		_unwrap_reg_operand_into_ptr(this, cur_frame_regs_ptr, cur_major_frame, operands[1], y);             \
+		if ((x->value_type != ValueType::slake_type_upper) | (y->value_type != ValueType::slake_type_upper)) \
+			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));          \
+                                                                                                             \
+		Value &result_out = *_calc_reg_ptr(cur_frame_regs_ptr, output);                                      \
+		result_out.value_type = ValueType::slake_type_upper;                                                 \
+		result_out.as_##slake_type_lower = x->get_##slake_type_lower() op y->get_##slake_type_lower();       \
+		break;                                                                                               \
 	}
 		case Opcode::PHI: {
 			if (output == UINT32_MAX) {
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
-			if ((num_operands < 2) || ((num_operands & 1))) {
+			if ((num_operands < 2) || (num_operands & 1)) {
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
@@ -726,6 +725,8 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			SIMPLE_BINARY_OP_PROC(i32, I32, int32_t, +);
 		case Opcode::ADDI64:
 			SIMPLE_BINARY_OP_PROC(i64, I64, int64_t, +);
+		case Opcode::ADDISIZE:
+			SIMPLE_BINARY_OP_PROC(isize, ISize, ssize_t, +);
 		case Opcode::ADDU8:
 			SIMPLE_BINARY_OP_PROC(u8, U8, uint8_t, +);
 		case Opcode::ADDU16:
@@ -734,6 +735,8 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			SIMPLE_BINARY_OP_PROC(u32, U32, uint32_t, +);
 		case Opcode::ADDU64:
 			SIMPLE_BINARY_OP_PROC(u64, U64, uint64_t, +);
+		case Opcode::ADDUSIZE:
+			SIMPLE_BINARY_OP_PROC(usize, USize, size_t, +);
 		case Opcode::ADDF32:
 			SIMPLE_BINARY_OP_PROC(f32, F32, float, +);
 		case Opcode::ADDF64:
@@ -747,6 +750,8 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			SIMPLE_BINARY_OP_PROC(i32, I32, int32_t, -);
 		case Opcode::SUBI64:
 			SIMPLE_BINARY_OP_PROC(i64, I64, int64_t, -);
+		case Opcode::SUBISIZE:
+			SIMPLE_BINARY_OP_PROC(isize, ISize, ssize_t, -);
 		case Opcode::SUBU8:
 			SIMPLE_BINARY_OP_PROC(u8, U8, uint8_t, -);
 		case Opcode::SUBU16:
@@ -755,6 +760,8 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			SIMPLE_BINARY_OP_PROC(u32, U32, uint32_t, -);
 		case Opcode::SUBU64:
 			SIMPLE_BINARY_OP_PROC(u64, U64, uint64_t, -);
+		case Opcode::SUBUSIZE:
+			SIMPLE_BINARY_OP_PROC(usize, USize, size_t, -);
 		case Opcode::SUBF32:
 			SIMPLE_BINARY_OP_PROC(f32, F32, float, -);
 		case Opcode::SUBF64:
@@ -768,6 +775,8 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			SIMPLE_BINARY_OP_PROC(i32, I32, int32_t, *);
 		case Opcode::MULI64:
 			SIMPLE_BINARY_OP_PROC(i64, I64, int64_t, *);
+		case Opcode::MULISIZE:
+			SIMPLE_BINARY_OP_PROC(isize, ISize, ssize_t, *);
 		case Opcode::MULU8:
 			SIMPLE_BINARY_OP_PROC(u8, U8, uint8_t, *);
 		case Opcode::MULU16:
@@ -780,6 +789,8 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			SIMPLE_BINARY_OP_PROC(f32, F32, float, *);
 		case Opcode::MULF64:
 			SIMPLE_BINARY_OP_PROC(f64, F64, double, *);
+		case Opcode::MULUSIZE:
+			SIMPLE_BINARY_OP_PROC(usize, USize, size_t, *);
 
 		case Opcode::DIVI8:
 			SIMPLE_BINARY_OP_PROC(i8, I8, int8_t, /);
@@ -789,6 +800,8 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			SIMPLE_BINARY_OP_PROC(i32, I32, int32_t, /);
 		case Opcode::DIVI64:
 			SIMPLE_BINARY_OP_PROC(i64, I64, int64_t, /);
+		case Opcode::DIVISIZE:
+			SIMPLE_BINARY_OP_PROC(isize, ISize, ssize_t, /);
 		case Opcode::DIVU8:
 			SIMPLE_BINARY_OP_PROC(u8, U8, uint8_t, /);
 		case Opcode::DIVU16:
@@ -801,30 +814,29 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			SIMPLE_BINARY_OP_PROC(f32, F32, float, /);
 		case Opcode::DIVF64:
 			SIMPLE_BINARY_OP_PROC(f64, F64, double, /);
+		case Opcode::DIVUSIZE:
+			SIMPLE_BINARY_OP_PROC(usize, USize, size_t, /);
 
 		case Opcode::MODI8:
 			SIMPLE_BINARY_OP_PROC(i8, I8, int8_t, %);
 		case Opcode::MODI16:
 			SIMPLE_BINARY_OP_PROC(i16, I16, int16_t, %);
-			break;
 		case Opcode::MODI32:
 			SIMPLE_BINARY_OP_PROC(i32, I32, int32_t, %);
-			break;
 		case Opcode::MODI64:
 			SIMPLE_BINARY_OP_PROC(i64, I64, int64_t, %);
-			break;
+		case Opcode::MODISIZE:
+			SIMPLE_BINARY_OP_PROC(isize, ISize, ssize_t, &);
 		case Opcode::MODU8:
 			SIMPLE_BINARY_OP_PROC(u8, U8, uint8_t, %);
-			break;
 		case Opcode::MODU16:
 			SIMPLE_BINARY_OP_PROC(u16, U16, uint16_t, %);
-			break;
 		case Opcode::MODU32:
 			SIMPLE_BINARY_OP_PROC(u32, U32, uint32_t, %);
-			break;
 		case Opcode::MODU64:
 			SIMPLE_BINARY_OP_PROC(u64, U64, uint64_t, %);
-			break;
+		case Opcode::MODUSIZE:
+			SIMPLE_BINARY_OP_PROC(usize, USize, size_t, %);
 		case Opcode::MODF32: {
 			_check_operand_count_with_output_required(this, output, num_operands, 2);
 
@@ -872,6 +884,8 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			SIMPLE_BINARY_OP_PROC(i32, I32, int32_t, &);
 		case Opcode::ANDI64:
 			SIMPLE_BINARY_OP_PROC(i64, I64, int64_t, &);
+		case Opcode::ANDISIZE:
+			SIMPLE_BINARY_OP_PROC(isize, ISize, ssize_t, &);
 		case Opcode::ANDU8:
 			SIMPLE_BINARY_OP_PROC(u8, U8, uint8_t, &);
 		case Opcode::ANDU16:
@@ -882,6 +896,8 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			SIMPLE_BINARY_OP_PROC(u64, U64, uint64_t, &);
 		case Opcode::ANDBOOL:
 			SIMPLE_BINARY_OP_PROC(bool, Bool, bool, &);
+		case Opcode::ANDUSIZE:
+			SIMPLE_BINARY_OP_PROC(usize, USize, size_t, &);
 
 		case Opcode::ORI8:
 			SIMPLE_BINARY_OP_PROC(i8, I8, int8_t, |);
@@ -891,6 +907,8 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			SIMPLE_BINARY_OP_PROC(i32, I32, int32_t, |);
 		case Opcode::ORI64:
 			SIMPLE_BINARY_OP_PROC(i64, I64, int64_t, |);
+		case Opcode::ORISIZE:
+			SIMPLE_BINARY_OP_PROC(isize, ISize, ssize_t, |);
 		case Opcode::ORU8:
 			SIMPLE_BINARY_OP_PROC(u8, U8, uint8_t, |);
 		case Opcode::ORU16:
@@ -901,6 +919,8 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			SIMPLE_BINARY_OP_PROC(u64, U64, uint64_t, |);
 		case Opcode::ORBOOL:
 			SIMPLE_BINARY_OP_PROC(bool, Bool, bool, |);
+		case Opcode::ORUSIZE:
+			SIMPLE_BINARY_OP_PROC(usize, USize, size_t, |);
 
 		case Opcode::XORI8:
 			SIMPLE_BINARY_OP_PROC(i8, I8, int8_t, ^);
@@ -910,6 +930,8 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			SIMPLE_BINARY_OP_PROC(i32, I32, int32_t, ^);
 		case Opcode::XORI64:
 			SIMPLE_BINARY_OP_PROC(i64, I64, int64_t, ^);
+		case Opcode::XORISIZE:
+			SIMPLE_BINARY_OP_PROC(isize, ISize, ssize_t, ^);
 		case Opcode::XORU8:
 			SIMPLE_BINARY_OP_PROC(u8, U8, uint8_t, ^);
 		case Opcode::XORU16:
@@ -918,6 +940,8 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			SIMPLE_BINARY_OP_PROC(u32, U32, uint32_t, ^);
 		case Opcode::XORU64:
 			SIMPLE_BINARY_OP_PROC(u64, U64, uint64_t, ^);
+		case Opcode::XORUSIZE:
+			SIMPLE_BINARY_OP_PROC(usize, USize, size_t, ^);
 
 #define SIMPLE_EQ_OP_PROC(slake_type_lower, slake_type_upper)                                                                    \
 	{                                                                                                                            \
@@ -955,6 +979,8 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			SIMPLE_EQ_OP_PROC(i32, I32);
 		case Opcode::EQI64:
 			SIMPLE_EQ_OP_PROC(i64, I64);
+		case Opcode::EQISIZE:
+			SIMPLE_EQ_OP_PROC(isize, ISize);
 		case Opcode::EQU8:
 			SIMPLE_EQ_OP_PROC(u8, U8);
 		case Opcode::EQU16:
@@ -963,6 +989,8 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			SIMPLE_EQ_OP_PROC(u32, U32);
 		case Opcode::EQU64:
 			SIMPLE_EQ_OP_PROC(u64, U64);
+		case Opcode::EQUSIZE:
+			SIMPLE_EQ_OP_PROC(usize, USize);
 		case Opcode::EQF32:
 			SIMPLE_EQ_OP_PROC(f32, F32);
 		case Opcode::EQF64:
@@ -1046,6 +1074,8 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			SIMPLE_NEQ_OP_PROC(i32, I32);
 		case Opcode::NEQI64:
 			SIMPLE_NEQ_OP_PROC(i64, I64);
+		case Opcode::NEQISIZE:
+			SIMPLE_NEQ_OP_PROC(isize, ISize);
 		case Opcode::NEQU8:
 			SIMPLE_NEQ_OP_PROC(u8, U8);
 		case Opcode::NEQU16:
@@ -1054,6 +1084,8 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			SIMPLE_NEQ_OP_PROC(u32, U32);
 		case Opcode::NEQU64:
 			SIMPLE_NEQ_OP_PROC(u64, U64);
+		case Opcode::NEQUSIZE:
+			SIMPLE_NEQ_OP_PROC(usize, USize);
 		case Opcode::NEQF32:
 			SIMPLE_NEQ_OP_PROC(f32, F32);
 		case Opcode::NEQF64:
@@ -1101,24 +1133,23 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			break;
 		}
 
-#define SIMPLE_COMPARING_OP_PROC(slake_type_lower, slake_type_upper, op)                                                 \
-	{                                                                                                                    \
-		_check_operand_count_with_output_required(this, output, num_operands, 2);                                        \
-                                                                                                                         \
-		if (_is_register_invalid(cur_major_frame, output)) {                                                             \
-			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));                      \
-		}                                                                                                                \
-                                                                                                                         \
-		const Value *x, *y;                                                                                              \
-                                                                                                                         \
-		_unwrap_reg_operand_into_ptr(this, cur_frame_regs_ptr, cur_major_frame, operands[0], x);                         \
-		_unwrap_reg_operand_into_ptr(this, cur_frame_regs_ptr, cur_major_frame, operands[1], y);                         \
-		if ((x->value_type != ValueType::slake_type_upper) | (y->value_type != ValueType::slake_type_upper)) {           \
-			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));                      \
-		}                                                                                                                \
-                                                                                                                         \
-		*_calc_reg_ptr(cur_frame_regs_ptr, output) = (bool)(x->get_##slake_type_lower() op y->get_##slake_type_lower()); \
-		break;                                                                                                           \
+#define SIMPLE_COMPARING_OP_PROC(slake_type_lower, slake_type_upper, op)                                                            \
+	{                                                                                                                               \
+		_check_operand_count_with_output_required(this, output, num_operands, 2);                                                   \
+                                                                                                                                    \
+		if (_is_register_invalid(cur_major_frame, output)) {                                                                        \
+			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));                                 \
+		}                                                                                                                           \
+                                                                                                                                    \
+		const Value *x, *y;                                                                                                         \
+                                                                                                                                    \
+		_unwrap_reg_operand_into_ptr(this, cur_frame_regs_ptr, cur_major_frame, operands[0], x);                                    \
+		_unwrap_reg_operand_into_ptr(this, cur_frame_regs_ptr, cur_major_frame, operands[1], y);                                    \
+		if ((x->value_type != ValueType::slake_type_upper) | (y->value_type != ValueType::slake_type_upper))                        \
+			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));                                 \
+                                                                                                                                    \
+		*_calc_reg_ptr(cur_frame_regs_ptr, output) = static_cast<bool>(x->get_##slake_type_lower() op y->get_##slake_type_lower()); \
+		break;                                                                                                                      \
 	}
 		case Opcode::LTI8:
 			SIMPLE_COMPARING_OP_PROC(i8, I8, <);
@@ -1128,6 +1159,8 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			SIMPLE_COMPARING_OP_PROC(i32, I32, <);
 		case Opcode::LTI64:
 			SIMPLE_COMPARING_OP_PROC(i64, I64, <);
+		case Opcode::LTISIZE:
+			SIMPLE_COMPARING_OP_PROC(isize, ISize, <);
 		case Opcode::LTU8:
 			SIMPLE_COMPARING_OP_PROC(u8, U8, <);
 		case Opcode::LTU16:
@@ -1136,6 +1169,8 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			SIMPLE_COMPARING_OP_PROC(u32, U32, <);
 		case Opcode::LTU64:
 			SIMPLE_COMPARING_OP_PROC(u64, U64, <);
+		case Opcode::LTUSIZE:
+			SIMPLE_COMPARING_OP_PROC(usize, USize, <);
 		case Opcode::LTF32:
 			SIMPLE_COMPARING_OP_PROC(f32, F32, <);
 		case Opcode::LTF64:
@@ -1149,6 +1184,8 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			SIMPLE_COMPARING_OP_PROC(i32, I32, >);
 		case Opcode::GTI64:
 			SIMPLE_COMPARING_OP_PROC(i64, I64, >);
+		case Opcode::GTISIZE:
+			SIMPLE_COMPARING_OP_PROC(isize, ISize, >);
 		case Opcode::GTU8:
 			SIMPLE_COMPARING_OP_PROC(u8, U8, >);
 		case Opcode::GTU16:
@@ -1157,6 +1194,8 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			SIMPLE_COMPARING_OP_PROC(u32, U32, >);
 		case Opcode::GTU64:
 			SIMPLE_COMPARING_OP_PROC(u64, U64, >);
+		case Opcode::GTUSIZE:
+			SIMPLE_COMPARING_OP_PROC(usize, USize, >);
 		case Opcode::GTF32:
 			SIMPLE_COMPARING_OP_PROC(f32, F32, >);
 		case Opcode::GTF64:
@@ -1170,6 +1209,8 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			SIMPLE_COMPARING_OP_PROC(i32, I32, <=);
 		case Opcode::LTEQI64:
 			SIMPLE_COMPARING_OP_PROC(i64, I64, <=);
+		case Opcode::LTEQISIZE:
+			SIMPLE_COMPARING_OP_PROC(isize, ISize, <=);
 		case Opcode::LTEQU8:
 			SIMPLE_COMPARING_OP_PROC(u8, U8, <=);
 		case Opcode::LTEQU16:
@@ -1178,6 +1219,8 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			SIMPLE_COMPARING_OP_PROC(u32, U32, <=);
 		case Opcode::LTEQU64:
 			SIMPLE_COMPARING_OP_PROC(u64, U64, <=);
+		case Opcode::LTEQUSIZE:
+			SIMPLE_COMPARING_OP_PROC(usize, USize, <=);
 		case Opcode::LTEQF32:
 			SIMPLE_COMPARING_OP_PROC(f32, F32, <=);
 		case Opcode::LTEQF64:
@@ -1191,6 +1234,8 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			SIMPLE_COMPARING_OP_PROC(i32, I32, >=);
 		case Opcode::GTEQI64:
 			SIMPLE_COMPARING_OP_PROC(i64, I64, >=);
+		case Opcode::GTEQISIZE:
+			SIMPLE_COMPARING_OP_PROC(isize, ISize, >=);
 		case Opcode::GTEQU8:
 			SIMPLE_COMPARING_OP_PROC(u8, U8, >=);
 		case Opcode::GTEQU16:
@@ -1199,29 +1244,29 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			SIMPLE_COMPARING_OP_PROC(u32, U32, >=);
 		case Opcode::GTEQU64:
 			SIMPLE_COMPARING_OP_PROC(u64, U64, >=);
+		case Opcode::GTEQUSIZE:
+			SIMPLE_COMPARING_OP_PROC(usize, USize, >=);
 		case Opcode::GTEQF32:
 			SIMPLE_COMPARING_OP_PROC(f32, F32, >=);
 		case Opcode::GTEQF64:
 			SIMPLE_COMPARING_OP_PROC(f64, F64, >=);
 
-#define SIMPLE_CMP_OP_PROC(slake_type_lower, slake_type_upper)                                                                                            \
-	{                                                                                                                                                     \
-		_check_operand_count_with_output_required(this, output, num_operands, 2);                                                                         \
-                                                                                                                                                          \
-		if (_is_register_invalid(cur_major_frame, output)) {                                                                                              \
-			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));                                                       \
-		}                                                                                                                                                 \
-                                                                                                                                                          \
-		const Value *x, *y;                                                                                                                               \
-                                                                                                                                                          \
-		_unwrap_reg_operand_into_ptr(this, cur_frame_regs_ptr, cur_major_frame, operands[0], x);                                                          \
-		_unwrap_reg_operand_into_ptr(this, cur_frame_regs_ptr, cur_major_frame, operands[1], y);                                                          \
-		if ((x->value_type != ValueType::slake_type_upper) | (y->value_type != ValueType::slake_type_upper)) {                                            \
-			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));                                                       \
-		}                                                                                                                                                 \
-                                                                                                                                                          \
-		*_calc_reg_ptr(cur_frame_regs_ptr, output) = (int32_t)flib::compare_##slake_type_lower(x->get_##slake_type_lower(), y->get_##slake_type_lower()); \
-		break;                                                                                                                                            \
+#define SIMPLE_CMP_OP_PROC(slake_type_lower, slake_type_upper)                                                                                                         \
+	{                                                                                                                                                                  \
+		_check_operand_count_with_output_required(this, output, num_operands, 2);                                                                                      \
+                                                                                                                                                                       \
+		if (_is_register_invalid(cur_major_frame, output))                                                                                                             \
+			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));                                                                    \
+                                                                                                                                                                       \
+		const Value *x, *y;                                                                                                                                            \
+                                                                                                                                                                       \
+		_unwrap_reg_operand_into_ptr(this, cur_frame_regs_ptr, cur_major_frame, operands[0], x);                                                                       \
+		_unwrap_reg_operand_into_ptr(this, cur_frame_regs_ptr, cur_major_frame, operands[1], y);                                                                       \
+		if ((x->value_type != ValueType::slake_type_upper) | (y->value_type != ValueType::slake_type_upper))                                                           \
+			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));                                                                    \
+                                                                                                                                                                       \
+		*_calc_reg_ptr(cur_frame_regs_ptr, output) = static_cast<int32_t>(flib::compare_##slake_type_lower(x->get_##slake_type_lower(), y->get_##slake_type_lower())); \
+		break;                                                                                                                                                         \
 	}
 		case Opcode::CMPI8:
 			SIMPLE_CMP_OP_PROC(i8, I8);
@@ -1231,6 +1276,8 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			SIMPLE_CMP_OP_PROC(i32, I32);
 		case Opcode::CMPI64:
 			SIMPLE_CMP_OP_PROC(i64, I64);
+		case Opcode::CMPISIZE:
+			SIMPLE_CMP_OP_PROC(isize, ISize);
 		case Opcode::CMPU8:
 			SIMPLE_CMP_OP_PROC(u8, U8);
 		case Opcode::CMPU16:
@@ -1239,12 +1286,55 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			SIMPLE_CMP_OP_PROC(u32, U32);
 		case Opcode::CMPU64:
 			SIMPLE_CMP_OP_PROC(u64, U64);
+		case Opcode::CMPUSIZE:
+			SIMPLE_CMP_OP_PROC(usize, USize);
 		case Opcode::CMPF32:
 			SIMPLE_CMP_OP_PROC(f32, F32);
 		case Opcode::CMPF64:
 			SIMPLE_CMP_OP_PROC(f64, F64);
 
-			// TODO: Implement SHL and SHR.
+// TODO: Implement SHL and SHR.
+#define SIMPLE_SHIFT_OP_PROC(slake_type_lower, slake_type_upper, type, op)                                 \
+	{                                                                                                      \
+		_check_operand_count_with_output_required(this, output, num_operands, 2);                          \
+                                                                                                           \
+		if (_is_register_invalid(cur_major_frame, output))                                                 \
+			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));        \
+                                                                                                           \
+		const Value *x, *y;                                                                                \
+                                                                                                           \
+		_unwrap_reg_operand_into_ptr(this, cur_frame_regs_ptr, cur_major_frame, operands[0], x);           \
+		_unwrap_reg_operand_into_ptr(this, cur_frame_regs_ptr, cur_major_frame, operands[1], y);           \
+		if ((x->value_type != ValueType::slake_type_upper) | (y->value_type != ValueType::U32))            \
+			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));        \
+                                                                                                           \
+		Value &result_out = *_calc_reg_ptr(cur_frame_regs_ptr, output);                                    \
+		result_out.value_type = ValueType::slake_type_upper;                                               \
+		result_out.as_##slake_type_lower = static_cast<type>(x->get_##slake_type_lower() op y->get_u32()); \
+		break;                                                                                             \
+	}
+		case Opcode::SHLI8:
+			SIMPLE_SHIFT_OP_PROC(i8, I8, int8_t, <<);
+		case Opcode::SHLI16:
+			SIMPLE_SHIFT_OP_PROC(i16, I16, int16_t, <<);
+		case Opcode::SHLI32:
+			SIMPLE_SHIFT_OP_PROC(i32, I32, int32_t, <<);
+		case Opcode::SHLI64:
+			SIMPLE_SHIFT_OP_PROC(i64, I64, int64_t, <<);
+		case Opcode::SHLISIZE:
+			SIMPLE_SHIFT_OP_PROC(isize, ISize, ssize_t, <<);
+		case Opcode::SHLU8:
+			SIMPLE_SHIFT_OP_PROC(u8, U8, uint8_t, <<);
+		case Opcode::SHLU16:
+			SIMPLE_SHIFT_OP_PROC(u16, U16, uint16_t, <<);
+		case Opcode::SHLU32:
+			SIMPLE_SHIFT_OP_PROC(u32, U32, uint32_t, <<);
+		case Opcode::SHLU64:
+			SIMPLE_SHIFT_OP_PROC(u64, U64, uint64_t, <<);
+		case Opcode::SHLUSIZE:
+			SIMPLE_SHIFT_OP_PROC(usize, USize, size_t, <<);
+
+			// TODO: Implement SHR operation.
 
 		case Opcode::NOT: {
 			_check_operand_count_with_output_required(this, output, num_operands, 1);
@@ -1256,6 +1346,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 
 			const Value *x;
 			_unwrap_reg_operand_into_ptr(this, cur_frame_regs_ptr, cur_major_frame, operands[1], x);
+			// TODO: Implement isize and usize.
 			switch (x->value_type) {
 				case ValueType::I8:
 					value_out = (int8_t)(~x->get_i8());
@@ -1299,6 +1390,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 
 			const Value *x;
 			_unwrap_reg_operand_into_ptr(this, cur_frame_regs_ptr, cur_major_frame, operands[1], x);
+			// TODO: Implement isize and usize.
 			switch (x->value_type) {
 				case ValueType::I8:
 					value_out = (int8_t)(-x->get_i8());
@@ -1349,7 +1441,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			auto array_in = array_value.get_reference();
 			_check_object_ref_operand_type(this, array_in, ReferenceKind::ObjectRef);
 			_check_object_operand_type(this, array_in.as_object, ObjectKind::Array);
-			ArrayObject *array_object = (ArrayObject *)array_in.as_object;
+			ArrayObject *array_object = static_cast<ArrayObject *>(array_in.as_object);
 
 			uint32_t index_in = index.get_u32();
 
@@ -1371,11 +1463,11 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 
 			Reference entity_ref;
 
-			SLAKE_RETURN_IF_EXCEPT(resolve_id_ref((IdRefObject *)ref_ptr.as_object, entity_ref));
+			SLAKE_RETURN_IF_EXCEPT(resolve_id_ref(static_cast<IdRefObject *>(ref_ptr.as_object), entity_ref));
 
 			if (entity_ref.kind == ReferenceKind::Invalid)
 				// TODO: Use a proper one instead.
-				return alloc_oom_error_if_alloc_failed(ReferencedMemberNotFoundError::alloc(get_fixed_alloc(), (IdRefObject *)ref_ptr.as_object));
+				return alloc_oom_error_if_alloc_failed(ReferencedMemberNotFoundError::alloc(get_fixed_alloc(), static_cast<IdRefObject *>(ref_ptr.as_object)));
 
 			SLAKE_RETURN_IF_EXCEPT(_set_register_value(this, cur_frame_regs_ptr, cur_major_frame, output, entity_ref));
 			break;
@@ -1409,7 +1501,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
-			IdRefObject *id_ref = (IdRefObject *)id_ref_entity_ref.as_object;
+			IdRefObject *id_ref = static_cast<IdRefObject *>(id_ref_entity_ref.as_object);
 
 			Reference entity_ref;
 
@@ -1424,7 +1516,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 					TypeRef type = typeof_var(lhs_entity_ref);
 
 					if (type.type_id == TypeId::StructInstance) {
-						StructObject *struct_object = (StructObject *)(((CustomTypeDefObject *)type.type_def)->type_object);
+						StructObject *struct_object = static_cast<StructObject *>((static_cast<CustomTypeDefObject *>(type.type_def))->type_object);
 						IdRefEntry &cur_name = id_ref->entries.at(0);
 
 						if (auto it = struct_object->cached_object_layout->field_name_map.find(cur_name.name); it != struct_object->cached_object_layout->field_name_map.end()) {
@@ -1440,7 +1532,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 
 								generic_instantiation_context.generic_args = &cur_name.generic_args;
 								MemberObject *m;
-								SLAKE_RETURN_IF_EXCEPT(instantiate_generic_object((MemberObject *)entity_ref.as_object, m, &generic_instantiation_context));
+								SLAKE_RETURN_IF_EXCEPT(instantiate_generic_object(static_cast<MemberObject *>(entity_ref.as_object), m, &generic_instantiation_context));
 								entity_ref = Reference(m);
 							}
 						}
@@ -1832,8 +1924,8 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 					std::terminate();
 			}*/
 			size_t prev_stack_top = cur_major_frame->cur_coroutine ? context->get_context().stack_top - cur_major_frame->cur_coroutine->off_stack_top : context->get_context().stack_top;
-			if (char *p = context->get_context().aligned_stack_alloc(sizeof(Value), alignof(Value)); p) {
-				*(Value *)p = *value;
+			if (void *p = context->get_context().aligned_stack_alloc(sizeof(Value), alignof(Value)); p) {
+				*static_cast<Value *>(p) = *value;
 			} else
 				return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
 			const size_t new_off = cur_major_frame->cur_coroutine ? context->get_context().stack_top - cur_major_frame->cur_coroutine->off_stack_top : context->get_context().stack_top;
@@ -1859,10 +1951,12 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			const Value *fn_value;
 			_unwrap_reg_operand_into_ptr(this, cur_frame_regs_ptr, cur_major_frame, operands[0], fn_value);
 			_check_operand_type(this, *fn_value, ValueType::Reference);
+
 			const Reference &fn_object_ref = fn_value->get_reference();
+
 			_check_object_ref_operand_type(this, fn_object_ref, ReferenceKind::ObjectRef);
 			_check_object_operand_type(this, fn_object_ref.as_object, ObjectKind::FnOverloading);
-			fn = (FnOverloadingObject *)fn_object_ref.as_object;
+			fn = static_cast<FnOverloadingObject *>(fn_object_ref.as_object);
 
 			if (!fn)
 				return alloc_oom_error_if_alloc_failed(NullRefError::alloc(get_fixed_alloc()));
@@ -1935,15 +2029,19 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			const Value *fn_value;
 			_unwrap_reg_operand_into_ptr(this, cur_frame_regs_ptr, cur_major_frame, operands[0], fn_value);
 			_check_operand_type(this, *fn_value, ValueType::Reference);
+
 			const Reference &fn_object_ref = fn_value->get_reference();
+
 			_check_object_ref_operand_type(this, fn_object_ref, ReferenceKind::ObjectRef);
 			_check_object_operand_type(this, fn_object_ref.as_object, ObjectKind::FnOverloading);
-			fn = (FnOverloadingObject *)fn_object_ref.as_object;
+			fn = static_cast<FnOverloadingObject *>(fn_object_ref.as_object);
 
 			const Value *this_object_value;
 			_unwrap_reg_operand_into_ptr(this, cur_frame_regs_ptr, cur_major_frame, operands[1], this_object_value);
 			_check_operand_type(this, *this_object_value, ValueType::Reference);
+
 			const Reference &this_object_ref = this_object_value->get_reference();
+
 			_check_object_ref_operand_type(this, this_object_ref, ReferenceKind::ObjectRef);
 			_check_object_operand_type(this, this_object_ref.get_object_ref(), ObjectKind::Instance);
 			this_object = this_object_ref.as_object;
@@ -2022,7 +2120,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			const Reference &fn_object_ref = fn_value->get_reference();
 			_check_object_ref_operand_type(this, fn_object_ref, ReferenceKind::ObjectRef);
 			_check_object_operand_type(this, fn_object_ref.as_object, ObjectKind::FnOverloading);
-			fn = (FnOverloadingObject *)fn_object_ref.as_object;
+			fn = static_cast<FnOverloadingObject *>(fn_object_ref.as_object);
 
 			const Value *this_object_value;
 			_unwrap_reg_operand_into_ptr(this, cur_frame_regs_ptr, cur_major_frame, operands[1], this_object_value);
@@ -2094,7 +2192,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 					SLAKE_RETURN_IF_EXCEPT(
 						_set_register_value(
 							this,
-							calc_stack_addr(context->_context.data_stack, context->_context.stack_size, mjf->off_regs),
+							static_cast<Value *>(calc_stack_addr(context->_context.data_stack, context->_context.stack_size, mjf->off_regs)),
 							mjf,
 							return_value_out_reg,
 							*return_value));
@@ -2126,7 +2224,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 					const Reference &fn_object_ref = fn_value.get_reference();
 					_check_object_ref_operand_type(this, fn_object_ref, ReferenceKind::ObjectRef);
 					_check_object_operand_type(this, fn_object_ref.as_object, ObjectKind::FnOverloading);
-					fn = (FnOverloadingObject *)fn_object_ref.as_object;
+					fn = static_cast<FnOverloadingObject *>(fn_object_ref.as_object);
 
 					Value this_object_value;
 					_unwrap_reg_operand(this, cur_frame_regs_ptr, cur_major_frame, operands[1], this_object_value);
@@ -2145,7 +2243,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 					const Reference &fn_object_ref = fn_value.get_reference();
 					_check_object_ref_operand_type(this, fn_object_ref, ReferenceKind::ObjectRef);
 					_check_object_operand_type(this, fn_object_ref.as_object, ObjectKind::FnOverloading);
-					fn = (FnOverloadingObject *)fn_object_ref.as_object;
+					fn = static_cast<FnOverloadingObject *>(fn_object_ref.as_object);
 					break;
 				}
 				default:
@@ -2267,7 +2365,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			const Reference &fn_object_ref = fn_value.get_reference();
 			_check_object_ref_operand_type(this, fn_object_ref, ReferenceKind::ObjectRef);
 			_check_object_operand_type(this, fn_object_ref.as_object, ObjectKind::FnOverloading);
-			co = (CoroutineObject *)fn_object_ref.as_object;
+			co = static_cast<CoroutineObject *>(fn_object_ref.as_object);
 
 			if (co->is_done()) {
 				if (output != UINT32_MAX) {
@@ -2298,7 +2396,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			const Reference &fn_object_ref = fn_value.get_reference();
 			_check_object_ref_operand_type(this, fn_object_ref, ReferenceKind::ObjectRef);
 			_check_object_operand_type(this, fn_object_ref.as_object, ObjectKind::FnOverloading);
-			co = (CoroutineObject *)fn_object_ref.as_object;
+			co = static_cast<CoroutineObject *>(fn_object_ref.as_object);
 
 			SLAKE_RETURN_IF_EXCEPT(_set_register_value(this, cur_frame_regs_ptr, cur_major_frame, output, co->is_done()));
 			break;
@@ -2317,7 +2415,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 
 			switch (type.type_id) {
 				case TypeId::Instance: {
-					ClassObject *cls = (ClassObject *)(type.get_custom_type_def())->type_object;
+					ClassObject *cls = static_cast<ClassObject *>((type.get_custom_type_def())->type_object);
 					HostObjectRef<InstanceObject> instance = new_class_instance(cls, 0);
 					if (!instance)
 						// TODO: Return more detail exceptions.
@@ -2486,7 +2584,7 @@ SLAKE_API InternalExceptionPointer Runtime::exec_context(ContextObject *context)
 
 	while (context->get_context().num_major_frames >= initial_major_frame_depth) {
 		MajorFrame *cur_major_frame = _fetch_major_frame(&context->get_context(), context->get_context().off_cur_major_frame);
-		const FnOverloadingObject *const cur_fn = cur_major_frame->cur_fn;
+		FnOverloadingObject *const cur_fn = cur_major_frame->cur_fn;
 
 		if (!cur_fn) {
 			break;
@@ -2500,12 +2598,12 @@ SLAKE_API InternalExceptionPointer Runtime::exec_context(ContextObject *context)
 			case FnOverloadingKind::Regular: {
 				ContextChangeType context_change;
 				do {
-					const RegularFnOverloadingObject *const ol = (RegularFnOverloadingObject *)cur_major_frame->cur_fn;
+					const RegularFnOverloadingObject *const ol = static_cast<const RegularFnOverloadingObject *>(cur_major_frame->cur_fn);
 					const size_t num_ins = ol->instructions.size();
 					const Instruction *ins_ptr = ol->instructions.data();
 					do {
 						cur_major_frame = _fetch_major_frame(&context->get_context(), context->get_context().off_cur_major_frame);
-						Value *const cur_frame_regs_ptr = (Value *)calc_stack_addr(data_stack, data_stack_size, (cur_major_frame)->off_regs);
+						Value *const cur_frame_regs_ptr = static_cast<Value *>(calc_stack_addr(data_stack, data_stack_size, (cur_major_frame)->off_regs));
 						context_change = ContextChangeType::NoChange;
 						do {
 							// Interrupt execution if the thread is explicitly specified to be killed.
@@ -2540,7 +2638,7 @@ SLAKE_API InternalExceptionPointer Runtime::exec_context(ContextObject *context)
 			}
 			case FnOverloadingKind::Native: {
 				cur_major_frame = _fetch_major_frame(&context->get_context(), context->get_context().off_cur_major_frame);
-				NativeFnOverloadingObject *ol = (NativeFnOverloadingObject *)cur_fn;
+				NativeFnOverloadingObject *ol = static_cast<NativeFnOverloadingObject *>(cur_fn);
 
 				MinorFrame *mf = _fetch_minor_frame(&context->get_context(), cur_major_frame, cur_major_frame->resumable_context_data.off_cur_minor_frame);
 				const Value *args = _fetch_arg_stack(
@@ -2573,7 +2671,7 @@ SLAKE_API InternalExceptionPointer Runtime::exec_context(ContextObject *context)
 				uint32_t return_value_out_reg = cur_major_frame->return_value_out_reg;
 				_leave_major_frame(&context->get_context());
 				if (return_value_out_reg != UINT32_MAX) {
-					Value *regs_ptr = (Value *)calc_stack_addr(data_stack, data_stack_size, (cur_major_frame)->off_regs);
+					Value *regs_ptr = static_cast<Value *>(calc_stack_addr(data_stack, data_stack_size, (cur_major_frame)->off_regs));
 					SLAKE_RETURN_IF_EXCEPT(_set_register_value(this, regs_ptr, cur_major_frame, return_value_out_reg, return_value));
 				}
 
@@ -2589,7 +2687,7 @@ SLAKE_API InternalExceptionPointer Runtime::exec_context(ContextObject *context)
 }
 
 SLAKE_API InternalExceptionPointer Runtime::exec_fn(
-	const FnOverloadingObject *overloading,
+	FnOverloadingObject *overloading,
 	ContextObject *prev_context,
 	Object *this_object,
 	const Value *args,
@@ -2601,7 +2699,7 @@ SLAKE_API InternalExceptionPointer Runtime::exec_fn(
 
 	SLAKE_RETURN_IF_EXCEPT(_create_new_major_frame(prev_context, nullptr, nullptr, nullptr, SIZE_MAX, 0, UINT32_MAX, nullptr));
 	MajorFrame &bottom_frame = *_fetch_major_frame(&ctxt, ctxt.off_cur_major_frame);
-	Value *regs_ptr = (Value *)calc_stack_addr(ctxt.data_stack, ctxt.stack_size, (bottom_frame).off_regs);
+	Value *regs_ptr = static_cast<Value *>(calc_stack_addr(ctxt.data_stack, ctxt.stack_size, (bottom_frame).off_regs));
 	if (overloading->return_type.type_id == TypeId::StructInstance) {
 		Reference struct_ref;
 		SLAKE_RETURN_IF_EXCEPT(_add_local_var(&ctxt, &bottom_frame, overloading->return_type, 0, struct_ref));
@@ -2633,7 +2731,7 @@ SLAKE_API InternalExceptionPointer Runtime::exec_fn(
 }
 
 SLAKE_API InternalExceptionPointer Runtime::create_coroutine_instance(
-	const FnOverloadingObject *fn,
+	FnOverloadingObject *fn,
 	Object *this_object,
 	const Value *args,
 	uint32_t num_args,
@@ -2679,7 +2777,7 @@ SLAKE_API InternalExceptionPointer Runtime::resume_coroutine(
 
 	SLAKE_RETURN_IF_EXCEPT(_create_new_major_frame(context, nullptr, nullptr, nullptr, SIZE_MAX, 0, UINT32_MAX, nullptr));
 	MajorFrame &bottom_frame = *_fetch_major_frame(&ctxt, ctxt.off_cur_major_frame);
-	Value *regs_ptr = (Value *)calc_stack_addr(ctxt.data_stack, ctxt.stack_size, (bottom_frame).off_regs);
+	Value *regs_ptr = static_cast<Value *>(calc_stack_addr(ctxt.data_stack, ctxt.stack_size, (bottom_frame).off_regs));
 	if (coroutine->overloading->return_type.type_id == TypeId::StructInstance) {
 		Reference struct_ref;
 		SLAKE_RETURN_IF_EXCEPT(_add_local_var(&ctxt, &bottom_frame, coroutine->overloading->return_type, 0, struct_ref));

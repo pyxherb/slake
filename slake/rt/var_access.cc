@@ -2,7 +2,7 @@
 
 using namespace slake;
 
-SLAKE_FORCEINLINE static char *calc_coroutine_local_var_ref_stack_base_ptr(const CoroutineLocalVarRef &local_var_ref) noexcept {
+SLAKE_FORCEINLINE static void *calc_coroutine_local_var_ref_stack_base_ptr(const CoroutineLocalVarRef &local_var_ref) noexcept {
 	if (local_var_ref.coroutine->cur_context) {
 		return calc_stack_addr(local_var_ref.coroutine->cur_context->data_stack,
 			local_var_ref.coroutine->cur_context->stack_size,
@@ -13,17 +13,17 @@ SLAKE_FORCEINLINE static char *calc_coroutine_local_var_ref_stack_base_ptr(const
 			local_var_ref.stack_off);
 	};
 }
-SLAKE_FORCEINLINE static char *calc_local_var_ref_stack_base_ptr(const LocalVarRef &local_var_ref) noexcept {
+SLAKE_FORCEINLINE static void *calc_local_var_ref_stack_base_ptr(const LocalVarRef &local_var_ref) noexcept {
 	return calc_stack_addr(local_var_ref.context->data_stack,
 		local_var_ref.context->stack_size,
 		local_var_ref.stack_off);
 }
-SLAKE_FORCEINLINE static char *calc_local_var_ref_stack_raw_data_ptr(char *p) noexcept {
-	return p +
+SLAKE_FORCEINLINE static void *calc_local_var_ref_stack_raw_data_ptr(void *p) noexcept {
+	return static_cast<char *>(p) +
 		   (sizeof(TypeId) + sizeof(TypeModifier));
 }
-SLAKE_FORCEINLINE static const char *calc_local_var_ref_stack_raw_data_ptr(const char *p) noexcept {
-	return p +
+SLAKE_FORCEINLINE static const void *calc_local_var_ref_stack_raw_data_ptr(const void *p) noexcept {
+	return static_cast<const char *>(p) +
 		   (sizeof(TypeId) + sizeof(TypeModifier));
 }
 
@@ -35,7 +35,7 @@ SLAKE_API void *Runtime::locate_value_base_ptr(const Reference &entity_ref) noex
 			return entity_ref.as_static_field.module_object->local_field_storage.data() + field_record.offset;
 		}
 		case ReferenceKind::LocalVarRef: {
-			const char *raw_data_ptr = calc_local_var_ref_stack_raw_data_ptr(calc_local_var_ref_stack_base_ptr(entity_ref.as_local_var));
+			char *raw_data_ptr = static_cast<char *>(calc_local_var_ref_stack_raw_data_ptr(calc_local_var_ref_stack_base_ptr(entity_ref.as_local_var)));
 
 			switch (*static_cast<const TypeId *>(static_cast<const void *>(raw_data_ptr - (sizeof(TypeModifier) + sizeof(TypeId))))) {
 				case TypeId::Instance:
@@ -54,10 +54,10 @@ SLAKE_API void *Runtime::locate_value_base_ptr(const Reference &entity_ref) noex
 					break;
 			}
 
-			return (void *)raw_data_ptr;
+			return static_cast<void *>(raw_data_ptr);
 		}
 		case ReferenceKind::CoroutineLocalVarRef: {
-			const char *raw_data_ptr = calc_local_var_ref_stack_raw_data_ptr(calc_coroutine_local_var_ref_stack_base_ptr(entity_ref.as_coroutine_local_var));
+			char *raw_data_ptr = static_cast<char *>(calc_local_var_ref_stack_raw_data_ptr(calc_coroutine_local_var_ref_stack_base_ptr(entity_ref.as_coroutine_local_var)));
 
 			switch (*reinterpret_cast<const TypeId *>(raw_data_ptr - (sizeof(TypeModifier) + sizeof(TypeId)))) {
 				case TypeId::Instance:
@@ -75,7 +75,7 @@ SLAKE_API void *Runtime::locate_value_base_ptr(const Reference &entity_ref) noex
 					break;
 			}
 
-			return (void *)raw_data_ptr;
+			return static_cast<void *>(raw_data_ptr);
 		}
 		case ReferenceKind::ObjectFieldRef: {
 			ObjectFieldRecord &field_record =
@@ -87,7 +87,7 @@ SLAKE_API void *Runtime::locate_value_base_ptr(const Reference &entity_ref) noex
 		case ReferenceKind::ArrayElementRef: {
 			assert(entity_ref.as_array_element.index < entity_ref.as_array_element.array_object->length);
 
-			return ((char *)entity_ref.as_array_element.array_object->data) + entity_ref.as_array_element.index * entity_ref.as_array_element.array_object->element_size;
+			return (static_cast<char *>(entity_ref.as_array_element.array_object->data) + entity_ref.as_array_element.index * entity_ref.as_array_element.array_object->element_size);
 		}
 		case ReferenceKind::ArgRef:
 			std::terminate();
@@ -104,12 +104,12 @@ SLAKE_API void *Runtime::locate_value_base_ptr(const Reference &entity_ref) noex
 			((uint8_t &)inner_ref.kind) &= ~0x80;
 			TypeRef actual_type = typeof_var(inner_ref);
 
-			Object *const type_object = ((CustomTypeDefObject *)actual_type.type_def)->type_object;
-			char *base_ptr = (char *)locate_value_base_ptr(inner_ref);
+			Object *const type_object = static_cast<CustomTypeDefObject *>(actual_type.type_def)->type_object;
+			char *base_ptr = static_cast<char *>(locate_value_base_ptr(inner_ref));
 
 			assert(type_object->get_object_kind() == ObjectKind::Struct);
 
-			return base_ptr + ((StructObject *)type_object)->field_records.at(entity_ref.struct_field_index).offset;
+			return base_ptr + static_cast<StructObject *>(type_object)->field_records.at(entity_ref.struct_field_index).offset;
 		}
 		case ReferenceKind::InitObjectLayoutFieldRef: {
 			ObjectFieldRecord &field_record =
@@ -142,7 +142,8 @@ SLAKE_API TypeRef Runtime::typeof_var(const Reference &entity_ref) noexcept {
 			return field_record.type;
 		}
 		case ReferenceKind::LocalVarRef: {
-			const char *const raw_data_ptr = calc_local_var_ref_stack_raw_data_ptr(calc_local_var_ref_stack_base_ptr(entity_ref.as_local_var));
+			const char *const raw_data_ptr = static_cast<const char *>(
+				calc_local_var_ref_stack_raw_data_ptr(calc_local_var_ref_stack_base_ptr(entity_ref.as_local_var)));
 
 			TypeRef t = TypeRef(
 				*static_cast<const TypeId *>(static_cast<const void *>(raw_data_ptr - (sizeof(TypeModifier) + sizeof(TypeId)))),
@@ -172,9 +173,12 @@ SLAKE_API TypeRef Runtime::typeof_var(const Reference &entity_ref) noexcept {
 			return t;
 		}
 		case ReferenceKind::CoroutineLocalVarRef: {
-			const char *const raw_data_ptr = calc_local_var_ref_stack_raw_data_ptr(calc_coroutine_local_var_ref_stack_base_ptr(entity_ref.as_coroutine_local_var));
+			const char *const raw_data_ptr = static_cast<const char *>(
+				calc_local_var_ref_stack_raw_data_ptr(calc_coroutine_local_var_ref_stack_base_ptr(entity_ref.as_coroutine_local_var)));
 
-			TypeRef t = TypeRef(*(TypeId *)(raw_data_ptr - (sizeof(TypeModifier) + sizeof(TypeId))), *(TypeModifier *)(raw_data_ptr - sizeof(TypeModifier)));
+			TypeRef t = TypeRef(*static_cast<const TypeId *>(
+									static_cast<const void *>(raw_data_ptr - (sizeof(TypeModifier) + sizeof(TypeId)))),
+				*static_cast<const TypeModifier *>(static_cast<const void *>(raw_data_ptr - sizeof(TypeModifier))));
 
 			switch (t.type_id) {
 				case TypeId::Instance:
@@ -255,11 +259,11 @@ SLAKE_API TypeRef Runtime::typeof_var(const Reference &entity_ref) noexcept {
 			((uint8_t &)inner_ref.kind) &= ~0x80;
 			TypeRef actual_type = typeof_var(inner_ref);
 
-			Object *const type_object = ((CustomTypeDefObject *)actual_type.type_def)->type_object;
+			Object *const type_object = static_cast<CustomTypeDefObject *>(actual_type.type_def)->type_object;
 
 			assert(type_object->get_object_kind() == ObjectKind::Struct);
 
-			return ((StructObject *)type_object)->field_records.at(entity_ref.struct_field_index).type;
+			return static_cast<StructObject *>(type_object)->field_records.at(entity_ref.struct_field_index).type;
 		}
 		case ReferenceKind::InitObjectLayoutFieldRef: {
 			ObjectFieldRecord &field_record =
@@ -280,12 +284,12 @@ SLAKE_API TypeRef Runtime::typeof_var(const Reference &entity_ref) noexcept {
 SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const TypeRef &t, Value &value_out) noexcept {
 	switch (entity_ref.kind) {
 		case ReferenceKind::LocalVarRef: {
-			const char *raw_data_ptr = (char *)locate_value_base_ptr(entity_ref);
+			const char *raw_data_ptr = static_cast<char *>(locate_value_base_ptr(entity_ref));
 
 			switch (t.type_id) {
 				case TypeId::I8:
 					if (t.is_nullable()) {
-						if (*((bool *)raw_data_ptr)) {
+						if (*static_cast<const bool *>(static_cast<const void *>(raw_data_ptr))) {
 							value_out = nullptr;
 							break;
 						}
@@ -296,7 +300,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 					break;
 				case TypeId::I16:
 					if (t.is_nullable()) {
-						if (*((bool *)raw_data_ptr)) {
+						if (*(static_cast<const bool *>(static_cast<const void *>(raw_data_ptr)))) {
 							value_out = nullptr;
 							break;
 						}
@@ -307,7 +311,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 					break;
 				case TypeId::I32:
 					if (t.is_nullable()) {
-						if (*((bool *)raw_data_ptr)) {
+						if (*static_cast<const bool *>(static_cast<const void *>(raw_data_ptr))) {
 							value_out = nullptr;
 							break;
 						}
@@ -318,7 +322,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 					break;
 				case TypeId::I64:
 					if (t.is_nullable()) {
-						if (*((bool *)raw_data_ptr)) {
+						if (*static_cast<const bool *>(static_cast<const void *>(raw_data_ptr))) {
 							value_out = nullptr;
 							break;
 						}
@@ -329,7 +333,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 					break;
 				case TypeId::ISize:
 					if (t.is_nullable()) {
-						if (*((bool *)raw_data_ptr)) {
+						if (*static_cast<const bool *>(static_cast<const void *>(raw_data_ptr))) {
 							value_out = nullptr;
 							break;
 						}
@@ -340,7 +344,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 					break;
 				case TypeId::U8:
 					if (t.is_nullable()) {
-						if (*((bool *)raw_data_ptr)) {
+						if (*static_cast<const bool *>(static_cast<const void *>(raw_data_ptr))) {
 							value_out = nullptr;
 							break;
 						}
@@ -351,7 +355,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 					break;
 				case TypeId::U16:
 					if (t.is_nullable()) {
-						if (*((bool *)raw_data_ptr)) {
+						if (*static_cast<const bool *>(static_cast<const void *>(raw_data_ptr))) {
 							value_out = nullptr;
 							break;
 						}
@@ -362,7 +366,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 					break;
 				case TypeId::U32:
 					if (t.is_nullable()) {
-						if (*((bool *)raw_data_ptr)) {
+						if (*static_cast<const bool *>(static_cast<const void *>(raw_data_ptr))) {
 							value_out = nullptr;
 							break;
 						}
@@ -373,7 +377,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 					break;
 				case TypeId::U64:
 					if (t.is_nullable()) {
-						if (*((bool *)raw_data_ptr)) {
+						if (*static_cast<const bool *>(static_cast<const void *>(raw_data_ptr))) {
 							value_out = nullptr;
 							break;
 						}
@@ -384,7 +388,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 					break;
 				case TypeId::USize:
 					if (t.is_nullable()) {
-						if (*((bool *)raw_data_ptr)) {
+						if (*static_cast<const bool *>(static_cast<const void *>(raw_data_ptr))) {
 							value_out = nullptr;
 							break;
 						}
@@ -395,7 +399,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 					break;
 				case TypeId::F32:
 					if (t.is_nullable()) {
-						if (*((bool *)raw_data_ptr)) {
+						if (*static_cast<const bool *>(static_cast<const void *>(raw_data_ptr))) {
 							value_out = nullptr;
 							break;
 						}
@@ -406,7 +410,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 					break;
 				case TypeId::F64:
 					if (t.is_nullable()) {
-						if (*((bool *)raw_data_ptr)) {
+						if (*static_cast<const bool *>(static_cast<const void *>(raw_data_ptr))) {
 							value_out = nullptr;
 							break;
 						}
@@ -417,7 +421,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 					break;
 				case TypeId::Bool:
 					if (t.is_nullable()) {
-						if (*((bool *)raw_data_ptr)) {
+						if (*static_cast<const bool *>(static_cast<const void *>(raw_data_ptr))) {
 							value_out = nullptr;
 							break;
 						}
@@ -437,7 +441,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 					break;
 				case TypeId::StructInstance: {
 					if (t.is_nullable()) {
-						if (*((bool *)raw_data_ptr)) {
+						if (*static_cast<const bool *>(static_cast<const void *>(raw_data_ptr))) {
 							value_out = nullptr;
 							break;
 						}
@@ -469,12 +473,12 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 			break;
 		}
 		case ReferenceKind::CoroutineLocalVarRef: {
-			const char *raw_data_ptr = (char *)locate_value_base_ptr(entity_ref);
+			const char *raw_data_ptr = static_cast<char *>(locate_value_base_ptr(entity_ref));
 
 			switch (t.type_id) {
 				case TypeId::I8:
 					if (t.is_nullable()) {
-						if (*((bool *)raw_data_ptr)) {
+						if (*static_cast<const bool *>(static_cast<const void *>(raw_data_ptr))) {
 							value_out = nullptr;
 							break;
 						}
@@ -485,7 +489,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 					break;
 				case TypeId::I16:
 					if (t.is_nullable()) {
-						if (*((bool *)raw_data_ptr)) {
+						if (*static_cast<const bool *>(static_cast<const void *>(raw_data_ptr))) {
 							value_out = nullptr;
 							break;
 						}
@@ -496,7 +500,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 					break;
 				case TypeId::I32:
 					if (t.is_nullable()) {
-						if (*((bool *)raw_data_ptr)) {
+						if (*static_cast<const bool *>(static_cast<const void *>(raw_data_ptr))) {
 							value_out = nullptr;
 							break;
 						}
@@ -507,7 +511,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 					break;
 				case TypeId::I64:
 					if (t.is_nullable()) {
-						if (*((bool *)raw_data_ptr)) {
+						if (*static_cast<const bool *>(static_cast<const void *>(raw_data_ptr))) {
 							value_out = nullptr;
 							break;
 						}
@@ -518,7 +522,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 					break;
 				case TypeId::ISize:
 					if (t.is_nullable()) {
-						if (*((bool *)raw_data_ptr)) {
+						if (*static_cast<const bool *>(static_cast<const void *>(raw_data_ptr))) {
 							value_out = nullptr;
 							break;
 						}
@@ -529,7 +533,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 					break;
 				case TypeId::U8:
 					if (t.is_nullable()) {
-						if (*((bool *)raw_data_ptr)) {
+						if (*static_cast<const bool *>(static_cast<const void *>(raw_data_ptr))) {
 							value_out = nullptr;
 							break;
 						}
@@ -540,7 +544,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 					break;
 				case TypeId::U16:
 					if (t.is_nullable()) {
-						if (*((bool *)raw_data_ptr)) {
+						if (*static_cast<const bool *>(static_cast<const void *>(raw_data_ptr))) {
 							value_out = nullptr;
 							break;
 						}
@@ -551,7 +555,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 					break;
 				case TypeId::U32:
 					if (t.is_nullable()) {
-						if (*((bool *)raw_data_ptr)) {
+						if (*static_cast<const bool *>(static_cast<const void *>(raw_data_ptr))) {
 							value_out = nullptr;
 							break;
 						}
@@ -562,7 +566,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 					break;
 				case TypeId::U64:
 					if (t.is_nullable()) {
-						if (*((bool *)raw_data_ptr)) {
+						if (*static_cast<const bool *>(static_cast<const void *>(raw_data_ptr))) {
 							value_out = nullptr;
 							break;
 						}
@@ -573,7 +577,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 					break;
 				case TypeId::USize:
 					if (t.is_nullable()) {
-						if (*((bool *)raw_data_ptr)) {
+						if (*static_cast<const bool *>(static_cast<const void *>(raw_data_ptr))) {
 							value_out = nullptr;
 							break;
 						}
@@ -584,7 +588,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 					break;
 				case TypeId::F32:
 					if (t.is_nullable()) {
-						if (*((bool *)raw_data_ptr)) {
+						if (*static_cast<const bool *>(static_cast<const void *>(raw_data_ptr))) {
 							value_out = nullptr;
 							break;
 						}
@@ -595,7 +599,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 					break;
 				case TypeId::F64:
 					if (t.is_nullable()) {
-						if (*((bool *)raw_data_ptr)) {
+						if (*static_cast<const bool *>(static_cast<const void *>(raw_data_ptr))) {
 							value_out = nullptr;
 							break;
 						}
@@ -606,7 +610,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 					break;
 				case TypeId::Bool:
 					if (t.is_nullable()) {
-						if (*((bool *)raw_data_ptr)) {
+						if (*static_cast<const bool *>(static_cast<const void *>(raw_data_ptr))) {
 							value_out = nullptr;
 							break;
 						}
@@ -626,7 +630,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 					break;
 				case TypeId::StructInstance: {
 					if (t.is_nullable()) {
-						if (*((bool *)raw_data_ptr)) {
+						if (*static_cast<const bool *>(static_cast<const void *>(raw_data_ptr))) {
 							value_out = nullptr;
 							break;
 						}
@@ -665,43 +669,43 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 				std::terminate();
 			switch (t.type_id) {
 				case TypeId::I8:
-					value_out = (((int8_t *)entity_ref.as_array_element.array_object->data)[entity_ref.as_array_element.index]);
+					value_out = (static_cast<const int8_t *>(entity_ref.as_array_element.array_object->data)[entity_ref.as_array_element.index]);
 					break;
 				case TypeId::I16:
-					value_out = (((int16_t *)entity_ref.as_array_element.array_object->data)[entity_ref.as_array_element.index]);
+					value_out = (static_cast<const int16_t *>(entity_ref.as_array_element.array_object->data)[entity_ref.as_array_element.index]);
 					break;
 				case TypeId::I32:
-					value_out = (((int32_t *)entity_ref.as_array_element.array_object->data)[entity_ref.as_array_element.index]);
+					value_out = (static_cast<const int32_t *>(entity_ref.as_array_element.array_object->data)[entity_ref.as_array_element.index]);
 					break;
 				case TypeId::I64:
-					value_out = (((int64_t *)entity_ref.as_array_element.array_object->data)[entity_ref.as_array_element.index]);
+					value_out = (static_cast<const int64_t *>(entity_ref.as_array_element.array_object->data)[entity_ref.as_array_element.index]);
 					break;
 				case TypeId::U8:
-					value_out = (((uint8_t *)entity_ref.as_array_element.array_object->data)[entity_ref.as_array_element.index]);
+					value_out = (static_cast<const uint8_t *>(entity_ref.as_array_element.array_object->data)[entity_ref.as_array_element.index]);
 					break;
 				case TypeId::U16:
-					value_out = (((uint16_t *)entity_ref.as_array_element.array_object->data)[entity_ref.as_array_element.index]);
+					value_out = (static_cast<const uint16_t *>(entity_ref.as_array_element.array_object->data)[entity_ref.as_array_element.index]);
 					break;
 				case TypeId::U32:
-					value_out = (((uint32_t *)entity_ref.as_array_element.array_object->data)[entity_ref.as_array_element.index]);
+					value_out = (static_cast<const uint32_t *>(entity_ref.as_array_element.array_object->data)[entity_ref.as_array_element.index]);
 					break;
 				case TypeId::U64:
-					value_out = (((uint64_t *)entity_ref.as_array_element.array_object->data)[entity_ref.as_array_element.index]);
+					value_out = (static_cast<const uint64_t *>(entity_ref.as_array_element.array_object->data)[entity_ref.as_array_element.index]);
 					break;
 				case TypeId::F32:
-					value_out = (((float *)entity_ref.as_array_element.array_object->data)[entity_ref.as_array_element.index]);
+					value_out = (static_cast<const float *>(entity_ref.as_array_element.array_object->data)[entity_ref.as_array_element.index]);
 					break;
 				case TypeId::F64:
-					value_out = (((double *)entity_ref.as_array_element.array_object->data)[entity_ref.as_array_element.index]);
+					value_out = (static_cast<const double *>(entity_ref.as_array_element.array_object->data)[entity_ref.as_array_element.index]);
 					break;
 				case TypeId::Bool:
-					value_out = (((bool *)entity_ref.as_array_element.array_object->data)[entity_ref.as_array_element.index]);
+					value_out = (static_cast<const bool *>(entity_ref.as_array_element.array_object->data)[entity_ref.as_array_element.index]);
 					break;
 				case TypeId::Instance:
 				case TypeId::String:
 				case TypeId::Array:
 				case TypeId::Fn:
-					value_out = (Reference(((Object **)entity_ref.as_array_element.array_object->data)[entity_ref.as_array_element.index]));
+					value_out = Reference(static_cast<Object **>(entity_ref.as_array_element.array_object->data)[entity_ref.as_array_element.index]);
 					if (t.is_local())
 						std::terminate();
 					break;
@@ -711,12 +715,12 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 						std::terminate();
 					break;
 				case TypeId::Ref:
-					value_out = (((Reference *)entity_ref.as_array_element.array_object->data)[entity_ref.as_array_element.index]);
+					value_out = static_cast<const Reference *>(entity_ref.as_array_element.array_object->data)[entity_ref.as_array_element.index];
 					if (t.is_local())
 						std::terminate();
 					break;
 				case TypeId::Any:
-					value_out = (((Value *)entity_ref.as_array_element.array_object->data)[entity_ref.as_array_element.index]);
+					value_out = static_cast<const Value *>(entity_ref.as_array_element.array_object->data)[entity_ref.as_array_element.index];
 					if (t.is_local())
 						std::terminate();
 					break;
@@ -765,12 +769,12 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 		case ReferenceKind::ArrayElementStructFieldRef:
 		case ReferenceKind::ArgStructFieldRef:
 		case ReferenceKind::CoroutineArgStructFieldRef: {
-			const char *const raw_data_ptr = (char *)locate_value_base_ptr(entity_ref);
+			const char *const raw_data_ptr = static_cast<char *>(locate_value_base_ptr(entity_ref));
 
 			switch (t.type_id) {
 				case TypeId::I8:
 					if (t.is_nullable())
-						if (*(bool *)((raw_data_ptr + sizeof(int8_t)))) {
+						if (*static_cast<const bool *>(static_cast<const void *>((raw_data_ptr + sizeof(int8_t))))) {
 							value_out = nullptr;
 							break;
 						}
@@ -779,7 +783,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 					break;
 				case TypeId::I16:
 					if (t.is_nullable())
-						if (*(bool *)((raw_data_ptr + sizeof(int16_t)))) {
+						if (*static_cast<const bool *>(static_cast<const void *>(raw_data_ptr + sizeof(int16_t)))) {
 							value_out = nullptr;
 							break;
 						}
@@ -788,7 +792,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 					break;
 				case TypeId::I32:
 					if (t.is_nullable())
-						if (*(bool *)((raw_data_ptr + sizeof(int32_t)))) {
+						if (*static_cast<const bool *>(static_cast<const void *>(raw_data_ptr + sizeof(int32_t)))) {
 							value_out = nullptr;
 							break;
 						}
@@ -797,7 +801,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 					break;
 				case TypeId::I64:
 					if (t.is_nullable())
-						if (*(bool *)((raw_data_ptr + sizeof(int64_t)))) {
+						if (*static_cast<const bool *>(static_cast<const void *>(raw_data_ptr + sizeof(int64_t)))) {
 							value_out = nullptr;
 							break;
 						}
@@ -806,7 +810,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 					break;
 				case TypeId::ISize:
 					if (t.is_nullable())
-						if (*(bool *)((raw_data_ptr + sizeof(ssize_t)))) {
+						if (*static_cast<const bool *>(static_cast<const void *>(raw_data_ptr + sizeof(ssize_t)))) {
 							value_out = nullptr;
 							break;
 						}
@@ -815,7 +819,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 					break;
 				case TypeId::U8:
 					if (t.is_nullable())
-						if (*(bool *)((raw_data_ptr + sizeof(uint8_t)))) {
+						if (*static_cast<const bool *>(static_cast<const void *>(raw_data_ptr + sizeof(uint8_t)))) {
 							value_out = nullptr;
 							break;
 						}
@@ -824,7 +828,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 					break;
 				case TypeId::U16:
 					if (t.is_nullable())
-						if (*(bool *)((raw_data_ptr + sizeof(uint16_t)))) {
+						if (*static_cast<const bool *>(static_cast<const void *>(raw_data_ptr + sizeof(uint16_t)))) {
 							value_out = nullptr;
 							break;
 						}
@@ -833,7 +837,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 					break;
 				case TypeId::U32:
 					if (t.is_nullable())
-						if (*(bool *)((raw_data_ptr + sizeof(uint32_t)))) {
+						if (*static_cast<const bool *>(static_cast<const void *>(raw_data_ptr + sizeof(uint32_t)))) {
 							value_out = nullptr;
 							break;
 						}
@@ -842,7 +846,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 					break;
 				case TypeId::U64:
 					if (t.is_nullable())
-						if (*(bool *)((raw_data_ptr + sizeof(uint64_t)))) {
+						if (*static_cast<const bool *>(static_cast<const void *>(raw_data_ptr + sizeof(uint64_t)))) {
 							value_out = nullptr;
 							break;
 						}
@@ -851,7 +855,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 					break;
 				case TypeId::USize:
 					if (t.is_nullable())
-						if (*(bool *)((raw_data_ptr + sizeof(size_t)))) {
+						if (*static_cast<const bool *>(static_cast<const void *>(raw_data_ptr + sizeof(size_t)))) {
 							value_out = nullptr;
 							break;
 						}
@@ -860,7 +864,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 					break;
 				case TypeId::F32:
 					if (t.is_nullable())
-						if (*(bool *)((raw_data_ptr + sizeof(float)))) {
+						if (*static_cast<const bool *>(static_cast<const void *>(raw_data_ptr + sizeof(float)))) {
 							value_out = nullptr;
 							break;
 						}
@@ -869,7 +873,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 					break;
 				case TypeId::F64:
 					if (t.is_nullable())
-						if (*(bool *)((raw_data_ptr + sizeof(double)))) {
+						if (*static_cast<const bool *>(static_cast<const void *>(raw_data_ptr + sizeof(double)))) {
 							value_out = nullptr;
 							break;
 						}
@@ -878,7 +882,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 					break;
 				case TypeId::Bool:
 					if (t.is_nullable())
-						if (*(bool *)((raw_data_ptr + sizeof(bool)))) {
+						if (*static_cast<const bool *>(static_cast<const void *>(raw_data_ptr + sizeof(bool)))) {
 							value_out = nullptr;
 							break;
 						}
@@ -896,7 +900,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 					break;
 				case TypeId::StructInstance: {
 					if (t.is_nullable())
-						if (*(bool *)((raw_data_ptr + sizeof_type(t)))) {
+						if (*static_cast<const bool *>(static_cast<const void *>(raw_data_ptr + sizeof_type(t)))) {
 							value_out = nullptr;
 							break;
 						}
@@ -906,15 +910,15 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 					break;
 				}
 				case TypeId::ScopedEnum: {
-					CustomTypeDefObject *td = (CustomTypeDefObject *)t.type_def;
+					CustomTypeDefObject *td = static_cast<CustomTypeDefObject *>(t.type_def);
 					assert(td->type_object->get_object_kind() == ObjectKind::ScopedEnum);
 
 					TypeRef type;
-					if ((type = ((ScopedEnumObject *)td->type_object)->base_type))
+					if ((type = (static_cast<ScopedEnumObject *>(td->type_object))->base_type))
 						switch (type.type_id) {
 							case TypeId::I8:
 								if (t.is_nullable())
-									if (*(bool *)((raw_data_ptr + sizeof(int8_t)))) {
+									if (*static_cast<const bool *>(static_cast<const void *>(raw_data_ptr + sizeof(int8_t)))) {
 										value_out = nullptr;
 										break;
 									}
@@ -923,7 +927,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 								break;
 							case TypeId::I16:
 								if (t.is_nullable())
-									if (*(bool *)((raw_data_ptr + sizeof(int16_t)))) {
+									if (*static_cast<const bool *>(static_cast<const void *>(raw_data_ptr + sizeof(int16_t)))) {
 										value_out = nullptr;
 										break;
 									}
@@ -932,7 +936,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 								break;
 							case TypeId::I32:
 								if (t.is_nullable())
-									if (*(bool *)((raw_data_ptr + sizeof(int32_t)))) {
+									if (*static_cast<const bool *>(static_cast<const void *>(raw_data_ptr + sizeof(int32_t)))) {
 										value_out = nullptr;
 										break;
 									}
@@ -941,7 +945,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 								break;
 							case TypeId::I64:
 								if (t.is_nullable())
-									if (*(bool *)((raw_data_ptr + sizeof(int64_t)))) {
+									if (*static_cast<const bool *>(static_cast<const void *>(raw_data_ptr + sizeof(int64_t)))) {
 										value_out = nullptr;
 										break;
 									}
@@ -950,7 +954,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 								break;
 							case TypeId::ISize:
 								if (t.is_nullable())
-									if (*(bool *)((raw_data_ptr + sizeof(ssize_t)))) {
+									if (*static_cast<const bool *>(static_cast<const void *>(raw_data_ptr + sizeof(ssize_t)))) {
 										value_out = nullptr;
 										break;
 									}
@@ -959,7 +963,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 								break;
 							case TypeId::U8:
 								if (t.is_nullable())
-									if (*(bool *)((raw_data_ptr + sizeof(uint8_t)))) {
+									if (*static_cast<const bool *>(static_cast<const void *>(raw_data_ptr + sizeof(uint8_t)))) {
 										value_out = nullptr;
 										break;
 									}
@@ -968,7 +972,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 								break;
 							case TypeId::U16:
 								if (t.is_nullable())
-									if (*(bool *)((raw_data_ptr + sizeof(uint16_t)))) {
+									if (*static_cast<const bool *>(static_cast<const void *>(raw_data_ptr + sizeof(uint16_t)))) {
 										value_out = nullptr;
 										break;
 									}
@@ -977,7 +981,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 								break;
 							case TypeId::U32:
 								if (t.is_nullable())
-									if (*(bool *)((raw_data_ptr + sizeof(uint32_t)))) {
+									if (*static_cast<const bool *>(static_cast<const void *>(raw_data_ptr + sizeof(uint32_t)))) {
 										value_out = nullptr;
 										break;
 									}
@@ -986,7 +990,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 								break;
 							case TypeId::U64:
 								if (t.is_nullable())
-									if (*(bool *)((raw_data_ptr + sizeof(uint64_t)))) {
+									if (*static_cast<const bool *>(static_cast<const void *>(raw_data_ptr + sizeof(uint64_t)))) {
 										value_out = nullptr;
 										break;
 									}
@@ -995,7 +999,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 								break;
 							case TypeId::USize:
 								if (t.is_nullable())
-									if (*(bool *)((raw_data_ptr + sizeof(size_t)))) {
+									if (*static_cast<const bool *>(static_cast<const void *>(raw_data_ptr + sizeof(size_t)))) {
 										value_out = nullptr;
 										break;
 									}
@@ -1004,7 +1008,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 								break;
 							case TypeId::F32:
 								if (t.is_nullable())
-									if (*(bool *)((raw_data_ptr + sizeof(float)))) {
+									if (*static_cast<const bool *>(static_cast<const void *>(raw_data_ptr + sizeof(float)))) {
 										value_out = nullptr;
 										break;
 									}
@@ -1013,7 +1017,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 								break;
 							case TypeId::F64:
 								if (t.is_nullable())
-									if (*(bool *)((raw_data_ptr + sizeof(double)))) {
+									if (*static_cast<const bool *>(static_cast<const void *>(raw_data_ptr + sizeof(double)))) {
 										value_out = nullptr;
 										break;
 									}
@@ -1022,7 +1026,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 								break;
 							case TypeId::Bool:
 								if (t.is_nullable())
-									if (*(bool *)((raw_data_ptr + sizeof(bool)))) {
+									if (*static_cast<const bool *>(static_cast<const void *>(raw_data_ptr + sizeof(bool)))) {
 										value_out = nullptr;
 										break;
 									}
@@ -1036,7 +1040,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 				}
 				case TypeId::TypelessScopedEnum:
 					if (t.is_nullable())
-						if (*(bool *)((raw_data_ptr + sizeof(uint32_t)))) {
+						if (*static_cast<const bool *>(static_cast<const void *>(raw_data_ptr + sizeof(uint32_t)))) {
 							value_out = nullptr;
 							break;
 						}
@@ -1070,12 +1074,12 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 SLAKE_API void Runtime::write_var_with_type(const Reference &entity_ref, const TypeRef &t, const Value &value) noexcept {
 	switch (entity_ref.kind) {
 		case ReferenceKind::LocalVarRef: {
-			char *raw_data_ptr = (char *)locate_value_base_ptr(entity_ref);
+			char *raw_data_ptr = static_cast<char *>(locate_value_base_ptr(entity_ref));
 
 			switch (t.type_id) {
 				case TypeId::I8:
 					if (t.is_nullable()) {
-						if ((*((bool *)raw_data_ptr) = value.is_null()))
+						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr)) = value.is_null()))
 							break;
 						raw_data_ptr += sizeof(bool);
 					}
@@ -1083,7 +1087,7 @@ SLAKE_API void Runtime::write_var_with_type(const Reference &entity_ref, const T
 					break;
 				case TypeId::I16:
 					if (t.is_nullable()) {
-						if ((*((bool *)raw_data_ptr) = value.is_null()))
+						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr)) = value.is_null()))
 							break;
 						raw_data_ptr += sizeof(bool);
 					}
@@ -1091,7 +1095,7 @@ SLAKE_API void Runtime::write_var_with_type(const Reference &entity_ref, const T
 					break;
 				case TypeId::I32:
 					if (t.is_nullable()) {
-						if ((*((bool *)raw_data_ptr) = value.is_null()))
+						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr)) = value.is_null()))
 							break;
 						raw_data_ptr += sizeof(bool);
 					}
@@ -1099,7 +1103,7 @@ SLAKE_API void Runtime::write_var_with_type(const Reference &entity_ref, const T
 					break;
 				case TypeId::I64:
 					if (t.is_nullable()) {
-						if ((*((bool *)raw_data_ptr) = value.is_null()))
+						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr)) = value.is_null()))
 							break;
 						raw_data_ptr += sizeof(bool);
 					}
@@ -1107,7 +1111,7 @@ SLAKE_API void Runtime::write_var_with_type(const Reference &entity_ref, const T
 					break;
 				case TypeId::U8:
 					if (t.is_nullable()) {
-						if ((*((bool *)raw_data_ptr) = value.is_null()))
+						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr)) = value.is_null()))
 							break;
 						raw_data_ptr += sizeof(bool);
 					}
@@ -1115,7 +1119,7 @@ SLAKE_API void Runtime::write_var_with_type(const Reference &entity_ref, const T
 					break;
 				case TypeId::U16:
 					if (t.is_nullable()) {
-						if ((*((bool *)raw_data_ptr) = value.is_null()))
+						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr)) = value.is_null()))
 							break;
 						raw_data_ptr += sizeof(bool);
 					}
@@ -1123,7 +1127,7 @@ SLAKE_API void Runtime::write_var_with_type(const Reference &entity_ref, const T
 					break;
 				case TypeId::U32:
 					if (t.is_nullable()) {
-						if ((*((bool *)raw_data_ptr) = value.is_null()))
+						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr)) = value.is_null()))
 							break;
 						raw_data_ptr += sizeof(bool);
 					}
@@ -1131,7 +1135,7 @@ SLAKE_API void Runtime::write_var_with_type(const Reference &entity_ref, const T
 					break;
 				case TypeId::U64:
 					if (t.is_nullable()) {
-						if ((*((bool *)raw_data_ptr) = value.is_null()))
+						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr)) = value.is_null()))
 							break;
 						raw_data_ptr += sizeof(bool);
 					}
@@ -1139,7 +1143,7 @@ SLAKE_API void Runtime::write_var_with_type(const Reference &entity_ref, const T
 					break;
 				case TypeId::F32:
 					if (t.is_nullable()) {
-						if ((*((bool *)raw_data_ptr) = value.is_null()))
+						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr)) = value.is_null()))
 							break;
 						raw_data_ptr += sizeof(bool);
 					}
@@ -1147,7 +1151,7 @@ SLAKE_API void Runtime::write_var_with_type(const Reference &entity_ref, const T
 					break;
 				case TypeId::F64:
 					if (t.is_nullable()) {
-						if ((*((bool *)raw_data_ptr) = value.is_null()))
+						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr)) = value.is_null()))
 							break;
 						raw_data_ptr += sizeof(bool);
 					}
@@ -1155,7 +1159,7 @@ SLAKE_API void Runtime::write_var_with_type(const Reference &entity_ref, const T
 					break;
 				case TypeId::Bool:
 					if (t.is_nullable()) {
-						if ((*((bool *)raw_data_ptr) = value.is_null()))
+						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr)) = value.is_null()))
 							break;
 						raw_data_ptr += sizeof(bool);
 					}
@@ -1180,12 +1184,12 @@ SLAKE_API void Runtime::write_var_with_type(const Reference &entity_ref, const T
 			break;
 		}
 		case ReferenceKind::CoroutineLocalVarRef: {
-			char *raw_data_ptr = (char *)locate_value_base_ptr(entity_ref);
+			char *raw_data_ptr = static_cast<char *>(locate_value_base_ptr(entity_ref));
 
 			switch (t.type_id) {
 				case TypeId::I8:
 					if (t.is_nullable()) {
-						if ((*((bool *)raw_data_ptr) = value.is_null()))
+						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr)) = value.is_null()))
 							break;
 						raw_data_ptr += sizeof(bool);
 					}
@@ -1193,7 +1197,7 @@ SLAKE_API void Runtime::write_var_with_type(const Reference &entity_ref, const T
 					break;
 				case TypeId::I16:
 					if (t.is_nullable()) {
-						if ((*((bool *)raw_data_ptr) = value.is_null()))
+						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr)) = value.is_null()))
 							break;
 						raw_data_ptr += sizeof(bool);
 					}
@@ -1201,7 +1205,7 @@ SLAKE_API void Runtime::write_var_with_type(const Reference &entity_ref, const T
 					break;
 				case TypeId::I32:
 					if (t.is_nullable()) {
-						if ((*((bool *)raw_data_ptr) = value.is_null()))
+						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr)) = value.is_null()))
 							break;
 						raw_data_ptr += sizeof(bool);
 					}
@@ -1209,7 +1213,7 @@ SLAKE_API void Runtime::write_var_with_type(const Reference &entity_ref, const T
 					break;
 				case TypeId::I64:
 					if (t.is_nullable()) {
-						if ((*((bool *)raw_data_ptr) = value.is_null()))
+						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr)) = value.is_null()))
 							break;
 						raw_data_ptr += sizeof(bool);
 					}
@@ -1217,7 +1221,7 @@ SLAKE_API void Runtime::write_var_with_type(const Reference &entity_ref, const T
 					break;
 				case TypeId::U8:
 					if (t.is_nullable()) {
-						if ((*((bool *)raw_data_ptr) = value.is_null()))
+						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr)) = value.is_null()))
 							break;
 						raw_data_ptr += sizeof(bool);
 					}
@@ -1225,7 +1229,7 @@ SLAKE_API void Runtime::write_var_with_type(const Reference &entity_ref, const T
 					break;
 				case TypeId::U16:
 					if (t.is_nullable()) {
-						if ((*((bool *)raw_data_ptr) = value.is_null()))
+						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr)) = value.is_null()))
 							break;
 						raw_data_ptr += sizeof(bool);
 					}
@@ -1233,7 +1237,7 @@ SLAKE_API void Runtime::write_var_with_type(const Reference &entity_ref, const T
 					break;
 				case TypeId::U32:
 					if (t.is_nullable()) {
-						if ((*((bool *)raw_data_ptr) = value.is_null()))
+						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr)) = value.is_null()))
 							break;
 						raw_data_ptr += sizeof(bool);
 					}
@@ -1241,7 +1245,7 @@ SLAKE_API void Runtime::write_var_with_type(const Reference &entity_ref, const T
 					break;
 				case TypeId::U64:
 					if (t.is_nullable()) {
-						if ((*((bool *)raw_data_ptr) = value.is_null()))
+						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr)) = value.is_null()))
 							break;
 						raw_data_ptr += sizeof(bool);
 					}
@@ -1249,7 +1253,7 @@ SLAKE_API void Runtime::write_var_with_type(const Reference &entity_ref, const T
 					break;
 				case TypeId::F32:
 					if (t.is_nullable()) {
-						if ((*((bool *)raw_data_ptr) = value.is_null()))
+						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr)) = value.is_null()))
 							break;
 						raw_data_ptr += sizeof(bool);
 					}
@@ -1257,7 +1261,7 @@ SLAKE_API void Runtime::write_var_with_type(const Reference &entity_ref, const T
 					break;
 				case TypeId::F64:
 					if (t.is_nullable()) {
-						if ((*((bool *)raw_data_ptr) = value.is_null()))
+						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr)) = value.is_null()))
 							break;
 						raw_data_ptr += sizeof(bool);
 					}
@@ -1265,7 +1269,7 @@ SLAKE_API void Runtime::write_var_with_type(const Reference &entity_ref, const T
 					break;
 				case TypeId::Bool:
 					if (t.is_nullable()) {
-						if ((*((bool *)raw_data_ptr) = value.is_null()))
+						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr)) = value.is_null()))
 							break;
 						raw_data_ptr += sizeof(bool);
 					}
@@ -1300,37 +1304,37 @@ SLAKE_API void Runtime::write_var_with_type(const Reference &entity_ref, const T
 			}
 			switch (t.type_id) {
 				case TypeId::I8:
-					((int8_t *)entity_ref.as_array_element.array_object->data)[entity_ref.as_array_element.index] = value.get_i8();
+					static_cast<int8_t *>(entity_ref.as_array_element.array_object->data)[entity_ref.as_array_element.index] = value.get_i8();
 					break;
 				case TypeId::I16:
-					((int16_t *)entity_ref.as_array_element.array_object->data)[entity_ref.as_array_element.index] = value.get_i16();
+					static_cast<int16_t *>(entity_ref.as_array_element.array_object->data)[entity_ref.as_array_element.index] = value.get_i16();
 					break;
 				case TypeId::I32:
-					((int32_t *)entity_ref.as_array_element.array_object->data)[entity_ref.as_array_element.index] = value.get_i32();
+					static_cast<int32_t *>(entity_ref.as_array_element.array_object->data)[entity_ref.as_array_element.index] = value.get_i32();
 					break;
 				case TypeId::I64:
-					((int64_t *)entity_ref.as_array_element.array_object->data)[entity_ref.as_array_element.index] = value.get_i64();
+					static_cast<int64_t *>(entity_ref.as_array_element.array_object->data)[entity_ref.as_array_element.index] = value.get_i64();
 					break;
 				case TypeId::U8:
-					((uint8_t *)entity_ref.as_array_element.array_object->data)[entity_ref.as_array_element.index] = value.get_u8();
+					static_cast<uint8_t *>(entity_ref.as_array_element.array_object->data)[entity_ref.as_array_element.index] = value.get_u8();
 					break;
 				case TypeId::U16:
-					((uint16_t *)entity_ref.as_array_element.array_object->data)[entity_ref.as_array_element.index] = value.get_u16();
+					static_cast<uint16_t *>(entity_ref.as_array_element.array_object->data)[entity_ref.as_array_element.index] = value.get_u16();
 					break;
 				case TypeId::U32:
-					((uint32_t *)entity_ref.as_array_element.array_object->data)[entity_ref.as_array_element.index] = value.get_u32();
+					static_cast<uint32_t *>(entity_ref.as_array_element.array_object->data)[entity_ref.as_array_element.index] = value.get_u32();
 					break;
 				case TypeId::U64:
-					((uint64_t *)entity_ref.as_array_element.array_object->data)[entity_ref.as_array_element.index] = value.get_u64();
+					static_cast<uint64_t *>(entity_ref.as_array_element.array_object->data)[entity_ref.as_array_element.index] = value.get_u64();
 					break;
 				case TypeId::F32:
-					((float *)entity_ref.as_array_element.array_object->data)[entity_ref.as_array_element.index] = value.get_f32();
+					static_cast<float *>(entity_ref.as_array_element.array_object->data)[entity_ref.as_array_element.index] = value.get_f32();
 					break;
 				case TypeId::F64:
-					((double *)entity_ref.as_array_element.array_object->data)[entity_ref.as_array_element.index] = value.get_f64();
+					static_cast<double *>(entity_ref.as_array_element.array_object->data)[entity_ref.as_array_element.index] = value.get_f64();
 					break;
 				case TypeId::Bool:
-					((bool *)entity_ref.as_array_element.array_object->data)[entity_ref.as_array_element.index] = value.get_bool();
+					static_cast<bool *>(entity_ref.as_array_element.array_object->data)[entity_ref.as_array_element.index] = value.get_bool();
 					break;
 				case TypeId::String:
 				case TypeId::Instance:
@@ -1339,7 +1343,7 @@ SLAKE_API void Runtime::write_var_with_type(const Reference &entity_ref, const T
 						std::terminate();
 					if (value.is_local())
 						std::terminate();
-					((Object **)entity_ref.as_array_element.array_object->data)[entity_ref.as_array_element.index] = value.get_reference().as_object;
+					static_cast<Object **>(entity_ref.as_array_element.array_object->data)[entity_ref.as_array_element.index] = value.get_reference().as_object;
 					break;
 				}
 				default:
@@ -1383,85 +1387,85 @@ SLAKE_API void Runtime::write_var_with_type(const Reference &entity_ref, const T
 		case ReferenceKind::ArgStructFieldRef:
 		case ReferenceKind::CoroutineArgStructFieldRef:
 		case ReferenceKind::InitObjectLayoutFieldRef: {
-			char *const raw_data_ptr = (char *)locate_value_base_ptr(entity_ref);
+			char *const raw_data_ptr = static_cast<char *>(locate_value_base_ptr(entity_ref));
 
 			switch (t.type_id) {
 				case TypeId::I8:
 					if (t.is_nullable()) {
-						if ((*((bool *)(raw_data_ptr + sizeof(int8_t))) = value.is_null()))
+						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr + sizeof(int8_t))) = value.is_null()))
 							break;
 					}
-					*((int8_t *)raw_data_ptr) = value.get_i8();
+					*static_cast<int8_t *>(static_cast<void*>(raw_data_ptr)) = value.get_i8();
 					break;
 				case TypeId::I16:
 					if (t.is_nullable()) {
-						if ((*((bool *)(raw_data_ptr + sizeof(int16_t))) = value.is_null()))
+						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr + sizeof(int16_t))) = value.is_null()))
 							break;
 					}
-					*((int16_t *)raw_data_ptr) = value.get_i16();
+					*static_cast<int16_t *>(static_cast<void*>(raw_data_ptr)) = value.get_i16();
 					break;
 				case TypeId::I32:
 					if (t.is_nullable()) {
-						if ((*((bool *)(raw_data_ptr + sizeof(int32_t))) = value.is_null()))
+						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr + sizeof(int32_t))) = value.is_null()))
 							break;
 					}
-					*((int32_t *)raw_data_ptr) = value.get_i32();
+					*static_cast<int32_t *>(static_cast<void*>(raw_data_ptr)) = value.get_i32();
 					break;
 				case TypeId::I64:
 					if (t.is_nullable()) {
-						if ((*((bool *)(raw_data_ptr + sizeof(int64_t))) = value.is_null()))
+						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr + sizeof(int64_t))) = value.is_null()))
 							break;
 					}
-					*((int64_t *)raw_data_ptr) = value.get_i64();
+					*static_cast<int64_t *>(static_cast<void*>(raw_data_ptr)) = value.get_i64();
 					break;
 				case TypeId::U8:
 					if (t.is_nullable()) {
-						if ((*((bool *)(raw_data_ptr + sizeof(uint8_t))) = value.is_null()))
+						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr + sizeof(uint8_t))) = value.is_null()))
 							break;
 					}
-					*((uint8_t *)raw_data_ptr) = value.get_u8();
+					*static_cast<uint8_t *>(static_cast<void*>(raw_data_ptr)) = value.get_u8();
 					break;
 				case TypeId::U16:
 					if (t.is_nullable()) {
-						if ((*((bool *)(raw_data_ptr + sizeof(uint16_t))) = value.is_null()))
+						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr + sizeof(uint16_t))) = value.is_null()))
 							break;
 					}
-					*((uint16_t *)raw_data_ptr) = value.get_u16();
+					*static_cast<uint16_t *>(static_cast<void*>(raw_data_ptr)) = value.get_u16();
 					break;
 				case TypeId::U32:
 					if (t.is_nullable()) {
-						if ((*((bool *)(raw_data_ptr + sizeof(uint32_t))) = value.is_null()))
+						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr + sizeof(uint32_t))) = value.is_null()))
 							break;
 					}
-					*((uint32_t *)raw_data_ptr) = value.get_u32();
+					*static_cast<uint32_t *>(static_cast<void*>(raw_data_ptr)) = value.get_u32();
 					break;
 				case TypeId::U64:
 					if (t.is_nullable()) {
-						if ((*((bool *)(raw_data_ptr + sizeof(uint64_t))) = value.is_null()))
+						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr + sizeof(uint64_t))) = value.is_null()))
 							break;
 					}
-					*((uint64_t *)raw_data_ptr) = value.get_u64();
+					*static_cast<uint64_t *>(static_cast<void*>(raw_data_ptr)) = value.get_u64();
 					break;
 				case TypeId::F32:
 					if (t.is_nullable()) {
-						if ((*((bool *)(raw_data_ptr + sizeof(float))) = value.is_null()))
+						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr + sizeof(float))) = value.is_null()))
 							break;
 					}
-					*((float *)raw_data_ptr) = value.get_f32();
+					*(static_cast<float *>(static_cast<void*>(raw_data_ptr))) = value.get_f32();
 					break;
 				case TypeId::F64:
 					if (t.is_nullable()) {
-						if ((*((bool *)(raw_data_ptr + sizeof(double))) = value.is_null()))
+						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr + sizeof(double))) = value.is_null()))
 							break;
 					}
-					*((double *)raw_data_ptr) = value.get_f64();
+					*static_cast<double *>(static_cast<void*>(raw_data_ptr)) = value.get_f64();
 					break;
 				case TypeId::Bool:
 					if (t.is_nullable()) {
-						if ((*((bool *)(raw_data_ptr + sizeof(bool))) = value.is_null()))
+						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr + sizeof(bool))) = value.is_null()))
 							break;
 					}
-					*((bool *)raw_data_ptr) = value.get_bool();
+					*static_cast<int8_t *>(static_cast<void*>(raw_data_ptr)) = value.get_bool();
 					break;
 				case TypeId::String:
 				case TypeId::Instance:
@@ -1470,7 +1474,7 @@ SLAKE_API void Runtime::write_var_with_type(const Reference &entity_ref, const T
 						std::terminate();
 					if (value.is_local())
 						std::terminate();
-					*((Object **)raw_data_ptr) = value.get_reference().as_object;
+					*static_cast<Object **>(static_cast<void*>(raw_data_ptr)) = value.get_reference().as_object;
 					break;
 				default:
 					// All fields should be checked during the instantiation.

@@ -406,7 +406,7 @@ SLAKE_API ErrorEvaluatingObjectTypeError *ErrorEvaluatingObjectTypeError::alloc(
 }
 
 SLAKE_API InternalExceptionPointer slake::alloc_oom_error_if_alloc_failed(InternalExceptionPointer e) {
-	if (!e) {
+	if SLAKE_UNLIKELY (!e) {
 		return OutOfMemoryError::alloc();
 	}
 	return e;

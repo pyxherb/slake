@@ -7,28 +7,28 @@
 
 using namespace slake;
 
-#define _check_operand_count_with_output_required(runtime, output, num_operands_in, num_operands)                     \
-	if (SLAKE_UNLIKELY(SLAKE_UNLIKELY((output) == UINT32_MAX) | SLAKE_UNLIKELY((num_operands_in) != (num_operands)))) \
+#define _check_operand_count_with_output_required(runtime, output, num_operands_in, num_operands) \
+	if SLAKE_UNLIKELY ((output) == UINT32_MAX | (num_operands_in) != (num_operands))              \
 	return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc((runtime)->get_fixed_alloc()))
 
 #define _check_operand_count(runtime, output, num_operands_in, num_operands) \
-	if (SLAKE_UNLIKELY(num_operands_in != num_operands))                     \
+	if SLAKE_UNLIKELY (num_operands_in != num_operands)                      \
 	return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(runtime->get_fixed_alloc()))
 
-#define _check_operand_type(runtime, operand, type)     \
-	if (SLAKE_UNLIKELY((operand).value_type != (type))) \
+#define _check_operand_type(runtime, operand, type)    \
+	if SLAKE_UNLIKELY ((operand).value_type != (type)) \
 	return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc((runtime)->get_fixed_alloc()))
 
 #define _check_object_ref_operand_type(runtime, operand, operand_kind) \
-	if (SLAKE_UNLIKELY((operand).kind != operand_kind))                \
+	if SLAKE_UNLIKELY ((operand).kind != operand_kind)                 \
 	return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(runtime->get_fixed_alloc()))
 
-#define _check_object_operand_type(runtime, object, type_id)                                                \
-	if (SLAKE_UNLIKELY(SLAKE_UNLIKELY(object) && SLAKE_UNLIKELY((object)->get_object_kind() != (type_id)))) \
+#define _check_object_operand_type(runtime, object, type_id)               \
+	if SLAKE_UNLIKELY (object && (object)->get_object_kind() != (type_id)) \
 		return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc((runtime)->get_fixed_alloc()));
 
-#define _is_register_valid(cur_major_frame, index) SLAKE_LIKELY((index) < (cur_major_frame)->resumable_context_data.num_regs)
-#define _is_register_invalid(cur_major_frame, index) SLAKE_UNLIKELY((index) >= (cur_major_frame)->resumable_context_data.num_regs)
+#define _is_register_valid(cur_major_frame, index) ((index) < (cur_major_frame)->resumable_context_data.num_regs)
+#define _is_register_invalid(cur_major_frame, index) ((index) >= (cur_major_frame)->resumable_context_data.num_regs)
 
 #define _calc_reg_ptr(regs_ptr, index)                      \
 	(static_cast<std::conditional_t<                        \
@@ -364,7 +364,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_create_new_major_frame(
 	mf->stack_base = prev_stack_top;
 	new_major_frame.resumable_context_data.off_cur_minor_frame = mf_stack_off;
 
-	if (SLAKE_UNLIKELY(!fn)) {
+	if (!fn) {
 		// Used in the creation of top major frame.
 		new_major_frame.cur_fn = nullptr;
 		new_major_frame.resumable_context_data.num_regs = 1;
@@ -460,7 +460,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer slake::Runtime::_add_local_var(Contex
 
 	size_t size = sizeof_type(type), align = alignof_type(type);
 
-	if (SLAKE_UNLIKELY(!context->aligned_stack_alloc(size, align)))
+	if (!context->aligned_stack_alloc(size, align))
 		return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
 
 	switch (type.type_id) {
@@ -486,7 +486,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer slake::Runtime::_add_local_var(Contex
 		case TypeId::Ref: {
 			// The data is already aligned, just directly assign to them.
 			Object **type_info = static_cast<Object **>(context->stack_alloc(sizeof(void *)));
-			if (SLAKE_UNLIKELY(!type_info))
+			if (!type_info)
 				return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
 #ifndef _NDEBUG
 			const size_t diff = alignof(void *) - ((uintptr_t)(calc_stack_addr(context->data_stack, context->stack_size, context->stack_top)) & (alignof(void *) - 1));
@@ -499,7 +499,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer slake::Runtime::_add_local_var(Contex
 			if (type.is_nullable())
 				context->stack_alloc(sizeof(bool));
 			TypeDefObject **type_info = (TypeDefObject **)context->stack_alloc(sizeof(void *));
-			if (SLAKE_UNLIKELY(!type_info))
+			if (!type_info)
 				return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
 			memcpy(type_info, &type.type_def, sizeof(void *));
 			break;
@@ -508,7 +508,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer slake::Runtime::_add_local_var(Contex
 			if (type.is_nullable())
 				context->stack_alloc(sizeof(bool));
 			TypeDefObject **type_info = (TypeDefObject **)context->stack_alloc(sizeof(void *));
-			if (SLAKE_UNLIKELY(!type_info))
+			if (!type_info)
 				return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
 			memcpy(type_info, &type.type_def, sizeof(void *));
 			break;
@@ -519,7 +519,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer slake::Runtime::_add_local_var(Contex
 			if (type.is_nullable())
 				context->stack_alloc(sizeof(bool));
 			TypeDefObject **type_info = (TypeDefObject **)context->stack_alloc(sizeof(void *));
-			if (SLAKE_UNLIKELY(!type_info))
+			if (!type_info)
 				return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
 			memcpy(type_info, &type.type_def, sizeof(void *));
 			break;
@@ -529,18 +529,18 @@ SLAKE_FORCEINLINE InternalExceptionPointer slake::Runtime::_add_local_var(Contex
 	}
 
 	TypeModifier *type_modifier = static_cast<TypeModifier *>(context->stack_alloc(sizeof(TypeModifier)));
-	if (SLAKE_UNLIKELY(!type_modifier))
+	if (!type_modifier)
 		return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
 	*type_modifier = type.type_modifier;
 
 	TypeId *type_id = static_cast<TypeId *>(context->stack_alloc(sizeof(TypeId)));
-	if (SLAKE_UNLIKELY(!type_id))
+	if (!type_id)
 		return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
 	*type_id = type.type_id;
 
 	size_t off_out = context->stack_top;
 
-	if (SLAKE_UNLIKELY(!_alloc_alloca_record(context, frame, output_reg)))
+	if (!_alloc_alloca_record(context, frame, output_reg))
 		return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
 
 	restore_stack_top_guard.release();
@@ -578,7 +578,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer slake::Runtime::_add_local_var(Contex
 }
 
 SLAKE_FORCEINLINE InternalExceptionPointer larg(Context *context, MajorFrame *major_frame, Runtime *rt, uint32_t off, Reference &object_ref_out) {
-	if (SLAKE_UNLIKELY(off >= major_frame->resumable_context_data.num_args)) {
+	if (off >= major_frame->resumable_context_data.num_args) {
 		return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(rt->get_fixed_alloc()));
 	}
 
@@ -609,10 +609,11 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			_unwrap_reg_operand_into_ptr(this, cur_frame_regs_ptr, cur_major_frame, operands[0], src);
 			_check_operand_type(this, *src, ValueType::Reference);
 
-			if (_is_register_invalid(cur_major_frame, output))
+			if SLAKE_LIKELY (_is_register_valid(cur_major_frame, output))
+				read_var(src->get_reference(), *_calc_reg_ptr(cur_frame_regs_ptr, output));
+			else
 				// The register does not present.
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
-			read_var(src->get_reference(), *_calc_reg_ptr(cur_frame_regs_ptr, output));
 
 			break;
 		}
@@ -628,7 +629,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 
 			const Reference &ref = dest_value->get_reference();
 			TypeRef t = typeof_var(ref);
-			if (SLAKE_LIKELY(is_compatible(t, *data)))
+			if SLAKE_LIKELY (is_compatible(t, *data))
 				write_var_with_type(ref, t, *data);
 			else
 				return MismatchedVarTypeError::alloc(get_fixed_alloc(), t);
@@ -654,25 +655,25 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			cur_major_frame->resumable_context_data.cur_ins = operands[((uint8_t)!condition->get_bool()) + 1].get_u32();
 			return {};
 		}
-#define SIMPLE_BINARY_OP_PROC(slake_type_lower, slake_type_upper, cpp_type, op)                                                                          \
-	{                                                                                                                                                    \
-		_check_operand_count_with_output_required(this, output, num_operands, 2);                                                                        \
-                                                                                                                                                         \
-		if (_is_register_invalid(cur_major_frame, output)) {                                                                                             \
-			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));                                                      \
-		}                                                                                                                                                \
-                                                                                                                                                         \
-		const Value *x, *y;                                                                                                                              \
-                                                                                                                                                         \
-		_unwrap_reg_operand_into_ptr(this, cur_frame_regs_ptr, cur_major_frame, operands[0], x);                                                         \
-		_unwrap_reg_operand_into_ptr(this, cur_frame_regs_ptr, cur_major_frame, operands[1], y);                                                         \
-		if (SLAKE_UNLIKELY(SLAKE_UNLIKELY(x->value_type != ValueType::slake_type_upper) | SLAKE_UNLIKELY(y->value_type != ValueType::slake_type_upper))) \
-			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));                                                      \
-                                                                                                                                                         \
-		Value &result_out = *_calc_reg_ptr(cur_frame_regs_ptr, output);                                                                                  \
-		result_out.value_type = ValueType::slake_type_upper;                                                                                             \
-		result_out.as_##slake_type_lower = x->get_##slake_type_lower() op y->get_##slake_type_lower();                                                   \
-		break;                                                                                                                                           \
+#define SIMPLE_BINARY_OP_PROC(slake_type_lower, slake_type_upper, cpp_type, op)                                             \
+	{                                                                                                                       \
+		const Value *x, *y;                                                                                                 \
+                                                                                                                            \
+		_check_operand_count_with_output_required(this, output, num_operands, 2);                                           \
+                                                                                                                            \
+		_unwrap_reg_operand_into_ptr(this, cur_frame_regs_ptr, cur_major_frame, operands[0], x);                            \
+		_unwrap_reg_operand_into_ptr(this, cur_frame_regs_ptr, cur_major_frame, operands[1], y);                            \
+		if SLAKE_UNLIKELY ((x->value_type != ValueType::slake_type_upper) | (y->value_type != ValueType::slake_type_upper)) \
+			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));                         \
+                                                                                                                            \
+		if SLAKE_UNLIKELY (_is_register_invalid(cur_major_frame, output)) {                                                 \
+			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));                         \
+		}                                                                                                                   \
+                                                                                                                            \
+		Value &result_out = *_calc_reg_ptr(cur_frame_regs_ptr, output);                                                     \
+		result_out.value_type = ValueType::slake_type_upper;                                                                \
+		result_out.as_##slake_type_lower = x->get_##slake_type_lower() op y->get_##slake_type_lower();                      \
+		break;                                                                                                              \
 	}
 		case Opcode::PHI: {
 			if (output == UINT32_MAX) {
@@ -711,10 +712,11 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			Reference ref;
 			SLAKE_RETURN_IF_EXCEPT(larg(&context->get_context(), cur_major_frame, this, operands[0].get_u32(), ref));
 
-			if (_is_register_invalid(cur_major_frame, output))
+			if SLAKE_LIKELY (_is_register_invalid(cur_major_frame, output))
+				read_var(ref, *_calc_reg_ptr(cur_frame_regs_ptr, output));
+			else
 				// The register does not present.
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
-			read_var(ref, *_calc_reg_ptr(cur_frame_regs_ptr, output));
 
 			break;
 		}
@@ -841,7 +843,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 		case Opcode::MODF32: {
 			_check_operand_count_with_output_required(this, output, num_operands, 2);
 
-			if (_is_register_invalid(cur_major_frame, output)) {
+			if SLAKE_UNLIKELY (_is_register_invalid(cur_major_frame, output)) {
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
@@ -860,7 +862,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 		case Opcode::MODF64: {
 			_check_operand_count_with_output_required(this, output, num_operands, 2);
 
-			if (_is_register_invalid(cur_major_frame, output)) {
+			if SLAKE_UNLIKELY (_is_register_invalid(cur_major_frame, output)) {
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
@@ -944,33 +946,33 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 		case Opcode::XORUSIZE:
 			SIMPLE_BINARY_OP_PROC(usize, USize, size_t, ^);
 
-#define SIMPLE_EQ_OP_PROC(slake_type_lower, slake_type_upper)                                                                    \
-	{                                                                                                                            \
-		_check_operand_count_with_output_required(this, output, num_operands, 2);                                                \
-                                                                                                                                 \
-		if (_is_register_invalid(cur_major_frame, output)) {                                                                     \
-			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));                              \
-		}                                                                                                                        \
-                                                                                                                                 \
-		const Value *x, *y;                                                                                                      \
-                                                                                                                                 \
-		_unwrap_reg_operand_into_ptr(this, cur_frame_regs_ptr, cur_major_frame, operands[0], x);                                 \
-		_unwrap_reg_operand_into_ptr(this, cur_frame_regs_ptr, cur_major_frame, operands[1], y);                                 \
-		switch (x->value_type) {                                                                                                 \
-			case ValueType::slake_type_upper:                                                                                    \
-				if ((x->value_type != ValueType::slake_type_upper) | (y->value_type != ValueType::slake_type_upper)) {           \
-					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));                      \
-				}                                                                                                                \
-				*_calc_reg_ptr(cur_frame_regs_ptr, output) = (bool)(x->get_##slake_type_lower() == y->get_##slake_type_lower()); \
-				break;                                                                                                           \
-			case ValueType::Reference:                                                                                           \
-				*_calc_reg_ptr(cur_frame_regs_ptr, output) = x->is_null() == y->is_null();                                       \
-				break;                                                                                                           \
-			default:                                                                                                             \
-				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));                          \
-		}                                                                                                                        \
-                                                                                                                                 \
-		break;                                                                                                                   \
+#define SIMPLE_EQ_OP_PROC(slake_type_lower, slake_type_upper)                                                                         \
+	{                                                                                                                                 \
+		_check_operand_count_with_output_required(this, output, num_operands, 2);                                                     \
+                                                                                                                                      \
+		if SLAKE_UNLIKELY (_is_register_invalid(cur_major_frame, output)) {                                                           \
+			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));                                   \
+		}                                                                                                                             \
+                                                                                                                                      \
+		const Value *x, *y;                                                                                                           \
+                                                                                                                                      \
+		_unwrap_reg_operand_into_ptr(this, cur_frame_regs_ptr, cur_major_frame, operands[0], x);                                      \
+		_unwrap_reg_operand_into_ptr(this, cur_frame_regs_ptr, cur_major_frame, operands[1], y);                                      \
+		switch (x->value_type) {                                                                                                      \
+			case ValueType::slake_type_upper:                                                                                         \
+				if SLAKE_UNLIKELY ((x->value_type != ValueType::slake_type_upper) | (y->value_type != ValueType::slake_type_upper)) { \
+					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));                           \
+				}                                                                                                                     \
+				*_calc_reg_ptr(cur_frame_regs_ptr, output) = (bool)(x->get_##slake_type_lower() == y->get_##slake_type_lower());      \
+				break;                                                                                                                \
+			case ValueType::Reference:                                                                                                \
+				*_calc_reg_ptr(cur_frame_regs_ptr, output) = x->is_null() == y->is_null();                                            \
+				break;                                                                                                                \
+			default:                                                                                                                  \
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));                               \
+		}                                                                                                                             \
+                                                                                                                                      \
+		break;                                                                                                                        \
 	}
 		case Opcode::EQI8:
 			SIMPLE_EQ_OP_PROC(i8, I8);
@@ -1001,7 +1003,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 		case Opcode::EQREF: {
 			_check_operand_count_with_output_required(this, output, num_operands, 2);
 
-			if (_is_register_invalid(cur_major_frame, output)) {
+			if SLAKE_UNLIKELY (_is_register_invalid(cur_major_frame, output)) {
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
@@ -1010,7 +1012,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			_unwrap_reg_operand_into_ptr(this, cur_frame_regs_ptr, cur_major_frame, operands[0], x);
 			_unwrap_reg_operand_into_ptr(this, cur_frame_regs_ptr, cur_major_frame, operands[1], y);
 
-			if ((x->value_type != ValueType::Reference) | (y->value_type != ValueType::Reference)) {
+			if SLAKE_UNLIKELY ((x->value_type != ValueType::Reference) | (y->value_type != ValueType::Reference)) {
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
@@ -1021,7 +1023,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 		case Opcode::EQTYPE: {
 			_check_operand_count_with_output_required(this, output, num_operands, 2);
 
-			if (_is_register_invalid(cur_major_frame, output)) {
+			if SLAKE_UNLIKELY (_is_register_invalid(cur_major_frame, output)) {
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
@@ -1030,7 +1032,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			_unwrap_reg_operand_into_ptr(this, cur_frame_regs_ptr, cur_major_frame, operands[0], x);
 			_unwrap_reg_operand_into_ptr(this, cur_frame_regs_ptr, cur_major_frame, operands[1], y);
 
-			if ((x->value_type != ValueType::TypeName) | (y->value_type != ValueType::TypeName)) {
+			if SLAKE_UNLIKELY ((x->value_type != ValueType::TypeName) | (y->value_type != ValueType::TypeName)) {
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
@@ -1039,33 +1041,33 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			break;
 		}
 
-#define SIMPLE_NEQ_OP_PROC(slake_type_lower, slake_type_upper)                                                                   \
-	{                                                                                                                            \
-		_check_operand_count_with_output_required(this, output, num_operands, 2);                                                \
-                                                                                                                                 \
-		if (_is_register_invalid(cur_major_frame, output)) {                                                                     \
-			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));                              \
-		}                                                                                                                        \
-                                                                                                                                 \
-		const Value *x, *y;                                                                                                      \
-                                                                                                                                 \
-		_unwrap_reg_operand_into_ptr(this, cur_frame_regs_ptr, cur_major_frame, operands[0], x);                                 \
-		_unwrap_reg_operand_into_ptr(this, cur_frame_regs_ptr, cur_major_frame, operands[1], y);                                 \
-		switch (x->value_type) {                                                                                                 \
-			case ValueType::slake_type_upper:                                                                                    \
-				if ((x->value_type != ValueType::slake_type_upper) | (y->value_type != ValueType::slake_type_upper)) {           \
-					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));                      \
-				}                                                                                                                \
-				*_calc_reg_ptr(cur_frame_regs_ptr, output) = (bool)(x->get_##slake_type_lower() != y->get_##slake_type_lower()); \
-				break;                                                                                                           \
-			case ValueType::Reference:                                                                                           \
-				*_calc_reg_ptr(cur_frame_regs_ptr, output) = x->is_null() != y->is_null();                                       \
-				break;                                                                                                           \
-			default:                                                                                                             \
-				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));                          \
-		}                                                                                                                        \
-                                                                                                                                 \
-		break;                                                                                                                   \
+#define SIMPLE_NEQ_OP_PROC(slake_type_lower, slake_type_upper)                                                                        \
+	{                                                                                                                                 \
+		_check_operand_count_with_output_required(this, output, num_operands, 2);                                                     \
+                                                                                                                                      \
+		if SLAKE_UNLIKELY (_is_register_invalid(cur_major_frame, output)) {                                                           \
+			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));                                   \
+		}                                                                                                                             \
+                                                                                                                                      \
+		const Value *x, *y;                                                                                                           \
+                                                                                                                                      \
+		_unwrap_reg_operand_into_ptr(this, cur_frame_regs_ptr, cur_major_frame, operands[0], x);                                      \
+		_unwrap_reg_operand_into_ptr(this, cur_frame_regs_ptr, cur_major_frame, operands[1], y);                                      \
+		switch (x->value_type) {                                                                                                      \
+			case ValueType::slake_type_upper:                                                                                         \
+				if SLAKE_UNLIKELY ((x->value_type != ValueType::slake_type_upper) | (y->value_type != ValueType::slake_type_upper)) { \
+					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));                           \
+				}                                                                                                                     \
+				*_calc_reg_ptr(cur_frame_regs_ptr, output) = (bool)(x->get_##slake_type_lower() != y->get_##slake_type_lower());      \
+				break;                                                                                                                \
+			case ValueType::Reference:                                                                                                \
+				*_calc_reg_ptr(cur_frame_regs_ptr, output) = x->is_null() != y->is_null();                                            \
+				break;                                                                                                                \
+			default:                                                                                                                  \
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));                               \
+		}                                                                                                                             \
+                                                                                                                                      \
+		break;                                                                                                                        \
 	}
 		case Opcode::NEQI8:
 			SIMPLE_NEQ_OP_PROC(i8, I8);
@@ -1096,7 +1098,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 		case Opcode::NEQREF: {
 			_check_operand_count_with_output_required(this, output, num_operands, 2);
 
-			if (_is_register_invalid(cur_major_frame, output)) {
+			if SLAKE_UNLIKELY (_is_register_invalid(cur_major_frame, output)) {
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
@@ -1105,7 +1107,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			_unwrap_reg_operand_into_ptr(this, cur_frame_regs_ptr, cur_major_frame, operands[0], x);
 			_unwrap_reg_operand_into_ptr(this, cur_frame_regs_ptr, cur_major_frame, operands[1], y);
 
-			if ((x->value_type != ValueType::Reference) | (y->value_type != ValueType::Reference)) {
+			if SLAKE_UNLIKELY ((x->value_type != ValueType::Reference) | (y->value_type != ValueType::Reference)) {
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
@@ -1116,7 +1118,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 		case Opcode::NEQTYPE: {
 			_check_operand_count_with_output_required(this, output, num_operands, 2);
 
-			if (_is_register_invalid(cur_major_frame, output)) {
+			if SLAKE_UNLIKELY (_is_register_invalid(cur_major_frame, output)) {
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
@@ -1125,7 +1127,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			_unwrap_reg_operand_into_ptr(this, cur_frame_regs_ptr, cur_major_frame, operands[0], x);
 			_unwrap_reg_operand_into_ptr(this, cur_frame_regs_ptr, cur_major_frame, operands[1], y);
 
-			if ((x->value_type != ValueType::TypeName) | (y->value_type != ValueType::TypeName)) {
+			if SLAKE_UNLIKELY ((x->value_type != ValueType::TypeName) | (y->value_type != ValueType::TypeName)) {
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
@@ -1138,7 +1140,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 	{                                                                                                                               \
 		_check_operand_count_with_output_required(this, output, num_operands, 2);                                                   \
                                                                                                                                     \
-		if (_is_register_invalid(cur_major_frame, output)) {                                                                        \
+		if SLAKE_UNLIKELY (_is_register_invalid(cur_major_frame, output)) {                                                         \
 			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));                                 \
 		}                                                                                                                           \
                                                                                                                                     \
@@ -1146,7 +1148,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
                                                                                                                                     \
 		_unwrap_reg_operand_into_ptr(this, cur_frame_regs_ptr, cur_major_frame, operands[0], x);                                    \
 		_unwrap_reg_operand_into_ptr(this, cur_frame_regs_ptr, cur_major_frame, operands[1], y);                                    \
-		if (SLAKE_UNLIKELY(SLAKE_UNLIKELY(x->value_type != ValueType::slake_type_upper) | SLAKE_UNLIKELY(y->value_type != ValueType::slake_type_upper)))                        \
+		if SLAKE_UNLIKELY ((x->value_type != ValueType::slake_type_upper) | (y->value_type != ValueType::slake_type_upper))         \
 			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));                                 \
                                                                                                                                     \
 		*_calc_reg_ptr(cur_frame_regs_ptr, output) = static_cast<bool>(x->get_##slake_type_lower() op y->get_##slake_type_lower()); \
@@ -1256,14 +1258,14 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 	{                                                                                                                                                                  \
 		_check_operand_count_with_output_required(this, output, num_operands, 2);                                                                                      \
                                                                                                                                                                        \
-		if (_is_register_invalid(cur_major_frame, output))                                                                                                             \
+		if SLAKE_UNLIKELY (_is_register_invalid(cur_major_frame, output))                                                                                              \
 			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));                                                                    \
                                                                                                                                                                        \
 		const Value *x, *y;                                                                                                                                            \
                                                                                                                                                                        \
 		_unwrap_reg_operand_into_ptr(this, cur_frame_regs_ptr, cur_major_frame, operands[0], x);                                                                       \
 		_unwrap_reg_operand_into_ptr(this, cur_frame_regs_ptr, cur_major_frame, operands[1], y);                                                                       \
-		if (SLAKE_UNLIKELY(SLAKE_UNLIKELY(x->value_type != ValueType::slake_type_upper) | SLAKE_UNLIKELY(y->value_type != ValueType::slake_type_upper)))                                                           \
+		if SLAKE_UNLIKELY ((x->value_type != ValueType::slake_type_upper) | (y->value_type != ValueType::slake_type_upper))                                            \
 			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));                                                                    \
                                                                                                                                                                        \
 		*_calc_reg_ptr(cur_frame_regs_ptr, output) = static_cast<int32_t>(flib::compare_##slake_type_lower(x->get_##slake_type_lower(), y->get_##slake_type_lower())); \
@@ -1295,24 +1297,24 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			SIMPLE_CMP_OP_PROC(f64, F64);
 
 // TODO: Implement SHL and SHR.
-#define SIMPLE_SHIFT_OP_PROC(slake_type_lower, slake_type_upper, type, op)                                 \
-	{                                                                                                      \
-		_check_operand_count_with_output_required(this, output, num_operands, 2);                          \
-                                                                                                           \
-		if (_is_register_invalid(cur_major_frame, output))                                                 \
-			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));        \
-                                                                                                           \
-		const Value *x, *y;                                                                                \
-                                                                                                           \
-		_unwrap_reg_operand_into_ptr(this, cur_frame_regs_ptr, cur_major_frame, operands[0], x);           \
-		_unwrap_reg_operand_into_ptr(this, cur_frame_regs_ptr, cur_major_frame, operands[1], y);           \
-		if (SLAKE_UNLIKELY(SLAKE_UNLIKELY(x->value_type != ValueType::slake_type_upper) | SLAKE_UNLIKELY(y->value_type != ValueType::U32)))            \
-			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));        \
-                                                                                                           \
-		Value &result_out = *_calc_reg_ptr(cur_frame_regs_ptr, output);                                    \
-		result_out.value_type = ValueType::slake_type_upper;                                               \
-		result_out.as_##slake_type_lower = static_cast<type>(x->get_##slake_type_lower() op y->get_u32()); \
-		break;                                                                                             \
+#define SIMPLE_SHIFT_OP_PROC(slake_type_lower, slake_type_upper, type, op)                                     \
+	{                                                                                                          \
+		_check_operand_count_with_output_required(this, output, num_operands, 2);                              \
+                                                                                                               \
+		if SLAKE_UNLIKELY (_is_register_invalid(cur_major_frame, output))                                      \
+			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));            \
+                                                                                                               \
+		const Value *x, *y;                                                                                    \
+                                                                                                               \
+		_unwrap_reg_operand_into_ptr(this, cur_frame_regs_ptr, cur_major_frame, operands[0], x);               \
+		_unwrap_reg_operand_into_ptr(this, cur_frame_regs_ptr, cur_major_frame, operands[1], y);               \
+		if SLAKE_UNLIKELY ((x->value_type != ValueType::slake_type_upper) | (y->value_type != ValueType::U32)) \
+			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));            \
+                                                                                                               \
+		Value &result_out = *_calc_reg_ptr(cur_frame_regs_ptr, output);                                        \
+		result_out.value_type = ValueType::slake_type_upper;                                                   \
+		result_out.as_##slake_type_lower = static_cast<type>(x->get_##slake_type_lower() op y->get_u32());     \
+		break;                                                                                                 \
 	}
 		case Opcode::SHLI8:
 			SIMPLE_SHIFT_OP_PROC(i8, I8, int8_t, <<);
@@ -1340,7 +1342,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 		case Opcode::NOT: {
 			_check_operand_count_with_output_required(this, output, num_operands, 1);
 
-			if (_is_register_invalid(cur_major_frame, output)) {
+			if SLAKE_UNLIKELY (_is_register_invalid(cur_major_frame, output)) {
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			Value &value_out = *_calc_reg_ptr(cur_frame_regs_ptr, output);
@@ -1384,7 +1386,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 		case Opcode::NEG: {
 			_check_operand_count_with_output_required(this, output, num_operands, 1);
 
-			if (_is_register_invalid(cur_major_frame, output)) {
+			if SLAKE_UNLIKELY (_is_register_invalid(cur_major_frame, output)) {
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 			Value &value_out = *_calc_reg_ptr(cur_frame_regs_ptr, output);
@@ -1446,7 +1448,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 
 			uint32_t index_in = index.get_u32();
 
-			if (SLAKE_UNLIKELY(index_in > array_object->length)) {
+			if SLAKE_UNLIKELY (index_in > array_object->length) {
 				return alloc_oom_error_if_alloc_failed(InvalidArrayIndexError::alloc(get_fixed_alloc(), index_in));
 			}
 
@@ -1466,7 +1468,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 
 			SLAKE_RETURN_IF_EXCEPT(resolve_id_ref(static_cast<IdRefObject *>(ref_ptr.as_object), entity_ref));
 
-			if (SLAKE_UNLIKELY(entity_ref.kind == ReferenceKind::Invalid))
+			if SLAKE_UNLIKELY (entity_ref.kind == ReferenceKind::Invalid)
 				// TODO: Use a proper one instead.
 				return alloc_oom_error_if_alloc_failed(ReferencedMemberNotFoundError::alloc(get_fixed_alloc(), static_cast<IdRefObject *>(ref_ptr.as_object)));
 
@@ -1490,15 +1492,15 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			auto &id_ref_entity_ref = rhs.get_reference();
 			_check_object_ref_operand_type(this, id_ref_entity_ref, ReferenceKind::ObjectRef);
 
-			if (SLAKE_UNLIKELY(!lhs_entity_ref)) {
+			if SLAKE_UNLIKELY (!lhs_entity_ref) {
 				return alloc_oom_error_if_alloc_failed(NullRefError::alloc(get_fixed_alloc()));
 			}
 
-			if (SLAKE_UNLIKELY(!id_ref_entity_ref)) {
+			if SLAKE_UNLIKELY (!id_ref_entity_ref) {
 				return alloc_oom_error_if_alloc_failed(NullRefError::alloc(get_fixed_alloc()));
 			}
 
-			if (SLAKE_UNLIKELY(id_ref_entity_ref.as_object->get_object_kind() != ObjectKind::IdRef)) {
+			if SLAKE_UNLIKELY (id_ref_entity_ref.as_object->get_object_kind() != ObjectKind::IdRef) {
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
 
@@ -1557,7 +1559,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 		case Opcode::LCURFN: {
 			_check_operand_count_with_output_required(this, output, num_operands, 0);
 
-			if (_is_register_valid(cur_major_frame, output)) {
+			if SLAKE_LIKELY (_is_register_valid(cur_major_frame, output)) {
 				Value &output_reg = *_calc_reg_ptr(cur_frame_regs_ptr, output);
 				output_reg.value_type = ValueType::Reference;
 				output_reg.get_reference().kind = ReferenceKind::ObjectRef;
@@ -1569,7 +1571,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			_check_operand_count_with_output_required(this, output, num_operands, 1);
 			_check_operand_type(this, operands[0], ValueType::I8);
 
-			if (_is_register_invalid(cur_major_frame, output)) {
+			if SLAKE_UNLIKELY (_is_register_invalid(cur_major_frame, output)) {
 				// The register does not present.
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
@@ -1580,7 +1582,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			_check_operand_count_with_output_required(this, output, num_operands, 1);
 			_check_operand_type(this, operands[0], ValueType::I16);
 
-			if (_is_register_invalid(cur_major_frame, output)) {
+			if SLAKE_UNLIKELY (_is_register_invalid(cur_major_frame, output)) {
 				// The register does not present.
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
@@ -1591,7 +1593,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			_check_operand_count_with_output_required(this, output, num_operands, 1);
 			_check_operand_type(this, operands[0], ValueType::I32);
 
-			if (_is_register_invalid(cur_major_frame, output)) {
+			if SLAKE_UNLIKELY (_is_register_invalid(cur_major_frame, output)) {
 				// The register does not present.
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
@@ -1602,7 +1604,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			_check_operand_count_with_output_required(this, output, num_operands, 1);
 			_check_operand_type(this, operands[0], ValueType::I64);
 
-			if (_is_register_invalid(cur_major_frame, output)) {
+			if SLAKE_UNLIKELY (_is_register_invalid(cur_major_frame, output)) {
 				// The register does not present.
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
@@ -1613,7 +1615,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			_check_operand_count_with_output_required(this, output, num_operands, 1);
 			_check_operand_type(this, operands[0], ValueType::ISize);
 
-			if (_is_register_invalid(cur_major_frame, output)) {
+			if SLAKE_UNLIKELY (_is_register_invalid(cur_major_frame, output)) {
 				// The register does not present.
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
@@ -1627,7 +1629,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			_check_operand_count_with_output_required(this, output, num_operands, 1);
 			_check_operand_type(this, operands[0], ValueType::U8);
 
-			if (_is_register_invalid(cur_major_frame, output)) {
+			if SLAKE_UNLIKELY (_is_register_invalid(cur_major_frame, output)) {
 				// The register does not present.
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
@@ -1638,7 +1640,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			_check_operand_count_with_output_required(this, output, num_operands, 1);
 			_check_operand_type(this, operands[0], ValueType::U16);
 
-			if (_is_register_invalid(cur_major_frame, output)) {
+			if SLAKE_UNLIKELY (_is_register_invalid(cur_major_frame, output)) {
 				// The register does not present.
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
@@ -1649,7 +1651,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			_check_operand_count_with_output_required(this, output, num_operands, 1);
 			_check_operand_type(this, operands[0], ValueType::U32);
 
-			if (_is_register_invalid(cur_major_frame, output)) {
+			if SLAKE_UNLIKELY (_is_register_invalid(cur_major_frame, output)) {
 				// The register does not present.
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
@@ -1660,7 +1662,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			_check_operand_count_with_output_required(this, output, num_operands, 1);
 			_check_operand_type(this, operands[0], ValueType::U64);
 
-			if (_is_register_invalid(cur_major_frame, output)) {
+			if SLAKE_UNLIKELY (_is_register_invalid(cur_major_frame, output)) {
 				// The register does not present.
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
@@ -1671,7 +1673,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			_check_operand_count_with_output_required(this, output, num_operands, 1);
 			_check_operand_type(this, operands[0], ValueType::USize);
 
-			if (_is_register_invalid(cur_major_frame, output)) {
+			if SLAKE_UNLIKELY (_is_register_invalid(cur_major_frame, output)) {
 				// The register does not present.
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
@@ -1685,7 +1687,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			_check_operand_count_with_output_required(this, output, num_operands, 1);
 			_check_operand_type(this, operands[0], ValueType::F32);
 
-			if (_is_register_invalid(cur_major_frame, output)) {
+			if SLAKE_UNLIKELY (_is_register_invalid(cur_major_frame, output)) {
 				// The register does not present.
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
@@ -1696,7 +1698,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			_check_operand_count_with_output_required(this, output, num_operands, 1);
 			_check_operand_type(this, operands[0], ValueType::F64);
 
-			if (_is_register_invalid(cur_major_frame, output)) {
+			if SLAKE_UNLIKELY (_is_register_invalid(cur_major_frame, output)) {
 				// The register does not present.
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
@@ -1707,7 +1709,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			_check_operand_count_with_output_required(this, output, num_operands, 1);
 			_check_operand_type(this, operands[0], ValueType::Bool);
 
-			if (_is_register_invalid(cur_major_frame, output)) {
+			if SLAKE_UNLIKELY (_is_register_invalid(cur_major_frame, output)) {
 				// The register does not present.
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
@@ -1717,7 +1719,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 		case Opcode::COPYNULL: {
 			_check_operand_count_with_output_required(this, output, num_operands, 0);
 
-			if (_is_register_invalid(cur_major_frame, output)) {
+			if SLAKE_UNLIKELY (_is_register_invalid(cur_major_frame, output)) {
 				// The register does not present.
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
@@ -1730,7 +1732,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			const Value *value;
 			_unwrap_reg_operand_into_ptr(this, cur_frame_regs_ptr, cur_major_frame, operands[0], value);
 
-			if (_is_register_invalid(cur_major_frame, output)) {
+			if SLAKE_UNLIKELY (_is_register_invalid(cur_major_frame, output)) {
 				// The register does not present.
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
@@ -1836,7 +1838,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			_check_operand_count_with_output_required(this, output, num_operands, 1);
 			_check_operand_type(this, operands[0], ValueType::U32);
 
-			if (_is_register_invalid(cur_major_frame, output)) {
+			if SLAKE_UNLIKELY (_is_register_invalid(cur_major_frame, output)) {
 				// The register does not present.
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
@@ -1898,7 +1900,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 				while (off_alloca_record != SIZE_MAX) {
 					AllocaRecord *ar = _fetch_alloca_record(&context->get_context(), cur_major_frame, off_alloca_record);
 
-					if (_is_register_invalid(cur_major_frame, ar->def_reg)) {
+					if SLAKE_UNLIKELY (_is_register_invalid(cur_major_frame, ar->def_reg)) {
 						return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 						// TODO: Use a more proper kind of exception.
 					}
@@ -1959,7 +1961,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			_check_object_operand_type(this, fn_object_ref.as_object, ObjectKind::FnOverloading);
 			fn = static_cast<FnOverloadingObject *>(fn_object_ref.as_object);
 
-			if (SLAKE_UNLIKELY(!fn))
+			if (!fn)
 				return alloc_oom_error_if_alloc_failed(NullRefError::alloc(get_fixed_alloc()));
 
 			ResumableContextData &resumable_context_data = cur_major_frame->resumable_context_data;
@@ -2047,7 +2049,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			_check_object_operand_type(this, this_object_ref.get_object_ref(), ObjectKind::Instance);
 			this_object = this_object_ref.as_object;
 
-			if (SLAKE_UNLIKELY(!fn))
+			if (!fn)
 				return alloc_oom_error_if_alloc_failed(NullRefError::alloc(get_fixed_alloc()));
 
 			ResumableContextData &resumable_context_data = cur_major_frame->resumable_context_data;
@@ -2131,7 +2133,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			_check_object_operand_type(this, this_object_ref.get_object_ref(), ObjectKind::Instance);
 			this_object = this_object_ref.as_object;
 
-			if (SLAKE_UNLIKELY(!fn))
+			if (!fn)
 				return alloc_oom_error_if_alloc_failed(NullRefError::alloc(get_fixed_alloc()));
 
 			ResumableContextData &resumable_context_data = cur_major_frame->resumable_context_data;
@@ -2163,7 +2165,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 		case Opcode::RETVOID: {
 			const uint32_t return_value_out_reg = cur_major_frame->return_value_out_reg;
 
-			if (SLAKE_UNLIKELY(return_value_out_reg != UINT32_MAX))
+			if SLAKE_UNLIKELY (return_value_out_reg != UINT32_MAX)
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 
 			_leave_major_frame(&context->get_context());
@@ -2251,7 +2253,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 					std::terminate();
 			}
 
-			if (SLAKE_UNLIKELY(!fn)) {
+			if (!fn) {
 				return alloc_oom_error_if_alloc_failed(NullRefError::alloc(get_fixed_alloc()));
 			}
 
@@ -2482,7 +2484,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 		case Opcode::CAST: {
 			_check_operand_count_with_output_required(this, output, num_operands, 2);
 			_check_operand_type(this, operands[0], ValueType::TypeName);
-			if (_is_register_invalid(cur_major_frame, output)) {
+			if SLAKE_UNLIKELY (_is_register_invalid(cur_major_frame, output)) {
 				// The register does not present.
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
@@ -2541,7 +2543,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 		case Opcode::NULLCAST: {
 			_check_operand_count_with_output_required(this, output, num_operands, 2);
 			_check_operand_type(this, operands[0], ValueType::TypeName);
-			if (_is_register_invalid(cur_major_frame, output)) {
+			if SLAKE_UNLIKELY (_is_register_invalid(cur_major_frame, output)) {
 				// The register does not present.
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 			}
@@ -2608,7 +2610,7 @@ SLAKE_API InternalExceptionPointer Runtime::exec_context(ContextObject *context)
 						context_change = ContextChangeType::NoChange;
 						do {
 							// Interrupt execution if the thread is explicitly specified to be killed.
-							if (SLAKE_UNLIKELY(managed_thread->status == ThreadStatus::Dead)) {
+							if SLAKE_UNLIKELY (managed_thread->status == ThreadStatus::Dead) {
 								return {};
 							}
 
@@ -2617,8 +2619,8 @@ SLAKE_API InternalExceptionPointer Runtime::exec_context(ContextObject *context)
 							}
 
 							const uint32_t idx_cur_ins = cur_major_frame->resumable_context_data.cur_ins;
-							if (SLAKE_UNLIKELY(idx_cur_ins >=
-											   num_ins)) {
+							if SLAKE_UNLIKELY (idx_cur_ins >=
+											   num_ins) {
 								// Raise out of fn body error.
 								std::terminate();
 							}

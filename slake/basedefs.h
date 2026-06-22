@@ -25,17 +25,17 @@
 #define SLAKE_RESTRICT PEFF_RESTRICT
 
 #if __cplusplus >= 202002L
-	#define SLAKE_LIKELY(...) [[likely]] __VA_ARGS__
+	#define SLAKE_LIKELY(...) (__VA_ARGS__) [[likely]]
 #elif defined(__GNUC__)
-	#define SLAKE_LIKELY(...) __builtin_expect(!!(__VA_ARGS__), 1)
+	#define SLAKE_LIKELY(...) (__builtin_expect(!!(__VA_ARGS__), 1))
 #else
 	#define SLAKE_LIKELY(...) (__VA_ARGS__)
 #endif
 
 #if __cplusplus >= 202002L
-	#define SLAKE_UNLIKELY(...) [[unlikely]] __VA_ARGS__
+	#define SLAKE_UNLIKELY(...) (__VA_ARGS__) [[unlikely]]
 #elif defined(__GNUC__)
-	#define SLAKE_UNLIKELY(...) __builtin_expect(!!(__VA_ARGS__), 0)
+	#define SLAKE_UNLIKELY(...) (__builtin_expect(!!(__VA_ARGS__), 0))
 #else
 	#define SLAKE_UNLIKELY(...) (__VA_ARGS__)
 #endif

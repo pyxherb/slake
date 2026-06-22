@@ -29,7 +29,7 @@
 #elif defined(__GNUC__)
 	#define SLAKE_LIKELY(...) __builtin_expect(!!(__VA_ARGS__), 1)
 #else
-	#define SLAKE_LIKELY(...)
+	#define SLAKE_LIKELY(...) (__VA_ARGS__)
 #endif
 
 #if __cplusplus >= 202002L
@@ -37,7 +37,7 @@
 #elif defined(__GNUC__)
 	#define SLAKE_UNLIKELY(...) __builtin_expect(!!(__VA_ARGS__), 0)
 #else
-	#define SLAKE_UNLIKELY(...)
+	#define SLAKE_UNLIKELY(...) (__VA_ARGS__)
 #endif
 
 #endif

@@ -2607,7 +2607,7 @@ SLAKE_API InternalExceptionPointer Runtime::exec_context(ContextObject *context)
 						context_change = ContextChangeType::NoChange;
 						do {
 							// Interrupt execution if the thread is explicitly specified to be killed.
-							if (managed_thread->status == ThreadStatus::Dead) {
+							if (SLAKE_UNLIKELY(managed_thread->status == ThreadStatus::Dead)) {
 								return {};
 							}
 
@@ -2616,8 +2616,8 @@ SLAKE_API InternalExceptionPointer Runtime::exec_context(ContextObject *context)
 							}
 
 							const uint32_t idx_cur_ins = cur_major_frame->resumable_context_data.cur_ins;
-							if (idx_cur_ins >=
-								num_ins) {
+							if (SLAKE_UNLIKELY(idx_cur_ins >=
+											   num_ins)) {
 								// Raise out of fn body error.
 								std::terminate();
 							}

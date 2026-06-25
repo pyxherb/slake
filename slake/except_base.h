@@ -93,11 +93,11 @@ namespace slake {
 #define SLAKE_UNWRAP_EXCEPT(expr) (expr).unwrap()
 #define SLAKE_RETURN_IF_EXCEPT(...)                                     \
 	do {                                                                \
-		if (slake::InternalExceptionPointer _ = (__VA_ARGS__); !!_) \
+		if (slake::InternalExceptionPointer _ = (__VA_ARGS__); static_cast<bool>(_)) \
 			return _;                                                   \
 	} while (0)
 #define SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(name, ...) \
-	if (!!(name = (__VA_ARGS__)))               \
+	if (static_cast<bool>(name = (__VA_ARGS__)))               \
 		return name;                                \
 	else
 

@@ -670,9 +670,9 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));                         \
 		}                                                                                                                   \
                                                                                                                             \
-		Value &result_out = *_calc_reg_ptr(cur_frame_regs_ptr, output);                                                     \
-		result_out.value_type = ValueType::slake_type_upper;                                                                \
-		result_out.as_##slake_type_lower = x->get_##slake_type_lower() op y->get_##slake_type_lower();                      \
+		Value *const result_out = _calc_reg_ptr(cur_frame_regs_ptr, output);                                                \
+		result_out->value_type = ValueType::slake_type_upper;                                                               \
+		result_out->as_##slake_type_lower = x->get_##slake_type_lower() op y->get_##slake_type_lower();                     \
 		break;                                                                                                              \
 	}
 		case Opcode::PHI: {
@@ -1311,9 +1311,9 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 		if SLAKE_UNLIKELY ((x->value_type != ValueType::slake_type_upper) | (y->value_type != ValueType::U32)) \
 			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));            \
                                                                                                                \
-		Value &result_out = *_calc_reg_ptr(cur_frame_regs_ptr, output);                                        \
-		result_out.value_type = ValueType::slake_type_upper;                                                   \
-		result_out.as_##slake_type_lower = static_cast<type>(x->get_##slake_type_lower() op y->get_u32());     \
+		Value *const result_out = _calc_reg_ptr(cur_frame_regs_ptr, output);                                   \
+		result_out->value_type = ValueType::slake_type_upper;                                                  \
+		result_out->as_##slake_type_lower = static_cast<type>(x->get_##slake_type_lower() op y->get_u32());    \
 		break;                                                                                                 \
 	}
 		case Opcode::SHLI8:
@@ -1560,10 +1560,10 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			_check_operand_count_with_output_required(this, output, num_operands, 0);
 
 			if SLAKE_LIKELY (_is_register_valid(cur_major_frame, output)) {
-				Value &output_reg = *_calc_reg_ptr(cur_frame_regs_ptr, output);
-				output_reg.value_type = ValueType::Reference;
-				output_reg.get_reference().kind = ReferenceKind::ObjectRef;
-				output_reg.get_reference().as_object = const_cast<FnOverloadingObject *>(cur_major_frame->cur_fn);
+				Value *const output_reg = _calc_reg_ptr(cur_frame_regs_ptr, output);
+				output_reg->value_type = ValueType::Reference;
+				output_reg->get_reference().kind = ReferenceKind::ObjectRef;
+				output_reg->get_reference().as_object = const_cast<FnOverloadingObject *>(cur_major_frame->cur_fn);
 			}
 			break;
 		}

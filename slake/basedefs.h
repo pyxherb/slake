@@ -27,7 +27,7 @@
 #if __cplusplus >= 202002L
 	#define SLAKE_LIKELY(...) (__VA_ARGS__) [[likely]]
 #elif defined(__GNUC__)
-	#define SLAKE_LIKELY(...) (__builtin_expect(!!(__VA_ARGS__), 1))
+	#define SLAKE_LIKELY(...) (__builtin_expect(static_cast<bool>(__VA_ARGS__), 1))
 #else
 	#define SLAKE_LIKELY(...) (__VA_ARGS__)
 #endif
@@ -35,9 +35,30 @@
 #if __cplusplus >= 202002L
 	#define SLAKE_UNLIKELY(...) (__VA_ARGS__) [[unlikely]]
 #elif defined(__GNUC__)
-	#define SLAKE_UNLIKELY(...) (__builtin_expect(!!(__VA_ARGS__), 0))
+	#define SLAKE_UNLIKELY(...) (__builtin_expect(static_cast<bool>(__VA_ARGS__), 0))
 #else
 	#define SLAKE_UNLIKELY(...) (__VA_ARGS__)
+#endif
+
+#if __cplusplus >= 202002L
+	#define SLAKE_LIKELY_CASE(...) \
+		case __VA_ARGS__:          \
+			[[likely]]
+#else
+	#define SLAKE_LIKELY_CASE(...) case __VA_ARGS__:
+#endif
+
+#if __cplusplus >= 202302L
+	#define SLAKE_ASSUME(...) [[assume(__VA_ARGS__)]]
+#elif defined(__clang__)
+	#define SLAKE_ASSUME(...) __builtin_assume(__VA_ARGS__)
+#elif defined(__GNUC__)
+	#define SLAKE_ASSUME(...) \
+		if (__VA_ARGS__) {    \
+		} else                \
+			__builtin_unreachable()
+#else
+	#define SLAKE_ASSUME(...)
 #endif
 
 #endif

@@ -11,10 +11,10 @@ template <typename T>
 	const Value &lhs_expected_value,
 	const Value &rhs_expected_value) noexcept {
 	InternalExceptionPointer exception;
-	uint32_t output_reg_index = cur_ins.output;
+	RegIndex output_reg_index = cur_ins.output;
 
 	if (rhs_expected_value.value_type != ValueType::Undefined) {
-		uint32_t lhs_reg_index = cur_ins.operands[0].get_reg_index();
+		RegIndex lhs_reg_index = cur_ins.operands[0].get_reg_index();
 		int32_t saved_rdx_off = INT32_MIN;
 		size_t saved_rdx_size;
 		const RegisterId lhs_reg_id = REG_RAX;
@@ -174,7 +174,7 @@ template <typename T>
 
 	} else {
 		if (lhs_expected_value.value_type != ValueType::Undefined) {  // The RHS is an expectable value so we can just simply add it with a register.
-			uint32_t rhs_reg_index = cur_ins.operands[1].get_reg_index();
+			RegIndex rhs_reg_index = cur_ins.operands[1].get_reg_index();
 			int32_t saved_rdx_off = INT32_MIN;
 			size_t saved_rdx_size;
 			const RegisterId rhs_reg_id = REG_RAX;
@@ -332,7 +332,7 @@ template <typename T>
 			if (!output_vreg_state)
 				return OutOfMemoryError::alloc();
 		} else {
-			uint32_t rhs_reg_index = cur_ins.operands[1].get_reg_index();
+			RegIndex rhs_reg_index = cur_ins.operands[1].get_reg_index();
 			int32_t saved_rdx_off = INT32_MIN;
 			size_t saved_rdx_size;
 			const RegisterId lhs_reg_id = REG_RAX;
@@ -480,10 +480,10 @@ template <typename T>
 	const Value &lhs_expected_value,
 	const Value &rhs_expected_value) noexcept {
 	InternalExceptionPointer exception;
-	uint32_t output_reg_index = cur_ins.output;
+	RegIndex output_reg_index = cur_ins.output;
 
 	if (rhs_expected_value.value_type != ValueType::Undefined) {
-		uint32_t lhs_reg_index = cur_ins.operands[0].get_reg_index();
+		RegIndex lhs_reg_index = cur_ins.operands[0].get_reg_index();
 		const RegisterId lhs_xmm_reg_id = compile_context.alloc_xmm_reg();
 
 		if (compile_context.is_reg_in_use(lhs_xmm_reg_id)) {
@@ -578,7 +578,7 @@ template <typename T>
 		}
 	} else {
 		if (lhs_expected_value.value_type != ValueType::Undefined) {
-			uint32_t rhs_reg_index = cur_ins.operands[0].get_reg_index();
+			RegIndex rhs_reg_index = cur_ins.operands[0].get_reg_index();
 			const RegisterId rhs_xmm_reg_id = compile_context.alloc_xmm_reg();
 
 			if (compile_context.is_reg_in_use(rhs_xmm_reg_id)) {
@@ -672,7 +672,7 @@ template <typename T>
 				static_assert(!std::is_same_v<T, T>, "Invalid operand type");
 			}
 		} else {
-			uint32_t lhs_reg_index = cur_ins.operands[0].get_reg_index(),
+			RegIndex lhs_reg_index = cur_ins.operands[0].get_reg_index(),
 					 rhs_reg_index = cur_ins.operands[1].get_reg_index();
 
 			VirtualRegState &lhs_vreg_state = compile_context.virtual_reg_states.at(lhs_reg_index);
@@ -750,7 +750,7 @@ InternalExceptionPointer slake::jit::x86_64::compile_mul_instruction(
 	size_t off_ins,
 	const Instruction &cur_ins) noexcept {
 	InternalExceptionPointer exception;
-	uint32_t output_reg_index = UINT32_MAX;
+	RegIndex output_reg_index = INVALID_REG;
 	auto &output_reg_info = analyzed_info.analyzed_reg_info.at(output_reg_index);
 
 	Value lhs = cur_ins.operands[0], rhs = cur_ins.operands[1];

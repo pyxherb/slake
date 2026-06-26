@@ -771,7 +771,7 @@ InternalExceptionPointer slake::opti::analyze_cast_ins(
 		}
 	}
 
-	if (reg_index != UINT32_MAX) {
+	if (reg_index != INVALID_REG) {
 		analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).type = dest_type;
 	}
 

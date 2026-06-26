@@ -11,10 +11,10 @@ template <typename T>
 	const Value &lhs_expected_value,
 	const Value &rhs_expected_value) noexcept {
 	InternalExceptionPointer exception;
-	uint32_t output_reg_index = cur_ins.output;
+	RegIndex output_reg_index = cur_ins.output;
 
 	if (rhs_expected_value.value_type != ValueType::Undefined) {
-		uint32_t lhs_reg_index = cur_ins.operands[0].get_reg_index();
+		RegIndex lhs_reg_index = cur_ins.operands[0].get_reg_index();
 		const RegisterId lhs_reg_id = compile_context.alloc_gp_reg();
 
 		uint32_t rhs_data = cur_ins.operands[1].get_u32();
@@ -141,7 +141,7 @@ template <typename T>
 		}
 	} else {
 		if (lhs_expected_value.value_type != ValueType::Undefined) {
-			uint32_t rhs_reg_index = cur_ins.operands[1].get_reg_index();
+			RegIndex rhs_reg_index = cur_ins.operands[1].get_reg_index();
 			const RegisterId rhs_reg_id = compile_context.alloc_gp_reg();
 
 			uint32_t lhs_data = cur_ins.operands[1].get_u32();
@@ -267,7 +267,7 @@ template <typename T>
 				static_assert(!std::is_same_v<T, T>, "Invalid operand type");
 			}
 		} else {
-			uint32_t rhs_reg_index = cur_ins.operands[1].get_reg_index();
+			RegIndex rhs_reg_index = cur_ins.operands[1].get_reg_index();
 
 			const RegisterId lhs_reg_id = compile_context.alloc_gp_reg();
 
@@ -397,7 +397,7 @@ InternalExceptionPointer slake::jit::x86_64::compile_shl_instruction(
 	size_t off_ins,
 	const Instruction &cur_ins) noexcept {
 	InternalExceptionPointer exception;
-	uint32_t output_reg_index = UINT32_MAX;
+	RegIndex output_reg_index = INVALID_REG;
 	auto &output_reg_info = analyzed_info.analyzed_reg_info.at(output_reg_index);
 
 	Value lhs = cur_ins.operands[0], rhs = cur_ins.operands[1];
@@ -521,10 +521,10 @@ template <typename T>
 	const Value &lhs_expected_value,
 	const Value &rhs_expected_value) noexcept {
 	InternalExceptionPointer exception;
-	uint32_t output_reg_index = cur_ins.output;
+	RegIndex output_reg_index = cur_ins.output;
 
 	if (rhs_expected_value.value_type != ValueType::Undefined) {
-		uint32_t lhs_reg_index = cur_ins.operands[0].get_reg_index();
+		RegIndex lhs_reg_index = cur_ins.operands[0].get_reg_index();
 		const RegisterId lhs_reg_id = compile_context.alloc_gp_reg();
 
 		uint32_t rhs_data = cur_ins.operands[1].get_u32();
@@ -651,7 +651,7 @@ template <typename T>
 		}
 	} else {
 		if (lhs_expected_value.value_type != ValueType::Undefined) {
-			uint32_t rhs_reg_index = cur_ins.operands[1].get_reg_index();
+			RegIndex rhs_reg_index = cur_ins.operands[1].get_reg_index();
 			const RegisterId rhs_reg_id = compile_context.alloc_gp_reg();
 
 			uint32_t lhs_data = cur_ins.operands[1].get_u32();
@@ -777,7 +777,7 @@ template <typename T>
 				static_assert(!std::is_same_v<T, T>, "Invalid operand type");
 			}
 		} else {
-			uint32_t rhs_reg_index = cur_ins.operands[1].get_reg_index();
+			RegIndex rhs_reg_index = cur_ins.operands[1].get_reg_index();
 
 			const RegisterId lhs_reg_id = compile_context.alloc_gp_reg();
 
@@ -907,7 +907,7 @@ InternalExceptionPointer slake::jit::x86_64::compile_shr_instruction(
 	size_t off_ins,
 	const Instruction &cur_ins) noexcept {
 	InternalExceptionPointer exception;
-	uint32_t output_reg_index = UINT32_MAX;
+	RegIndex output_reg_index = INVALID_REG;
 	auto &output_reg_info = analyzed_info.analyzed_reg_info.at(output_reg_index);
 
 	Value lhs = cur_ins.operands[0], rhs = cur_ins.operands[1];
@@ -1031,10 +1031,10 @@ template <typename T>
 	const Value &lhs_expected_value,
 	const Value &rhs_expected_value) noexcept {
 	InternalExceptionPointer exception;
-	uint32_t output_reg_index = cur_ins.output;
+	RegIndex output_reg_index = cur_ins.output;
 
 	if (rhs_expected_value.value_type != ValueType::Undefined) {
-		uint32_t lhs_reg_index = cur_ins.operands[0].get_reg_index();
+		RegIndex lhs_reg_index = cur_ins.operands[0].get_reg_index();
 		const RegisterId lhs_reg_id = compile_context.alloc_gp_reg();
 
 		uint32_t rhs_data = cur_ins.operands[1].get_u32();
@@ -1161,7 +1161,7 @@ template <typename T>
 		}
 	} else {
 		if (lhs_expected_value.value_type != ValueType::Undefined) {
-			uint32_t rhs_reg_index = cur_ins.operands[1].get_reg_index();
+			RegIndex rhs_reg_index = cur_ins.operands[1].get_reg_index();
 			const RegisterId rhs_reg_id = compile_context.alloc_gp_reg();
 
 			uint32_t lhs_data = cur_ins.operands[1].get_u32();
@@ -1287,7 +1287,7 @@ template <typename T>
 				static_assert(!std::is_same_v<T, T>, "Invalid operand type");
 			}
 		} else {
-			uint32_t rhs_reg_index = cur_ins.operands[1].get_reg_index();
+			RegIndex rhs_reg_index = cur_ins.operands[1].get_reg_index();
 
 			const RegisterId lhs_reg_id = compile_context.alloc_gp_reg();
 
@@ -1417,7 +1417,7 @@ InternalExceptionPointer slake::jit::x86_64::compile_sar_instruction(
 	size_t off_ins,
 	const Instruction &cur_ins) noexcept {
 	InternalExceptionPointer exception;
-	uint32_t output_reg_index = UINT32_MAX;
+	RegIndex output_reg_index = INVALID_REG;
 	auto &output_reg_info = analyzed_info.analyzed_reg_info.at(output_reg_index);
 
 	Value lhs = cur_ins.operands[0], rhs = cur_ins.operands[1];

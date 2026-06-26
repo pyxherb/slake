@@ -37,7 +37,7 @@ namespace slake {
 	constexpr uint32_t ALLOCA_RECORD_MAGIC = 0xacce55ed;
 	struct AllocaRecord {
 		size_t off_next;
-		uint32_t def_reg;
+		RegIndex def_reg;
 	};
 
 	struct ResumableContextData {
@@ -68,11 +68,11 @@ namespace slake {
 
 		ResumableContextData resumable_context_data;
 
-		uint32_t return_value_out_reg = UINT32_MAX;
+		RegIndex return_value_out_reg = INVALID_REG;
 		Reference return_struct_ref;
 
 		size_t prev_stack_top = 0;
-		size_t off_regs = UINT32_MAX;
+		size_t off_regs = 0;
 
 		Value cur_except;  // Current exception.
 

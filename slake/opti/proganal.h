@@ -27,7 +27,7 @@ namespace slake {
 		struct LocalVarRegStorageInfo {
 			bool is_used_for_output;
 			/// @brief Register where the local variable is defined and received
-			uint32_t definition_reg;
+			RegIndex definition_reg;
 		};
 
 		struct ArgRefRegStorageInfo {
@@ -109,7 +109,7 @@ namespace slake {
 		bool is_ins_has_side_effect(Opcode opcode);
 		bool is_ins_simplifiable(Opcode opcode);
 
-		void mark_reg_as_for_output(ProgramAnalyzeContext &analyze_context, uint32_t i);
+		void mark_reg_as_for_output(ProgramAnalyzeContext &analyze_context, RegIndex i);
 		InternalExceptionPointer wrap_into_heap_type(
 			Runtime *runtime,
 			TypeRef type,
@@ -139,10 +139,10 @@ namespace slake {
 			Value &const_value_out);
 		InternalExceptionPointer analyze_arithmetic_ins(
 			ProgramAnalyzeContext &analyze_context,
-			uint32_t reg_index) noexcept;
+			RegIndex reg_index) noexcept;
 		InternalExceptionPointer analyze_cast_ins(
 			ProgramAnalyzeContext &analyze_context,
-			uint32_t reg_index);
+			RegIndex reg_index);
 		InternalExceptionPointer analyze_program_info_pass(
 			Runtime *runtime,
 			peff::Alloc *resource_allocator,

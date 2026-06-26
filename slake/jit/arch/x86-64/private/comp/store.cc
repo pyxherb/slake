@@ -12,7 +12,7 @@ InternalExceptionPointer compile_reg_to_field_var_store_instruction(
 	const Instruction &cur_ins,
 	FieldRecord &field_record,
 	char *raw_data_ptr,
-	uint32_t reg_off) noexcept {
+	RegIndex reg_off) noexcept {
 	InternalExceptionPointer exception;
 	VirtualRegState &vreg_state = compile_context.virtual_reg_states.at(reg_off);
 
@@ -720,7 +720,7 @@ InternalExceptionPointer slake::jit::x86_64::compile_store_instruction(
 					case TypeId::I8:
 					case TypeId::U8:
 					case TypeId::Bool: {
-						uint32_t reg_off = rhs.get_reg_index();
+						RegIndex reg_off = rhs.get_reg_index();
 						VirtualRegState &vreg_state = compile_context.virtual_reg_states.at(reg_off);
 
 						if (vreg_state.save_offset != INT32_MIN) {
@@ -757,7 +757,7 @@ InternalExceptionPointer slake::jit::x86_64::compile_store_instruction(
 					}
 					case TypeId::I16:
 					case TypeId::U16: {
-						uint32_t reg_off = rhs.get_reg_index();
+						RegIndex reg_off = rhs.get_reg_index();
 						VirtualRegState &vreg_state = compile_context.virtual_reg_states.at(reg_off);
 
 						if (vreg_state.save_offset != INT32_MIN) {
@@ -795,7 +795,7 @@ InternalExceptionPointer slake::jit::x86_64::compile_store_instruction(
 					case TypeId::I32:
 					case TypeId::U32:
 					case TypeId::F32: {
-						uint32_t reg_off = rhs.get_reg_index();
+						RegIndex reg_off = rhs.get_reg_index();
 						VirtualRegState &vreg_state = compile_context.virtual_reg_states.at(reg_off);
 
 						if (vreg_state.save_offset != INT32_MIN) {
@@ -833,7 +833,7 @@ InternalExceptionPointer slake::jit::x86_64::compile_store_instruction(
 					case TypeId::I64:
 					case TypeId::U64:
 					case TypeId::F64: {
-						uint32_t reg_off = rhs.get_reg_index();
+						RegIndex reg_off = rhs.get_reg_index();
 						VirtualRegState &vreg_state = compile_context.virtual_reg_states.at(reg_off);
 
 						if (vreg_state.save_offset != INT32_MIN) {
@@ -990,7 +990,7 @@ InternalExceptionPointer slake::jit::x86_64::compile_store_instruction(
 			case TypeId::Array:
 			case TypeId::FnDelegate: {
 				if (rhs.value_type == ValueType::RegIndex) {
-					uint32_t reg_off = rhs.get_reg_index();
+					RegIndex reg_off = rhs.get_reg_index();
 					VirtualRegState &vreg_state = compile_context.virtual_reg_states.at(reg_off);
 
 					if (vreg_state.save_offset != INT32_MIN) {

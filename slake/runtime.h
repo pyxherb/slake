@@ -208,7 +208,7 @@ namespace slake {
 			assert(mf->magic == MINOR_FRAME_MAGIC);
 			return mf;
 		}
-		SLAKE_API AllocaRecord *_alloc_alloca_record(Context *context, const MajorFrame *frame, uint32_t output_reg);
+		SLAKE_API AllocaRecord *_alloc_alloca_record(Context *context, const MajorFrame *frame, RegIndex output_reg);
 		SLAKE_API static Value *_fetch_arg_stack(
 			char *data_stack,
 			size_t stack_size,
@@ -246,7 +246,7 @@ namespace slake {
 			MajorFrame *const cur_major_frame,
 			char *const data_stack,
 			const size_t stack_size,
-			const uint32_t output,
+			const RegIndex output,
 			const Opcode opcode,
 			const size_t num_operands,
 			const Value *const operands,
@@ -330,7 +330,7 @@ namespace slake {
 		friend class ModuleObject;
 
 	public:
-		[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer _add_local_var(Context *context, const MajorFrame *frame, TypeRef type, uint32_t output_reg, Reference &object_ref_out) noexcept;
+		[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer _add_local_var(Context *context, const MajorFrame *frame, TypeRef type, RegIndex output_reg, Reference &object_ref_out) noexcept;
 		[[nodiscard]] SLAKE_API InternalExceptionPointer _fill_args(
 			Context *context,
 			MajorFrame *new_major_frame,
@@ -340,7 +340,7 @@ namespace slake {
 		[[nodiscard]] SLAKE_API InternalExceptionPointer _create_new_coroutine_major_frame(
 			Context *context,
 			CoroutineObject *coroutine,
-			uint32_t return_value_out,
+			RegIndex return_value_out,
 			const Reference *return_struct_ref) noexcept;
 		[[nodiscard]] SLAKE_API InternalExceptionPointer _create_new_major_frame(
 			ContextObject *context_object,
@@ -349,7 +349,7 @@ namespace slake {
 			const Value *args,
 			size_t off_args,
 			uint32_t num_args,
-			uint32_t return_value_out,
+			RegIndex return_value_out,
 			const Reference *return_struct_ref) noexcept;
 		SLAKE_API void _leave_major_frame(Context *context) noexcept;
 

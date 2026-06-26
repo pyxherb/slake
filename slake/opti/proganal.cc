@@ -47,7 +47,7 @@ bool opti::is_ins_simplifiable(Opcode opcode) {
 	return false;
 }
 
-void slake::opti::mark_reg_as_for_output(ProgramAnalyzeContext &analyze_context, uint32_t i) {
+void slake::opti::mark_reg_as_for_output(ProgramAnalyzeContext &analyze_context, RegIndex i) {
 	switch (auto &reg_info = analyze_context.analyzed_info_out.analyzed_reg_info.at(i); reg_info.storage_type) {
 		case opti::RegStorageType::None:
 			break;
@@ -250,7 +250,7 @@ InternalExceptionPointer slake::opti::eval_value_type(
 			break;
 		}
 		case ValueType::RegIndex: {
-			uint32_t reg_index = value.get_reg_index();
+			RegIndex reg_index = value.get_reg_index();
 
 			if (!analyze_context.analyzed_info_out.analyzed_reg_info.contains(reg_index)) {
 				return alloc_oom_error_if_alloc_failed(
@@ -293,7 +293,7 @@ InternalExceptionPointer slake::opti::eval_const_value(
 			const_value_out = value;
 			break;
 		case ValueType::RegIndex: {
-			uint32_t idx_reg = value.get_reg_index();
+			RegIndex idx_reg = value.get_reg_index();
 
 			if (!analyze_context.analyzed_info_out.analyzed_reg_info.contains(idx_reg)) {
 				return alloc_oom_error_if_alloc_failed(
@@ -331,7 +331,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 	uint32_t num_ins = (uint32_t)fn_object->instructions.size();
 	analyzed_info_out.context_object = ContextObject::alloc(runtime, SLAKE_STACK_SIZE_MAX);
 	{
-		SLAKE_RETURN_IF_EXCEPT(runtime->_create_new_major_frame(analyzed_info_out.context_object.get(), nullptr, nullptr, nullptr, SIZE_MAX, 0, UINT32_MAX, nullptr));
+		SLAKE_RETURN_IF_EXCEPT(runtime->_create_new_major_frame(analyzed_info_out.context_object.get(), nullptr, nullptr, nullptr, SIZE_MAX, 0, INVALID_REG, nullptr));
 	}
 
 	ProgramAnalyzeContext analyze_context = {
@@ -349,7 +349,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 
 	// Analyze lifetime of virtual registers.
 	bool new_expectable_reg_found;
-	auto set_expected_value = [&analyzed_info_out, &new_expectable_reg_found](uint32_t reg_index, const Value &value) {
+	auto set_expected_value = [&analyzed_info_out, &new_expectable_reg_found](RegIndex reg_index, const Value &value) {
 		analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = value;
 		new_expectable_reg_found = true;
 	};
@@ -358,9 +358,9 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 		for (uint32_t &i = analyze_context.idx_cur_ins; i < num_ins; ++i) {
 			const Instruction &cur_ins = fn_object->instructions.at(i);
 
-			uint32_t reg_index = UINT32_MAX;
+			RegIndex reg_index = INVALID_REG;
 
-			if (cur_ins.output != UINT32_MAX) {
+			if (cur_ins.output != INVALID_REG) {
 				reg_index = cur_ins.output;
 
 				if (analyzed_info_out.analyzed_reg_info.contains(reg_index)) {
@@ -381,7 +381,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 
 			for (size_t j = 0; j < cur_ins.num_operands; ++j) {
 				if (cur_ins.operands[j].value_type == ValueType::RegIndex) {
-					uint32_t index = cur_ins.operands[j].get_reg_index();
+					RegIndex index = cur_ins.operands[j].get_reg_index();
 
 					if (!analyzed_info_out.analyzed_reg_info.contains(index)) {
 						// Malformed program, return.
@@ -398,7 +398,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 
 			switch (cur_ins.opcode) {
 				case Opcode::LOAD: {
-					if (reg_index != UINT32_MAX) {
+					if (reg_index != INVALID_REG) {
 						if (cur_ins.num_operands != 1) {
 							return alloc_oom_error_if_alloc_failed(
 								MalformedProgramError::alloc(
@@ -474,7 +474,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 					break;
 				}
 				case Opcode::RLOAD: {
-					if (reg_index != UINT32_MAX) {
+					if (reg_index != INVALID_REG) {
 						if (cur_ins.num_operands != 2) {
 							return alloc_oom_error_if_alloc_failed(
 								MalformedProgramError::alloc(
@@ -514,7 +514,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 							id_ref = (IdRefObject *)object.as_object;
 						}
 
-						uint32_t call_target_reg_index = cur_ins.operands[0].get_reg_index();
+						RegIndex call_target_reg_index = cur_ins.operands[0].get_reg_index();
 						TypeRef type = analyze_context.analyzed_info_out.analyzed_reg_info.at(call_target_reg_index).type;
 
 						switch (type.type_id) {
@@ -582,7 +582,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 					break;
 				}
 				case Opcode::STORE: {
-					if (reg_index != UINT32_MAX) {
+					if (reg_index != INVALID_REG) {
 						return alloc_oom_error_if_alloc_failed(
 							MalformedProgramError::alloc(
 								runtime->get_fixed_alloc(),
@@ -593,7 +593,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 					break;
 				}
 				case Opcode::COPY: {
-					if (reg_index != UINT32_MAX) {
+					if (reg_index != INVALID_REG) {
 						switch (cur_ins.operands[0].value_type) {
 							case ValueType::I8:
 								set_expected_value(reg_index, cur_ins.operands[0]);
@@ -666,7 +666,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 					break;
 				}
 				case Opcode::LARG: {
-					if (reg_index != UINT32_MAX) {
+					if (reg_index != INVALID_REG) {
 						if (cur_ins.num_operands != 1) {
 							return alloc_oom_error_if_alloc_failed(
 								MalformedProgramError::alloc(
@@ -738,7 +738,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 					break;
 				}
 				case Opcode::LVAR: {
-					if (reg_index == UINT32_MAX) {
+					if (reg_index == INVALID_REG) {
 						return alloc_oom_error_if_alloc_failed(
 							MalformedProgramError::alloc(
 								runtime->get_fixed_alloc(),
@@ -764,7 +764,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 
 					TypeRef type_name = cur_ins.operands[0].get_type_name();
 
-					if (cur_ins.output != UINT32_MAX) {
+					if (cur_ins.output != INVALID_REG) {
 						Reference entity_ref;
 						//SLAKE_RETURN_IF_EXCEPT(runtime->_add_local_var(&analyzed_info_out.context_object->_context, pseudo_major_frame.get(), type_name, cur_ins.output, entity_ref));
 
@@ -782,7 +782,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 					break;
 				}
 				case Opcode::LVALUE: {
-					if (reg_index != UINT32_MAX) {
+					if (reg_index != INVALID_REG) {
 						if (cur_ins.num_operands != 1) {
 							return alloc_oom_error_if_alloc_failed(
 								MalformedProgramError::alloc(
@@ -799,7 +799,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 									i));
 						}
 
-						uint32_t index = cur_ins.operands[0].get_reg_index();
+						RegIndex index = cur_ins.operands[0].get_reg_index();
 						TypeRef type = analyzed_info_out.analyzed_reg_info.at(index).type;
 
 						if (type.type_id != TypeId::Ref) {
@@ -845,7 +845,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 					SLAKE_RETURN_IF_EXCEPT(analyze_arithmetic_ins(analyze_context, reg_index));
 					break;
 				case Opcode::AT: {
-					if (reg_index != UINT32_MAX) {
+					if (reg_index != INVALID_REG) {
 						if (cur_ins.num_operands != 2) {
 							return alloc_oom_error_if_alloc_failed(
 								MalformedProgramError::alloc(
@@ -862,7 +862,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 									i));
 						}
 
-						uint32_t index = cur_ins.operands[0].get_reg_index();
+						RegIndex index = cur_ins.operands[0].get_reg_index();
 						TypeRef type = analyzed_info_out.analyzed_reg_info.at(index).type;
 
 						if (type.type_id != TypeId::Array) {
@@ -885,7 +885,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 					break;
 				}
 				case Opcode::JMP:
-					if (reg_index != UINT32_MAX) {
+					if (reg_index != INVALID_REG) {
 						return alloc_oom_error_if_alloc_failed(
 							MalformedProgramError::alloc(
 								runtime->get_fixed_alloc(),
@@ -899,7 +899,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 						return OutOfMemoryError::alloc();
 					break;
 				case Opcode::PUSHARG: {
-					if (reg_index != UINT32_MAX) {
+					if (reg_index != INVALID_REG) {
 						return alloc_oom_error_if_alloc_failed(
 							MalformedProgramError::alloc(
 								runtime->get_fixed_alloc(),
@@ -959,7 +959,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 								i));
 					}
 
-					uint32_t call_target_reg_index = call_target.get_reg_index();
+					RegIndex call_target_reg_index = call_target.get_reg_index();
 					if (!analyzed_info_out.analyzed_reg_info.contains(call_target_reg_index)) {
 						return alloc_oom_error_if_alloc_failed(
 							MalformedProgramError::alloc(
@@ -972,7 +972,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 
 					switch (call_target_type.type_id) {
 						case TypeId::Fn:
-							if (reg_index != UINT32_MAX) {
+							if (reg_index != INVALID_REG) {
 								FnTypeDefObject *type_def = (FnTypeDefObject *)call_target_type.get_custom_type_def();
 								analyzed_info_out.analyzed_reg_info.at(reg_index).type = type_def->return_type->type_ref;
 							}
@@ -1022,7 +1022,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 								i));
 					}
 
-					uint32_t call_target_reg_index = call_target.get_reg_index();
+					RegIndex call_target_reg_index = call_target.get_reg_index();
 					if (!analyzed_info_out.analyzed_reg_info.contains(call_target_reg_index)) {
 						return alloc_oom_error_if_alloc_failed(
 							MalformedProgramError::alloc(
@@ -1035,7 +1035,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 
 					switch (call_target_type.type_id) {
 						case TypeId::Fn:
-							if (reg_index != UINT32_MAX) {
+							if (reg_index != INVALID_REG) {
 								FnTypeDefObject *type_def = (FnTypeDefObject *)call_target_type.get_custom_type_def();
 								analyzed_info_out.analyzed_reg_info.at(reg_index).type = type_def->return_type->type_ref;
 							}
@@ -1066,7 +1066,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 					break;
 				}
 				case Opcode::RET:
-					if (reg_index != UINT32_MAX) {
+					if (reg_index != INVALID_REG) {
 						return alloc_oom_error_if_alloc_failed(
 							MalformedProgramError::alloc(
 								runtime->get_fixed_alloc(),
@@ -1108,7 +1108,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 						return OutOfMemoryError::alloc();
 					break;
 				case Opcode::YIELD:
-					if (reg_index != UINT32_MAX) {
+					if (reg_index != INVALID_REG) {
 						return alloc_oom_error_if_alloc_failed(
 							MalformedProgramError::alloc(
 								runtime->get_fixed_alloc(),
@@ -1119,7 +1119,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 						return OutOfMemoryError::alloc();
 					break;
 				case Opcode::LTHIS:
-					if (reg_index == UINT32_MAX) {
+					if (reg_index == INVALID_REG) {
 						return alloc_oom_error_if_alloc_failed(
 							MalformedProgramError::alloc(
 								runtime->get_fixed_alloc(),
@@ -1137,7 +1137,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 					analyzed_info_out.analyzed_reg_info.at(reg_index).type = analyze_context.fn_object->this_type;
 					break;
 				case Opcode::NEW:
-					if (reg_index == UINT32_MAX) {
+					if (reg_index == INVALID_REG) {
 						return alloc_oom_error_if_alloc_failed(
 							MalformedProgramError::alloc(
 								runtime->get_fixed_alloc(),
@@ -1164,7 +1164,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 					analyzed_info_out.analyzed_reg_info.at(reg_index).type = cur_ins.operands[0].get_type_name();
 					break;
 				case Opcode::ARRNEW: {
-					if (reg_index == UINT32_MAX) {
+					if (reg_index == INVALID_REG) {
 						return alloc_oom_error_if_alloc_failed(
 							MalformedProgramError::alloc(
 								runtime->get_fixed_alloc(),
@@ -1215,7 +1215,7 @@ InternalExceptionPointer slake::opti::analyze_program_info_pass(
 				}
 				case Opcode::THROW:
 				case Opcode::PUSHEH:
-					if (reg_index != UINT32_MAX) {
+					if (reg_index != INVALID_REG) {
 						return alloc_oom_error_if_alloc_failed(
 							MalformedProgramError::alloc(
 								runtime->get_fixed_alloc(),

@@ -10,7 +10,7 @@ InternalExceptionPointer slake::jit::x86_64::compile_mov_instruction(
 	size_t off_ins,
 	const Instruction &cur_ins) noexcept {
 	InternalExceptionPointer exception;
-	uint32_t output_reg_index = cur_ins.output;
+	RegIndex output_reg_index = cur_ins.output;
 
 	Value src = cur_ins.operands[1];
 
@@ -227,7 +227,7 @@ InternalExceptionPointer slake::jit::x86_64::compile_mov_instruction(
 			break;
 		}
 		case ValueType::RegIndex: {
-			uint32_t src_reg_index = src.get_reg_index();
+			RegIndex src_reg_index = src.get_reg_index();
 			auto &src_reg_info = analyzed_info.analyzed_reg_info.at(src_reg_index);
 			auto &src_vreg_info = compile_context.virtual_reg_states.at(src_reg_index);
 			TypeRef &src_reg_type = src_reg_info.type;

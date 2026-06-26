@@ -23,8 +23,8 @@ InternalExceptionPointer compile_instruction(
 	opti::ProgramAnalyzedInfo &analyzed_info,
 	size_t off_ins,
 	const Instruction &cur_ins) {
-	uint32_t output_reg_index = UINT32_MAX;
-	if (cur_ins.output != UINT32_MAX) {
+	RegIndex output_reg_index = INVALID_REG;
+	if (cur_ins.output != INVALID_REG) {
 		output_reg_index = cur_ins.output;
 		size_t off_timeline_end = analyzed_info.analyzed_reg_info.at(output_reg_index).lifetime.off_end_ins;
 
@@ -54,7 +54,7 @@ InternalExceptionPointer compile_instruction(
 		case Opcode::NOP:
 			break;
 		case Opcode::LOAD: {
-			uint32_t output_reg_index = cur_ins.output;
+			RegIndex output_reg_index = cur_ins.output;
 
 			/*
 			{
@@ -112,7 +112,7 @@ InternalExceptionPointer compile_instruction(
 			break;
 		}
 		case Opcode::RLOAD: {
-			uint32_t output_reg_index = cur_ins.output,
+			RegIndex output_reg_index = cur_ins.output,
 					 base_object_reg_index = cur_ins.operands[0].get_reg_index();
 
 			/*

@@ -408,6 +408,10 @@ namespace slake {
 
 	struct InvalidValueState {};
 
+	using RegIndex = uint32_t;
+	using RegSize = RegIndex;
+	constexpr RegIndex REG_MAX = UINT32_MAX, INVALID_REG = UINT32_MAX;
+
 	using ValueFlags = uint8_t;
 	constexpr ValueFlags VALUE_LOCAL = 0x01;
 	struct Value {
@@ -635,7 +639,7 @@ namespace slake {
 			return as_bool;
 		}
 
-		SLAKE_FORCEINLINE uint32_t get_reg_index() const noexcept {
+		SLAKE_FORCEINLINE RegIndex get_reg_index() const noexcept {
 			assert(value_type == ValueType::RegIndex);
 			return as_u32;
 		}

@@ -25,11 +25,11 @@ namespace slake {
 			};
 
 			struct PhysicalRegSavingInfo {
-				uint32_t vreg_id;
+				RegIndex vreg_id;
 			};
 
 			struct PhysicalRegState {
-				uint32_t last_vreg_id;
+				RegIndex last_vreg_id;
 				peff::Uninit<peff::List<PhysicalRegSavingInfo>> saving_info;
 			};
 
@@ -64,7 +64,7 @@ namespace slake {
 				size_t cur_stack_size;
 				JITCompilerOptions options;
 				std::bitset<REG_MAX> reg_alloc_flags;
-				peff::Map<uint32_t, VirtualRegState> virtual_reg_states;
+				peff::Map<RegIndex, VirtualRegState> virtual_reg_states;
 				peff::Map<uint32_t, LocalVarState> local_var_states;
 				peff::Map<size_t, peff::List<uint32_t>> reg_recycle_boundaries;
 				peff::Map<int32_t, size_t> free_stack_spaces;
@@ -289,10 +289,10 @@ namespace slake {
 				[[nodiscard]] SLAKE_API InternalExceptionPointer pop_reg_xmm(RegisterId reg, int32_t off, size_t size) noexcept;
 
 				SLAKE_FORCEINLINE bool is_reg_in_use(RegisterId reg) noexcept {
-					return phy_reg_states[reg].last_vreg_id == UINT32_MAX;
+					return phy_reg_states[reg].last_vreg_id == INVALID_REG;
 				}
 
-				[[nodiscard]] SLAKE_FORCEINLINE VirtualRegState *def_virtual_reg(uint32_t vreg, RegisterId phy_reg, size_t size) noexcept {
+				[[nodiscard]] SLAKE_FORCEINLINE VirtualRegState *def_virtual_reg(RegIndex vreg, RegisterId phy_reg, size_t size) noexcept {
 					if (!virtual_reg_states.insert(+vreg, {}))
 						return nullptr;
 					VirtualRegState &vreg_state = virtual_reg_states.at(vreg);
@@ -304,7 +304,7 @@ namespace slake {
 
 					return &vreg_state;
 				}
-				[[nodiscard]] SLAKE_FORCEINLINE VirtualRegState *def_virtual_reg(uint32_t vreg, int32_t save_offset, size_t size) noexcept {
+				[[nodiscard]] SLAKE_FORCEINLINE VirtualRegState *def_virtual_reg(RegIndex vreg, int32_t save_offset, size_t size) noexcept {
 					if (!virtual_reg_states.insert(+vreg, {}))
 						return nullptr;
 					VirtualRegState &vreg_state = virtual_reg_states.at(vreg);
@@ -314,7 +314,7 @@ namespace slake {
 
 					return &vreg_state;
 				}
-				[[nodiscard]] SLAKE_FORCEINLINE VirtualRegState *def_dummy_virtual_reg(uint32_t vreg) noexcept {
+				[[nodiscard]] SLAKE_FORCEINLINE VirtualRegState *def_dummy_virtual_reg(RegIndex vreg) noexcept {
 					if (!virtual_reg_states.insert(+vreg, {}))
 						return nullptr;
 					VirtualRegState &vreg_state = virtual_reg_states.at(vreg);

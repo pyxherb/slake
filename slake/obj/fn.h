@@ -20,7 +20,7 @@ namespace slake {
 	public:
 		size_t off_source_loc_desc = SIZE_MAX;
 		Opcode opcode;
-		uint32_t output;
+		RegIndex output;
 		uint32_t num_operands;
 		Value *operands;
 		peff::RcObjectPtr<peff::Alloc> operands_allocator;
@@ -42,7 +42,7 @@ namespace slake {
 			this->opcode = opcode;
 		}
 
-		SLAKE_FORCEINLINE void set_output(uint32_t output) {
+		SLAKE_FORCEINLINE void set_output(RegIndex output) {
 			this->output = output;
 		}
 

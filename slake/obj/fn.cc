@@ -6,7 +6,7 @@ using namespace slake;
 SLAKE_API Instruction::Instruction()
 	: opcode((Opcode)0xff),
 	  num_operands(0),
-	  output(UINT32_MAX),
+	  output(INVALID_REG),
 	  operands(nullptr),
 	  operands_allocator(nullptr) {
 }
@@ -21,7 +21,7 @@ SLAKE_API Instruction::Instruction(Instruction &&rhs)
 	rhs.off_source_loc_desc = SIZE_MAX;
 	rhs.opcode = (Opcode)0xff;
 	rhs.num_operands = 0;
-	rhs.output = UINT32_MAX;
+	rhs.output = INVALID_REG;
 	rhs.operands = nullptr;
 	rhs.operands_allocator = nullptr;
 }

@@ -120,7 +120,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 				}
 			}
 
-			if (reg_index != UINT32_MAX) {
+			if (reg_index != INVALID_REG) {
 				analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).type = result_type;
 				if (result.value_type != ValueType::Undefined) {
 					analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = result;
@@ -231,7 +231,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 				}
 			}
 
-			if (reg_index != UINT32_MAX) {
+			if (reg_index != INVALID_REG) {
 				analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).type = result_type;
 				if (result.value_type != ValueType::Undefined) {
 					analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = result;
@@ -342,7 +342,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 				}
 			}
 
-			if (reg_index != UINT32_MAX) {
+			if (reg_index != INVALID_REG) {
 				analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).type = result_type;
 				if (result.value_type != ValueType::Undefined) {
 					analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = result;
@@ -453,7 +453,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 				}
 			}
 
-			if (reg_index != UINT32_MAX) {
+			if (reg_index != INVALID_REG) {
 				analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).type = result_type;
 				if (result.value_type != ValueType::Undefined) {
 					analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = result;
@@ -564,7 +564,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 				}
 			}
 
-			if (reg_index != UINT32_MAX) {
+			if (reg_index != INVALID_REG) {
 				analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).type = result_type;
 				if (result.value_type != ValueType::Undefined) {
 					analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = result;
@@ -661,7 +661,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 				}
 			}
 
-			if (reg_index != UINT32_MAX) {
+			if (reg_index != INVALID_REG) {
 				analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).type = result_type;
 				if (result.value_type != ValueType::Undefined) {
 					analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = result;
@@ -758,7 +758,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 				}
 			}
 
-			if (reg_index != UINT32_MAX) {
+			if (reg_index != INVALID_REG) {
 				analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).type = result_type;
 				if (result.value_type != ValueType::Undefined) {
 					analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = result;
@@ -855,7 +855,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 				}
 			}
 
-			if (reg_index != UINT32_MAX) {
+			if (reg_index != INVALID_REG) {
 				analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).type = result_type;
 				if (result.value_type != ValueType::Undefined) {
 					analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = result;
@@ -913,7 +913,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 				}
 			}
 
-			if (reg_index != UINT32_MAX) {
+			if (reg_index != INVALID_REG) {
 				analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).type = result_type;
 				if (result.value_type != ValueType::Undefined) {
 					analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = result;
@@ -968,7 +968,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 				}
 			}
 
-			if (reg_index != UINT32_MAX) {
+			if (reg_index != INVALID_REG) {
 				analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).type = result_type;
 				if (result.value_type != ValueType::Undefined) {
 					analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = result;
@@ -1086,7 +1086,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 				}
 			}
 
-			if (reg_index != UINT32_MAX) {
+			if (reg_index != INVALID_REG) {
 				analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).type = result_type;
 				if (result.value_type != ValueType::Undefined) {
 					analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = result;
@@ -1204,7 +1204,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 				}
 			}
 
-			if (reg_index != UINT32_MAX) {
+			if (reg_index != INVALID_REG) {
 				analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).type = result_type;
 				if (result.value_type != ValueType::Undefined) {
 					analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = result;
@@ -1315,7 +1315,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 				}
 			}
 
-			if (reg_index != UINT32_MAX) {
+			if (reg_index != INVALID_REG) {
 				analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).type = result_type;
 				if (result.value_type != ValueType::Undefined) {
 					analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = result;
@@ -1426,7 +1426,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 				}
 			}
 
-			if (reg_index != UINT32_MAX) {
+			if (reg_index != INVALID_REG) {
 				analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).type = result_type;
 				if (result.value_type != ValueType::Undefined) {
 					analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = result;
@@ -1537,7 +1537,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 				}
 			}
 
-			if (reg_index != UINT32_MAX) {
+			if (reg_index != INVALID_REG) {
 				analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).type = result_type;
 				if (result.value_type != ValueType::Undefined) {
 					analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = result;
@@ -1648,7 +1648,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 				}
 			}
 
-			if (reg_index != UINT32_MAX) {
+			if (reg_index != INVALID_REG) {
 				analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).type = result_type;
 				if (result.value_type != ValueType::Undefined) {
 					analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = result;
@@ -1829,7 +1829,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 				}
 			}
 
-			if (reg_index != UINT32_MAX) {
+			if (reg_index != INVALID_REG) {
 				analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).type = result_type;
 				if (result.value_type != ValueType::Undefined) {
 					analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = result;
@@ -1926,7 +1926,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 				}
 			}
 
-			if (reg_index != UINT32_MAX) {
+			if (reg_index != INVALID_REG) {
 				analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).type = result_type;
 				if (result.value_type != ValueType::Undefined) {
 					analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = result;
@@ -2023,7 +2023,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 				}
 			}
 
-			if (reg_index != UINT32_MAX) {
+			if (reg_index != INVALID_REG) {
 				analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).type = result_type;
 				if (result.value_type != ValueType::Undefined) {
 					analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = result;
@@ -2109,7 +2109,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 				}
 			}
 
-			if (reg_index != UINT32_MAX) {
+			if (reg_index != INVALID_REG) {
 				if (result.value_type != ValueType::Undefined) {
 					analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = result;
 				}
@@ -2152,7 +2152,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 				}
 			}
 
-			if (reg_index != UINT32_MAX) {
+			if (reg_index != INVALID_REG) {
 				if (result.value_type != ValueType::Undefined) {
 					analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = result;
 				}
@@ -2249,7 +2249,7 @@ InternalExceptionPointer slake::opti::analyze_arithmetic_ins(
 				}
 			}
 
-			if (reg_index != UINT32_MAX) {
+			if (reg_index != INVALID_REG) {
 				if (result.value_type != ValueType::Undefined) {
 					analyze_context.analyzed_info_out.analyzed_reg_info.at(reg_index).expected_value = result;
 				}

@@ -571,14 +571,14 @@ static SLAKE_FORCEINLINE InternalExceptionPointer _is_struct_recursed(StructRecu
 			case ObjectKind::UnionEnum: {
 				UnionEnumObject *struct_object = (UnionEnumObject *)cur_frame.struct_object;
 				BasicModuleObject::MembersMap::ConstIterator &iterator = std::get<EnumModuleIteratorStructRecursionCheckFrameExData>(cur_frame.ex_data).enum_module_iterator;
-				if (iterator == struct_object->get_members().begin_const()) {
+				if (iterator == struct_object->get_members().cbegin()) {
 					if (context.walked_objects.contains(cur_frame.struct_object))
 						// Recursed!
 						std::terminate();
 
 					if (!context.walked_objects.insert(+cur_frame.struct_object))
 						return OutOfMemoryError::alloc();
-				} else if (iterator == struct_object->get_members().end_const()) {
+				} else if (iterator == struct_object->get_members().cend()) {
 					context.walked_objects.remove(struct_object);
 					context.frames.pop_back();
 					continue;

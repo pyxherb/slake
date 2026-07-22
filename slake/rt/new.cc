@@ -268,7 +268,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer _prepare_struct_for_instantiation(Str
 					assert(td->type_object->get_object_kind() == ObjectKind::UnionEnum);
 					if (!context.frames.push_back(
 							{ (UnionEnumObject *)td->type_object,
-								MembersOpStructPreparationFrameExData{ ((UnionEnumObject *)td->type_object)->get_members().begin_const() } }))
+								MembersOpStructPreparationFrameExData{ ((UnionEnumObject *)td->type_object)->get_members().cbegin() } }))
 						return OutOfMemoryError::alloc();
 					break;
 				}
@@ -313,7 +313,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer _prepare_struct_for_instantiation(Str
 				UnionEnumObject *enum_object = (UnionEnumObject *)cur_frame.struct_object;
 				MembersOpStructPreparationFrameExData &ex_data = std::get<MembersOpStructPreparationFrameExData>(cur_frame.ex_data);
 				auto &field_records = enum_object->get_members();
-				if (ex_data.iter == enum_object->get_members().end_const()) {
+				if (ex_data.iter == enum_object->get_members().cend()) {
 					// TODO: Find out the maximum alignment and the maximum size.
 					size_t max_alignment = 0, max_size = 0;
 					for (auto i : enum_object->get_members()) {
@@ -381,7 +381,7 @@ SLAKE_API InternalExceptionPointer Runtime::prepare_struct_for_instantiation(Str
 SLAKE_API InternalExceptionPointer Runtime::prepare_union_enum_for_instantiation(UnionEnumObject *cls) {
 	StructPreparationContext context(get_fixed_alloc());
 
-	if (!context.frames.push_back({ cls, MembersOpStructPreparationFrameExData{ cls->members.begin_const() } }))
+	if (!context.frames.push_back({ cls, MembersOpStructPreparationFrameExData{ cls->members.cbegin() } }))
 		return OutOfMemoryError::alloc();
 
 	SLAKE_RETURN_IF_EXCEPT(_prepare_struct_for_instantiation(context));

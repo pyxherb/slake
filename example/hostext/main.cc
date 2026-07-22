@@ -623,7 +623,7 @@ SLAKE_API bool dump_type_name(peff::Alloc *allocator, DumpWriter *writer, const 
 					if (!runtime->get_full_ref(allocator, (slake::MemberObject *)obj->type_object, module_full_name))
 						return false;
 
-					SLAKE_RETURN_IF_FALSE(dump_id_ref(allocator, writer, module_full_name, nullptr, false, {}));
+					SLAKE_RETURN_IF_FALSE(dump_id_ref(allocator, writer, module_full_name, nullptr, false, peff::Option<slake::TypeRef>{}));
 
 					break;
 				}
@@ -651,7 +651,7 @@ SLAKE_API bool dump_type_name(peff::Alloc *allocator, DumpWriter *writer, const 
 					if (!runtime->get_full_ref(allocator, (slake::MemberObject *)obj->type_object, module_full_name))
 						return false;
 
-					SLAKE_RETURN_IF_FALSE(dump_id_ref(allocator, writer, module_full_name, nullptr, false, {}));
+					SLAKE_RETURN_IF_FALSE(dump_id_ref(allocator, writer, module_full_name, nullptr, false, peff::Option<slake::TypeRef>{}));
 
 					break;
 				}
@@ -679,7 +679,7 @@ SLAKE_API bool dump_type_name(peff::Alloc *allocator, DumpWriter *writer, const 
 					if (!runtime->get_full_ref(allocator, (slake::MemberObject *)obj->type_object, module_full_name))
 						return false;
 
-					SLAKE_RETURN_IF_FALSE(dump_id_ref(allocator, writer, module_full_name, nullptr, false, {}));
+					SLAKE_RETURN_IF_FALSE(dump_id_ref(allocator, writer, module_full_name, nullptr, false, peff::Option<slake::TypeRef>{}));
 
 					break;
 				}
@@ -707,7 +707,7 @@ SLAKE_API bool dump_type_name(peff::Alloc *allocator, DumpWriter *writer, const 
 					if (!runtime->get_full_ref(allocator, (slake::MemberObject *)obj->type_object, module_full_name))
 						return false;
 
-					SLAKE_RETURN_IF_FALSE(dump_id_ref(allocator, writer, module_full_name, nullptr, false, {}));
+					SLAKE_RETURN_IF_FALSE(dump_id_ref(allocator, writer, module_full_name, nullptr, false, peff::Option<slake::TypeRef>{}));
 
 					break;
 				}
@@ -735,7 +735,7 @@ SLAKE_API bool dump_type_name(peff::Alloc *allocator, DumpWriter *writer, const 
 					if (!runtime->get_full_ref(allocator, (slake::MemberObject *)obj->type_object, module_full_name))
 						return false;
 
-					SLAKE_RETURN_IF_FALSE(dump_id_ref(allocator, writer, module_full_name, nullptr, false, {}));
+					SLAKE_RETURN_IF_FALSE(dump_id_ref(allocator, writer, module_full_name, nullptr, false, peff::Option<slake::TypeRef>{}));
 
 					break;
 				}
@@ -763,7 +763,7 @@ SLAKE_API bool dump_type_name(peff::Alloc *allocator, DumpWriter *writer, const 
 					if (!runtime->get_full_ref(allocator, (slake::MemberObject *)obj->type_object, module_full_name))
 						return false;
 
-					SLAKE_RETURN_IF_FALSE(dump_id_ref(allocator, writer, module_full_name, nullptr, false, {}));
+					SLAKE_RETURN_IF_FALSE(dump_id_ref(allocator, writer, module_full_name, nullptr, false, peff::Option<slake::TypeRef>{}));
 
 					break;
 				}

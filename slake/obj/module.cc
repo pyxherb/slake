@@ -64,7 +64,7 @@ SLAKE_API BasicModuleObject::~BasicModuleObject() {
 }
 
 SLAKE_API Reference BasicModuleObject::get_member(const std::string_view &name) const {
-	if (auto it = field_record_indices.find(name); it != field_record_indices.end_const()) {
+	if (auto it = field_record_indices.find(name); it != field_record_indices.cend()) {
 		return StaticFieldRef((BasicModuleObject *)this, it.value());
 	}
 	if (auto it = members.find(name); it != members.end()) {

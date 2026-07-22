@@ -238,7 +238,7 @@ SLAKE_API bool Runtime::is_floating_type(const TypeRef &type) noexcept {
 	SLAKE_UNREACHABLE();
 }
 
-SLAKE_API static bool is_scoped_enum_type(const TypeRef &type) noexcept {
+SLAKE_API bool Runtime::is_scoped_enum_type(const TypeRef &type) noexcept {
 	return (type.type_id == TypeId::ScopedEnum) || (type.type_id == TypeId::TypelessScopedEnum);
 }
 

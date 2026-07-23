@@ -207,13 +207,13 @@ SLAKE_API void BasicModuleObject::replace_allocator(peff::Alloc *allocator) noex
 SLAKE_API peff::Option<FieldRecord &> BasicModuleObject::get_field_record(const std::string_view &name) {
 	if (auto it = field_record_indices.find(name); it != field_record_indices.end())
 		return field_records.at(it.value());
-	return peff::NULL_OPTION;
+	return peff::NULLOPT;
 }
 
 SLAKE_API peff::Option<const FieldRecord &> BasicModuleObject::get_field_record(const std::string_view &name) const {
 	if (auto it = field_record_indices.find(name); it != field_record_indices.end())
 		return field_records.at(it.value());
-	return peff::NULL_OPTION;
+	return peff::NULLOPT;
 }
 
 SLAKE_API ModuleObject::ModuleObject(Runtime *rt, peff::Alloc *self_allocator)

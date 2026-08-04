@@ -950,9 +950,9 @@ int main(int argc, char **argv) {
 						BCBuilder builder(rt.get(), peff::default_allocator());
 						builder.set_fn(ol.get());
 
-						ol->set_register_number(InsRegType::Any, 30);
-						ol->set_register_number(InsRegType::I64, 30);
-						ol->set_register_number(InsRegType::Bool, 30);
+						ol->set_register_number(InsRegType::Any, 9);
+						ol->set_register_number(InsRegType::I64, 9);
+						ol->set_register_number(InsRegType::Bool, 9);
 
 						if (!ol->ins_type_set.push_back(TypeRef(TypeId::I64)))
 							abort();

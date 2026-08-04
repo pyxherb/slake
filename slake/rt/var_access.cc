@@ -1079,91 +1079,91 @@ SLAKE_API void Runtime::write_var_with_type(const Reference &entity_ref, const T
 			switch (t.type_id) {
 				case TypeId::I8:
 					if (t.is_nullable()) {
-						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr)) = value.is_null()))
+						if ((*reinterpret_cast<bool*>((raw_data_ptr)) = value.is_null()))
 							break;
 						raw_data_ptr += sizeof(bool);
 					}
-					*(static_cast<int8_t *>(static_cast<void *>(raw_data_ptr))) = value.get_i8();
+					*(reinterpret_cast<int8_t*>((raw_data_ptr))) = value.get_i8();
 					break;
 				case TypeId::I16:
 					if (t.is_nullable()) {
-						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr)) = value.is_null()))
+						if ((*reinterpret_cast<bool*>((raw_data_ptr)) = value.is_null()))
 							break;
 						raw_data_ptr += sizeof(bool);
 					}
-					*(static_cast<int16_t *>(static_cast<void *>(raw_data_ptr))) = value.get_i16();
+					*(reinterpret_cast<int16_t*>((raw_data_ptr))) = value.get_i16();
 					break;
 				case TypeId::I32:
 					if (t.is_nullable()) {
-						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr)) = value.is_null()))
+						if ((*reinterpret_cast<bool*>((raw_data_ptr)) = value.is_null()))
 							break;
 						raw_data_ptr += sizeof(bool);
 					}
-					*(static_cast<int32_t *>(static_cast<void *>(raw_data_ptr))) = value.get_i32();
+					*(reinterpret_cast<int32_t*>((raw_data_ptr))) = value.get_i32();
 					break;
 				case TypeId::I64:
 					if (t.is_nullable()) {
-						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr)) = value.is_null()))
+						if ((*reinterpret_cast<bool*>((raw_data_ptr)) = value.is_null()))
 							break;
 						raw_data_ptr += sizeof(bool);
 					}
-					*(static_cast<int64_t *>(static_cast<void *>(raw_data_ptr))) = value.get_i64();
+					*(reinterpret_cast<int64_t*>((raw_data_ptr))) = value.get_i64();
 					break;
 				case TypeId::U8:
 					if (t.is_nullable()) {
-						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr)) = value.is_null()))
+						if ((*reinterpret_cast<bool*>((raw_data_ptr)) = value.is_null()))
 							break;
 						raw_data_ptr += sizeof(bool);
 					}
-					*(static_cast<uint8_t *>(static_cast<void *>(raw_data_ptr))) = value.get_u8();
+					*(reinterpret_cast<uint8_t*>((raw_data_ptr))) = value.get_u8();
 					break;
 				case TypeId::U16:
 					if (t.is_nullable()) {
-						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr)) = value.is_null()))
+						if ((*reinterpret_cast<bool*>((raw_data_ptr)) = value.is_null()))
 							break;
 						raw_data_ptr += sizeof(bool);
 					}
-					*(static_cast<uint16_t *>(static_cast<void *>(raw_data_ptr))) = value.get_u16();
+					*(reinterpret_cast<uint16_t*>((raw_data_ptr))) = value.get_u16();
 					break;
 				case TypeId::U32:
 					if (t.is_nullable()) {
-						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr)) = value.is_null()))
+						if ((*reinterpret_cast<bool*>((raw_data_ptr)) = value.is_null()))
 							break;
 						raw_data_ptr += sizeof(bool);
 					}
-					*(static_cast<uint32_t *>(static_cast<void *>(raw_data_ptr))) = value.get_u32();
+					*(reinterpret_cast<uint32_t*>((raw_data_ptr))) = value.get_u32();
 					break;
 				case TypeId::U64:
 					if (t.is_nullable()) {
-						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr)) = value.is_null()))
+						if ((*reinterpret_cast<bool*>((raw_data_ptr)) = value.is_null()))
 							break;
 						raw_data_ptr += sizeof(bool);
 					}
-					*(static_cast<uint64_t *>(static_cast<void *>(raw_data_ptr))) = value.get_u64();
+					*(reinterpret_cast<uint64_t*>((raw_data_ptr))) = value.get_u64();
 					break;
 				case TypeId::F32:
 					if (t.is_nullable()) {
-						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr)) = value.is_null()))
+						if ((*reinterpret_cast<bool*>((raw_data_ptr)) = value.is_null()))
 							break;
 						raw_data_ptr += sizeof(bool);
 					}
-					*(static_cast<float *>(static_cast<void *>(raw_data_ptr))) = value.get_f32();
+					*(reinterpret_cast<float*>((raw_data_ptr))) = value.get_f32();
 					break;
 				case TypeId::F64:
 					if (t.is_nullable()) {
-						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr)) = value.is_null()))
+						if ((*reinterpret_cast<bool*>((raw_data_ptr)) = value.is_null()))
 							break;
 						raw_data_ptr += sizeof(bool);
 					}
-					*(static_cast<double *>(static_cast<void *>(raw_data_ptr))) = value.get_f64();
+					*(reinterpret_cast<double*>((raw_data_ptr))) = value.get_f64();
 					break;
 				case TypeId::Bool:
 					if (t.is_nullable()) {
-						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr)) = value.is_null()))
+						if ((*reinterpret_cast<bool*>((raw_data_ptr)) = value.is_null()))
 							break;
 						raw_data_ptr += sizeof(bool);
 					}
-					*(static_cast<bool *>(static_cast<void *>(raw_data_ptr))) = value.get_bool();
+					*(reinterpret_cast<bool*>((raw_data_ptr))) = value.get_bool();
 					break;
 				case TypeId::String:
 					if (value.is_local() && !t.is_local())
@@ -1189,91 +1189,91 @@ SLAKE_API void Runtime::write_var_with_type(const Reference &entity_ref, const T
 			switch (t.type_id) {
 				case TypeId::I8:
 					if (t.is_nullable()) {
-						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr)) = value.is_null()))
+						if ((*reinterpret_cast<bool*>((raw_data_ptr)) = value.is_null()))
 							break;
 						raw_data_ptr += sizeof(bool);
 					}
-					*(static_cast<int8_t *>(static_cast<void *>(raw_data_ptr))) = value.get_i8();
+					*(reinterpret_cast<int8_t*>((raw_data_ptr))) = value.get_i8();
 					break;
 				case TypeId::I16:
 					if (t.is_nullable()) {
-						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr)) = value.is_null()))
+						if ((*reinterpret_cast<bool*>((raw_data_ptr)) = value.is_null()))
 							break;
 						raw_data_ptr += sizeof(bool);
 					}
-					*(static_cast<int16_t *>(static_cast<void *>(raw_data_ptr))) = value.get_i16();
+					*(reinterpret_cast<int16_t*>((raw_data_ptr))) = value.get_i16();
 					break;
 				case TypeId::I32:
 					if (t.is_nullable()) {
-						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr)) = value.is_null()))
+						if ((*reinterpret_cast<bool*>((raw_data_ptr)) = value.is_null()))
 							break;
 						raw_data_ptr += sizeof(bool);
 					}
-					*(static_cast<int32_t *>(static_cast<void *>(raw_data_ptr))) = value.get_i32();
+					*(reinterpret_cast<int32_t*>((raw_data_ptr))) = value.get_i32();
 					break;
 				case TypeId::I64:
 					if (t.is_nullable()) {
-						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr)) = value.is_null()))
+						if ((*reinterpret_cast<bool*>((raw_data_ptr)) = value.is_null()))
 							break;
 						raw_data_ptr += sizeof(bool);
 					}
-					*(static_cast<int64_t *>(static_cast<void *>(raw_data_ptr))) = value.get_i64();
+					*(reinterpret_cast<int64_t*>((raw_data_ptr))) = value.get_i64();
 					break;
 				case TypeId::U8:
 					if (t.is_nullable()) {
-						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr)) = value.is_null()))
+						if ((*reinterpret_cast<bool*>((raw_data_ptr)) = value.is_null()))
 							break;
 						raw_data_ptr += sizeof(bool);
 					}
-					*(static_cast<uint8_t *>(static_cast<void *>(raw_data_ptr))) = value.get_u8();
+					*(reinterpret_cast<uint8_t*>((raw_data_ptr))) = value.get_u8();
 					break;
 				case TypeId::U16:
 					if (t.is_nullable()) {
-						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr)) = value.is_null()))
+						if ((*reinterpret_cast<bool*>((raw_data_ptr)) = value.is_null()))
 							break;
 						raw_data_ptr += sizeof(bool);
 					}
-					*(static_cast<uint16_t *>(static_cast<void *>(raw_data_ptr))) = value.get_u16();
+					*(reinterpret_cast<uint16_t*>((raw_data_ptr))) = value.get_u16();
 					break;
 				case TypeId::U32:
 					if (t.is_nullable()) {
-						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr)) = value.is_null()))
+						if ((*reinterpret_cast<bool*>((raw_data_ptr)) = value.is_null()))
 							break;
 						raw_data_ptr += sizeof(bool);
 					}
-					*(static_cast<uint32_t *>(static_cast<void *>(raw_data_ptr))) = value.get_u32();
+					*(reinterpret_cast<uint32_t*>((raw_data_ptr))) = value.get_u32();
 					break;
 				case TypeId::U64:
 					if (t.is_nullable()) {
-						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr)) = value.is_null()))
+						if ((*reinterpret_cast<bool*>((raw_data_ptr)) = value.is_null()))
 							break;
 						raw_data_ptr += sizeof(bool);
 					}
-					*(static_cast<uint64_t *>(static_cast<void *>(raw_data_ptr))) = value.get_u64();
+					*(reinterpret_cast<uint64_t*>((raw_data_ptr))) = value.get_u64();
 					break;
 				case TypeId::F32:
 					if (t.is_nullable()) {
-						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr)) = value.is_null()))
+						if ((*reinterpret_cast<bool*>((raw_data_ptr)) = value.is_null()))
 							break;
 						raw_data_ptr += sizeof(bool);
 					}
-					*(static_cast<float *>(static_cast<void *>(raw_data_ptr))) = value.get_f32();
+					*(reinterpret_cast<float*>((raw_data_ptr))) = value.get_f32();
 					break;
 				case TypeId::F64:
 					if (t.is_nullable()) {
-						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr)) = value.is_null()))
+						if ((*reinterpret_cast<bool*>((raw_data_ptr)) = value.is_null()))
 							break;
 						raw_data_ptr += sizeof(bool);
 					}
-					*(static_cast<double *>(static_cast<void *>(raw_data_ptr))) = value.get_f64();
+					*(reinterpret_cast<double*>((raw_data_ptr))) = value.get_f64();
 					break;
 				case TypeId::Bool:
 					if (t.is_nullable()) {
-						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr)) = value.is_null()))
+						if ((*reinterpret_cast<bool*>((raw_data_ptr)) = value.is_null()))
 							break;
 						raw_data_ptr += sizeof(bool);
 					}
-					*(static_cast<bool *>(static_cast<void *>(raw_data_ptr))) = value.get_bool();
+					*(reinterpret_cast<bool*>((raw_data_ptr))) = value.get_bool();
 					break;
 				case TypeId::String:
 					if (value.is_local() && !t.is_local())
@@ -1392,77 +1392,77 @@ SLAKE_API void Runtime::write_var_with_type(const Reference &entity_ref, const T
 			switch (t.type_id) {
 				case TypeId::I8:
 					if (t.is_nullable()) {
-						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr + sizeof(int8_t))) = value.is_null()))
+						if ((*reinterpret_cast<bool*>((raw_data_ptr + sizeof(int8_t))) = value.is_null()))
 							break;
 					}
 					*static_cast<int8_t *>(static_cast<void*>(raw_data_ptr)) = value.get_i8();
 					break;
 				case TypeId::I16:
 					if (t.is_nullable()) {
-						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr + sizeof(int16_t))) = value.is_null()))
+						if ((*reinterpret_cast<bool*>((raw_data_ptr + sizeof(int16_t))) = value.is_null()))
 							break;
 					}
 					*static_cast<int16_t *>(static_cast<void*>(raw_data_ptr)) = value.get_i16();
 					break;
 				case TypeId::I32:
 					if (t.is_nullable()) {
-						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr + sizeof(int32_t))) = value.is_null()))
+						if ((*reinterpret_cast<bool*>((raw_data_ptr + sizeof(int32_t))) = value.is_null()))
 							break;
 					}
 					*static_cast<int32_t *>(static_cast<void*>(raw_data_ptr)) = value.get_i32();
 					break;
 				case TypeId::I64:
 					if (t.is_nullable()) {
-						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr + sizeof(int64_t))) = value.is_null()))
+						if ((*reinterpret_cast<bool*>((raw_data_ptr + sizeof(int64_t))) = value.is_null()))
 							break;
 					}
 					*static_cast<int64_t *>(static_cast<void*>(raw_data_ptr)) = value.get_i64();
 					break;
 				case TypeId::U8:
 					if (t.is_nullable()) {
-						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr + sizeof(uint8_t))) = value.is_null()))
+						if ((*reinterpret_cast<bool*>((raw_data_ptr + sizeof(uint8_t))) = value.is_null()))
 							break;
 					}
 					*static_cast<uint8_t *>(static_cast<void*>(raw_data_ptr)) = value.get_u8();
 					break;
 				case TypeId::U16:
 					if (t.is_nullable()) {
-						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr + sizeof(uint16_t))) = value.is_null()))
+						if ((*reinterpret_cast<bool*>((raw_data_ptr + sizeof(uint16_t))) = value.is_null()))
 							break;
 					}
 					*static_cast<uint16_t *>(static_cast<void*>(raw_data_ptr)) = value.get_u16();
 					break;
 				case TypeId::U32:
 					if (t.is_nullable()) {
-						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr + sizeof(uint32_t))) = value.is_null()))
+						if ((*reinterpret_cast<bool*>((raw_data_ptr + sizeof(uint32_t))) = value.is_null()))
 							break;
 					}
 					*static_cast<uint32_t *>(static_cast<void*>(raw_data_ptr)) = value.get_u32();
 					break;
 				case TypeId::U64:
 					if (t.is_nullable()) {
-						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr + sizeof(uint64_t))) = value.is_null()))
+						if ((*reinterpret_cast<bool*>((raw_data_ptr + sizeof(uint64_t))) = value.is_null()))
 							break;
 					}
 					*static_cast<uint64_t *>(static_cast<void*>(raw_data_ptr)) = value.get_u64();
 					break;
 				case TypeId::F32:
 					if (t.is_nullable()) {
-						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr + sizeof(float))) = value.is_null()))
+						if ((*reinterpret_cast<bool*>((raw_data_ptr + sizeof(float))) = value.is_null()))
 							break;
 					}
 					*(static_cast<float *>(static_cast<void*>(raw_data_ptr))) = value.get_f32();
 					break;
 				case TypeId::F64:
 					if (t.is_nullable()) {
-						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr + sizeof(double))) = value.is_null()))
+						if ((*reinterpret_cast<bool*>((raw_data_ptr + sizeof(double))) = value.is_null()))
 							break;
 					}
 					*static_cast<double *>(static_cast<void*>(raw_data_ptr)) = value.get_f64();
 					break;
 				case TypeId::Bool:
 					if (t.is_nullable()) {
-						if ((*static_cast<bool *>(static_cast<void *>(raw_data_ptr + sizeof(bool))) = value.is_null()))
+						if ((*reinterpret_cast<bool*>((raw_data_ptr + sizeof(bool))) = value.is_null()))
 							break;
 					}
 					*static_cast<int8_t *>(static_cast<void*>(raw_data_ptr)) = value.get_bool();

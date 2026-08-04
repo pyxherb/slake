@@ -1037,7 +1037,7 @@ int main(int argc, char **argv) {
 							BCBuilder::Operand::new_imm(i32_as_ins_operand(1)), BCBuilder::Operand::new_imm(0)));
 
 						ABORT_IF_EMIT_FAILED(builder.emit_ins(
-							Opcode::RET, 0,
+							Opcode::RETVOID, 0,
 							{ InsRegType::Any, INVALID_REG }, {}, {},
 							BCBuilder::Operand::new_imm(0), BCBuilder::Operand::new_imm(0)));
 

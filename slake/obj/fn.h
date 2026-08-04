@@ -96,11 +96,11 @@ namespace slake {
 		return static_cast<size_t>(operand);
 	}
 
-	SLAKE_FORCEINLINE uint32_t ins_operand_as_f32(uint64_t operand) noexcept {
+	SLAKE_FORCEINLINE float ins_operand_as_f32(uint64_t operand) noexcept {
 		return peff::bit_cast<float>(static_cast<uint32_t>(operand));
 	}
 
-	SLAKE_FORCEINLINE uint64_t ins_operand_as_f64(uint64_t operand) noexcept {
+	SLAKE_FORCEINLINE double ins_operand_as_f64(uint64_t operand) noexcept {
 		return peff::bit_cast<double>(operand);
 	}
 

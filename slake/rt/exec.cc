@@ -848,18 +848,18 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			_basic_arithm_opcode(MULF32, float, F32, f32, *);
 			_basic_arithm_opcode(MULF64, double, F64, f64, *);
 
-			_basic_arithm_opcode(DIVI8, int8_t, I8, i8, *);
-			_basic_arithm_opcode(DIVI16, int16_t, I16, i16, *);
-			_basic_arithm_opcode(DIVI32, int32_t, I32, i32, *);
-			_basic_arithm_opcode(DIVI64, int64_t, I64, i64, *);
-			_basic_arithm_opcode(DIVISIZE, ptrdiff_t, ISize, isize, *);
-			_basic_arithm_opcode(DIVU8, uint8_t, U8, u8, *);
-			_basic_arithm_opcode(DIVU16, uint16_t, U16, u16, *);
-			_basic_arithm_opcode(DIVU32, uint32_t, U32, u32, *);
-			_basic_arithm_opcode(DIVU64, uint64_t, U64, u64, *);
-			_basic_arithm_opcode(DIVUSIZE, size_t, USize, usize, *);
-			_basic_arithm_opcode(DIVF32, float, F32, f32, *);
-			_basic_arithm_opcode(DIVF64, double, F64, f64, *);
+			_basic_arithm_opcode(DIVI8, int8_t, I8, i8, /);
+			_basic_arithm_opcode(DIVI16, int16_t, I16, i16, /);
+			_basic_arithm_opcode(DIVI32, int32_t, I32, i32, /);
+			_basic_arithm_opcode(DIVI64, int64_t, I64, i64, /);
+			_basic_arithm_opcode(DIVISIZE, ptrdiff_t, ISize, isize, /);
+			_basic_arithm_opcode(DIVU8, uint8_t, U8, u8, /);
+			_basic_arithm_opcode(DIVU16, uint16_t, U16, u16, /);
+			_basic_arithm_opcode(DIVU32, uint32_t, U32, u32, /);
+			_basic_arithm_opcode(DIVU64, uint64_t, U64, u64, /);
+			_basic_arithm_opcode(DIVUSIZE, size_t, USize, usize, /);
+			_basic_arithm_opcode(DIVF32, float, F32, f32, /);
+			_basic_arithm_opcode(DIVF64, double, F64, f64, /);
 
 			_basic_arithm_opcode(MODI8, int8_t, I8, i8, %);
 			_basic_arithm_opcode(MODI16, int16_t, I16, i16, %);

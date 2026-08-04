@@ -246,11 +246,8 @@ namespace slake {
 			MajorFrame *const cur_major_frame,
 			char *const data_stack,
 			const size_t stack_size,
-			const RegIndex output,
-			const Opcode opcode,
-			const size_t num_operands,
-			const Value *const operands,
-			Value *const cur_frame_regs_ptr,
+			const Instruction &cur_ins,
+			const RegularFnOverloadingObject *ol,
 			ContextChangeType &is_context_changed_out) noexcept;
 
 		friend struct Context;
@@ -337,11 +334,6 @@ namespace slake {
 			const FnOverloadingObject *fn,
 			const Value *args,
 			uint32_t num_args);
-		[[nodiscard]] SLAKE_API InternalExceptionPointer _create_new_coroutine_major_frame(
-			Context *context,
-			CoroutineObject *coroutine,
-			RegIndex return_value_out,
-			const Reference *return_struct_ref) noexcept;
 		[[nodiscard]] SLAKE_API InternalExceptionPointer _create_new_major_frame(
 			ContextObject *context_object,
 			Object *this_object,
@@ -481,18 +473,6 @@ namespace slake {
 			const Value *args,
 			uint32_t num_args,
 			Value &value_out);
-		[[nodiscard]] SLAKE_API InternalExceptionPointer create_coroutine_instance(
-			FnOverloadingObject *fn,
-			Object *this_object,
-			const Value *args,
-			uint32_t num_args,
-			HostObjectRef<CoroutineObject> &coroutine_out);
-		[[nodiscard]] SLAKE_API InternalExceptionPointer resume_coroutine(
-			ContextObject *context,
-			CoroutineObject *coroutine,
-			Value &result_out,
-			void *native_stack_base_current_ptr = nullptr,
-			size_t native_stack_size = 0);
 
 		SLAKE_API static void *locate_value_base_ptr(const Reference &entity_ref) noexcept;
 		SLAKE_API static TypeRef typeof_var(const Reference &entity_ref) noexcept;

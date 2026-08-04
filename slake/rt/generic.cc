@@ -815,10 +815,12 @@ SLAKE_API InternalExceptionPointer Runtime::_instantiate_generic_object(GenericI
 			case FnOverloadingKind::Regular: {
 				RegularFnOverloadingObject *overloading = (RegularFnOverloadingObject *)ol;
 
-				for (auto &i : overloading->instructions) {
-					for (size_t j = 0; j < i.num_operands; ++j) {
-						SLAKE_RETURN_IF_EXCEPT(_instantiate_generic_object(dispatcher, i.operands[j], instantiation_context));
-					}
+				for(auto &i : overloading->ins_object_set) {
+					SLAKE_RETURN_IF_EXCEPT(_instantiate_generic_object(dispatcher, i, instantiation_context));
+				}
+
+				for(auto &i : overloading->ins_type_set) {
+					SLAKE_RETURN_IF_EXCEPT(_instantiate_generic_object(dispatcher, i, instantiation_context));
 				}
 
 				break;

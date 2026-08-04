@@ -42,12 +42,11 @@ namespace slake {
 
 	struct ResumableContextData {
 		uint32_t cur_ins = 0;
-		uint32_t last_jump_src = UINT32_MAX;
 		size_t off_args = SIZE_MAX, off_next_args = SIZE_MAX, off_next_args_begin = SIZE_MAX;
 		size_t num_args = 0, num_next_args = 0;
 		/// @brief Offset of current minor frame, note that it is context-dependent offset.
 		size_t off_cur_minor_frame = SIZE_MAX;
-		size_t num_regs = 0;
+		size_t regs_base_off[(size_t)InsRegType::MAX_VALUE] = {};	// Will be copied from the regular function object.
 		Object *this_object = nullptr;
 	};
 
@@ -62,7 +61,7 @@ namespace slake {
 
 		Runtime *associated_runtime;
 
-		FnOverloadingObject *cur_fn;	// Current function overloading.
+		FnOverloadingObject *cur_fn;  // Current function overloading.
 		ContextObject *cur_context;
 		CoroutineObject *cur_coroutine = nullptr;
 
@@ -72,7 +71,6 @@ namespace slake {
 		Reference return_struct_ref;
 
 		size_t prev_stack_top = 0;
-		size_t off_regs = 0;
 
 		Value cur_except;  // Current exception.
 

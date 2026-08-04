@@ -11,46 +11,154 @@
 
 #include <peff/containers/map.h>
 #include <peff/containers/hashmap.h>
+#include <peff/utils/bitops.h>
 
 namespace slake {
 	struct Context;
 	struct MajorFrame;
 
-	class Instruction final {
-	public:
-		size_t off_source_loc_desc = SIZE_MAX;
-		Opcode opcode;
-		RegIndex output;
-		uint32_t num_operands;
-		Value *operands;
-		peff::RcObjectPtr<peff::Alloc> operands_allocator;
+	enum class InsRegType : uint8_t {
+		I8 = 0,
+		I16,
+		I32,
+		I64,
+		ISize,
+		U8,
+		U16,
+		U32,
+		U64,
+		USize,
+		F32,
+		F64,
+		Bool,
+		Object,
+		Any,
 
-		SLAKE_API Instruction();
-		SLAKE_API Instruction(Instruction &&rhs);
-		SLAKE_API ~Instruction();
-
-		SLAKE_API bool operator==(const Instruction &rhs) const;
-		SLAKE_FORCEINLINE bool operator!=(const Instruction &rhs) const {
-			return !(*this == rhs);
-		}
-
-		SLAKE_API bool operator<(const Instruction &rhs) const;
-
-		SLAKE_API Instruction &operator=(Instruction &&rhs);
-
-		SLAKE_FORCEINLINE void set_opcode(Opcode opcode) {
-			this->opcode = opcode;
-		}
-
-		SLAKE_FORCEINLINE void set_output(RegIndex output) {
-			this->output = output;
-		}
-
-		SLAKE_API void clear_operands();
-		[[nodiscard]] SLAKE_API bool reserve_operands(peff::Alloc *allocator, uint32_t num_operands);
-
-		SLAKE_API void replace_allocator(peff::Alloc *allocator) noexcept;
+		MAX_VALUE
 	};
+
+	constexpr uint8_t INS_OP0_REG = 0x01,
+					  INS_OP1_REG = 0x02;
+
+	struct Instruction final {
+		Opcode opcode;
+		uint8_t flags : 4;
+		uint8_t reg_out_type : 4;
+		uint8_t reg0_type : 4;
+		uint8_t reg1_type : 4;
+		uint32_t reg_out;
+		uint32_t reg0;
+		uint32_t reg1;
+		uint64_t operands[2];
+	};
+
+	SLAKE_FORCEINLINE int8_t ins_operand_as_i8(uint64_t operand) noexcept {
+		return static_cast<int8_t>(peff::bit_cast<int64_t>(operand));
+	}
+
+	SLAKE_FORCEINLINE int16_t ins_operand_as_i16(uint64_t operand) noexcept {
+		return static_cast<int16_t>(peff::bit_cast<int64_t>(operand));
+	}
+
+	SLAKE_FORCEINLINE int32_t ins_operand_as_i32(uint64_t operand) noexcept {
+		return static_cast<int32_t>(peff::bit_cast<int64_t>(operand));
+	}
+
+	SLAKE_FORCEINLINE int64_t ins_operand_as_i64(uint64_t operand) noexcept {
+		return static_cast<int64_t>(peff::bit_cast<int64_t>(operand));
+	}
+
+	SLAKE_FORCEINLINE ptrdiff_t ins_operand_as_isize(uint64_t operand) noexcept {
+		return static_cast<ptrdiff_t>(peff::bit_cast<int64_t>(operand));
+	}
+
+	SLAKE_FORCEINLINE uint8_t ins_operand_as_u8(uint64_t operand) noexcept {
+		return static_cast<uint8_t>(operand);
+	}
+
+	SLAKE_FORCEINLINE uint16_t ins_operand_as_u16(uint64_t operand) noexcept {
+		return static_cast<uint16_t>(operand);
+	}
+
+	SLAKE_FORCEINLINE uint32_t ins_operand_as_u32(uint64_t operand) noexcept {
+		return static_cast<uint32_t>(operand);
+	}
+
+	SLAKE_FORCEINLINE RegIndex ins_operand_as_reg_index(uint64_t operand) noexcept {
+		return static_cast<RegIndex>(operand);
+	}
+
+	SLAKE_FORCEINLINE uint64_t ins_operand_as_u64(uint64_t operand) noexcept {
+		return static_cast<uint64_t>(operand);
+	}
+
+	SLAKE_FORCEINLINE size_t ins_operand_as_usize(uint64_t operand) noexcept {
+		return static_cast<size_t>(operand);
+	}
+
+	SLAKE_FORCEINLINE uint32_t ins_operand_as_f32(uint64_t operand) noexcept {
+		return peff::bit_cast<float>(static_cast<uint32_t>(operand));
+	}
+
+	SLAKE_FORCEINLINE uint64_t ins_operand_as_f64(uint64_t operand) noexcept {
+		return peff::bit_cast<double>(operand);
+	}
+
+	SLAKE_FORCEINLINE bool ins_operand_as_bool(uint64_t operand) noexcept {
+		return operand;
+	}
+
+	SLAKE_FORCEINLINE uint64_t i8_as_ins_operand(int8_t value) noexcept {
+		return peff::bit_cast<uint64_t>(static_cast<int64_t>(value));
+	}
+
+	SLAKE_FORCEINLINE uint64_t i16_as_ins_operand(int16_t value) noexcept {
+		return peff::bit_cast<uint64_t>(static_cast<int64_t>(value));
+	}
+
+	SLAKE_FORCEINLINE uint64_t i32_as_ins_operand(int32_t value) noexcept {
+		return peff::bit_cast<uint64_t>(static_cast<int64_t>(value));
+	}
+
+	SLAKE_FORCEINLINE uint64_t i64_as_ins_operand(int64_t value) noexcept {
+		return peff::bit_cast<uint64_t>(value);
+	}
+
+	SLAKE_FORCEINLINE uint64_t isize_as_ins_operand(ptrdiff_t value) noexcept {
+		return peff::bit_cast<uint64_t>(static_cast<int64_t>(value));
+	}
+
+	SLAKE_FORCEINLINE uint64_t u8_as_ins_operand(uint8_t value) noexcept {
+		return static_cast<uint64_t>(value);
+	}
+
+	SLAKE_FORCEINLINE uint64_t u16_as_ins_operand(uint16_t value) noexcept {
+		return static_cast<uint64_t>(value);
+	}
+
+	SLAKE_FORCEINLINE uint64_t u32_as_ins_operand(uint32_t value) noexcept {
+		return static_cast<uint64_t>(value);
+	}
+
+	SLAKE_FORCEINLINE uint64_t u64_as_ins_operand(uint64_t value) noexcept {
+		return value;
+	}
+
+	SLAKE_FORCEINLINE uint64_t usize_as_ins_operand(size_t value) noexcept {
+		return static_cast<uint64_t>(value);
+	}
+
+	SLAKE_FORCEINLINE uint64_t f32_as_ins_operand(float value) noexcept {
+		return static_cast<uint64_t>(peff::bit_cast<uint32_t>(value));
+	}
+
+	SLAKE_FORCEINLINE uint64_t f64_as_ins_operand(double value) noexcept {
+		return peff::bit_cast<uint64_t>(value);
+	}
+
+	SLAKE_FORCEINLINE uint64_t bool_as_ins_operand(bool value) noexcept {
+		return static_cast<uint64_t>(value != 0);
+	}
 
 	enum class FnOverloadingKind {
 		Regular = 0,
@@ -155,19 +263,23 @@ namespace slake {
 		peff::DynArray<slxfmt::SourceLocDesc> source_loc_descs;
 		peff::DynArray<Instruction> instructions;
 		TypeRef this_type = TypeId::Void;
-		uint32_t num_registers;
+		uint32_t num_registers[(size_t)InsRegType::MAX_VALUE];
+		peff::DynArray<Object *> ins_object_set;
+		peff::DynArray<TypeRef> ins_type_set;
 
 		SLAKE_API RegularFnOverloadingObject(
 			FnObject *fn_object,
 			peff::Alloc *self_allocator);
-		SLAKE_API RegularFnOverloadingObject(const RegularFnOverloadingObject &other, peff::Alloc *allocator, bool &succeeded_out);
+		SLAKE_API RegularFnOverloadingObject(Duplicator *duplicator, const RegularFnOverloadingObject &other, peff::Alloc *allocator, bool &succeeded_out);
 		SLAKE_API virtual ~RegularFnOverloadingObject();
 
 		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
 
 		SLAKE_API static HostObjectRef<RegularFnOverloadingObject> alloc(
 			FnObject *fn_object);
-		SLAKE_API static HostObjectRef<RegularFnOverloadingObject> alloc(const RegularFnOverloadingObject *other);
+		SLAKE_API static HostObjectRef<RegularFnOverloadingObject> alloc(
+			Duplicator *duplicator,
+			const RegularFnOverloadingObject *other);
 		SLAKE_API virtual void dealloc() override;
 
 		SLAKE_FORCEINLINE void set_this_type(TypeRef this_type) noexcept {
@@ -178,12 +290,12 @@ namespace slake {
 			return this_type;
 		}
 
-		SLAKE_FORCEINLINE void set_register_number(uint32_t num_registers) noexcept {
-			this->num_registers = num_registers;
+		SLAKE_FORCEINLINE void set_register_number(InsRegType type, uint32_t num_registers) noexcept {
+			this->num_registers[static_cast<uint8_t>(type)] = num_registers;
 		}
 
-		SLAKE_FORCEINLINE uint32_t get_register_number() noexcept {
-			return num_registers;
+		SLAKE_FORCEINLINE uint32_t get_register_number(InsRegType type) noexcept {
+			return num_registers[static_cast<uint8_t>(type)];
 		}
 
 		SLAKE_API virtual void replace_allocator(peff::Alloc *allocator) noexcept override;

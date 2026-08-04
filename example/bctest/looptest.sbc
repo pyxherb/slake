@@ -1,0 +1,23 @@
+typename = {
+	i64
+}
+
+ENTER
+%any 0 = LTYPE 0
+%any 1 = LVAR %any 0 // i
+%any 2 = LVAR %any 0 // sum
+loop:
+	%any 3 = LVALUE %1
+	%any 4 = LVALUE %2
+	%i64 0 = CASTI64 %any 3
+	%i64 1 = CASTI64 %any 4
+	%i64 2 = ADDI64 %i64 0, 1
+	%i64 3 = ADDI64 %i64 1, %i64 2
+	%any 5 = CASTANY %i64 2
+	%any 6 = CASTANY %i64 3
+	STORE %any 1, %any 5
+	STORE %any 2, %any 6
+	%bool 0 = LTI64 %i64 2, 10000000
+	BR %bool 0, loop, loop_end
+loop_end:
+LEAVE

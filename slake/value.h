@@ -125,6 +125,7 @@ namespace slake {
 		SLAKE_FORCEINLINE DefaultStructValueRef(ObjectLayout *object_layout) : object_layout(object_layout) {}
 	};
 
+	// TODO: Separate object reference and variable reference.
 	struct Reference {
 		union {
 			StaticFieldRef as_static_field;
@@ -420,7 +421,7 @@ namespace slake {
 			int16_t as_i16;
 			int32_t as_i32;
 			int64_t as_i64;
-			ssize_t as_isize;
+			ptrdiff_t as_isize;
 			uint8_t as_u8;
 			uint16_t as_u16;
 			uint32_t as_u32;
@@ -450,7 +451,7 @@ namespace slake {
 		}
 		SLAKE_FORCEINLINE constexpr explicit Value(int64_t data) noexcept : value_type(ValueType::I64), as_i64(data), value_flags(0) {
 		}
-		SLAKE_FORCEINLINE constexpr Value(SizeTypeMarker marker, ssize_t data) noexcept : value_type(ValueType::ISize), as_isize(data), value_flags(0) {
+		SLAKE_FORCEINLINE constexpr Value(SizeTypeMarker marker, ptrdiff_t data) noexcept : value_type(ValueType::ISize), as_isize(data), value_flags(0) {
 			SLAKE_REFERENCED_PARAM(marker);
 		}
 		SLAKE_FORCEINLINE constexpr explicit Value(uint8_t data) noexcept : value_type(ValueType::U8), as_u8(data), value_flags(0) {
@@ -644,11 +645,6 @@ namespace slake {
 			return as_u32;
 		}
 
-		SLAKE_FORCEINLINE uint32_t get_label() const noexcept {
-			assert(value_type == ValueType::Label);
-			return as_u32;
-		}
-
 		SLAKE_FORCEINLINE TypeRef &get_type_name() noexcept {
 			assert(value_type == ValueType::TypeName);
 			return as_type;
@@ -733,10 +729,6 @@ namespace slake {
 
 		SLAKE_FORCEINLINE bool is_reg_index() const noexcept {
 			return value_type == ValueType::RegIndex;
-		}
-
-		SLAKE_FORCEINLINE bool is_label() const noexcept {
-			return value_type == ValueType::Label;
 		}
 
 		SLAKE_FORCEINLINE bool is_type_name() const noexcept {

@@ -3,101 +3,6 @@
 
 using namespace slake;
 
-SLAKE_API Instruction::Instruction()
-	: opcode((Opcode)0xff),
-	  num_operands(0),
-	  output(INVALID_REG),
-	  operands(nullptr),
-	  operands_allocator(nullptr) {
-}
-
-SLAKE_API Instruction::Instruction(Instruction &&rhs)
-	: off_source_loc_desc(rhs.off_source_loc_desc),
-	  opcode(rhs.opcode),
-	  num_operands(rhs.num_operands),
-	  output(rhs.output),
-	  operands(rhs.operands),
-	  operands_allocator(rhs.operands_allocator) {
-	rhs.off_source_loc_desc = SIZE_MAX;
-	rhs.opcode = (Opcode)0xff;
-	rhs.num_operands = 0;
-	rhs.output = INVALID_REG;
-	rhs.operands = nullptr;
-	rhs.operands_allocator = nullptr;
-}
-
-SLAKE_API Instruction::~Instruction() {
-	clear_operands();
-}
-
-SLAKE_API void Instruction::clear_operands() {
-	if (num_operands) {
-		operands_allocator->release(operands, sizeof(Value) * num_operands, alignof(Value));
-		operands = nullptr;
-		num_operands = 0;
-	} else {
-		assert(!operands);
-	}
-	operands_allocator = nullptr;
-}
-
-[[nodiscard]] SLAKE_API bool Instruction::reserve_operands(peff::Alloc *allocator, uint32_t num_operands) {
-	clear_operands();
-	if (num_operands) {
-		if (!(operands = (Value *)allocator->alloc(sizeof(Value) * num_operands, alignof(Value)))) {
-			return false;
-		}
-		operands_allocator = allocator;
-	}
-	this->num_operands = num_operands;
-	return true;
-}
-
-SLAKE_API void Instruction::replace_allocator(peff::Alloc *allocator) noexcept {
-	peff::verify_replaceable(operands_allocator.get(), allocator);
-
-	operands_allocator = allocator;
-}
-
-SLAKE_API bool Instruction::operator==(const Instruction &rhs) const {
-	if (opcode != rhs.opcode)
-		return false;
-	if (output != rhs.output)
-		return false;
-	if (num_operands != rhs.num_operands)
-		return false;
-	for (size_t i = 0; i < num_operands; ++i) {
-		if (operands[i] != rhs.operands[i])
-			return false;
-	}
-	return true;
-}
-
-SLAKE_API bool Instruction::operator<(const Instruction &rhs) const {
-	if (opcode < rhs.opcode)
-		return true;
-	if (opcode > rhs.opcode)
-		return false;
-	if (output < rhs.output)
-		return true;
-	if (num_operands < rhs.num_operands)
-		return true;
-	if (num_operands > rhs.num_operands)
-		return false;
-	for (size_t i = 0; i < num_operands; ++i) {
-		if (operands[i] < rhs.operands[i])
-			return true;
-		if (operands[i] != rhs.operands[i])
-			return false;
-	}
-	return false;
-}
-
-SLAKE_API Instruction &Instruction::operator=(Instruction &&rhs) {
-	peff::construct_at<Instruction>(this, std::move(rhs));
-	return *this;
-}
-
 SLAKE_API FnOverloadingObject::FnOverloadingObject(
 	FnOverloadingKind overloading_kind,
 	FnObject *fn_object,
@@ -115,8 +20,8 @@ SLAKE_API FnOverloadingObject::FnOverloadingObject(
 SLAKE_API FnOverloadingObject::FnOverloadingObject(const FnOverloadingObject &other, peff::Alloc *allocator, bool &succeeded_out)
 	: Object(other, allocator),
 	  generic_params(allocator),
-	  mapped_generic_params(allocator),  // No need to copy
-	  mapped_generic_args(allocator),	   // No need to copy
+	  mapped_generic_params(allocator),	 // No need to copy
+	  mapped_generic_args(allocator),	 // No need to copy
 	  param_types(allocator) {
 	fn_object = other.fn_object;
 
@@ -186,59 +91,49 @@ SLAKE_API RegularFnOverloadingObject::RegularFnOverloadingObject(
 		  FnOverloadingKind::Regular,
 		  fn_object,
 		  self_allocator),
-	  num_registers(0),
 	  source_loc_descs(self_allocator),
-	  instructions(self_allocator) {}
+	  instructions(self_allocator),
+	  ins_object_set(self_allocator),
+	  ins_type_set(self_allocator) {
+	memset(num_registers, 0, sizeof(num_registers));
+}
 
-SLAKE_API RegularFnOverloadingObject::RegularFnOverloadingObject(const RegularFnOverloadingObject &other, peff::Alloc *allocator, bool &succeeded_out) : FnOverloadingObject(other, allocator, succeeded_out), source_loc_descs(allocator), instructions(allocator) {
+SLAKE_API RegularFnOverloadingObject::RegularFnOverloadingObject(
+	Duplicator *duplicator,
+	const RegularFnOverloadingObject &other,
+	peff::Alloc *allocator,
+	bool &succeeded_out)
+	: FnOverloadingObject(other, allocator, succeeded_out),
+	  source_loc_descs(allocator),
+	  instructions(allocator),
+	  ins_object_set(allocator),
+	  ins_type_set(allocator) {
 	if (succeeded_out) {
-		if (!source_loc_descs.resize(other.source_loc_descs.size())) {
+		if (!source_loc_descs.resize_uninit(other.source_loc_descs.size())) {
 			succeeded_out = false;
 			return;
 		}
 		memcpy(source_loc_descs.data(), other.source_loc_descs.data(), source_loc_descs.size() * sizeof(slxfmt::SourceLocDesc));
 
-		if (!instructions.resize(other.instructions.size())) {
+		if (!instructions.resize_uninit(other.instructions.size())) {
 			succeeded_out = false;
 			return;
 		}
-		for (size_t i = 0; i < instructions.size(); ++i) {
-			Instruction &cur_ins = instructions.at(i);
-			const Instruction &other_cur_ins = other.instructions.at(i);
-			cur_ins.opcode = other_cur_ins.opcode;
 
-			cur_ins.output = other_cur_ins.output;
+		memcpy(instructions.data(), other.instructions.data(), instructions.size() * sizeof(Instruction));
 
-			if (!cur_ins.reserve_operands(allocator, other_cur_ins.num_operands)) {
-				succeeded_out = false;
-				return;
-			}
-			for (size_t j = 0; j < other_cur_ins.num_operands; ++j) {
-				cur_ins.operands[j] = Value(ValueType::Undefined);
-			}
+		memcpy(num_registers, other.num_registers, sizeof(num_registers));
 
-			// Duplicate each of the operands.
-			for (size_t j = 0; j < other_cur_ins.num_operands; ++j) {
-				auto &operand = other_cur_ins.operands[j];
-
-				if (operand.value_type == ValueType::Reference) {
-					const Reference &entity_ref = operand.get_reference();
-					switch (entity_ref.kind) {
-						case ReferenceKind::ObjectRef:
-							if (entity_ref.as_object)
-								cur_ins.operands[j] = Reference(entity_ref.as_object->duplicate(nullptr));
-							else
-								cur_ins.operands[j] = operand;
-							break;
-						default:
-							cur_ins.operands[j] = operand;
-					}
-				} else
-					cur_ins.operands[j] = operand;
-			}
+		if (!ins_object_set.resize_uninit(other.ins_object_set.size())) {
+			succeeded_out = false;
+			return;
 		}
+		memcpy(ins_object_set.data(), other.ins_object_set.data(), ins_object_set.size() * sizeof(Object *));
 
-		num_registers = other.num_registers;
+		if (!ins_type_set.build(other.ins_type_set)) {
+			succeeded_out = false;
+			return;
+		}
 	}
 }
 
@@ -246,7 +141,7 @@ SLAKE_API RegularFnOverloadingObject::~RegularFnOverloadingObject() {
 }
 
 SLAKE_API Object *slake::RegularFnOverloadingObject::duplicate(Duplicator *duplicator) const {
-	return alloc(this).get();
+	return alloc(duplicator, this).get();
 }
 
 SLAKE_API HostObjectRef<RegularFnOverloadingObject> slake::RegularFnOverloadingObject::alloc(
@@ -268,7 +163,7 @@ SLAKE_API HostObjectRef<RegularFnOverloadingObject> slake::RegularFnOverloadingO
 	return ptr.release();
 }
 
-SLAKE_API HostObjectRef<RegularFnOverloadingObject> slake::RegularFnOverloadingObject::alloc(const RegularFnOverloadingObject *other) {
+SLAKE_API HostObjectRef<RegularFnOverloadingObject> slake::RegularFnOverloadingObject::alloc(Duplicator *duplicator, const RegularFnOverloadingObject *other) {
 	peff::RcObjectPtr<peff::Alloc> cur_generation_allocator = other->fn_object->associated_runtime->get_cur_gen_alloc();
 
 	bool succeeded = true;
@@ -277,7 +172,7 @@ SLAKE_API HostObjectRef<RegularFnOverloadingObject> slake::RegularFnOverloadingO
 		peff::alloc_and_construct<RegularFnOverloadingObject>(
 			cur_generation_allocator.get(),
 			alignof(RegularFnOverloadingObject),
-			*other, cur_generation_allocator.get(), succeeded));
+			duplicator, *other, cur_generation_allocator.get(), succeeded));
 	if (!ptr)
 		return nullptr;
 
@@ -301,9 +196,9 @@ SLAKE_API void RegularFnOverloadingObject::replace_allocator(peff::Alloc *alloca
 
 	instructions.replace_allocator(allocator);
 
-	for (auto &i : instructions) {
-		i.replace_allocator(allocator);
-	}
+	ins_object_set.replace_allocator(allocator);
+
+	ins_type_set.replace_allocator(allocator);
 }
 
 SLAKE_API NativeFnOverloadingObject::NativeFnOverloadingObject(

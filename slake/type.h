@@ -31,8 +31,6 @@ namespace slake {
 		RegIndex,  // Register index
 		TypeName,  // Type name
 
-		Label,	// Label
-
 		Undefined = UINT8_MAX,	// For empty registers, etc.
 	};
 

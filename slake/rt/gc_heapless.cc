@@ -457,10 +457,12 @@ SLAKE_API void Runtime::_gc_walk(GCWalkContext *context, Object *v) {
 						case FnOverloadingKind::Regular: {
 							RegularFnOverloadingObject *ol = (RegularFnOverloadingObject *)fn_overloading;
 
-							for (auto &i : ol->instructions) {
-								for (size_t j = 0; j < i.num_operands; ++j) {
-									_gc_walk(context, i.operands[j]);
-								}
+							for (auto &i : ol->ins_object_set) {
+								_gc_walk(context, i);
+							}
+
+							for (auto &i : ol->ins_type_set) {
+								_gc_walk(context, i);
 							}
 
 							break;
@@ -500,17 +502,23 @@ SLAKE_API void Runtime::_gc_walk(GCWalkContext *context, Object *v) {
 					_gc_walk(context, value->_context);
 					break;
 				}
-				case ObjectKind::Coroutine: {
+				// TODO: Discard these codes and rewrite one.
+				/*case ObjectKind::Coroutine: {
 					auto value = (CoroutineObject *)v;
 
-					context->push_object((FnOverloadingObject *)value->overloading);
+					auto ol = value->overloading;
+					context->push_object(ol);
 
-					if (value->resumable.has_value()) {
-						_gc_walk(context, value->stack_data, value->len_stack_data, value->resumable.value());
+					if (ol->overloading_kind == FnOverloadingKind::Regular) {
+						auto rol = static_cast<RegularFnOverloadingObject *>(ol);
+						if (value->resumable.has_value()) {
+							_gc_walk(context, value->stack_data, value->len_stack_data, value->resumable.value());
 
-						if (value->stack_data) {
-							for (size_t i = 0; i < value->resumable->num_regs; ++i)
-								_gc_walk(context, *((Value *)(value->stack_data + value->len_stack_data - sizeof(Value) * i)));
+							if (value->stack_data) {
+								auto limit = rol->get_register_number(InsRegType::Object);
+								for (size_t i = 0; i < limit; ++i)
+									_gc_walk(context, *((Value *)(value->stack_data + value->len_stack_data - sizeof(Value) * i)));
+							}
 						}
 					}
 
@@ -518,7 +526,7 @@ SLAKE_API void Runtime::_gc_walk(GCWalkContext *context, Object *v) {
 						_gc_walk(context, value->final_result);
 					}
 					break;
-				}
+				}*/
 				default:
 					peff::panic("Unhandled object type");
 			}
@@ -535,15 +543,46 @@ SLAKE_API void Runtime::_gc_walk(GCWalkContext *context, Object *v) {
 }
 
 SLAKE_API void Runtime::_gc_walk(GCWalkContext *context, char *data_stack, size_t stack_size, MajorFrame *major_frame) {
-	context->push_object((FnOverloadingObject *)major_frame->cur_fn);
+	auto cur_fn = major_frame->cur_fn;
+	context->push_object(cur_fn);
 	if (major_frame->cur_coroutine)
 		context->push_object(major_frame->cur_coroutine);
 
 	_gc_walk(context, data_stack, stack_size, major_frame->resumable_context_data);
 
-	size_t num_regs = major_frame->resumable_context_data.num_regs;
-	for (size_t i = 0; i < num_regs; ++i)
-		_gc_walk(context, *static_cast<Value *>(calc_stack_addr(data_stack, stack_size, (major_frame->off_regs + sizeof(Value) * i))));
+	if (cur_fn) {
+		if (cur_fn->overloading_kind == FnOverloadingKind::Regular) {
+			auto typed_cur_fn = static_cast<RegularFnOverloadingObject *>(cur_fn);
+
+			{
+				size_t num_regs = typed_cur_fn->get_register_number(InsRegType::Object);
+				for (size_t i = 0; i < num_regs; ++i) {
+					context->push_object(
+						*static_cast<Object **>(calc_stack_addr(
+							data_stack,
+							stack_size,
+							(major_frame->resumable_context_data.regs_base_off[static_cast<size_t>(InsRegType::Object)] + sizeof(void *) * i))));
+				}
+			}
+
+			{
+				size_t num_regs = typed_cur_fn->get_register_number(InsRegType::Any);
+				for (size_t i = 0; i < num_regs; ++i) {
+					_gc_walk(context,
+						*static_cast<Value *>(calc_stack_addr(
+							data_stack,
+							stack_size,
+							(major_frame->resumable_context_data.regs_base_off[static_cast<size_t>(InsRegType::Any)] + sizeof(Value) * i))));
+				}
+			}
+		}
+	} else {
+		_gc_walk(context,
+			*static_cast<Value *>(calc_stack_addr(
+				data_stack,
+				stack_size,
+				(major_frame->resumable_context_data.regs_base_off[static_cast<size_t>(InsRegType::Any)] + sizeof(Value)))));
+	}
 }
 
 SLAKE_API void Runtime::_gc_walk(GCWalkContext *context, Context &ctxt) {

@@ -17,6 +17,8 @@ It supports:
 
 ## Development Progress
 
+**NOTE: Refactors of the compiler (SLKC) is in progress.**
+
 ✅: Completed
 
 🕓: Working In Progress

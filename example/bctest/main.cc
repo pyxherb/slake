@@ -989,23 +989,13 @@ int main(int argc, char **argv) {
 
 						{
 							ABORT_IF_EMIT_FAILED(builder.emit_ins(
-								Opcode::LVALUE, 0,
-								{ InsRegType::Any, 3 }, { InsRegType::Any, 1 }, {},
+								Opcode::LVALUEI64, 0,
+								{ InsRegType::I64, 0 }, { InsRegType::Any, 1 }, {},
 								BCBuilder::Operand::new_imm(0), BCBuilder::Operand::new_imm(0)));
 
 							ABORT_IF_EMIT_FAILED(builder.emit_ins(
-								Opcode::LVALUE, 0,
-								{ InsRegType::Any, 4 }, { InsRegType::Any, 2 }, {},
-								BCBuilder::Operand::new_imm(0), BCBuilder::Operand::new_imm(0)));
-
-							ABORT_IF_EMIT_FAILED(builder.emit_ins(
-								Opcode::CASTI64, 0,
-								{ InsRegType::I64, 0 }, { InsRegType::Any, 3 }, {},
-								BCBuilder::Operand::new_imm(0), BCBuilder::Operand::new_imm(0)));
-
-							ABORT_IF_EMIT_FAILED(builder.emit_ins(
-								Opcode::CASTI64, 0,
-								{ InsRegType::I64, 1 }, { InsRegType::Any, 4 }, {},
+								Opcode::LVALUEI64, 0,
+								{ InsRegType::I64, 1 }, { InsRegType::Any, 2 }, {},
 								BCBuilder::Operand::new_imm(0), BCBuilder::Operand::new_imm(0)));
 
 							ABORT_IF_EMIT_FAILED(builder.emit_ins(
@@ -1019,23 +1009,13 @@ int main(int argc, char **argv) {
 								BCBuilder::Operand::new_imm(0), BCBuilder::Operand::new_imm(0)));
 
 							ABORT_IF_EMIT_FAILED(builder.emit_ins(
-								Opcode::CASTANY, 0,
-								{ InsRegType::Any, 5 }, { InsRegType::I64, 2 }, {},
+								Opcode::STOREI64, 0,
+								{}, { InsRegType::Any, 1 }, { InsRegType::I64, 2 },
 								BCBuilder::Operand::new_imm(0), BCBuilder::Operand::new_imm(0)));
 
 							ABORT_IF_EMIT_FAILED(builder.emit_ins(
-								Opcode::CASTANY, 0,
-								{ InsRegType::Any, 6 }, { InsRegType::I64, 3 }, {},
-								BCBuilder::Operand::new_imm(0), BCBuilder::Operand::new_imm(0)));
-
-							ABORT_IF_EMIT_FAILED(builder.emit_ins(
-								Opcode::STORE, 0,
-								{}, { InsRegType::Any, 1 }, { InsRegType::Any, 5 },
-								BCBuilder::Operand::new_imm(0), BCBuilder::Operand::new_imm(0)));
-
-							ABORT_IF_EMIT_FAILED(builder.emit_ins(
-								Opcode::STORE, 0,
-								{}, { InsRegType::Any, 2 }, { InsRegType::Any, 6 },
+								Opcode::STOREI64, 0,
+								{}, { InsRegType::Any, 2 }, { InsRegType::I64, 3 },
 								BCBuilder::Operand::new_imm(0), BCBuilder::Operand::new_imm(0)));
 
 							ABORT_IF_EMIT_FAILED(builder.emit_ins(

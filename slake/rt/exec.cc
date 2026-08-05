@@ -569,12 +569,12 @@ SLAKE_FORCEINLINE InternalExceptionPointer larg(Context *context, MajorFrame *ma
 	return {};
 }
 
-#define _check_reg_type(v, t)                     \
-	if ((v) != static_cast<uint8_t>(InsRegType::t)) \
+#define _check_reg_type(v, t)                                      \
+	if SLAKE_UNLIKELY ((v) != static_cast<uint8_t>(InsRegType::t)) \
 		return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(this->get_fixed_alloc()));
 
-#define _check_reg_index(index, opr_type)                                       \
-	if ((index) >= ol->num_registers[static_cast<uint8_t>(InsRegType::opr_type)]) \
+#define _check_reg_index(index, opr_type)                                                        \
+	if SLAKE_UNLIKELY ((index) >= ol->num_registers[static_cast<uint8_t>(InsRegType::opr_type)]) \
 		return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(this->get_fixed_alloc()));
 
 #define _access_typed_reg(index, type, opr_type) \
@@ -612,7 +612,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(this->get_fixed_alloc())); \
                                                                                                           \
 		read_var(source->get_reference(), v);                                                             \
-		if (!v.is_##slake_lower_type())                                                                   \
+		if SLAKE_UNLIKELY (!v.is_##slake_lower_type())                                                                   \
 			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(this->get_fixed_alloc())); \
 		*_access_typed_reg(cur_ins.reg_out, data_type, slake_type) = v.get_##slake_lower_type();          \
                                                                                                           \
@@ -647,7 +647,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 
 			break;
 		}
-#define _store_opcode(opcode, data_type, slake_type, slake_lower_type)                                                      \
+#define _basic_type_store_opcode(opcode, data_type, slake_type, slake_lower_type)                                           \
 	case Opcode::opcode: {                                                                                                  \
 		_check_reg_type(cur_ins.reg0_type, Any);                                                                            \
 		_check_reg_index(cur_ins.reg0, Any);                                                                                \
@@ -656,21 +656,20 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 		_check_reg_index(cur_ins.reg1, slake_type);                                                                         \
                                                                                                                             \
 		Value *dest = _access_typed_reg(cur_ins.reg0, Value, Any);                                                          \
-		Value source = Value(*_access_typed_reg(cur_ins.reg1, data_type, slake_type));                                      \
+		Value source(*_access_typed_reg(cur_ins.reg1, data_type, slake_type));                                              \
 		if ((!dest->is_reference()) || (dest->as_reference.is_object_ref()))                                                \
 			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(context->get_runtime()->get_fixed_alloc())); \
                                                                                                                             \
-		TypeRef type = typeof_var(dest->get_reference());                                                                   \
-		if (!is_compatible(type, source))                                                                                   \
-			return MismatchedVarTypeError::alloc(context->get_runtime()->get_fixed_alloc(), type);                          \
-		write_var(dest->get_reference(), source);                                                                           \
+		if (typeof_var(dest->get_reference()).type_id != TypeId::slake_type)                                                \
+			return MismatchedVarTypeError::alloc(context->get_runtime()->get_fixed_alloc(), TypeId::slake_type);            \
+		write_var_with_type(dest->get_reference(), TypeId::slake_type, source);                                             \
                                                                                                                             \
 		break;                                                                                                              \
 	}
-			_store_opcode(STOREI8, int8_t, I8, i8);
-			_store_opcode(STOREI16, int16_t, I16, i16);
-			_store_opcode(STOREI32, int32_t, I32, i32);
-			_store_opcode(STOREI64, int64_t, I64, i64);
+			_basic_type_store_opcode(STOREI8, int8_t, I8, i8);
+			_basic_type_store_opcode(STOREI16, int16_t, I16, i16);
+			_basic_type_store_opcode(STOREI32, int32_t, I32, i32);
+			_basic_type_store_opcode(STOREI64, int64_t, I64, i64);
 		case Opcode::STOREISIZE: {
 			_check_reg_type(cur_ins.reg0_type, Any);
 			_check_reg_index(cur_ins.reg0, Any);
@@ -679,21 +678,20 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			_check_reg_index(cur_ins.reg1, ISize);
 
 			Value *dest = _access_typed_reg(cur_ins.reg0, Value, Any);
-			Value source = Value(SizeTypeMarker(), *_access_typed_reg(cur_ins.reg1, ptrdiff_t, ISize));
+			Value source(ExplicitISize{ *_access_typed_reg(cur_ins.reg1, ptrdiff_t, ISize) });
 			if ((!dest->is_reference()) || (dest->as_reference.is_object_ref()))
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(context->get_runtime()->get_fixed_alloc()));
 
-			TypeRef type = typeof_var(dest->get_reference());
-			if (!is_compatible(type, source))
-				return MismatchedVarTypeError::alloc(context->get_runtime()->get_fixed_alloc(), type);
-			write_var(dest->get_reference(), source);
+			if (typeof_var(dest->get_reference()).type_id != TypeId::ISize)
+				return MismatchedVarTypeError::alloc(context->get_runtime()->get_fixed_alloc(), TypeId::ISize);
+			write_var_with_type(dest->get_reference(), TypeId::ISize, source);
 
 			break;
 		}
-			_store_opcode(STOREU8, uint8_t, U8, u8);
-			_store_opcode(STOREU16, uint16_t, U16, u16);
-			_store_opcode(STOREU32, uint32_t, U32, u32);
-			_store_opcode(STOREU64, uint64_t, U64, u64);
+			_basic_type_store_opcode(STOREU8, uint8_t, U8, u8);
+			_basic_type_store_opcode(STOREU16, uint16_t, U16, u16);
+			_basic_type_store_opcode(STOREU32, uint32_t, U32, u32);
+			_basic_type_store_opcode(STOREU64, uint64_t, U64, u64);
 		case Opcode::STOREUSIZE: {
 			_check_reg_type(cur_ins.reg0_type, Any);
 			_check_reg_index(cur_ins.reg0, Any);
@@ -702,20 +700,19 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			_check_reg_index(cur_ins.reg1, USize);
 
 			Value *dest = _access_typed_reg(cur_ins.reg0, Value, Any);
-			Value source = Value(SizeTypeMarker(), *_access_typed_reg(cur_ins.reg1, size_t, USize));
+			Value source(ExplicitUSize{ *_access_typed_reg(cur_ins.reg1, size_t, USize) });
 			if ((!dest->is_reference()) || (dest->as_reference.is_object_ref()))
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(context->get_runtime()->get_fixed_alloc()));
 
-			TypeRef type = typeof_var(dest->get_reference());
-			if (!is_compatible(type, source))
-				return MismatchedVarTypeError::alloc(context->get_runtime()->get_fixed_alloc(), type);
-			write_var(dest->get_reference(), source);
+			if (typeof_var(dest->get_reference()).type_id != TypeId::USize)
+				return MismatchedVarTypeError::alloc(context->get_runtime()->get_fixed_alloc(), TypeId::USize);
+			write_var_with_type(dest->get_reference(), TypeId::USize, source);
 
 			break;
 		}
-			_store_opcode(STOREF32, float, F32, f32);
-			_store_opcode(STOREF64, double, F64, f64);
-			_store_opcode(STOREBOOL, bool, Bool, bool);
+			_basic_type_store_opcode(STOREF32, float, F32, f32);
+			_basic_type_store_opcode(STOREF64, double, F64, f64);
+			_basic_type_store_opcode(STOREBOOL, bool, Bool, bool);
 		case Opcode::STORE: {
 			_check_reg_type(cur_ins.reg0_type, Any);
 			_check_reg_index(cur_ins.reg0, Any);
@@ -731,7 +728,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			TypeRef type = typeof_var(dest->get_reference());
 			if (!is_compatible(type, *source))
 				return MismatchedVarTypeError::alloc(context->get_runtime()->get_fixed_alloc(), type);
-			write_var(dest->get_reference(), *source);
+			write_var_with_type(dest->get_reference(), type, *source);
 
 			break;
 		}
@@ -1919,7 +1916,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 					_check_reg_index(cur_ins.reg0, ISize);
 
 					*_access_typed_reg(cur_ins.reg_out, Value, Any) =
-						Value(SizeTypeMarker(), *_access_typed_reg(cur_ins.reg0, ptrdiff_t, ISize));
+						ExplicitISize{ *_access_typed_reg(cur_ins.reg0, ptrdiff_t, ISize) };
 					break;
 				case InsRegType::U8:
 					_check_reg_type(cur_ins.reg0_type, U8);
@@ -1954,7 +1951,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 					_check_reg_index(cur_ins.reg0, USize);
 
 					*_access_typed_reg(cur_ins.reg_out, Value, Any) =
-						Value(SizeTypeMarker(), (*_access_typed_reg(cur_ins.reg0, size_t, USize)));
+						ExplicitUSize{ (*_access_typed_reg(cur_ins.reg0, size_t, USize)) };
 					break;
 				case InsRegType::F32:
 					_check_reg_type(cur_ins.reg0_type, F32);

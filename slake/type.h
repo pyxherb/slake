@@ -113,15 +113,15 @@ namespace slake {
 
 		TypeRef() noexcept = default;
 		TypeRef(const TypeRef &) noexcept = default;
-		SLAKE_FORCEINLINE TypeRef(TypeId type_id) : type_id(type_id), type_modifier(0), type_def(nullptr) {
+		SLAKE_FORCEINLINE constexpr TypeRef(TypeId type_id) : type_id(type_id), type_modifier(0), type_def(nullptr) {
 		}
-		SLAKE_FORCEINLINE TypeRef(TypeId type_id, TypeModifier type_modifier) : type_id(type_id), type_modifier(type_modifier), type_def(nullptr) {
+		SLAKE_FORCEINLINE constexpr TypeRef(TypeId type_id, TypeModifier type_modifier) : type_id(type_id), type_modifier(type_modifier), type_def(nullptr) {
 		}
-		SLAKE_FORCEINLINE TypeRef(TypeId type_id, TypeDefObject *type_def) : type_id(type_id), type_modifier(0), type_def(type_def) {
-			assert(is_type_def_object((Object *)type_def));
+		SLAKE_FORCEINLINE constexpr TypeRef(TypeId type_id, TypeDefObject *type_def) : type_id(type_id), type_modifier(0), type_def(type_def) {
+			// assert(is_type_def_object((Object *)type_def));
 		}
-		SLAKE_FORCEINLINE TypeRef(TypeId type_id, TypeDefObject *type_def, TypeModifier type_modifier) : type_id(type_id), type_modifier(type_modifier), type_def(type_def) {
-			assert(is_type_def_object((Object *)type_def));
+		SLAKE_FORCEINLINE constexpr TypeRef(TypeId type_id, TypeDefObject *type_def, TypeModifier type_modifier) : type_id(type_id), type_modifier(type_modifier), type_def(type_def) {
+			// assert(is_type_def_object((Object *)type_def));
 		}
 		~TypeRef() = default;
 

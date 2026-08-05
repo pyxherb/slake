@@ -399,8 +399,23 @@ namespace slake {
 	using ssize_t = std::make_signed_t<size_t>;
 #endif
 
-	using SizeTypeMarker = bool;
-	constexpr static SizeTypeMarker SIZETYPE_MARKER = true;
+	struct ExplicitISize {
+		ptrdiff_t data;
+
+		ExplicitISize() = default;
+		ExplicitISize(const ExplicitISize &) = default;
+		ExplicitISize(ExplicitISize &&) = default;
+		ExplicitISize(ptrdiff_t data): data(data) {}
+	};
+
+	struct ExplicitUSize {
+		size_t data;
+
+		ExplicitUSize() = default;
+		ExplicitUSize(const ExplicitUSize &) = default;
+		ExplicitUSize(ExplicitUSize &&) = default;
+		ExplicitUSize(size_t data): data(data) {}
+	};
 
 	struct TypelessScopedEnumValue {
 		uint32_t value;
@@ -451,8 +466,7 @@ namespace slake {
 		}
 		SLAKE_FORCEINLINE constexpr explicit Value(int64_t data) noexcept : value_type(ValueType::I64), as_i64(data), value_flags(0) {
 		}
-		SLAKE_FORCEINLINE constexpr Value(SizeTypeMarker marker, ptrdiff_t data) noexcept : value_type(ValueType::ISize), as_isize(data), value_flags(0) {
-			SLAKE_REFERENCED_PARAM(marker);
+		SLAKE_FORCEINLINE constexpr Value(ExplicitISize data) noexcept : value_type(ValueType::ISize), as_isize(data.data), value_flags(0) {
 		}
 		SLAKE_FORCEINLINE constexpr explicit Value(uint8_t data) noexcept : value_type(ValueType::U8), as_u8(data), value_flags(0) {
 		}
@@ -462,8 +476,7 @@ namespace slake {
 		}
 		SLAKE_FORCEINLINE constexpr explicit Value(uint64_t data) noexcept : value_type(ValueType::U64), as_u64(data), value_flags(0) {
 		}
-		SLAKE_FORCEINLINE constexpr Value(SizeTypeMarker marker, size_t data) noexcept : value_type(ValueType::USize), as_usize(data), value_flags(0) {
-			SLAKE_REFERENCED_PARAM(marker);
+		SLAKE_FORCEINLINE constexpr Value(ExplicitUSize data) noexcept : value_type(ValueType::USize), as_usize(data.data), value_flags(0) {
 		}
 		SLAKE_FORCEINLINE constexpr explicit Value(float data) noexcept : value_type(ValueType::F32), as_f32(data), value_flags(0) {
 		}
@@ -515,6 +528,11 @@ namespace slake {
 			this->as_i64 = data;
 			return *this;
 		}
+		SLAKE_FORCEINLINE constexpr Value &operator=(ExplicitISize data) noexcept {
+			value_type = ValueType::ISize;
+			this->as_isize = data.data;
+			return *this;
+		}
 		SLAKE_FORCEINLINE constexpr Value &operator=(uint8_t data) noexcept {
 			value_type = ValueType::U8;
 			this->as_u8 = data;
@@ -533,6 +551,11 @@ namespace slake {
 		SLAKE_FORCEINLINE constexpr Value &operator=(uint64_t data) noexcept {
 			value_type = ValueType::U64;
 			this->as_u64 = data;
+			return *this;
+		}
+		SLAKE_FORCEINLINE constexpr Value &operator=(ExplicitUSize data) noexcept {
+			value_type = ValueType::USize;
+			this->as_usize = data.data;
 			return *this;
 		}
 		SLAKE_FORCEINLINE constexpr Value &operator=(float data) noexcept {

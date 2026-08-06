@@ -55,7 +55,7 @@ namespace slake {
 		SLAKE_API BasicModuleObject(Duplicator *duplicator, const BasicModuleObject &x, peff::Alloc *allocator, bool &succeeded_out);
 		SLAKE_API virtual ~BasicModuleObject();
 
-		SLAKE_API virtual Reference get_member(const std::string_view &name) const override;
+		SLAKE_API virtual MemberQueryResult get_member(const std::string_view &name) const override;
 		[[nodiscard]] SLAKE_API virtual bool add_member(MemberObject *member);
 		[[nodiscard]] SLAKE_API virtual bool shrink_member_storage();
 		SLAKE_API virtual void remove_member(const std::string_view &name);

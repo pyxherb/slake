@@ -24,7 +24,7 @@ namespace slake {
 
 		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
 
-		SLAKE_API virtual Reference get_member(
+		SLAKE_API virtual MemberQueryResult get_member(
 			const std::string_view &name) const override;
 
 		SLAKE_API static HostObjectRef<InstanceObject> alloc(Runtime *rt);

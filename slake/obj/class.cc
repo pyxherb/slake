@@ -903,11 +903,11 @@ SLAKE_API Object *UnionEnumObject::duplicate(Duplicator *duplicator) const {
 	return (Object *)alloc(duplicator, this).get();
 }
 
-SLAKE_API Reference UnionEnumObject::get_member(const std::string_view &name) const {
+SLAKE_API MemberQueryResult UnionEnumObject::get_member(const std::string_view &name) const {
 	if (auto it = members.find(name); it != members.end()) {
-		return Reference(it.value());
+		return it.value();
 	}
-	return ReferenceKind::Invalid;
+	return MemberQueryResultType::None;
 }
 
 SLAKE_API bool UnionEnumObject::add_member(MemberObject *member) {

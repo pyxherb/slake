@@ -30,7 +30,6 @@ namespace slake {
 		InitObjectLayoutFieldRef,
 		DefaultStructValueRef,
 
-		ObjectRef,
 		ArgPackRef,
 		AotPtrRef,
 
@@ -130,7 +129,6 @@ namespace slake {
 		union {
 			StaticFieldRef as_static_field;
 			ArrayElementRef as_array_element;
-			Object *as_object;
 			ObjectFieldRef as_object_field;
 			LocalVarRef as_local_var;
 			CoroutineLocalVarRef as_coroutine_local_var;
@@ -148,8 +146,6 @@ namespace slake {
 		SLAKE_FORCEINLINE Reference(const Reference &) noexcept = default;
 
 		SLAKE_FORCEINLINE Reference(ReferenceKind reference_kind) noexcept : kind(reference_kind) {}
-		SLAKE_FORCEINLINE Reference(std::nullptr_t) noexcept : kind(ReferenceKind::ObjectRef), as_object(nullptr) {}
-		SLAKE_FORCEINLINE Reference(Object *object) noexcept : kind(ReferenceKind::ObjectRef), as_object(object) {}
 		SLAKE_FORCEINLINE Reference(const StaticFieldRef &ref) noexcept : kind(ReferenceKind::StaticFieldRef), as_static_field(ref) {}
 		SLAKE_FORCEINLINE Reference(const ArrayElementRef &ref) noexcept : kind(ReferenceKind::ArrayElementRef), as_array_element(ref) {}
 		SLAKE_FORCEINLINE Reference(const ObjectFieldRef &ref) noexcept : kind(ReferenceKind::ObjectFieldRef), as_object_field(ref) {}
@@ -168,11 +164,6 @@ namespace slake {
 			return *this;
 		}
 
-		SLAKE_FORCEINLINE Reference &operator=(std::nullptr_t) noexcept {
-			this->kind = ReferenceKind::ObjectRef;
-			this->as_object = nullptr;
-			return *this;
-		}
 		SLAKE_FORCEINLINE Reference &operator=(const StaticFieldRef &ref) noexcept {
 			kind = ReferenceKind::StaticFieldRef;
 			as_static_field = ref;
@@ -237,10 +228,6 @@ namespace slake {
 			return kind == ReferenceKind::Invalid;
 		}
 
-		SLAKE_FORCEINLINE bool is_object_ref() const noexcept {
-			return kind == ReferenceKind::ObjectRef;
-		}
-
 		SLAKE_FORCEINLINE bool is_static_field_ref() const noexcept {
 			return kind == ReferenceKind::StaticFieldRef;
 		}
@@ -285,16 +272,6 @@ namespace slake {
 		SLAKE_FORCEINLINE const StaticFieldRef &get_static_field_ref() const noexcept {
 			assert(kind == ReferenceKind::StaticFieldRef);
 			return as_static_field;
-		}
-
-		SLAKE_FORCEINLINE Object *get_object_ref() const noexcept {
-			assert(kind == ReferenceKind::ObjectRef);
-			return as_object;
-		}
-
-		SLAKE_FORCEINLINE Object *&get_object_ref() noexcept {
-			assert(kind == ReferenceKind::ObjectRef);
-			return as_object;
 		}
 
 		SLAKE_FORCEINLINE StaticFieldRef &get_static_field_ref() noexcept {
@@ -405,7 +382,7 @@ namespace slake {
 		ExplicitISize() = default;
 		ExplicitISize(const ExplicitISize &) = default;
 		ExplicitISize(ExplicitISize &&) = default;
-		ExplicitISize(ptrdiff_t data): data(data) {}
+		ExplicitISize(ptrdiff_t data) : data(data) {}
 	};
 
 	struct ExplicitUSize {
@@ -414,7 +391,7 @@ namespace slake {
 		ExplicitUSize() = default;
 		ExplicitUSize(const ExplicitUSize &) = default;
 		ExplicitUSize(ExplicitUSize &&) = default;
-		ExplicitUSize(size_t data): data(data) {}
+		ExplicitUSize(size_t data) : data(data) {}
 	};
 
 	struct TypelessScopedEnumValue {
@@ -447,6 +424,7 @@ namespace slake {
 			bool as_bool;
 			TypeRef as_type;
 			Reference as_reference;
+			Object *as_object;
 			TypelessScopedEnumValue as_typeless_scoped_enum;
 		};
 
@@ -483,6 +461,8 @@ namespace slake {
 		SLAKE_FORCEINLINE constexpr explicit Value(double data) noexcept : value_type(ValueType::F64), as_f64(data), value_flags(0) {
 		}
 		SLAKE_FORCEINLINE constexpr explicit Value(bool data) noexcept : value_type(ValueType::Bool), as_bool(data), value_flags(0) {
+		}
+		SLAKE_FORCEINLINE Value(Object *object) noexcept : value_type(ValueType::Object), as_object(object), value_flags(0) {
 		}
 		SLAKE_FORCEINLINE Value(const Reference &reference) noexcept : value_type(ValueType::Reference), as_reference(reference), value_flags(0) {
 			if (reference.kind == ReferenceKind::Invalid)
@@ -585,6 +565,12 @@ namespace slake {
 			this->value_flags = 0;
 			return *this;
 		}
+		SLAKE_FORCEINLINE Value &operator=(Object *object) noexcept {
+			value_type = ValueType::Object;
+			this->as_object = object;
+			this->value_flags = 0;
+			return *this;
+		}
 		SLAKE_FORCEINLINE Value &operator=(const TypelessScopedEnumValue &data) noexcept {
 			value_type = ValueType::TypelessScopedEnum;
 			this->as_typeless_scoped_enum = data;
@@ -677,6 +663,10 @@ namespace slake {
 			return as_type;
 		}
 
+		SLAKE_FORCEINLINE Object *get_object() const noexcept {
+			assert(value_type == ValueType::Object);
+			return as_object;
+		}
 		SLAKE_FORCEINLINE Reference &get_reference() noexcept {
 			assert(value_type == ValueType::Reference);
 			return as_reference;
@@ -761,8 +751,11 @@ namespace slake {
 		SLAKE_FORCEINLINE bool is_reference() const noexcept {
 			return value_type == ValueType::Reference;
 		}
+		SLAKE_FORCEINLINE bool is_object() const noexcept {
+			return value_type == ValueType::Object;
+		}
 		SLAKE_FORCEINLINE bool is_null() const noexcept {
-			return (value_type == ValueType::Reference) && (as_reference.kind == ReferenceKind::ObjectRef) && (!as_reference.as_object);
+			return value_type == ValueType::Object && as_object;
 		}
 		SLAKE_FORCEINLINE bool is_typeless_scoped_enum() const noexcept {
 			return value_type == ValueType::TypelessScopedEnum;

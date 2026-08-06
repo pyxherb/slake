@@ -63,14 +63,14 @@ SLAKE_API BasicModuleObject::BasicModuleObject(Duplicator *duplicator, const Bas
 SLAKE_API BasicModuleObject::~BasicModuleObject() {
 }
 
-SLAKE_API Reference BasicModuleObject::get_member(const std::string_view &name) const {
+SLAKE_API MemberQueryResult BasicModuleObject::get_member(const std::string_view &name) const {
 	if (auto it = field_record_indices.find(name); it != field_record_indices.cend()) {
-		return StaticFieldRef((BasicModuleObject *)this, it.value());
+		return Reference(StaticFieldRef((BasicModuleObject *)this, it.value()));
 	}
 	if (auto it = members.find(name); it != members.end()) {
-		return Reference(it.value());
+		return it.value();
 	}
-	return ReferenceKind::Invalid;
+	return MemberQueryResultType::None;
 }
 
 SLAKE_API bool BasicModuleObject::add_member(MemberObject *member) {

@@ -417,7 +417,7 @@ namespace slake {
 		/// @param ref Reference to be resolved.
 		/// @param scope_object Scope value for resolving.
 		/// @return Resolved value which is referred by the reference.
-		SLAKE_API InternalExceptionPointer resolve_id_ref(IdRefObject *ref, Reference &object_ref_out, Object *scope_object = nullptr);
+		SLAKE_API InternalExceptionPointer resolve_id_ref(IdRefObject *ref, MemberQueryResult &object_ref_out, Object *scope_object = nullptr);
 
 		[[nodiscard]] SLAKE_API bool add_object(Object *object) noexcept;
 		SLAKE_API void remove_object(Object *object) noexcept;

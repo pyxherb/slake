@@ -554,16 +554,16 @@ SLAKE_API Value Runtime::default_value_of(const TypeRef &type) const {
 SLAKE_API InternalExceptionPointer Runtime::load_deferred_custom_type_def(CustomTypeDefObject *custom_type_def) {
 	IdRefObject *id_ref_object = (IdRefObject *)custom_type_def->type_object;
 
-	slake::Reference entity_ref;
-	SLAKE_RETURN_IF_EXCEPT(resolve_id_ref(id_ref_object, entity_ref));
+	slake::MemberQueryResult result;
+	SLAKE_RETURN_IF_EXCEPT(resolve_id_ref(id_ref_object, result));
 
-	if (!entity_ref)
+	if (!result)
 		return ReferencedMemberNotFoundError::alloc(get_fixed_alloc(), id_ref_object);
 
-	if (entity_ref.kind != ReferenceKind::ObjectRef)
+	if (result.type != MemberQueryResultType::Object)
 		std::terminate();
 
-	custom_type_def->type_object = entity_ref.as_object;
+	custom_type_def->type_object = result.as_object;
 
 	return {};
 }

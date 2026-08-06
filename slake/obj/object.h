@@ -126,6 +126,54 @@ namespace slake {
 		[[nodiscard]] SLAKE_API bool exec();
 	};
 
+	enum class MemberQueryResultType : uint8_t {
+		None = 0,
+		Object = 0,
+		Ref
+	};
+	struct MemberQueryResult {
+		union {
+			Reference as_ref;
+			Object *as_object;
+		};
+		MemberQueryResultType type;
+
+		SLAKE_FORCEINLINE MemberQueryResult() noexcept : type(MemberQueryResultType::None) {
+		}
+		SLAKE_FORCEINLINE MemberQueryResult(MemberQueryResultType type) noexcept : type(type) {
+		}
+
+		SLAKE_FORCEINLINE MemberQueryResult(const Reference &ref) noexcept : as_ref(ref), type(MemberQueryResultType::Ref) {
+		}
+
+		SLAKE_FORCEINLINE MemberQueryResult(std::nullptr_t) noexcept : type(MemberQueryResultType::None) {
+		}
+
+		SLAKE_FORCEINLINE MemberQueryResult(Object *obj) noexcept : as_object(obj), type(MemberQueryResultType::Object) {
+		}
+
+		SLAKE_FORCEINLINE MemberQueryResult &operator=(const Reference &ref) noexcept {
+			as_ref = ref;
+			type = MemberQueryResultType::Ref;
+			return *this;
+		}
+
+		SLAKE_FORCEINLINE MemberQueryResult &operator=(std::nullptr_t) noexcept {
+			type = MemberQueryResultType::None;
+			return *this;
+		}
+
+		SLAKE_FORCEINLINE MemberQueryResult operator=(Object *obj) noexcept {
+			as_object = obj;
+			type = MemberQueryResultType::Object;
+			return *this;
+		}
+
+		SLAKE_FORCEINLINE operator bool() const noexcept {
+			return type != MemberQueryResultType::None;
+		}
+	};
+
 	class Object {
 	public:
 		// The object will never be freed if its host reference count is not 0.
@@ -184,7 +232,7 @@ namespace slake {
 			--host_ref_count;
 		}
 
-		SLAKE_API virtual Reference get_member(const std::string_view &name) const;
+		SLAKE_API virtual MemberQueryResult get_member(const std::string_view &name) const;
 	};
 
 	template <typename T = Object>

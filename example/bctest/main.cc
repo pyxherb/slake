@@ -121,10 +121,8 @@ Value print(Context *context, MajorFrame *cur_major_frame) {
 				case ValueType::Bool:
 					fputs(data.get_bool() ? "true" : "false", stdout);
 					break;
-				case ValueType::Reference: {
-					if (!data.get_reference().is_object_ref())
-						continue;
-					Object *object_ptr = data.get_reference().as_object;
+				case ValueType::Object: {
+					Object *object_ptr = data.get_object();
 					if (!object_ptr)
 						fputs("null", stdout);
 					else {
@@ -281,119 +279,110 @@ SLAKE_API bool dump_value(peff::Alloc *allocator, DumpWriter *writer, const slak
 		case slake::ValueType::Bool:
 			SLAKE_RETURN_IF_FALSE(writer->write(value.get_bool() ? "true" : "false"));
 			break;
-		case slake::ValueType::Reference: {
-			const slake::Reference &er = value.get_reference();
+		case slake::ValueType::Object: {
+			slake::Object *obj = value.get_object();
 
-			switch (er.kind) {
-				case slake::ReferenceKind::ObjectRef: {
-					slake::Object *obj = er.as_object;
+			if (!obj) {
+				SLAKE_RETURN_IF_FALSE(writer->write("null"));
+				break;
+			}
 
-					if (!obj) {
-						SLAKE_RETURN_IF_FALSE(writer->write("null"));
-						break;
-					}
+			switch (obj->get_object_kind()) {
+				case slake::ObjectKind::String: {
+					SLAKE_RETURN_IF_FALSE(writer->write("\""));
 
-					switch (obj->get_object_kind()) {
-						case slake::ObjectKind::String: {
-							SLAKE_RETURN_IF_FALSE(writer->write("\""));
+					slake::StringObject *s = (slake::StringObject *)obj;
 
-							slake::StringObject *s = (slake::StringObject *)obj;
+					const char *data = s->data.data();
+					size_t len = s->data.size();
+					char c;
 
-							const char *data = s->data.data();
-							size_t len = s->data.size();
-							char c;
+					size_t idx_char_since_last_esc = 0;
 
-							size_t idx_char_since_last_esc = 0;
+					for (size_t i = 0; i < len; ++i) {
+						switch ((c = data[i])) {
+							case '\n':
+							case '\t':
+							case '\v':
+							case '\f':
+							case '\a':
+							case '\b':
+							case '\r':
+							case '"':
+							case '\\':
+								SLAKE_RETURN_IF_FALSE(writer->write(std::string_view(data + idx_char_since_last_esc, i - idx_char_since_last_esc)));
 
-							for (size_t i = 0; i < len; ++i) {
-								switch ((c = data[i])) {
+								switch (c) {
+									case '\0':
+										SLAKE_RETURN_IF_FALSE(writer->write("\\0"));
+										break;
 									case '\n':
+										SLAKE_RETURN_IF_FALSE(writer->write("\\n"));
+										break;
 									case '\t':
+										SLAKE_RETURN_IF_FALSE(writer->write("\\t"));
+										break;
 									case '\v':
+										SLAKE_RETURN_IF_FALSE(writer->write("\\v"));
+										break;
 									case '\f':
+										SLAKE_RETURN_IF_FALSE(writer->write("\\f"));
+										break;
 									case '\a':
+										SLAKE_RETURN_IF_FALSE(writer->write("\\a"));
+										break;
 									case '\b':
+										SLAKE_RETURN_IF_FALSE(writer->write("\\b"));
+										break;
 									case '\r':
+										SLAKE_RETURN_IF_FALSE(writer->write("\\r"));
+										break;
 									case '"':
+										SLAKE_RETURN_IF_FALSE(writer->write("\\\""));
+										break;
 									case '\\':
-										SLAKE_RETURN_IF_FALSE(writer->write(std::string_view(data + idx_char_since_last_esc, i - idx_char_since_last_esc)));
-
-										switch (c) {
-											case '\0':
-												SLAKE_RETURN_IF_FALSE(writer->write("\\0"));
-												break;
-											case '\n':
-												SLAKE_RETURN_IF_FALSE(writer->write("\\n"));
-												break;
-											case '\t':
-												SLAKE_RETURN_IF_FALSE(writer->write("\\t"));
-												break;
-											case '\v':
-												SLAKE_RETURN_IF_FALSE(writer->write("\\v"));
-												break;
-											case '\f':
-												SLAKE_RETURN_IF_FALSE(writer->write("\\f"));
-												break;
-											case '\a':
-												SLAKE_RETURN_IF_FALSE(writer->write("\\a"));
-												break;
-											case '\b':
-												SLAKE_RETURN_IF_FALSE(writer->write("\\b"));
-												break;
-											case '\r':
-												SLAKE_RETURN_IF_FALSE(writer->write("\\r"));
-												break;
-											case '"':
-												SLAKE_RETURN_IF_FALSE(writer->write("\\\""));
-												break;
-											case '\\':
-												SLAKE_RETURN_IF_FALSE(writer->write("\\\\"));
-												break;
-										}
-
-										idx_char_since_last_esc = i + 1;
-										break;
-
-									default:
-
+										SLAKE_RETURN_IF_FALSE(writer->write("\\\\"));
 										break;
 								}
-							}
 
-							if (idx_char_since_last_esc < len)
-								SLAKE_RETURN_IF_FALSE(writer->write(std::string_view(data + idx_char_since_last_esc, len - idx_char_since_last_esc)));
+								idx_char_since_last_esc = i + 1;
+								break;
 
-							SLAKE_RETURN_IF_FALSE(writer->write("\""));
-							break;
+							default:
+
+								break;
 						}
-						case slake::ObjectKind::IdRef: {
-							SLAKE_RETURN_IF_FALSE(dump_id_ref(allocator, writer, (slake::IdRefObject *)obj));
-							break;
-						}
-						case slake::ObjectKind::Array: {
-							slake::ArrayObject *a = (slake::ArrayObject *)obj;
-
-							SLAKE_RETURN_IF_FALSE(writer->write("{ "));
-
-							for (size_t i = 0; i < a->length; ++i) {
-								if (i) {
-									SLAKE_RETURN_IF_FALSE(writer->write(", "));
-								}
-
-								slake::Reference rer = slake::ArrayElementRef(a, i);
-								slake::Value data;
-
-								slake::Runtime::read_var(rer, data);
-
-								SLAKE_RETURN_IF_FALSE(dump_value(allocator, writer, data));
-							}
-
-							SLAKE_RETURN_IF_FALSE(writer->write(" }"));
-						}
-						default:
-							std::terminate();
 					}
+
+					if (idx_char_since_last_esc < len)
+						SLAKE_RETURN_IF_FALSE(writer->write(std::string_view(data + idx_char_since_last_esc, len - idx_char_since_last_esc)));
+
+					SLAKE_RETURN_IF_FALSE(writer->write("\""));
 					break;
+				}
+				case slake::ObjectKind::IdRef: {
+					SLAKE_RETURN_IF_FALSE(dump_id_ref(allocator, writer, (slake::IdRefObject *)obj));
+					break;
+				}
+				case slake::ObjectKind::Array: {
+					slake::ArrayObject *a = (slake::ArrayObject *)obj;
+
+					SLAKE_RETURN_IF_FALSE(writer->write("{ "));
+
+					for (size_t i = 0; i < a->length; ++i) {
+						if (i) {
+							SLAKE_RETURN_IF_FALSE(writer->write(", "));
+						}
+
+						slake::Reference rer = slake::ArrayElementRef(a, i);
+						slake::Value data;
+
+						slake::Runtime::read_var(rer, data);
+
+						SLAKE_RETURN_IF_FALSE(dump_value(allocator, writer, data));
+					}
+
+					SLAKE_RETURN_IF_FALSE(writer->write(" }"));
 				}
 				default:
 					std::terminate();

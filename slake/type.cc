@@ -98,8 +98,6 @@ SLAKE_API bool Reference::operator==(const Reference &rhs) const {
 			if (as_array_element.array_object != rhs.as_array_element.array_object)
 				return false;
 			return as_static_field.index == rhs.as_static_field.index;
-		case ReferenceKind::ObjectRef:
-			return as_object == rhs.as_object;
 		case ReferenceKind::ObjectFieldRef:
 			if (as_object_field.instance_object != rhs.as_object_field.instance_object)
 				return false;
@@ -142,8 +140,6 @@ SLAKE_API bool Reference::operator<(const Reference &rhs) const {
 			if (as_array_element.array_object > rhs.as_array_element.array_object)
 				return false;
 			return as_static_field.index < rhs.as_static_field.index;
-		case ReferenceKind::ObjectRef:
-			return as_object < rhs.as_object;
 		case ReferenceKind::ObjectFieldRef:
 			if (as_object_field.instance_object < rhs.as_object_field.instance_object)
 				return true;
@@ -190,8 +186,6 @@ SLAKE_API bool Reference::operator>(const Reference &rhs) const {
 			if (as_array_element.array_object < rhs.as_array_element.array_object)
 				return false;
 			return as_static_field.index > rhs.as_static_field.index;
-		case ReferenceKind::ObjectRef:
-			return as_object > rhs.as_object;
 		case ReferenceKind::ObjectFieldRef:
 			if (as_object_field.instance_object > rhs.as_object_field.instance_object)
 				return true;
@@ -292,12 +286,8 @@ SLAKE_API bool slake::is_compatible(const TypeRef &type, const Value &value) noe
 				return false;
 			if (value.is_local() && !type.is_local())
 				return false;
-			const Reference &entity_ref = value.get_reference();
-			if (entity_ref.kind != ReferenceKind::ObjectRef)
-				return false;
-			if (!entity_ref.as_object)
-				return true;
-			if (entity_ref.as_object->get_object_kind() != ObjectKind::String)
+			Object *s = value.get_object();
+			if (s->get_object_kind() != ObjectKind::String)
 				return false;
 			return true;
 		}
@@ -307,10 +297,7 @@ SLAKE_API bool slake::is_compatible(const TypeRef &type, const Value &value) noe
 			if (value.is_local() && !type.is_local())
 				return false;
 
-			const Reference &entity_ref = value.get_reference();
-			if (entity_ref.kind != ReferenceKind::ObjectRef)
-				return false;
-			Object *object_ptr = entity_ref.as_object;
+			Object *object_ptr = value.get_object();
 
 			if (!object_ptr)
 				return true;
@@ -375,11 +362,7 @@ SLAKE_API bool slake::is_compatible(const TypeRef &type, const Value &value) noe
 			if (value.is_local() && !type.is_local())
 				return false;
 
-			const Reference &entity_ref = value.get_reference();
-			if (entity_ref.kind != ReferenceKind::ObjectRef) {
-				return false;
-			}
-			Object *object_ptr = entity_ref.as_object;
+			Object *object_ptr = value.get_object();
 			if (!object_ptr)
 				return false;
 			if (object_ptr->get_object_kind() != ObjectKind::Array) {
@@ -416,11 +399,7 @@ SLAKE_API bool slake::is_compatible(const TypeRef &type, const Value &value) noe
 			if (value.is_local() && !type.is_local())
 				return false;
 
-			const Reference &entity_ref = value.get_reference();
-			if (entity_ref.kind != ReferenceKind::ObjectRef) {
-				return false;
-			}
-			Object *object_ptr = entity_ref.as_object;
+			Object *object_ptr = value.get_object();
 			if (!object_ptr)
 				return false;
 			if (object_ptr->get_object_kind() != ObjectKind::FnOverloading) {

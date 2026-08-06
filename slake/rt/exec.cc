@@ -8,61 +8,6 @@
 
 using namespace slake;
 
-template <typename LT>
-static void _cast_to_literal_value(bool nullable, const Value &x, Value &value_out) noexcept {
-	switch (x.value_type) {
-		case ValueType::I8:
-			value_out = (static_cast<LT>(x.get_i8()));
-			break;
-		case ValueType::I16:
-			value_out = (static_cast<LT>(x.get_i16()));
-			break;
-		case ValueType::I32:
-			value_out = (static_cast<LT>(x.get_i32()));
-			break;
-		case ValueType::I64:
-			value_out = (static_cast<LT>(x.get_i64()));
-			break;
-		case ValueType::ISize:
-			value_out = (static_cast<LT>(x.get_isize()));
-			break;
-		case ValueType::U8:
-			value_out = (static_cast<LT>(x.get_u8()));
-			break;
-		case ValueType::U16:
-			value_out = (static_cast<LT>(x.get_u16()));
-			break;
-		case ValueType::U32:
-			value_out = (static_cast<LT>(x.get_u32()));
-			break;
-		case ValueType::U64:
-			value_out = (static_cast<LT>(x.get_u64()));
-			break;
-		case ValueType::USize:
-			value_out = (static_cast<LT>(x.get_usize()));
-			break;
-		case ValueType::F32:
-			value_out = (static_cast<LT>(x.get_f32()));
-			break;
-		case ValueType::F64:
-			value_out = (static_cast<LT>(x.get_f64()));
-			break;
-		case ValueType::Bool:
-			value_out = (static_cast<LT>(x.get_bool()));
-			break;
-		case ValueType::Reference:
-			if (nullable) {
-				if (x.is_null())
-					value_out = nullptr;
-				else
-					std::terminate();
-			}
-			break;
-		default:
-			std::terminate();
-	}
-}
-
 SLAKE_API InternalExceptionPointer Runtime::_fill_args(
 	Context *context,
 	MajorFrame *new_major_frame,
@@ -235,8 +180,8 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_create_new_major_frame(
 			case FnOverloadingKind::Regular: {
 				RegularFnOverloadingObject *ol = static_cast<RegularFnOverloadingObject *>(fn);
 
-				{
-					size_t num_regs = ol->get_register_number(InsRegType::Any);
+				size_t num_regs;
+				if ((num_regs = ol->get_register_number(InsRegType::Any))) {
 					void *regs = context->aligned_stack_alloc(sizeof(Value) * num_regs, alignof(Value));
 					if (!regs)
 						return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
@@ -244,8 +189,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_create_new_major_frame(
 					new_major_frame.resumable_context_data.regs_base_off[(size_t)InsRegType::Any] = context->stack_top;
 				}
 
-				{
-					size_t num_regs = ol->get_register_number(InsRegType::Object);
+				if ((num_regs = ol->get_register_number(InsRegType::Object))) {
 					void *regs = context->aligned_stack_alloc(sizeof(void *) * num_regs, alignof(void *));
 					if (!regs)
 						return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
@@ -253,8 +197,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_create_new_major_frame(
 					new_major_frame.resumable_context_data.regs_base_off[(size_t)InsRegType::Any] = context->stack_top;
 				}
 
-				{
-					size_t num_regs = ol->get_register_number(InsRegType::ISize);
+				if ((num_regs = ol->get_register_number(InsRegType::ISize))) {
 					void *regs = context->aligned_stack_alloc(sizeof(ptrdiff_t) * num_regs, alignof(ptrdiff_t));
 					if (!regs)
 						return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
@@ -262,8 +205,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_create_new_major_frame(
 					new_major_frame.resumable_context_data.regs_base_off[(size_t)InsRegType::ISize] = context->stack_top;
 				}
 
-				{
-					size_t num_regs = ol->get_register_number(InsRegType::USize);
+				if ((num_regs = ol->get_register_number(InsRegType::USize))) {
 					void *regs = context->aligned_stack_alloc(sizeof(size_t) * num_regs, alignof(size_t));
 					if (!regs)
 						return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
@@ -271,8 +213,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_create_new_major_frame(
 					new_major_frame.resumable_context_data.regs_base_off[(size_t)InsRegType::USize] = context->stack_top;
 				}
 
-				{
-					size_t num_regs = ol->get_register_number(InsRegType::F64);
+				if ((num_regs = ol->get_register_number(InsRegType::F64))) {
 					void *regs = context->aligned_stack_alloc(sizeof(double) * num_regs, alignof(double));
 					if (!regs)
 						return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
@@ -280,8 +221,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_create_new_major_frame(
 					new_major_frame.resumable_context_data.regs_base_off[(size_t)InsRegType::F64] = context->stack_top;
 				}
 
-				{
-					size_t num_regs = ol->get_register_number(InsRegType::I64);
+				if ((num_regs = ol->get_register_number(InsRegType::I64))) {
 					void *regs = context->aligned_stack_alloc(sizeof(int64_t) * num_regs, alignof(int64_t));
 					if (!regs)
 						return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
@@ -289,8 +229,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_create_new_major_frame(
 					new_major_frame.resumable_context_data.regs_base_off[(size_t)InsRegType::I64] = context->stack_top;
 				}
 
-				{
-					size_t num_regs = ol->get_register_number(InsRegType::U64);
+				if ((num_regs = ol->get_register_number(InsRegType::U64))) {
 					void *regs = context->aligned_stack_alloc(sizeof(uint64_t) * num_regs, alignof(uint64_t));
 					if (!regs)
 						return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
@@ -298,8 +237,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_create_new_major_frame(
 					new_major_frame.resumable_context_data.regs_base_off[(size_t)InsRegType::U64] = context->stack_top;
 				}
 
-				{
-					size_t num_regs = ol->get_register_number(InsRegType::F32);
+				if ((num_regs = ol->get_register_number(InsRegType::F32))) {
 					void *regs = context->aligned_stack_alloc(sizeof(float) * num_regs, alignof(float));
 					if (!regs)
 						return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
@@ -307,8 +245,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_create_new_major_frame(
 					new_major_frame.resumable_context_data.regs_base_off[(size_t)InsRegType::F32] = context->stack_top;
 				}
 
-				{
-					size_t num_regs = ol->get_register_number(InsRegType::I32);
+				if ((num_regs = ol->get_register_number(InsRegType::I32))) {
 					void *regs = context->aligned_stack_alloc(sizeof(int32_t) * num_regs, alignof(int32_t));
 					if (!regs)
 						return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
@@ -316,8 +253,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_create_new_major_frame(
 					new_major_frame.resumable_context_data.regs_base_off[(size_t)InsRegType::I32] = context->stack_top;
 				}
 
-				{
-					size_t num_regs = ol->get_register_number(InsRegType::U32);
+				if ((num_regs = ol->get_register_number(InsRegType::U32))) {
 					void *regs = context->aligned_stack_alloc(sizeof(uint32_t) * num_regs, alignof(uint32_t));
 					if (!regs)
 						return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
@@ -325,8 +261,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_create_new_major_frame(
 					new_major_frame.resumable_context_data.regs_base_off[(size_t)InsRegType::U32] = context->stack_top;
 				}
 
-				{
-					size_t num_regs = ol->get_register_number(InsRegType::I16);
+				if ((num_regs = ol->get_register_number(InsRegType::I16))) {
 					void *regs = context->aligned_stack_alloc(sizeof(int16_t) * num_regs, alignof(int16_t));
 					if (!regs)
 						return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
@@ -334,8 +269,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_create_new_major_frame(
 					new_major_frame.resumable_context_data.regs_base_off[(size_t)InsRegType::I16] = context->stack_top;
 				}
 
-				{
-					size_t num_regs = ol->get_register_number(InsRegType::U16);
+				if ((num_regs = ol->get_register_number(InsRegType::U16))) {
 					void *regs = context->aligned_stack_alloc(sizeof(uint16_t) * num_regs, alignof(uint16_t));
 					if (!regs)
 						return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
@@ -343,8 +277,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_create_new_major_frame(
 					new_major_frame.resumable_context_data.regs_base_off[(size_t)InsRegType::U16] = context->stack_top;
 				}
 
-				{
-					size_t num_regs = ol->get_register_number(InsRegType::I8);
+				if ((num_regs = ol->get_register_number(InsRegType::I8))) {
 					void *regs = context->aligned_stack_alloc(sizeof(int8_t) * num_regs, alignof(int8_t));
 					if (!regs)
 						return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
@@ -352,8 +285,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_create_new_major_frame(
 					new_major_frame.resumable_context_data.regs_base_off[(size_t)InsRegType::I8] = context->stack_top;
 				}
 
-				{
-					size_t num_regs = ol->get_register_number(InsRegType::U8);
+				if ((num_regs = ol->get_register_number(InsRegType::U8))) {
 					void *regs = context->aligned_stack_alloc(sizeof(uint8_t) * num_regs, alignof(uint8_t));
 					if (!regs)
 						return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
@@ -361,8 +293,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_create_new_major_frame(
 					new_major_frame.resumable_context_data.regs_base_off[(size_t)InsRegType::U8] = context->stack_top;
 				}
 
-				{
-					size_t num_regs = ol->get_register_number(InsRegType::Bool);
+				if ((num_regs = ol->get_register_number(InsRegType::Bool))) {
 					void *regs = context->aligned_stack_alloc(sizeof(bool) * num_regs, alignof(bool));
 					if (!regs)
 						return alloc_oom_error_if_alloc_failed(StackOverflowError::alloc(get_fixed_alloc()));
@@ -608,12 +539,13 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
                                                                                                           \
 		Value v;                                                                                          \
 		const Value *source = _access_typed_reg(cur_ins.reg0, Value, Any);                                \
-		if ((!source->is_reference()) || (source->as_reference.is_object_ref()))                          \
+		if (!source->is_reference())                                                                      \
 			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(this->get_fixed_alloc())); \
                                                                                                           \
-		read_var(source->get_reference(), v);                                                             \
-		if SLAKE_UNLIKELY (!v.is_##slake_lower_type())                                                                   \
+		if (typeof_var(source->get_reference()).type_id != TypeId::slake_type)                            \
 			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(this->get_fixed_alloc())); \
+		read_var_with_type(source->get_reference(), TypeId::slake_type, v);                               \
+                                                                                                          \
 		*_access_typed_reg(cur_ins.reg_out, data_type, slake_type) = v.get_##slake_lower_type();          \
                                                                                                           \
 		break;                                                                                            \
@@ -640,31 +572,31 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 
 			Value *dest = _access_typed_reg(cur_ins.reg_out, Value, Any);
 			const Value *source = _access_typed_reg(cur_ins.reg0, Value, Any);
-			if ((!source->is_reference()) || (source->as_reference.is_object_ref()))
+			if (!source->is_reference())
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(this->get_fixed_alloc()));
 
 			read_var(source->get_reference(), *dest);
 
 			break;
 		}
-#define _basic_type_store_opcode(opcode, data_type, slake_type, slake_lower_type)                                           \
-	case Opcode::opcode: {                                                                                                  \
-		_check_reg_type(cur_ins.reg0_type, Any);                                                                            \
-		_check_reg_index(cur_ins.reg0, Any);                                                                                \
-                                                                                                                            \
-		_check_reg_type(cur_ins.reg1_type, slake_type);                                                                     \
-		_check_reg_index(cur_ins.reg1, slake_type);                                                                         \
-                                                                                                                            \
-		Value *dest = _access_typed_reg(cur_ins.reg0, Value, Any);                                                          \
-		Value source(*_access_typed_reg(cur_ins.reg1, data_type, slake_type));                                              \
-		if ((!dest->is_reference()) || (dest->as_reference.is_object_ref()))                                                \
-			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(context->get_runtime()->get_fixed_alloc())); \
-                                                                                                                            \
-		if (typeof_var(dest->get_reference()).type_id != TypeId::slake_type)                                                \
-			return MismatchedVarTypeError::alloc(context->get_runtime()->get_fixed_alloc(), TypeId::slake_type);            \
-		write_var_with_type(dest->get_reference(), TypeId::slake_type, source);                                             \
-                                                                                                                            \
-		break;                                                                                                              \
+#define _basic_type_store_opcode(opcode, data_type, slake_type, slake_lower_type)                         \
+	case Opcode::opcode: {                                                                                \
+		_check_reg_type(cur_ins.reg0_type, Any);                                                          \
+		_check_reg_index(cur_ins.reg0, Any);                                                              \
+                                                                                                          \
+		_check_reg_type(cur_ins.reg1_type, slake_type);                                                   \
+		_check_reg_index(cur_ins.reg1, slake_type);                                                       \
+                                                                                                          \
+		const Value *dest = _access_typed_reg(cur_ins.reg0, Value, Any);                                  \
+		const Value source(*_access_typed_reg(cur_ins.reg1, data_type, slake_type));                      \
+		if (!dest->is_reference())                                                                        \
+			return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(this->get_fixed_alloc())); \
+                                                                                                          \
+		if (typeof_var(dest->get_reference()).type_id != TypeId::slake_type)                              \
+			return MismatchedVarTypeError::alloc(this->get_fixed_alloc(), TypeId::slake_type);            \
+		write_var_with_type(dest->get_reference(), TypeId::slake_type, source);                           \
+                                                                                                          \
+		break;                                                                                            \
 	}
 			_basic_type_store_opcode(STOREI8, int8_t, I8, i8);
 			_basic_type_store_opcode(STOREI16, int16_t, I16, i16);
@@ -677,13 +609,13 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			_check_reg_type(cur_ins.reg1_type, ISize);
 			_check_reg_index(cur_ins.reg1, ISize);
 
-			Value *dest = _access_typed_reg(cur_ins.reg0, Value, Any);
-			Value source(ExplicitISize{ *_access_typed_reg(cur_ins.reg1, ptrdiff_t, ISize) });
-			if ((!dest->is_reference()) || (dest->as_reference.is_object_ref()))
-				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(context->get_runtime()->get_fixed_alloc()));
+			const Value *dest = _access_typed_reg(cur_ins.reg0, Value, Any);
+			const Value source(ExplicitISize{ *_access_typed_reg(cur_ins.reg1, ptrdiff_t, ISize) });
+			if (!dest->is_reference())
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(this->get_fixed_alloc()));
 
 			if (typeof_var(dest->get_reference()).type_id != TypeId::ISize)
-				return MismatchedVarTypeError::alloc(context->get_runtime()->get_fixed_alloc(), TypeId::ISize);
+				return MismatchedVarTypeError::alloc(this->get_fixed_alloc(), TypeId::ISize);
 			write_var_with_type(dest->get_reference(), TypeId::ISize, source);
 
 			break;
@@ -699,13 +631,13 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			_check_reg_type(cur_ins.reg1_type, USize);
 			_check_reg_index(cur_ins.reg1, USize);
 
-			Value *dest = _access_typed_reg(cur_ins.reg0, Value, Any);
-			Value source(ExplicitUSize{ *_access_typed_reg(cur_ins.reg1, size_t, USize) });
-			if ((!dest->is_reference()) || (dest->as_reference.is_object_ref()))
-				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(context->get_runtime()->get_fixed_alloc()));
+			const Value *dest = _access_typed_reg(cur_ins.reg0, Value, Any);
+			const Value source(ExplicitUSize{ *_access_typed_reg(cur_ins.reg1, size_t, USize) });
+			if (!dest->is_reference())
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(this->get_fixed_alloc()));
 
 			if (typeof_var(dest->get_reference()).type_id != TypeId::USize)
-				return MismatchedVarTypeError::alloc(context->get_runtime()->get_fixed_alloc(), TypeId::USize);
+				return MismatchedVarTypeError::alloc(this->get_fixed_alloc(), TypeId::USize);
 			write_var_with_type(dest->get_reference(), TypeId::USize, source);
 
 			break;
@@ -720,14 +652,14 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			_check_reg_type(cur_ins.reg1_type, Any);
 			_check_reg_index(cur_ins.reg1, Any);
 
-			Value *dest = _access_typed_reg(cur_ins.reg0, Value, Any);
+			const Value *dest = _access_typed_reg(cur_ins.reg0, Value, Any);
 			const Value *source = _access_typed_reg(cur_ins.reg1, Value, Any);
-			if ((!dest->is_reference()) || (dest->as_reference.is_object_ref()))
-				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(context->get_runtime()->get_fixed_alloc()));
+			if (!dest->is_reference())
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(this->get_fixed_alloc()));
 
 			TypeRef type = typeof_var(dest->get_reference());
 			if (!is_compatible(type, *source))
-				return MismatchedVarTypeError::alloc(context->get_runtime()->get_fixed_alloc(), type);
+				return MismatchedVarTypeError::alloc(this->get_fixed_alloc(), type);
 			write_var_with_type(dest->get_reference(), type, *source);
 
 			break;
@@ -742,7 +674,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			uint32_t operand_index = ins_operand_as_u32(cur_ins.operands[0]);
 
 			if (operand_index >= obj_set_index)
-				return InvalidOperandsError::alloc(context->get_runtime()->get_fixed_alloc());
+				return InvalidOperandsError::alloc(this->get_fixed_alloc());
 
 			Value *dest = _access_typed_reg(dest_reg, Value, Any);
 
@@ -758,7 +690,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			uint32_t operand_index = ins_operand_as_u32(cur_ins.operands[0]);
 
 			if (operand_index >= type_set_index)
-				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(context->get_runtime()->get_fixed_alloc()));
+				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(this->get_fixed_alloc()));
 
 			Value *dest = _access_typed_reg(cur_ins.reg_out, Value, Any);
 
@@ -1185,20 +1117,15 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			if (!ref_obj->is_reference())
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(this->get_fixed_alloc()));
 
-			auto &ref = ref_obj->get_reference();
-
-			if (!ref.is_object_ref())
-				return alloc_oom_error_if_alloc_failed(NullRefError::alloc(this->get_fixed_alloc()));
-
-			Object *obj = ref.get_object_ref();
+			Object *obj = ref_obj->get_object();
 			if ((!obj) || (obj->get_object_kind() != ObjectKind::IdRef))
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(this->get_fixed_alloc()));
 
-			Reference entity_ref;
+			MemberQueryResult entity_ref;
 
 			SLAKE_RETURN_IF_EXCEPT(resolve_id_ref(static_cast<IdRefObject *>(obj), entity_ref));
 
-			if SLAKE_UNLIKELY (entity_ref.kind == ReferenceKind::Invalid)
+			if SLAKE_UNLIKELY (!entity_ref)
 				// TODO: Use a proper one instead.
 				return alloc_oom_error_if_alloc_failed(ReferencedMemberNotFoundError::alloc(get_fixed_alloc(), static_cast<IdRefObject *>(obj)));
 
@@ -1218,8 +1145,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 
 			Value *base_obj = _access_typed_reg(cur_ins.reg0, Value, Any);
 
-			if ((!base_obj->is_reference()) ||
-				(base_obj->is_null()) || (!base_obj->get_reference().is_object_ref()))
+			if ((!base_obj->is_object()) || base_obj->is_null())
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(this->get_fixed_alloc()));
 
 			_check_reg_type(cur_ins.reg1, Any);
@@ -1227,23 +1153,18 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 
 			Value *ref_obj = _access_typed_reg(cur_ins.reg1, Value, Any);
 
-			if (!ref_obj->is_reference())
+			if (!ref_obj->is_object())
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(this->get_fixed_alloc()));
 
-			auto &ref = ref_obj->get_reference();
-
-			if (!ref.is_object_ref())
-				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(this->get_fixed_alloc()));
-
-			Object *obj = ref.get_object_ref();
+			Object *obj = ref_obj->get_object();
 			if ((!obj) || (obj->get_object_kind() != ObjectKind::IdRef))
 				return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(this->get_fixed_alloc()));
 
-			Reference entity_ref;
+			MemberQueryResult entity_ref;
 
-			SLAKE_RETURN_IF_EXCEPT(resolve_id_ref(static_cast<IdRefObject *>(obj), entity_ref, base_obj->get_reference().get_object_ref()));
+			SLAKE_RETURN_IF_EXCEPT(resolve_id_ref(static_cast<IdRefObject *>(obj), entity_ref, base_obj->get_object()));
 
-			if SLAKE_UNLIKELY (entity_ref.kind == ReferenceKind::Invalid)
+			if SLAKE_UNLIKELY (!entity_ref)
 				// TODO: Use a proper one instead.
 				return alloc_oom_error_if_alloc_failed(ReferencedMemberNotFoundError::alloc(get_fixed_alloc(), static_cast<IdRefObject *>(obj)));
 
@@ -1393,10 +1314,10 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 
 				arg = _access_typed_reg(cur_ins.reg0, Value, Any);
 
-				if ((!arg->is_reference()) || (arg->is_null()) || (!arg->get_reference().is_object_ref()))
+				if ((!arg->is_object()) || arg->is_null())
 					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 
-				if (auto obj = arg->get_reference().get_object_ref(); obj->get_object_kind() == ObjectKind::FnOverloading)
+				if (auto obj = arg->get_object(); obj->get_object_kind() == ObjectKind::FnOverloading)
 					fn = static_cast<FnOverloadingObject *>(obj);
 				else
 					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
@@ -1485,10 +1406,10 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 
 				arg = _access_typed_reg(cur_ins.reg0, Value, Any);
 
-				if ((!arg->is_reference()) || (arg->is_null()) || (!arg->get_reference().is_object_ref()))
+				if ((!arg->is_object()) || arg->is_null())
 					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 
-				if (auto obj = arg->get_reference().get_object_ref(); obj->get_object_kind() == ObjectKind::FnOverloading)
+				if (auto obj = arg->get_object(); obj->get_object_kind() == ObjectKind::FnOverloading)
 					fn = static_cast<FnOverloadingObject *>(obj);
 				else
 					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
@@ -1502,10 +1423,10 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 
 				arg = _access_typed_reg(cur_ins.reg1, Value, Any);
 
-				if ((!arg->is_reference()) || (arg->is_null()) || (!arg->get_reference().is_object_ref()))
+				if ((!arg->is_object()) || arg->is_null())
 					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 
-				this_object = arg->get_reference().get_object_ref();
+				this_object = arg->get_object();
 			}
 
 			if (!fn)
@@ -1591,10 +1512,10 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 
 				arg = _access_typed_reg(cur_ins.reg0, Value, Any);
 
-				if ((!arg->is_reference()) || (arg->is_null()) || (!arg->get_reference().is_object_ref()))
+				if ((!arg->is_object()) || arg->is_null())
 					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 
-				if (auto obj = arg->get_reference().get_object_ref(); obj->get_object_kind() == ObjectKind::FnOverloading)
+				if (auto obj = arg->get_object(); obj->get_object_kind() == ObjectKind::FnOverloading)
 					fn = static_cast<FnOverloadingObject *>(obj);
 				else
 					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
@@ -1608,10 +1529,10 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 
 				arg = _access_typed_reg(cur_ins.reg1, Value, Any);
 
-				if ((!arg->is_reference()) || (arg->is_null()) || (!arg->get_reference().is_object_ref()))
+				if ((!arg->is_object()) || arg->is_null())
 					return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(get_fixed_alloc()));
 
-				this_object = arg->get_reference().get_object_ref();
+				this_object = arg->get_object();
 			}
 
 			if (!fn)
@@ -1868,9 +1789,9 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 					_check_reg_index(cur_ins.reg0, Any);
 
 					const Value *v = _access_typed_reg(cur_ins.reg0, Value, Any);
-					if ((!v->is_reference()) || (!v->get_reference().is_object_ref()))
+					if (!v->is_object())
 						return alloc_oom_error_if_alloc_failed(InvalidOperandsError::alloc(this->get_fixed_alloc()));
-					*_access_typed_reg(cur_ins.reg_out, Value, Any) = v->get_reference().get_object_ref();
+					*_access_typed_reg(cur_ins.reg_out, Value, Any) = v->get_object();
 					break;
 				}
 				default:
@@ -2075,18 +1996,18 @@ SLAKE_API InternalExceptionPointer Runtime::exec_context(ContextObject *context)
 				{
 					peff::ScopeGuard dec_ref_args_guard([this, cur_major_frame, args]() noexcept {
 						for (size_t i = 0; i < cur_major_frame->resumable_context_data.num_args; ++i) {
-							if (args[i].is_reference()) {
-								const Reference &ref = args[i].get_reference();
-								if (ref.is_object_ref())
-									ref.get_object_ref()->dec_host_ref();
+							if (args[i].is_object()) {
+								auto obj = args[i].get_object();
+								if (obj)
+									obj->dec_host_ref();
 							}
 						}
 					});
 					for (size_t i = 0; i < cur_major_frame->resumable_context_data.num_args; ++i) {
-						if (args[i].is_reference()) {
-							const Reference &ref = args[i].get_reference();
-							if (ref.is_object_ref())
-								ref.get_object_ref()->inc_host_ref();
+						if (args[i].is_object()) {
+							auto obj = args[i].get_object();
+							if (obj)
+								obj->dec_host_ref();
 						}
 					}
 					return_value = ol->callback(

@@ -104,8 +104,8 @@ SLAKE_API peff::Alloc *Object::get_allocator() const noexcept {
 	return associated_runtime->get_generational_alloc(object_generation);
 }
 
-SLAKE_API Reference Object::get_member(const std::string_view &name) const {
-	return ReferenceKind::Invalid;
+SLAKE_API MemberQueryResult Object::get_member(const std::string_view &name) const {
+	return MemberQueryResultType::None;
 }
 
 SLAKE_API HostRefHolder::HostRefHolder(peff::Alloc *self_allocator)

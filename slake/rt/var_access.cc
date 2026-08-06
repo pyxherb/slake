@@ -434,8 +434,8 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 				case TypeId::Instance:
 				case TypeId::Array:
 				case TypeId::Fn:
-					value_out.as_reference = (Reference(*((Object **)(raw_data_ptr))));
-					value_out.value_type = ValueType::Reference;
+					value_out.as_object = *((Object **)(raw_data_ptr));
+					value_out.value_type = ValueType::Object;
 					if (t.is_local())
 						value_out.set_local();
 					break;
@@ -623,8 +623,8 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 				case TypeId::Instance:
 				case TypeId::Array:
 				case TypeId::Fn:
-					value_out.as_reference = (Reference(*((Object **)(raw_data_ptr))));
-					value_out.value_type = ValueType::Reference;
+					value_out.as_object = (*((Object **)(raw_data_ptr)));
+					value_out.value_type = ValueType::Object;
 					if (t.is_local())
 						value_out.set_local();
 					break;
@@ -705,7 +705,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 				case TypeId::String:
 				case TypeId::Array:
 				case TypeId::Fn:
-					value_out = Reference(static_cast<Object **>(entity_ref.as_array_element.array_object->data)[entity_ref.as_array_element.index]);
+					value_out = static_cast<Object **>(entity_ref.as_array_element.array_object->data)[entity_ref.as_array_element.index];
 					if (t.is_local())
 						std::terminate();
 					break;
@@ -893,8 +893,8 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 				case TypeId::Instance:
 				case TypeId::Array:
 				case TypeId::Fn:
-					value_out.as_reference = (Reference(*((Object **)(raw_data_ptr))));
-					value_out.value_type = ValueType::Reference;
+					value_out.as_object = *((Object **)(raw_data_ptr));
+					value_out.value_type = ValueType::Object;
 					if (t.is_local())
 						std::terminate();
 					break;
@@ -1168,13 +1168,13 @@ SLAKE_API void Runtime::write_var_with_type(const Reference &entity_ref, const T
 				case TypeId::String:
 					if (value.is_local() && !t.is_local())
 						std::terminate();
-					*((Object **)(raw_data_ptr)) = value.get_reference().as_object;
+					*((Object **)(raw_data_ptr)) = value.get_object();
 					break;
 				case TypeId::Instance:
 				case TypeId::Array:
 					if (value.is_local() && !t.is_local())
 						std::terminate();
-					*((Object **)(raw_data_ptr)) = value.get_reference().as_object;
+					*((Object **)(raw_data_ptr)) = value.get_object();
 					break;
 				default:
 					// All fields should be checked during the instantiation.
@@ -1278,13 +1278,13 @@ SLAKE_API void Runtime::write_var_with_type(const Reference &entity_ref, const T
 				case TypeId::String:
 					if (value.is_local() && !t.is_local())
 						std::terminate();
-					*((Object **)(raw_data_ptr)) = value.get_reference().as_object;
+					*((Object **)(raw_data_ptr)) = value.get_object();
 					break;
 				case TypeId::Instance:
 				case TypeId::Array:
 					if (value.is_local() && !t.is_local())
 						std::terminate();
-					*((Object **)(raw_data_ptr)) = value.get_reference().as_object;
+					*((Object **)(raw_data_ptr)) = value.get_object();
 					break;
 				case TypeId::StructInstance:
 					memcpy(raw_data_ptr, locate_value_base_ptr(value.get_reference()), sizeof_type(t));
@@ -1343,7 +1343,7 @@ SLAKE_API void Runtime::write_var_with_type(const Reference &entity_ref, const T
 						std::terminate();
 					if (value.is_local())
 						std::terminate();
-					static_cast<Object **>(entity_ref.as_array_element.array_object->data)[entity_ref.as_array_element.index] = value.get_reference().as_object;
+					static_cast<Object **>(entity_ref.as_array_element.array_object->data)[entity_ref.as_array_element.index] = value.get_object();
 					break;
 				}
 				default:
@@ -1474,7 +1474,7 @@ SLAKE_API void Runtime::write_var_with_type(const Reference &entity_ref, const T
 						std::terminate();
 					if (value.is_local())
 						std::terminate();
-					*static_cast<Object **>(static_cast<void*>(raw_data_ptr)) = value.get_reference().as_object;
+					*static_cast<Object **>(static_cast<void*>(raw_data_ptr)) = value.get_object();
 					break;
 				default:
 					// All fields should be checked during the instantiation.

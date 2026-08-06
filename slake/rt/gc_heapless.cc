@@ -44,6 +44,10 @@ SLAKE_API void Runtime::_gc_walk(GCWalkContext *context, const Value &i) {
 		case ValueType::F64:
 		case ValueType::Bool:
 			break;
+		case ValueType::Object: {
+			context->push_object(i.get_object());
+			break;
+		}
 		case ValueType::Reference: {
 			const Reference &entity_ref = i.get_reference();
 
@@ -53,9 +57,6 @@ SLAKE_API void Runtime::_gc_walk(GCWalkContext *context, const Value &i) {
 					break;
 				case ReferenceKind::ArrayElementRef:
 					context->push_object(entity_ref.as_array_element.array_object);
-					break;
-				case ReferenceKind::ObjectRef:
-					context->push_object(entity_ref.as_object);
 					break;
 				case ReferenceKind::ObjectFieldRef:
 					context->push_object(entity_ref.as_object_field.instance_object);

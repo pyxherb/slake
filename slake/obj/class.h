@@ -251,7 +251,7 @@ namespace slake {
 
 		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
 
-		SLAKE_API virtual Reference get_member(const std::string_view &name) const override;
+		SLAKE_API virtual MemberQueryResult get_member(const std::string_view &name) const override;
 		[[nodiscard]] SLAKE_API virtual bool add_member(MemberObject *member) override;
 		SLAKE_API virtual void remove_member(const std::string_view &name) override;
 

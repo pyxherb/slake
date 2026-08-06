@@ -4,7 +4,7 @@ using namespace slake;
 
 SLAKE_API InternalExceptionPointer Runtime::resolve_id_ref(
 	IdRefObject *ref,
-	Reference &object_ref_out,
+	MemberQueryResult &object_ref_out,
 	Object *scope_object) {
 	assert(ref);
 
@@ -20,15 +20,15 @@ SLAKE_API InternalExceptionPointer Runtime::resolve_id_ref(
 		if (!cur_object)
 			goto fail;
 
-		object_ref_out = cur_object->get_member(cur_name.name);
+		auto result = cur_object->get_member(cur_name.name);
 
-		if (!object_ref_out) {
+		if (!result) {
 			goto fail;
 		}
 
-		if (object_ref_out.kind == ReferenceKind::ObjectRef) {
+		if (result.type == MemberQueryResultType::Object) {
 			// TODO: Check if the instance object is a member object.
-			cur_object = (MemberObject *)object_ref_out.as_object;
+			cur_object = (MemberObject *)result.as_object;
 
 			switch (cur_object->get_object_kind()) {
 				case ObjectKind::Class:
@@ -44,7 +44,7 @@ SLAKE_API InternalExceptionPointer Runtime::resolve_id_ref(
 						MemberObject *m;
 						SLAKE_RETURN_IF_EXCEPT(instantiate_generic_object((MemberObject *)cur_object, m, &generic_instantiation_context));
 						cur_object = m;
-						object_ref_out = Reference(cur_object);
+						object_ref_out = cur_object;
 					}
 					break;
 			}
@@ -66,7 +66,7 @@ SLAKE_API InternalExceptionPointer Runtime::resolve_id_ref(
 				auto it = fn_object->overloadings.find(FnSignature{ param_types, ref->has_var_args, ref->entries.back().generic_args.size(), ref->overriden_type });
 
 				if (it != fn_object->overloadings.end())
-					object_ref_out = Reference(it.value());
+					object_ref_out = it.value();
 				else {
 					it = fn_object->overloadings.find(FnSignature{ param_types, ref->has_var_args, ref->entries.back().generic_args.size(), TypeId::Void });
 
@@ -76,12 +76,12 @@ SLAKE_API InternalExceptionPointer Runtime::resolve_id_ref(
 					}
 				}
 
-				object_ref_out = Reference(it.value());
+				object_ref_out = it.value();
 
 				break;
 			}
 			default:
-				object_ref_out = ReferenceKind::Invalid;
+				object_ref_out = MemberQueryResultType::None;
 				return {};
 		}
 	}
@@ -89,7 +89,7 @@ SLAKE_API InternalExceptionPointer Runtime::resolve_id_ref(
 	return {};
 
 fail:;
-	object_ref_out = ReferenceKind::Invalid;
+	object_ref_out = MemberQueryResultType::None;
 	return {};
 }
 

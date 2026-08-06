@@ -24,6 +24,8 @@ namespace slake {
 		F64,		  // 64-bit floating point number
 		Bool,		  // Boolean
 
+		Object,	 // Object
+
 		Reference,	// Reference
 
 		TypelessScopedEnum,	 // Typeless scoped enumeration

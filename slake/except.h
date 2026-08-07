@@ -461,6 +461,9 @@ namespace slake {
 	};
 
 	SLAKE_API InternalExceptionPointer alloc_oom_error_if_alloc_failed(InternalExceptionPointer e);
+	SLAKE_FORCEINLINE InternalExceptionPointer alloc_oom_error_if_alloc_failed(OutOfMemoryError *e) {
+		return e;
+	}
 }
 
 #endif

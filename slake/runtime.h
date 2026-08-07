@@ -246,6 +246,7 @@ namespace slake {
 			MajorFrame *const cur_major_frame,
 			char *const data_stack,
 			const size_t stack_size,
+			const size_t num_ins,
 			const Instruction &cur_ins,
 			const RegularFnOverloadingObject *ol,
 			ContextChangeType &is_context_changed_out) noexcept;

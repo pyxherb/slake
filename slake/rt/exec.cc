@@ -702,21 +702,13 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			break;
 		}
 		case Opcode::JMP:
-			if SLAKE_UNLIKELY (
-				(cur_major_frame->resumable_context_data.cur_ins = ins_operand_as_u32(cur_ins.operands[0])) >=
-				num_ins)
-				std::terminate();
+			cur_major_frame->resumable_context_data.cur_ins = ins_operand_as_u32(cur_ins.operands[0]);
 			_FINISH_EXEC();
 		case Opcode::BR: {
 			_check_reg_type(cur_ins.reg0_type, Bool);
 			_check_reg_index(cur_ins.reg0, Bool);
 
-			if SLAKE_UNLIKELY (
-				(cur_major_frame->resumable_context_data.cur_ins = ins_operand_as_u32(cur_ins.operands[*_access_typed_reg(cur_ins.reg0, bool, Bool) ? 0 : 1])) >=
-				num_ins) {
-				// Raise out of fn body error.
-				std::terminate();
-			}
+			cur_major_frame->resumable_context_data.cur_ins = ins_operand_as_u32(cur_ins.operands[*_access_typed_reg(cur_ins.reg0, bool, Bool) ? 0 : 1]);
 			_FINISH_EXEC();
 		}
 
@@ -1931,8 +1923,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			_THROW_EXCEPT(InvalidOpcodeError::alloc(this->get_fixed_alloc(), cur_ins.opcode));
 	}
 
-	if (++cur_major_frame->resumable_context_data.cur_ins >= num_ins)
-		std::terminate();
+	++cur_major_frame->resumable_context_data.cur_ins;
 	_FINISH_EXEC();
 }
 
@@ -1961,9 +1952,6 @@ SLAKE_API InternalExceptionPointer Runtime::exec_context(ContextObject *context)
 				do {
 					const RegularFnOverloadingObject *const ol = static_cast<const RegularFnOverloadingObject *>(cur_major_frame->cur_fn);
 					const size_t num_ins = ol->instructions.size();
-
-					if (cur_major_frame->resumable_context_data.cur_ins >= num_ins)
-						std::terminate();
 					do {
 						cur_major_frame = _fetch_major_frame(&context->get_context(), context->get_context().off_cur_major_frame);
 						context_change = ContextChangeType::NoChange;
@@ -1977,6 +1965,9 @@ SLAKE_API InternalExceptionPointer Runtime::exec_context(ContextObject *context)
 							if ((fixed_alloc.sz_allocated > _sz_computed_gc_limit)) {
 								gc();
 							}
+
+							if SLAKE_UNLIKELY (cur_major_frame->resumable_context_data.cur_ins >= num_ins)
+								std::terminate();
 
 							SLAKE_RETURN_IF_EXCEPT(_exec_ins(
 								context,

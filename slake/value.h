@@ -755,7 +755,7 @@ namespace slake {
 			return value_type == ValueType::Object;
 		}
 		SLAKE_FORCEINLINE bool is_null() const noexcept {
-			return value_type == ValueType::Object && as_object;
+			return value_type == ValueType::Object && !as_object;
 		}
 		SLAKE_FORCEINLINE bool is_typeless_scoped_enum() const noexcept {
 			return value_type == ValueType::TypelessScopedEnum;

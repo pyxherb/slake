@@ -68,3 +68,8 @@ install(TARGETS slake slaked
     RUNTIME DESTINATION bin
 )
 install(FILES ${HEADERS} DESTINATION ${CMAKE_INSTALL_PREFIX}/include/slake)
+
+if(MSVC)
+    target_compile_options(slake PRIVATE "/Zc:__cplusplus" INTERFACE $<TARGET_PROPERTY:peff_base,COMPILE_OPTIONS>)
+    target_compile_options(slaked PRIVATE "/Zc:__cplusplus" INTERFACE $<TARGET_PROPERTY:peff_base,COMPILE_OPTIONS>)
+endif()

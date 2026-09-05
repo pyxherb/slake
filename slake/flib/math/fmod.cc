@@ -5,6 +5,7 @@ using namespace slake;
 using namespace slake::flib;
 
 SLAKE_API float flib::fmodf(float n, float d) {
+	// TODO: Fix this tricky function.
 	if (n < d)
 		return n;
 

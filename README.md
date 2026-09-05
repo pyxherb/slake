@@ -1,5 +1,7 @@
 # Slake
 
+**NOTE: We are refactoring our compiler, see [SLKC](https://github.com/pyxherb/slkc) for more activities.**
+
 <div style="text-align: center">
     <img src="./common/logo2.svg" alt="Slake logo"><br/>
 </div>
@@ -11,6 +13,7 @@ Slake is a static-typed, general-purpose and embeddable programming language for
 It supports:
 
 * Function Overloading
+* Generics (Parameterized Types)
 * Union Enumeration (ADT-like)
 * Coroutine
 * and more...

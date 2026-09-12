@@ -19,6 +19,13 @@ class RecurseTest<T>(RecurseTest::<Sabotage::<T>>) {
 
 It should be blocked by the runtime, or the runtime will crash.
 
+### Refactor the Object Types Into Non-polymorphic Types
+
+Currently, the object types have a vtable for some operations.
+
+Because the object model is closed/sealed, so we can safely use global functions with branches
+convering all object types to handle every kind of objects like GC.
+
 ### Solution of Interacting With The Native Side With Moving GC
 
 A viable solution is that pin all of the objects involved when calling the native functions.

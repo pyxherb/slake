@@ -13,7 +13,7 @@ Slake is a static-typed, general-purpose and embeddable programming language for
 It supports:
 
 * Function Overloading
-* Generics (Parameterized Types)
+* Generics (Parametric)
 * Union Enumeration (ADT-like)
 * Coroutine
 * and more...

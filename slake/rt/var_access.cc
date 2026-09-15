@@ -94,24 +94,6 @@ SLAKE_API void *Runtime::locate_value_base_ptr(const Reference &entity_ref) noex
 			std::terminate();
 		case ReferenceKind::CoroutineArgRef:
 			std::terminate();
-		case ReferenceKind::StaticFieldStructFieldRef:
-		case ReferenceKind::LocalVarStructFieldRef:
-		case ReferenceKind::CoroutineLocalVarStructFieldRef:
-		case ReferenceKind::ObjectFieldStructFieldRef:
-		case ReferenceKind::ArrayElementStructFieldRef:
-		case ReferenceKind::ArgStructFieldRef:
-		case ReferenceKind::CoroutineArgStructFieldRef: {
-			Reference inner_ref = entity_ref;
-			((uint8_t &)inner_ref.kind) &= ~0x80;
-			TypeRef actual_type = typeof_var(inner_ref);
-
-			Object *const type_object = static_cast<CustomTypeDefObject *>(actual_type.type_def)->type_object;
-			char *base_ptr = static_cast<char *>(locate_value_base_ptr(inner_ref));
-
-			assert(type_object->get_object_kind() == ObjectKind::Struct);
-
-			return base_ptr + static_cast<StructObject *>(type_object)->field_records.at(entity_ref.struct_field_index).offset;
-		}
 		case ReferenceKind::InitObjectLayoutFieldRef: {
 			ObjectFieldRecord &field_record =
 				entity_ref.as_init_object_layout_field.object_layout->field_records.at(
@@ -127,7 +109,28 @@ SLAKE_API void *Runtime::locate_value_base_ptr(const Reference &entity_ref) noex
 			return init_data;
 		}
 		default:
-			std::terminate();
+			switch (entity_ref.kind) {
+				case ReferenceKind::StaticFieldStructFieldRef:
+				case ReferenceKind::LocalVarStructFieldRef:
+				case ReferenceKind::CoroutineLocalVarStructFieldRef:
+				case ReferenceKind::ObjectFieldStructFieldRef:
+				case ReferenceKind::ArrayElementStructFieldRef:
+				case ReferenceKind::ArgStructFieldRef:
+				case ReferenceKind::CoroutineArgStructFieldRef: {
+					Reference inner_ref = entity_ref;
+					((uint8_t &)inner_ref.kind) &= ~0x80;
+					TypeRef actual_type = typeof_var(inner_ref);
+
+					Object *const type_object = static_cast<CustomTypeDefObject *>(actual_type.type_def)->type_object;
+					char *base_ptr = static_cast<char *>(locate_value_base_ptr(inner_ref));
+
+					assert(type_object->get_object_kind() == ObjectKind::Struct);
+
+					return base_ptr + static_cast<StructObject *>(type_object)->field_records.at(entity_ref.struct_field_index).offset;
+				}
+				default:
+					std::terminate();
+			}
 	}
 }
 
@@ -247,23 +250,6 @@ SLAKE_API TypeRef Runtime::typeof_var(const Reference &entity_ref) noexcept {
 			}
 			break;
 		}
-		case ReferenceKind::StaticFieldStructFieldRef:
-		case ReferenceKind::LocalVarStructFieldRef:
-		case ReferenceKind::CoroutineLocalVarStructFieldRef:
-		case ReferenceKind::ObjectFieldStructFieldRef:
-		case ReferenceKind::ArrayElementStructFieldRef:
-		case ReferenceKind::ArgStructFieldRef:
-		case ReferenceKind::CoroutineArgStructFieldRef: {
-			Reference inner_ref = entity_ref;
-			((uint8_t &)inner_ref.kind) &= ~0x80;
-			TypeRef actual_type = typeof_var(inner_ref);
-
-			Object *const type_object = static_cast<CustomTypeDefObject *>(actual_type.type_def)->type_object;
-
-			assert(type_object->get_object_kind() == ObjectKind::Struct);
-
-			return static_cast<StructObject *>(type_object)->field_records.at(entity_ref.struct_field_index).type;
-		}
 		case ReferenceKind::InitObjectLayoutFieldRef: {
 			ObjectFieldRecord &field_record =
 				entity_ref.as_init_object_layout_field.object_layout->field_records.at(
@@ -275,9 +261,28 @@ SLAKE_API TypeRef Runtime::typeof_var(const Reference &entity_ref) noexcept {
 			// The user should have known type of the value to be written if they want to write the default value.
 			std::terminate();
 		default:
-			break;
+			switch (entity_ref.kind) {
+				case ReferenceKind::StaticFieldStructFieldRef:
+				case ReferenceKind::LocalVarStructFieldRef:
+				case ReferenceKind::CoroutineLocalVarStructFieldRef:
+				case ReferenceKind::ObjectFieldStructFieldRef:
+				case ReferenceKind::ArrayElementStructFieldRef:
+				case ReferenceKind::ArgStructFieldRef:
+				case ReferenceKind::CoroutineArgStructFieldRef: {
+					Reference inner_ref = entity_ref;
+					((uint8_t &)inner_ref.kind) &= ~0x80;
+					TypeRef actual_type = typeof_var(inner_ref);
+
+					Object *const type_object = static_cast<CustomTypeDefObject *>(actual_type.type_def)->type_object;
+
+					assert(type_object->get_object_kind() == ObjectKind::Struct);
+
+					return static_cast<StructObject *>(type_object)->field_records.at(entity_ref.struct_field_index).type;
+				}
+				default:
+					std::terminate();
+			}
 	}
-	std::terminate();
 }
 
 SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const TypeRef &t, void *data_out) noexcept {
@@ -592,14 +597,8 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 			break;
 		}
 		case ReferenceKind::StaticFieldRef:
-		case ReferenceKind::ObjectFieldRef:
-		case ReferenceKind::StaticFieldStructFieldRef:
-		case ReferenceKind::LocalVarStructFieldRef:
-		case ReferenceKind::CoroutineLocalVarStructFieldRef:
-		case ReferenceKind::ObjectFieldStructFieldRef:
-		case ReferenceKind::ArrayElementStructFieldRef:
-		case ReferenceKind::ArgStructFieldRef:
-		case ReferenceKind::CoroutineArgStructFieldRef: {
+		case ReferenceKind::ObjectFieldRef: {
+		read_field:
 			const char *const raw_data_ptr = static_cast<char *>(locate_value_base_ptr(entity_ref));
 
 			switch (t.type_id) {
@@ -960,7 +959,18 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 			break;
 		}
 		default:
-			std::terminate();
+			switch (entity_ref.kind) {
+				case ReferenceKind::StaticFieldStructFieldRef:
+				case ReferenceKind::LocalVarStructFieldRef:
+				case ReferenceKind::CoroutineLocalVarStructFieldRef:
+				case ReferenceKind::ObjectFieldStructFieldRef:
+				case ReferenceKind::ArrayElementStructFieldRef:
+				case ReferenceKind::ArgStructFieldRef:
+				case ReferenceKind::CoroutineArgStructFieldRef:
+					goto read_field;
+				default:
+					std::terminate();
+			}
 	}
 }
 
@@ -1279,14 +1289,8 @@ SLAKE_API void Runtime::write_var_with_type(const Reference &entity_ref, const T
 		}
 		case ReferenceKind::StaticFieldRef:
 		case ReferenceKind::ObjectFieldRef:
-		case ReferenceKind::StaticFieldStructFieldRef:
-		case ReferenceKind::LocalVarStructFieldRef:
-		case ReferenceKind::CoroutineLocalVarStructFieldRef:
-		case ReferenceKind::ObjectFieldStructFieldRef:
-		case ReferenceKind::ArrayElementStructFieldRef:
-		case ReferenceKind::ArgStructFieldRef:
-		case ReferenceKind::CoroutineArgStructFieldRef:
 		case ReferenceKind::InitObjectLayoutFieldRef: {
+		write_field:
 			char *const raw_data_ptr = static_cast<char *>(locate_value_base_ptr(entity_ref));
 
 			switch (t.type_id) {
@@ -1386,6 +1390,18 @@ SLAKE_API void Runtime::write_var_with_type(const Reference &entity_ref, const T
 			break;
 		}
 		default:
+			switch (entity_ref.kind) {
+				case ReferenceKind::StaticFieldStructFieldRef:
+				case ReferenceKind::LocalVarStructFieldRef:
+				case ReferenceKind::CoroutineLocalVarStructFieldRef:
+				case ReferenceKind::ObjectFieldStructFieldRef:
+				case ReferenceKind::ArrayElementStructFieldRef:
+				case ReferenceKind::ArgStructFieldRef:
+				case ReferenceKind::CoroutineArgStructFieldRef:
+					goto write_field;
+				default:
+					break;
+			}
 			std::terminate();
 	}
 }

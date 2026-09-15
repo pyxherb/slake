@@ -57,6 +57,8 @@
 		if (__VA_ARGS__) {    \
 		} else                \
 			__builtin_unreachable()
+#elif defined(_MSC_VER)
+	#define SLAKE_ASSUME(...) __assume(__VA_ARGS__)
 #else
 	#define SLAKE_ASSUME(...)
 #endif

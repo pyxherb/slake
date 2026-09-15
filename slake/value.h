@@ -124,7 +124,6 @@ namespace slake {
 		SLAKE_FORCEINLINE DefaultStructValueRef(ObjectLayout *object_layout) : object_layout(object_layout) {}
 	};
 
-	// TODO: Separate object reference and variable reference.
 	struct Reference {
 		union {
 			StaticFieldRef as_static_field;

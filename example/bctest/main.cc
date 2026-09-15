@@ -83,9 +83,9 @@ Value print(Context *context, MajorFrame *cur_major_frame) {
 		for (uint8_t i = 0; i < cur_major_frame->resumable_context_data.num_args; ++i) {
 			Value data;
 			if (cur_major_frame->cur_coroutine)
-				Runtime::read_var(CoroutineArgRef(cur_major_frame->cur_coroutine, i), data);
+				Runtime::read_var_with_value(CoroutineArgRef(cur_major_frame->cur_coroutine, i), data);
 			else
-				Runtime::read_var(ArgRef(cur_major_frame, i), data);
+				Runtime::read_var_with_value(ArgRef(cur_major_frame, i), data);
 
 			switch (data.value_type) {
 				case ValueType::I8:
@@ -377,7 +377,7 @@ SLAKE_API bool dump_value(peff::Alloc *allocator, DumpWriter *writer, const slak
 						slake::Reference rer = slake::ArrayElementRef(a, i);
 						slake::Value data;
 
-						slake::Runtime::read_var(rer, data);
+						slake::Runtime::read_var_with_value(rer, data);
 
 						SLAKE_RETURN_IF_FALSE(dump_value(allocator, writer, data));
 					}

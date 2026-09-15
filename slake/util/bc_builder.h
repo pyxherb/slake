@@ -95,7 +95,7 @@ namespace slake {
 					break;
 				case OperandClass::Label: {
 					ins.operands[0] = UINT64_MAX;
-					if (!operand_to_label_replacement_map.insert({fn_object->instructions.size(), false}, +operand0.as_label))
+					if (!operand_to_label_replacement_map.insert({static_cast<uint32_t>(fn_object->instructions.size()), false}, +operand0.as_label))
 						return false;
 					break;
 				}
@@ -109,7 +109,7 @@ namespace slake {
 					break;
 				case OperandClass::Label: {
 					ins.operands[1] = UINT64_MAX;
-					if (!operand_to_label_replacement_map.insert({fn_object->instructions.size(), true}, +operand1.as_label))
+					if (!operand_to_label_replacement_map.insert({static_cast<uint32_t>(fn_object->instructions.size()), true}, +operand1.as_label))
 						return false;
 					break;
 				}

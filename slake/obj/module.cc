@@ -107,7 +107,7 @@ SLAKE_API bool BasicModuleObject::append_field_record(FieldRecord &&field_record
 		return false;
 	}
 
-	Runtime::write_var(StaticFieldRef(this, field_records.size() - 1), associated_runtime->default_value_of(fr.type));
+	Runtime::write_var_with_value(StaticFieldRef(this, field_records.size() - 1), associated_runtime->default_value_of(fr.type));
 	return true;
 }
 

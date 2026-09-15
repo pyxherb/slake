@@ -940,10 +940,10 @@ int main(int argc, char **argv) {
 						builder.set_fn(ol.get());
 
 						ol->set_register_number(InsRegType::Any, 9);
-						ol->set_register_number(InsRegType::I64, 9);
+						ol->set_register_number(InsRegType::U64, 9);
 						ol->set_register_number(InsRegType::Bool, 9);
 
-						if (!ol->ins_type_set.push_back(TypeRef(TypeId::I64)))
+						if (!ol->ins_type_set.push_back(TypeRef(TypeId::U64)))
 							abort();
 
 #define ABORT_IF_EMIT_FAILED(e) \
@@ -978,39 +978,39 @@ int main(int argc, char **argv) {
 
 						{
 							ABORT_IF_EMIT_FAILED(builder.emit_ins(
-								Opcode::LVALUEI64, 0,
-								{ InsRegType::I64, 0 }, { InsRegType::Any, 1 }, {},
+								Opcode::LVALUEU64, 0,
+								{ InsRegType::U64, 0 }, { InsRegType::Any, 1 }, {},
 								BCBuilder::Operand::new_imm(0), BCBuilder::Operand::new_imm(0)));
 
 							ABORT_IF_EMIT_FAILED(builder.emit_ins(
-								Opcode::LVALUEI64, 0,
-								{ InsRegType::I64, 1 }, { InsRegType::Any, 2 }, {},
+								Opcode::LVALUEU64, 0,
+								{ InsRegType::U64, 1 }, { InsRegType::Any, 2 }, {},
 								BCBuilder::Operand::new_imm(0), BCBuilder::Operand::new_imm(0)));
 
 							ABORT_IF_EMIT_FAILED(builder.emit_ins(
-								Opcode::ADDI64, INS_OP0_REG,
-								{ InsRegType::I64, 2 }, { InsRegType::I64, 0 }, {},
-								BCBuilder::Operand::new_imm(0), BCBuilder::Operand::new_imm(i64_as_ins_operand(1))));
+								Opcode::ADDU64, INS_OP0_REG,
+								{ InsRegType::U64, 2 }, { InsRegType::U64, 0 }, {},
+								BCBuilder::Operand::new_imm(0), BCBuilder::Operand::new_imm(u64_as_ins_operand(1))));
 
 							ABORT_IF_EMIT_FAILED(builder.emit_ins(
-								Opcode::ADDI64, INS_OP0_REG | INS_OP1_REG,
-								{ InsRegType::I64, 3 }, { InsRegType::I64, 1 }, { InsRegType::I64, 2 },
+								Opcode::ADDU64, INS_OP0_REG | INS_OP1_REG,
+								{ InsRegType::U64, 3 }, { InsRegType::U64, 1 }, { InsRegType::U64, 2 },
 								BCBuilder::Operand::new_imm(0), BCBuilder::Operand::new_imm(0)));
 
 							ABORT_IF_EMIT_FAILED(builder.emit_ins(
-								Opcode::STOREI64, 0,
-								{}, { InsRegType::Any, 1 }, { InsRegType::I64, 2 },
+								Opcode::STOREU64, 0,
+								{}, { InsRegType::Any, 1 }, { InsRegType::U64, 2 },
 								BCBuilder::Operand::new_imm(0), BCBuilder::Operand::new_imm(0)));
 
 							ABORT_IF_EMIT_FAILED(builder.emit_ins(
-								Opcode::STOREI64, 0,
-								{}, { InsRegType::Any, 2 }, { InsRegType::I64, 3 },
+								Opcode::STOREU64, 0,
+								{}, { InsRegType::Any, 2 }, { InsRegType::U64, 3 },
 								BCBuilder::Operand::new_imm(0), BCBuilder::Operand::new_imm(0)));
 
 							ABORT_IF_EMIT_FAILED(builder.emit_ins(
-								Opcode::LTI64, INS_OP0_REG,
-								{ InsRegType::Bool, 0 }, { InsRegType::I64, 2 }, {},
-								BCBuilder::Operand::new_imm(0), BCBuilder::Operand::new_imm(i64_as_ins_operand(10000000))));
+								Opcode::LTU64, INS_OP0_REG,
+								{ InsRegType::Bool, 0 }, { InsRegType::U64, 2 }, {},
+								BCBuilder::Operand::new_imm(0), BCBuilder::Operand::new_imm(u64_as_ins_operand(10000000))));
 
 							ABORT_IF_EMIT_FAILED(builder.emit_ins(
 								Opcode::BR, 0,

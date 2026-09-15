@@ -41,3 +41,17 @@ into exceptions to avoid UB.
 
 Now we have many object types have extraneous allocator parameter after we
 removed the `self_allocator` member, remove them.
+
+### Generic Instantiation Depth Limit
+
+A generic instantiation depth limit is required during loading:
+
+```slake
+module test;
+
+class Loop<T> {
+    public void test() {
+        Loop<Loop<T>>.test();
+    }
+}
+```

@@ -512,13 +512,13 @@ SLAKE_FORCEINLINE InternalExceptionPointer larg(Context *context, MajorFrame *ma
 	static_cast<type *>(calc_stack_addr(         \
 		data_stack,                              \
 		stack_size,                              \
-		cur_major_frame->resumable_context_data.regs_base_off[static_cast<uint8_t>(InsRegType::opr_type)] + index * sizeof(type)))
+		cur_major_frame->resumable_context_data.regs_base_off[static_cast<uint8_t>(InsRegType::opr_type)] + sizeof(type) * index))
 
 #define _access_nonlocal_typed_reg(cur_major_frame, index, type, opr_type) \
 	static_cast<type *>(calc_stack_addr(                                   \
 		data_stack,                                                        \
 		stack_size,                                                        \
-		cur_major_frame->resumable_context_data.regs_base_off[static_cast<uint8_t>(InsRegType::opr_type)] + index * sizeof(type)))
+		cur_major_frame->resumable_context_data.regs_base_off[static_cast<uint8_t>(InsRegType::opr_type)] + sizeof(type) * index))
 
 #define _FINISH_EXEC() return {};
 #define _THROW_EXCEPT(...) return alloc_oom_error_if_alloc_failed(__VA_ARGS__);
@@ -534,10 +534,8 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 	switch (cur_ins.opcode) {
 #define _lvalue_opcode(opcode, data_type, slake_type, slake_lower_type)                                                             \
 	case Opcode::opcode: {                                                                                                          \
-		_check_reg_type(cur_ins.reg_out_type, slake_type);                                                                          \
 		_check_reg_index(cur_ins.reg_out, slake_type);                                                                              \
                                                                                                                                     \
-		_check_reg_type(cur_ins.reg0_type, Any);                                                                                    \
 		_check_reg_index(cur_ins.reg0, Any);                                                                                        \
                                                                                                                                     \
 		const Value *source = _access_typed_reg(cur_ins.reg0, Value, Any);                                                          \
@@ -561,10 +559,8 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 		_lvalue_opcode(LVALUEF64, double, F64, f64);
 		_lvalue_opcode(LVALUEBOOL, bool, Bool, bool);
 		case Opcode::LVALUE: {
-			_check_reg_type(cur_ins.reg_out_type, Any);
 			_check_reg_index(cur_ins.reg_out, Any);
 
-			_check_reg_type(cur_ins.reg0_type, Any);
 			_check_reg_index(cur_ins.reg0, Any);
 
 			Value *dest = _access_typed_reg(cur_ins.reg_out, Value, Any);
@@ -578,10 +574,8 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 		}
 #define _basic_type_store_opcode(opcode, data_type, slake_type, slake_lower_type)                                               \
 	case Opcode::opcode: {                                                                                                      \
-		_check_reg_type(cur_ins.reg0_type, Any);                                                                                \
 		_check_reg_index(cur_ins.reg0, Any);                                                                                    \
                                                                                                                                 \
-		_check_reg_type(cur_ins.reg1_type, slake_type);                                                                         \
 		_check_reg_index(cur_ins.reg1, slake_type);                                                                             \
                                                                                                                                 \
 		const Value *dest = _access_typed_reg(cur_ins.reg0, Value, Any);                                                        \
@@ -599,10 +593,8 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			_basic_type_store_opcode(STOREI32, int32_t, I32, i32);
 			_basic_type_store_opcode(STOREI64, int64_t, I64, i64);
 		case Opcode::STOREISIZE: {
-			_check_reg_type(cur_ins.reg0_type, Any);
 			_check_reg_index(cur_ins.reg0, Any);
 
-			_check_reg_type(cur_ins.reg1_type, ISize);
 			_check_reg_index(cur_ins.reg1, ISize);
 
 			const Value *dest = _access_typed_reg(cur_ins.reg0, Value, Any);
@@ -620,10 +612,8 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			_basic_type_store_opcode(STOREU32, uint32_t, U32, u32);
 			_basic_type_store_opcode(STOREU64, uint64_t, U64, u64);
 		case Opcode::STOREUSIZE: {
-			_check_reg_type(cur_ins.reg0_type, Any);
 			_check_reg_index(cur_ins.reg0, Any);
 
-			_check_reg_type(cur_ins.reg1_type, USize);
 			_check_reg_index(cur_ins.reg1, USize);
 
 			const Value *dest = _access_typed_reg(cur_ins.reg0, Value, Any);
@@ -640,10 +630,8 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			_basic_type_store_opcode(STOREF64, double, F64, f64);
 			_basic_type_store_opcode(STOREBOOL, bool, Bool, bool);
 		case Opcode::STORE: {
-			_check_reg_type(cur_ins.reg0_type, Any);
 			_check_reg_index(cur_ins.reg0, Any);
 
-			_check_reg_type(cur_ins.reg1_type, Any);
 			_check_reg_index(cur_ins.reg1, Any);
 
 			const Value *dest = _access_typed_reg(cur_ins.reg0, Value, Any);
@@ -659,7 +647,6 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			break;
 		}
 		case Opcode::LOBJ: {
-			_check_reg_type(cur_ins.reg_out_type, Object);
 			_check_reg_index(cur_ins.reg_out, Object);
 
 			RegIndex dest_reg = cur_ins.reg_out;
@@ -677,7 +664,6 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			break;
 		}
 		case Opcode::LTYPE: {
-			_check_reg_type(cur_ins.reg_out_type, Any);
 			_check_reg_index(cur_ins.reg_out, Any);
 
 			uint32_t type_set_index = static_cast<uint32_t>(ol->ins_type_set.size());
@@ -696,10 +682,9 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			cur_major_frame->resumable_context_data.cur_ins = ins_operand_as_u32(cur_ins.operands[0]);
 			_FINISH_EXEC();
 		case Opcode::BR: {
-			_check_reg_type(cur_ins.reg0_type, Bool);
 			_check_reg_index(cur_ins.reg0, Bool);
 
-			cur_major_frame->resumable_context_data.cur_ins = ins_operand_as_u32(cur_ins.operands[*_access_typed_reg(cur_ins.reg0, bool, Bool) ? 0 : 1]);
+			cur_major_frame->resumable_context_data.cur_ins = ins_operand_as_u32(cur_ins.operands[!*_access_typed_reg(cur_ins.reg0, bool, Bool)]);
 			_FINISH_EXEC();
 		}
 
@@ -708,7 +693,6 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 		data_type op0, op1;                                                             \
                                                                                         \
 		if (cur_ins.flags & INS_OP0_REG) {                                              \
-			_check_reg_type(cur_ins.reg0_type, slake_type);                             \
 			_check_reg_index(cur_ins.reg0, slake_type);                                 \
                                                                                         \
 			op0 = *_access_typed_reg(cur_ins.reg0, data_type, slake_type);              \
@@ -717,7 +701,6 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 		}                                                                               \
                                                                                         \
 		if (cur_ins.flags & INS_OP1_REG) {                                              \
-			_check_reg_type(cur_ins.reg1_type, slake_type);                             \
 			_check_reg_index(cur_ins.reg1, slake_type);                                 \
                                                                                         \
 			op1 = *_access_typed_reg(cur_ins.reg1, data_type, slake_type);              \
@@ -725,7 +708,6 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			op1 = ins_operand_as_##slake_lower_type(cur_ins.operands[1]);               \
 		}                                                                               \
                                                                                         \
-		_check_reg_type(cur_ins.reg_out_type, slake_type);                              \
 		_check_reg_index(cur_ins.reg_out, slake_type);                                  \
                                                                                         \
 		*_access_typed_reg(cur_ins.reg_out, data_type, slake_type) = op0 op_token op1;  \
@@ -798,7 +780,6 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			float op0, op1;
 
 			if (cur_ins.flags & INS_OP0_REG) {
-				_check_reg_type(cur_ins.reg0_type, F32);
 				_check_reg_index(cur_ins.reg0, F32);
 
 				op0 = *_access_typed_reg(cur_ins.reg0, float, F32);
@@ -807,7 +788,6 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			}
 
 			if (cur_ins.flags & INS_OP1_REG) {
-				_check_reg_type(cur_ins.reg1_type, F32);
 				_check_reg_index(cur_ins.reg1, F32);
 
 				op1 = *_access_typed_reg(cur_ins.reg1, float, F32);
@@ -815,7 +795,6 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 				op1 = ins_operand_as_f32(cur_ins.operands[1]);
 			}
 
-			_check_reg_type(cur_ins.reg_out_type, F32);
 			_check_reg_index(cur_ins.reg_out, F32);
 
 			float *output = _access_typed_reg(cur_ins.reg_out, float, F32);
@@ -827,7 +806,6 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			double op0, op1;
 
 			if (cur_ins.flags & INS_OP0_REG) {
-				_check_reg_type(cur_ins.reg0_type, F64);
 				_check_reg_index(cur_ins.reg0, F64);
 
 				op0 = *_access_typed_reg(cur_ins.reg0, double, F64);
@@ -836,7 +814,6 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			}
 
 			if (cur_ins.flags & INS_OP1_REG) {
-				_check_reg_type(cur_ins.reg1_type, F64);
 				_check_reg_index(cur_ins.reg1, F64);
 
 				op1 = *_access_typed_reg(cur_ins.reg1, double, F64);
@@ -844,7 +821,6 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 				op1 = ins_operand_as_f64(cur_ins.operands[1]);
 			}
 
-			_check_reg_type(cur_ins.reg_out_type, F64);
 			_check_reg_index(cur_ins.reg_out, F64);
 
 			double *output = _access_typed_reg(cur_ins.reg_out, double, F64);
@@ -891,11 +867,9 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 	case Opcode::opcode: {                                                                  \
 		data_type op0, op1;                                                                 \
                                                                                             \
-		_check_reg_type(cur_ins.reg_out_type, Bool);                                        \
 		_check_reg_index(cur_ins.reg_out, Bool);                                            \
                                                                                             \
 		if (cur_ins.flags & INS_OP0_REG) {                                                  \
-			_check_reg_type(cur_ins.reg0_type, slake_type);                                 \
 			_check_reg_index(cur_ins.reg0, slake_type);                                     \
                                                                                             \
 			op0 = *_access_typed_reg(cur_ins.reg0, data_type, slake_type);                  \
@@ -904,7 +878,6 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 		}                                                                                   \
                                                                                             \
 		if (cur_ins.flags & INS_OP1_REG) {                                                  \
-			_check_reg_type(cur_ins.reg1_type, slake_type);                                 \
 			_check_reg_index(cur_ins.reg1, slake_type);                                     \
                                                                                             \
 			op1 = *_access_typed_reg(cur_ins.reg1, data_type, slake_type);                  \
@@ -931,17 +904,14 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 		case Opcode::EQOBJ: {
 			Object *op0, *op1;
 
-			_check_reg_type(cur_ins.reg0_type, Object);
 			_check_reg_index(cur_ins.reg0, Object);
 
 			op0 = *_access_typed_reg(cur_ins.reg0, Object *, Object);
 
-			_check_reg_type(cur_ins.reg1_type, Object);
 			_check_reg_index(cur_ins.reg1, Object);
 
 			op1 = *_access_typed_reg(cur_ins.reg1, Object *, Object);
 
-			_check_reg_type(cur_ins.reg_out_type, Bool);
 			_check_reg_index(cur_ins.reg_out, Bool);
 
 			bool *output = _access_typed_reg(cur_ins.reg_out, bool, Bool);
@@ -952,12 +922,10 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 		case Opcode::EQTYPE: {
 			Value *op0, *op1;
 
-			_check_reg_type(cur_ins.reg0_type, Any);
 			_check_reg_index(cur_ins.reg0, Any);
 
 			op0 = _access_typed_reg(cur_ins.reg0, Value, Any);
 
-			_check_reg_type(cur_ins.reg1_type, Object);
 			_check_reg_index(cur_ins.reg1, Object);
 
 			if (!op0->is_type_name())
@@ -968,7 +936,6 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			if (!op1->is_type_name())
 				goto throw_invalid_operands_error;
 
-			_check_reg_type(cur_ins.reg_out_type, Bool);
 			_check_reg_index(cur_ins.reg_out, Bool);
 
 			bool *output = _access_typed_reg(cur_ins.reg_out, bool, Bool);
@@ -991,17 +958,14 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 		case Opcode::NEQOBJ: {
 			Object *op0, *op1;
 
-			_check_reg_type(cur_ins.reg0_type, Object);
 			_check_reg_index(cur_ins.reg0, Object);
 
 			op0 = *_access_typed_reg(cur_ins.reg0, Object *, Object);
 
-			_check_reg_type(cur_ins.reg1_type, Object);
 			_check_reg_index(cur_ins.reg1, Object);
 
 			op1 = *_access_typed_reg(cur_ins.reg1, Object *, Object);
 
-			_check_reg_type(cur_ins.reg_out_type, Bool);
 			_check_reg_index(cur_ins.reg_out, Bool);
 
 			bool *output = _access_typed_reg(cur_ins.reg_out, bool, Bool);
@@ -1012,12 +976,10 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 		case Opcode::NEQTYPE: {
 			Value *op0, *op1;
 
-			_check_reg_type(cur_ins.reg0_type, Any);
 			_check_reg_index(cur_ins.reg0, Any);
 
 			op0 = _access_typed_reg(cur_ins.reg0, Value, Any);
 
-			_check_reg_type(cur_ins.reg1_type, Object);
 			_check_reg_index(cur_ins.reg1, Object);
 
 			if (!op0->is_type_name())
@@ -1028,7 +990,6 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			if (!op1->is_type_name())
 				goto throw_invalid_operands_error;
 
-			_check_reg_type(cur_ins.reg_out_type, Bool);
 			_check_reg_index(cur_ins.reg_out, Bool);
 
 			bool *output = _access_typed_reg(cur_ins.reg_out, bool, Bool);
@@ -1096,14 +1057,12 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			// TODO: Implement the unary operations.
 
 		case Opcode::LOAD: {
-			_check_reg_type(cur_ins.reg_out_type, Any);
 			_check_reg_index(cur_ins.reg_out, Any);
 
 			RegIndex dest_reg = cur_ins.reg_out;
 
 			Value *dest = _access_typed_reg(dest_reg, Value, Any);
 
-			_check_reg_type(cur_ins.reg0, Any);
 			_check_reg_index(cur_ins.reg0, Any);
 
 			Value *ref_obj = _access_typed_reg(cur_ins.reg0, Value, Any);
@@ -1127,14 +1086,12 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			break;
 		}
 		case Opcode::RLOAD: {
-			_check_reg_type(cur_ins.reg_out_type, Any);
 			_check_reg_index(cur_ins.reg_out, Any);
 
 			RegIndex dest_reg = cur_ins.reg_out;
 
 			Value *dest = _access_typed_reg(dest_reg, Value, Any);
 
-			_check_reg_type(cur_ins.reg0, Any);
 			_check_reg_index(cur_ins.reg0, Any);
 
 			Value *base_obj = _access_typed_reg(cur_ins.reg0, Value, Any);
@@ -1142,7 +1099,6 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			if ((!base_obj->is_object()) || base_obj->is_null())
 				goto throw_invalid_operands_error;
 
-			_check_reg_type(cur_ins.reg1, Any);
 			_check_reg_index(cur_ins.reg1, Any);
 
 			Value *ref_obj = _access_typed_reg(cur_ins.reg1, Value, Any);
@@ -1167,7 +1123,6 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			break;
 		}
 		case Opcode::LCURFN: {
-			_check_reg_type(cur_ins.reg_out_type, Any);
 			_check_reg_index(cur_ins.reg_out, Any);
 
 			RegIndex dest_reg = cur_ins.reg_out;
@@ -1177,7 +1132,6 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 		}
 
 		case Opcode::LARG: {
-			_check_reg_type(cur_ins.reg_out_type, Any);
 			_check_reg_index(cur_ins.reg_out, Any);
 
 			RegIndex dest_reg = cur_ins.reg_out;
@@ -1195,14 +1149,12 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			// TODO: Implement LAPARG.
 
 		case Opcode::LVAR: {
-			_check_reg_type(cur_ins.reg_out_type, Any);
 			_check_reg_index(cur_ins.reg_out, Any);
 
 			RegIndex dest_reg = cur_ins.reg_out;
 
 			Value *dest = _access_typed_reg(dest_reg, Value, Any);
 
-			_check_reg_type(cur_ins.reg0_type, Any);
 			_check_reg_index(cur_ins.reg0, Any);
 
 			Value *var_type = _access_typed_reg(cur_ins.reg0, Value, Any);
@@ -1270,7 +1222,6 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 		case Opcode::PUSHARG: {
 			Value *arg;
 
-			_check_reg_type(cur_ins.reg0_type, Any);
 			_check_reg_index(cur_ins.reg0, Any);
 
 			arg = _access_typed_reg(cur_ins.reg0, Value, Any);
@@ -1303,7 +1254,6 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			{
 				Value *arg;
 
-				_check_reg_type(cur_ins.reg0_type, Any);
 				_check_reg_index(cur_ins.reg0, Any);
 
 				arg = _access_typed_reg(cur_ins.reg0, Value, Any);
@@ -1323,7 +1273,6 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			RegIndex output = INVALID_REG;
 
 			if (cur_ins.reg_out != INVALID_REG) {
-				_check_reg_type(cur_ins.reg_out_type, Any);
 				_check_reg_index(cur_ins.reg_out, Any);
 				output = cur_ins.reg_out;
 			}
@@ -1395,7 +1344,6 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			{
 				Value *arg;
 
-				_check_reg_type(cur_ins.reg0_type, Any);
 				_check_reg_index(cur_ins.reg0, Any);
 
 				arg = _access_typed_reg(cur_ins.reg0, Value, Any);
@@ -1412,7 +1360,6 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			{
 				Value *arg;
 
-				_check_reg_type(cur_ins.reg1_type, Any);
 				_check_reg_index(cur_ins.reg1, Any);
 
 				arg = _access_typed_reg(cur_ins.reg1, Value, Any);
@@ -1429,7 +1376,6 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			RegIndex output = INVALID_REG;
 
 			if (cur_ins.reg_out != INVALID_REG) {
-				_check_reg_type(cur_ins.reg_out_type, Any);
 				_check_reg_index(cur_ins.reg_out, Any);
 				output = cur_ins.reg_out;
 			}
@@ -1501,7 +1447,6 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			{
 				Value *arg;
 
-				_check_reg_type(cur_ins.reg0_type, Any);
 				_check_reg_index(cur_ins.reg0, Any);
 
 				arg = _access_typed_reg(cur_ins.reg0, Value, Any);
@@ -1518,7 +1463,6 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			{
 				Value *arg;
 
-				_check_reg_type(cur_ins.reg1_type, Any);
 				_check_reg_index(cur_ins.reg1, Any);
 
 				arg = _access_typed_reg(cur_ins.reg1, Value, Any);
@@ -1575,7 +1519,6 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			if (return_value_out_reg != INVALID_REG) {
 				TypeRef return_type = cur_major_frame->cur_fn->return_type;
 
-				_check_reg_type(cur_ins.reg0_type, Any);
 				_check_reg_index(cur_ins.reg0, Any);
 				const Value *return_value = _access_typed_reg(cur_ins.reg0, Value, Any);
 
@@ -1602,14 +1545,12 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 		}
 
 		case Opcode::LTHIS: {
-			_check_reg_type(cur_ins.reg_out_type, Any);
 			_check_reg_index(cur_ins.reg_out, Any);
 			*_access_typed_reg(cur_ins.reg_out, Value, Any) = cur_major_frame->resumable_context_data.this_object;
 			break;
 		}
 
 		case Opcode::NEW: {
-			_check_reg_type(cur_ins.reg0_type, Any);
 			_check_reg_index(cur_ins.reg0, Any);
 			const Value *new_type = _access_typed_reg(cur_ins.reg0, Value, Any);
 
@@ -1618,7 +1559,6 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 
 			TypeRef type = new_type->get_type_name();
 
-			_check_reg_type(cur_ins.reg_out_type, Any);
 			_check_reg_index(cur_ins.reg_out, Any);
 			Value *output = _access_typed_reg(cur_ins.reg0, Value, Any);
 
@@ -1643,103 +1583,88 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 
 #define _arithm_cast_opcode(opcode, data_type, slake_type, slake_lower_type)                              \
 	case Opcode::opcode: {                                                                                \
-		_check_reg_type(cur_ins.reg_out_type, slake_type);                                                \
 		_check_reg_index(cur_ins.reg_out, slake_type);                                                    \
                                                                                                           \
-		switch (static_cast<InsRegType>(cur_ins.reg0_type)) {                                             \
+		switch (static_cast<InsRegType>(cur_ins.reg0_type_hint)) {                                        \
 			case InsRegType::I8:                                                                          \
-				_check_reg_type(cur_ins.reg0_type, I8);                                                   \
 				_check_reg_index(cur_ins.reg0, I8);                                                       \
                                                                                                           \
 				*_access_typed_reg(cur_ins.reg_out, data_type, slake_type) =                              \
 					static_cast<data_type>(*_access_typed_reg(cur_ins.reg0, int8_t, I8));                 \
 				break;                                                                                    \
 			case InsRegType::I16:                                                                         \
-				_check_reg_type(cur_ins.reg0_type, I16);                                                  \
 				_check_reg_index(cur_ins.reg0, I16);                                                      \
                                                                                                           \
 				*_access_typed_reg(cur_ins.reg_out, data_type, slake_type) =                              \
 					static_cast<data_type>(*_access_typed_reg(cur_ins.reg0, int16_t, I16));               \
 				break;                                                                                    \
 			case InsRegType::I32:                                                                         \
-				_check_reg_type(cur_ins.reg0_type, I32);                                                  \
 				_check_reg_index(cur_ins.reg0, I32);                                                      \
                                                                                                           \
 				*_access_typed_reg(cur_ins.reg_out, data_type, slake_type) =                              \
 					static_cast<data_type>(*_access_typed_reg(cur_ins.reg0, int32_t, I32));               \
 				break;                                                                                    \
 			case InsRegType::I64:                                                                         \
-				_check_reg_type(cur_ins.reg0_type, I64);                                                  \
 				_check_reg_index(cur_ins.reg0, I64);                                                      \
                                                                                                           \
 				*_access_typed_reg(cur_ins.reg_out, data_type, slake_type) =                              \
 					static_cast<data_type>(*_access_typed_reg(cur_ins.reg0, int64_t, I64));               \
 				break;                                                                                    \
 			case InsRegType::ISize:                                                                       \
-				_check_reg_type(cur_ins.reg0_type, ISize);                                                \
 				_check_reg_index(cur_ins.reg0, ISize);                                                    \
                                                                                                           \
 				*_access_typed_reg(cur_ins.reg_out, data_type, slake_type) =                              \
 					static_cast<data_type>(*_access_typed_reg(cur_ins.reg0, ptrdiff_t, ISize));           \
 				break;                                                                                    \
 			case InsRegType::U8:                                                                          \
-				_check_reg_type(cur_ins.reg0_type, U8);                                                   \
 				_check_reg_index(cur_ins.reg0, U8);                                                       \
                                                                                                           \
 				*_access_typed_reg(cur_ins.reg_out, data_type, slake_type) =                              \
 					static_cast<data_type>(*_access_typed_reg(cur_ins.reg0, uint8_t, U8));                \
 				break;                                                                                    \
 			case InsRegType::U16:                                                                         \
-				_check_reg_type(cur_ins.reg0_type, U16);                                                  \
 				_check_reg_index(cur_ins.reg0, U16);                                                      \
                                                                                                           \
 				*_access_typed_reg(cur_ins.reg_out, data_type, slake_type) =                              \
 					static_cast<data_type>(*_access_typed_reg(cur_ins.reg0, uint16_t, U16));              \
 				break;                                                                                    \
 			case InsRegType::U32:                                                                         \
-				_check_reg_type(cur_ins.reg0_type, U32);                                                  \
 				_check_reg_index(cur_ins.reg0, U32);                                                      \
                                                                                                           \
 				*_access_typed_reg(cur_ins.reg_out, data_type, slake_type) =                              \
 					static_cast<data_type>(*_access_typed_reg(cur_ins.reg0, uint32_t, U32));              \
 				break;                                                                                    \
 			case InsRegType::U64:                                                                         \
-				_check_reg_type(cur_ins.reg0_type, U64);                                                  \
 				_check_reg_index(cur_ins.reg0, U64);                                                      \
                                                                                                           \
 				*_access_typed_reg(cur_ins.reg_out, data_type, slake_type) =                              \
 					static_cast<data_type>(*_access_typed_reg(cur_ins.reg0, uint64_t, U64));              \
 				break;                                                                                    \
 			case InsRegType::USize:                                                                       \
-				_check_reg_type(cur_ins.reg0_type, USize);                                                \
 				_check_reg_index(cur_ins.reg0, USize);                                                    \
                                                                                                           \
 				*_access_typed_reg(cur_ins.reg_out, data_type, slake_type) =                              \
 					static_cast<data_type>(*_access_typed_reg(cur_ins.reg0, size_t, USize));              \
 				break;                                                                                    \
 			case InsRegType::F32:                                                                         \
-				_check_reg_type(cur_ins.reg0_type, F32);                                                  \
 				_check_reg_index(cur_ins.reg0, F32);                                                      \
                                                                                                           \
 				*_access_typed_reg(cur_ins.reg_out, data_type, slake_type) =                              \
 					static_cast<data_type>(*_access_typed_reg(cur_ins.reg0, float, F32));                 \
 				break;                                                                                    \
 			case InsRegType::F64:                                                                         \
-				_check_reg_type(cur_ins.reg0_type, F64);                                                  \
 				_check_reg_index(cur_ins.reg0, F64);                                                      \
                                                                                                           \
 				*_access_typed_reg(cur_ins.reg_out, data_type, slake_type) =                              \
 					static_cast<data_type>(*_access_typed_reg(cur_ins.reg0, double, F64));                \
 				break;                                                                                    \
 			case InsRegType::Bool:                                                                        \
-				_check_reg_type(cur_ins.reg0_type, Bool);                                                 \
 				_check_reg_index(cur_ins.reg0, Bool);                                                     \
                                                                                                           \
 				*_access_typed_reg(cur_ins.reg_out, data_type, slake_type) =                              \
 					static_cast<data_type>(*_access_typed_reg(cur_ins.reg0, bool, Bool));                 \
 				break;                                                                                    \
 			case InsRegType::Any: {                                                                       \
-				_check_reg_type(cur_ins.reg0_type, Any);                                                  \
 				_check_reg_index(cur_ins.reg0, Any);                                                      \
                                                                                                           \
 				const Value *v = _access_typed_reg(cur_ins.reg0, Value, Any);                             \
@@ -1767,19 +1692,16 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			_arithm_cast_opcode(CASTF64, double, F64, f64);
 			_arithm_cast_opcode(CASTBOOL, bool, Bool, bool);
 		case Opcode::CASTOBJ: {
-			_check_reg_type(cur_ins.reg_out_type, Any);
 			_check_reg_index(cur_ins.reg_out, Any);
 
-			switch (static_cast<InsRegType>(cur_ins.reg0_type)) {
+			switch (static_cast<InsRegType>(cur_ins.reg0_type_hint)) {
 				case InsRegType::Object: {
-					_check_reg_type(cur_ins.reg0_type, Any);
 					_check_reg_index(cur_ins.reg0, Any);
 
 					*_access_typed_reg(cur_ins.reg_out, Value, Any) = *_access_typed_reg(cur_ins.reg0, Object *, Object);
 					break;
 				}
 				case InsRegType::Any: {
-					_check_reg_type(cur_ins.reg0_type, Any);
 					_check_reg_index(cur_ins.reg0, Any);
 
 					const Value *v = _access_typed_reg(cur_ins.reg0, Value, Any);
@@ -1794,110 +1716,94 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			break;
 		}
 		case Opcode::CASTANY: {
-			_check_reg_type(cur_ins.reg_out_type, Any);
 			_check_reg_index(cur_ins.reg_out, Any);
 
-			switch (static_cast<InsRegType>(cur_ins.reg0_type)) {
+			switch (static_cast<InsRegType>(cur_ins.reg0_type_hint)) {
 				case InsRegType::I8:
-					_check_reg_type(cur_ins.reg0_type, I8);
 					_check_reg_index(cur_ins.reg0, I8);
 
 					*_access_typed_reg(cur_ins.reg_out, Value, Any) =
 						*_access_typed_reg(cur_ins.reg0, int8_t, I8);
 					break;
 				case InsRegType::I16:
-					_check_reg_type(cur_ins.reg0_type, I16);
 					_check_reg_index(cur_ins.reg0, I16);
 
 					*_access_typed_reg(cur_ins.reg_out, Value, Any) =
 						(*_access_typed_reg(cur_ins.reg0, int16_t, I16));
 					break;
 				case InsRegType::I32:
-					_check_reg_type(cur_ins.reg0_type, I32);
 					_check_reg_index(cur_ins.reg0, I32);
 
 					*_access_typed_reg(cur_ins.reg_out, Value, Any) =
 						(*_access_typed_reg(cur_ins.reg0, int32_t, I32));
 					break;
 				case InsRegType::I64:
-					_check_reg_type(cur_ins.reg0_type, I64);
 					_check_reg_index(cur_ins.reg0, I64);
 
 					*_access_typed_reg(cur_ins.reg_out, Value, Any) =
 						(*_access_typed_reg(cur_ins.reg0, int64_t, I64));
 					break;
 				case InsRegType::ISize:
-					_check_reg_type(cur_ins.reg0_type, ISize);
 					_check_reg_index(cur_ins.reg0, ISize);
 
 					*_access_typed_reg(cur_ins.reg_out, Value, Any) =
 						ExplicitISize{ *_access_typed_reg(cur_ins.reg0, ptrdiff_t, ISize) };
 					break;
 				case InsRegType::U8:
-					_check_reg_type(cur_ins.reg0_type, U8);
 					_check_reg_index(cur_ins.reg0, U8);
 
 					*_access_typed_reg(cur_ins.reg_out, Value, Any) =
 						(*_access_typed_reg(cur_ins.reg0, uint8_t, U8));
 					break;
 				case InsRegType::U16:
-					_check_reg_type(cur_ins.reg0_type, U16);
 					_check_reg_index(cur_ins.reg0, U16);
 
 					*_access_typed_reg(cur_ins.reg_out, Value, Any) =
 						(*_access_typed_reg(cur_ins.reg0, uint16_t, U16));
 					break;
 				case InsRegType::U32:
-					_check_reg_type(cur_ins.reg0_type, U32);
 					_check_reg_index(cur_ins.reg0, U32);
 
 					*_access_typed_reg(cur_ins.reg_out, Value, Any) =
 						(*_access_typed_reg(cur_ins.reg0, uint32_t, U32));
 					break;
 				case InsRegType::U64:
-					_check_reg_type(cur_ins.reg0_type, U64);
 					_check_reg_index(cur_ins.reg0, U64);
 
 					*_access_typed_reg(cur_ins.reg_out, Value, Any) =
 						(*_access_typed_reg(cur_ins.reg0, uint64_t, U64));
 					break;
 				case InsRegType::USize:
-					_check_reg_type(cur_ins.reg0_type, USize);
 					_check_reg_index(cur_ins.reg0, USize);
 
 					*_access_typed_reg(cur_ins.reg_out, Value, Any) =
 						ExplicitUSize{ (*_access_typed_reg(cur_ins.reg0, size_t, USize)) };
 					break;
 				case InsRegType::F32:
-					_check_reg_type(cur_ins.reg0_type, F32);
 					_check_reg_index(cur_ins.reg0, F32);
 
 					*_access_typed_reg(cur_ins.reg_out, Value, Any) =
 						(*_access_typed_reg(cur_ins.reg0, float, F32));
 					break;
 				case InsRegType::F64:
-					_check_reg_type(cur_ins.reg0_type, F64);
 					_check_reg_index(cur_ins.reg0, F64);
 
 					*_access_typed_reg(cur_ins.reg_out, Value, Any) =
 						(*_access_typed_reg(cur_ins.reg0, double, F64));
 					break;
 				case InsRegType::Bool:
-					_check_reg_type(cur_ins.reg0_type, Bool);
 					_check_reg_index(cur_ins.reg0, Bool);
 
 					*_access_typed_reg(cur_ins.reg_out, Value, Any) =
 						(*_access_typed_reg(cur_ins.reg0, bool, Bool));
 					break;
 				case InsRegType::Object: {
-					_check_reg_type(cur_ins.reg0_type, Any);
 					_check_reg_index(cur_ins.reg0, Any);
 
 					*_access_typed_reg(cur_ins.reg_out, Value, Any) = *_access_typed_reg(cur_ins.reg0, Object *, Object);
 					break;
 				}
 				case InsRegType::Any: {
-					_check_reg_type(cur_ins.reg0_type, Any);
 					_check_reg_index(cur_ins.reg0, Any);
 
 					const Value *v = _access_typed_reg(cur_ins.reg0, Value, Any);
@@ -1945,19 +1851,19 @@ SLAKE_API InternalExceptionPointer Runtime::exec_context(ContextObject *context)
 				do {
 					const RegularFnOverloadingObject *const ol = static_cast<const RegularFnOverloadingObject *>(cur_major_frame->cur_fn);
 					const size_t num_ins = ol->instructions.size();
+					const auto *instructions = ol->instructions.data();
 					do {
 						cur_major_frame = _fetch_major_frame(&context->get_context(), context->get_context().off_cur_major_frame);
 						context_change = ContextChangeType::NoChange;
-						auto &instructions = ol->instructions;
 						do {
 							// Interrupt execution if the thread is explicitly specified to be killed.
 							if SLAKE_UNLIKELY (managed_thread->status == ThreadStatus::Dead) {
 								return {};
 							}
 
-							/*if ((fixed_alloc.sz_allocated > _sz_computed_gc_limit)) {
+							if ((fixed_alloc.sz_allocated > _sz_computed_gc_limit)) {
 								gc();
-							}*/
+							}
 
 							if SLAKE_UNLIKELY (cur_major_frame->resumable_context_data.cur_ins >= num_ins)
 								std::terminate();
@@ -1967,7 +1873,7 @@ SLAKE_API InternalExceptionPointer Runtime::exec_context(ContextObject *context)
 								cur_major_frame,
 								data_stack, data_stack_size,
 								num_ins,
-								instructions.at(cur_major_frame->resumable_context_data.cur_ins),
+								instructions[cur_major_frame->resumable_context_data.cur_ins],
 								ol,
 								context_change));
 						} while (context_change == ContextChangeType::NoChange);

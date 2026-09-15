@@ -35,9 +35,9 @@ SLAKE_API void *Runtime::locate_value_base_ptr(const Reference &entity_ref) noex
 			return entity_ref.as_static_field.module_object->local_field_storage.data() + field_record.offset;
 		}
 		case ReferenceKind::LocalVarRef: {
-			char *raw_data_ptr = static_cast<char *>(calc_local_var_ref_stack_raw_data_ptr(calc_local_var_ref_stack_base_ptr(entity_ref.as_local_var)));
+			char *raw_data_ptr = static_cast<char *>(calc_local_var_ref_stack_base_ptr(entity_ref.as_local_var));
 
-			switch (*static_cast<const TypeId *>(static_cast<const void *>(raw_data_ptr - (sizeof(TypeModifier) + sizeof(TypeId))))) {
+			switch (*reinterpret_cast<const TypeId *>(raw_data_ptr)) {
 				case TypeId::Instance:
 				case TypeId::Array:
 				case TypeId::Fn:
@@ -54,7 +54,8 @@ SLAKE_API void *Runtime::locate_value_base_ptr(const Reference &entity_ref) noex
 					break;
 			}
 
-			return static_cast<void *>(raw_data_ptr);
+			// We have to add size of the type modifier and type ID back, size of other extra information is already added.
+			return static_cast<void *>(raw_data_ptr + (sizeof(TypeModifier) + sizeof(TypeId)));
 		}
 		case ReferenceKind::CoroutineLocalVarRef: {
 			char *raw_data_ptr = static_cast<char *>(calc_local_var_ref_stack_raw_data_ptr(calc_coroutine_local_var_ref_stack_base_ptr(entity_ref.as_coroutine_local_var)));
@@ -126,10 +127,8 @@ SLAKE_API void *Runtime::locate_value_base_ptr(const Reference &entity_ref) noex
 			return init_data;
 		}
 		default:
-			break;
+			std::terminate();
 	}
-
-	std::terminate();
 }
 
 SLAKE_API TypeRef Runtime::typeof_var(const Reference &entity_ref) noexcept {
@@ -143,11 +142,11 @@ SLAKE_API TypeRef Runtime::typeof_var(const Reference &entity_ref) noexcept {
 		}
 		case ReferenceKind::LocalVarRef: {
 			const char *const raw_data_ptr = static_cast<const char *>(
-				calc_local_var_ref_stack_raw_data_ptr(calc_local_var_ref_stack_base_ptr(entity_ref.as_local_var)));
+				calc_local_var_ref_stack_base_ptr(entity_ref.as_local_var));
 
 			TypeRef t = TypeRef(
-				*static_cast<const TypeId *>(static_cast<const void *>(raw_data_ptr - (sizeof(TypeModifier) + sizeof(TypeId)))),
-				*static_cast<const TypeModifier *>(static_cast<const void *>(raw_data_ptr - sizeof(TypeModifier))));
+				*static_cast<const TypeId *>(static_cast<const void *>(raw_data_ptr)),
+				*static_cast<const TypeModifier *>(static_cast<const void *>(raw_data_ptr + sizeof(TypeId))));
 
 			switch (t.type_id) {
 				case TypeId::Instance:
@@ -298,7 +297,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 						*static_cast<Value *>(data_out) = *(reinterpret_cast<const int8_t *>(raw_data_ptr));
 						break;
 					}
-					*static_cast<int8_t*>(data_out) = *(reinterpret_cast<const int8_t *>(raw_data_ptr));
+					*static_cast<int8_t *>(data_out) = *(reinterpret_cast<const int8_t *>(raw_data_ptr));
 					break;
 				case TypeId::I16:
 					if (t.is_nullable()) {
@@ -343,7 +342,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 							break;
 						}
 						raw_data_ptr += sizeof(bool);
-						*static_cast<Value *>(data_out) = ExplicitISize{ *(reinterpret_cast<const intptr_t *>(raw_data_ptr)) } ;
+						*static_cast<Value *>(data_out) = ExplicitISize{ *(reinterpret_cast<const intptr_t *>(raw_data_ptr)) };
 						break;
 					}
 					*static_cast<intptr_t *>(data_out) = *(reinterpret_cast<const intptr_t *>(raw_data_ptr));
@@ -657,7 +656,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 						*static_cast<Value *>(data_out) = ExplicitISize{ *(reinterpret_cast<const intptr_t *>(raw_data_ptr)) };
 						break;
 					}
-					*static_cast<intptr_t*>(data_out) = *(reinterpret_cast<const intptr_t*>(raw_data_ptr));
+					*static_cast<intptr_t *>(data_out) = *(reinterpret_cast<const intptr_t *>(raw_data_ptr));
 					break;
 				case TypeId::U8:
 					if (t.is_nullable()) {
@@ -723,7 +722,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 						*static_cast<Value *>(data_out) = *(reinterpret_cast<const float *>(raw_data_ptr));
 						break;
 					}
-					*static_cast<float*>(data_out) = *(reinterpret_cast<const float*>(raw_data_ptr));
+					*static_cast<float *>(data_out) = *(reinterpret_cast<const float *>(raw_data_ptr));
 					break;
 				case TypeId::F64:
 					if (t.is_nullable()) {
@@ -731,7 +730,7 @@ SLAKE_API void Runtime::read_var_with_type(const Reference &entity_ref, const Ty
 							*static_cast<Value *>(data_out) = nullptr;
 							break;
 						}
-						*static_cast<Value *>(data_out) = *(reinterpret_cast<const double*>(raw_data_ptr));
+						*static_cast<Value *>(data_out) = *(reinterpret_cast<const double *>(raw_data_ptr));
 						break;
 					}
 					*static_cast<double *>(data_out) = *(reinterpret_cast<const double *>(raw_data_ptr));
@@ -1073,7 +1072,6 @@ SLAKE_API void Runtime::read_var_with_type_and_value(const Reference &entity_ref
 }
 
 SLAKE_API void Runtime::write_var_with_type(const Reference &entity_ref, const TypeRef &t, const void *data) noexcept {
-	// TODO: Move the nullity flag to the back of the data storage.
 	switch (entity_ref.kind) {
 		case ReferenceKind::LocalVarRef:
 		case ReferenceKind::CoroutineLocalVarRef: {

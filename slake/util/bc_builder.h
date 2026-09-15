@@ -84,9 +84,9 @@ namespace slake {
 			ins.flags = flags;
 			ins.reg_out_type = static_cast<uint8_t>(reg_out.reg_type);
 			ins.reg_out = reg_out.index;
-			ins.reg0_type = static_cast<uint8_t>(reg1.reg_type);
+			ins.reg0_type_hint = static_cast<uint8_t>(reg1.reg_type);
 			ins.reg0 = reg1.index;
-			ins.reg1_type = static_cast<uint8_t>(reg2.reg_type);
+			ins.reg1_type_hint = static_cast<uint8_t>(reg2.reg_type);
 			ins.reg1 = reg2.index;
 
 			switch (operand0.operand_class) {

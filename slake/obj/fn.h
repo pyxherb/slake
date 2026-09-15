@@ -44,8 +44,8 @@ namespace slake {
 		Opcode opcode;
 		uint8_t flags : 4;
 		uint8_t reg_out_type : 4;
-		uint8_t reg0_type : 4;
-		uint8_t reg1_type : 4;
+		uint8_t reg0_type_hint : 4;
+		uint8_t reg1_type_hint : 4;
 		uint32_t reg_out;
 		uint32_t reg0;
 		uint32_t reg1;

@@ -40,7 +40,7 @@ namespace slake {
 	constexpr uint8_t INS_OP0_REG = 0x01,
 					  INS_OP1_REG = 0x02;
 
-	struct Instruction final {
+	struct alignas(32) Instruction final {
 		Opcode opcode;
 		uint8_t flags : 4;
 		uint8_t reg_out_type : 4;
@@ -68,8 +68,8 @@ namespace slake {
 		return static_cast<int64_t>(peff::bit_cast<int64_t>(operand));
 	}
 
-	SLAKE_FORCEINLINE ptrdiff_t ins_operand_as_isize(uint64_t operand) noexcept {
-		return static_cast<ptrdiff_t>(peff::bit_cast<int64_t>(operand));
+	SLAKE_FORCEINLINE intptr_t ins_operand_as_isize(uint64_t operand) noexcept {
+		return static_cast<ptrdiff_t>(peff::bit_cast<intptr_t>(operand));
 	}
 
 	SLAKE_FORCEINLINE uint8_t ins_operand_as_u8(uint64_t operand) noexcept {

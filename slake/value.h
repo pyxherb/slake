@@ -407,7 +407,7 @@ namespace slake {
 
 	using ValueFlags = uint8_t;
 	constexpr ValueFlags VALUE_LOCAL = 0x01;
-	struct Value {
+	struct alignas(16) Value {
 		union {
 			int8_t as_i8;
 			int16_t as_i16;

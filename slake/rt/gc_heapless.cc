@@ -64,14 +64,14 @@ SLAKE_API void Runtime::_gc_walk(GCWalkContext *context, const Value &i) {
 				case ReferenceKind::LocalVarRef: {
 					Value data;
 					_gc_walk(context, *entity_ref.as_local_var.context);
-					read_var_with_value(entity_ref, data);
+					read_var(entity_ref, data);
 					_gc_walk(context, data);
 					break;
 				}
 				case ReferenceKind::CoroutineLocalVarRef: {
 					Value data;
 					context->push_object(entity_ref.as_coroutine_local_var.coroutine);
-					read_var_with_value(entity_ref, data);
+					read_var(entity_ref, data);
 					_gc_walk(context, data);
 					break;
 				}
@@ -243,7 +243,7 @@ SLAKE_API void Runtime::_gc_walk(GCWalkContext *context, Object *v) {
 					}
 					Value data;
 					for (size_t i = 0; i < ((ModuleObject *)v)->field_records.size(); ++i) {
-						read_var_with_value(StaticFieldRef((ModuleObject *)v, i), data);
+						read_var(StaticFieldRef((ModuleObject *)v, i), data);
 						_gc_walk(context, data);
 					}
 
@@ -269,7 +269,7 @@ SLAKE_API void Runtime::_gc_walk(GCWalkContext *context, Object *v) {
 					Value data;
 					for (size_t i = 0; i < value->field_records.size(); ++i) {
 						_gc_walk(context, value->field_records.at(i).type);
-						read_var_with_value(StaticFieldRef(value, i), data);
+						read_var(StaticFieldRef(value, i), data);
 						_gc_walk(context, data);
 					}
 
@@ -308,7 +308,7 @@ SLAKE_API void Runtime::_gc_walk(GCWalkContext *context, Object *v) {
 					Value data;
 					for (size_t i = 0; i < value->field_records.size(); ++i) {
 						_gc_walk(context, value->field_records.at(i).type);
-						read_var_with_value(StaticFieldRef(value, i), data);
+						read_var(StaticFieldRef(value, i), data);
 						_gc_walk(context, data);
 					}
 
@@ -341,7 +341,7 @@ SLAKE_API void Runtime::_gc_walk(GCWalkContext *context, Object *v) {
 						Value data;
 						for (size_t i = 0; i < value->field_records.size(); ++i) {
 							_gc_walk(context, value->field_records.at(i).type);
-							read_var_with_value(StaticFieldRef(value, i), data);
+							read_var(StaticFieldRef(value, i), data);
 							_gc_walk(context, data);
 						}
 					}
@@ -381,7 +381,7 @@ SLAKE_API void Runtime::_gc_walk(GCWalkContext *context, Object *v) {
 					Value data;
 					for (size_t i = 0; i < value->field_records.size(); ++i) {
 						_gc_walk(context, value->field_records.at(i).type);
-						read_var_with_value(StaticFieldRef(value, i), data);
+						read_var(StaticFieldRef(value, i), data);
 						_gc_walk(context, data);
 					}
 					break;
@@ -397,7 +397,7 @@ SLAKE_API void Runtime::_gc_walk(GCWalkContext *context, Object *v) {
 
 					Value data;
 					for (size_t i = 0; i < value->field_records.size(); ++i) {
-						read_var_with_value(StaticFieldRef(value, i), data);
+						read_var(StaticFieldRef(value, i), data);
 						_gc_walk(context, data);
 					}
 

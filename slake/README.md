@@ -55,3 +55,9 @@ class Loop<T> {
     }
 }
 ```
+
+### Behavior of Three-way Comparison on Floating-point Types
+
+Floating-point types are incomparable to some values, we have to handle them carefully.
+
+However, this is still unresolved.

@@ -477,14 +477,7 @@ namespace slake {
 
 		SLAKE_API static void *locate_value_base_ptr(const Reference &entity_ref) noexcept;
 		SLAKE_API static TypeRef typeof_var(const Reference &entity_ref) noexcept;
-		SLAKE_API static void read_var_with_type(const Reference &entity_ref, const TypeRef &t, void *data_out) noexcept;
-		SLAKE_API static void read_var_with_type_and_value(const Reference &entity_ref, const TypeRef &t, Value &value_out) noexcept;
-		SLAKE_FORCEINLINE static void read_var(const Reference &entity_ref, void *data_out) noexcept {
-			read_var_with_type(entity_ref, typeof_var(entity_ref), data_out);
-		}
-		SLAKE_FORCEINLINE static void read_var_with_value(const Reference &entity_ref, Value &value_out) noexcept {
-			read_var_with_type_and_value(entity_ref, typeof_var(entity_ref), value_out);
-		}
+		SLAKE_API static void read_var(const Reference &entity_ref, Value &value_out) noexcept;
 		SLAKE_API static void write_var_with_type(const Reference &entity_ref, const TypeRef &t, const void *data) noexcept;
 		SLAKE_API static void write_var_with_type_and_value(const Reference &entity_ref, const TypeRef &t, const Value &data) noexcept;
 		SLAKE_FORCEINLINE static void write_var(const Reference &entity_ref, void *data) noexcept {

@@ -532,18 +532,22 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 	const RegularFnOverloadingObject *ol,
 	ContextChangeType &context_changes_out) noexcept {
 	switch (cur_ins.opcode) {
-#define _lvalue_opcode(opcode, data_type, slake_type, slake_lower_type)                                                             \
-	case Opcode::opcode: {                                                                                                          \
-		_check_reg_index(cur_ins.reg_out, slake_type);                                                                              \
-                                                                                                                                    \
-		_check_reg_index(cur_ins.reg0, Any);                                                                                        \
-                                                                                                                                    \
-		const Value *source = _access_typed_reg(cur_ins.reg0, Value, Any);                                                          \
-		if ((!source->is_reference()) | (typeof_var(source->get_reference()).type_id != TypeId::slake_type))                        \
-			goto throw_invalid_operands_error;                                                                                      \
-		read_var_with_type(source->get_reference(), TypeId::slake_type, _access_typed_reg(cur_ins.reg_out, data_type, slake_type)); \
-                                                                                                                                    \
-		break;                                                                                                                      \
+#define _lvalue_opcode(opcode, data_type, slake_type, slake_lower_type)                          \
+	case Opcode::opcode: {                                                                       \
+		_check_reg_index(cur_ins.reg_out, slake_type);                                           \
+                                                                                                 \
+		_check_reg_index(cur_ins.reg0, Any);                                                     \
+                                                                                                 \
+		const Value *source = _access_typed_reg(cur_ins.reg0, Value, Any);                       \
+		if (!source->is_reference())                                                             \
+			goto throw_invalid_operands_error;                                                   \
+		Value v;                                                                                 \
+		read_var(source->get_reference(), v);                                                    \
+		if (source->is_##slake_lower_type())                                                     \
+			goto throw_invalid_operands_error;                                                   \
+		*_access_typed_reg(cur_ins.reg_out, data_type, slake_type) = v.get_##slake_lower_type(); \
+                                                                                                 \
+		break;                                                                                   \
 	}
 		_lvalue_opcode(LVALUEI8, int8_t, I8, i8);
 		_lvalue_opcode(LVALUEI16, int16_t, I16, i16);
@@ -568,7 +572,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			if (!source->is_reference())
 				goto throw_invalid_operands_error;
 
-			read_var_with_value(source->get_reference(), *dest);
+			read_var(source->get_reference(), *dest);
 
 			break;
 		}
@@ -1050,12 +1054,278 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_exec_ins(
 			_basic_comparison_opcode(GTEQF32, float, F32, f32, >=);
 			_basic_comparison_opcode(GTEQF64, double, F64, f64, >=);
 
-			// TODO: Implement left-shift and right-shift.
+#define _basic_shl_signed_opcode(opcode, bit_size)                                                                  \
+	case Opcode::opcode: {                                                                                          \
+		int##bit_size##_t op0;                                                                                      \
+		uint32_t op1;                                                                                               \
+                                                                                                                    \
+		if (cur_ins.flags & INS_OP0_REG) {                                                                          \
+			_check_reg_index(cur_ins.reg0, I##bit_size);                                                            \
+                                                                                                                    \
+			op0 = *_access_typed_reg(cur_ins.reg0, int##bit_size##_t, I##bit_size);                                 \
+		} else {                                                                                                    \
+			op0 = ins_operand_as_i##bit_size(cur_ins.operands[0]);                                                  \
+		}                                                                                                           \
+                                                                                                                    \
+		if (cur_ins.flags & INS_OP1_REG) {                                                                          \
+			_check_reg_index(cur_ins.reg1, I##bit_size);                                                            \
+                                                                                                                    \
+			op1 = *_access_typed_reg(cur_ins.reg1, uint32_t, U32);                                                  \
+		} else {                                                                                                    \
+			op1 = ins_operand_as_u32(cur_ins.operands[1]);                                                          \
+		}                                                                                                           \
+                                                                                                                    \
+		_check_reg_index(cur_ins.reg_out, I##bit_size);                                                             \
+                                                                                                                    \
+		*_access_typed_reg(cur_ins.reg_out, int##bit_size##_t, I##bit_size) = flib::shl_signed##bit_size(op0, op1); \
+                                                                                                                    \
+		break;                                                                                                      \
+	}
+			_basic_shl_signed_opcode(SHLI8, 8);
+			_basic_shl_signed_opcode(SHLI16, 16);
+			_basic_shl_signed_opcode(SHLI32, 32);
+			_basic_shl_signed_opcode(SHLI64, 64);
+		case Opcode::SHLISIZE: {
+			intptr_t op0;
+			uint32_t op1;
 
-			// TODO: Implement the three-way comparison.
+			if (cur_ins.flags & INS_OP0_REG) {
+				_check_reg_index(cur_ins.reg0, ISize);
+
+				op0 = *_access_typed_reg(cur_ins.reg0, intptr_t, ISize);
+			} else {
+				op0 = ins_operand_as_isize(cur_ins.operands[0]);
+			}
+
+			if (cur_ins.flags & INS_OP1_REG) {
+				_check_reg_index(cur_ins.reg1, ISize);
+
+				op1 = *_access_typed_reg(cur_ins.reg1, uint32_t, U32);
+			} else {
+				op1 = ins_operand_as_u32(cur_ins.operands[1]);
+			}
+
+			_check_reg_index(cur_ins.reg_out, ISize);
+
+			*_access_typed_reg(cur_ins.reg_out, intptr_t, ISize) = flib::shl_signed(op0, op1);
+
+			break;
+		}
+#define _basic_shl_unsigned_opcode(opcode, bit_size)                                                                   \
+	case Opcode::opcode: {                                                                                             \
+		uint##bit_size##_t op0;                                                                                        \
+		uint32_t op1;                                                                                                  \
+                                                                                                                       \
+		if (cur_ins.flags & INS_OP0_REG) {                                                                             \
+			_check_reg_index(cur_ins.reg0, U##bit_size);                                                               \
+                                                                                                                       \
+			op0 = *_access_typed_reg(cur_ins.reg0, uint##bit_size##_t, U##bit_size);                                   \
+		} else {                                                                                                       \
+			op0 = ins_operand_as_i##bit_size(cur_ins.operands[0]);                                                     \
+		}                                                                                                              \
+                                                                                                                       \
+		if (cur_ins.flags & INS_OP1_REG) {                                                                             \
+			_check_reg_index(cur_ins.reg1, I##bit_size);                                                               \
+                                                                                                                       \
+			op1 = *_access_typed_reg(cur_ins.reg1, uint32_t, U32);                                                     \
+		} else {                                                                                                       \
+			op1 = ins_operand_as_u32(cur_ins.operands[1]);                                                             \
+		}                                                                                                              \
+                                                                                                                       \
+		_check_reg_index(cur_ins.reg_out, U##bit_size);                                                                \
+                                                                                                                       \
+		*_access_typed_reg(cur_ins.reg_out, uint##bit_size##_t, I##bit_size) = flib::shl_unsigned##bit_size(op0, op1); \
+                                                                                                                       \
+		break;                                                                                                         \
+	}
+			_basic_shl_unsigned_opcode(SHLU8, 8);
+			_basic_shl_unsigned_opcode(SHLU16, 16);
+			_basic_shl_unsigned_opcode(SHLU32, 32);
+			_basic_shl_unsigned_opcode(SHLU64, 64);
+		case Opcode::SHLUSIZE: {
+			size_t op0;
+			uint32_t op1;
+
+			if (cur_ins.flags & INS_OP0_REG) {
+				_check_reg_index(cur_ins.reg0, ISize);
+
+				op0 = *_access_typed_reg(cur_ins.reg0, size_t, ISize);
+			} else {
+				op0 = ins_operand_as_usize(cur_ins.operands[0]);
+			}
+
+			if (cur_ins.flags & INS_OP1_REG) {
+				_check_reg_index(cur_ins.reg1, ISize);
+
+				op1 = *_access_typed_reg(cur_ins.reg1, uint32_t, U32);
+			} else {
+				op1 = ins_operand_as_u32(cur_ins.operands[1]);
+			}
+
+			_check_reg_index(cur_ins.reg_out, ISize);
+
+			*_access_typed_reg(cur_ins.reg_out, size_t, ISize) = flib::shl_unsigned(op0, op1);
+
+			break;
+		}
+
+#define _basic_shr_signed_opcode(opcode, bit_size)                                                                  \
+	case Opcode::opcode: {                                                                                          \
+		int##bit_size##_t op0;                                                                                      \
+		uint32_t op1;                                                                                               \
+                                                                                                                    \
+		if (cur_ins.flags & INS_OP0_REG) {                                                                          \
+			_check_reg_index(cur_ins.reg0, I##bit_size);                                                            \
+                                                                                                                    \
+			op0 = *_access_typed_reg(cur_ins.reg0, int##bit_size##_t, I##bit_size);                                 \
+		} else {                                                                                                    \
+			op0 = ins_operand_as_i##bit_size(cur_ins.operands[0]);                                                  \
+		}                                                                                                           \
+                                                                                                                    \
+		if (cur_ins.flags & INS_OP1_REG) {                                                                          \
+			_check_reg_index(cur_ins.reg1, I##bit_size);                                                            \
+                                                                                                                    \
+			op1 = *_access_typed_reg(cur_ins.reg1, uint32_t, U32);                                                  \
+		} else {                                                                                                    \
+			op1 = ins_operand_as_u32(cur_ins.operands[1]);                                                          \
+		}                                                                                                           \
+                                                                                                                    \
+		_check_reg_index(cur_ins.reg_out, I##bit_size);                                                             \
+                                                                                                                    \
+		*_access_typed_reg(cur_ins.reg_out, int##bit_size##_t, I##bit_size) = flib::shr_signed##bit_size(op0, op1); \
+                                                                                                                    \
+		break;                                                                                                      \
+	}
+			_basic_shr_signed_opcode(SHRI8, 8);
+			_basic_shr_signed_opcode(SHRI16, 16);
+			_basic_shr_signed_opcode(SHRI32, 32);
+			_basic_shr_signed_opcode(SHRI64, 64);
+		case Opcode::SHRISIZE: {
+			intptr_t op0;
+			uint32_t op1;
+
+			if (cur_ins.flags & INS_OP0_REG) {
+				_check_reg_index(cur_ins.reg0, ISize);
+
+				op0 = *_access_typed_reg(cur_ins.reg0, intptr_t, ISize);
+			} else {
+				op0 = ins_operand_as_isize(cur_ins.operands[0]);
+			}
+
+			if (cur_ins.flags & INS_OP1_REG) {
+				_check_reg_index(cur_ins.reg1, ISize);
+
+				op1 = *_access_typed_reg(cur_ins.reg1, uint32_t, U32);
+			} else {
+				op1 = ins_operand_as_u32(cur_ins.operands[1]);
+			}
+
+			_check_reg_index(cur_ins.reg_out, ISize);
+
+			*_access_typed_reg(cur_ins.reg_out, intptr_t, ISize) = flib::shr_signed(op0, op1);
+
+			break;
+		}
+#define _basic_shr_unsigned_opcode(opcode, bit_size)                                                                   \
+	case Opcode::opcode: {                                                                                             \
+		uint##bit_size##_t op0;                                                                                        \
+		uint32_t op1;                                                                                                  \
+                                                                                                                       \
+		if (cur_ins.flags & INS_OP0_REG) {                                                                             \
+			_check_reg_index(cur_ins.reg0, U##bit_size);                                                               \
+                                                                                                                       \
+			op0 = *_access_typed_reg(cur_ins.reg0, uint##bit_size##_t, U##bit_size);                                   \
+		} else {                                                                                                       \
+			op0 = ins_operand_as_i##bit_size(cur_ins.operands[0]);                                                     \
+		}                                                                                                              \
+                                                                                                                       \
+		if (cur_ins.flags & INS_OP1_REG) {                                                                             \
+			_check_reg_index(cur_ins.reg1, I##bit_size);                                                               \
+                                                                                                                       \
+			op1 = *_access_typed_reg(cur_ins.reg1, uint32_t, U32);                                                     \
+		} else {                                                                                                       \
+			op1 = ins_operand_as_u32(cur_ins.operands[1]);                                                             \
+		}                                                                                                              \
+                                                                                                                       \
+		_check_reg_index(cur_ins.reg_out, U##bit_size);                                                                \
+                                                                                                                       \
+		*_access_typed_reg(cur_ins.reg_out, uint##bit_size##_t, I##bit_size) = flib::shr_unsigned##bit_size(op0, op1); \
+                                                                                                                       \
+		break;                                                                                                         \
+	}
+			_basic_shl_unsigned_opcode(SHRU8, 8);
+			_basic_shl_unsigned_opcode(SHRU16, 16);
+			_basic_shl_unsigned_opcode(SHRU32, 32);
+			_basic_shl_unsigned_opcode(SHRU64, 64);
+		case Opcode::SHRUSIZE: {
+			size_t op0;
+			uint32_t op1;
+
+			if (cur_ins.flags & INS_OP0_REG) {
+				_check_reg_index(cur_ins.reg0, ISize);
+
+				op0 = *_access_typed_reg(cur_ins.reg0, size_t, ISize);
+			} else {
+				op0 = ins_operand_as_usize(cur_ins.operands[0]);
+			}
+
+			if (cur_ins.flags & INS_OP1_REG) {
+				_check_reg_index(cur_ins.reg1, ISize);
+
+				op1 = *_access_typed_reg(cur_ins.reg1, uint32_t, U32);
+			} else {
+				op1 = ins_operand_as_u32(cur_ins.operands[1]);
+			}
+
+			_check_reg_index(cur_ins.reg_out, ISize);
+
+			*_access_typed_reg(cur_ins.reg_out, size_t, ISize) = flib::shr_unsigned(op0, op1);
+
+			break;
+		}
+
+		// TODO: Implement the three-way comparison.
+#define _basic_cmp_op_opcode(opcode, data_type, slake_type, slake_lower_type)                           \
+	case Opcode::opcode: {                                                                              \
+		data_type op0, op1;                                                                             \
+                                                                                                        \
+		_check_reg_index(cur_ins.reg_out, Bool);                                                        \
+                                                                                                        \
+		if (cur_ins.flags & INS_OP0_REG) {                                                              \
+			_check_reg_index(cur_ins.reg0, slake_type);                                                 \
+                                                                                                        \
+			op0 = *_access_typed_reg(cur_ins.reg0, data_type, slake_type);                              \
+		} else {                                                                                        \
+			op0 = ins_operand_as_##slake_lower_type(cur_ins.operands[0]);                               \
+		}                                                                                               \
+                                                                                                        \
+		if (cur_ins.flags & INS_OP1_REG) {                                                              \
+			_check_reg_index(cur_ins.reg1, slake_type);                                                 \
+                                                                                                        \
+			op1 = *_access_typed_reg(cur_ins.reg1, data_type, slake_type);                              \
+		} else {                                                                                        \
+			op1 = ins_operand_as_##slake_lower_type(cur_ins.operands[1]);                               \
+		}                                                                                               \
+                                                                                                        \
+		*_access_typed_reg(cur_ins.reg_out, int32_t, I32) = flib::compare_##slake_lower_type(op0, op1); \
+                                                                                                        \
+		break;                                                                                          \
+	}
+			_basic_cmp_op_opcode(CMPI8, int8_t, I8, i8);
+			_basic_cmp_op_opcode(CMPI16, int16_t, I16, i16);
+			_basic_cmp_op_opcode(CMPI32, int32_t, I32, i32);
+			_basic_cmp_op_opcode(CMPI64, int64_t, I64, i64);
+			_basic_cmp_op_opcode(CMPISIZE, intptr_t, ISize, isize);
+			_basic_cmp_op_opcode(CMPU8, uint8_t, U8, u8);
+			_basic_cmp_op_opcode(CMPU16, uint16_t, U16, u16);
+			_basic_cmp_op_opcode(CMPU32, uint32_t, U32, u32);
+			_basic_cmp_op_opcode(CMPU64, uint64_t, U64, u64);
+			_basic_cmp_op_opcode(CMPUSIZE, size_t, USize, usize);
+			// TODO: Handle floating-point types carefully instead...
+			_basic_cmp_op_opcode(CMPF32, uint32_t, U32, u32);
+			_basic_cmp_op_opcode(CMPF64, uint64_t, U64, u64);
 
 			// TODO: Implement the unary operations.
-
 		case Opcode::LOAD: {
 			_check_reg_index(cur_ins.reg_out, Any);
 

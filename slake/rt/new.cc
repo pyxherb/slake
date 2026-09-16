@@ -127,7 +127,7 @@ SLAKE_API InternalExceptionPointer Runtime::init_object_layout_for_module(BasicM
 			FieldRecord &cls_field_record = mod->field_records.at(i);
 			write_var_checked(
 				{ InitObjectLayoutFieldRef(object_layout, i) },
-				default_value_of(cls_field_record.type));
+				default_value_of(cls_field_record.type)).unwrap();
 		}
 	}
 

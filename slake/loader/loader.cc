@@ -1324,7 +1324,7 @@ load_dependencies:
 
 	for (auto &i : context.init_var_data) {
 		// TODO: Generate an error.
-		Runtime::write_var_checked(i.first, i.second);
+		runtime->write_var_checked(i.first, i.second).unwrap();
 	}
 
 	context.init_var_data.clear();

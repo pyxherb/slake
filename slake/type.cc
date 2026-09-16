@@ -282,7 +282,7 @@ SLAKE_API bool slake::is_compatible(const TypeRef &type, const Value &value) noe
 		case TypeId::Bool:
 			return value.value_type == ValueType::Bool;
 		case TypeId::String: {
-			if (value.value_type != ValueType::Reference)
+			if (value.value_type != ValueType::Object)
 				return false;
 			if (value.is_local() && !type.is_local())
 				return false;

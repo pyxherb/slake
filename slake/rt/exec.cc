@@ -478,7 +478,8 @@ SLAKE_FORCEINLINE InternalExceptionPointer slake::Runtime::_add_local_var(Contex
 		case TypeId::Array:
 		case TypeId::Ref:
 		case TypeId::StructInstance:
-			write_var_with_type_and_value(object_ref_out, type, default_value_of(type));
+			if(!write_var(object_ref_out, default_value_of(type)))
+				std::terminate();
 			break;
 		default:
 			break;
@@ -587,21 +588,20 @@ SLAKE_FORCEINLINE bool Runtime::_exec_ins(
 
 			break;
 		}
-#define _basic_type_store_opcode(opcode, data_type, slake_type, slake_lower_type)                                                \
-	case Opcode::opcode: {                                                                                                       \
-		_check_reg_index(cur_ins->reg0, Any);                                                                                    \
-                                                                                                                                 \
-		_check_reg_index(cur_ins->reg1, slake_type);                                                                             \
-                                                                                                                                 \
-		const Value *dest = _access_typed_reg(cur_ins->reg0, Value, Any);                                                        \
-		if (!dest->is_reference())                                                                                               \
-			goto throw_invalid_operands_error;                                                                                   \
-                                                                                                                                 \
-		if (typeof_var(dest->get_reference()).type_id != TypeId::slake_type)                                                     \
-			_THROW_EXCEPT(MismatchedVarTypeError::alloc(this->get_fixed_alloc(), TypeId::slake_type));                           \
-		write_var_with_type(dest->get_reference(), TypeId::slake_type, _access_typed_reg(cur_ins->reg1, data_type, slake_type)); \
-                                                                                                                                 \
-		break;                                                                                                                   \
+#define _basic_type_store_opcode(opcode, data_type, slake_type, slake_lower_type)                               \
+	case Opcode::opcode: {                                                                                      \
+		_check_reg_index(cur_ins->reg0, Any);                                                                   \
+                                                                                                                \
+		_check_reg_index(cur_ins->reg1, slake_type);                                                            \
+                                                                                                                \
+		const Value *dest = _access_typed_reg(cur_ins->reg0, Value, Any);                                       \
+		if (!dest->is_reference())                                                                              \
+			goto throw_invalid_operands_error;                                                                  \
+                                                                                                                \
+		if (!write_var(dest->get_reference(), Value(*_access_typed_reg(cur_ins->reg1, data_type, slake_type)))) \
+			goto throw_invalid_operands_error;                                                                  \
+                                                                                                                \
+		break;                                                                                                  \
 	}
 			_basic_type_store_opcode(STOREI8, int8_t, I8, i8);
 			_basic_type_store_opcode(STOREI16, int16_t, I16, i16);
@@ -616,9 +616,8 @@ SLAKE_FORCEINLINE bool Runtime::_exec_ins(
 			if (!dest->is_reference())
 				goto throw_invalid_operands_error;
 
-			if (typeof_var(dest->get_reference()).type_id != TypeId::ISize)
-				_THROW_EXCEPT(MismatchedVarTypeError::alloc(this->get_fixed_alloc(), TypeId::ISize));
-			write_var_with_type(dest->get_reference(), TypeId::ISize, _access_typed_reg(cur_ins->reg1, ptrdiff_t, ISize));
+			if (!write_var(dest->get_reference(), Value(ExplicitISize(*_access_typed_reg(cur_ins->reg1, ptrdiff_t, ISize)))))
+				goto throw_invalid_operands_error;
 
 			break;
 		}
@@ -635,9 +634,8 @@ SLAKE_FORCEINLINE bool Runtime::_exec_ins(
 			if (!dest->is_reference())
 				goto throw_invalid_operands_error;
 
-			if (typeof_var(dest->get_reference()).type_id != TypeId::USize)
-				_THROW_EXCEPT(MismatchedVarTypeError::alloc(this->get_fixed_alloc(), TypeId::USize));
-			write_var_with_type(dest->get_reference(), TypeId::USize, _access_typed_reg(cur_ins->reg1, size_t, USize));
+			if (!write_var(dest->get_reference(), Value(ExplicitUSize(*_access_typed_reg(cur_ins->reg1, size_t, USize)))))
+				goto throw_invalid_operands_error;
 
 			break;
 		}
@@ -654,10 +652,8 @@ SLAKE_FORCEINLINE bool Runtime::_exec_ins(
 			if (!dest->is_reference())
 				goto throw_invalid_operands_error;
 
-			TypeRef type = typeof_var(dest->get_reference());
-			if (!is_compatible(type, *source))
-				_THROW_EXCEPT(MismatchedVarTypeError::alloc(this->get_fixed_alloc(), type));
-			write_var_with_type_and_value(dest->get_reference(), type, *source);
+			if (!write_var(dest->get_reference(), *source))
+				goto throw_invalid_operands_error;
 
 			break;
 		}
@@ -2153,16 +2149,16 @@ SLAKE_API InternalExceptionPointer Runtime::exec_context(ContextObject *context)
 							}
 
 							if (!_exec_ins(
-									  context,
-									  cur_major_frame,
-									  data_stack, data_stack_size,
-									  num_ins,
-									  ins_base,
-									  ins_limit,
-									  cur_ins,
-									  ol,
-									  context_change,
-									  except_ptr))
+									context,
+									cur_major_frame,
+									data_stack, data_stack_size,
+									num_ins,
+									ins_base,
+									ins_limit,
+									cur_ins,
+									ol,
+									context_change,
+									except_ptr))
 								return except_ptr;
 						} while (context_change == ContextChangeType::NoChange);
 					} while (context_change == ContextChangeType::MajorFrameChanged);

@@ -254,6 +254,13 @@ namespace slake {
 			ContextChangeType &is_context_changed_out,
 			InternalExceptionPointer &except_out) noexcept;
 
+		SLAKE_FORCEINLINE static void _write_local_var(const Reference &entity_ref, char *raw_data_ptr, const TypeRef &t, const void *data) noexcept;
+		SLAKE_FORCEINLINE static bool _write_local_var(const Reference &entity_ref, TypeRef &t, const Value &value, char *raw_data_ptr);
+		SLAKE_FORCEINLINE static void _read_field(const Reference &entity_ref, Value &value_out) noexcept;
+		SLAKE_FORCEINLINE static bool _write_field(const Reference &entity_ref, const Value &value) noexcept;
+		SLAKE_FORCEINLINE static void *_locate_value_base_ptr(const Reference &entity_ref);
+		SLAKE_FORCEINLINE static TypeRef _typeof_var(const Reference &entity_ref) noexcept;
+
 		friend struct Context;
 
 	public:
@@ -478,10 +485,10 @@ namespace slake {
 			uint32_t num_args,
 			Value &value_out);
 
-		SLAKE_API static void *locate_value_base_ptr(const Reference &entity_ref) noexcept;
 		SLAKE_API static TypeRef typeof_var(const Reference &entity_ref) noexcept;
 		SLAKE_API static void read_var(const Reference &entity_ref, Value &value_out) noexcept;
 		SLAKE_API static void write_var_with_type(const Reference &entity_ref, const TypeRef &t, const void *data) noexcept;
+		SLAKE_API static bool write_var(const Reference &entity_ref, const Value &data) noexcept;
 		SLAKE_API static void write_var_with_type_and_value(const Reference &entity_ref, const TypeRef &t, const Value &data) noexcept;
 		SLAKE_FORCEINLINE static void write_var(const Reference &entity_ref, void *data) noexcept {
 			write_var_with_type(entity_ref, typeof_var(entity_ref), data);

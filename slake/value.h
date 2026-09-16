@@ -20,13 +20,13 @@ namespace slake {
 	enum class ReferenceKind : uint8_t {
 		Invalid = 0,
 
-		StaticFieldRef,
 		LocalVarRef,
 		CoroutineLocalVarRef,
-		ObjectFieldRef,
 		ArrayElementRef,
 		ArgRef,
 		CoroutineArgRef,
+		StaticFieldRef,
+		ObjectFieldRef,
 		InitObjectLayoutFieldRef,
 		DefaultStructValueRef,
 

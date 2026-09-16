@@ -241,15 +241,18 @@ namespace slake {
 		/// @brief Execute a single instruction.
 		/// @param context Context for execution.
 		/// @param ins Instruction to be executed.
-		[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer _exec_ins(
+		[[nodiscard]] SLAKE_FORCEINLINE bool _exec_ins(
 			ContextObject *const context,
 			MajorFrame *const cur_major_frame,
 			char *const data_stack,
 			const size_t stack_size,
 			const size_t num_ins,
-			const Instruction &cur_ins,
+			const Instruction *fn_ins_array,
+			const Instruction *fn_ins_limit,
+			const Instruction *&cur_ins_ptr,
 			const RegularFnOverloadingObject *ol,
-			ContextChangeType &is_context_changed_out) noexcept;
+			ContextChangeType &is_context_changed_out,
+			InternalExceptionPointer &except_out) noexcept;
 
 		friend struct Context;
 
